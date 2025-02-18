@@ -1,0 +1,108 @@
+<template>
+    <div class="container mx-auto px-4">
+        <div class="flex justify-center items-center h-screen">
+            <div class="w-full max-w-md">
+                <div class="bg-white shadow-md rounded-lg">
+                    <div class="bg-gray-200 px-6 py-4 rounded-t-lg">Вход</div>
+
+                    <div class="px-6 py-4">
+                        <form method="POST" action="/">
+                            <div class="mb-4">
+                                <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+                                <div>
+                                    <input id="email" type="email" @input="clearErrors"
+                                        :class="{ 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline': true, 'border-red-500': v$.email.$error }"
+                                        name="email" required autocomplete="email" v-model="email" autofocus>
+                                    <ValidationErrorMessage :show="v$.email.$error" :messages="v$.email.$errors" />
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Пароль</label>
+
+                                <div>
+                                    <input id="password" type="password" @input="clearErrors"
+                                        :class="{ 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline': true, 'border-red-500': v$.password.$error }"
+                                        name="password" required autocomplete="current-password" v-model="password">
+                                    <ValidationErrorMessage :show="v$.password.$error"
+                                        :messages="v$.password.$errors" />
+
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="flex items-center">
+                                    <input class="form-check-input mr-2 leading-tight" type="checkbox" name="remember"
+                                        id="remember">
+                                    <label class="text-sm" for="remember">
+                                        Запомнить меня
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- <div class="flex items-center justify-between"> -->
+                                <!-- <button type="submit" @click.prevent="login"
+                                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                                    Войти
+                                </button> -->
+                                <PrimaryButton :onclick="login" :is-loading="loading" :is-info="true" :is-full="true">Войти</PrimaryButton>
+                            <!-- </div> -->
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+import useVuelidate from '@vuelidate/core';
+import { required, email, minLength } from '@vuelidate/validators';
+import ValidationErrorMessage from '@/views/components/app/forms/ValidationErrorMessage.vue';
+import UserController from '@/api/UserController';
+
+import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+
+export default {
+    components: {
+        ValidationErrorMessage,
+        PrimaryButton
+    },
+    data() {
+        return {
+            v$: useVuelidate(),
+            email: '',
+            password: '',
+            loading: false
+        }
+    },
+    validations() {
+        return {
+            email: { required, email },
+            password: { required, minLength: minLength(6) }
+        }
+    },
+    methods: {
+        async login() {
+            this.v$.$validate();
+            if (this.v$.$error) {
+                return;
+            }
+            this.loading = true;
+            try {
+                await UserController.login(this.email, this.password);
+                this.$store.state.user = await UserController.getUser()
+                this.$router.push('/'); // Перенаправляем после успешного входа
+            } catch (error) {
+                alert(`Ошибка авторизации ${error}`);
+            }
+            this.loading = false;
+
+        },
+        clearErrors() {
+            this.v$.$reset();
+        }
+    }
+}
+
+</script>
