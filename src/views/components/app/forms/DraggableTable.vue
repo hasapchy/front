@@ -39,8 +39,11 @@
         :class="{ 'border-b border-gray-300': index !== tableData.length - 1 }" @click="() => { itemClick(item) }">
         <td v-for="column in columns" :key="`${column}${item}`" class="py-2 px-4 border-x border-gray-300"
           :class="{ 'hidden': !column.visible, 'w-15': column.size }">
-          <img v-if="column.image && itemMapper(item, column.name) !== null" :src="itemMapper(item, column.name)" alt="" width="50px" class="rounded">
-          <span v-else> {{ itemMapper(item, column.name) }} </span>
+          <img v-if="column.image && itemMapper(item, column.name) !== null" :src="itemMapper(item, column.name)" alt=""
+            width="50px" class="rounded">
+          <span v-else-if="column.html" v-html="itemMapper(item, column.name)"></span>
+          <span v-else>
+            {{ itemMapper(item, column.name) }} </span>
         </td>
       </tr>
     </tbody>

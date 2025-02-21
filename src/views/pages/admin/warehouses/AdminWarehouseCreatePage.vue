@@ -8,7 +8,7 @@
     <div class="mt-4">
         <label>Назначить пользователей</label>
         <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
-            <label v-for="user, index in users" :key="user.id" class="flex items-center space-x-2">
+            <label v-for="user, index in users" :key="user.id" class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
                 <input type="checkbox" :value="user.id" v-model="selectedUsers" :id="'user-' + user.id">
                 <span>{{ user.name }}</span>
             </label>

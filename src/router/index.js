@@ -10,6 +10,7 @@ import AppComponentsPage from "@/views/pages/app/AppComponentsPage.vue";
 import AdminWarehousesPage from "@/views/pages/admin/warehouses/AdminWarehousesPage.vue";
 import AdminCategoriesPage from "@/views/pages/admin/categories/AdminCategoriesPage.vue";
 import AdminProductsPage from "@/views/pages/admin/products/AdminProductsPage.vue";
+import ClientsPage from "@/views/pages/clients/ClientsPage.vue";
 
 const routes = [
     {
@@ -29,6 +30,12 @@ const routes = [
                 name: "Warehouses",
                 component: WarehousesPage,
                 meta: { title: 'Склады', requiresAuth: true }
+            },
+            {
+                path: "/clients",
+                name: "Clients",
+                component: ClientsPage,
+                meta: { title: 'Клиенты', requiresAuth: true }
             },
             {
                 path: "/components",
