@@ -22,6 +22,7 @@
       </div>
     </TableFilterButton>
   </div>
+  <!-- {{ tableData }} -->
   <!-- Сама таблица -->
   <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
     <thead class="bg-gray-100 rounded-t-sm">
@@ -35,6 +36,11 @@
       </draggable>
     </thead>
     <tbody>
+      <tr v-if="tableData.length === 0" class="text-center">
+        <td class="py-2 px-4 border-x border-gray-300" :colspan="columns.length">
+          Нет данных
+        </td>
+      </tr>
       <tr v-for="item, index in tableData" :key="item" class="cursor-pointer hover:bg-gray-100 transition-all"
         :class="{ 'border-b border-gray-300': index !== tableData.length - 1 }" @click="() => { itemClick(item) }">
         <td v-for="column in columns" :key="`${column}${item}`" class="py-2 px-4 border-x border-gray-300"
@@ -119,7 +125,7 @@ export default {
     },
     log(event) {
       this.columns = this.columns.map((col, index) => {
-        return { name: col.name, label: col.label, size: col.size, image: col.image ?? false, visible: col.visible, sort_index: index };
+        return { name: col.name, label: col.label, html: col.html, size: col.size, image: col.image ?? false, visible: col.visible, sort_index: index };
       });
       this.saveColumns();
     },

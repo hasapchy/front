@@ -5,6 +5,11 @@
             <div class="mb-5"></div>
             <!-- <h2 class="text-lg font-semibold mb-4 p-2">Настройки</h2> -->
             <ul>
+                <SidebarLink to="/admin/cash-registers" icon="fa-solid fa-cash-register mr-2" :settings="true">
+                    Кассы
+                </SidebarLink>
+            </ul>
+            <ul>
                 <SidebarLink to="/admin/warehouses" icon="fa-solid fa-warehouse mr-2" :settings="true">
                     Склады
                 </SidebarLink>
@@ -17,6 +22,11 @@
             <ul>
                 <SidebarLink to="/admin/products" icon="fa-solid fa-box mr-2" :settings="true">
                     Товары
+                </SidebarLink>
+            </ul>
+            <ul>
+                <SidebarLink to="/admin/services" icon="fa-solid fa-paint-roller mr-2" :settings="true">
+                    Услуги
                 </SidebarLink>
             </ul>
             <!-- <ul> -->

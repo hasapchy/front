@@ -50,7 +50,8 @@
         <label class="block mb-1">Единица измерения</label>
         <select v-model="unit_id">
             <option value="">Нет</option>
-            <option v-if="units.length" v-for="parent in units" :value="parent.id">{{ parent.name }} ({{ parent.short_name }})
+            <option v-if="units.length" v-for="parent in units" :value="parent.id">{{ parent.name }} ({{
+                parent.short_name }})
             </option>
         </select>
     </div>
@@ -68,46 +69,47 @@
             </option>
         </select>
     </div>
-    <div class=" mt-2">
+    <!-- <div class=" mt-2">
         <label class="block mb-1">Валюта</label>
         <select v-model="currency_id">
             <option value="">Нет</option>
             <option v-if="currencies.length" v-for="parent in currencies" :value="parent.id">{{ parent.name }}
             </option>
         </select>
-    </div>
+    </div> -->
     <div class="mt-2 flex space-x-2">
         <div class="w-1/3">
             <label>Закупочная цена</label>
             <div class="flex items-center rounded-l">
                 <input type="number" v-model="purchase_price">
-                <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span>
+                <!-- <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span> -->
             </div>
         </div>
         <div class="w-1/3">
             <label>Оптовая цена</label>
             <div class="flex items-center rounded-l">
                 <input type="number" v-model="wholesale_price">
-                <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span>
+                <!-- <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span> -->
             </div>
         </div>
         <div class="w-1/3">
             <label>Розничная цена</label>
             <div class="flex items-center rounded-l">
                 <input type="number" v-model="retail_price">
-                <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span>
+                <!-- <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span> -->
             </div>
         </div>
     </div>
     <div class="mt-2">
         <label>Баркод (EAN-13)</label>
-        <div  class="flex items-center space-x-2">
+        <div class="flex items-center space-x-2">
             <input type="text" v-model="barcode" :disabled="editingItemId !== null">
-            <PrimaryButton v-if="editingItemId == null" icon="fas fa-barcode" :is-info="true" :onclick="generateBarcode" :is-full="true"> Сгенерировать </PrimaryButton>
+            <PrimaryButton v-if="editingItemId == null" icon="fas fa-barcode" :is-info="true" :onclick="generateBarcode"
+                :is-full="true"> Сгенерировать </PrimaryButton>
         </div>
     </div>
 
-    <!-- {{ editingItem.id }} -->
+    <!-- {{ defaultType }} -->
     <div class="mt-4 flex space-x-2">
         <!-- <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton> -->
@@ -144,11 +146,16 @@ export default {
             type: ProductDto,
             required: false,
             default: null
+        },
+        defaultType: {
+            type: String,
+            required: false,
+            default: 'product'
         }
     },
     data() {
         return {
-            type: this.editingItem ? this.editingItem.typeName() : "product",
+            type: this.editingItem ? this.editingItem.typeName() : this.defaultType || "product",
             name: this.editingItem ? this.editingItem.name : '',
             description: this.editingItem ? this.editingItem.description : '',
             sku: this.editingItem ? this.editingItem.sku : '',
@@ -161,7 +168,7 @@ export default {
             retail_price: this.editingItem ? this.editingItem.retail_price : 0,
             wholesale_price: this.editingItem ? this.editingItem.wholesale_price : 0,
             purchase_price: this.editingItem ? this.editingItem.purchase_price : 0,
-            currency_id: this.editingItem ? this.editingItem.currency_id : '',
+            // currency_id: this.editingItem ? this.editingItem.currency_id : '',
             editingItemId: this.editingItem ? this.editingItem.id : null,
             //
             currencies: [],
@@ -185,9 +192,9 @@ export default {
         selectedUnit() {
             return this.units.find(unit => unit.id == this.unit_id);
         },
-        selectedCurrency() {
-            return this.currencies.find(currency => currency.id == this.currency_id);
-        }
+        // selectedCurrency() {
+        //     return this.currencies.find(currency => currency.id == this.currency_id);
+        // }
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
@@ -219,7 +226,7 @@ export default {
                     description: this.description,
                     sku: this.sku,
                     category_id: this.category_id,
-                    currency_id: this.currency_id,
+                    // currency_id: this.currency_id,
                     unit_id: this.unit_id,
                     status_id: this.status_id,
                     barcode: this.barcode,
@@ -309,7 +316,7 @@ export default {
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
-                    this.type = newEditingItem.typeName() || "product";
+                    this.type = newEditingItem.typeName() || this.defaultType || "product";
                     this.name = newEditingItem.name || '';
                     this.description = newEditingItem.description || '';
                     this.sku = newEditingItem.sku || '';
@@ -321,10 +328,10 @@ export default {
                     this.retail_price = newEditingItem.retail_price || 0;
                     this.wholesale_price = newEditingItem.wholesale_price || 0;
                     this.purchase_price = newEditingItem.purchase_price || 0;
-                    this.currency_id = newEditingItem.currency_id || '';
+                    // this.currency_id = newEditingItem.currency_id || '';
                     this.editingItemId = newEditingItem.id || null;
                 } else {
-                    this.type = "product";
+                    this.type = this.defaultType || "product";
                     this.name = '';
                     this.description = '';
                     this.sku = '';
@@ -336,7 +343,7 @@ export default {
                     this.retail_price = 0;
                     this.wholesale_price = 0;
                     this.purchase_price = 0;
-                    this.currency_id = '';
+                    // this.currency_id = '';
                     this.editingItemId = null;
                     this.selected_image = null;
                 }

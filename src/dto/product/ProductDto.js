@@ -21,10 +21,10 @@ class ProductDto {
         retail_price,
         wholesale_price,
         purchase_price,
-        currency_id,
-        currency_name,
-        currency_code,
-        currency_symbol
+        // currency_id,
+        // currency_name,
+        // currency_code,
+        // currency_symbol
     }) {
         this.id = id;
         this.type = type;
@@ -47,10 +47,10 @@ class ProductDto {
         this.retail_price = retail_price;
         this.wholesale_price = wholesale_price;
         this.purchase_price = purchase_price;
-        this.currency_id = currency_id;
-        this.currency_name = currency_name;
-        this.currency_code = currency_code;
-        this.currency_symbol = currency_symbol;
+        // this.currency_id = currency_id;
+        // this.currency_name = currency_name;
+        // this.currency_code = currency_code;
+        // this.currency_symbol = currency_symbol;
     }
 
     typeName() {
@@ -79,7 +79,9 @@ class ProductDto {
         if (typeof price !== 'number') {
             price = parseFloat(price);
         }
-        return (isNaN(price) ? '' : price.toFixed(2).replace(/\.0+$/, '')) + ' ' + (this.currency_symbol || '');
+        return (isNaN(price) ? '' : price.toFixed(2).replace(/\.0+$/, ''))
+            // + ' ' + (this.currency_symbol || '')
+            ;
     }
 }
 

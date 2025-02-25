@@ -1,5 +1,5 @@
 <template>
-    <div class="flex justify-center mt-4">
+    <div class="flex justify-center">
         <nav >
             <ul class="flex items-center -space-x-px h-8 text-sm">
                 <li>

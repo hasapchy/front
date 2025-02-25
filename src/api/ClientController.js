@@ -1,5 +1,4 @@
 import PaginatedResponse from '@/dto/app/PaginatedResponseDto';
-import CategoryDto from '@/dto/client/ClientDto';
 import api from './axiosInstance';
 import ClientDto from '@/dto/client/ClientDto';
 
@@ -34,6 +33,37 @@ export default class ClientController {
             return paginatedResponse;
         } catch (error) {
             console.error('Ошибка при получении клиентов:', error);
+            throw error;
+        }
+    }
+
+    static async search(term) {
+        try {
+            const response = await api.get(`/clients/search?search_request=${term}`);
+            const data = response.data;
+            console.log(data);
+            // Преобразуем полученные данные в DTO
+            const items = data.map(item => {
+                return new ClientDto(
+                    item.id,
+                    item.client_type,
+                    item.is_supplier,
+                    item.is_conflict,
+                    item.first_name,
+                    item.last_name,
+                    item.contact_person,
+                    item.address,
+                    item.note,
+                    item.status,
+                    item.created_at,
+                    item.updated_at,
+                    item.emails,
+                    item.phones,
+                );
+            });
+            return items;
+        } catch (error) {
+            console.error('Ошибка при поиске клиентов:', error);
             throw error;
         }
     }

@@ -1,4 +1,5 @@
-import dayjs from "dayjs";
+import { dayjsDate } from "@/utils/dateUtils";
+
 
 // CategoryDto описывает структуру категории
 export default class CategoryDto {
@@ -15,10 +16,10 @@ export default class CategoryDto {
     }
 
     formatCreatedAt() {
-        return dayjs(this.createdAt).format('YYYY-MM-DD');
+        return dayjsDate(this.createdAt);
     }
 
     formatUpdatedAt() {
-        return dayjs(this.updatedAt).format('YYYY-MM-DD');
+        return dayjsDate(this.updatedAt);
     }
 }

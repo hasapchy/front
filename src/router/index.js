@@ -11,6 +11,11 @@ import AdminWarehousesPage from "@/views/pages/admin/warehouses/AdminWarehousesP
 import AdminCategoriesPage from "@/views/pages/admin/categories/AdminCategoriesPage.vue";
 import AdminProductsPage from "@/views/pages/admin/products/AdminProductsPage.vue";
 import ClientsPage from "@/views/pages/clients/ClientsPage.vue";
+import AdminCashRegistersPage from "@/views/pages/admin/cash_registers/AdminCashRegistersPage.vue";
+import ProjectsPage from "@/views/pages/projects/ProjectsPage.vue";
+import AdminServicesPage from "@/views/pages/admin/products/AdminServicesPage.vue";
+import TransactionsPage from "@/views/pages/transactions/TransactionsPage.vue";
+import TransfersPage from "@/views/pages/transfers/TransfersPage.vue";
 
 const routes = [
     {
@@ -26,6 +31,42 @@ const routes = [
                 meta: { title: 'Моя компания', requiresAuth: true }
             },
             {
+                path: "/transactions",
+                name: "Transactions",
+                component: TransactionsPage,
+                meta: {
+                    title: 'Финансы', requiresAuth: true,
+                    binded: [
+                        {
+                            "name": "Трансферы",
+                            "path": "/transfers"
+                        },
+                        {
+                            "name": "Кассы",
+                            "path": "/admin/cash-registers"
+                        },
+                    ]
+                }
+            },
+            {
+                path: "/transfers",
+                name: "Transfers",
+                component: TransfersPage,
+                meta: {
+                    title: 'Трансферы', requiresAuth: true,
+                    binded: [
+                        {
+                            "name": "Финансы",
+                            "path": "/transactions"
+                        },
+                        {
+                            "name": "Кассы",
+                            "path": "/admin/cash-registers"
+                        }
+                    ]
+                }
+            },
+            {
                 path: "/warehouses",
                 name: "Warehouses",
                 component: WarehousesPage,
@@ -36,6 +77,12 @@ const routes = [
                 name: "Clients",
                 component: ClientsPage,
                 meta: { title: 'Клиенты', requiresAuth: true }
+            },
+            {
+                path: "/projects",
+                name: "Projects",
+                component: ProjectsPage,
+                meta: { title: 'Проекты', requiresAuth: true }
             },
             {
                 path: "/components",
@@ -59,7 +106,45 @@ const routes = [
                 path: "/admin/products",
                 name: "Admin-Products",
                 component: AdminProductsPage,
-                meta: { title: 'Товары', requiresAuth: true }
+                meta: {
+                    title: 'Товары', requiresAuth: true,
+                    binded: [
+                        {
+                            "name": "Услуги",
+                            "path": "/admin/services"
+                        }
+                    ]
+                }
+            },
+            {
+                path: "/admin/services",
+                name: "Admin-Sevices",
+                component: AdminServicesPage,
+                meta: {
+                    title: 'Услуги', requiresAuth: true,
+                    binded: [
+                        {
+                            "name": "Товары",
+                            "path": "/admin/products"
+                        }
+                    ]
+                }
+            },
+            {
+                path: "/admin/cash-registers",
+                name: "Admin-Cash-Registers",
+                component: AdminCashRegistersPage,
+                meta: { title: 'Кассы', requiresAuth: true,
+                    binded: [
+                        {
+                            "name": "Трансферы",
+                            "path": "/transfers"
+                        },
+                        {
+                            "name": "Финансы",
+                            "path": "/transactions"
+                        }
+                    ] }
             },
         ]
     },
@@ -85,7 +170,7 @@ const router = createRouter({
 
 // Проверяем авторизацию перед каждой навигацией
 router.beforeEach(async (to, from, next) => {
-    
+
     const token = localStorage.getItem('token');
     if (to.meta.requiresAuth && !token) {
         next('/auth/login'); // Если нет токена, отправляем на логин

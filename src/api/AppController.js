@@ -2,6 +2,7 @@ import UnitDto from '../dto/app/UnitDto';
 import CurrencyDto from '../dto/app/CurrencyDto';
 import api from './axiosInstance';
 import ProductStatusDto from '@/dto/product/ProductStatusDto';
+import TransactionCategoryDto from '@/dto/transaction/TransactionCategoryDto';
 
 class AppController {
     async getCurrencies() {
@@ -57,6 +58,24 @@ class AppController {
             ));
         } catch (error) {
             console.error('Error fetching product statuses:', error);
+            throw error;
+        }
+    }
+    async getTransactionCategories() {
+        try {
+            const response = await api.get('/app/transaction_categories');
+            const data = await response.data;
+            console.log(data);
+
+            return data.map(item => new TransactionCategoryDto(
+                {
+                    id: item.id,
+                    name: item.name,
+                    type: item.type
+                }
+            ));
+        } catch (error) {
+            console.error('Error fetching transaction categories:', error);
             throw error;
         }
     }

@@ -35,6 +35,9 @@ input[type="number"],
 input[type="email"],
 input[type="password"],
 input[type="file"],
+input[type="date"],
+input[type="datetime"],
+input[type="datetime-local"],
 select {
     width: 100%;
     padding: 7px;
@@ -53,6 +56,12 @@ input[type="number"]:visited,
 input[type="email"]:focus,
 input[type="email"]:focus-visible,
 input[type="email"]:visited
+input[type="date"]:focus-visible,
+input[type="date"]:visited
+input[type="datetime"]:focus-visible,
+input[type="datetime"]:visited
+input[type="datetime-local"]:focus-visible,
+input[type="datetime-local"]:visited
 input[type="password"]:focus,
 input[type="password"]:focus-visible,
 input[type="password"]:visited,

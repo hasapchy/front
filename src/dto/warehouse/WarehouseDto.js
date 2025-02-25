@@ -1,4 +1,4 @@
-import dayjs from "dayjs";
+import { dayjsDate } from "@/utils/dateUtils";
 
 // WarehouseDto описывает структуру склада
 export default class WarehouseDto {
@@ -11,6 +11,6 @@ export default class WarehouseDto {
     }
 
     formatCreatedAt() {
-        return dayjs(this.createdAt).format('YYYY-MM-DD');
+        return dayjsDate(this.createdAt);
     }
 }

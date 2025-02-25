@@ -1,6 +1,6 @@
-import dayjs from "dayjs";
 import ClientPhoneDto from "./ClientPhoneDto";
 import ClientEmailDto from "./ClientEmailDto";
+import { dayjsDate } from "@/utils/dateUtils";
 
 // ClientDto описывает структуру клиента
 export default class ClientDto {
@@ -19,6 +19,10 @@ export default class ClientDto {
         this.updatedAt = updatedAt; // Дата обновления клиента
         this.emails = emails.map(email => new ClientEmailDto(email.id, email.client_id, email.email)); // Список email-ов
         this.phones = phones.map(phone => new ClientPhoneDto(phone.id, phone.client_id, phone.phone)); // Список телефонов
+    }
+
+    fullName() {
+        return this.contactPerson ? `${this.firstName} ${this.lastName} (${this.contactPerson})` : `${this.firstName} ${this.lastName}`;
     }
 
     icons() {
@@ -63,10 +67,10 @@ export default class ClientDto {
     }
 
     formatCreatedAt() {
-        return dayjs(this.createdAt).format('YYYY-MM-DD');
+        return dayjsDate(this.createdAt);
     }
 
     formatUpdatedAt() {
-        return dayjs(this.updatedAt).format('YYYY-MM-DD');
+        return dayjsDate(this.updatedAt);
     }
 }
