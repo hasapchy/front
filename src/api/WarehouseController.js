@@ -28,6 +28,28 @@ export default class WarehouseController {
         }
     }
 
+    static async getAllItems() {
+        try {
+            const response = await api.get(`/warehouses/all`);
+            const data = response.data;
+            console.log(data);
+            // Преобразуем полученные данные в DTO
+            const items = data.map(item => {
+                return new WarehouseDto(
+                    item.id,
+                    item.name,
+                    item.users,
+                    item.created_at,
+                    item.updated_at
+                );
+            });
+            return items;
+        } catch (error) {
+            console.error('Ошибка при получении всех складов:', error);
+            throw error;
+        }
+    }
+
     static async storeWarehouse(warehouse) {
         try {
             const { data } = await api.post('/warehouses', warehouse);
@@ -37,8 +59,8 @@ export default class WarehouseController {
             throw error;
         }
     }
-    
-    static async updateWarehouse(id, warehouse){
+
+    static async updateWarehouse(id, warehouse) {
         try {
             const { data } = await api.put(`/warehouses/${id}`, warehouse);
             return data;
@@ -47,8 +69,8 @@ export default class WarehouseController {
             throw error;
         }
     }
-    
-    static async deleteWarehouse(id){
+
+    static async deleteWarehouse(id) {
         try {
             const { data } = await api.delete(`/warehouses/${id}`);
             return data;

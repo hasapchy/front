@@ -13,6 +13,7 @@ export default class ClientController {
                 return new ClientDto(
                     item.id,
                     item.client_type,
+                    item.balance,
                     item.is_supplier,
                     item.is_conflict,
                     item.first_name,
@@ -47,6 +48,7 @@ export default class ClientController {
                 return new ClientDto(
                     item.id,
                     item.client_type,
+                    item.balance,
                     item.is_supplier,
                     item.is_conflict,
                     item.first_name,

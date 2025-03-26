@@ -47,6 +47,52 @@ export default class ProductController {
             throw error;
         }
     }
+    static async searchItems($search_term) {
+        try {
+            const response = await api.get('/products/search', {
+                params: {
+                    search: $search_term
+                }
+            });
+            const data = response.data;
+            console.log(data);
+            // Преобразуем полученные данные в DTO
+            const items = data.map(item => {
+                return new ProductDto({
+                    id: item.id,
+                    type: item.type,
+                    name: item.name,
+                    description: item.description,
+                    sku: item.sku,
+                    image: item.image,
+                    category_id: item.category_id,
+                    category_name: item.category_name,
+                    stock_quantity: item.stock_quantity,
+                    unit_id: item.unit_id,
+                    unit_name: item.unit_name,
+                    unit_short_name: item.unit_short_name,
+                    unit_calc_area: item.unit_calc_area,
+                    status_id: item.status_id,
+                    barcode: item.barcode,
+                    is_serialized: item.is_serialized,
+                    created_at: item.created_at,
+                    updated_at: item.updated_at,
+                    retail_price: item.retail_price,
+                    wholesale_price: item.wholesale_price,
+                    purchase_price: item.purchase_price,
+                    // currency_id: item.currency_id,
+                    // currency_name: item.currency_name,
+                    // currency_code: item.currency_code,
+                    // currency_symbol: item.currency_symbol
+                });
+            });
+
+            return items;
+        } catch (error) {
+            console.error('Ошибка при поиске товаров или услуг:', error);
+            throw error;
+        }
+    }
 
     static async storeItem(item, imageFile) {
         try {

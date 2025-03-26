@@ -16,6 +16,7 @@ export default class ProjectController {
                     client = new ClientDto(
                         item.client.id,
                         item.client.client_type,
+                        item.client.balance,
                         item.client.is_supplier,
                         item.client.is_conflict,
                         item.client.first_name,
@@ -66,6 +67,7 @@ export default class ProjectController {
                     client = new ClientDto(
                         item.client.id,
                         item.client.client_type,
+                        item.client.balance,
                         item.client.is_supplier,
                         item.client.is_conflict,
                         item.client.first_name,

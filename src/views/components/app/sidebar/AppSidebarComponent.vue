@@ -21,6 +21,9 @@
                 <SidebarLink to="/" icon="fas fa-building mr-2">
                     Моя компания 
                 </SidebarLink>
+                <SidebarLink to="/sales" icon="fas fa-shopping-cart mr-2">
+                    Продажи 
+                </SidebarLink>
                 <SidebarLink to="/transactions" icon="fas fa-coins mr-2">
                     Финансы 
                 </SidebarLink>

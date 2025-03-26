@@ -1,5 +1,6 @@
 <template>
     <h2 class="text-lg font-bold mb-4">Клиент</h2>
+    <TabBar :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => {changeTab(t)}"/>
     <div>
         <label>Тип клиента</label>
         <select v-model="clientType">
@@ -83,11 +84,13 @@ import ClientController from '@/api/ClientController';
 import ClientDto from '@/dto/client/ClientDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import TabBar from '@/views/components/app/forms/TabBar.vue';
 
 export default {
     components: {
         PrimaryButton,
-        AlertDialog
+        AlertDialog,
+        TabBar
     },
     props: {
         editingItem: {
@@ -113,7 +116,19 @@ export default {
             newEmail: '',
             saveLoading: false,
             deleteDialog: false,
-            deleteLoading: false
+            deleteLoading: false,
+            ///
+            currentTab: 'form',
+            tabs: [
+                {
+                    name: 'form',
+                    label: 'Форма'
+                },
+                {
+                    name: 'balance',
+                    label: 'Баланс'
+                }
+            ]
         }
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
@@ -204,6 +219,10 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
+        },
+        ///
+        changeTab(tab) {
+            this.currentTab = tab;
         }
     },
     watch: {

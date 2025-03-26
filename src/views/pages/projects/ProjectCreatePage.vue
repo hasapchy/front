@@ -21,7 +21,8 @@
         <transition name="appear">
             <ul v-show="showDropdown"
                 class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-                <li v-if="clientSearch.length === 0" class="p-2 text-gray-500">Введите запрос</li>
+                <li v-if="clientSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
+                <li v-else-if="clientSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li>
                 <li v-else-if="clientSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
                 <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
                 <li v-for="client in clientResults" :key="client.id" @mousedown.prevent="() => { selectClient(client) }"
@@ -30,12 +31,13 @@
                         <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
                         <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
                     </div>
-                    <!-- <span :class="client.balance > 0 ? 'text-green-500' : 'text-red-500'">
-                    {{ client.convertedBalance.toFixed(2) }} {{ client.currencySymbol }}
-                    <span v-if="client.balance > 0">(Клиент должен нам)</span>
-                    <span v-else-if="client.balance < 0">(Мы должны клиенту)</span>
-                    <span v-else>(0)</span>
-                </span> -->
+                    <span :class="client.balance > 0 ? 'text-green-500' : 'text-red-500'">
+                        {{ client.balanceFormatted() }}
+                        <!-- {{ client.currencySymbol }} -->
+                        <span v-if="client.balanceNumeric() > 0">(Клиент должен нам)</span>
+                        <span v-else-if="client.balanceNumeric() < 0">(Мы должны клиенту)</span>
+                        <span v-else>(0)</span>
+                    </span>
                 </li>
             </ul>
         </transition>
@@ -47,6 +49,15 @@
                     <label>Клиент</label>
                     <p><span class="font-semibold text-sm">Имя:</span> {{ selectedClient.fullName() }}</p>
                     <p><span class="font-semibold text-sm">Номер:</span> {{ selectedClient.phones[0].phone }}</p>
+                    <p><span class="font-semibold text-sm">Баланс:</span>
+                        <span :class="selectedClient.balanceNumeric() > 0  ? 'text-green-500' : 'text-red-500'">
+                            {{ selectedClient.balanceFormatted() }}
+                            <!-- {{ selectedClient.currencySymbol }} -->
+                            <span v-if="selectedClient.balanceNumeric() > 0">(Клиент должен нам)</span>
+                            <span v-else-if="selectedClient.balanceNumeric() < 0">(Мы должны клиенту)</span>
+                            <span v-else>(0)</span>
+                        </span>
+                    </p>
                     <!-- <p><strong>Баланс:</strong>
                         <span
                         class="{{ optional($selectedClient->balance)->balance > 0 ? 'text-green-500' : 'text-red-500' }}">
@@ -125,6 +136,7 @@ export default {
             deleteLoading: false,
             // Поиск клиентов
             clientSearch: '',
+            clientSearchLoading: false,
             clientResults: [],
             showDropdown: false
         }
@@ -140,8 +152,9 @@ export default {
         // Поиск клиентов
         searchClients: debounce(async function () {
             if (this.clientSearch.length >= 4) {
-                console.log('searching clients');
+                this.clientSearchLoading = true;
                 const results = await ClientController.search(this.clientSearch);
+                this.clientSearchLoading = false;
                 this.clientResults = results;
             } else {
                 this.clientResults = [];

@@ -4,9 +4,10 @@ import { dayjsDate } from "@/utils/dateUtils";
 
 // ClientDto описывает структуру клиента
 export default class ClientDto {
-    constructor(id, clientType, isSupplier, isConflict, firstName, lastName, contactPerson, address, note, status, createdAt, updatedAt, emails = [], phones = []) {
+    constructor(id, clientType, balance = 0, isSupplier, isConflict, firstName, lastName, contactPerson, address, note, status, createdAt, updatedAt, emails = [], phones = []) {
         this.id = id; // Идентификатор клиента
         this.clientType = clientType; // Тип клиента
+        this.balance = balance; // Баланс клиента
         this.isSupplier = (isSupplier == 1 || isSupplier == '1' || isSupplier == true) ? true : false; // Является ли поставщиком
         this.isConflict = (isConflict == 1 || isConflict == '1' || isConflict == true) ? true : false; // Является ли конфликтным
         this.firstName = firstName; // Имя клиента
@@ -19,6 +20,17 @@ export default class ClientDto {
         this.updatedAt = updatedAt; // Дата обновления клиента
         this.emails = emails.map(email => new ClientEmailDto(email.id, email.client_id, email.email)); // Список email-ов
         this.phones = phones.map(phone => new ClientPhoneDto(phone.id, phone.client_id, phone.phone)); // Список телефонов
+    }
+
+    balanceNumeric(){
+        const balanceStr = this.balance.toString();
+        return parseFloat(balanceStr);
+    }
+    
+    balanceFormatted(){
+        const balanceStr = this.balance.toString();
+        const balanceFloat = parseFloat(balanceStr);
+        return balanceFloat.toFixed(2);
     }
 
     fullName() {

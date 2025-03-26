@@ -16,6 +16,7 @@ import ProjectsPage from "@/views/pages/projects/ProjectsPage.vue";
 import AdminServicesPage from "@/views/pages/admin/products/AdminServicesPage.vue";
 import TransactionsPage from "@/views/pages/transactions/TransactionsPage.vue";
 import TransfersPage from "@/views/pages/transfers/TransfersPage.vue";
+import SalesPage from "@/views/pages/sales/SalesPage.vue";
 
 const routes = [
     {
@@ -29,6 +30,12 @@ const routes = [
                 name: "Home",
                 component: HomePage,
                 meta: { title: 'Моя компания', requiresAuth: true }
+            },
+            {
+                path: "/sales",
+                name: "Sales",
+                component: SalesPage,
+                meta: { title: 'Продажи', requiresAuth: true }
             },
             {
                 path: "/transactions",
