@@ -184,6 +184,7 @@ import ClientController from '@/api/ClientController';
 import ProductController from '@/api/ProductController';
 import ProjectController from '@/api/ProjectController';
 import WarehouseController from '@/api/WarehouseController';
+import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import SaleDto from '@/dto/sale/SaleDto';
 import SaleProductDto from '@/dto/sale/SaleProductDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
@@ -205,7 +206,7 @@ export default {
     },
     data() {
         return {
-            date: this.editingItem ? this.editingItem.date : '',
+            date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0,10),
             note: this.editingItem ? this.editingItem.note : '',
             type: this.editingItem ? this.editingItem.type : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId || '' : '',
@@ -306,55 +307,55 @@ export default {
             this.products = this.products.filter(product => product.productId != id);
         },
         async save() {
-            // this.saveLoading = true;
-            // try {
-            //     var formData = {
-            //         client_id: this.selectedClient.id,
-            //         warehouse_id: this.warehouseId,
-            //         currency_id: this.currencyId,
-            //         note: this.note,
-            //         products: this.products.map(product => ({
-            //             product_id: product.productId,
-            //             quantity: product.quantity,
-            //             price: product.price
-            //         }))
-            //     };
-            //     if (this.editingItemId != null) {
-            //         var resp = await WarehouseReceiptController.updateReceipt(
-            //             this.editingItemId,
-            //             formData);
-            //     } else {
-            //         var resp = await WarehouseReceiptController.storeReceipt(formData);
-            //     }
-            //     if (resp.message) {
-            //         this.$emit('saved');
-            //         this.clearForm();
-            //     }
-            // } catch (error) {
-            //     this.$emit('saved-error', error);
-            // }
-            // this.saveLoading = false;
+            this.saveLoading = true;
+            try {
+                var formData = {
+                    client_id: this.selectedClient.id,
+                    warehouse_id: this.warehouseId,
+                    currency_id: this.currencyId,
+                    note: this.note,
+                    products: this.products.map(product => ({
+                        product_id: product.productId,
+                        quantity: product.quantity,
+                        price: product.price
+                    }))
+                };
+                if (this.editingItemId != null) {
+                    var resp = await WarehouseReceiptController.updateReceipt(
+                        this.editingItemId,
+                        formData);
+                } else {
+                    var resp = await WarehouseReceiptController.storeReceipt(formData);
+                }
+                if (resp.message) {
+                    this.$emit('saved');
+                    this.clearForm();
+                }
+            } catch (error) {
+                this.$emit('saved-error', error);
+            }
+            this.saveLoading = false;
         },
         async deleteItem() {
-            // this.closeDeleteDialog();
-            // if (this.editingItemId == null) {
-            //     return;
-            // }
-            // this.deleteLoading = true;
-            // try {
-            //     var resp = await WarehouseReceiptController.deleteReceipt(
-            //         this.editingItemId);
-            //     if (resp.message) {
-            //         this.$emit('deleted');
-            //         this.clearForm();
-            //     }
-            // } catch (error) {
-            //     this.$emit('deleted-error', error);
-            // }
-            // this.deleteLoading = false;
+            this.closeDeleteDialog();
+            if (this.editingItemId == null) {
+                return;
+            }
+            this.deleteLoading = true;
+            try {
+                var resp = await WarehouseReceiptController.deleteReceipt(
+                    this.editingItemId);
+                if (resp.message) {
+                    this.$emit('deleted');
+                    this.clearForm();
+                }
+            } catch (error) {
+                this.$emit('deleted-error', error);
+            }
+            this.deleteLoading = false;
         },
         clearForm() {
-            this.date = '';
+            this.date = new Date().toISOString().substring(0,10);
             this.note = '';
             this.warehouseId = '';
             this.currencyId = '';

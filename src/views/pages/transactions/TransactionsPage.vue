@@ -12,7 +12,7 @@
                         {{ parent.name }} ({{ parent.currency_code }})
                     </option>
                 </select>
-                
+
                 <!-- @if ($dateFilter == 'custom')
                 <div class="flex space-x-2 items-center ml-4">
                     <input type="date" wire:model.change="startDate" class="w-full p-2 border rounded">
@@ -34,9 +34,9 @@
             </div>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-        @changePage="fetchItems" />
+            @changePage="fetchItems" />
     </div>
-    <TransactionsBalance ref="balanceRef" :cash-register-id="cashRegisterId || null"/>
+    <TransactionsBalance ref="balanceRef" :cash-register-id="cashRegisterId || null" />
     <!-- Table with placeholder -->
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
@@ -114,7 +114,7 @@ export default {
         this.$store.commit('SET_SETTINGS_OPEN', false);
     },
     methods: {
-        updateBalace(){
+        updateBalace() {
             this.$refs.balanceRef.fetchItems();
         },
         async fetchAllCashRegisters() {
@@ -163,6 +163,7 @@ export default {
             }, 3000);
         },
         showModal(item = null) {
+            this.editingItem = null;
             if (item?.isTransfer === 1) {
                 this.showNotification('Нельзя редактировать транзакцию', 'Транзакция является трансфером', true);
                 return;
@@ -185,6 +186,7 @@ export default {
         handleDeleted() {
             this.showNotification('Транзакция успешно удалена', '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
+            this.updateBalace();
             this.closeModal();
         },
         handleDeletedError(m) {

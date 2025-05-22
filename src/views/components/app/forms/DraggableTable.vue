@@ -1,55 +1,54 @@
 <template>
-  <!-- {{ tableData }} -->
-  <!-- Кнопка настройки колонны  -->
+  <!-- Настройка колонок -->
   <div class="flex flex-row-reverse">
     <TableFilterButton v-if="columns.length">
       <ul>
         <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
-          <li @click="toggleVisible(index)" class="flex items-center hover:bg-gray-100 p-2 rounded"
-            v-for="element, index in columns" :key="element.name">
+          <li v-for="(element, index) in columns" :key="element.name" @click="toggleVisible(index)"
+            class="flex items-center hover:bg-gray-100 p-2 rounded">
             <div class="space-x-2 flex flex-row justify-between w-full select-none">
-              <div><i class="text-sm mr-2 text-[#337AB7]"
-                  :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>{{ element.label }}</div>
+              <div>
+                <i class="text-sm mr-2 text-[#337AB7]"
+                  :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                {{ element.label }}
+              </div>
               <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i></div>
             </div>
           </li>
         </draggable>
       </ul>
       <div class="flex flex-row-reverse">
-        <button @click="resetColumns" class="text-[#337AB7] hover:underline mr-3 cursor-pointer">
-          Сбросить
-        </button>
+        <button @click="resetColumns" class="text-[#337AB7] hover:underline mr-3 cursor-pointer">Сбросить</button>
       </div>
     </TableFilterButton>
   </div>
-  <!-- {{ tableData }} -->
-  <!-- Сама таблица -->
+
+  <!-- Таблица -->
   <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
     <thead class="bg-gray-100 rounded-t-sm">
       <draggable v-if="columns.length" tag="tr" class="dragArea list-group w-full" :list="columns" @change="log">
-        <th class="text-left border border-gray-300 py-2 px-4 font-medium cursor-move" v-for="element in columns"
-          :key="element.name" :class="{ 'hidden': !element.visible }">
-          <span>
-            {{ element.label }}
-          </span>
+        <th v-for="(element, index) in columns" :key="element.name"
+          :class="{ hidden: !element.visible, relative: true }"
+          class="text-left border border-gray-300 py-2 px-4 font-medium cursor-move select-none"
+          :style="{ width: element.size ? element.size + 'px' : 'auto' }">
+          <span>{{ element.label }}</span>
+          <span v-if="element.visible" class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize"
+            @mousedown.prevent="startResize($event, index)"></span>
         </th>
       </draggable>
     </thead>
     <tbody>
       <tr v-if="tableData.length === 0" class="text-center">
-        <td class="py-2 px-4 border-x border-gray-300" :colspan="columns.length">
-          Нет данных
-        </td>
+        <td class="py-2 px-4 border-x border-gray-300" :colspan="columns.length">Нет данных</td>
       </tr>
-      <tr v-for="item, index in tableData" :key="item" class="cursor-pointer hover:bg-gray-100 transition-all"
-        :class="{ 'border-b border-gray-300': index !== tableData.length - 1 }" @click="() => { itemClick(item) }">
-        <td v-for="column in columns" :key="`${column}${item}`" class="py-2 px-4 border-x border-gray-300"
-          :class="{ 'hidden': !column.visible, 'w-15': column.size }">
+      <tr v-for="(item, idx) in tableData" :key="idx" class="cursor-pointer hover:bg-gray-100 transition-all"
+        :class="{ 'border-b border-gray-300': idx !== tableData.length - 1 }" @click="() => itemClick(item)">
+        <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`" class="py-2 px-4 border-x border-gray-300"
+          :class="{ hidden: !column.visible }" :style="{ width: column.size ? column.size + 'px' : 'auto' }">
           <img v-if="column.image && itemMapper(item, column.name) !== null" :src="itemMapper(item, column.name)" alt=""
-            width="50px" class="rounded">
+            width="50" class="rounded" />
           <span v-else-if="column.html" v-html="itemMapper(item, column.name)"></span>
-          <span v-else>
-            {{ itemMapper(item, column.name) }} </span>
+          <span v-else>{{ itemMapper(item, column.name) }}</span>
         </td>
       </tr>
     </tbody>
@@ -57,63 +56,49 @@
 </template>
 
 <script>
-import { VueDraggableNext } from 'vue-draggable-next'
+import { VueDraggableNext } from 'vue-draggable-next';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 
 export default {
+  name: 'ResizableTable',
   components: { draggable: VueDraggableNext, TableFilterButton },
   props: {
-    tableKey: {
-      type: String,
-      required: true
-    },
-    columnsConfig: {
-      type: Array,
-      required: true
-    },
-    tableData: {
-      type: Array,
-      required: true
-    },
-    itemMapper: {
-      type: Function,
-      required: true
-    },
-    onItemClick: {
-      type: Function,
-      required: false
-    }
+    tableKey: { type: String, required: true },
+    columnsConfig: { type: Array, required: true },
+    tableData: { type: Array, required: true },
+    itemMapper: { type: Function, required: true },
+    onItemClick: { type: Function },
   },
   data() {
     return {
       columns: [],
-      ///
-      enabled: true,
-      dragging: false,
+      resizing: false,
+      resizingColumn: null,
+      startX: 0,
+      startWidth: 0,
     };
   },
-  // computed: {
-  //   visibleColumns() {
-  //     return this.columns.filter(col => col.visible);
-  //   }
-  // },
   methods: {
     loadColumns() {
       const saved = localStorage.getItem(`tableColumns_${this.tableKey}`);
       if (saved) {
-        console.log('saved', saved);
         this.columns = JSON.parse(saved);
       } else {
-        console.log('not saved');
-        this.columns = this.columnsConfig.map((col, index) => {
-          return { ...col, sort_index: index, visible: true };
-        });
+        this.columns = this.columnsConfig.map((col, index) => ({
+          ...col,
+          sort_index: index,
+          visible: true,
+          size: col.size ?? null,
+        }));
       }
     },
     resetColumns() {
-      this.columns = this.columnsConfig.map((col, index) => {
-        return { ...col, sort_index: index, visible: true };
-      });
+      this.columns = this.columnsConfig.map((col, index) => ({
+        ...col,
+        sort_index: index,
+        visible: true,
+        size: col.size ?? null,
+      }));
       this.saveColumns();
     },
     saveColumns() {
@@ -123,21 +108,47 @@ export default {
       this.columns[index].visible = !this.columns[index].visible;
       this.saveColumns();
     },
-    log(event) {
-      this.columns = this.columns.map((col, index) => {
-        return { name: col.name, label: col.label, html: col.html, size: col.size, image: col.image ?? false, visible: col.visible, sort_index: index };
-      });
+    log() {
+      this.columns = this.columns.map((col, index) => ({
+        ...col,
+        sort_index: index,
+      }));
       this.saveColumns();
     },
     itemClick(i) {
-      if (this.onItemClick != null) {
-        this.onItemClick(i);
-      }
-    }
+      this.onItemClick?.(i);
+    },
+
+    /* ---------- Новое от Эмиля.Это на случай, если ты начнешь смотреть ресайз колонок ---------- */
+    startResize(e, index) {
+      this.resizing = true;
+      this.resizingColumn = index;
+      this.startX = e.clientX;
+      this.startWidth = e.target.parentElement.offsetWidth;
+      document.addEventListener('mousemove', this.onMouseMove);
+      document.addEventListener('mouseup', this.stopResize);
+    },
+    onMouseMove(e) {
+      if (!this.resizing) return;
+      const dx = e.clientX - this.startX;
+      const newWidth = Math.max(50, this.startWidth + dx);
+      this.columns[this.resizingColumn].size = newWidth;
+    },
+    stopResize() {
+      if (!this.resizing) return;
+      this.resizing = false;
+      this.saveColumns();
+      document.removeEventListener('mousemove', this.onMouseMove);
+      document.removeEventListener('mouseup', this.stopResize);
+    },
   },
   mounted() {
     this.loadColumns();
-  }
+  },
+  beforeUnmount() {
+    document.removeEventListener('mousemove', this.onMouseMove);
+    document.removeEventListener('mouseup', this.stopResize);
+  },
 };
 </script>
 
@@ -145,5 +156,13 @@ export default {
 th,
 td {
   text-align: left;
+}
+
+.resize-handle {
+  transition: background-color 0.15s ease;
+}
+
+.resize-handle:hover {
+  background-color: rgba(0, 0, 0, 0.15);
 }
 </style>

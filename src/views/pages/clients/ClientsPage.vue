@@ -63,6 +63,7 @@ export default {
                 { name: 'emails', label: 'Email', html: true },
                 { name: 'address', label: 'Адрес' },
                 { name: 'note', label: 'Заметка' },
+                { name: 'discount', label: 'Скидка' },
                 { name: 'status', label: 'Статус', html: true },
                 { name: 'createdAt', label: 'Дата создания' },
             ],
@@ -82,6 +83,8 @@ export default {
                     return i.phonesHtmlList();
                 case 'emails':
                     return i.emailsHtmlList();
+                case 'discount':
+                    return i.discountFormatted();
                 case 'status':
                     return i.statusIcon();
                 case 'createdAt':

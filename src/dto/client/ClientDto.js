@@ -4,7 +4,7 @@ import { dayjsDate } from "@/utils/dateUtils";
 
 // ClientDto описывает структуру клиента
 export default class ClientDto {
-    constructor(id, clientType, balance = 0, isSupplier, isConflict, firstName, lastName, contactPerson, address, note, status, createdAt, updatedAt, emails = [], phones = []) {
+    constructor(id, clientType, balance = 0, isSupplier, isConflict, firstName, lastName, contactPerson, address, note, status, discountType, discount, createdAt, updatedAt, emails = [], phones = []) {
         this.id = id; // Идентификатор клиента
         this.clientType = clientType; // Тип клиента
         this.balance = balance; // Баланс клиента
@@ -16,10 +16,13 @@ export default class ClientDto {
         this.address = address; // Адрес клиента
         this.note = note; // Заметка
         this.status = (status == 1 || status == '1' || status == true) ? true : false; // Статус клиента
+        this.discountType = discountType; // Тип скидки
+        this.discount = discount; // Скидка
         this.createdAt = createdAt; // Дата создания клиента
         this.updatedAt = updatedAt; // Дата обновления клиента
         this.emails = emails.map(email => new ClientEmailDto(email.id, email.client_id, email.email)); // Список email-ов
         this.phones = phones.map(phone => new ClientPhoneDto(phone.id, phone.client_id, phone.phone)); // Список телефонов
+    
     }
 
     balanceNumeric(){
@@ -76,6 +79,21 @@ export default class ClientDto {
         });
         res += '</ul>';
         return res;
+    }
+
+    discountFormatted() {
+        const discount = this.discount !== undefined ? this.discount : '';
+        let discountType = '';
+        if (this.discountType !== undefined && this.discountType) {
+            if (this.discountType === 'fixed') {
+                discountType = 'фиксированная';
+            } else if (this.discountType === 'percent') {
+                discountType = 'процентная';
+            } else {
+                discountType = this.discountType;
+            }
+        }
+        return discount + (discountType ? ` (${discountType})` : '');
     }
 
     formatCreatedAt() {

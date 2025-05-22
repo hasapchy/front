@@ -12,8 +12,8 @@
         <label class="block mb-1">Касса</label>
         <select v-model="cashId" :disabled="!!editingItemId">
             <option value="">Нет</option>
-            <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">{{ parent.name
-                }}
+            <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">
+                {{ parent.name }} ({{ parent.currencySymbol }})
             </option>
         </select>
     </div>
@@ -52,7 +52,7 @@
         <select v-model="categoryId">
             <option value="">Нет</option>
             <option v-if="allCategories.length" v-for="parent in allCategories" :value="parent.id">{{ parent.typeClass()
-            }} {{ parent.name }}
+                }} {{ parent.name }}
             </option>
         </select>
     </div>
@@ -129,7 +129,7 @@
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="'Подтвердите удаление категории'" :confirm-text="'Удалить категорию'" :leave-text="'Отмена'" />
+        :descr="'Подтвердите удаление транзакции'" :confirm-text="'Удалить транзакцию'" :leave-text="'Отмена'" />
 </template>
 
 
@@ -143,6 +143,7 @@ import TransactionDto from '@/dto/transaction/TransactionDto';
 import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
 import TransactionController from '@/api/TransactionController';
+import dayjs from 'dayjs';
 
 
 export default {
@@ -172,7 +173,7 @@ export default {
             currencyId: this.editingItem ? this.editingItem.origCurrencyId : '',
             categoryId: this.editingItem ? this.editingItem.categoryId : '',
             projectId: this.editingItem ? this.editingItem.projectId : '',
-            date: this.editingItem ? this.editingItem.date : '',
+            date: this.editingItem && this.editingItem.date ? this.editingItem.date : dayjs().format('YYYY-MM-DDTHH:mm'),
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
             currencies: [],
@@ -208,6 +209,13 @@ export default {
         },
         async fetchAllCashRegisters() {
             this.allCashRegisters = await CashRegisterController.getAllItems();
+            this.allCashRegisters = this.allCashRegisters.map(cash => {
+                const currency = this.currencies.find(c => c.id === cash.currency_id);
+                return { ...cash, currencySymbol: currency.symbol };
+            });
+            if (this.allCashRegisters.length && !this.cashId && !this.defaultCashId) {
+                this.cashId = this.allCashRegisters[0].id;
+            }
         },
         // Поиск клиентов
         searchClients: debounce(async function () {
@@ -265,34 +273,35 @@ export default {
 
         },
         async deleteItem() {
-            // this.closeDeleteDialog();
-            // if (this.editingItemId == null) {
-            //     return;
-            // }
-            // this.deleteLoading = true;
-            // try {
-            //     var resp = await CategoryController.deleteItem(
-            //         this.editingItemId);
-            //     if (resp.message) {
-            //         this.$emit('deleted');
-            //         this.clearForm();
-            //     }
-            // } catch (error) {
-            //     this.$emit('deleted-error', error);
-            // }
-            // this.deleteLoading = false;
+            this.closeDeleteDialog();
+            if (this.editingItemId == null) {
+                return;
+            }
+            this.deleteLoading = true;
+            try {
+                var resp = await TransactionController.deleteItem(this.editingItemId);
+                console.log('Ответ сервера при удалении:', resp);
+                if (resp.message || resp.success || resp) {
+                    this.$emit('deleted');
+                    this.clearForm();
+                }
+            } catch (error) {
+                this.$emit('deleted-error', error);
+            }
+            this.deleteLoading = false;
         },
         clearForm() {
             this.type = "income";
-            this.cashId = '';
+            this.cashId = this.allCashRegisters.length ? this.allCashRegisters[0].id : '';
             this.origAmount = 0;
             this.currencyId = '';
             this.categoryId = '';
             this.projectId = '';
-            this.date = '';
+            this.date = dayjs().format('YYYY-MM-DDTHH:mm');
             this.selectedClient = null;
             this.editingItemId = null;
         },
+
         showDeleteDialog() {
             this.deleteDialog = true;
         },
@@ -308,13 +317,13 @@ export default {
             immediate: true
         },
         defaultCashId: {
-            handler(i){
+            handler(i) {
                 this.cashId = this.defaultCashId;
             },
             immediate: true
         },
         cashId: {
-            handler(i){
+            handler(i) {
                 this.allCashRegisters.forEach(cash => {
                     if (cash.id == this.cashId && cash.currency_id) {
                         this.currencyId = cash.currency_id;
@@ -335,20 +344,21 @@ export default {
                     this.currencyId = newEditingItem.origCurrencyId || '';
                     this.categoryId = newEditingItem.categoryId || '';
                     this.projectId = newEditingItem.projectId || '';
-                    this.date = newEditingItem.date || '';
+                    this.date = newEditingItem.date;
                     this.selectedClient = newEditingItem.client || null;
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     this.type = "income";
                     this.name = '';
-                    this.cashId = this.defaultCashId || '';
+                    this.cashId = this.defaultCashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
+                    const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
                     this.cashAmount = null;
                     this.cashCurrencyId = null;
                     this.origAmount = 0;
-                    this.currencyId = '';
+                    this.currencyId = selectedCash?.currency_id || '';
                     this.categoryId = '';
                     this.projectId = '';
-                    this.date = '';
+                    this.date = dayjs().format('YYYY-MM-DDTHH:mm');
                     this.selectedClient = null;
                     this.editingItemId = null;
                 }

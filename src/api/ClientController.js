@@ -22,10 +22,13 @@ export default class ClientController {
                     item.address,
                     item.note,
                     item.status,
+                    item.discount_type,
+                    item.discount,
                     item.created_at,
                     item.updated_at,
                     item.emails,
                     item.phones,
+                 
                 );
             });
 
@@ -57,10 +60,13 @@ export default class ClientController {
                     item.address,
                     item.note,
                     item.status,
+                    item.discount_type,
+                    item.discount,
                     item.created_at,
                     item.updated_at,
                     item.emails,
                     item.phones,
+                   
                 );
             });
             return items;

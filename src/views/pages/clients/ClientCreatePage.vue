@@ -1,6 +1,6 @@
 <template>
     <h2 class="text-lg font-bold mb-4">Клиент</h2>
-    <TabBar :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => {changeTab(t)}"/>
+    <TabBar :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
     <div>
         <label>Тип клиента</label>
         <select v-model="clientType">
@@ -70,6 +70,20 @@
             <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removeEmail(index)" />
         </div>
     </div>
+    <div class="flex gap-4 w-full">
+        <div class="flex flex-col w-full">
+            <label>Тип скидки</label>
+            <select v-model="discountType" class="w-full">
+                <option value="">Выберите тип скидки</option>
+                <option value="percent">Процентная</option>
+                <option value="fixed">Фиксированная</option>
+            </select>
+        </div>
+        <div class="flex flex-col w-full">
+            <label>Скидка</label>
+            <input type="number" v-model="discount" class="w-full"/>
+        </div>
+    </div>
     <div class="mt-4 flex space-x-2">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
@@ -112,6 +126,8 @@ export default {
             isSupplier: this.editingItem ? this.editingItem.isSupplier : false,
             phones: this.editingItem ? this.editingItem.phones.map(phone => phone.phone) : [],
             emails: this.editingItem ? this.editingItem.emails.map(email => email.email) : [],
+            discountType: this.editingItem ? this.editingItem.discountType : 'fixed',
+            discount: this.editingItem ? this.editingItem.discount : 0,
             newPhone: '',
             newEmail: '',
             saveLoading: false,
@@ -165,7 +181,9 @@ export default {
                     is_conflict: this.isConflict,
                     is_supplier: this.isSupplier,
                     phones: this.phones,
-                    emails: this.emails
+                    emails: this.emails,
+                    discount_type: this.discountType,
+                    discount: this.discount
                 };
 
                 let resp;
@@ -213,6 +231,8 @@ export default {
             this.isSupplier = false;
             this.phones = [];
             this.emails = [];
+            this.discountType = 'fixed';
+            this.discount = 0;
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -240,6 +260,8 @@ export default {
                     this.isSupplier = newEditingItem.isSupplier || false;
                     this.phones = newEditingItem.phones.map(phone => phone.phone) || [];
                     this.emails = newEditingItem.emails.map(email => email.email) || [];
+                    this.discountType = newEditingItem.discountType ?? 'fixed';
+                    this.discount = newEditingItem.discount ?? 0;
                 } else {
                     this.clearForm();
                 }
