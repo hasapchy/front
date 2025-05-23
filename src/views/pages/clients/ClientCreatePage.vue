@@ -46,7 +46,7 @@
     <div>
         <label>Номер телефона</label>
         <div class="flex items-center space-x-2">
-            <input type="text" v-model="newPhone" @keyup.enter="addPhone">
+            <input type="text" v-model="newPhone" ref="phoneInput" @keyup.enter="addPhone">
             <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addPhone" />
         </div>
         <div v-for="(phone, index) in phones" :key="phone" class="flex items-center space-x-2 mt-2">
@@ -81,7 +81,7 @@
         </div>
         <div class="flex flex-col w-full">
             <label>Скидка</label>
-            <input type="number" v-model="discount" class="w-full"/>
+            <input type="number" v-model="discount" class="w-full" />
         </div>
     </div>
     <div class="mt-4 flex space-x-2">
@@ -99,6 +99,7 @@ import ClientDto from '@/dto/client/ClientDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
+import Inputmask from 'inputmask';
 
 export default {
     components: {
@@ -147,11 +148,28 @@ export default {
             ]
         }
     },
+    mounted() {
+     const phoneInput = this.$refs.phoneInput;
+        const mask = new Inputmask({
+            mask: "\\9\\9\\3 99 999999",
+            placeholder: "_", 
+            showMaskOnHover: false,
+            showMaskOnFocus: true,
+            clearIncomplete: true, 
+            keepStatic: true 
+        });
+        mask.mask(phoneInput);
+    },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
         addPhone() {
             if (this.newPhone) {
-                this.phones.push(this.newPhone);
+                const cleanedPhone = this.newPhone.replace(/[\s-()]/g, '');
+                if (this.phones.includes(cleanedPhone)) {
+                    alert('Этот номер телефона уже добавлен!');
+                    return;
+                }
+                this.phones.push(cleanedPhone);
                 this.newPhone = '';
             }
         },

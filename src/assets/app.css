@@ -256,3 +256,7 @@ input[type="checkbox"] {
     align-items: center;
     gap: 8px;
 }
+body {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 12px;
+}

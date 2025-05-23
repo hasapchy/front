@@ -29,23 +29,32 @@
       <draggable v-if="columns.length" tag="tr" class="dragArea list-group w-full" :list="columns" @change="log">
         <th v-for="(element, index) in columns" :key="element.name"
           :class="{ hidden: !element.visible, relative: true }"
-          class="text-left border border-gray-300 py-2 px-4 font-medium cursor-move select-none"
-          :style="{ width: element.size ? element.size + 'px' : 'auto' }">
+          class="text-left border border-gray-300 py-2 px-4 font-medium cursor-pointer select-none"
+          :style="{ width: element.size ? element.size + 'px' : 'auto' }" @click.prevent="sortBy(element.name)">
           <span>{{ element.label }}</span>
+          <span v-if="sortKey === element.name" class="ml-1">
+            <i v-if="sortOrder === 1" class="fas fa-sort-up"></i>
+            <i v-else class="fas fa-sort-down"></i>
+          </span>
+          <span v-else class="ml-1 text-gray-300">
+            <i class="fas fa-sort"></i>
+          </span>
           <span v-if="element.visible" class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize"
             @mousedown.prevent="startResize($event, index)"></span>
         </th>
       </draggable>
     </thead>
     <tbody>
-      <tr v-if="tableData.length === 0" class="text-center">
-        <td class="py-2 px-4 border-x border-gray-300" :colspan="columns.length">Нет данных</td>
+      <tr v-if="sortedData.length === 0" class="text-center">
+        <td class="py-2 px-4 border-x border-gray-300" :colspan="columns.length">
+          Нет данных
+        </td>
       </tr>
-      <tr v-for="(item, idx) in tableData" :key="idx" class="cursor-pointer hover:bg-gray-100 transition-all"
-        :class="{ 'border-b border-gray-300': idx !== tableData.length - 1 }" @click="() => itemClick(item)">
+      <tr v-for="(item, idx) in sortedData" :key="idx" class="cursor-pointer hover:bg-gray-100 transition-all"
+        :class="{ 'border-b border-gray-300': idx !== sortedData.length - 1 }" @click="() => itemClick(item)">
         <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`" class="py-2 px-4 border-x border-gray-300"
           :class="{ hidden: !column.visible }" :style="{ width: column.size ? column.size + 'px' : 'auto' }">
-          <img v-if="column.image && itemMapper(item, column.name) !== null" :src="itemMapper(item, column.name)" alt=""
+          <img v-if="column.image && itemMapper(item, column.name) !== null" :src="itemMapper(item, column.name)"
             width="50" class="rounded" />
           <span v-else-if="column.html" v-html="itemMapper(item, column.name)"></span>
           <span v-else>{{ itemMapper(item, column.name) }}</span>
@@ -53,6 +62,7 @@
       </tr>
     </tbody>
   </table>
+
 </template>
 
 <script>
@@ -73,10 +83,31 @@ export default {
     return {
       columns: [],
       resizing: false,
+      sortKey: null,
+      sortOrder: 1,
       resizingColumn: null,
       startX: 0,
       startWidth: 0,
     };
+  },
+  computed: {
+    sortedData() {
+      if (!this.sortKey) {
+        return this.tableData;
+      }
+      return [...this.tableData].sort((a, b) => {
+        const va = this.itemMapper(a, this.sortKey);
+        const vb = this.itemMapper(b, this.sortKey);
+        const da = Date.parse(va), db = Date.parse(vb);
+        if (!isNaN(da) && !isNaN(db)) {
+          return (da - db) * this.sortOrder;
+        }
+        if (!isNaN(parseFloat(va)) && !isNaN(parseFloat(vb))) {
+          return (parseFloat(va) - parseFloat(vb)) * this.sortOrder;
+        }
+        return va.toString().localeCompare(vb.toString()) * this.sortOrder;
+      });
+    }
   },
   methods: {
     loadColumns() {
@@ -92,6 +123,7 @@ export default {
         }));
       }
     },
+
     resetColumns() {
       this.columns = this.columnsConfig.map((col, index) => ({
         ...col,
@@ -100,6 +132,14 @@ export default {
         size: col.size ?? null,
       }));
       this.saveColumns();
+    },
+    sortBy(key) {
+      if (this.sortKey === key) {
+        this.sortOrder = -this.sortOrder;
+      } else {
+        this.sortKey = key;
+        this.sortOrder = 1;
+      }
     },
     saveColumns() {
       localStorage.setItem(`tableColumns_${this.tableKey}`, JSON.stringify(this.columns));

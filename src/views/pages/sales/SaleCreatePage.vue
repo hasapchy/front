@@ -105,12 +105,12 @@
             </label>
         </div>
     </div>
-    <div v-if="type==='cash'" class="mt-2">
+    <div v-if="type === 'cash'" class="mt-2">
         <label class="block mb-1">Касса</label>
         <select v-model="cashId" :disabled="!!editingItemId">
             <option value="">Нет</option>
             <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">{{ parent.name
-                }}
+            }}
             </option>
         </select>
     </div>
@@ -206,9 +206,9 @@ export default {
     },
     data() {
         return {
-            date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0,10),
+            date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 10),
             note: this.editingItem ? this.editingItem.note : '',
-            type: this.editingItem ? this.editingItem.type : '',
+            type: this.editingItem ? this.editingItem.type : 'cash',
             warehouseId: this.editingItem ? this.editingItem.warehouseId || '' : '',
             currencyId: this.editingItem ? this.editingItem.currencyId || '' : '',
             projectId: this.editingItem ? this.editingItem.projectId : '',
@@ -264,6 +264,9 @@ export default {
         },
         async fetchAllCashRegisters() {
             this.allCashRegisters = await CashRegisterController.getAllItems();
+            if (this.allCashRegisters.length && !this.cashId && !this.editingItem) {
+                this.cashId = this.allCashRegisters[0].id;
+            }
         },
         // Поиск клиентов
         searchClients: debounce(async function () {
@@ -355,10 +358,13 @@ export default {
             this.deleteLoading = false;
         },
         clearForm() {
-            this.date = new Date().toISOString().substring(0,10);
+            this.date = new Date().toISOString().substring(0, 10);
             this.note = '';
-            this.warehouseId = '';
+            this.type = 'cash';
+            this.warehouseId = this.allWarehouses.length ? this.allWarehouses[0].id : '';
             this.currencyId = '';
+            this.projectId = '';
+            this.cashId = this.allCashRegisters.length ? this.allCashRegisters[0].id : '';
             this.selectedClient = null;
             this.products = [];
             this.editingItemId = null;
@@ -377,7 +383,6 @@ export default {
             handler: 'searchClients',
             immediate: true
         },
-        // Поиск товаров
         productSearch: {
             handler: 'searchProducts',
             immediate: true
@@ -389,13 +394,33 @@ export default {
                 }
             }
         },
+        cashId: {
+            handler(newCashId) {
+                const selectedCash = this.allCashRegisters.find(cash => cash.id == newCashId);
+                if (selectedCash && selectedCash.currency_id) {
+                    this.currencyId = selectedCash.currency_id;
+                }
+            },
+            immediate: true
+        },
+        allWarehouses: {
+            handler(newWarehouses) {
+                if (newWarehouses.length && !this.warehouseId && !this.editingItem) {
+                    this.warehouseId = newWarehouses[0].id;
+                }
+            },
+            immediate: true
+        },
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
-                    this.date = newEditingItem.date || '';
+                    this.date = newEditingItem.date || new Date().toISOString().substring(0, 10);
                     this.note = newEditingItem.note || '';
-                    this.warehouseId = newEditingItem.warehouseId || '';
+                    this.type = newEditingItem.type || 'cash';
+                    this.warehouseId = newEditingItem.warehouseId || (this.allWarehouses.length ? this.allWarehouses[0].id : '');
                     this.currencyId = newEditingItem.currencyId || '';
+                    this.projectId = newEditingItem.projectId || '';
+                    this.cashId = newEditingItem.cashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
                     this.selectedClient = newEditingItem.client || null;
                     this.editingItemId = newEditingItem.id || null;
                     this.products = newEditingItem.products || [];

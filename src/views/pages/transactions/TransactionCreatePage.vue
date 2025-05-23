@@ -58,7 +58,7 @@
     </div>
     <div>
         <label>Дата</label>
-        <input type="datetime-local" v-model="date">
+        <input type="date" v-model="date">
     </div>
     <!-- Начало блока поиска клиентов -->
 
@@ -143,7 +143,6 @@ import TransactionDto from '@/dto/transaction/TransactionDto';
 import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
 import TransactionController from '@/api/TransactionController';
-import dayjs from 'dayjs';
 
 
 export default {
@@ -173,7 +172,7 @@ export default {
             currencyId: this.editingItem ? this.editingItem.origCurrencyId : '',
             categoryId: this.editingItem ? this.editingItem.categoryId : '',
             projectId: this.editingItem ? this.editingItem.projectId : '',
-            date: this.editingItem && this.editingItem.date ? this.editingItem.date : dayjs().format('YYYY-MM-DDTHH:mm'),
+            date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 10),
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
             currencies: [],
@@ -297,7 +296,7 @@ export default {
             this.currencyId = '';
             this.categoryId = '';
             this.projectId = '';
-            this.date = dayjs().format('YYYY-MM-DDTHH:mm');
+            this.date = new Date().toISOString().substring(0, 10);
             this.selectedClient = null;
             this.editingItemId = null;
         },
@@ -344,7 +343,7 @@ export default {
                     this.currencyId = newEditingItem.origCurrencyId || '';
                     this.categoryId = newEditingItem.categoryId || '';
                     this.projectId = newEditingItem.projectId || '';
-                    this.date = newEditingItem.date;
+                    this.date = newEditingItem.date || new Date().toISOString().substring(0, 10);
                     this.selectedClient = newEditingItem.client || null;
                     this.editingItemId = newEditingItem.id || null;
                 } else {
@@ -358,7 +357,7 @@ export default {
                     this.currencyId = selectedCash?.currency_id || '';
                     this.categoryId = '';
                     this.projectId = '';
-                    this.date = dayjs().format('YYYY-MM-DDTHH:mm');
+                    this.date = new Date().toISOString().substring(0, 10);
                     this.selectedClient = null;
                     this.editingItemId = null;
                 }
