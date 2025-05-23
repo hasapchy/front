@@ -162,6 +162,30 @@
                 </td>
             </tr>
         </tbody>
+        <tfoot v-if="products.length">
+            <tr class="bg-gray-50 font-medium">
+                <td colspan="2" class="py-2 px-4 text-right">Сумма без скидки</td>
+                <td class="py-2 px-4 text-right">{{ subtotal.toFixed(2) }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td colspan="2" class="py-2 px-4 text-right">
+                    <select v-model="discountType" class="border ml-2 p-1">
+                        <option value="percent">%</option>
+                        <option value="fixed">– сумма</option>
+                    </select>
+                </td>
+                <td class="py-2 px-4 text-right">
+                    <input type="number" v-model.number="discount" class="w-full p-1 text-right">
+                </td>
+                <td></td>
+            </tr>
+            <tr class="bg-gray-100 font-bold">
+                <td colspan="2" class="py-2 px-4 text-right">Итого</td>
+                <td class="py-2 px-4 text-right">{{ totalPrice.toFixed(2) }}</td>
+                <td></td>
+            </tr>
+        </tfoot>
     </table>
     <!-- Конец блока поиска товаров -->
 
@@ -216,7 +240,7 @@ export default {
             cashId: this.editingItem ? this.editingItem.cashId : '',
             products: this.editingItem ? this.editingItem.products : [],
             discount: this.editingItem ? this.editingItem.discount : 0,
-            totalPrice: this.editingItem ? this.editingItem.totalPrice : 0,
+            discount_type: this.discountType,
             // 
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
@@ -253,6 +277,22 @@ export default {
         },
         selectedCash() {
             return this.allCashRegisters.find(c => c.id == this.cashId);
+        },
+        subtotal() {
+            return this.products.reduce((sum, p) =>
+                sum + (Number(p.price) || 0) * (Number(p.quantity) || 0), 0
+            );
+        },
+        discountAmount() {
+            const disc = Number(this.discount) || 0;
+            if (!disc) return 0;
+            if (this.discountType === 'percent') {
+                return this.subtotal * disc / 100;
+            }
+            return Math.min(disc, this.subtotal);
+        },
+        totalPrice() {
+            return this.subtotal - this.discountAmount;
         }
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
@@ -298,6 +338,8 @@ export default {
             this.clientSearch = '';
             this.clientResults = [];
             this.selectedClient = client;
+            this.discount = client.discount || 0;
+            this.discountType = client.discountType || 'fixed';
             console.log('Selected client:', client);
         },
         selectProduct(product) {
@@ -328,7 +370,7 @@ export default {
                     date: this.date,
                     note: this.note,
                     discount: this.discount,
-                    discount_type: this.discountType || 'fixed',
+                    discount_type: this.discountType,
                     products: this.products.map(p => ({
                         product_id: p.productId,
                         quantity: p.quantity,
