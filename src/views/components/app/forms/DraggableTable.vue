@@ -133,14 +133,6 @@ export default {
       }));
       this.saveColumns();
     },
-    sortBy(key) {
-      if (this.sortKey === key) {
-        this.sortOrder = -this.sortOrder;
-      } else {
-        this.sortKey = key;
-        this.sortOrder = 1;
-      }
-    },
     saveColumns() {
       localStorage.setItem(`tableColumns_${this.tableKey}`, JSON.stringify(this.columns));
     },
@@ -157,6 +149,21 @@ export default {
     },
     itemClick(i) {
       this.onItemClick?.(i);
+    },
+    saveSort() {
+      localStorage.setItem(
+        `tableSort_${this.tableKey}`,
+        JSON.stringify({ key: this.sortKey, order: this.sortOrder })
+      );
+    },
+    sortBy(key) {
+      if (this.sortKey === key) {
+        this.sortOrder = -this.sortOrder;
+      } else {
+        this.sortKey = key;
+        this.sortOrder = 1;
+      }
+      this.saveSort();
     },
 
     /* ---------- Новое от Эмиля.Это на случай, если ты начнешь смотреть ресайз колонок ---------- */
@@ -184,6 +191,17 @@ export default {
   },
   mounted() {
     this.loadColumns();
+
+    const saved = localStorage.getItem(`tableSort_${this.tableKey}`);
+    if (saved) {
+      try {
+        const { key, order } = JSON.parse(saved);
+        this.sortKey = key;
+        this.sortOrder = order;
+      } catch (e) {
+
+      }
+    }
   },
   beforeUnmount() {
     document.removeEventListener('mousemove', this.onMouseMove);

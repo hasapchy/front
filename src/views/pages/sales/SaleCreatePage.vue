@@ -77,14 +77,14 @@
             </select>
         </div>
     </div>
-    <div class=" mt-2">
+    <!-- <div class=" mt-2">
         <label class="block mb-1">Валюта</label>
         <select v-model="currencyId" :disabled="!!editingItemId">
             <option value="">Нет</option>
             <option v-if="currencies.length" v-for="parent in currencies" :value="parent.id">{{ parent.name }}
             </option>
         </select>
-    </div>
+    </div> -->
 
     <div class="mt-2">
         <label>Примечание</label>
@@ -110,7 +110,7 @@
         <select v-model="cashId" :disabled="!!editingItemId">
             <option value="">Нет</option>
             <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">{{ parent.name
-            }}
+                }}
             </option>
         </select>
     </div>
@@ -185,6 +185,7 @@ import ProductController from '@/api/ProductController';
 import ProjectController from '@/api/ProjectController';
 import WarehouseController from '@/api/WarehouseController';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
+import SaleController from '@/api/SaleController';
 import SaleDto from '@/dto/sale/SaleDto';
 import SaleProductDto from '@/dto/sale/SaleProductDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
@@ -249,6 +250,9 @@ export default {
     computed: {
         selectedCurrency() {
             return this.currencies.find(currency => currency.id == this.currency_id);
+        },
+        selectedCash() {
+            return this.allCashRegisters.find(c => c.id == this.cashId);
         }
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
@@ -313,22 +317,29 @@ export default {
             this.saveLoading = true;
             try {
                 var formData = {
-                    client_id: this.selectedClient.id,
+                    client_id: this.selectedClient?.id,
+                    project_id: this.projectId || null,
                     warehouse_id: this.warehouseId,
-                    currency_id: this.currencyId,
+                    currency_id: this.type === 'cash'
+                        ? this.selectedCash?.currency_id
+                        : this.currencyId,
+                    cash_id: this.type === 'cash' ? this.cashId : null,
+                    type: this.type,
+                    date: this.date,
                     note: this.note,
-                    products: this.products.map(product => ({
-                        product_id: product.productId,
-                        quantity: product.quantity,
-                        price: product.price
+                    discount: this.discount,
+                    discount_type: this.discountType || 'fixed',
+                    products: this.products.map(p => ({
+                        product_id: p.productId,
+                        quantity: p.quantity,
+                        price: p.price
                     }))
                 };
+                let resp;
                 if (this.editingItemId != null) {
-                    var resp = await WarehouseReceiptController.updateReceipt(
-                        this.editingItemId,
-                        formData);
+                    resp = await SaleController.updateItem(this.editingItemId, formData);
                 } else {
-                    var resp = await WarehouseReceiptController.storeReceipt(formData);
+                    resp = await SaleController.storeItem(formData);
                 }
                 if (resp.message) {
                     this.$emit('saved');

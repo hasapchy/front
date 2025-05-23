@@ -128,6 +128,9 @@ export default {
     methods: {
         async fetchAllWarehouses() {
             this.allWarehouses = await WarehouseController.getAllItems();
+            if (!this.warehouseId && !this.editingItem && this.allWarehouses.length > 0) {
+                this.warehouseId = this.allWarehouses[0].id;
+            }
         },
         searchProducts: debounce(async function () {
             if (this.productSearch.length >= 4) {
