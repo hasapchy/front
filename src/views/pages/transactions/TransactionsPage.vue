@@ -6,7 +6,7 @@
             <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить транзакцию</PrimaryButton>
             <div class="mx-4">
                 <!-- <label class="block mb-1">Касса</label> -->
-                <select v-model="cashRegisterId" @change="fetchItems">'
+                <select v-model="cashRegisterId" @change="fetchItems">
                     <option value="">Все кассы</option>
                     <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">
                         {{ parent.name }} ({{ parent.currency_code }})
@@ -101,10 +101,9 @@ export default {
                 { name: 'origAmount', label: 'Указанная сумма' },
                 { name: 'categoryName', label: 'Категория' },
                 { name: 'note', label: 'Примечание' },
-                { name: 'date', label: 'Дата транзакции' },
                 { name: 'projectName', label: 'Проект' },
                 { name: 'clientId', label: 'Клиент' },
-                { name: 'userName', label: 'Пользователь' },
+                { name: 'dateUser', label: 'Дата' },
             ],
         }
     },
@@ -130,9 +129,14 @@ export default {
                 case 'origAmount':
                     return i.origAmountData();
                 case 'clientId':
-                    return i.clientId != null ? i.client.fullName() : '';
-                case 'date':
-                    return i.formatDate();
+                    if (!i.client) return '';
+                    const name = i.client.fullName();
+                    const firstPhone = i.client.phones?.[0]?.phone;
+                    return firstPhone
+                        ? `${name} (${firstPhone})`
+                        : name;
+                case 'dateUser':
+                    return `${i.formatDate()} / ${i.userName}`;
                 default:
                     return i[c];
             }

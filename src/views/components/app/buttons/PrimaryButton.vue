@@ -63,7 +63,7 @@ export default {
                 'hover:bg-[#D53935]': this.isDanger && !this.isLight && !this.isInfo,
                 'hover:bg-[#3571A4]': this.isInfo && !this.isDanger && !this.isLight,
                 'hover:bg-gray-300/50': this.isLight && !this.isDanger && !this.isInfo,
-                'text-sm px-3 py-2 rounded focus:outline-none focus:shadow-outline transition duration-300 cursor-pointer': true,
+                'px-3 py-2 rounded focus:outline-none focus:shadow-outline transition duration-300 cursor-pointer': true,
                 'w-full': this.isFull
             }
         }

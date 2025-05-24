@@ -1,29 +1,32 @@
 <template>
-    <h2 class="text-lg font-bold mb-4">Категория</h2>
-    <div>
-        <label>Название</label>
-        <input type="text" v-model="name">
-    </div>
+    <div class="flex flex-col overflow-auto p-4">
+        <h2 class="text-lg font-bold ">Категория</h2>
+        <div>
+            <label>Название</label>
+            <input type="text" v-model="name">
+        </div>
 
-    <div class="mt-4">
-        <label>Назначить пользователей</label>
-        <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
-            <label v-for="user, index in users" :key="user.id" class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-                <input type="checkbox" :value="user.id" v-model="selectedUsers" :id="'user-' + user.id" >
-                <span class="text-black">{{ user.name }}</span>
-            </label>
+        <div class="mt-4">
+            <label>Назначить пользователей</label>
+            <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
+                <label v-for="user, index in users" :key="user.id"
+                    class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+                    <input type="checkbox" :value="user.id" v-model="selectedUsers" :id="'user-' + user.id">
+                    <span class="text-black">{{ user.name }}</span>
+                </label>
+            </div>
+        </div>
+        <div class=" mt-4 mb-2">
+            <label class="block mb-1">Родительская категория</label>
+            <select v-model="selectedParentCategoryId">
+                <option value="">Нет</option>
+                <option v-if="allCategories.length" v-for="parent in allCategories" :value="parent.id">{{ parent.name }}
+                </option>
+            </select>
         </div>
     </div>
-    <div class=" mt-4 mb-2">
-        <label class="block mb-1">Родительская категория</label>
-        <select v-model="selectedParentCategoryId">
-            <option value="">Нет</option>
-            <option v-if="allCategories.length" v-for="parent in allCategories" :value="parent.id">{{ parent.name }}
-            </option>
-        </select>
-    </div>
     <!-- {{ editingItem.id }} -->
-    <div class="mt-4 flex space-x-2">
+    <div class="mt-4 p-4 flex space-x-2 bg-[#f3fbed]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>

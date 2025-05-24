@@ -1,21 +1,23 @@
 <template>
-    <h2 class="text-lg font-bold mb-4">Склад</h2>
-    <div>
-        <label>Название</label>
-        <input type="text" v-model="name" >
-    </div>
+    <div class="flex flex-col overflow-auto p-4">
+        <h2 class="text-lg font-bold ">Склад</h2>
+        <div>
+            <label>Название</label>
+            <input type="text" v-model="name">
+        </div>
 
-    <div class="mt-4">
-        <label>Назначить пользователей</label>
-        <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
-            <label v-for="user, index in users" :key="user.id" class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-                <input type="checkbox" :value="user.id" v-model="selectedUsers" :id="'user-' + user.id">
-                <span>{{ user.name }}</span>
-            </label>
+        <div class="mt-4">
+            <label>Назначить пользователей</label>
+            <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
+                <label v-for="user, index in users" :key="user.id"
+                    class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+                    <input type="checkbox" :value="user.id" v-model="selectedUsers" :id="'user-' + user.id">
+                    <span>{{ user.name }}</span>
+                </label>
+            </div>
         </div>
     </div>
-
-    <div class="mt-4 flex space-x-2">
+    <div class="mt-4 p-4 flex space-x-2 bg-[#f3fbed]">
         <PrimaryButton v-if="warehouse != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>

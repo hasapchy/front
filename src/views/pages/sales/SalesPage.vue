@@ -60,7 +60,8 @@ export default {
             columnsConfig: [
                 { name: 'id', label: '#' },
                 { name: 'date', label: 'Дата' },
-                { name: 'client', label: 'Покупатель' },
+                { name: 'client', label: 'Покупатель', html: true },
+                { name: 'cashRegisterName', label: 'Касса' },
                 { name: 'warehouseName', label: 'Склад' },
                 { name: 'products', label: 'Товары', html: true },
                 { name: 'price', label: 'Сумма продажи' },
@@ -78,11 +79,17 @@ export default {
                 case 'products':
                     return i.productsHtmlList();
                 case 'date':
-                    return i.formatDate();
+                    return `${i.formatDate()} / ${i.userName}`;
                 case 'price':
                     return i.priceInfo();
                 case 'client':
-                    return i.client?.fullName() || 'Не указан';
+                    if (!i.client) return '<span class="text-gray-500">Не указан</span>';
+                    const name = i.client.fullName();
+                    const phone = i.client.phones?.[0]?.phone;
+                    return phone
+                        ? `<div>${name}<br/><span class="text-sm text-gray-500">${phone}</span></div>`
+                        : name;
+
                 default:
                     return i[c];
             }

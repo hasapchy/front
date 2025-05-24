@@ -1,129 +1,143 @@
 <template>
-    <h2 class="text-lg font-bold mb-4">Транзакция</h2>
-    <div class="mt-2">
-        <label class="block mb-1">Тип</label>
-        <select v-model="type" :disabled="!!editingItemId">
-            <option value="">Выберите тип</option>
-            <option value="income">✅ Приход</option>
-            <option value="outcome">🔺 Расход</option>
-        </select>
-    </div>
-    <div class="mt-2">
-        <label class="block mb-1">Касса</label>
-        <select v-model="cashId" :disabled="!!editingItemId">
-            <option value="">Нет</option>
-            <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">
-                {{ parent.name }} ({{ parent.currencySymbol }})
-            </option>
-        </select>
-    </div>
-    <div class="flex items-center space-x-2">
-        <div class="w-full mt-2">
-            <label>Сумма</label>
-            <input type="number" v-model="origAmount" :disabled="!!editingItemId">
+    <div class="flex flex-col overflow-auto p-4">
+        <h2 class="text-lg font-bold ">Транзакция</h2>
+        <div class="mt-2">
+            <label class="block mb-1 required">Тип</label>
+            <select v-model="type" :disabled="!!editingItemId" required>
+                <option value="">Выберите тип</option>
+                <option value="income">✅ Приход</option>
+                <option value="outcome">🔺 Расход</option>
+            </select>
         </div>
-        <div class="w-full mt-2">
-            <label class="block mb-1">Валюта</label>
-            <select v-model="currencyId" :disabled="!!editingItemId">
+        <div class="mt-2">
+            <label class="block mb-1 required">Касса</label>
+            <select v-model="cashId" :disabled="!!editingItemId" required>
                 <option value="">Нет</option>
-                <option v-if="currencies.length" v-for="parent in currencies" :value="parent.id">{{ parent.symbol }} -
-                    {{ parent.name }}
+                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">
+                    {{ parent.name }} ({{ parent.currencySymbol }})
                 </option>
             </select>
         </div>
-    </div>
-    <div v-if="cashCurrencyId != currencyId && editingItemId" class="flex items-center space-x-2">
-        <div class="w-full mt-2">
-            <label>Сконвертированная сумма</label>
-            <input type="number" v-model="cashAmount" :disabled="!!editingItemId">
-        </div>
-        <div class="w-full mt-2">
-            <label class="block mb-1">Валюта кассы</label>
-            <select v-model="cashCurrencyId" :disabled="!!editingItemId">
-                <option value="">Нет</option>
-                <option v-if="currencies.length" v-for="parent in currencies" :value="parent.id">{{ parent.symbol }} -
-                    {{ parent.name }}
-                </option>
-            </select>
-        </div>
-    </div>
-    <div class="mt-2">
-        <label class="block mb-1">Категория</label>
-        <select v-model="categoryId">
-            <option value="">Нет</option>
-            <option v-if="allCategories.length" v-for="parent in allCategories" :value="parent.id">{{ parent.typeClass()
-                }} {{ parent.name }}
-            </option>
-        </select>
-    </div>
-    <div>
-        <label>Дата</label>
-        <input type="date" v-model="date">
-    </div>
-    <!-- Начало блока поиска клиентов -->
-
-    <div v-if="selectedClient == null" class="mb-4">
-        <label class="block mb-1">Поиск клиента</label>
-        <input type="text" v-model="clientSearch" placeholder="Введите имя или номер клиента"
-            class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="showDropdown = false">
-        <transition name="appear">
-            <ul v-show="showDropdown"
-                class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-                <li v-if="clientSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
-                <li v-else-if="clientSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li>
-                <li v-else-if="clientSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
-                <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
-                <li v-for="client in clientResults" :key="client.id" @mousedown.prevent="() => { selectClient(client) }"
-                    class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                    <div class="flex justify-between">
-                        <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                        <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
-                    </div>
-                    <span
-                        :class="client.balance == 0 ? 'text-[#337AB7]' : client.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
-                        {{ client.balanceFormatted() }}
-                        <!-- {{ client.currencySymbol }} -->
-                        <span v-if="client.balanceNumeric() > 0">(Клиент должен нам)</span>
-                        <span v-else-if="client.balanceNumeric() < 0">(Мы должны клиенту)</span>
-                        <span v-else>(Взаимный расчет)</span>
-                    </span>
-                </li>
-            </ul>
-        </transition>
-    </div>
-    <div v-else class="mb-4 mt-2">
-        <div class="p-2 pt-0 mt-2 border-2 border-gray-400/60 rounded-md">
-            <div class="flex justify-between items-center">
-                <div>
-                    <label>Клиент</label>
-                    <p><span class="font-semibold text-sm">Имя:</span> {{ selectedClient.fullName() }}</p>
-                    <p><span class="font-semibold text-sm">Номер:</span> {{ selectedClient.phones[0].phone }}</p>
-                    <p><span class="font-semibold text-sm">Баланс:</span>
-                        <span
-                            :class="selectedClient.balanceNumeric() == 0 ? 'text-[#337AB7]' : selectedClient.balanceNumeric() > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
-                            {{ selectedClient.balanceFormatted() }}
-                            <!-- {{ selectedClient.currencySymbol }} -->
-                            <span v-if="selectedClient.balanceNumeric() > 0">(Клиент должен нам)</span>
-                            <span v-else-if="selectedClient.balanceNumeric() < 0">(Мы должны клиенту)</span>
-                            <span v-else>(Взаимный расчет)</span>
-                        </span>
-                    </p>
-                </div>
-                <button v-on:click="deselectClient" class="text-red-500 text-2xl cursor-pointer">&times;</button>
+        <div class="flex items-center space-x-2">
+            <div class="w-full mt-2">
+                <label class="required">Сумма</label>
+                <input type="number" v-model="origAmount" :disabled="!!editingItemId" required>
+            </div>
+            <div class="w-full mt-2">
+                <label class="block mb-1 required">Валюта</label>
+                <select v-model="currencyId" :disabled="!!editingItemId" required>
+                    <option value="">Нет</option>
+                    <option v-if="currencies.length" v-for="parent in currencies" :value="parent.id">{{ parent.symbol }}
+                        -
+                        {{ parent.name }}
+                    </option>
+                </select>
             </div>
         </div>
-    </div>
-    <!-- Конец блока поиска клиентов -->
-    <div class="mt-2">
-        <label class="block mb-1">Проект</label>
-        <select v-model="projectId">
-            <option value="">Нет</option>
-            <option v-if="allProjects.length" v-for="parent in allProjects" :value="parent.id">{{ parent.name }}
-            </option>
-        </select>
-    </div>
+        <div v-if="cashCurrencyId != currencyId && editingItemId" class="flex items-center space-x-2">
+            <div class="w-full mt-2">
+                <label>Сконвертированная сумма</label>
+                <input type="number" v-model="cashAmount" :disabled="!!editingItemId">
+            </div>
+            <div class="w-full mt-2">
+                <label class="block mb-1">Валюта кассы</label>
+                <select v-model="cashCurrencyId" :disabled="!!editingItemId">
+                    <option value="">Нет</option>
+                    <option v-if="currencies.length" v-for="parent in currencies" :value="parent.id">{{ parent.symbol }}
+                        -
+                        {{ parent.name }}
+                    </option>
+                </select>
+            </div>
+        </div>
+        <div class="mt-2">
+            <label class="block mb-1">Категория</label>
+            <select v-model="categoryId">
+                <option value="">Нет</option>
+                <option v-if="allCategories.length" v-for="parent in allCategories" :value="parent.id">{{
+                    parent.typeClass()
+                    }} {{ parent.name }}
+                </option>
+            </select>
+        </div>
+        <div>
+            <label>Дата</label>
+            <input type="datetime-local" v-model="date">
+        </div>
+        <!-- Начало блока поиска клиентов -->
 
-    <div class="mt-4 flex space-x-2">
+        <div v-if="selectedClient == null" class="relative">
+            <label class="block mb-1">Поиск клиента</label>
+            <input type="text" v-model="clientSearch" placeholder="Введите имя или номер клиента"
+                class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="showDropdown = false">
+            <transition name="appear">
+                <ul v-show="showDropdown"
+                    class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
+                    <li v-if="clientSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
+                    <!-- <li v-else-if="clientSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li> -->
+                    <template v-else-if="clientSearch.length === 0">
+                        <li v-for="client in lastClients" :key="client.id" @mousedown.prevent="selectClient(client)"
+                            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
+                            <div class="flex justify-between">
+                                <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
+                                <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
+                            </div>
+                        </li>
+                    </template>
+                    <li v-else-if="clientSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
+                    <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
+                    <li v-for="client in clientResults" :key="client.id"
+                        @mousedown.prevent="() => { selectClient(client) }"
+                        class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
+                        <div class="flex justify-between">
+                            <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
+                            <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
+                        </div>
+                        <span
+                            :class="client.balance == 0 ? 'text-[#337AB7]' : client.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
+                            {{ client.balanceFormatted() }}
+                            <!-- {{ client.currencySymbol }} -->
+                            <span v-if="client.balanceNumeric() > 0">(Клиент должен нам)</span>
+                            <span v-else-if="client.balanceNumeric() < 0">(Мы должны клиенту)</span>
+                            <span v-else>(Взаимный расчет)</span>
+                        </span>
+                    </li>
+                </ul>
+            </transition>
+        </div>
+        <div v-else class=" mt-2">
+            <div class="p-2 pt-0 mt-2 border-2 border-gray-400/60 rounded-md">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <label>Клиент</label>
+                        <p><span class="font-semibold text-sm">Имя:</span> {{ selectedClient.fullName() }}</p>
+                        <p><span class="font-semibold text-sm">Номер:</span> {{ selectedClient.phones[0].phone }}</p>
+                        <p><span class="font-semibold text-sm">Баланс:</span>
+                            <span
+                                :class="selectedClient.balanceNumeric() == 0 ? 'text-[#337AB7]' : selectedClient.balanceNumeric() > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
+                                {{ selectedClient.balanceFormatted() }}
+                                <!-- {{ selectedClient.currencySymbol }} -->
+                                <span v-if="selectedClient.balanceNumeric() > 0">(Клиент должен нам)</span>
+                                <span v-else-if="selectedClient.balanceNumeric() < 0">(Мы должны клиенту)</span>
+                                <span v-else>(Взаимный расчет)</span>
+                            </span>
+                        </p>
+                    </div>
+                    <button v-on:click="deselectClient" class="text-red-500 text-2xl cursor-pointer">&times;</button>
+                </div>
+            </div>
+        </div>
+        <!-- Конец блока поиска клиентов -->
+        <div class="mt-2">
+            <label class="block mb-1">Проект</label>
+            <select v-model="projectId">
+                <option value="">Нет</option>
+                <option v-if="allProjects.length" v-for="parent in allProjects" :value="parent.id">{{ parent.name }}
+                </option>
+            </select>
+        </div>
+    </div>
+    <div class="mt-4 p-4 flex space-x-2 bg-[#f3fbed]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
@@ -172,7 +186,7 @@ export default {
             currencyId: this.editingItem ? this.editingItem.origCurrencyId : '',
             categoryId: this.editingItem ? this.editingItem.categoryId : '',
             projectId: this.editingItem ? this.editingItem.projectId : '',
-            date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 10),
+            date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
             currencies: [],
@@ -186,6 +200,7 @@ export default {
             clientSearch: '',
             clientSearchLoading: false,
             clientResults: [],
+            lastClients: [],
             showDropdown: false
         }
     },
@@ -194,6 +209,7 @@ export default {
         this.fetchAllCategories();
         this.fetchAllProjects();
         this.fetchAllCashRegisters();
+        this.fetchLastClients();
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
@@ -215,6 +231,10 @@ export default {
             if (this.allCashRegisters.length && !this.cashId && !this.defaultCashId) {
                 this.cashId = this.allCashRegisters[0].id;
             }
+        },
+        async fetchLastClients() {
+            const paginated = await ClientController.getItems(1);
+            this.lastClients = paginated.items.slice(0, 10);
         },
         // Поиск клиентов
         searchClients: debounce(async function () {
@@ -296,7 +316,7 @@ export default {
             this.currencyId = '';
             this.categoryId = '';
             this.projectId = '';
-            this.date = new Date().toISOString().substring(0, 10);
+            this.date = new Date().toISOString().substring(0, 16);
             this.selectedClient = null;
             this.editingItemId = null;
         },
@@ -343,7 +363,7 @@ export default {
                     this.currencyId = newEditingItem.origCurrencyId || '';
                     this.categoryId = newEditingItem.categoryId || '';
                     this.projectId = newEditingItem.projectId || '';
-                    this.date = newEditingItem.date || new Date().toISOString().substring(0, 10);
+                    this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
                     this.selectedClient = newEditingItem.client || null;
                     this.editingItemId = newEditingItem.id || null;
                 } else {
@@ -357,7 +377,7 @@ export default {
                     this.currencyId = selectedCash?.currency_id || '';
                     this.categoryId = '';
                     this.projectId = '';
-                    this.date = new Date().toISOString().substring(0, 10);
+                    this.date = new Date().toISOString().substring(0, 16);
                     this.selectedClient = null;
                     this.editingItemId = null;
                 }

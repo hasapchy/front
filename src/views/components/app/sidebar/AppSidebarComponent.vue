@@ -1,5 +1,5 @@
 <template>
-    <aside class="w-50 bg-[#282E33] text-white flex-shrink-0 transform transition-transform duration-300">
+    <aside class="w-40 bg-[#282E33] text-white flex-shrink-0 transform transition-transform duration-300">
         <!-- Logo -->
 
 

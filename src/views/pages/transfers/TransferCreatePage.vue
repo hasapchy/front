@@ -1,32 +1,35 @@
 <template>
-    <h2 class="text-lg font-bold mb-4">Трансфер</h2>
-    <div class="mt-2">
-        <label class="block mb-1">Касса отправитель</label>
-        <select v-model="cashIdFrom" :disabled="!!editingItemId">
-            <option value="">-- Выберите кассу --</option>
-            <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">{{ parent.name
-                }}
-            </option>
-        </select>
-    </div>
-    <div class="mt-2">
-        <label class="block mb-1">Касса получатель</label>
-        <select v-model="cashIdTo" :disabled="!!editingItemId">
-            <option value="">-- Выберите кассу --</option>
-            <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">{{ parent.name
-                }}
-            </option>
-        </select>
-    </div>
-    <div class="mt-2">
-        <label>Сумма</label>
-        <input type="number" v-model="origAmount" :disabled="!!editingItemId">
-    </div>
-    <div class="mt-2">
-        <label>Примечание</label>
-        <input type="text" v-model="note" :disabled="!!editingItemId">
-    </div>
-    <!-- <div v-if="cashCurrencyId != currencyId && editingItemId" class="flex items-center space-x-2">
+    <div class="flex flex-col overflow-auto p-4">
+        <h2 class="text-lg font-bold ">Трансфер</h2>
+        <div class="mt-2">
+            <label class="block mb-1">Касса отправитель</label>
+            <select v-model="cashIdFrom" :disabled="!!editingItemId">
+                <option value="">-- Выберите кассу --</option>
+                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">{{
+                    parent.name
+                    }}
+                </option>
+            </select>
+        </div>
+        <div class="mt-2">
+            <label class="block mb-1">Касса получатель</label>
+            <select v-model="cashIdTo" :disabled="!!editingItemId">
+                <option value="">-- Выберите кассу --</option>
+                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">{{
+                    parent.name
+                    }}
+                </option>
+            </select>
+        </div>
+        <div class="mt-2">
+            <label>Сумма</label>
+            <input type="number" v-model="origAmount" :disabled="!!editingItemId">
+        </div>
+        <div class="mt-2">
+            <label>Примечание</label>
+            <input type="text" v-model="note" :disabled="!!editingItemId">
+        </div>
+        <!-- <div v-if="cashCurrencyId != currencyId && editingItemId" class="flex items-center space-x-2">
         <div class="w-full mt-2">
             <label>Сконвертированная сумма</label>
             <input type="number" v-model="cashAmount" :disabled="!!editingItemId">
@@ -41,10 +44,9 @@
             </select>
         </div>
     </div> -->
-
-
+    </div>
     <!-- {{ editingItem.id }} -->
-    <div class="mt-4 flex space-x-2">
+    <div class="mt-4 p-4 flex space-x-2 bg-[#f3fbed]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
@@ -85,7 +87,7 @@ export default {
             cashAmount: this.editingItem ? this.editingItem.cashAmount : null,
             cashCurrencyId: this.editingItem ? this.editingItem.cashCurrencyId : null,
             currencyId: this.editingItem ? this.editingItem.origCurrencyId : '',
-            date: this.editingItem ? this.editingItem.date : '',
+            date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
             editingItemId: this.editingItem ? this.editingItem.id : null,
             currencies: [],
             allCashRegisters: [],

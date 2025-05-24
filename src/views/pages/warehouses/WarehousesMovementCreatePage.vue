@@ -1,84 +1,88 @@
 <template>
-    <h2 class="text-lg font-bold mb-4">Перемещение</h2>
+    <div class="flex flex-col overflow-auto p-4">
+        <h2 class="text-lg font-bold ">Перемещение</h2>
 
-    <div class="mt-2">
-        <label class="block mb-1">Склад отправитель</label>
-        <div class="flex items-center space-x-2">
-            <select v-model="warehouseFromId">
-                <option value="">Нет</option>
-                <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">{{ parent.name }}
-                </option>
-            </select>
+        <div class="mt-2">
+            <label class="block mb-1">Склад отправитель</label>
+            <div class="flex items-center space-x-2">
+                <select v-model="warehouseFromId">
+                    <option value="">Нет</option>
+                    <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">{{
+                        parent.name }}
+                    </option>
+                </select>
+            </div>
         </div>
-    </div>
-    <div class="mt-2">
-        <label class="block mb-1">Склад получатель</label>
-        <div class="flex items-center space-x-2">
-            <select v-model="warehouseToId">
-                <option value="">Нет</option>
-                <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">{{ parent.name }}
-                </option>
-            </select>
+        <div class="mt-2">
+            <label class="block mb-1">Склад получатель</label>
+            <div class="flex items-center space-x-2">
+                <select v-model="warehouseToId">
+                    <option value="">Нет</option>
+                    <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">{{
+                        parent.name }}
+                    </option>
+                </select>
+            </div>
         </div>
-    </div>
-    <div>
-        <label>Дата</label>
-        <input type="datetime-local" v-model="date">
-    </div>
-    <div class="mt-2">
-        <label>Примечание</label>
-        <input type="text" v-model="note">
-    </div>
+        <div>
+            <label>Дата</label>
+            <input type="datetime-local" v-model="date">
+        </div>
+        <div class="mt-2">
+            <label>Примечание</label>
+            <input type="text" v-model="note">
+        </div>
 
-    <!-- Начало блока поиска товаров -->
+        <!-- Начало блока поиска товаров -->
 
-    <label class="block mb-1">Поиск товаров и услуг</label>
-    <input type="text" v-model="productSearch" placeholder="Введите название или код товара"
-        class="w-full p-2 border rounded" @focus="showDropdownProduct = true" @blur="showDropdownProduct = false">
-    <transition name="appear">
-        <ul v-show="showDropdownProduct"
-            class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-            <li v-if="productSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
-            <li v-else-if="productSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li>
-            <li v-else-if="productSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
-            <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
-            <li v-for="product in productResults" :key="product.id"
-                @mousedown.prevent="() => { selectProduct(product) }"
-                class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                <div class="flex justify-between">
-                    <div>{{ product.name }}</div>
-                    <!-- <div class="text-[#337AB7]">{{ product.code }}</div> -->
-                </div>
+        <label class="block mb-1">Поиск товаров и услуг</label>
+        <input type="text" v-model="productSearch" placeholder="Введите название или код товара"
+            class="w-full p-2 border rounded" @focus="showDropdownProduct = true" @blur="showDropdownProduct = false">
+        <transition name="appear">
+            <ul v-show="showDropdownProduct"
+                class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
+                <li v-if="productSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
+                <li v-else-if="productSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li>
+                <li v-else-if="productSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
+                <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
+                <li v-for="product in productResults" :key="product.id"
+                    @mousedown.prevent="() => { selectProduct(product) }"
+                    class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
+                    <div class="flex justify-between">
+                        <div>{{ product.name }}</div>
+                        <!-- <div class="text-[#337AB7]">{{ product.code }}</div> -->
+                    </div>
 
-            </li>
-        </ul>
-    </transition>
-    <label class="block mt-4 mb-1">Указанные товары и услуги</label>
-    <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
-        <thead class="bg-gray-100 rounded-t-sm">
-            <tr>
-                <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">Название</th>
-                <th class="text-left border border-gray-300 py-2 px-4 font-medium w-20">Количество</th>
-                <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr v-for="(product, index) in products" :key="index" class="border-b border-gray-300">
-                <td class="py-2 px-4 border-x border-gray-300">{{ product.productName }}</td>
-                <td class="py-2 px-4 border-x border-gray-300">
-                    <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right">
-                </td>
-                <td class=" px-4 border-x border-gray-300">
-                    <button v-on:click="() => { removeSelectedProduct(product.productId) }"
-                        class="text-red-500 text-2xl cursor-pointer">&times;</button>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+                </li>
+            </ul>
+        </transition>
+        <label class="block mt-4 mb-1">Указанные товары и услуги</label>
+        <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
+            <thead class="bg-gray-100 rounded-t-sm">
+                <tr>
+                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">Название</th>
+                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-20">Количество</th>
+                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(product, index) in products" :key="index" class="border-b border-gray-300">
+                    <td class="py-2 px-4 border-x border-gray-300">{{ product.productName }}</td>
+                    <td class="py-2 px-4 border-x border-gray-300">
+                        <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right">
+                    </td>
+                    <td class=" px-4 border-x border-gray-300">
+                        <button v-on:click="() => { removeSelectedProduct(product.productId) }"
+                            class="text-red-500 text-2xl cursor-pointer">&times;</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
     <!-- Конец блока поиска товаров -->
 
     <!-- {{ editingItem.id }} -->
-    <div class="mt-4 flex space-x-2">
+    <div class="mt-4 p-4 flex space-x-2 bg-[#f3fbed]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
@@ -116,7 +120,7 @@ export default {
     },
     data() {
         return {
-            date: this.editingItem ? this.editingItem.date : '',
+            date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
             note: this.editingItem ? this.editingItem.note : '',
             warehouseFromId: this.editingItem ? this.editingItem.warehouseFromId || '' : '',
             warehouseToId: this.editingItem ? this.editingItem.warehouseToId || '' : '',
@@ -214,7 +218,7 @@ export default {
             this.deleteLoading = false;
         },
         clearForm() {
-            this.date = '';
+            this.date = new Date().toISOString().substring(0, 16);
             this.note = '';
             this.warehouseFromId = '';
             this.warehouseToId = '';

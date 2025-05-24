@@ -1,6 +1,6 @@
 <template>
-    <div class="shadow-sm px-3 py-1.5 mb-5 bg-white rounded">
-        <div class="container px-4">
+    <div class="shadow-sm px-4 py-1.5 mb-5 bg-white rounded">
+        <div class="container">
             <div class="flex items-center justify-between">
                 <div class="flex items-end gap-6">
                     <h1 class="text-xl font-semibold">{{ title }}</h1>

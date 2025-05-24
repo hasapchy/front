@@ -1,75 +1,78 @@
 <template>
-    <h2 class="text-lg font-bold mb-4">Товар | Услуга</h2>
+    <div class="flex flex-col overflow-auto p-4">
+        <h2 class="text-lg font-bold ">Товар | Услуга</h2>
 
-    <div class="mt-2 flex items-center">
-        <div>
-            <div class="mt-2">
-                <label class="block mb-1">Тип</label>
-                <select v-model="type">
-                    <option value="">Выберите тип</option>
-                    <option value="product">Товар</option>
-                    <option value="service">Услуга</option>
-                </select>
-            </div>
+        <div class="mt-2 flex items-center">
             <div>
-                <label>Изображение</label>
-                <input type="file" @change="onFileChange" ref="imageInput">
-            </div>
-            <div class="mt-2">
-                <label>Название</label>
-                <input type="text" v-model="name" class="">
-            </div>
+                <div class="mt-2">
+                    <label class="block mb-1">Тип</label>
+                    <select v-model="type">
+                        <option value="">Выберите тип</option>
+                        <option value="product">Товар</option>
+                        <option value="service">Услуга</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Изображение</label>
+                    <input type="file" @change="onFileChange" ref="imageInput">
+                </div>
+                <div class="mt-2">
+                    <label>Название</label>
+                    <input type="text" v-model="name" class="">
+                </div>
 
+            </div>
+            <div v-if="selected_image" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
+                <img :src="selected_image" alt="Selected Image" class="w-32 h-32 object-cover rounded">
+                <button @click="() => { this.selected_image = null; this.image = null }"
+                    class="mt-2 text-red-500 text-sm">Удалить</button>
+            </div>
+            <div v-else-if="editingItem?.image" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
+                <img :src="editingItem?.imgUrl()" alt="Selected Image" class="w-32 h-32 object-cover rounded">
+                <button @click="() => { this.editingItem.image = '' }"
+                    class="mt-2 text-red-500 text-sm">Удалить</button>
+            </div>
         </div>
-        <div v-if="selected_image" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
-            <img :src="selected_image" alt="Selected Image" class="w-32 h-32 object-cover rounded">
-            <button @click="() => { this.selected_image = null; this.image = null }"
-                class="mt-2 text-red-500 text-sm">Удалить</button>
+        <div class="mt-2">
+            <label class="block mb-1">Категория</label>
+            <div class="flex items-center space-x-2">
+                <select v-model="category_id">
+                    <option value="">Нет</option>
+                    <option v-if="allCategories.length" v-for="parent in allCategories" :value="parent.id">{{
+                        parent.name }}
+                    </option>
+                </select>
+                <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showModal" />
+            </div>
         </div>
-        <div v-else-if="editingItem?.image" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
-            <img :src="editingItem?.imgUrl()" alt="Selected Image" class="w-32 h-32 object-cover rounded">
-            <button @click="() => { this.editingItem.image = '' }" class="mt-2 text-red-500 text-sm">Удалить</button>
+        <div class="mt-2">
+            <label>Описание</label>
+            <input type="text" v-model="description">
         </div>
-    </div>
-    <div class="mt-2">
-        <label class="block mb-1">Категория</label>
-        <div class="flex items-center space-x-2">
-            <select v-model="category_id">
+        <div class=" mt-2">
+            <label class="block mb-1">Единица измерения</label>
+            <select v-model="unit_id">
                 <option value="">Нет</option>
-                <option v-if="allCategories.length" v-for="parent in allCategories" :value="parent.id">{{ parent.name }}
+                <option v-if="units.length" v-for="parent in units" :value="parent.id">{{ parent.name }} ({{
+                    parent.short_name }})
                 </option>
             </select>
-            <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showModal" />
         </div>
-    </div>
-    <div class="mt-2">
-        <label>Описание</label>
-        <input type="text" v-model="description">
-    </div>
-    <div class=" mt-2">
-        <label class="block mb-1">Единица измерения</label>
-        <select v-model="unit_id">
-            <option value="">Нет</option>
-            <option v-if="units.length" v-for="parent in units" :value="parent.id">{{ parent.name }} ({{
-                parent.short_name }})
-            </option>
-        </select>
-    </div>
-    <div class="mt-2">
-        <label>Артикул</label>
-        <input type="text" v-model="sku" :disabled="editingItemId !== null">
-    </div>
+        <div class="mt-2">
+            <label>Артикул</label>
+            <input type="text" v-model="sku" :disabled="editingItemId !== null">
+        </div>
 
-    <div class="mt-2">
-        <label class="block mb-1">Статус</label>
-        <select v-model="status_id">
-            <option value="">Нет</option>
-            <option v-if="statuses.length" v-for="s in statuses" :value="s.id">{{
-                s.name }}
-            </option>
-        </select>
-    </div>
-    <!-- <div class=" mt-2">
+        <div class="mt-2">
+            <label class="block mb-1">Статус</label>
+            <select v-model="status_id">
+                <option value="">Нет</option>
+                <option v-if="statuses.length" v-for="s in statuses" :value="s.id">{{
+                    s.name }}
+                </option>
+            </select>
+        </div>
+        <!-- <div class=" mt-2">
         <label class="block mb-1">Валюта</label>
         <select v-model="currency_id">
             <option value="">Нет</option>
@@ -77,40 +80,40 @@
             </option>
         </select>
     </div> -->
-    <div class="mt-2 flex space-x-2">
-        <div class="w-1/3">
-            <label>Закупочная цена</label>
-            <div class="flex items-center rounded-l">
-                <input type="number" v-model="purchase_price">
-                <!-- <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span> -->
+        <div class="mt-2 flex space-x-2">
+            <div class="w-1/3">
+                <label>Закупочная цена</label>
+                <div class="flex items-center rounded-l">
+                    <input type="number" v-model="purchase_price">
+                    <!-- <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span> -->
+                </div>
+            </div>
+            <div class="w-1/3">
+                <label>Оптовая цена</label>
+                <div class="flex items-center rounded-l">
+                    <input type="number" v-model="wholesale_price">
+                    <!-- <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span> -->
+                </div>
+            </div>
+            <div class="w-1/3">
+                <label>Розничная цена</label>
+                <div class="flex items-center rounded-l">
+                    <input type="number" v-model="retail_price">
+                    <!-- <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span> -->
+                </div>
             </div>
         </div>
-        <div class="w-1/3">
-            <label>Оптовая цена</label>
-            <div class="flex items-center rounded-l">
-                <input type="number" v-model="wholesale_price">
-                <!-- <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span> -->
-            </div>
-        </div>
-        <div class="w-1/3">
-            <label>Розничная цена</label>
-            <div class="flex items-center rounded-l">
-                <input type="number" v-model="retail_price">
-                <!-- <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span> -->
+        <div class="mt-2">
+            <label>Баркод (EAN-13)</label>
+            <div class="flex items-center space-x-2">
+                <input type="text" v-model="barcode" :disabled="editingItemId !== null">
+                <PrimaryButton v-if="editingItemId == null" icon="fas fa-barcode" :is-info="true"
+                    :onclick="generateBarcode" :is-full="true"> Сгенерировать </PrimaryButton>
             </div>
         </div>
     </div>
-    <div class="mt-2">
-        <label>Баркод (EAN-13)</label>
-        <div class="flex items-center space-x-2">
-            <input type="text" v-model="barcode" :disabled="editingItemId !== null">
-            <PrimaryButton v-if="editingItemId == null" icon="fas fa-barcode" :is-info="true" :onclick="generateBarcode"
-                :is-full="true"> Сгенерировать </PrimaryButton>
-        </div>
-    </div>
-
     <!-- {{ defaultType }} -->
-    <div class="mt-4 flex space-x-2">
+    <div class="mt-4 p-4 flex space-x-2 bg-[#f3fbed]">
         <!-- <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton> -->
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>

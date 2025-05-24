@@ -1,90 +1,92 @@
 <template>
-    <h2 class="text-lg font-bold mb-4">Клиент</h2>
-    <TabBar :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
-    <div>
-        <label>Тип клиента</label>
-        <select v-model="clientType">
-            <option value="individual">Индивидуальный</option>
-            <option value="company">Компания</option>
-        </select>
-    </div>
-    <div>
-        <label>Имя</label>
-        <input type="text" v-model="firstName">
-    </div>
-    <div v-if="clientType === 'individual'">
-        <label>Фамилия</label>
-        <input type="text" v-model="lastName">
-    </div>
-    <div v-else>
-        <label>Контактное лицо</label>
-        <input type="text" v-model="contactPerson">
-    </div>
-    <div>
-        <label>Адрес</label>
-        <input type="text" v-model="address">
-    </div>
-    <div>
-        <label>Заметка</label>
-        <input type="text" v-model="note" />
-    </div>
-    <label>Характеристики</label>
-    <div class="flex flex-wrap gap-2">
-        <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-            <input type="checkbox" v-model="status">
-            <span>Активен</span>
-        </label>
-        <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-            <input type="checkbox" v-model="isSupplier">
-            <span>Поставщик</span>
-        </label>
-        <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-            <input type="checkbox" v-model="isConflict">
-            <span>Проблемный клиент</span>
-        </label>
-    </div>
-    <div>
-        <label>Номер телефона</label>
-        <div class="flex items-center space-x-2">
-            <input type="text" v-model="newPhone" ref="phoneInput" @keyup.enter="addPhone">
-            <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addPhone" />
+    <div class="flex flex-col overflow-auto p-4">
+        <h2 class="text-lg font-bold ">Клиент</h2>
+        <TabBar :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
+        <div>
+            <label>Тип клиента</label>
+            <select v-model="clientType">
+                <option value="individual">Индивидуальный</option>
+                <option value="company">Компания</option>
+            </select>
         </div>
-        <div v-for="(phone, index) in phones" :key="phone" class="flex items-center space-x-2 mt-2">
-            <input type="text" :value="phone" readonly>
-            <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" />
+        <div>
+            <label class="required">Имя</label>
+            <input type="text" v-model="firstName" required>
         </div>
-        <!-- <ul>
+        <div v-if="clientType === 'individual'">
+            <label>Фамилия</label>
+            <input type="text" v-model="lastName">
+        </div>
+        <div v-else>
+            <label>Контактное лицо</label>
+            <input type="text" v-model="contactPerson">
+        </div>
+        <div>
+            <label>Адрес</label>
+            <input type="text" v-model="address">
+        </div>
+        <div>
+            <label>Заметка</label>
+            <input type="text" v-model="note" />
+        </div>
+        <label>Характеристики</label>
+        <div class="flex flex-wrap gap-2">
+            <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+                <input type="checkbox" v-model="status">
+                <span>Активен</span>
+            </label>
+            <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+                <input type="checkbox" v-model="isSupplier">
+                <span>Поставщик</span>
+            </label>
+            <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+                <input type="checkbox" v-model="isConflict">
+                <span>Проблемный клиент</span>
+            </label>
+        </div>
+        <div>
+            <label class="required">Номер телефона</label>
+            <div class="flex items-center space-x-2">
+                <input type="text" v-model="newPhone" ref="phoneInput" @keyup.enter="addPhone" required>
+                <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addPhone" />
+            </div>
+            <div v-for="(phone, index) in phones" :key="phone" class="flex items-center space-x-2 mt-2">
+                <input type="text" :value="phone" readonly>
+                <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" />
+            </div>
+            <!-- <ul>
             <li v-for="(phone, index) in phones" :key="phone" class="bg-gray-100 p-2 rounded my-2">
                 {{ phone }} <button @click="removePhone(index)">Удалить</button>
                 </li>
             </ul> -->
+        </div>
+        <div>
+            <label>Emails</label>
+            <div class="flex items-center space-x-2">
+                <input type="text" v-model="newEmail" @keyup.enter="addEmail">
+                <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addEmail" />
+            </div>
+            <div v-for="(email, index) in emails" :key="email" class="flex items-center space-x-2 mt-2">
+                <input type="text" :value="email" readonly>
+                <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removeEmail(index)" />
+            </div>
+        </div>
+        <div class="flex gap-4 w-full">
+            <div class="flex flex-col w-full">
+                <label>Тип скидки</label>
+                <select v-model="discountType" class="w-full">
+                    <option value="">Выберите тип скидки</option>
+                    <option value="percent">Процентная</option>
+                    <option value="fixed">Фиксированная</option>
+                </select>
+            </div>
+            <div class="flex flex-col w-full">
+                <label>Скидка</label>
+                <input type="number" v-model="discount" class="w-full" />
+            </div>
+        </div>
     </div>
-    <div>
-        <label>Emails</label>
-        <div class="flex items-center space-x-2">
-            <input type="text" v-model="newEmail" @keyup.enter="addEmail">
-            <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addEmail" />
-        </div>
-        <div v-for="(email, index) in emails" :key="email" class="flex items-center space-x-2 mt-2">
-            <input type="text" :value="email" readonly>
-            <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removeEmail(index)" />
-        </div>
-    </div>
-    <div class="flex gap-4 w-full">
-        <div class="flex flex-col w-full">
-            <label>Тип скидки</label>
-            <select v-model="discountType" class="w-full">
-                <option value="">Выберите тип скидки</option>
-                <option value="percent">Процентная</option>
-                <option value="fixed">Фиксированная</option>
-            </select>
-        </div>
-        <div class="flex flex-col w-full">
-            <label>Скидка</label>
-            <input type="number" v-model="discount" class="w-full" />
-        </div>
-    </div>
-    <div class="mt-4 flex space-x-2">
+    <div class="mt-4 p-4 flex space-x-2 bg-[#f3fbed]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
@@ -149,14 +151,14 @@ export default {
         }
     },
     mounted() {
-     const phoneInput = this.$refs.phoneInput;
+        const phoneInput = this.$refs.phoneInput;
         const mask = new Inputmask({
             mask: "\\9\\9\\3 99 999999",
-            placeholder: "_", 
+            placeholder: "_",
             showMaskOnHover: false,
             showMaskOnFocus: true,
-            clearIncomplete: true, 
-            keepStatic: true 
+            clearIncomplete: true,
+            keepStatic: true
         });
         mask.mask(phoneInput);
     },
