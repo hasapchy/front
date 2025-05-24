@@ -1,6 +1,6 @@
 <template>
     <div class="flex flex-col overflow-auto p-4">
-        <h2 class="text-lg font-bold ">Оприходование</h2>
+        <h2 class="text-lg font-bold mb-4">Оприходование</h2>
 
         <!-- Начало блока поиска клиентов -->
         <div v-if="selectedClient == null" class="relative">
@@ -125,7 +125,7 @@
                 <tr>
                     <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">Название</th>
                     <th class="text-left border border-gray-300 py-2 px-4 font-medium w-20">Количество</th>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">Цена</th>
+                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">Закупочная цена</th>
                     <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
                 </tr>
             </thead>
@@ -149,7 +149,7 @@
     <!-- Конец блока поиска товаров -->
 
     <!-- {{ editingItem.id }} -->
-    <div class="mt-4 p-4 flex space-x-2 bg-[#f3fbed]">
+    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>

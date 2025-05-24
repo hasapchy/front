@@ -26,6 +26,8 @@ export default class SaleController {
             item.client.address,
             item.client.note,
             item.client.status,
+              item.client.discount_type,
+            item.client.discount,
             item.client.created_at,
             item.client.updated_at,
             item.client.emails,

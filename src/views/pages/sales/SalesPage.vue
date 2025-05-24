@@ -87,7 +87,7 @@ export default {
                     const name = i.client.fullName();
                     const phone = i.client.phones?.[0]?.phone;
                     return phone
-                        ? `<div>${name}<br/><span class="text-sm text-gray-500">${phone}</span></div>`
+                        ? `<div>${name} (<span>${phone}</span>)</div>`
                         : name;
 
                 default:

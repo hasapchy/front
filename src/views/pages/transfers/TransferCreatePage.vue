@@ -1,6 +1,6 @@
 <template>
     <div class="flex flex-col overflow-auto p-4">
-        <h2 class="text-lg font-bold ">Трансфер</h2>
+        <h2 class="text-lg font-bold mb-4">Трансфер</h2>
         <div class="mt-2">
             <label class="block mb-1">Касса отправитель</label>
             <select v-model="cashIdFrom" :disabled="!!editingItemId">
@@ -46,7 +46,7 @@
     </div> -->
     </div>
     <!-- {{ editingItem.id }} -->
-    <div class="mt-4 p-4 flex space-x-2 bg-[#f3fbed]">
+    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
