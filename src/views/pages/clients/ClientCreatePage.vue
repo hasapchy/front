@@ -1,9 +1,9 @@
 <template>
-    <div class="flex flex-col overflow-auto p-4">
+    <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">Клиент</h2>
         <TabBar :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
         <div>
-            <label>Тип клиента</label>
+            <label class="required">Тип клиента</label>
             <select v-model="clientType">
                 <option value="individual">Индивидуальный</option>
                 <option value="company">Компания</option>
@@ -61,7 +61,7 @@
             </ul> -->
         </div>
         <div>
-            <label>Emails</label>
+            <label>Email</label>
             <div class="flex items-center space-x-2">
                 <input type="text" v-model="newEmail" @keyup.enter="addEmail">
                 <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addEmail" />
@@ -124,7 +124,7 @@ export default {
             clientType: this.editingItem ? this.editingItem.clientType : 'individual',
             address: this.editingItem ? this.editingItem.address : '',
             note: this.editingItem ? this.editingItem.note : '',
-            status: this.editingItem ? this.editingItem.status : false,
+            status: this.editingItem ? this.editingItem.status : true,
             isConflict: this.editingItem ? this.editingItem.isConflict : false,
             isSupplier: this.editingItem ? this.editingItem.isSupplier : false,
             phones: this.editingItem ? this.editingItem.phones.map(phone => phone.phone) : [],
@@ -246,7 +246,7 @@ export default {
             this.clientType = 'individual';
             this.address = '';
             this.note = '';
-            this.status = false;
+            this.status = true;
             this.isConflict = false;
             this.isSupplier = false;
             this.phones = [];

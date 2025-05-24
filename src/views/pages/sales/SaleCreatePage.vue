@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-col overflow-auto p-4">
+    <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">Продажа</h2>
         <!-- Начало блока поиска клиентов -->
         <div v-if="selectedClient == null" class="relative">
@@ -462,8 +462,7 @@ export default {
             }
             this.deleteLoading = true;
             try {
-                var resp = await WarehouseReceiptController.deleteReceipt(
-                    this.editingItemId);
+                var resp = await SaleController.deleteItem(this.editingItemId);
                 if (resp.message) {
                     this.$emit('deleted');
                     this.clearForm();

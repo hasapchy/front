@@ -1,11 +1,11 @@
 <template>
-    <div class="flex flex-col overflow-auto p-4">
+    <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">Трансфер</h2>
         <div class="mt-2">
             <label class="block mb-1">Касса отправитель</label>
             <select v-model="cashIdFrom" :disabled="!!editingItemId">
                 <option value="">-- Выберите кассу --</option>
-                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">{{
+                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id" :disabled="parent.id === cashIdTo">{{
                     parent.name
                     }}
                 </option>
@@ -15,7 +15,7 @@
             <label class="block mb-1">Касса получатель</label>
             <select v-model="cashIdTo" :disabled="!!editingItemId">
                 <option value="">-- Выберите кассу --</option>
-                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">{{
+                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id" :disabled="parent.id === cashIdFrom">{{
                     parent.name
                     }}
                 </option>

@@ -58,7 +58,7 @@ export default class SaleDto {
         if(!isDiscount){
             return `${this.totalPrice} ${this.currencySymbol}`;
         }
-        return `${this.totalPrice} ${this.currencySymbol} (${this.price} ${this.currencySymbol}, ${this.discount} ${this.currencySymbol})`;
+        return `${this.totalPrice} ${this.currencySymbol} (${this.price} ${this.currencySymbol}, скидка:${this.discount} ${this.currencySymbol})`;
     }
 
     productsHtmlList() {
