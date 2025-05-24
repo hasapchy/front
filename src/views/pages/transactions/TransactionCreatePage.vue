@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-col overflow-auto p-4">
+    <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">Транзакция</h2>
         <div class="mt-2">
             <label class="block mb-1 required">Тип</label>
@@ -21,7 +21,7 @@
         <div class="flex items-center space-x-2">
             <div class="w-full mt-2">
                 <label class="required">Сумма</label>
-                <input type="number" v-model="origAmount" :disabled="!!editingItemId" required>
+                <input type="number" v-model="origAmount" :disabled="!!editingItemId" required  min="0.01"> 
             </div>
             <div class="w-full mt-2">
                 <label class="block mb-1 required">Валюта</label>
@@ -259,6 +259,7 @@ export default {
         },
         async save() {
             this.saveLoading = true;
+            
             try {
                 if (this.editingItemId != null) {
                     var resp = await TransactionController.updateItem(

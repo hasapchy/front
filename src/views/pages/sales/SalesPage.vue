@@ -61,7 +61,7 @@ export default {
                 { name: 'id', label: '#' },
                 { name: 'date', label: 'Дата' },
                 { name: 'client', label: 'Покупатель', html: true },
-                { name: 'cashRegisterName', label: 'Касса' },
+                { name: 'cashName', label: 'Касса' },
                 { name: 'warehouseName', label: 'Склад' },
                 { name: 'products', label: 'Товары', html: true },
                 { name: 'price', label: 'Сумма продажи' },
@@ -75,12 +75,19 @@ export default {
     },
     methods: {
         itemMapper(i, c) {
+
+            if (c === 'cashName') {
+                return i.cashName
+                    ? i.cashName
+                    : 'В долг (баланс)';
+            }
             switch (c) {
                 case 'products':
                     return i.productsHtmlList();
                 case 'date':
                     return `${i.formatDate()} / ${i.userName}`;
                 case 'price':
+
                     return i.priceInfo();
                 case 'client':
                     if (!i.client) return '<span class="text-gray-500">Не указан</span>';
