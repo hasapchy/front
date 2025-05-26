@@ -22,11 +22,20 @@
       </div>
     </TableFilterButton>
   </div>
+  <!-- Кнопка удалить -->
+  <div class="mb-4" v-if="selectedRows.length > 0">
+    <button @click="deleteSelectedRows" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+      Удалить выбранные (тест, не работает)({{ selectedRows.length }})
+    </button>
+  </div>
 
   <!-- Таблица -->
   <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
     <thead class="bg-gray-100 rounded-t-sm">
-      <draggable v-if="columns.length" tag="tr" class="dragArea list-group w-full" :list="columns" @change="log">
+      <tr v-if="columns.length" class="dragArea list-group w-full">
+        <th class="border border-gray-300 py-2 px-4 w-12">
+          <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" class="cursor-pointer" />
+        </th>
         <th v-for="(element, index) in columns" :key="element.name"
           :class="{ hidden: !element.visible, relative: true }"
           class="text-left border border-gray-300 py-2 px-4 font-medium cursor-pointer select-none"
@@ -42,16 +51,19 @@
           <span v-if="element.visible" class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize"
             @mousedown.prevent="startResize($event, index)"></span>
         </th>
-      </draggable>
+      </tr>
     </thead>
     <tbody>
       <tr v-if="sortedData.length === 0" class="text-center">
-        <td class="py-2 px-4 border-x border-gray-300" :colspan="columns.length">
+        <td class="py-2 px-4 border-x border-gray-300" :colspan="columns.length + 1">
           Нет данных
         </td>
       </tr>
       <tr v-for="(item, idx) in sortedData" :key="idx" class="cursor-pointer hover:bg-gray-100 transition-all"
         :class="{ 'border-b border-gray-300': idx !== sortedData.length - 1 }" @click="() => itemClick(item)">
+        <td class="py-2 px-4 border-x border-gray-300 w-12">
+          <input type="checkbox" v-model="selectedRows" :value="item" class="cursor-pointer" @click.stop />
+        </td>
         <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`" class="py-2 px-4 border-x border-gray-300"
           :class="{ hidden: !column.visible }" :style="{ width: column.size ? column.size + 'px' : 'auto' }">
           <img v-if="column.image && itemMapper(item, column.name) !== null" :src="itemMapper(item, column.name)"
@@ -78,6 +90,7 @@ export default {
     tableData: { type: Array, required: true },
     itemMapper: { type: Function, required: true },
     onItemClick: { type: Function },
+    onDeleteRows: { type: Function },
   },
   data() {
     return {
@@ -88,7 +101,15 @@ export default {
       resizingColumn: null,
       startX: 0,
       startWidth: 0,
+      selectedRows: [],
+      selectAll: false,
     };
+  },
+  watch: {
+    tableData() {
+      this.selectedRows = [];
+      this.selectAll = false;
+    }
   },
   computed: {
     sortedData() {
@@ -165,7 +186,20 @@ export default {
       }
       this.saveSort();
     },
-
+    toggleSelectAll() {
+      if (this.selectAll) {
+        this.selectedRows = [...this.sortedData];
+      } else {
+        this.selectedRows = [];
+      }
+    },
+    deleteSelectedRows() {
+      if (this.selectedRows.length > 0) {
+        this.$emit('delete-rows', this.selectedRows);
+        this.selectedRows = [];
+        this.selectAll = false;
+      }
+    },
     /* ---------- Новое от Эмиля.Это на случай, если ты начнешь смотреть ресайз колонок ---------- */
     startResize(e, index) {
       this.resizing = true;
