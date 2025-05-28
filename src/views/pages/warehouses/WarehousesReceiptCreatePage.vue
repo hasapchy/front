@@ -82,14 +82,39 @@
                 </select>
             </div>
         </div>
-        <div class=" mt-2">
+
+        <div class="mt-2">
+            <label class="block mb-1 required">Тип оплаты</label>
+            <div>
+                <label class="inline-flex items-center">
+                    <input type="radio" v-model="type" value="cash">
+                    <span class="ml-2">В кассу</span>
+                </label>
+            </div>
+            <div>
+                <label class="inline-flex items-center">
+                    <input type="radio" v-model="type" value="balance">
+                    <span class="ml-2">В баланс клиента</span>
+                </label>
+            </div>
+        </div>
+        <div v-if="type === 'cash'" class="mt-2">
+            <label class="block mb-1 required">Касса</label>
+            <select v-model="cashId">
+                <option value="">Нет</option>
+                <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">
+                    {{ c.name }}
+                </option>
+            </select>
+        </div>
+        <!-- <div class=" mt-2">
             <label class="block mb-1">Валюта</label>
             <select v-model="currencyId" :disabled="!!editingItemId">
                 <option value="">Нет</option>
                 <option v-if="currencies.length" v-for="parent in currencies" :value="parent.id">{{ parent.name }}
                 </option>
             </select>
-        </div>
+        </div> -->
 
         <div class="mt-2">
             <label>Примечание</label>
@@ -97,28 +122,29 @@
         </div>
 
         <!-- Начало блока поиска товаров -->
-
-        <label class="block mb-1">Поиск товаров и услуг</label>
-        <input type="text" v-model="productSearch" placeholder="Введите название или код товара"
-            class="w-full p-2 border rounded" @focus="showDropdownProduct = true" @blur="showDropdownProduct = false">
-        <transition name="appear">
-            <ul v-show="showDropdownProduct"
-                class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-                <li v-if="productSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
-                <li v-else-if="productSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li>
-                <li v-else-if="productSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
-                <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
-                <li v-for="product in productResults" :key="product.id"
-                    @mousedown.prevent="() => { selectProduct(product) }"
-                    class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                    <div class="flex justify-between">
-                        <div>{{ product.name }}</div>
-                        <!-- <div class="text-[#337AB7]">{{ product.code }}</div> -->
-                    </div>
-
-                </li>
-            </ul>
-        </transition>
+        <div class="relative">
+            <label class="block mb-1">Поиск товаров и услуг</label>
+            <input type="text" v-model="productSearch" placeholder="Введите название или код товара"
+                class="w-full p-2 border rounded" @focus="showDropdownProduct = true"
+                @blur="showDropdownProduct = false">
+            <transition name="appear">
+                <ul v-show="showDropdownProduct"
+                    class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
+                    <li v-if="productSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
+                    <li v-else-if="productSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li>
+                    <li v-else-if="productSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
+                    <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
+                    <li v-for="product in productResults" :key="product.id"
+                        @mousedown.prevent="() => { selectProduct(product) }"
+                        class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
+                        <div class="flex justify-between">
+                            <div>{{ product.name }}</div>
+                            <!-- <div class="text-[#337AB7]">{{ product.code }}</div> -->
+                        </div>
+                    </li>
+                </ul>
+            </transition>
+        </div>
         <label class="block mt-4 mb-1">Указанные товары и услуги</label>
         <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
             <thead class="bg-gray-100 rounded-t-sm">
@@ -162,6 +188,7 @@
 
 <script>
 import AppController from '@/api/AppController';
+import CashRegisterController from '@/api/CashRegisterController';
 import ClientController from '@/api/ClientController';
 import ProductController from '@/api/ProductController';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
@@ -190,7 +217,9 @@ export default {
             date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
             note: this.editingItem ? this.editingItem.note : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId || '' : '',
-            currencyId: this.editingItem ? this.editingItem.currencyId || '' : '',
+            // currencyId: this.editingItem ? this.editingItem.currencyId || '' : '',
+            type: this.editingItem ? this.editingItem.type : 'cash',
+            cashId: this.editingItem ? this.editingItem.cashId : '',
             products: this.editingItem ? this.editingItem.products : [],
             // 
             editingItemId: this.editingItem ? this.editingItem.id : null,
@@ -212,17 +241,19 @@ export default {
             ///
             allWarehouses: [],
             currencies: [],
+            allCashRegisters: [],
         }
     },
     created() {
         this.fetchAllWarehouses();
         this.fetchCurrencies();
         this.fetchLastClients();
+        this.fetchAllCashRegisters();
     },
     computed: {
-        selectedCurrency() {
-            return this.currencies.find(currency => currency.id == this.currency_id);
-        }
+        // selectedCurrency() {
+        //     return this.currencies.find(currency => currency.id == this.currency_id);
+        // }
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
@@ -231,6 +262,12 @@ export default {
         },
         async fetchCurrencies() {
             this.currencies = await AppController.getCurrencies();
+        },
+        async fetchAllCashRegisters() {
+            this.allCashRegisters = await CashRegisterController.getAllItems();
+            if (!this.cashId && this.allCashRegisters.length) {
+                this.cashId = this.allCashRegisters[0].id;
+            }
         },
         async fetchLastClients() {
             const paginated = await ClientController.getItems(1);
@@ -288,6 +325,11 @@ export default {
                     warehouse_id: this.warehouseId,
                     currency_id: this.currencyId,
                     note: this.note,
+                    type: this.type,
+                    cash_id: this.type === 'cash' ? this.cashId : null,
+                    currency_id: this.type === 'cash'
+                        ? (this.allCashRegisters.find(c => c.id === this.cashId)?.currency_id)
+                        : null,
                     products: this.products.map(product => ({
                         product_id: product.productId,
                         quantity: product.quantity,

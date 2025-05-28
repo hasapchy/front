@@ -5,7 +5,8 @@
         <div v-if="selectedClient == null" class="relative">
             <label class="block mb-1">Поиск клиента</label>
             <input type="text" v-model="clientSearch" placeholder="Введите имя или номер клиента"
-                class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="showDropdown = false">
+                class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="showDropdown = false"
+                :disabled="!!editingItemId">
             <transition name="appear">
                 <ul v-show="showDropdown"
                     class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
@@ -60,14 +61,15 @@
                         </p>
 
                     </div>
-                    <button v-on:click="deselectClient" class="text-red-500 text-2xl cursor-pointer">&times;</button>
+                    <button v-on:click="deselectClient" class="text-red-500 text-2xl cursor-pointer"
+                        :disabled="!!editingItemId">&times;</button>
                 </div>
             </div>
         </div>
         <!-- Конец блока поиска клиентов -->
         <div class="mt-2">
             <label class="block mb-1">Проект</label>
-            <select v-model="projectId">
+            <select v-model="projectId" :disabled="!!editingItemId">
                 <option value="">Нет</option>
                 <option v-if="allProjects.length" v-for="parent in allProjects" :value="parent.id">{{ parent.name }}
                 </option>
@@ -75,12 +77,12 @@
         </div>
         <div>
             <label>Дата</label>
-            <input type="datetime-local" v-model="date">
+            <input type="datetime-local" v-model="date" :disabled="!!editingItemId">
         </div>
         <div class="mt-2">
             <label class="block mb-1 required">Склад</label>
             <div class="flex items-center space-x-2">
-                <select v-model="warehouseId" required>
+                <select v-model="warehouseId" required :disabled="!!editingItemId">
                     <option value="">Нет</option>
                     <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">{{
                         parent.name }}
@@ -99,7 +101,7 @@
 
         <div class="mt-2">
             <label>Примечание</label>
-            <input type="text" v-model="note">
+            <input type="text" v-model="note" :disabled="!!editingItemId">
         </div>
         <div class="mt-2">
             <label class="block mb-1 required">Тип оплаты</label>
@@ -122,7 +124,7 @@
                 <option value="">Нет</option>
                 <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">{{
                     parent.name
-                }}
+                    }}
                 </option>
             </select>
         </div>
@@ -131,7 +133,7 @@
             <label class="block mb-1 required">Поиск товаров и услуг</label>
             <input type="text" ref="productInput" v-model="productSearch" placeholder="Введите название или код товара"
                 class="w-full p-2 border rounded" @focus="showDropdownProduct = true"
-                @blur="showDropdownProduct = false">
+                @blur="showDropdownProduct = false" :disabled="!!editingItemId">
             <transition name="appear">
                 <ul v-show="showDropdownProduct"
                     class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
@@ -180,38 +182,58 @@
                 <tr v-for="(product, index) in products" :key="index" class="border-b border-gray-300">
                     <td class="py-2 px-4 border-x border-gray-300">{{ product.productName }}</td>
                     <td class="py-2 px-4 border-x border-gray-300">
-                        <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right">
+
+                        <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right"
+                            :disabled="!!editingItemId">
                     </td>
-                    <td class="py-2 px-4 border-x border-gray-300">
-                        <input type="number" v-model.number="product.price" class="w-full p-1 text-right">
+
+                    <td class="py-2 px-4 border-x border-gray-300 flex items-center space-x-2">
+                        <input type="number" v-model.number="product.price" class="w-full p-1 text-right"
+                            :disabled="!!editingItemId">
+                        <select v-model="product.priceType" @change="onPriceTypeChange(product)"
+                            class="border p-1 text-sm w-20" :disabled="!!editingItemId">
+                            <option value="retail">Розн.</option>
+                            <option value="wholesale">Опт.</option>
+                        </select>
                     </td>
+
                     <td class=" px-4 border-x border-gray-300">
                         <button v-on:click="() => { removeSelectedProduct(product.productId) }"
-                            class="text-red-500 text-2xl cursor-pointer">&times;</button>
+                            class="text-red-500 text-2xl cursor-pointer" :disabled="!!editingItemId">&times;</button>
                     </td>
                 </tr>
             </tbody>
             <tfoot v-if="products.length">
                 <tr class="bg-gray-50 font-medium">
                     <td colspan="2" class="py-2 px-4 text-right">Сумма без скидки</td>
-                    <td class="py-2 px-4 text-right">{{ subtotal.toFixed(2) }}</td>
+                    <td class="py-2 px-4 text-right">
+                        {{ subtotal.toFixed(2) }} <span class="ml-1">{{ currencySymbol }}</span>
+                    </td>
                     <td></td>
                 </tr>
                 <tr>
-                    <td colspan="2" class="py-2 px-4 text-right">
-                        <select v-model="discountType" class="border ml-2 p-1">
-                            <option value="percent">%</option>
-                            <option value="fixed">– сумма</option>
-                        </select>
-                    </td>
-                    <td class="py-2 px-4 text-right">
-                        <input type="number" v-model.number="discount" class="w-full p-1 text-right">
+                    <td colspan="3" class="py-2 px-4">
+                        <div class="flex justify-end items-center space-x-2">
+                            <label class="flex">Скидка</label>
+                            <div class="relative">
+                                <input type="number" v-model.number="discount"
+                                    class="w-24 p-1 text-right border rounded" :disabled="!!editingItemId">
+                            </div>
+
+                            <select v-model="discountType" class="border ml-2 p-1 text-sm !w-18 text-center"
+                                :disabled="!!editingItemId">
+                                <option value="percent">%</option>
+                                <option value="fixed">{{ currencySymbol }}</option>
+                            </select>
+                        </div>
                     </td>
                     <td></td>
                 </tr>
                 <tr class="bg-gray-100 font-bold">
                     <td colspan="2" class="py-2 px-4 text-right">Итого</td>
-                    <td class="py-2 px-4 text-right">{{ totalPrice.toFixed(2) }}</td>
+                    <td class="py-2 px-4 text-right">
+                        {{ totalPrice.toFixed(2) }} <span class="ml-1">{{ currencySymbol }}</span>
+                    </td>
                     <td></td>
                 </tr>
             </tfoot>
@@ -227,7 +249,7 @@
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление. Данные будут отражены на стоке и балансе клиента!'"
-        :confirm-text="'Удалить запись оприходования'" :leave-text="'Отмена'" />
+        :confirm-text="'Удалить продажу'" :leave-text="'Отмена'" />
 </template>
 
 
@@ -295,6 +317,7 @@ export default {
             allProjects: [],
             allCashRegisters: [],
             currencies: [],
+
         }
     },
     created() {
@@ -327,7 +350,18 @@ export default {
         },
         totalPrice() {
             return this.subtotal - this.discountAmount;
-        }
+        },
+
+        defaultCurrencySymbol() {
+            const def = this.currencies.find(c => c.is_default);
+            return def ? def.symbol : '';
+        },
+
+        currencySymbol() {
+            return this.type === 'cash'
+                ? (this.selectedCash?.currency_symbol || '')
+                : (this.defaultCurrencySymbol || '');
+        },
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
@@ -398,19 +432,37 @@ export default {
             this.showDropdownProduct = false;
             this.productSearch = '';
             this.productResults = [];
-            const existing = this.products.find(p => p.productId === product.id)
+
+            const existing = this.products.find(p => p.productId === product.id);
             if (existing) {
-                // Паша, я это сделал, чтобы при клике был +1, если товар уже есть в таблице
-                existing.quantity++
+                // если уже в списке — +1 к количеству
+                existing.quantity++;
             } else {
-                this.products.push(SaleProductDto.fromProductDto(product, true))
+                // создаём DTO
+                const dto = SaleProductDto.fromProductDto(product, true);
+
+                // сохраняем обе цены из DTO
+                dto.retail_price = product.retail_price;
+                dto.wholesale_price = product.wholesale_price;
+                // тип цены и начальная подстановка
+                dto.priceType = 'retail';
+                dto.price = dto.retail_price;
+
+                this.products.push(dto);
             }
-            //Паша, это добавил из-за проблемы, что при выборе товара, когда поле в фокусе, нужно было снимать фокус и заново брать его,чтобы он искал
+
             this.$nextTick(() => {
                 this.$refs.productInput.focus();
                 this.showDropdownProduct = true;
             });
             console.log('Selected product:', product);
+        },
+
+        // метод-менялка цены при переключении
+        onPriceTypeChange(product) {
+            product.price = product.priceType === 'retail'
+                ? product.retail_price
+                : product.wholesale_price;
         },
         deselectClient() {
             this.selectedClient = null;

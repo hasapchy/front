@@ -4,7 +4,7 @@ import ClientDto from "../client/ClientDto";
 import 'dayjs/locale/ru';
 
 export default class ProjectDto {
-    constructor(id, name, budget, date = null, clientId = null, client = null, userId = null, userName = null, users = [], createdAt = '', updatedAt = '') {
+    constructor(id, name, budget, date = null, clientId = null, client = null, userId = null, userName = null, users = [], createdAt = '', updatedAt = '',files = []) {
         this.id = id; 
         this.name = name; 
         this.date = date;
@@ -17,11 +17,13 @@ export default class ProjectDto {
         this.users = users;
         this.createdAt = createdAt; 
         this.updatedAt = updatedAt; 
+        this.files = files;
     }
     
     formatDate() {
         return this.date !== null ? dayjsDate(this.date) : '-';
     }
+    
     formatCreatedAt() {
         return dayjsDate(this.createdAt);
     }

@@ -20,28 +20,30 @@
         </div>
 
         <!-- Начало блока поиска товаров -->
+        <div class="relative">
+            <label class="block mb-1">Поиск товаров и услуг</label>
+            <input type="text" v-model="productSearch" placeholder="Введите название или код товара"
+                class="w-full p-2 border rounded" @focus="showDropdownProduct = true"
+                @blur="showDropdownProduct = false">
+            <transition name="appear">
+                <ul v-show="showDropdownProduct"
+                    class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
+                    <li v-if="productSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
+                    <li v-else-if="productSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li>
+                    <li v-else-if="productSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
+                    <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
+                    <li v-for="product in productResults" :key="product.id"
+                        @mousedown.prevent="() => { selectProduct(product) }"
+                        class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
+                        <div class="flex justify-between">
+                            <div>{{ product.name }}</div>
+                            <!-- <div class="text-[#337AB7]">{{ product.code }}</div> -->
+                        </div>
 
-        <label class="block mb-1">Поиск товаров и услуг</label>
-        <input type="text" v-model="productSearch" placeholder="Введите название или код товара"
-            class="w-full p-2 border rounded" @focus="showDropdownProduct = true" @blur="showDropdownProduct = false">
-        <transition name="appear">
-            <ul v-show="showDropdownProduct"
-                class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-                <li v-if="productSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
-                <li v-else-if="productSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li>
-                <li v-else-if="productSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
-                <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
-                <li v-for="product in productResults" :key="product.id"
-                    @mousedown.prevent="() => { selectProduct(product) }"
-                    class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                    <div class="flex justify-between">
-                        <div>{{ product.name }}</div>
-                        <!-- <div class="text-[#337AB7]">{{ product.code }}</div> -->
-                    </div>
-
-                </li>
-            </ul>
-        </transition>
+                    </li>
+                </ul>
+            </transition>
+        </div>
         <label class="block mt-4 mb-1">Указанные товары и услуги</label>
         <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
             <thead class="bg-gray-100 rounded-t-sm">

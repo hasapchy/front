@@ -7,7 +7,7 @@ export default class WarehouseReceiptDto {
         warehouseId,
         warehouseName,
         amount,
-        currencyId,
+        // currencyId,
         client = null,
         products = null,
         note = '',
@@ -17,7 +17,7 @@ export default class WarehouseReceiptDto {
         this.warehouseId = warehouseId;
         this.warehouseName = warehouseName;
         this.amount = amount;
-        this.currencyId = currencyId;
+        //Паша, переходим без выбора валюты this.currencyId = currencyId;
         /** @type {ClientDto | null} */
         this.client = client;
         /** @type {Array<WarehouseReceiptProductDto> | null} */

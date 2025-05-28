@@ -55,7 +55,7 @@ export default class WarehouseReceiptController {
                     item.warehouse_id,
                     item.warehouse_name,
                     item.amount,
-                    item.currency_id,
+                    // item.currency_id,
                     client,
                     products,
                     item.note,

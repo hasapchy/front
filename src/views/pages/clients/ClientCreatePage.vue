@@ -263,7 +263,8 @@ export default {
         ///
         changeTab(tab) {
             this.currentTab = tab;
-        }
+        },
+       
     },
     watch: {
         editingItem: {
