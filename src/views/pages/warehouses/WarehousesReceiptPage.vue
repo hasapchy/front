@@ -27,8 +27,8 @@
     <!-- Таблица с заглушкой -->
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.warehouse_receipts" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
+            <DraggableTable table-key="admin.warehouse_receipts" :columns-config="columnsConfig"
+                :table-data="data.items" :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
@@ -37,7 +37,7 @@
     <!-- Модальное окно форма создания/редактирования -->
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
         <WarehousesReceiptCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" :editingItem="editingItem" />
+            @deleted-error="handleDeletedError" :editingItem="editingItem" @delete-rows="handleDeleteRows" />
     </SideModalDialog>
     <!-- Компонент уведомлений -->
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -114,6 +114,23 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
+        },
+        async handleDeleteRows(selectedRows) {
+            if (!selectedRows.length) return;
+
+            this.loading = true;
+            try {
+                for (const row of selectedRows) {
+                    if (row.id) {
+                        await SaleController.deleteItem(row.id);
+                    }
+                }
+                await this.fetchItems(this.data?.currentPage || 1, true);
+                this.showNotification('Выбранные продажи успешно удалены', '', false);
+            } catch (error) {
+                this.showNotification('Ошибка при удалении продаж', error.message, true);
+            }
+            this.loading = false;
         },
         showNotification(title, subtitle, isDanger = false) {
             this.notificationTitle = title;

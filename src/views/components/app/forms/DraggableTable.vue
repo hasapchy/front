@@ -25,7 +25,7 @@
   <!-- Кнопка удалить -->
   <div class="mb-4" v-if="selectedRows.length > 0">
     <button @click="deleteSelectedRows" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
-      Удалить выбранные (тест, не работает)({{ selectedRows.length }})
+      Удалить выбранные ({{ selectedRows.length }})
     </button>
   </div>
 
