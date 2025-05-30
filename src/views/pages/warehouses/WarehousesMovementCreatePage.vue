@@ -36,25 +36,40 @@
 
         <!-- Начало блока поиска товаров -->
         <div class="relative">
-            <label class="block mb-1">Поиск товаров и услуг</label>
-            <input type="text" v-model="productSearch" placeholder="Введите название или код товара"
+            <label class="block mb-1 required">Поиск товаров и услуг</label>
+            <input type="text" ref="productInput" v-model="productSearch" placeholder="Введите название или код товара"
                 class="w-full p-2 border rounded" @focus="showDropdownProduct = true"
-                @blur="showDropdownProduct = false">
+                @blur="showDropdownProduct = false" :disabled="!!editingItemId">
             <transition name="appear">
                 <ul v-show="showDropdownProduct"
                     class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
                     <li v-if="productSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
-                    <li v-else-if="productSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li>
+                    <!-- <li v-else-if="productSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li> -->
+                    <template v-else-if="productSearch.length === 0">
+                        <li v-for="product in lastProducts" :key="product.id"
+                            @mousedown.prevent="selectProduct(product)"
+                            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center">
+                                    <span v-html="product.icons()"></span>
+                                    {{ product.name }}
+                                </div>
+                                <div class="text-[#337AB7]">{{ product.sku }}</div>
+                            </div>
+                        </li>
+                    </template>
                     <li v-else-if="productSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
                     <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
-                    <li v-for="product in productResults" :key="product.id"
-                        @mousedown.prevent="() => { selectProduct(product) }"
+                    <li v-else v-for="product in productResults" :key="product.id"
+                        @mousedown.prevent="selectProduct(product)"
                         class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                        <div class="flex justify-between">
-                            <div>{{ product.name }}</div>
-                            <!-- <div class="text-[#337AB7]">{{ product.code }}</div> -->
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <span v-html="product.icons()"></span>
+                                {{ product.name }}
+                            </div>
+                            <div class="text-[#337AB7]">{{ product.sku }}</div>
                         </div>
-
                     </li>
                 </ul>
             </transition>
@@ -137,6 +152,7 @@ export default {
             productSearch: '',
             productSearchLoading: false,
             productResults: [],
+            lastProducts: [],
             showDropdownProduct: false,
             ///
             allWarehouses: [],
@@ -144,12 +160,26 @@ export default {
     },
     created() {
         this.fetchAllWarehouses();
+        this.fetchLastProducts();
     },
 
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
         async fetchAllWarehouses() {
             this.allWarehouses = await WarehouseController.getAllItems();
+        },
+        async fetchLastProducts() {
+            const prodPage = await ProductController.getItems(1, true)
+            const servPage = await ProductController.getItems(1, false)
+            this.lastProducts = [
+                ...prodPage.items,
+                ...servPage.items
+            ]
+                .sort((a, b) => {
+                    // сортировка по дате создания
+                    return new Date(b.created_at) - new Date(a.created_at)
+                })
+                .slice(0, 10)
         },
         searchProducts: debounce(async function () {
             if (this.productSearch.length >= 4) {
@@ -167,6 +197,7 @@ export default {
             this.productSearch = '';
             this.productResults = [];
             this.products.push(WarehouseMovementProductDto.fromProductDto(product, true));
+            this.$refs.productInput.blur();
         },
 
         removeSelectedProduct(id) {

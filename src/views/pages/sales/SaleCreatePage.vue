@@ -435,26 +435,17 @@ export default {
 
             const existing = this.products.find(p => p.productId === product.id);
             if (existing) {
-                // если уже в списке — +1 к количеству
                 existing.quantity++;
             } else {
-                // создаём DTO
                 const dto = SaleProductDto.fromProductDto(product, true);
-
-                // сохраняем обе цены из DTO
                 dto.retail_price = product.retail_price;
                 dto.wholesale_price = product.wholesale_price;
-                // тип цены и начальная подстановка
                 dto.priceType = 'retail';
                 dto.price = dto.retail_price;
-
                 this.products.push(dto);
             }
 
-            this.$nextTick(() => {
-                this.$refs.productInput.focus();
-                this.showDropdownProduct = true;
-            });
+            this.$refs.productInput.blur();
             console.log('Selected product:', product);
         },
 

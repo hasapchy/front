@@ -6,7 +6,8 @@
         <div v-if="selectedClient == null" class="relative">
             <label class="block mb-1 required">Поиск клиента</label>
             <input type="text" v-model="clientSearch" placeholder="Введите имя или номер клиента"
-                class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="showDropdown = false"  :disabled="!!editingItemId">
+                class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="showDropdown = false"
+                :disabled="!!editingItemId">
             <transition name="appear">
                 <ul v-show="showDropdown"
                     class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
@@ -61,7 +62,8 @@
                         </p>
 
                     </div>
-                    <button v-on:click="deselectClient" class="text-red-500 text-2xl cursor-pointer"  :disabled="!!editingItemId">&times;</button>
+                    <button v-on:click="deselectClient" class="text-red-500 text-2xl cursor-pointer"
+                        :disabled="!!editingItemId">&times;</button>
                 </div>
             </div>
         </div>
@@ -69,12 +71,12 @@
 
         <div>
             <label>Дата</label>
-            <input type="datetime-local" :disabled="!!editingItemId" v-model="date" >
+            <input type="datetime-local" :disabled="!!editingItemId" v-model="date">
         </div>
         <div class="mt-2">
             <label class="block mb-1 required">Склад</label>
             <div class="flex items-center space-x-2">
-                <select v-model="warehouseId"  :disabled="!!editingItemId">
+                <select v-model="warehouseId" :disabled="!!editingItemId">
                     <option value="">Нет</option>
                     <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">{{
                         parent.name }}
@@ -87,7 +89,7 @@
             <label class="block mb-1 required">Тип оплаты</label>
             <div>
                 <label class="inline-flex items-center">
-                    <input type="radio" v-model="type" value="cash"  :disabled="!!editingItemId">
+                    <input type="radio" v-model="type" value="cash" :disabled="!!editingItemId">
                     <span class="ml-2">В кассу</span>
                 </label>
             </div>
@@ -99,8 +101,8 @@
             </div>
         </div>
         <div v-if="type === 'cash'" class="mt-2">
-            <label class="block mb-1 required" >Касса</label>
-            <select v-model="cashId"  :disabled="!!editingItemId">
+            <label class="block mb-1 required">Касса</label>
+            <select v-model="cashId" :disabled="!!editingItemId">
                 <option value="">Нет</option>
                 <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">
                     {{ c.name }}
@@ -118,28 +120,44 @@
 
         <div class="mt-2">
             <label>Примечание</label>
-            <input type="text" v-model="note"  :disabled="!!editingItemId">
+            <input type="text" v-model="note" :disabled="!!editingItemId">
         </div>
 
         <!-- Начало блока поиска товаров -->
         <div class="relative">
-            <label class="block mb-1">Поиск товаров и услуг</label>
-            <input type="text" v-model="productSearch" placeholder="Введите название или код товара"
+            <label class="block mb-1 required">Поиск товаров и услуг</label>
+            <input type="text" ref="productInput" v-model="productSearch" placeholder="Введите название или код товара"
                 class="w-full p-2 border rounded" @focus="showDropdownProduct = true"
-                @blur="showDropdownProduct = false"  :disabled="!!editingItemId">
+                @blur="showDropdownProduct = false" :disabled="!!editingItemId">
             <transition name="appear">
                 <ul v-show="showDropdownProduct"
                     class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
                     <li v-if="productSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
-                    <li v-else-if="productSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li>
+                    <!-- <li v-else-if="productSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li> -->
+                    <template v-else-if="productSearch.length === 0">
+                        <li v-for="product in lastProducts" :key="product.id"
+                            @mousedown.prevent="selectProduct(product)"
+                            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center">
+                                    <span v-html="product.icons()"></span>
+                                    {{ product.name }}
+                                </div>
+                                <div class="text-[#337AB7]">{{ product.sku }}</div>
+                            </div>
+                        </li>
+                    </template>
                     <li v-else-if="productSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
                     <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
-                    <li v-for="product in productResults" :key="product.id"
-                        @mousedown.prevent="() => { selectProduct(product) }"
+                    <li v-else v-for="product in productResults" :key="product.id"
+                        @mousedown.prevent="selectProduct(product)"
                         class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                        <div class="flex justify-between">
-                            <div>{{ product.name }}</div>
-                            <!-- <div class="text-[#337AB7]">{{ product.code }}</div> -->
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <span v-html="product.icons()"></span>
+                                {{ product.name }}
+                            </div>
+                            <div class="text-[#337AB7]">{{ product.sku }}</div>
                         </div>
                     </li>
                 </ul>
@@ -159,14 +177,16 @@
                 <tr v-for="(product, index) in products" :key="index" class="border-b border-gray-300">
                     <td class="py-2 px-4 border-x border-gray-300">{{ product.productName }}</td>
                     <td class="py-2 px-4 border-x border-gray-300">
-                        <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right"  :disabled="!!editingItemId">
+                        <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right"
+                            :disabled="!!editingItemId">
                     </td>
                     <td class="py-2 px-4 border-x border-gray-300">
-                        <input type="number" v-model.number="product.price" class="w-full p-1 text-right"  :disabled="!!editingItemId">
+                        <input type="number" v-model.number="product.price" class="w-full p-1 text-right"
+                            :disabled="!!editingItemId">
                     </td>
                     <td class=" px-4 border-x border-gray-300">
                         <button v-on:click="() => { removeSelectedProduct(product.productId) }"
-                            class="text-red-500 text-2xl cursor-pointer"  :disabled="!!editingItemId">&times;</button>
+                            class="text-red-500 text-2xl cursor-pointer" :disabled="!!editingItemId">&times;</button>
                     </td>
                 </tr>
             </tbody>
@@ -237,6 +257,7 @@ export default {
             productSearch: '',
             productSearchLoading: false,
             productResults: [],
+            lastProducts: [],
             showDropdownProduct: false,
             ///
             allWarehouses: [],
@@ -249,6 +270,7 @@ export default {
         this.fetchCurrencies();
         this.fetchLastClients();
         this.fetchAllCashRegisters();
+        this.fetchLastProducts();
     },
     computed: {
         // selectedCurrency() {
@@ -275,6 +297,19 @@ export default {
             this.lastClients = paginated.items
                 .filter(client => client.isSupplier)
                 .slice(0, 10);
+        },
+        async fetchLastProducts() {
+            const prodPage = await ProductController.getItems(1, true)
+            const servPage = await ProductController.getItems(1, false)
+            this.lastProducts = [
+                ...prodPage.items,
+                ...servPage.items
+            ]
+                .sort((a, b) => {
+                    // сортировка по дате создания
+                    return new Date(b.created_at) - new Date(a.created_at)
+                })
+                .slice(0, 10)
         },
         // Поиск клиентов
         searchClients: debounce(async function () {
@@ -309,6 +344,7 @@ export default {
             this.productSearch = '';
             this.productResults = [];
             this.products.push(WarehouseReceiptProductDto.fromProductDto(product, true));
+            this.$refs.productInput.blur();
             console.log('Selected product:', product);
         },
         deselectClient() {
@@ -317,6 +353,7 @@ export default {
         removeSelectedProduct(id) {
             this.products = this.products.filter(product => product.productId != id);
         },
+
         async save() {
             this.saveLoading = true;
             try {
