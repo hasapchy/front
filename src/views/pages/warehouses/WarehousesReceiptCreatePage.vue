@@ -4,9 +4,9 @@
 
         <!-- Начало блока поиска клиентов -->
         <div v-if="selectedClient == null" class="relative">
-            <label class="block mb-1">Поиск клиента</label>
+            <label class="block mb-1 required">Поиск клиента</label>
             <input type="text" v-model="clientSearch" placeholder="Введите имя или номер клиента"
-                class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="showDropdown = false">
+                class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="showDropdown = false"  :disabled="!!editingItemId">
             <transition name="appear">
                 <ul v-show="showDropdown"
                     class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
@@ -61,7 +61,7 @@
                         </p>
 
                     </div>
-                    <button v-on:click="deselectClient" class="text-red-500 text-2xl cursor-pointer">&times;</button>
+                    <button v-on:click="deselectClient" class="text-red-500 text-2xl cursor-pointer"  :disabled="!!editingItemId">&times;</button>
                 </div>
             </div>
         </div>
@@ -69,12 +69,12 @@
 
         <div>
             <label>Дата</label>
-            <input type="datetime-local" v-model="date">
+            <input type="datetime-local" :disabled="!!editingItemId" v-model="date" >
         </div>
         <div class="mt-2">
-            <label class="block mb-1">Склад</label>
+            <label class="block mb-1 required">Склад</label>
             <div class="flex items-center space-x-2">
-                <select v-model="warehouseId">
+                <select v-model="warehouseId"  :disabled="!!editingItemId">
                     <option value="">Нет</option>
                     <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">{{
                         parent.name }}
@@ -87,7 +87,7 @@
             <label class="block mb-1 required">Тип оплаты</label>
             <div>
                 <label class="inline-flex items-center">
-                    <input type="radio" v-model="type" value="cash">
+                    <input type="radio" v-model="type" value="cash"  :disabled="!!editingItemId">
                     <span class="ml-2">В кассу</span>
                 </label>
             </div>
@@ -99,8 +99,8 @@
             </div>
         </div>
         <div v-if="type === 'cash'" class="mt-2">
-            <label class="block mb-1 required">Касса</label>
-            <select v-model="cashId">
+            <label class="block mb-1 required" >Касса</label>
+            <select v-model="cashId"  :disabled="!!editingItemId">
                 <option value="">Нет</option>
                 <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">
                     {{ c.name }}
@@ -118,7 +118,7 @@
 
         <div class="mt-2">
             <label>Примечание</label>
-            <input type="text" v-model="note">
+            <input type="text" v-model="note"  :disabled="!!editingItemId">
         </div>
 
         <!-- Начало блока поиска товаров -->
@@ -126,7 +126,7 @@
             <label class="block mb-1">Поиск товаров и услуг</label>
             <input type="text" v-model="productSearch" placeholder="Введите название или код товара"
                 class="w-full p-2 border rounded" @focus="showDropdownProduct = true"
-                @blur="showDropdownProduct = false">
+                @blur="showDropdownProduct = false"  :disabled="!!editingItemId">
             <transition name="appear">
                 <ul v-show="showDropdownProduct"
                     class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
@@ -159,14 +159,14 @@
                 <tr v-for="(product, index) in products" :key="index" class="border-b border-gray-300">
                     <td class="py-2 px-4 border-x border-gray-300">{{ product.productName }}</td>
                     <td class="py-2 px-4 border-x border-gray-300">
-                        <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right">
+                        <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right"  :disabled="!!editingItemId">
                     </td>
                     <td class="py-2 px-4 border-x border-gray-300">
-                        <input type="number" v-model.number="product.price" class="w-full p-1 text-right">
+                        <input type="number" v-model.number="product.price" class="w-full p-1 text-right"  :disabled="!!editingItemId">
                     </td>
                     <td class=" px-4 border-x border-gray-300">
                         <button v-on:click="() => { removeSelectedProduct(product.productId) }"
-                            class="text-red-500 text-2xl cursor-pointer">&times;</button>
+                            class="text-red-500 text-2xl cursor-pointer"  :disabled="!!editingItemId">&times;</button>
                     </td>
                 </tr>
             </tbody>
