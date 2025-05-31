@@ -54,7 +54,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr v-if="sortedData.length === 0" class="text-center">
+      <tr v-if="filteredData.length === 0" class="text-center">
         <td class="py-2 px-4 border-x border-gray-300" :colspan="columns.length + 1">
           Нет данных
         </td>
@@ -82,7 +82,7 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 
 export default {
-  name: 'ResizableTable',
+  name: 'DragableTable',
   components: { draggable: VueDraggableNext, TableFilterButton },
   props: {
     tableKey: { type: String, required: true },
@@ -91,6 +91,7 @@ export default {
     itemMapper: { type: Function, required: true },
     onItemClick: { type: Function },
     onDeleteRows: { type: Function },
+    filterQuery: { type: String, default: '' },
   },
   data() {
     return {
@@ -109,14 +110,18 @@ export default {
     tableData() {
       this.selectedRows = [];
       this.selectAll = false;
-    }
+    },
+    filterQuery() {
+      this.selectedRows = [];
+      this.selectAll = false;
+    },
   },
   computed: {
     sortedData() {
       if (!this.sortKey) {
-        return this.tableData;
+        return this.filteredData;
       }
-      return [...this.tableData].sort((a, b) => {
+      return [...this.filteredData].sort((a, b) => {
         const va = this.itemMapper(a, this.sortKey);
         const vb = this.itemMapper(b, this.sortKey);
         const da = Date.parse(va), db = Date.parse(vb);
@@ -128,7 +133,20 @@ export default {
         }
         return va.toString().localeCompare(vb.toString()) * this.sortOrder;
       });
-    }
+    },
+    filteredData() {
+      if (!this.filterQuery || this.filterQuery.trim().length < 2) {
+        return this.tableData;
+      }
+      const query = this.filterQuery.toLowerCase().trim();
+      return this.tableData.filter((item) => {
+        return this.columns.some((column) => {
+          if (!column.visible) return false;
+          const value = this.itemMapper(item, column.name)?.toString().toLowerCase() || '';
+          return value.includes(query);
+        });
+      });
+    },
   },
   methods: {
     loadColumns() {
@@ -200,7 +218,7 @@ export default {
         this.selectAll = false;
       }
     },
-    /* ---------- Новое от Эмиля.Это на случай, если ты начнешь смотреть ресайз колонок ---------- */
+    /* ---------- Паша.Это на случай, если ты начнешь смотреть ресайз колонок ---------- */
     startResize(e, index) {
       this.resizing = true;
       this.resizingColumn = index;

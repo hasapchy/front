@@ -12,7 +12,8 @@
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.sales" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" @delete-rows="handleDeleteRows" />
+                :filter-query="searchQuery" :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }"
+                @delete-rows="handleDeleteRows" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
@@ -166,6 +167,9 @@ export default {
         }
     },
     computed: {
+        searchQuery() {
+            return this.$store.state.searchQuery;
+        }
     },
 }
 </script>

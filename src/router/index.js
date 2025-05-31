@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import store from "@/store";
 
 import SidebarLayout from "@/views/layouts/SidebarLayout.vue";
 import BlankLayout from "@/views/layouts/BlankLayout.vue";
@@ -19,171 +20,180 @@ import TransfersPage from "@/views/pages/transfers/TransfersPage.vue";
 import SalesPage from "@/views/pages/sales/SalesPage.vue";
 
 const routes = [
-    {
+  {
+    path: "/",
+    name: "Public",
+    component: SidebarLayout,
+    redirect: "/",
+    children: [
+      {
         path: "/",
-        name: "Public",
-        component: SidebarLayout,
-        redirect: "/",
-        children: [
+        name: "Home",
+        component: HomePage,
+        meta: { title: "Моя компания", requiresAuth: true },
+      },
+      {
+        path: "/sales",
+        name: "Sales",
+        component: SalesPage,
+        meta: { title: "Продажи", requiresAuth: true, showSearch: true},
+      },
+      {
+        path: "/transactions",
+        name: "Transactions",
+        component: TransactionsPage,
+        meta: {
+          title: "Финансы",
+          requiresAuth: true,
+          showSearch: true,
+          binded: [
             {
-                path: "/",
-                name: "Home",
-                component: HomePage,
-                meta: { title: 'Моя компания', requiresAuth: true }
+              name: "Трансферы",
+              path: "/transfers",
             },
             {
-                path: "/sales",
-                name: "Sales",
-                component: SalesPage,
-                meta: { title: 'Продажи', requiresAuth: true }
+              name: "Кассы",
+              path: "/admin/cash-registers",
+            },
+          ],
+        },
+      },
+      {
+        path: "/transfers",
+        name: "Transfers",
+        component: TransfersPage,
+        meta: {
+          title: "Трансферы",
+          requiresAuth: true,
+          binded: [
+            {
+              name: "Финансы",
+              path: "/transactions",
             },
             {
-                path: "/transactions",
-                name: "Transactions",
-                component: TransactionsPage,
-                meta: {
-                    title: 'Финансы', requiresAuth: true,
-                    binded: [
-                        {
-                            "name": "Трансферы",
-                            "path": "/transfers"
-                        },
-                        {
-                            "name": "Кассы",
-                            "path": "/admin/cash-registers"
-                        },
-                    ]
-                }
+              name: "Кассы",
+              path: "/admin/cash-registers",
+            },
+          ],
+        },
+      },
+      {
+        path: "/warehouses",
+        name: "Warehouses",
+        component: WarehousesPage,
+        meta: { title: "Склады", requiresAuth: true },
+      },
+      {
+        path: "/clients",
+        name: "Clients",
+        component: ClientsPage,
+        meta: { title: "Клиенты", requiresAuth: true, showSearch: true },
+      },
+      {
+        path: "/projects",
+        name: "Projects",
+        component: ProjectsPage,
+        meta: { title: "Проекты", requiresAuth: true },
+      },
+      {
+        path: "/components",
+        name: "Components",
+        component: AppComponentsPage,
+        meta: { title: "Компоненты", requiresAuth: true },
+      },
+      {
+        path: "/admin/warehouses",
+        name: "Admin-Warehouses",
+        component: AdminWarehousesPage,
+        meta: { title: "Склады", requiresAuth: true },
+      },
+      {
+        path: "/admin/categories",
+        name: "Admin-Categories",
+        component: AdminCategoriesPage,
+        meta: { title: "Категории", requiresAuth: true },
+      },
+      {
+        path: "/admin/products",
+        name: "Admin-Products",
+        component: AdminProductsPage,
+        meta: {
+          title: "Товары",
+          requiresAuth: true,
+          binded: [
+            {
+              name: "Услуги",
+              path: "/admin/services",
+            },
+          ],
+        },
+      },
+      {
+        path: "/admin/services",
+        name: "Admin-Sevices",
+        component: AdminServicesPage,
+        meta: {
+          title: "Услуги",
+          requiresAuth: true,
+          binded: [
+            {
+              name: "Товары",
+              path: "/admin/products",
+            },
+          ],
+        },
+      },
+      {
+        path: "/admin/cash-registers",
+        name: "Admin-Cash-Registers",
+        component: AdminCashRegistersPage,
+        meta: {
+          title: "Кассы",
+          requiresAuth: true,
+          binded: [
+            {
+              name: "Трансферы",
+              path: "/transfers",
             },
             {
-                path: "/transfers",
-                name: "Transfers",
-                component: TransfersPage,
-                meta: {
-                    title: 'Трансферы', requiresAuth: true,
-                    binded: [
-                        {
-                            "name": "Финансы",
-                            "path": "/transactions"
-                        },
-                        {
-                            "name": "Кассы",
-                            "path": "/admin/cash-registers"
-                        }
-                    ]
-                }
+              name: "Финансы",
+              path: "/transactions",
             },
-            {
-                path: "/warehouses",
-                name: "Warehouses",
-                component: WarehousesPage,
-                meta: { title: 'Склады', requiresAuth: true }
-            },
-            {
-                path: "/clients",
-                name: "Clients",
-                component: ClientsPage,
-                meta: { title: 'Клиенты', requiresAuth: true }
-            },
-            {
-                path: "/projects",
-                name: "Projects",
-                component: ProjectsPage,
-                meta: { title: 'Проекты', requiresAuth: true }
-            },
-            {
-                path: "/components",
-                name: "Components",
-                component: AppComponentsPage,
-                meta: { title: 'Компоненты', requiresAuth: true }
-            },
-            {
-                path: "/admin/warehouses",
-                name: "Admin-Warehouses",
-                component: AdminWarehousesPage,
-                meta: { title: 'Склады', requiresAuth: true }
-            },
-            {
-                path: "/admin/categories",
-                name: "Admin-Categories",
-                component: AdminCategoriesPage,
-                meta: { title: 'Категории', requiresAuth: true }
-            },
-            {
-                path: "/admin/products",
-                name: "Admin-Products",
-                component: AdminProductsPage,
-                meta: {
-                    title: 'Товары', requiresAuth: true,
-                    binded: [
-                        {
-                            "name": "Услуги",
-                            "path": "/admin/services"
-                        }
-                    ]
-                }
-            },
-            {
-                path: "/admin/services",
-                name: "Admin-Sevices",
-                component: AdminServicesPage,
-                meta: {
-                    title: 'Услуги', requiresAuth: true,
-                    binded: [
-                        {
-                            "name": "Товары",
-                            "path": "/admin/products"
-                        }
-                    ]
-                }
-            },
-            {
-                path: "/admin/cash-registers",
-                name: "Admin-Cash-Registers",
-                component: AdminCashRegistersPage,
-                meta: { title: 'Кассы', requiresAuth: true,
-                    binded: [
-                        {
-                            "name": "Трансферы",
-                            "path": "/transfers"
-                        },
-                        {
-                            "name": "Финансы",
-                            "path": "/transactions"
-                        }
-                    ] }
-            },
-        ]
-    },
-    {
-        path: "/auth",
-        name: "Auth",
-        component: BlankLayout,
-        redirect: '/auth',
-        children: [
-            {
-                path: "/auth/login",
-                name: "Login",
-                component: LoginPage
-            }
-        ]
-    }
-]
+          ],
+        },
+      },
+    ],
+  },
+  {
+    path: "/auth",
+    name: "Auth",
+    component: BlankLayout,
+    redirect: "/auth",
+    children: [
+      {
+        path: "/auth/login",
+        name: "Login",
+        component: LoginPage,
+      },
+    ],
+  },
+];
 
 const router = createRouter({
-    history: createWebHistory(),
-    routes
+  history: createWebHistory(),
+  routes,
 });
 
-// Проверяем авторизацию перед каждой навигацией
 router.beforeEach(async (to, from, next) => {
-
-    const token = localStorage.getItem('token');
-    if (to.meta.requiresAuth && !token) {
-        next('/auth/login'); // Если нет токена, отправляем на логин
-    } else {
-        next();
+  const token = localStorage.getItem("token");
+  if (to.meta.requiresAuth && !token) {
+    next("/auth/login");
+  } else {
+    if (!to.meta.showSearch) {
+      store.dispatch("setSearchQuery", ""); 
     }
+    next();
+  }
 });
 
 export default router;
