@@ -1,8 +1,10 @@
 <template>
-    <div class="relative inline-block">
+    <div class="relative inline-block" ref="dropdown">
         <!-- Кнопка-ссылка -->
         <button @click="toggleMenu" class="text-[#337AB7] hover:underline cursor-pointer">
-            Настроить таблицу <i v-if="isOpen" class="fas fa-angle-up text-xs"></i> <i v-else class="fas fa-angle-down text-xs"></i>  
+            Настроить таблицу
+            <i v-if="isOpen" class="fas fa-angle-up text-xs"></i>
+            <i v-else class="fas fa-angle-down text-xs"></i>
         </button>
 
         <!-- Всплывающее окно -->
@@ -27,9 +29,21 @@ export default {
             isOpen: false
         };
     },
+    mounted() {
+        document.addEventListener('click', this.handleClickOutside);
+    },
+    beforeUnmount() {
+        document.removeEventListener('click', this.handleClickOutside);
+    },
     methods: {
         toggleMenu() {
             this.isOpen = !this.isOpen;
+        },
+        handleClickOutside(event) {
+            const dropdown = this.$refs.dropdown;
+            if (this.isOpen && dropdown && !dropdown.contains(event.target)) {
+                this.isOpen = false;
+            }
         }
     }
 };
