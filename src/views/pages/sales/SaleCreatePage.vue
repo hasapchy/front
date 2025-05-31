@@ -1,72 +1,7 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">Продажа</h2>
-        <!-- Начало блока поиска клиентов -->
-        <div v-if="selectedClient == null" class="relative">
-            <label class="block mb-1">Поиск клиента</label>
-            <input type="text" v-model="clientSearch" placeholder="Введите имя или номер клиента"
-                class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="showDropdown = false"
-                :disabled="!!editingItemId">
-            <transition name="appear">
-                <ul v-show="showDropdown"
-                    class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-                    <li v-if="clientSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
-                    <!-- <li v-else-if="clientSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li> -->
-                    <template v-else-if="clientSearch.length === 0">
-                        <li v-for="client in lastClients" :key="client.id" @mousedown.prevent="selectClient(client)"
-                            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                            <div class="flex justify-between">
-                                <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                                <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
-                            </div>
-                        </li>
-                    </template>
-                    <li v-else-if="clientSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
-                    <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
-                    <li v-for="client in clientResults" :key="client.id"
-                        @mousedown.prevent="() => { selectClient(client) }"
-                        class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                        <div class="flex justify-between">
-                            <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                            <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
-                        </div>
-                        <span
-                            :class="client.balance == 0 ? 'text-[#337AB7]' : client.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
-                            {{ client.balanceFormatted() }}
-                            <!-- {{ client.currencySymbol }} -->
-                            <span v-if="client.balanceNumeric() > 0">(Клиент должен нам)</span>
-                            <span v-else-if="client.balanceNumeric() < 0">(Мы должны клиенту)</span>
-                            <span v-else>(Взаимный расчет)</span>
-                        </span>
-                    </li>
-                </ul>
-            </transition>
-        </div>
-        <div v-else class="">
-            <div class="p-2 pt-0 mt-2 border-2 border-gray-400/60 rounded-md">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <label>Клиент</label>
-                        <p><span class="font-semibold text-sm">Имя:</span> {{ selectedClient.fullName() }}</p>
-                        <p><span class="font-semibold text-sm">Номер:</span> {{ selectedClient.phones[0].phone }}</p>
-                        <p><span class="font-semibold text-sm">Баланс:</span>
-                            <span
-                                :class="selectedClient.balanceNumeric() == 0 ? 'text-[#337AB7]' : selectedClient.balanceNumeric() > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
-                                {{ selectedClient.balanceFormatted() }}
-                                <!-- {{ selectedClient.currencySymbol }} -->
-                                <span v-if="selectedClient.balanceNumeric() > 0">(Клиент должен нам)</span>
-                                <span v-else-if="selectedClient.balanceNumeric() < 0">(Мы должны клиенту)</span>
-                                <span v-else>(Взаимный расчет)</span>
-                            </span>
-                        </p>
-
-                    </div>
-                    <button v-on:click="deselectClient" class="text-red-500 text-2xl cursor-pointer"
-                        :disabled="!!editingItemId">&times;</button>
-                </div>
-            </div>
-        </div>
-        <!-- Конец блока поиска клиентов -->
+        <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
         <div class="mt-2">
             <label class="block mb-1">Проект</label>
             <select v-model="projectId" :disabled="!!editingItemId">
@@ -90,14 +25,6 @@
                 </select>
             </div>
         </div>
-        <!-- <div class=" mt-2">
-        <label class="block mb-1">Валюта</label>
-        <select v-model="currencyId" :disabled="!!editingItemId">
-            <option value="">Нет</option>
-            <option v-if="currencies.length" v-for="parent in currencies" :value="parent.id">{{ parent.name }}
-            </option>
-        </select>
-    </div> -->
 
         <div class="mt-2">
             <label>Примечание</label>
@@ -128,120 +55,11 @@
                 </option>
             </select>
         </div>
-        <!-- Начало блока поиска товаров -->
-        <div class="relative">
-            <label class="block mb-1 required">Поиск товаров и услуг</label>
-            <input type="text" ref="productInput" v-model="productSearch" placeholder="Введите название или код товара"
-                class="w-full p-2 border rounded" @focus="showDropdownProduct = true"
-                @blur="showDropdownProduct = false" :disabled="!!editingItemId">
-            <transition name="appear">
-                <ul v-show="showDropdownProduct"
-                    class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-                    <li v-if="productSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
-                    <!-- <li v-else-if="productSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li> -->
-                    <template v-else-if="productSearch.length === 0">
-                        <li v-for="product in lastProducts" :key="product.id"
-                            @mousedown.prevent="selectProduct(product)"
-                            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center">
-                                    <span v-html="product.icons()"></span>
-                                    {{ product.name }}
-                                </div>
-                                <div class="text-[#337AB7]">{{ product.sku }}</div>
-                            </div>
-                        </li>
-                    </template>
-                    <li v-else-if="productSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
-                    <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
-                    <li v-else v-for="product in productResults" :key="product.id"
-                        @mousedown.prevent="selectProduct(product)"
-                        class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center">
-                                <span v-html="product.icons()"></span>
-                                {{ product.name }}
-                            </div>
-                            <div class="text-[#337AB7]">{{ product.sku }}</div>
-                        </div>
-                    </li>
-                </ul>
-            </transition>
-        </div>
-        <label class="block mt-4 mb-1">Указанные товары и услуги</label>
-        <table class="min-w-full bg-white rounded mb-6 w-100">
-            <thead class="bg-gray-100 rounded-t-sm">
-                <tr>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">Название</th>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-20">Количество</th>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">Цена</th>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="(product, index) in products" :key="index" class="border-b border-gray-300">
-                    <td class="py-2 px-4 border-x border-gray-300">{{ product.productName }}</td>
-                    <td class="py-2 px-4 border-x border-gray-300">
-
-                        <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right"
-                            :disabled="!!editingItemId">
-                    </td>
-
-                    <td class="py-2 px-4 border-x border-gray-300 flex items-center space-x-2">
-                        <input type="number" v-model.number="product.price" class="w-full p-1 text-right"
-                            :disabled="!!editingItemId">
-                        <select v-model="product.priceType" @change="onPriceTypeChange(product)"
-                            class="border p-1 text-sm w-20" :disabled="!!editingItemId">
-                            <option value="retail">Розн.</option>
-                            <option value="wholesale">Опт.</option>
-                        </select>
-                    </td>
-
-                    <td class=" px-4 border-x border-gray-300">
-                        <button v-on:click="() => { removeSelectedProduct(product.productId) }"
-                            class="text-red-500 text-2xl cursor-pointer" :disabled="!!editingItemId">&times;</button>
-                    </td>
-                </tr>
-            </tbody>
-            <tfoot v-if="products.length">
-                <tr class="bg-gray-50 font-medium">
-                    <td colspan="2" class="py-2 px-4 text-right">Сумма без скидки</td>
-                    <td class="py-2 px-4 text-right">
-                        {{ subtotal.toFixed(2) }} <span class="ml-1">{{ currencySymbol }}</span>
-                    </td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td colspan="3" class="py-2 px-4">
-                        <div class="flex justify-end items-center space-x-2">
-                            <label class="flex">Скидка</label>
-                            <div class="relative">
-                                <input type="number" v-model.number="discount"
-                                    class="w-24 p-1 text-right border rounded" :disabled="!!editingItemId">
-                            </div>
-
-                            <select v-model="discountType" class="border ml-2 p-1 text-sm !w-18 text-center"
-                                :disabled="!!editingItemId">
-                                <option value="percent">%</option>
-                                <option value="fixed">{{ currencySymbol }}</option>
-                            </select>
-                        </div>
-                    </td>
-                    <td></td>
-                </tr>
-                <tr class="bg-gray-100 font-bold">
-                    <td colspan="2" class="py-2 px-4 text-right">Итого</td>
-                    <td class="py-2 px-4 text-right">
-                        {{ totalPrice.toFixed(2) }} <span class="ml-1">{{ currencySymbol }}</span>
-                    </td>
-                    <td></td>
-                </tr>
-            </tfoot>
-        </table>
+        <ProductSearch v-model="products" :disabled="!!editingItemId" :show-quantity="true" :show-price="true"
+            :show-price-type="true" :is-sale="true" :currency-symbol="currencySymbol" v-model:discount="discount"
+            v-model:discountType="discountType" @update:subtotal="subtotal = $event"
+            @update:totalPrice="totalPrice = $event" required />
     </div>
-    <!-- Конец блока поиска товаров -->
-
-    <!-- {{ editingItem.id }} -->
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
@@ -267,12 +85,16 @@ import SaleProductDto from '@/dto/sale/SaleProductDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import debounce from 'lodash.debounce';
+import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
+import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 
 
 export default {
     components: {
         PrimaryButton,
-        AlertDialog
+        AlertDialog,
+        ClientSearch,
+        ProductSearch
     },
     props: {
         editingItem: {
@@ -300,24 +122,10 @@ export default {
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
-            // Поиск клиентов
-            clientSearch: '',
-            clientSearchLoading: false,
-            clientResults: [],
-            lastClients: [],
-            showDropdown: false,
-            // Поиск товаров
-            productSearch: '',
-            productSearchLoading: false,
-            productResults: [],
-            lastProducts: [],
-            showDropdownProduct: false,
-            ///
             allWarehouses: [],
             allProjects: [],
             allCashRegisters: [],
             currencies: [],
-
         }
     },
     created() {
@@ -325,8 +133,6 @@ export default {
         this.fetchAllProjects();
         this.fetchCurrencies();
         this.fetchAllCashRegisters();
-        this.fetchLastClients();
-        this.fetchLastProducts();
     },
     computed: {
         selectedCurrency() {
@@ -356,7 +162,6 @@ export default {
             const def = this.currencies.find(c => c.is_default);
             return def ? def.symbol : '';
         },
-
         currencySymbol() {
             return this.type === 'cash'
                 ? (this.selectedCash?.currency_symbol || '')
@@ -380,87 +185,13 @@ export default {
                 this.cashId = this.allCashRegisters[0].id;
             }
         },
-        async fetchLastClients() {
-            const paginated = await ClientController.getItems(1);
-            this.lastClients = paginated.items.slice(0, 10);
-        },
-        // Поиск клиентов
-        searchClients: debounce(async function () {
-            if (this.clientSearch.length >= 4) {
-                this.clientSearchLoading = true;
-                const results = await ClientController.search(this.clientSearch);
-                this.clientSearchLoading = false;
-                this.clientResults = results;
-            } else {
-                this.clientResults = [];
-            }
-        }, 250),
-
-        async fetchLastProducts() {
-            const prodPage = await ProductController.getItems(1, true)
-            const servPage = await ProductController.getItems(1, false)
-            this.lastProducts = [
-                ...prodPage.items,
-                ...servPage.items
-            ]
-                .sort((a, b) => {
-                    // сортировка по дате создания
-                    return new Date(b.created_at) - new Date(a.created_at)
-                })
-                .slice(0, 10)
-        },
-
-        searchProducts: debounce(async function () {
-            if (this.productSearch.length >= 4) {
-                this.productSearchLoading = true
-                this.productResults = await ProductController.searchItems(this.productSearch)
-                this.productSearchLoading = false
-            } else {
-                this.productResults = []
-            }
-        }, 250),
-        selectClient(client) {
-            this.showDropdown = false;
-            this.clientSearch = '';
-            this.clientResults = [];
-            this.selectedClient = client;
-            this.discount = client.discount || 0;
-            this.discountType = client.discountType || 'fixed';
-            console.log('Selected client:', client);
-        },
-        selectProduct(product) {
-            this.showDropdownProduct = false;
-            this.productSearch = '';
-            this.productResults = [];
-
-            const existing = this.products.find(p => p.productId === product.id);
-            if (existing) {
-                existing.quantity++;
-            } else {
-                const dto = SaleProductDto.fromProductDto(product, true);
-                dto.retail_price = product.retail_price;
-                dto.wholesale_price = product.wholesale_price;
-                dto.priceType = 'retail';
-                dto.price = dto.retail_price;
-                this.products.push(dto);
-            }
-
-            this.$refs.productInput.blur();
-            console.log('Selected product:', product);
-        },
-
         // метод-менялка цены при переключении
-        onPriceTypeChange(product) {
-            product.price = product.priceType === 'retail'
-                ? product.retail_price
-                : product.wholesale_price;
-        },
-        deselectClient() {
-            this.selectedClient = null;
-        },
-        removeSelectedProduct(id) {
-            this.products = this.products.filter(product => product.productId != id);
-        },
+        // onPriceTypeChange(product) {
+        //     product.price = product.priceType === 'retail'
+        //         ? product.retail_price
+        //         : product.wholesale_price;
+        // },
+
         async save() {
             this.saveLoading = true;
             try {
@@ -533,18 +264,8 @@ export default {
         closeDeleteDialog() {
             this.deleteDialog = false;
         }
-
     },
     watch: {
-        // Поиск клиентов
-        clientSearch: {
-            handler: 'searchClients',
-            immediate: true
-        },
-        productSearch: {
-            handler: 'searchProducts',
-            immediate: true
-        },
         type: {
             handler(newType) {
                 if (newType === 'balance') {
@@ -593,27 +314,4 @@ export default {
         }
     }
 }
-
 </script>
-
-<!-- Стили для поиска клиентов: -->
-<style scoped>
-.appear-enter-active,
-.appear-leave-active {
-    transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.appear-enter-from,
-.appear-leave-to {
-    transform: scaleY(0);
-    opacity: 0;
-    transform-origin: top;
-}
-
-.appear-enter-to,
-.appear-leave-from {
-    transform: scaleY(1);
-    opacity: 1;
-    transform-origin: top;
-}
-</style>

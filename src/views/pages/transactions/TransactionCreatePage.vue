@@ -21,7 +21,7 @@
         <div class="flex items-center space-x-2">
             <div class="w-full mt-2">
                 <label class="required">Сумма</label>
-                <input type="number" v-model="origAmount" :disabled="!!editingItemId" required  min="0.01"> 
+                <input type="number" v-model="origAmount" :disabled="!!editingItemId" required min="0.01">
             </div>
             <div class="w-full mt-2">
                 <label class="block mb-1 required">Валюта</label>
@@ -65,68 +65,7 @@
             <input type="datetime-local" v-model="date">
         </div>
         <!-- Начало блока поиска клиентов -->
-
-        <div v-if="selectedClient == null" class="relative">
-            <label class="block mb-1">Поиск клиента</label>
-            <input type="text" v-model="clientSearch" placeholder="Введите имя или номер клиента"
-                class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="showDropdown = false">
-            <transition name="appear">
-                <ul v-show="showDropdown"
-                    class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-                    <li v-if="clientSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
-                    <!-- <li v-else-if="clientSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li> -->
-                    <template v-else-if="clientSearch.length === 0">
-                        <li v-for="client in lastClients" :key="client.id" @mousedown.prevent="selectClient(client)"
-                            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                            <div class="flex justify-between">
-                                <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                                <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
-                            </div>
-                        </li>
-                    </template>
-                    <li v-else-if="clientSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
-                    <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
-                    <li v-for="client in clientResults" :key="client.id"
-                        @mousedown.prevent="() => { selectClient(client) }"
-                        class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                        <div class="flex justify-between">
-                            <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                            <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
-                        </div>
-                        <span
-                            :class="client.balance == 0 ? 'text-[#337AB7]' : client.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
-                            {{ client.balanceFormatted() }}
-                            <!-- {{ client.currencySymbol }} -->
-                            <span v-if="client.balanceNumeric() > 0">(Клиент должен нам)</span>
-                            <span v-else-if="client.balanceNumeric() < 0">(Мы должны клиенту)</span>
-                            <span v-else>(Взаимный расчет)</span>
-                        </span>
-                    </li>
-                </ul>
-            </transition>
-        </div>
-        <div v-else class=" mt-2">
-            <div class="p-2 pt-0 mt-2 border-2 border-gray-400/60 rounded-md">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <label>Клиент</label>
-                        <p><span class="font-semibold text-sm">Имя:</span> {{ selectedClient.fullName() }}</p>
-                        <p><span class="font-semibold text-sm">Номер:</span> {{ selectedClient.phones[0].phone }}</p>
-                        <p><span class="font-semibold text-sm">Баланс:</span>
-                            <span
-                                :class="selectedClient.balanceNumeric() == 0 ? 'text-[#337AB7]' : selectedClient.balanceNumeric() > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
-                                {{ selectedClient.balanceFormatted() }}
-                                <!-- {{ selectedClient.currencySymbol }} -->
-                                <span v-if="selectedClient.balanceNumeric() > 0">(Клиент должен нам)</span>
-                                <span v-else-if="selectedClient.balanceNumeric() < 0">(Мы должны клиенту)</span>
-                                <span v-else>(Взаимный расчет)</span>
-                            </span>
-                        </p>
-                    </div>
-                    <button v-on:click="deselectClient" class="text-red-500 text-2xl cursor-pointer">&times;</button>
-                </div>
-            </div>
-        </div>
+        <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
         <!-- Конец блока поиска клиентов -->
         <div class="mt-2">
             <label class="block mb-1">Проект</label>
@@ -157,12 +96,14 @@ import TransactionDto from '@/dto/transaction/TransactionDto';
 import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
 import TransactionController from '@/api/TransactionController';
+import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 
 
 export default {
     components: {
         PrimaryButton,
-        AlertDialog
+        AlertDialog,
+        ClientSearch,
     },
     props: {
         editingItem: {
@@ -196,12 +137,7 @@ export default {
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
-            // Поиск клиентов
-            clientSearch: '',
-            clientSearchLoading: false,
-            clientResults: [],
-            lastClients: [],
-            showDropdown: false
+          
         }
     },
     created() {
@@ -209,7 +145,6 @@ export default {
         this.fetchAllCategories();
         this.fetchAllProjects();
         this.fetchAllCashRegisters();
-        this.fetchLastClients();
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
@@ -232,34 +167,9 @@ export default {
                 this.cashId = this.allCashRegisters[0].id;
             }
         },
-        async fetchLastClients() {
-            const paginated = await ClientController.getItems(1);
-            this.lastClients = paginated.items.slice(0, 10);
-        },
-        // Поиск клиентов
-        searchClients: debounce(async function () {
-            if (this.clientSearch.length >= 4) {
-                this.clientSearchLoading = true;
-                const results = await ClientController.search(this.clientSearch);
-                this.clientSearchLoading = false;
-                this.clientResults = results;
-            } else {
-                this.clientResults = [];
-            }
-        }, 250),
-        selectClient(client) {
-            this.showDropdown = false;
-            this.clientSearch = '';
-            this.clientResults = [];
-            this.selectedClient = client;
-            console.log('Selected client:', client);
-        },
-        deselectClient() {
-            this.selectedClient = null;
-        },
         async save() {
             this.saveLoading = true;
-            
+
             try {
                 if (this.editingItemId != null) {
                     var resp = await TransactionController.updateItem(
@@ -331,11 +241,6 @@ export default {
 
     },
     watch: {
-        // Поиск клиентов
-        clientSearch: {
-            handler: 'searchClients',
-            immediate: true
-        },
         defaultCashId: {
             handler(i) {
                 this.cashId = this.defaultCashId;
@@ -391,25 +296,3 @@ export default {
 }
 
 </script>
-
-<!-- Стили для поиска клиентов: -->
-<style scoped>
-.appear-enter-active,
-.appear-leave-active {
-    transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.appear-enter-from,
-.appear-leave-to {
-    transform: scaleY(0);
-    opacity: 0;
-    transform-origin: top;
-}
-
-.appear-enter-to,
-.appear-leave-from {
-    transform: scaleY(1);
-    opacity: 1;
-    transform-origin: top;
-}
-</style>

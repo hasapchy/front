@@ -18,72 +18,9 @@
             <label>Примечание</label>
             <input type="text" v-model="note">
         </div>
-
-        <!-- Начало блока поиска товаров -->
-        <div class="relative">
-            <label class="block mb-1 required">Поиск товаров и услуг</label>
-            <input type="text" ref="productInput" v-model="productSearch" placeholder="Введите название или код товара"
-                class="w-full p-2 border rounded" @focus="showDropdownProduct = true"
-                @blur="showDropdownProduct = false" :disabled="!!editingItemId">
-            <transition name="appear">
-                <ul v-show="showDropdownProduct"
-                    class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-                    <li v-if="productSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
-                    <!-- <li v-else-if="productSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li> -->
-                    <template v-else-if="productSearch.length === 0">
-                        <li v-for="product in lastProducts" :key="product.id"
-                            @mousedown.prevent="selectProduct(product)"
-                            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center">
-                                    <span v-html="product.icons()"></span>
-                                    {{ product.name }}
-                                </div>
-                                <div class="text-[#337AB7]">{{ product.sku }}</div>
-                            </div>
-                        </li>
-                    </template>
-                    <li v-else-if="productSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
-                    <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
-                    <li v-else v-for="product in productResults" :key="product.id"
-                        @mousedown.prevent="selectProduct(product)"
-                        class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center">
-                                <span v-html="product.icons()"></span>
-                                {{ product.name }}
-                            </div>
-                            <div class="text-[#337AB7]">{{ product.sku }}</div>
-                        </div>
-                    </li>
-                </ul>
-            </transition>
-        </div>
-        <label class="block mt-4 mb-1">Указанные товары и услуги</label>
-        <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
-            <thead class="bg-gray-100 rounded-t-sm">
-                <tr>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">Название</th>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-20">Количество</th>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="(product, index) in products" :key="index" class="border-b border-gray-300">
-                    <td class="py-2 px-4 border-x border-gray-300">{{ product.productName }}</td>
-                    <td class="py-2 px-4 border-x border-gray-300">
-                        <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right">
-                    </td>
-                    <td class=" px-4 border-x border-gray-300">
-                        <button v-on:click="() => { removeSelectedProduct(product.productId) }"
-                            class="text-red-500 text-2xl cursor-pointer">&times;</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        <!-- Конец блока поиска товаров -->
+        <ProductSearch v-model="products" :disabled="!!editingItemId" :show-quantity="true" :only-products="true"
+            required />
     </div>
-    <!-- {{ editingItem.id }} -->
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
@@ -97,7 +34,6 @@
 
 <script>
 import AppController from '@/api/AppController';
-import ClientController from '@/api/ClientController';
 import ProductController from '@/api/ProductController';
 import WarehouseController from '@/api/WarehouseController';
 import WarehouseWriteoffDto from '@/dto/warehouse/WarehouseWriteoffDto';
@@ -106,12 +42,14 @@ import WarehouseWriteoffController from '@/api/WarehouseWriteoffController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import debounce from 'lodash.debounce';
+import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 
 
 export default {
     components: {
         PrimaryButton,
-        AlertDialog
+        AlertDialog,
+        ProductSearch
     },
     props: {
         editingItem: {
@@ -130,19 +68,12 @@ export default {
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
-            // Поиск товаров
-            productSearch: '',
-            productSearchLoading: false,
-            productResults: [],
-            lastProducts: [],
-            showDropdownProduct: false,
             ///
             allWarehouses: [],
         }
     },
     created() {
         this.fetchAllWarehouses();
-        this.fetchLastProducts();
     },
 
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
@@ -152,41 +83,6 @@ export default {
             if (!this.warehouseId && !this.editingItem && this.allWarehouses.length > 0) {
                 this.warehouseId = this.allWarehouses[0].id;
             }
-        },
-        async fetchLastProducts() {
-            const prodPage = await ProductController.getItems(1, true)
-            const servPage = await ProductController.getItems(1, false)
-            this.lastProducts = [
-                ...prodPage.items,
-                ...servPage.items
-            ]
-                .sort((a, b) => {
-                    // сортировка по дате создания
-                    return new Date(b.created_at) - new Date(a.created_at)
-                })
-                .slice(0, 10)
-        },
-        searchProducts: debounce(async function () {
-            if (this.productSearch.length >= 4) {
-                this.productSearchLoading = true;
-                const results = await ProductController.searchItems(this.productSearch);
-                this.productSearchLoading = false;
-                this.productResults = results;
-            } else {
-                this.productResults = [];
-            }
-        }, 250),
-
-        selectProduct(product) {
-            this.showDropdownProduct = false;
-            this.productSearch = '';
-            this.productResults = [];
-            this.products.push(WarehouseWriteoffProductDto.fromProductDto(product, true));
-            this.$refs.productInput.blur();
-        },
-
-        removeSelectedProduct(id) {
-            this.products = this.products.filter(product => product.productId != id);
         },
         async save() {
             this.saveLoading = true;
@@ -250,11 +146,6 @@ export default {
 
     },
     watch: {
-        // Поиск товаров
-        productSearch: {
-            handler: 'searchProducts',
-            immediate: true
-        },
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
@@ -273,25 +164,3 @@ export default {
 }
 
 </script>
-
-<!-- Стили для поиска клиентов: -->
-<style scoped>
-.appear-enter-active,
-.appear-leave-active {
-    transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.appear-enter-from,
-.appear-leave-to {
-    transform: scaleY(0);
-    opacity: 0;
-    transform-origin: top;
-}
-
-.appear-enter-to,
-.appear-leave-from {
-    transform: scaleY(1);
-    opacity: 1;
-    transform-origin: top;
-}
-</style>
