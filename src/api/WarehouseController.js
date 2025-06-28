@@ -7,7 +7,7 @@ export default class WarehouseController {
         try {
             const response = await api.get(`/warehouses?page=${page}`);
             const data = response.data;
-            console.log(data);
+            // console.log(data);
             // Преобразуем полученные данные в DTO
             const items = data.items.map(item => {
                 return new WarehouseDto(
@@ -32,7 +32,7 @@ export default class WarehouseController {
         try {
             const response = await api.get(`/warehouses/all`);
             const data = response.data;
-            console.log(data);
+            // console.log(data);
             // Преобразуем полученные данные в DTO
             const items = data.map(item => {
                 return new WarehouseDto(

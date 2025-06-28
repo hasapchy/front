@@ -7,7 +7,7 @@ export default class CategoryController {
         try {
             const response = await api.get(`/categories?page=${page}`);
             const data = response.data;
-            console.log(data);
+            // console.log(data);
             // Преобразуем полученные данные в DTO
             const items = data.items.map(item => {
                 return new CategoryDto(
@@ -36,7 +36,7 @@ export default class CategoryController {
         try {
             const response = await api.get(`/categories/all`);
             const data = response.data;
-            console.log(data);
+            // console.log(data);
             // Преобразуем полученные данные в DTO
             const items = data.map(item => {
                 return new CategoryDto(

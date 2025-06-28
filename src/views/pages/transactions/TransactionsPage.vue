@@ -146,7 +146,6 @@ export default {
                 this.loading = true;
             }
             try {
-                console.log('datefilter', this.dateFilter);
                 const new_data = await TransactionController.getItems(page, this.cashRegisterId, this.dateFilter);
                 this.data = new_data;
                 this.dateFilter = this.dateFilter;

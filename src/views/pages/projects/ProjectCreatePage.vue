@@ -13,7 +13,7 @@
         </div>
         <div>
             <label>Дата проекта</label>
-            <input type="datetime-local" v-model="date">
+            <input type="datetime-local" v-model="dateModel" />
         </div>
         <!-- Начало блока поиска клиентов -->
 
@@ -108,7 +108,8 @@
             <input type="file" multiple @change="handleFileChange" />
             <ul>
                 <li v-for="(file, index) in files" :key="index" class="flex items-center space-x-2">
-                    <a :href="file.url" :download="file.name" target="_blank" class="text-blue-600 hover:underline">
+                    <a :href="editingItem.getFileUrl(file)" :download="file.name" target="_blank"
+                        class="text-blue-600 hover:underline">
                         {{ file.name || file.path }}
                     </a>
                     <button @click="showDeleteFileDialog(index)"
@@ -165,6 +166,7 @@ export default {
             name: this.editingItem ? this.editingItem.name : '',
             budget: this.editingItem ? this.editingItem.budget : 0,
             date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
+            dateObj: this.editingItem ? new Date(this.editingItem.date) : new Date(),
             selectedUsers: this.editingItem ? this.editingItem.users.map(user => user.id.toString()) : [],
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
@@ -183,6 +185,18 @@ export default {
             uploading: false,
             deleteFileDialog: false,
             deleteFileIndex: -1,
+        }
+    },
+    computed: {
+        dateModel: {
+            get() {
+                const d = new Date(this.dateObj);
+                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                return d.toISOString().slice(0, 16);
+            },
+            set(val) {
+                this.dateObj = new Date(val);
+            }
         }
     },
     created() {
@@ -230,7 +244,7 @@ export default {
                 const payload = {
                     name: this.name,
                     budget: this.budget,
-                    date: this.date,
+                    date: this.dateObj.toISOString(),
                     client_id: this.selectedClient.id,
                     users: this.selectedUsers,
                 };

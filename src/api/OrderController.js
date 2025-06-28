@@ -1,16 +1,14 @@
 import api from "./axiosInstance";
-import SaleDto from "@/dto/sale/SaleDto";
+import OrderDto from "@/dto/order/OrderDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import ClientDto from "@/dto/client/ClientDto";
-import SaleProductDto from "@/dto/sale/SaleProductDto";
+import OrderProductDto from "@/dto/order/OrderProductDto";
 
-export default class SaleController {
+export default class OrderController {
   static async getItemsPaginated(page = 1) {
     try {
-      const response = await api.get(`/sales?page=${page}`);
+      const response = await api.get(`/orders?page=${page}`);
       const data = response.data;
-      // console.log(data);
-      // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {
         var client = null;
         if (item.client) {
@@ -37,9 +35,9 @@ export default class SaleController {
         var products = null;
         if (item.products) {
           products = item.products.map((product) => {
-            return new SaleProductDto(
+            return new OrderProductDto(
               product.id,
-              product.sale_id,
+              product.order_id,
               product.product_id,
               product.product_name,
               product.product_image,
@@ -51,26 +49,31 @@ export default class SaleController {
             );
           });
         }
-        return new SaleDto(
+        return new OrderDto(
           item.id,
           item.price,
-          item.discount,
+          item.discount ?? 0,
           item.total_price,
           item.currency_id,
           item.currency_name,
           item.currency_code,
           item.currency_symbol,
-          item.cash_id,
-          item.cash_name,
+          item.cash_id ?? null,
+          item.cash_name ?? null,
           item.warehouse_id,
           item.warehouse_name,
           item.user_id,
           item.user_name,
           item.project_id,
           item.project_name,
+          item.status_id,
+          item.status_name,
+          item.category_id,
+          item.category_name,
           client,
           products,
-          item.note,
+          item.note ?? "",
+          item.description ?? "",
           item.date,
           item.created_at,
           item.updated_at
@@ -85,37 +88,54 @@ export default class SaleController {
       );
       return paginatedResponse;
     } catch (error) {
-      console.error("Ошибка при получении списка продаж:", error);
+      console.error("Ошибка при получении списка заказов:", error);
       throw error;
     }
   }
+
   static async storeItem(item) {
     try {
-      const { data } = await api.post("/sales", item);
+      const { data } = await api.post("/orders", {
+        ...item,
+      });
       return data;
     } catch (error) {
-      console.error("Ошибка при создании продажи:", error);
+      console.error("Ошибка при создании заказа:", error);
       throw error;
     }
   }
 
   static async updateItem(id, item) {
     try {
-      const { data } = await api.put(`/sales/${id}`, item);
+      const { data } = await api.put(`/orders/${id}`, {
+        ...item,
+      });
       return data;
     } catch (error) {
-      console.error("Ошибка при обновлении продажи:", error);
+      console.error("Ошибка при обновлении заказа:", error);
       throw error;
     }
   }
 
   static async deleteItem(id) {
     try {
-      const { data } = await api.delete(`/sales/${id}`);
+      const { data } = await api.delete(`/orders/${id}`);
       return data;
     } catch (error) {
-      console.error("Ошибка при удалении продажи:", error);
+      console.error("Ошибка при удалении заказа:", error);
       throw error;
+    }
+  }
+  static async batchUpdateStatus({ ids, status_id }) {
+    try {
+      const { data } = await api.post("/orders/batch-status", {
+        ids,
+        status_id,
+      });
+      return data;
+    } catch (e) {
+      console.error("Ошибка пакетного обновления статуса:", e);
+      throw e;
     }
   }
 }

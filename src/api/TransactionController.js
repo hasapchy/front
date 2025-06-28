@@ -7,7 +7,8 @@ export default class TransactionController {
   static async getItems(
     page = 1,
     cash_id = null,
-    date_filter_type = "all_time"
+    date_filter_type = "all_time",
+    order_id = null
   ) {
     try {
       const response = await api.get("/transactions", {
@@ -15,10 +16,11 @@ export default class TransactionController {
           page: page,
           cash_id: cash_id,
           date_filter_type: date_filter_type,
+          order_id: order_id
         },
       });
       const data = response.data;
-      console.log(data);
+      // console.log(data);
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {
         var client = null;
@@ -59,6 +61,7 @@ export default class TransactionController {
           item.orig_currency_name,
           item.orig_currency_code,
           item.orig_currency_symbol,
+          item.order_id,
           item.user_id,
           item.user_name,
           item.category_id,

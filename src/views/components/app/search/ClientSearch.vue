@@ -106,7 +106,7 @@ export default {
                 .slice(0, 10);
         },
         searchClients: debounce(async function () {
-            if (this.clientSearch.length >= 4) {
+            if (this.clientSearch.length >= 3) {
                 this.clientSearchLoading = true;
                 const results = await ClientController.search(this.clientSearch);
                 this.clientSearchLoading = false;

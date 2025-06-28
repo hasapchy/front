@@ -8,7 +8,7 @@ export default class WarehouseMovementController {
         try {
             const response = await api.get(`/warehouse_movements?page=${page}`);
             const data = response.data;
-            console.log(data);
+            // console.log(data);
             // Преобразуем полученные данные в DTO
             const items = data.items.map(item => {
                 var products = null;

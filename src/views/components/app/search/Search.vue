@@ -10,22 +10,33 @@
 </template>
 
 <script>
-import { computed } from 'vue';
-import { useStore } from 'vuex';
+import { mapActions } from 'vuex';
 
 export default {
-    setup() {
-        const store = useStore();
-        const searchQuery = computed({
-            get: () => store.state.searchQuery,
-            set: (value) => store.dispatch('setSearchQuery', value),
-        });
-        return { searchQuery };
+    computed: {
+        searchQuery: {
+            get() {
+                return this.$store.state.searchQuery;
+            },
+            set(value) {
+                this.setSearchQuery(value);
+            }
+        }
+    },
+    watch: {
+        // при любом изменении маршрута сбрасываем поиск
+        $route() {
+            this.setSearchQuery('');
+        }
     },
     methods: {
+        ...mapActions({
+            setSearchQuery: 'setSearchQuery'
+        }),
         clearSearch() {
+
             this.searchQuery = '';
-        },
-    },
+        }
+    }
 };
 </script>

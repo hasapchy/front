@@ -18,15 +18,32 @@
         </draggable>
       </ul>
       <div class="flex flex-row-reverse">
-        <button @click="resetColumns" class="text-[#337AB7] hover:underline mr-3 cursor-pointer">Сбросить</button>
+        <PrimaryButton isLight @click="resetColumns" class="mr-3">Сбросить</PrimaryButton>
       </div>
     </TableFilterButton>
   </div>
-  <!-- Кнопка удалить -->
-  <div class="mb-4" v-if="selectedRows.length > 0">
-    <button @click="deleteSelectedRows" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
-      Удалить выбранные ({{ selectedRows.length }})
-    </button>
+
+  <!-- Панель действий сверху таблицы -->
+  <div v-if="selectedRows.length" class="mb-4 flex items-center gap-3">
+    <PrimaryButton isDanger @click="deleteSelectedRows" :icon="'fas fa-trash text-xs'">
+      Удалить ({{ selectedRows.length }})
+    </PrimaryButton>
+
+    <template v-if="allStatuses.length">
+      <div class="relative">
+        <PrimaryButton isInfo @click="showMenu = !showMenu" :icon="'fas fa-exchange-alt'">
+          Статус <i class="fas fa-chevron-down text-xs ml-1"></i>
+        </PrimaryButton>
+        <ul v-if="showMenu" @click.outside="showMenu = false"
+          class="absolute z-10 mt-1 w-48 bg-white border rounded shadow">
+          <li v-for="s in allStatuses" :key="s.id" @click="changeStatus(s.id)"
+            class="flex items-center justify-between px-3 py-2 hover:bg-gray-100 cursor-pointer">
+            <span>{{ s.name }}</span>
+            <i class="fas fa-check text-green-500 opacity-0 group-hover:opacity-100"></i>
+          </li>
+        </ul>
+      </div>
+    </template>
   </div>
 
   <!-- Таблица -->
@@ -54,7 +71,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr v-if="filteredData.length === 0" class="text-center">
+      <tr v-if="sortedData.length === 0" class="text-center">
         <td class="py-2 px-4 border-x border-gray-300" :colspan="columns.length + 1">
           Нет данных
         </td>
@@ -80,10 +97,10 @@
 <script>
 import { VueDraggableNext } from 'vue-draggable-next';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import PrimaryButton from '../buttons/PrimaryButton.vue';
 
 export default {
-  name: 'DragableTable',
-  components: { draggable: VueDraggableNext, TableFilterButton },
+  components: { draggable: VueDraggableNext, TableFilterButton, PrimaryButton },
   props: {
     tableKey: { type: String, required: true },
     columnsConfig: { type: Array, required: true },
@@ -91,6 +108,7 @@ export default {
     itemMapper: { type: Function, required: true },
     onItemClick: { type: Function },
     onDeleteRows: { type: Function },
+    allStatuses: { type: Array, default: () => [] },
     filterQuery: { type: String, default: '' },
   },
   data() {
@@ -104,49 +122,48 @@ export default {
       startWidth: 0,
       selectedRows: [],
       selectAll: false,
+      bulkStatusId: '',
+      showMenu: false,
     };
   },
   watch: {
     tableData() {
       this.selectedRows = [];
       this.selectAll = false;
-    },
-    filterQuery() {
-      this.selectedRows = [];
-      this.selectAll = false;
-    },
+    }
   },
   computed: {
     sortedData() {
-      if (!this.sortKey) {
-        return this.filteredData;
+      // 1) фильтрация по поисковому запросу (min 3 символа)
+      let data = this.tableData;
+      if (this.filterQuery && this.filterQuery.length >= 3) {
+        const q = this.filterQuery.toLowerCase();
+        data = data.filter(item =>
+          this.columns.some(col => {
+            const value = this.itemMapper(item, col.name);
+            return String(value).toLowerCase().includes(q);
+          })
+        );
       }
-      return [...this.filteredData].sort((a, b) => {
+
+      // 2) сортировка
+      if (!this.sortKey) {
+        return data;
+      }
+      return [...data].sort((a, b) => {
         const va = this.itemMapper(a, this.sortKey);
         const vb = this.itemMapper(b, this.sortKey);
         const da = Date.parse(va), db = Date.parse(vb);
         if (!isNaN(da) && !isNaN(db)) {
           return (da - db) * this.sortOrder;
         }
-        if (!isNaN(parseFloat(va)) && !isNaN(parseFloat(vb))) {
-          return (parseFloat(va) - parseFloat(vb)) * this.sortOrder;
+        const na = parseFloat(va), nb = parseFloat(vb);
+        if (!isNaN(na) && !isNaN(nb)) {
+          return (na - nb) * this.sortOrder;
         }
         return va.toString().localeCompare(vb.toString()) * this.sortOrder;
       });
-    },
-    filteredData() {
-      if (!this.filterQuery || this.filterQuery.trim().length < 2) {
-        return this.tableData;
-      }
-      const query = this.filterQuery.toLowerCase().trim();
-      return this.tableData.filter((item) => {
-        return this.columns.some((column) => {
-          if (!column.visible) return false;
-          const value = this.itemMapper(item, column.name)?.toString().toLowerCase() || '';
-          return value.includes(query);
-        });
-      });
-    },
+    }
   },
   methods: {
     loadColumns() {
@@ -218,7 +235,7 @@ export default {
         this.selectAll = false;
       }
     },
-    /* ---------- Паша.Это на случай, если ты начнешь смотреть ресайз колонок ---------- */
+    /* ---------- Новое от Эмиля.Это на случай, если ты начнешь смотреть ресайз колонок ---------- */
     startResize(e, index) {
       this.resizing = true;
       this.resizingColumn = index;
@@ -239,6 +256,27 @@ export default {
       this.saveColumns();
       document.removeEventListener('mousemove', this.onMouseMove);
       document.removeEventListener('mouseup', this.stopResize);
+    },
+    emitChangeStatus() {
+      if (!this.bulkStatusId) return;
+      this.$emit(
+        "change-status",
+        this.selectedRows.map(r => r.id),
+        this.bulkStatusId
+      );
+      this.bulkStatusId = '';
+      this.selectedRows = [];
+      this.selectAll = false;
+    },
+    changeStatus(statusId) {
+      this.showMenu = false;
+      this.$emit(
+        'change-status',
+        this.selectedRows.map(r => r.id),
+        statusId
+      );
+      this.selectedRows = [];
+      this.selectAll = false;
     },
   },
   mounted() {

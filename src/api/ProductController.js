@@ -7,7 +7,7 @@ export default class ProductController {
         try {
             const response = await api.get(`/${products ? 'products' : 'services'}?page=${page}`);
             const data = response.data;
-            console.log(data);
+            // console.log(data);
             // Преобразуем полученные данные в DTO
             const items = data.items.map(item => {
                 return new ProductDto({
@@ -55,7 +55,7 @@ export default class ProductController {
                 }
             });
             const data = response.data;
-            console.log(data);
+            // console.log(data);
             // Преобразуем полученные данные в DTO
             const items = data.map(item => {
                 return new ProductDto({

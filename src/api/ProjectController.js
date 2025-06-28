@@ -8,7 +8,7 @@ export default class ProjectController {
     try {
       const response = await api.get(`/projects?page=${page}`);
       const data = response.data;
-      console.log(data);
+      // console.log(data);
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {
         var client = null;
@@ -68,7 +68,7 @@ export default class ProjectController {
     try {
       const response = await api.get(`/projects/all`);
       const data = response.data;
-      console.log(data);
+      // console.log(data);
       // Преобразуем полученные данные в DTO
       const items = data.map((item) => {
         var client = null;

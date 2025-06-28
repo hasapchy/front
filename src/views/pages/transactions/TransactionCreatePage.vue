@@ -25,7 +25,7 @@
             </div>
             <div class="w-full mt-2">
                 <label class="block mb-1 required">Валюта</label>
-                <select v-model="currencyId" :disabled="!!editingItemId" required>
+                <select v-model="currencyIdComputed" :disabled="!!editingItemId" required>
                     <option value="">Нет</option>
                     <option v-if="currencies.length" v-for="parent in currencies" :value="parent.id">{{ parent.symbol }}
                         -
@@ -93,6 +93,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import debounce from 'lodash.debounce';
 import ProjectController from '@/api/ProjectController';
 import TransactionDto from '@/dto/transaction/TransactionDto';
+import ClientDto from '@/dto/client/ClientDto';
 import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
 import TransactionController from '@/api/TransactionController';
@@ -110,6 +111,18 @@ export default {
             type: TransactionDto,
             required: false,
             default: null
+        },
+        initialClient: {
+            type: ClientDto,
+            default: null
+        },
+        initialProjectId: {
+            type: [String, Number, null],
+            default: null
+        },
+        orderId: {
+            type: [String, Number],
+            required: false
         },
         defaultCashId: {
             type: Number,
@@ -137,7 +150,21 @@ export default {
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
-          
+
+        }
+    },
+    computed: {
+        currencyIdComputed: {
+            get() {
+                // при редактировании — оставить выбранную
+                if (this.editingItemId) return this.currencyId;
+                // иначе — валюта кассы
+                const cash = this.allCashRegisters.find(c => c.id === this.cashId);
+                return cash?.currency_id || '';
+            },
+            set(val) {
+                this.currencyId = val;
+            }
         }
     },
     created() {
@@ -145,6 +172,14 @@ export default {
         this.fetchAllCategories();
         this.fetchAllProjects();
         this.fetchAllCashRegisters();
+        if (!this.editingItem) {
+            if (this.initialClient) {
+                this.selectedClient = this.initialClient;
+            }
+            if (this.initialProjectId) {
+                this.projectId = this.initialProjectId;
+            }
+        }
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
@@ -185,15 +220,16 @@ export default {
                         type: this.type == "income" ? 1 : this.type == "outcome" ? 0 : null,
                         cash_id: this.cashId,
                         orig_amount: this.origAmount,
-                        currency_id: this.currencyId,
+                        currency_id: this.currencyIdComputed,
                         category_id: this.categoryId,
                         project_id: this.projectId,
                         date: this.date,
-                        client_id: this.selectedClient?.id
+                        client_id: this.selectedClient?.id,
+                        order_id: this.orderId
                     });
                 }
                 if (resp.message) {
-                    this.$emit('saved');
+                    this.$emit('saved', resp)
                     this.clearForm();
                 }
             } catch (error) {
@@ -224,7 +260,7 @@ export default {
             this.type = "income";
             this.cashId = this.allCashRegisters.length ? this.allCashRegisters[0].id : '';
             this.origAmount = 0;
-            this.currencyId = '';
+            //this.currencyId = '';
             this.categoryId = '';
             this.projectId = '';
             this.date = new Date().toISOString().substring(0, 16);
@@ -249,11 +285,10 @@ export default {
         },
         cashId: {
             handler(i) {
-                this.allCashRegisters.forEach(cash => {
-                    if (cash.id == this.cashId && cash.currency_id) {
-                        this.currencyId = cash.currency_id;
-                    }
-                });
+                if (!this.editingItemId) {
+                    const cash = this.allCashRegisters.find(c => c.id === i);
+                    this.currencyId = cash?.currency_id || '';
+                }
             },
             immediate: true
         },

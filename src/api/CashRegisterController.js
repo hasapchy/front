@@ -9,7 +9,7 @@ export default class CashRegisterController {
         try {
             const response = await api.get(`/cash_registers?page=${page}`);
             const data = response.data;
-            console.log(data);
+            // console.log(data);
             // Преобразуем полученные данные в DTO
             const items = data.items.map(item => {
                 return new CashRegisterDto(
@@ -39,7 +39,7 @@ export default class CashRegisterController {
         try {
             const response = await api.get(`/cash_registers/all`);
             const data = response.data;
-            console.log(data);
+            // console.log(data);
             // Преобразуем полученные данные в DTO
             const items = data.map(item => {
                 return new CashRegisterDto(
@@ -68,7 +68,7 @@ export default class CashRegisterController {
             if (cashIds.length !== 0) {
                 params['cash_register_ids'] = cashIds.join(',');
             }
-            console.log('cashIds', params);
+            // console.log('cashIds', params);
 
             const response = await api.get(`/cash_registers/balance`, 
                 {
@@ -76,7 +76,7 @@ export default class CashRegisterController {
             }
             );
             const data = response.data;
-            console.log(data);
+            // console.log(data);
             // Преобразуем полученные данные в DTO
             const items = data.map(item => {
                 return new CashRegisterBalanceDto(

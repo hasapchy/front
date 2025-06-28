@@ -18,6 +18,7 @@ import AdminServicesPage from "@/views/pages/admin/products/AdminServicesPage.vu
 import TransactionsPage from "@/views/pages/transactions/TransactionsPage.vue";
 import TransfersPage from "@/views/pages/transfers/TransfersPage.vue";
 import SalesPage from "@/views/pages/sales/SalesPage.vue";
+import OrdersPage from "@/views/pages/orders/OrdersPage.vue";
 
 const routes = [
   {
@@ -36,7 +37,13 @@ const routes = [
         path: "/sales",
         name: "Sales",
         component: SalesPage,
-        meta: { title: "Продажи", requiresAuth: true, showSearch: true},
+        meta: { title: "Продажи", requiresAuth: true, showSearch: true },
+      },
+      {
+        path: "/orders",
+        name: "Orders",
+        component: OrdersPage,
+        meta: { title: "Заказы", requiresAuth: true, showSearch: true },
       },
       {
         path: "/transactions",
@@ -190,7 +197,7 @@ router.beforeEach(async (to, from, next) => {
     next("/auth/login");
   } else {
     if (!to.meta.showSearch) {
-      store.dispatch("setSearchQuery", ""); 
+      store.dispatch("setSearchQuery", "");
     }
     next();
   }
