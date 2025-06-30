@@ -39,6 +39,12 @@ const routes = [
         component: SalesPage,
         meta: { title: "Продажи", requiresAuth: true, showSearch: true },
       },
+       {
+        path: "/orders",
+        name: "Orders",
+        component: OrdersPage,
+        meta: { title: "Заказы", requiresAuth: true, showSearch: true },
+      },
       {
         path: "/orders",
         name: "Orders",
