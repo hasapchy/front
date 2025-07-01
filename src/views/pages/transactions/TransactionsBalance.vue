@@ -25,14 +25,14 @@
 </template>
 <script>
 import CashRegisterController from '@/api/CashRegisterController';
+import dayjs from 'dayjs';
 
 export default {
     props: {
-        cashRegisterId: {
-            type: Number,
-            required: false,
-            default: null
-        }
+        cashRegisterId: { type: Number, default: null },
+        startDate: { type: String, default: null },
+        endDate: { type: String, default: null },
+        dateFilter: { type: String, default: 'all_time' }
     },
     data() {
         return {
@@ -41,33 +41,66 @@ export default {
         };
     },
     created() {
-        // this.fetchItems();
+        this.fetchItems();
     },
     methods: {
         async fetchItems() {
             this.loading = true;
             try {
-                if (this.cashRegisterId === null) {
-                    const new_data = await CashRegisterController.getCashBalace();
-                    this.data = new_data;
-                }else{
-                    const new_data = await CashRegisterController.getCashBalace([this.cashRegisterId]);
-                    this.data = new_data;
+                // 1. Вычисляем реальные start/end в зависимости от dateFilter
+                let start = null, end = null;
+                switch (this.dateFilter) {
+                    case 'today':
+                        start = end = dayjs().format('DD.MM.YYYY');
+                        break;
+                    case 'yesterday':
+                        start = end = dayjs().subtract(1, 'day').format('DD.MM.YYYY');
+                        break;
+                    case 'this_week':
+                        start = dayjs().startOf('isoWeek').format('DD.MM.YYYY');
+                        end = dayjs().endOf('isoWeek').format('DD.MM.YYYY');
+                        break;
+                    case 'last_week':
+                        start = dayjs().subtract(1, 'week').startOf('isoWeek').format('DD.MM.YYYY');
+                        end = dayjs().subtract(1, 'week').endOf('isoWeek').format('DD.MM.YYYY');
+                        break;
+                    case 'this_month':
+                        start = dayjs().startOf('month').format('DD.MM.YYYY');
+                        end = dayjs().endOf('month').format('DD.MM.YYYY');
+                        break;
+                    case 'last_month':
+                        start = dayjs().subtract(1, 'month').startOf('month').format('DD.MM.YYYY');
+                        end = dayjs().subtract(1, 'month').endOf('month').format('DD.MM.YYYY');
+                        break;
+                    case 'custom':
+                        start = this.startDate ? dayjs(this.startDate).format('DD.MM.YYYY') : null;
+                        end = this.endDate ? dayjs(this.endDate).format('DD.MM.YYYY') : null;
+                        break;
+                    case 'all_time':
+                    default:
+                    // оставляем start/end = null
                 }
-            } catch (e) {
-                console.log("Ошибка получения баланса касс", e);
+
+                // 2. Формируем cashIds
+                const cashIds = this.cashRegisterId !== null ? [this.cashRegisterId] : [];
+
+                // 3. Запрашиваем баланс с нужным диапазоном
+                this.data = await CashRegisterController.getCashBalance(
+                    cashIds,
+                    start,
+                    end
+                );
+            } finally {
+                this.loading = false;
             }
-            this.loading = false;
         }
     },
     watch: {
-        cashRegisterId: {
-            handler: function (val) {
-                this.fetchItems();
-            },
-            immediate: true
-        }
-    }
+        cashRegisterId: 'fetchItems',
+        dateFilter: 'fetchItems',
+        startDate: 'fetchItems',
+        endDate: 'fetchItems',
+    },
 }
 </script>
 <style>

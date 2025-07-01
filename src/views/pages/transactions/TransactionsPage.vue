@@ -13,12 +13,10 @@
                     </option>
                 </select>
 
-                <!-- @if ($dateFilter == 'custom')
-                <div class="flex space-x-2 items-center ml-4">
-                    <input type="date" wire:model.change="startDate" class="w-full p-2 border rounded">
-                    <input type="date" wire:model.change="endDate" class="w-full p-2 border rounded">
+                <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-4">
+                    <input type="date" v-model="startDate" @change="fetchItems" class="w-full p-2 border rounded" />
+                    <input type="date" v-model="endDate" @change="fetchItems" class="w-full p-2 border rounded" />
                 </div>
-                @endif -->
             </div>
             <div class="">
                 <select v-model="dateFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
@@ -29,19 +27,21 @@
                     <option value="this_month">Этот месяц</option>
                     <option value="last_week">Прошлая неделя</option>
                     <option value="last_month">Прошлый месяц</option>
-                    <!-- <option value="custom">Выбрать даты</option> -->
+                    <option value="custom">Выбрать даты</option>
                 </select>
             </div>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
-    <TransactionsBalance ref="balanceRef" :cash-register-id="cashRegisterId || null" />
+    <TransactionsBalance ref="balanceRef" :cash-register-id="cashRegisterId || null" :start-date="startDate"
+        :end-date="endDate" :date-filter="dateFilter" />
     <!-- Table with placeholder -->
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.transactions" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" @delete-rows="handleDeleteRows"  :filter-query="searchQuery"/>
+                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" @delete-rows="handleDeleteRows"
+                :filter-query="searchQuery" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
@@ -92,6 +92,8 @@ export default {
             // filters
             cashRegisterId: '',
             dateFilter: 'all_time',
+            startDate: null,
+            endDate: null,
             // table config
             columnsConfig: [
                 { name: 'id', label: '№', width: 'w-15' },
@@ -146,9 +148,23 @@ export default {
                 this.loading = true;
             }
             try {
-                const new_data = await TransactionController.getItems(page, this.cashRegisterId, this.dateFilter);
+                let new_data;
+                if (this.dateFilter === 'custom') {
+                    new_data = await TransactionController.getItems(
+                        page,
+                        this.cashRegisterId,
+                        this.dateFilter,
+                        this.startDate,
+                        this.endDate
+                    );
+                } else {
+                    new_data = await TransactionController.getItems(
+                        page,
+                        this.cashRegisterId,
+                        this.dateFilter
+                    );
+                }
                 this.data = new_data;
-                this.dateFilter = this.dateFilter;
             } catch (error) {
                 this.showNotification('Ошибка получения списка транзакций', error.message, true);
             }
@@ -156,6 +172,7 @@ export default {
                 this.loading = false;
             }
         },
+
         async handleDeleteRows(selectedRows) {
             if (!selectedRows.length) return;
 
