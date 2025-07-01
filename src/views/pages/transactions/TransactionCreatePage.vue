@@ -1,6 +1,11 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">Транзакция</h2>
+        <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
+        <div>
+            <label>Дата</label>
+            <input type="datetime-local" v-model="date">
+        </div>
         <div class="mt-2">
             <label class="block mb-1 required">Тип</label>
             <select v-model="type" :disabled="!!editingItemId" required>
@@ -54,19 +59,11 @@
             <label class="block mb-1">Категория</label>
             <select v-model="categoryId">
                 <option value="">Нет</option>
-                <option v-if="allCategories.length" v-for="parent in allCategories" :value="parent.id">{{
-                    parent.typeClass()
-                    }} {{ parent.name }}
-                </option>
+                <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">
+                     {{ cat.typeClass() }} {{ cat.name }}
+                     </option>
             </select>
         </div>
-        <div>
-            <label>Дата</label>
-            <input type="datetime-local" v-model="date">
-        </div>
-        <!-- Начало блока поиска клиентов -->
-        <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
-        <!-- Конец блока поиска клиентов -->
         <div class="mt-2">
             <label class="block mb-1">Проект</label>
             <select v-model="projectId">
@@ -165,6 +162,10 @@ export default {
             set(val) {
                 this.currencyId = val;
             }
+        },
+        filteredCategories() {
+            const wanted = this.type === 'income' ? 1 : 0;
+            return this.allCategories.filter(cat => cat.type === wanted);
         }
     },
     created() {
