@@ -97,10 +97,19 @@
             </div>
         </div>
     </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItemId" :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading"
-            icon="fas fa-remove">Удалить</PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
+    <div class="mt-4 p-4 flex flex-wrap items-center justify-between bg-[#edf4fb] gap-4">
+        <div class="flex space-x-2">
+            <PrimaryButton v-if="editingItemId" :onclick="showDeleteDialog" :is-danger="true"
+                :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
+            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
+        </div>
+        <div class="flex items-center space-x-4 text-sm font-medium text-gray-700">
+            <div>К оплате: <span class="font-bold">{{ totalPrice.toFixed(2) }}{{ currencySymbol }}</span></div>
+            <div>Оплачено: <span class="font-bold">{{ paidTotalAmount.toFixed(2) }}{{ currencySymbol }}</span></div>
+            <div>Осталось: <span class="font-bold">{{ (totalPrice - paidTotalAmount).toFixed(2) }}{{ currencySymbol
+            }}</span></div>
+
+        </div>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление заказа'" :confirm-text="'Удалить заказ'" :leave-text="'Отмена'" />
@@ -178,7 +187,8 @@ export default {
             deleteLoading: false,
             deleteDialog: false,
             transactionModal: false,
-            editingTransaction: null
+            editingTransaction: null,
+            paidTotalAmount: 0,
         };
     },
     created() {
@@ -219,7 +229,12 @@ export default {
         totalPrice() {
             return this.subtotal - this.discountAmount;
         },
-
+        paidTotal() {
+            return this.transactions.reduce((sum, t) => {
+                const amount = Number(t.amount || t.cash_amount || 0);
+                return sum + amount;
+            }, 0);
+        }
     },
     methods: {
         async fetchAllWarehouses() {
@@ -276,10 +291,12 @@ export default {
         handleTransactionSaved() {
             this.transactionModal = false;
             this.fetchTransactions();
+            this.fetchPaidTotal();
         },
         handleTransactionDeleted() {
             this.transactionModal = false;
             this.fetchTransactions();
+            this.fetchPaidTotal();
         },
         editTransaction(transaction) {
             this.editingTransaction = transaction;
@@ -289,8 +306,25 @@ export default {
             this.currentTab = tabName;
             if (tabName === 'transactions') {
                 this.fetchTransactions();
+                this.fetchPaidTotal();
             }
         },
+        async fetchPaidTotal() {
+            if (!this.editingItemId) {
+                this.paidTotalAmount = 0;
+                return;
+            }
+            try {
+                const resp = await TransactionController.getTotalPaidByOrderId(this.editingItemId);
+                console.log('fetchPaidTotal вызван с orderId =', this.editingItemId);
+                console.log('Ответ на /transactions/total:', resp);
+                this.paidTotalAmount = parseFloat(resp.total) || 0;
+            } catch (e) {
+                console.error('Ошибка при получении total:', e);
+                this.paidTotalAmount = 0;
+            }
+        },
+
         async save() {
             this.saveLoading = true;
             try {
@@ -357,6 +391,7 @@ export default {
             this.transactions = [];
             this.editingItemId = null;
             this.statusId = 1;
+            this.paidTotalAmount = 0;
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -398,9 +433,10 @@ export default {
                     this.products = newEditingItem.products || [];
                     this.currentTab = 'info';
                     this.editingItemId = newEditingItem.id || null;
-                    if (this.editingItemId) {
-                        this.fetchTransactions();
-                    }
+
+                    this.fetchTransactions();
+                    this.fetchPaidTotal();
+
                 } else {
                     this.clearForm();
                     this.currentTab = 'info';

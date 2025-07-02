@@ -18,41 +18,15 @@
         </draggable>
       </ul>
       <div class="flex flex-row-reverse">
-        <PrimaryButton isLight @click="resetColumns" class="mr-3">Сбросить</PrimaryButton>
+        <button @click="resetColumns" class="text-[#337AB7] hover:underline mr-3 cursor-pointer">Сбросить</button>
       </div>
     </TableFilterButton>
-  </div>
-
-  <!-- Панель действий сверху таблицы -->
-  <div v-if="selectedRows.length" class="mb-4 flex items-center gap-3">
-    <PrimaryButton isDanger @click="deleteSelectedRows" :icon="'fas fa-trash text-xs'">
-      Удалить ({{ selectedRows.length }})
-    </PrimaryButton>
-
-    <template v-if="allStatuses.length">
-      <div class="relative">
-        <PrimaryButton isInfo @click="showMenu = !showMenu" :icon="'fas fa-exchange-alt'">
-          Статус <i class="fas fa-chevron-down text-xs ml-1"></i>
-        </PrimaryButton>
-        <ul v-if="showMenu" @click.outside="showMenu = false"
-          class="absolute z-10 mt-1 w-48 bg-white border rounded shadow">
-          <li v-for="s in allStatuses" :key="s.id" @click="changeStatus(s.id)"
-            class="flex items-center justify-between px-3 py-2 hover:bg-gray-100 cursor-pointer">
-            <span>{{ s.name }}</span>
-            <i class="fas fa-check text-green-500 opacity-0 group-hover:opacity-100"></i>
-          </li>
-        </ul>
-      </div>
-    </template>
   </div>
 
   <!-- Таблица -->
   <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
     <thead class="bg-gray-100 rounded-t-sm">
-      <tr v-if="columns.length" class="dragArea list-group w-full">
-        <th class="border border-gray-300 py-2 px-4 w-12">
-          <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" class="cursor-pointer" />
-        </th>
+      <draggable v-if="columns.length" tag="tr" class="dragArea list-group w-full" :list="columns" @change="log">
         <th v-for="(element, index) in columns" :key="element.name"
           :class="{ hidden: !element.visible, relative: true }"
           class="text-left border border-gray-300 py-2 px-4 font-medium cursor-pointer select-none"
@@ -68,19 +42,16 @@
           <span v-if="element.visible" class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize"
             @mousedown.prevent="startResize($event, index)"></span>
         </th>
-      </tr>
+      </draggable>
     </thead>
     <tbody>
       <tr v-if="sortedData.length === 0" class="text-center">
-        <td class="py-2 px-4 border-x border-gray-300" :colspan="columns.length + 1">
+        <td class="py-2 px-4 border-x border-gray-300" :colspan="columns.length">
           Нет данных
         </td>
       </tr>
       <tr v-for="(item, idx) in sortedData" :key="idx" class="cursor-pointer hover:bg-gray-100 transition-all"
         :class="{ 'border-b border-gray-300': idx !== sortedData.length - 1 }" @click="() => itemClick(item)">
-        <td class="py-2 px-4 border-x border-gray-300 w-12">
-          <input type="checkbox" v-model="selectedRows" :value="item" class="cursor-pointer" @click.stop />
-        </td>
         <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`" class="py-2 px-4 border-x border-gray-300"
           :class="{ hidden: !column.visible }" :style="{ width: column.size ? column.size + 'px' : 'auto' }">
           <img v-if="column.image && itemMapper(item, column.name) !== null" :src="itemMapper(item, column.name)"
@@ -97,19 +68,16 @@
 <script>
 import { VueDraggableNext } from 'vue-draggable-next';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
-import PrimaryButton from '../buttons/PrimaryButton.vue';
 
 export default {
-  components: { draggable: VueDraggableNext, TableFilterButton, PrimaryButton },
+  name: 'ResizableTable',
+  components: { draggable: VueDraggableNext, TableFilterButton },
   props: {
     tableKey: { type: String, required: true },
     columnsConfig: { type: Array, required: true },
     tableData: { type: Array, required: true },
     itemMapper: { type: Function, required: true },
     onItemClick: { type: Function },
-    onDeleteRows: { type: Function },
-    allStatuses: { type: Array, default: () => [] },
-    filterQuery: { type: String, default: '' },
   },
   data() {
     return {
@@ -120,46 +88,22 @@ export default {
       resizingColumn: null,
       startX: 0,
       startWidth: 0,
-      selectedRows: [],
-      selectAll: false,
-      bulkStatusId: '',
-      showMenu: false,
     };
-  },
-  watch: {
-    tableData() {
-      this.selectedRows = [];
-      this.selectAll = false;
-    }
   },
   computed: {
     sortedData() {
-      // 1) фильтрация по поисковому запросу (min 3 символа)
-      let data = this.tableData;
-      if (this.filterQuery && this.filterQuery.length >= 3) {
-        const q = this.filterQuery.toLowerCase();
-        data = data.filter(item =>
-          this.columns.some(col => {
-            const value = this.itemMapper(item, col.name);
-            return String(value).toLowerCase().includes(q);
-          })
-        );
-      }
-
-      // 2) сортировка
       if (!this.sortKey) {
-        return data;
+        return this.tableData;
       }
-      return [...data].sort((a, b) => {
+      return [...this.tableData].sort((a, b) => {
         const va = this.itemMapper(a, this.sortKey);
         const vb = this.itemMapper(b, this.sortKey);
         const da = Date.parse(va), db = Date.parse(vb);
         if (!isNaN(da) && !isNaN(db)) {
           return (da - db) * this.sortOrder;
         }
-        const na = parseFloat(va), nb = parseFloat(vb);
-        if (!isNaN(na) && !isNaN(nb)) {
-          return (na - nb) * this.sortOrder;
+        if (!isNaN(parseFloat(va)) && !isNaN(parseFloat(vb))) {
+          return (parseFloat(va) - parseFloat(vb)) * this.sortOrder;
         }
         return va.toString().localeCompare(vb.toString()) * this.sortOrder;
       });
@@ -221,20 +165,7 @@ export default {
       }
       this.saveSort();
     },
-    toggleSelectAll() {
-      if (this.selectAll) {
-        this.selectedRows = [...this.sortedData];
-      } else {
-        this.selectedRows = [];
-      }
-    },
-    deleteSelectedRows() {
-      if (this.selectedRows.length > 0) {
-        this.$emit('delete-rows', this.selectedRows);
-        this.selectedRows = [];
-        this.selectAll = false;
-      }
-    },
+
     /* ---------- Новое от Эмиля.Это на случай, если ты начнешь смотреть ресайз колонок ---------- */
     startResize(e, index) {
       this.resizing = true;
@@ -256,27 +187,6 @@ export default {
       this.saveColumns();
       document.removeEventListener('mousemove', this.onMouseMove);
       document.removeEventListener('mouseup', this.stopResize);
-    },
-    emitChangeStatus() {
-      if (!this.bulkStatusId) return;
-      this.$emit(
-        "change-status",
-        this.selectedRows.map(r => r.id),
-        this.bulkStatusId
-      );
-      this.bulkStatusId = '';
-      this.selectedRows = [];
-      this.selectAll = false;
-    },
-    changeStatus(statusId) {
-      this.showMenu = false;
-      this.$emit(
-        'change-status',
-        this.selectedRows.map(r => r.id),
-        statusId
-      );
-      this.selectedRows = [];
-      this.selectAll = false;
     },
   },
   mounted() {

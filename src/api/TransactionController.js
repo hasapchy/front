@@ -16,7 +16,7 @@ export default class TransactionController {
           page: page,
           cash_id: cash_id,
           date_filter_type: date_filter_type,
-          order_id: order_id
+          order_id: order_id,
         },
       });
       const data = response.data;
@@ -118,6 +118,18 @@ export default class TransactionController {
   //         throw error;
   //     }
   // }
+
+  static async getTotalPaidByOrderId(orderId) {
+    try {
+      const response = await api.get(`/transactions/total`, {
+        params: { order_id: orderId },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Ошибка при получении оплаченной суммы:", error);
+      throw error;
+    }
+  }
 
   static async storeItem(item) {
     try {
