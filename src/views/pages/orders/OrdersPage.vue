@@ -13,8 +13,8 @@
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading" key="table">
             <DraggableTable table-key="admin.orders" :columns-config="columnsConfig" :table-data="data.items"
-                :filter-query="searchQuery" :item-mapper="itemMapper" :onItemClick="i => showModal(i)" :all-statuses="allStatuses"
-                @delete-rows="handleDeleteRows" @change-status="handleChangeStatus" />
+                :filter-query="searchQuery" :item-mapper="itemMapper" :onItemClick="i => showModal(i)"
+                :all-statuses="allStatuses" @delete-rows="handleDeleteRows" @change-status="handleChangeStatus" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i>
@@ -69,7 +69,17 @@ export default {
                 { name: 'id', label: '#' },
                 { name: 'date', label: 'Дата / Пользователь' },
                 { name: 'client', label: 'Клиент', html: true },
-                { name: 'statusName', label: 'Статус' },
+                {
+                    name: 'statusName',
+                    label: 'Статус',
+                    component: 'StatusSelectCell',
+                    props: (item) => ({
+                        id: item.id,
+                        value: item.statusId,
+                        allStatuses: this.allStatuses,
+                        onChange: (newStatusId) => this.handleChangeStatus([item.id], newStatusId),
+                    })
+                },
                 { name: 'categoryName', label: 'Категория' },
                 { name: 'cashName', label: 'Касса' },
                 { name: 'warehouseName', label: 'Склад' },

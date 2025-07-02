@@ -6,11 +6,15 @@
             <div v-show="currentTab === 'info'">
                 <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
                 <div>
-                    <label>Проект</label>
-                    <select v-model="projectId" :disabled="!!editingItemId">
+                    <label class="required">Категория</label>
+                    <select v-model="categoryId" required>
                         <option value="">Нет</option>
-                        <option v-for="parent in allProjects" :value="parent.id">{{ parent.name }}</option>
+                        <option v-for="parent in allCategories" :value="parent.id">{{ parent.name }}</option>
                     </select>
+                </div>
+                <div>
+                    <label>Дата</label>
+                    <input type="datetime-local" v-model="date" :disabled="!!editingItemId">
                 </div>
                 <div>
                     <label class="required">Касса</label>
@@ -25,32 +29,11 @@
                         class="w-full border rounded p-2"></textarea>
                 </div>
                 <div>
-                    <label class="required">Статус</label>
-                    <select v-model="statusId" required>
+                    <label>Проект</label>
+                    <select v-model="projectId" :disabled="!!editingItemId">
                         <option value="">Нет</option>
-                        <option v-for="s in allStatuses" :key="s.id" :value="s.id">
-                            {{ s.name }}
-                            <span v-if="s.category">({{ s.category.name }})</span>
-                        </option>
+                        <option v-for="parent in allProjects" :value="parent.id">{{ parent.name }}</option>
                     </select>
-                </div>
-                <div>
-                    <label class="required">Склад</label>
-                    <select v-model="warehouseId" required :disabled="!!editingItemId">
-                        <option value="">Нет</option>
-                        <option v-for="parent in allWarehouses" :value="parent.id">{{ parent.name }}</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="required">Категория</label>
-                    <select v-model="categoryId" required>
-                        <option value="">Нет</option>
-                        <option v-for="parent in allCategories" :value="parent.id">{{ parent.name }}</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Дата</label>
-                    <input type="datetime-local" v-model="date" :disabled="!!editingItemId">
                 </div>
                 <div>
                     <label>Примечание</label>
@@ -58,6 +41,13 @@
                 </div>
             </div>
             <div v-show="currentTab === 'products'">
+                <div>
+                    <label class="required">Склад</label>
+                    <select v-model="warehouseId" required :disabled="!!editingItemId">
+                        <option value="">Нет</option>
+                        <option v-for="parent in allWarehouses" :value="parent.id">{{ parent.name }}</option>
+                    </select>
+                </div>
                 <ProductSearch v-model="products" :show-quantity="true" :show-price="true" :show-price-type="true"
                     :is-sale="true" :currency-symbol="currencySymbol" v-model:discount="discount"
                     v-model:discountType="discountType" @update:subtotal="subtotal = $event"
@@ -107,7 +97,7 @@
             <div>К оплате: <span class="font-bold">{{ totalPrice.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Оплачено: <span class="font-bold">{{ paidTotalAmount.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Осталось: <span class="font-bold">{{ (totalPrice - paidTotalAmount).toFixed(2) }}{{ currencySymbol
-            }}</span></div>
+                    }}</span></div>
 
         </div>
     </div>

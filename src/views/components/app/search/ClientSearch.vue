@@ -1,7 +1,7 @@
 <template>
     <div>
         <div v-if="selectedClient == null" class="relative">
-            <label class="block mb-1" :class="{ 'required': required }">Поиск клиента</label>
+            <label class="block mb-1" :class="{ 'required': required }">Клиент</label>
             <input type="text" v-model="clientSearch" placeholder="Введите имя или номер клиента"
                 class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="showDropdown = false"
                 :disabled="disabled" />

@@ -51,13 +51,21 @@
         </td>
       </tr>
       <tr v-for="(item, idx) in sortedData" :key="idx" class="cursor-pointer hover:bg-gray-100 transition-all"
-        :class="{ 'border-b border-gray-300': idx !== sortedData.length - 1 }" @click="() => itemClick(item)">
+        :class="{ 'border-b border-gray-300': idx !== sortedData.length - 1 }" @click="(e) => itemClick(item, e)">
         <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`" class="py-2 px-4 border-x border-gray-300"
           :class="{ hidden: !column.visible }" :style="{ width: column.size ? column.size + 'px' : 'auto' }">
-          <img v-if="column.image && itemMapper(item, column.name) !== null" :src="itemMapper(item, column.name)"
-            width="50" class="rounded" />
-          <span v-else-if="column.html" v-html="itemMapper(item, column.name)"></span>
-          <span v-else>{{ itemMapper(item, column.name) }}</span>
+          <template v-if="column.component">
+            <component :is="column.component" v-bind="column.props?.(item)" />
+          </template>
+          <template v-else-if="column.image && itemMapper(item, column.name) !== null">
+            <img :src="itemMapper(item, column.name)" width="50" class="rounded" />
+          </template>
+          <template v-else-if="column.html">
+            <span v-html="itemMapper(item, column.name)"></span>
+          </template>
+          <template v-else>
+            <span>{{ itemMapper(item, column.name) }}</span>
+          </template>
         </td>
       </tr>
     </tbody>
@@ -68,10 +76,10 @@
 <script>
 import { VueDraggableNext } from 'vue-draggable-next';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
-
+import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 export default {
   name: 'ResizableTable',
-  components: { draggable: VueDraggableNext, TableFilterButton },
+  components: { draggable: VueDraggableNext, TableFilterButton, StatusSelectCell, },
   props: {
     tableKey: { type: String, required: true },
     columnsConfig: { type: Array, required: true },
@@ -105,7 +113,8 @@ export default {
         if (!isNaN(parseFloat(va)) && !isNaN(parseFloat(vb))) {
           return (parseFloat(va) - parseFloat(vb)) * this.sortOrder;
         }
-        return va.toString().localeCompare(vb.toString()) * this.sortOrder;
+        return (va ?? '').toString().localeCompare((vb ?? '').toString()) * this.sortOrder;
+
       });
     }
   },
@@ -113,7 +122,15 @@ export default {
     loadColumns() {
       const saved = localStorage.getItem(`tableColumns_${this.tableKey}`);
       if (saved) {
-        this.columns = JSON.parse(saved);
+        const savedColumns = JSON.parse(saved);
+        this.columns = savedColumns.map((savedCol) => {
+          const original = this.columnsConfig.find(c => c.name === savedCol.name) || {};
+          return {
+            ...savedCol,
+            component: original.component,
+            props: original.props,
+          };
+        });
       } else {
         this.columns = this.columnsConfig.map((col, index) => ({
           ...col,
@@ -123,6 +140,7 @@ export default {
         }));
       }
     },
+
 
     resetColumns() {
       this.columns = this.columnsConfig.map((col, index) => ({
@@ -147,7 +165,10 @@ export default {
       }));
       this.saveColumns();
     },
-    itemClick(i) {
+    itemClick(i, e) {
+      if (e?.target?.closest('.status-dropdown')) {
+        return;
+      }
       this.onItemClick?.(i);
     },
     saveSort() {

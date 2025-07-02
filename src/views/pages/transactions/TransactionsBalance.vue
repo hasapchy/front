@@ -12,7 +12,7 @@
                                 'text-[#EE4F47]': balance.type === 'outcome',
                                 'text-[#337AB7]': balance.type === 'default',
                                 'font-semibold text-lg': true
-                            }">{{ balance.value }}</span>
+                            }">{{ Number(balance.value).toFixed(2) }}</span>
                         </div>
                     </div>
                 </div>
