@@ -5,8 +5,9 @@
             <label class="block mb-1">Касса отправитель</label>
             <select v-model="cashIdFrom" :disabled="!!editingItemId">
                 <option value="">-- Выберите кассу --</option>
-                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id" :disabled="parent.id === cashIdTo">{{
-                    parent.name
+                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id"
+                    :disabled="parent.id === cashIdTo">{{
+                        parent.name
                     }}
                 </option>
             </select>
@@ -15,8 +16,9 @@
             <label class="block mb-1">Касса получатель</label>
             <select v-model="cashIdTo" :disabled="!!editingItemId">
                 <option value="">-- Выберите кассу --</option>
-                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id" :disabled="parent.id === cashIdFrom">{{
-                    parent.name
+                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id"
+                    :disabled="parent.id === cashIdFrom">{{
+                        parent.name
                     }}
                 </option>
             </select>
@@ -139,22 +141,21 @@ export default {
 
         },
         async deleteItem() {
-            // this.closeDeleteDialog();
-            // if (this.editingItemId == null) {
-            //     return;
-            // }
-            // this.deleteLoading = true;
-            // try {
-            //     var resp = await CategoryController.deleteItem(
-            //         this.editingItemId);
-            //     if (resp.message) {
-            //         this.$emit('deleted');
-            //         this.clearForm();
-            //     }
-            // } catch (error) {
-            //     this.$emit('deleted-error', error);
-            // }
-            // this.deleteLoading = false;
+            this.closeDeleteDialog();
+            if (this.editingItemId == null) {
+                return;
+            }
+            this.deleteLoading = true;
+            try {
+                const resp = await TransferController.deleteItem(this.editingItemId);
+                if (resp.message) {
+                    this.$emit('deleted');
+                    this.clearForm();
+                }
+            } catch (error) {
+                this.$emit('deleted-error', error);
+            }
+            this.deleteLoading = false;
         },
         clearForm() {
             this.type = "income";
