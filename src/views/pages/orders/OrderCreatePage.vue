@@ -97,7 +97,7 @@
             <div>К оплате: <span class="font-bold">{{ totalPrice.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Оплачено: <span class="font-bold">{{ paidTotalAmount.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Осталось: <span class="font-bold">{{ (totalPrice - paidTotalAmount).toFixed(2) }}{{ currencySymbol
-            }}</span></div>
+                    }}</span></div>
 
         </div>
     </div>
@@ -442,6 +442,8 @@ export default {
                     this.description = this.editingItem?.description || '';
                     this.products = newEditingItem.products || [];
                     // this.currentTab = 'info';
+                    this.discount = newEditingItem.discount || 0;
+                    this.discountType = newEditingItem.discount_type || 'fixed';
                     this.editingItemId = newEditingItem.id || null;
 
                     this.fetchTransactions();

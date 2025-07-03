@@ -17,8 +17,9 @@
                             </div>
                             <div class="text-[#337AB7] text-sm">
                                 <template v-if="product.type === true">
-                                   {{ console.log('stock_quantity:', product.stock_quantity) }} {{ product.unit?.short_name ||
-                                    product.unit_short_name || '' }}
+                                    {{ console.log('stock_quantity:', product.stock_quantity) }} {{
+                                        product.unit?.short_name ||
+                                        product.unit_short_name || '' }}
                                 </template>
                                 <template v-else>
                                     ∞
@@ -45,8 +46,9 @@
                         </div>
                         <div class="text-[#337AB7] text-sm">
                             <template v-if="product.type === true">
-                                {{ console.log('stock_quantity:', product.stock_quantity) }} {{ product.unit?.short_name || product.unit_short_name
-                                || '' }}
+                                {{ console.log('stock_quantity:', product.stock_quantity) }} {{ product.unit?.short_name
+                                    || product.unit_short_name
+                                    || '' }}
                             </template>
                             <template v-else>
                                 ∞
@@ -119,11 +121,11 @@
                         <div class="flex justify-end items-center space-x-2">
                             <label class="flex">Скидка</label>
                             <div class="relative">
-                                <input type="number" v-model.number="discount"
+                                <input type="number" v-model.number="discountLocal"
                                     class="w-24 p-1 text-right border rounded" :disabled="disabled"
                                     @input="updateTotals" />
                             </div>
-                            <select v-model="discountType" class="border ml-2 p-1 text-sm !w-14 text-center"
+                            <select v-model="discountTypeLocal" class="border ml-2 p-1 text-sm !w-14 text-center"
                                 :disabled="disabled" @change="updateTotals">
                                 <option value="percent">%</option>
                                 <option value="fixed">{{ currencySymbol }}</option>
@@ -203,6 +205,14 @@ export default {
             type: String,
             default: '',
         },
+        discount: {
+            type: Number,
+            default: 0
+        },
+        discountType: {
+            type: String,
+            default: 'fixed'
+        }
     },
     data() {
         return {
@@ -211,8 +221,8 @@ export default {
             productResults: [],
             lastProducts: [],
             showDropdown: false,
-            discount: 0,
-            discountType: 'fixed',
+            // discount: 0,
+            // discountType: 'fixed',
             modalCreateProduct: false,
             defaultProductType: 'product',
             defaultProductName: '',
@@ -240,6 +250,22 @@ export default {
         },
         totalPrice() {
             return this.subtotal - this.discountAmount;
+        },
+        discountLocal: {
+            get() {
+                return this.discount;
+            },
+            set(value) {
+                this.$emit('update:discount', value);
+            }
+        },
+        discountTypeLocal: {
+            get() {
+                return this.discountType;
+            },
+            set(value) {
+                this.$emit('update:discountType', value);
+            }
         },
     },
     created() {
