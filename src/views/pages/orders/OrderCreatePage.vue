@@ -97,7 +97,7 @@
             <div>К оплате: <span class="font-bold">{{ totalPrice.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Оплачено: <span class="font-bold">{{ paidTotalAmount.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Осталось: <span class="font-bold">{{ (totalPrice - paidTotalAmount).toFixed(2) }}{{ currencySymbol
-                    }}</span></div>
+            }}</span></div>
 
         </div>
     </div>
@@ -322,7 +322,8 @@ export default {
                     client_id: this.selectedClient?.id,
                     project_id: this.projectId || null,
                     cash_id: this.cashId || null,
-                    currency_id: this.currencyIdComputed || null,
+                    // currency_id: this.currencyIdComputed || null,
+                    currency_id: this.currencyId || null,
                     warehouse_id: this.warehouseId || null,
                     status_id: this.statusId || 1,
                     category_id: this.categoryId,
@@ -393,9 +394,28 @@ export default {
     watch: {
         cashId: {
             handler(newCashId) {
-                const selectedCash = this.allCashRegisters.find(cash => cash.id == newCashId);
-                if (selectedCash && selectedCash.currency_id) {
+                if (!newCashId || !this.allCashRegisters.length) return;
+                const selectedCash = this.allCashRegisters.find(c => c.id == newCashId);
+                if (selectedCash?.currency_id) {
                     this.currencyId = selectedCash.currency_id;
+                    console.log("💰 currencyId установлен по cashId:", this.currencyId);
+                }
+            },
+            immediate: true
+        },
+        allCashRegisters: {
+            handler(newCashRegisters) {
+                if (
+                    this.editingItem &&
+                    this.cashId &&
+                    !this.currencyId &&
+                    newCashRegisters.length
+                ) {
+                    const selectedCash = newCashRegisters.find(c => c.id == this.cashId);
+                    if (selectedCash?.currency_id) {
+                        this.currencyId = selectedCash.currency_id;
+                        console.log("✅ currencyId подставлен после загрузки касс:", this.currencyId);
+                    }
                 }
             },
             immediate: true
@@ -421,7 +441,7 @@ export default {
                     this.note = newEditingItem.note || '';
                     this.description = this.editingItem?.description || '';
                     this.products = newEditingItem.products || [];
-                    this.currentTab = 'info';
+                    // this.currentTab = 'info';
                     this.editingItemId = newEditingItem.id || null;
 
                     this.fetchTransactions();
@@ -429,7 +449,7 @@ export default {
 
                 } else {
                     this.clearForm();
-                    this.currentTab = 'info';
+                    // this.currentTab = 'info';
                 }
             },
             deep: true,

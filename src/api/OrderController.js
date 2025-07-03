@@ -107,9 +107,14 @@ export default class OrderController {
 
   static async updateItem(id, item) {
     try {
+      console.log("👉 Отправка обновления заказа:");
+      console.log("ID заказа:", id);
+      console.log("Payload:", JSON.stringify(item, null, 2)); // красиво отформатирован
+
       const { data } = await api.put(`/orders/${id}`, {
         ...item,
       });
+
       return data;
     } catch (error) {
       console.error("Ошибка при обновлении заказа:", error);

@@ -15,7 +15,16 @@
                                 <span v-html="product.icons()"></span>
                                 {{ product.name }}
                             </div>
-                            <div class="text-[#337AB7]">{{ product.sku }}</div>
+                            <div class="text-[#337AB7] text-sm">
+                                <template v-if="product.type === true">
+                                   {{ console.log('stock_quantity:', product.stock_quantity) }} {{ product.unit?.short_name ||
+                                    product.unit_short_name || '' }}
+                                </template>
+                                <template v-else>
+                                    ∞
+                                </template>
+                            </div>
+
                         </div>
                     </li>
                 </template>
@@ -34,7 +43,15 @@
                             <span v-html="product.icons()"></span>
                             {{ product.name }}
                         </div>
-                        <div class="text-[#337AB7]">{{ product.sku }}</div>
+                        <div class="text-[#337AB7] text-sm">
+                            <template v-if="product.type === true">
+                                {{ console.log('stock_quantity:', product.stock_quantity) }} {{ product.unit?.short_name || product.unit_short_name
+                                || '' }}
+                            </template>
+                            <template v-else>
+                                ∞
+                            </template>
+                        </div>
                     </div>
                 </li>
             </ul>
@@ -67,12 +84,12 @@
                         <div class="flex items-center space-x-2">
                             <input type="number" v-model.number="product.price" class="w-full p-1 text-right"
                                 :disabled="disabled" min="0.01" @input="updateTotals" />
-                            <select v-if="isSale && showPriceType" v-model="product.priceType"
+                            <!-- <select v-if="isSale && showPriceType" v-model="product.priceType"
                                 class="border p-1 text-sm w-20" :disabled="disabled"
                                 @change="onPriceTypeChange(product)">
                                 <option value="retail">Розн.</option>
                                 <option value="wholesale">Опт.</option>
-                            </select>
+                            </select> -->
                         </div>
                     </td>
                     <td v-if="showPriceType && !isReceipt && !isSale" class="py-2 px-4 border-x border-gray-300">
