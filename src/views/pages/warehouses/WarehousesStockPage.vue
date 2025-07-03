@@ -1,20 +1,21 @@
 <template>
     <!-- Добавить + пагинация -->
+    <!-- Верхняя панель фильтров -->
     <div class="flex justify-between items-center mb-2">
-        <div class="flex justify-start items-center">
-            <!-- <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить транзакцию</PrimaryButton> -->
-            <div class="mr-2">
-                <!-- <label class="block mb-1">Касса</label> -->
-                <select v-model="warehouseId" @change="fetchItems">'
+        <div class="flex items-center gap-4">
+            <!-- Селект склада -->
+            <div>
+                <select v-model="warehouseId" @change="fetchItems">
                     <option value="">Все склады</option>
                     <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">
                         {{ parent.name }}
                     </option>
                 </select>
             </div>
-            <div class="mr-2">
-                <!-- <label class="block mb-1">Касса</label> -->
-                <select v-model="categoryId" @change="fetchItems">'
+
+            <!-- Селект категории -->
+            <div>
+                <select v-model="categoryId" @change="fetchItems">
                     <option value="">Все категории</option>
                     <option v-if="allCategories.length" v-for="parent in allCategories" :value="parent.id">
                         {{ parent.name }}
@@ -22,10 +23,22 @@
                 </select>
             </div>
         </div>
-        <!-- <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить товар</PrimaryButton> -->
+
+        <!-- Пагинация справа -->
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
+
+    <!-- Кнопки "Добавить склад" и "Добавить товар" -->
+    <div class="flex gap-2 mb-4">
+        <PrimaryButton icon="fas fa-plus" :onclick="openCreateWarehouse">
+            Добавить склад
+        </PrimaryButton>
+        <PrimaryButton icon="fas fa-plus" :onclick="openCreateProduct">
+            Добавить товар
+        </PrimaryButton>
+    </div>
+
     <!-- Таблица с заглушкой -->
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
@@ -44,6 +57,15 @@
     <!-- Компонент уведомлений -->
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" />
+    <SideModalDialog :showForm="modalCreateWarehouse" :onclose="() => modalCreateWarehouse = false" :level="1">
+        <AdminWarehouseCreatePage @saved="onWarehouseSaved" @saved-error="() => modalCreateWarehouse = false" />
+    </SideModalDialog>
+
+    <SideModalDialog :showForm="modalCreateProduct" :onclose="() => modalCreateProduct = false" :level="1">
+        <AdminProductsCreatePage :editingItem="null" :defaultType="'product'" @saved="onProductSaved"
+            @saved-error="() => modalCreateProduct = false" />
+    </SideModalDialog>
+
 </template>
 
 <script>
@@ -56,6 +78,7 @@ import WarehouseStockController from '@/api/WarehouseStockController';
 import AdminProductsCreatePage from '@/views/pages/admin/products/AdminProductsCreatePage.vue';
 import CategoryController from '@/api/CategoryController';
 import WarehouseController from '@/api/WarehouseController';
+import AdminWarehouseCreatePage from '@/views/pages/admin/warehouses/AdminWarehouseCreatePage.vue';
 
 export default {
     components: {
@@ -64,7 +87,8 @@ export default {
         SideModalDialog,
         AdminProductsCreatePage,
         Pagination,
-        DraggableTable
+        DraggableTable,
+        AdminWarehouseCreatePage
     },
     data() {
         return {
@@ -81,6 +105,8 @@ export default {
             allCategories: [],
             warehouseId: '',
             categoryId: '',
+            modalCreateWarehouse: false,
+            modalCreateProduct: false,
             // table config
             columnsConfig: [
                 { name: 'id', label: '#' },
@@ -151,6 +177,24 @@ export default {
         closeModal() {
             // this.modalDialog = false;
         },
+        openCreateWarehouse() {
+            this.modalCreateWarehouse = true;
+        },
+        onWarehouseSaved() {
+            this.modalCreateWarehouse = false;
+            this.fetchAllWarehouses(); // обновим список
+            this.showNotification('Склад успешно добавлен', '');
+        },
+
+        openCreateProduct() {
+            this.modalCreateProduct = true;
+        },
+        onProductSaved() {
+            this.modalCreateProduct = false;
+            this.fetchItems(); // если нужно обновить таблицу
+            this.showNotification('Товар успешно добавлен', '');
+        }
+
         // handleSaved() {
         //     this.showNotification('Товар на складе успешно добавлен', '', false);
         //     this.fetchItems(this.data?.currentPage || 1, true);
