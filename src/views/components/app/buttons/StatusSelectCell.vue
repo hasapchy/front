@@ -1,31 +1,23 @@
 <template>
   <div ref="dropdownRef" class="relative text-sm w-full status-dropdown">
     <!-- Отображение выбранного -->
-    <div
-      class="p-2 rounded border cursor-pointer flex items-center justify-between"
-      :style="selectedStyle"
-      @click="toggleDropdown"
-    >
+    <div class="p-2 rounded border cursor-pointer flex items-center justify-between" :style="selectedStyle"
+      @click="toggleDropdown">
       <span class="truncate">{{ selectedStatus?.name || '—' }}</span>
       <i class="fas fa-chevron-down text-xs ml-2 text-gray-600"></i>
     </div>
 
     <!-- Выпадающий список -->
-    <ul
-      v-if="isOpen"
-      class="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-60 overflow-auto"
-    >
-      <li
-        v-for="s in allStatuses"
-        :key="s.id"
-        class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-        @click="selectStatus(s.id)"
-        :style="{ backgroundColor: getColorStyle(s), color: '#000' }"
-      >
-        <span>{{ s.name }}</span>
-        <!-- <span v-if="s.category?.name" class="text-xs text-gray-600 ml-2">({{ s.category.name }})</span> -->
-      </li>
+    <ul v-if="isOpen" class="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-60 overflow-auto">
+      <template v-for="group in sortedStatuses" :key="group.category?.id">
+        <li v-for="s in group.items" :key="s.id"
+          class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+          @click="selectStatus(s.id)" :style="{ backgroundColor: getColorStyle(s), color: '#000' }">
+          <span>{{ s.name }}</span>
+        </li>
+      </template>
     </ul>
+
   </div>
 </template>
 
@@ -57,6 +49,27 @@ export default {
         backgroundColor: `rgba(${r}, ${g}, ${b}, 0.2)`,
         color: '#000',
       };
+    },
+    sortedStatuses() {
+      const grouped = {};
+
+      for (const status of this.allStatuses) {
+        const catId = status.category?.id ?? 0;
+        if (!grouped[catId]) {
+          grouped[catId] = {
+            category: status.category,
+            items: [],
+          };
+        }
+        grouped[catId].items.push(status);
+      }
+
+      // Преобразуем в массив и сортируем по category.id
+      return Object.values(grouped).sort((a, b) => {
+        const aId = a.category?.id ?? 0;
+        const bId = b.category?.id ?? 0;
+        return aId - bId;
+      });
     }
   },
   methods: {
