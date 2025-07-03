@@ -110,15 +110,12 @@ export default {
         TabBar
     },
     props: {
-        editingItem: {
-            type: ClientDto,
-            required: false,
-            default: null
-        }
+        editingItem: { type: ClientDto, default: null },
+        defaultFirstName: { type: String, default: '' }
     },
     data() {
         return {
-            firstName: this.editingItem ? this.editingItem.firstName : '',
+            firstName: this.editingItem ? this.editingItem.firstName : this.defaultFirstName || '',
             lastName: this.editingItem ? this.editingItem.lastName : '',
             contactPerson: this.editingItem ? this.editingItem.contactPerson : '',
             clientType: this.editingItem ? this.editingItem.clientType : 'individual',
@@ -214,7 +211,7 @@ export default {
                 }
 
                 if (resp.message) {
-                    this.$emit('saved');
+                    this.$emit('saved', resp.item || clientData);
                     this.clearForm();
                 }
             } catch (error) {
@@ -264,9 +261,14 @@ export default {
         changeTab(tab) {
             this.currentTab = tab;
         },
-       
+
     },
     watch: {
+        defaultFirstName(newVal) {
+            if (!this.editingItem) {
+                this.firstName = newVal || '';
+            }
+        },
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {

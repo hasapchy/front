@@ -19,7 +19,12 @@
                         </li>
                     </template>
                     <li v-else-if="clientSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
-                    <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
+                    <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">Не найдено
+                        <button class="text-blue-600 underline ml-2 cursor-pointer"
+                            @mousedown.prevent="openCreateClientModal">
+                            Создать клиента "{{ clientSearch }}"
+                        </button>
+                    </li>
                     <li v-for="client in clientResults" :key="client.id" @mousedown.prevent="() => selectClient(client)"
                         class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
                         <div class="flex justify-between">
@@ -60,13 +65,24 @@
             </div>
         </div>
     </div>
+    <SideModalDialog :showForm="modalCreateClient" :onclose="() => modalCreateClient = false" :level="1">
+        <ClientCreatePage :editingItem="null" :defaultFirstName="defaultClientName" @saved="onClientCreated"
+            @saved-error="() => modalCreateClient = false" />
+    </SideModalDialog>
 </template>
 
 <script>
 import ClientController from '@/api/ClientController';
 import debounce from 'lodash.debounce';
+import ClientCreatePage from '@/views/pages/clients/ClientCreatePage.vue';
+import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import ClientDto from '@/dto/client/ClientDto';
 
 export default {
+    components: {
+        ClientCreatePage,
+        SideModalDialog,
+    },
     props: {
         onlySuppliers: {
             type: Boolean,
@@ -92,6 +108,8 @@ export default {
             clientResults: [],
             lastClients: [],
             showDropdown: false,
+            modalCreateClient: false,
+            defaultClientName: '',
         };
     },
     created() {
@@ -126,6 +144,16 @@ export default {
         deselectClient() {
             this.$emit('update:selectedClient', null);
         },
+        openCreateClientModal() {
+            this.defaultClientName = this.clientSearch;
+            this.modalCreateClient = true;
+        },
+        onClientCreated(newClient) {
+            this.modalCreateClient = false;
+            if (newClient) {
+                this.selectClient(ClientDto.fromApi(newClient));
+            }
+        }
     },
     watch: {
         clientSearch: {
