@@ -19,8 +19,13 @@
                         </div>
                     </li>
                 </template>
-                <li v-else-if="productSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
-                <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
+                <li v-else-if="productSearch.length < 3" class="p-2 text-gray-500">Минимум 3 символа</li>
+                <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">Не найдено
+                    <button class="text-blue-600 underline ml-2 cursor-pointer"
+                        @mousedown.prevent="openCreateProductModal">
+                        Создать "{{ productSearch }}"
+                    </button>
+                </li>
                 <li v-else v-for="product in productResults" :key="product.id"
                     @mousedown.prevent="selectProduct(product)"
                     class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
@@ -78,7 +83,7 @@
                     </td>
                     <td class="px-4 border-x border-gray-300">
                         <button @click="removeSelectedProduct(product.productId)"
-                            class="text-red-500 text-2xl cursor-pointer" :disabled="disabled">
+                            class="text-red-500 text-2xl cursor-pointer z-99" :disabled="disabled">
                             ×
                         </button>
                     </td>
@@ -120,6 +125,10 @@
             </tfoot>
         </table>
     </div>
+    <SideModalDialog :showForm="modalCreateProduct" :onclose="() => modalCreateProduct = false" :level="1">
+        <AdminProductsCreatePage :defaultType="defaultProductType" :defaultName="defaultProductName" :editingItem="null"
+            @saved="onProductCreated" @saved-error="() => modalCreateProduct = false" />
+    </SideModalDialog>
 </template>
 
 <script>
@@ -128,8 +137,14 @@ import debounce from 'lodash.debounce';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import WarehouseReceiptProductDto from '@/dto/warehouse/WarehouseReceiptProductDto';
 import SaleProductDto from '@/dto/sale/SaleProductDto';
+import AdminProductsCreatePage from '@/views/pages/admin/products/AdminProductsCreatePage.vue';
+import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 
 export default {
+    components: {
+        AdminProductsCreatePage,
+        SideModalDialog,
+    },
     props: {
         modelValue: {
             type: Array,
@@ -181,6 +196,9 @@ export default {
             showDropdown: false,
             discount: 0,
             discountType: 'fixed',
+            modalCreateProduct: false,
+            defaultProductType: 'product',
+            defaultProductName: '',
         };
     },
     computed: {
@@ -295,15 +313,28 @@ export default {
             console.log('Product removed, current products:', this.products);
         },
         handleBlur() {
-            setTimeout(() => {
+            // оставляем задержку, но уменьшаем, чтобы избежать конфликта
+            requestAnimationFrame(() => {
                 this.showDropdown = false;
-            }, 200);
-        },
+            });
+        }
+        ,
         updateTotals() {
             this.$emit('update:discount', this.discount);
             this.$emit('update:discountType', this.discountType);
             this.$emit('update:subtotal', this.subtotal);
             this.$emit('update:totalPrice', this.totalPrice);
+        },
+        openCreateProductModal() {
+            this.defaultProductType = this.onlyProducts ? 'product' : 'service';
+            this.defaultProductName = this.productSearch;
+            this.modalCreateProduct = true;
+        },
+        onProductCreated(newProduct) {
+            this.modalCreateProduct = false;
+            if (newProduct) {
+                this.selectProduct(newProduct);
+            }
         },
     },
     watch: {

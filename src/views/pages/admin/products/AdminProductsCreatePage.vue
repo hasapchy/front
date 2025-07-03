@@ -145,21 +145,14 @@ export default {
         AdminCategoryCreatePage
     },
     props: {
-        editingItem: {
-            type: ProductDto,
-            required: false,
-            default: null
-        },
-        defaultType: {
-            type: String,
-            required: false,
-            default: 'product'
-        }
+        editingItem: { type: ProductDto, required: false, default: null },
+        defaultType: { type: String, required: false, default: 'product' },
+        defaultName: { type: String, required: false, default: '' }
     },
     data() {
         return {
             type: this.editingItem ? this.editingItem.typeName() : this.defaultType || "product",
-            name: this.editingItem ? this.editingItem.name : '',
+            name: this.editingItem ? this.editingItem.name : this.defaultName || '',
             description: this.editingItem ? this.editingItem.description : '',
             sku: this.editingItem ? this.editingItem.sku : '',
             image: this.editingItem ? this.editingItem.image : '',
@@ -247,7 +240,7 @@ export default {
                     var resp = await ProductController.storeItem(item, this.$refs.imageInput?.files[0]);
                 }
                 if (resp.message) {
-                    this.$emit('saved');
+                    this.$emit('saved', resp.item || item);
                     this.clearForm();
                 }
             } catch (error) {
@@ -316,6 +309,11 @@ export default {
 
     },
     watch: {
+        defaultName(newVal) {
+            if (!this.editingItem && !this.editingItemId) {
+                this.name = newVal || '';
+            }
+        },
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
