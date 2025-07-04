@@ -93,7 +93,7 @@
                 :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
         </div>
-        <div class="flex items-center space-x-4 text-sm font-medium text-gray-700">
+        <div class="flex items-center space-x-4 font-medium text-gray-700">
             <div>К оплате: <span class="font-bold">{{ totalPrice.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Оплачено: <span class="font-bold">{{ paidTotalAmount.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Осталось: <span class="font-bold">{{ (totalPrice - paidTotalAmount).toFixed(2) }}{{ currencySymbol
@@ -129,6 +129,7 @@ import TransactionController from '@/api/TransactionController';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 
 export default {
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     components: {
         ClientSearch,
         ProductSearch,
@@ -306,8 +307,6 @@ export default {
             }
             try {
                 const resp = await TransactionController.getTotalPaidByOrderId(this.editingItemId);
-                console.log('fetchPaidTotal вызван с orderId =', this.editingItemId);
-                console.log('Ответ на /transactions/total:', resp);
                 this.paidTotalAmount = parseFloat(resp.total) || 0;
             } catch (e) {
                 console.error('Ошибка при получении total:', e);
@@ -398,7 +397,6 @@ export default {
                 const selectedCash = this.allCashRegisters.find(c => c.id == newCashId);
                 if (selectedCash?.currency_id) {
                     this.currencyId = selectedCash.currency_id;
-                    console.log("💰 currencyId установлен по cashId:", this.currencyId);
                 }
             },
             immediate: true
@@ -414,7 +412,6 @@ export default {
                     const selectedCash = newCashRegisters.find(c => c.id == this.cashId);
                     if (selectedCash?.currency_id) {
                         this.currencyId = selectedCash.currency_id;
-                        console.log("✅ currencyId подставлен после загрузки касс:", this.currencyId);
                     }
                 }
             },

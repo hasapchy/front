@@ -12,8 +12,8 @@
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.sales" :columns-config="columnsConfig" :table-data="data.items"
-                :filter-query="searchQuery" :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }"
-                @delete-rows="handleDeleteRows" />
+                 :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
+            <!--@delete-rows="handleDeleteRows" :filter-query="searchQuery" -->
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
@@ -37,6 +37,8 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import SaleController from '@/api/SaleController';
 import SaleCreatePage from '@/views/pages/sales/SaleCreatePage.vue';
+import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
+import { markRaw } from 'vue';
 
 export default {
     components: {
@@ -45,7 +47,8 @@ export default {
         SideModalDialog,
         Pagination,
         DraggableTable,
-        SaleCreatePage
+        SaleCreatePage,
+        ClientButtonCell,
     },
     data() {
         return {
@@ -61,7 +64,15 @@ export default {
             columnsConfig: [
                 { name: 'id', label: '#' },
                 { name: 'date', label: 'Дата' },
-                { name: 'client', label: 'Покупатель', html: true },
+                {
+                    name: 'client',
+                    label: 'Покупатель',
+                    component: markRaw(ClientButtonCell),
+                    props: (item) => ({
+                        client: item.client,
+
+                    })
+                },
                 { name: 'cashName', label: 'Касса' },
                 { name: 'warehouseName', label: 'Склад' },
                 { name: 'products', label: 'Товары', html: true },
@@ -76,11 +87,8 @@ export default {
     },
     methods: {
         itemMapper(i, c) {
-
             if (c === 'cashName') {
-                return i.cashName
-                    ? i.cashName
-                    : 'В долг (баланс)';
+                return i.cashNameDisplay();
             }
             switch (c) {
                 case 'products':
@@ -116,23 +124,23 @@ export default {
                 this.loading = false;
             }
         },
-        async handleDeleteRows(selectedRows) {
-            if (!selectedRows.length) return;
+        // async handleDeleteRows(selectedRows) {
+        //     if (!selectedRows.length) return;
 
-            this.loading = true;
-            try {
-                for (const row of selectedRows) {
-                    if (row.id) {
-                        await SaleController.deleteItem(row.id);
-                    }
-                }
-                await this.fetchItems(this.data?.currentPage || 1, true);
-                this.showNotification('Выбранные продажи успешно удалены', '', false);
-            } catch (error) {
-                this.showNotification('Ошибка при удалении продаж', error.message, true);
-            }
-            this.loading = false;
-        },
+        //     this.loading = true;
+        //     try {
+        //         for (const row of selectedRows) {
+        //             if (row.id) {
+        //                 await SaleController.deleteItem(row.id);
+        //             }
+        //         }
+        //         await this.fetchItems(this.data?.currentPage || 1, true);
+        //         this.showNotification('Выбранные продажи успешно удалены', '', false);
+        //     } catch (error) {
+        //         this.showNotification('Ошибка при удалении продаж', error.message, true);
+        //     }
+        //     this.loading = false;
+        // },
         showNotification(title, subtitle, isDanger = false) {
             this.notificationTitle = title;
             this.notificationSubtitle = subtitle;

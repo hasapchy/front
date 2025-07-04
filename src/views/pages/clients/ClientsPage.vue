@@ -9,7 +9,7 @@
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="common.clients" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" @delete-rows="handleDeleteRows"  :filter-query="searchQuery"/>
+                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }"   />  <!--@delete-rows="handleDeleteRows" :filter-query="searchQuery"-->
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
@@ -108,23 +108,23 @@ export default {
                 this.loading = false;
             }
         },
-        async handleDeleteRows(selectedRows) {
-            if (!selectedRows.length) return;
+        // async handleDeleteRows(selectedRows) {
+        //     if (!selectedRows.length) return;
 
-            this.loading = true;
-            try {
-                for (const row of selectedRows) {
-                    if (row.id) {
-                        await ClientController.deleteItem(row.id);
-                    }
-                }
-                await this.fetchItems(this.data?.currentPage || 1, true);
-                this.showNotification('Выбранные продажи успешно удалены', '', false);
-            } catch (error) {
-                this.showNotification('Ошибка при удалении продаж', error.message, true);
-            }
-            this.loading = false;
-        },
+        //     this.loading = true;
+        //     try {
+        //         for (const row of selectedRows) {
+        //             if (row.id) {
+        //                 await ClientController.deleteItem(row.id);
+        //             }
+        //         }
+        //         await this.fetchItems(this.data?.currentPage || 1, true);
+        //         this.showNotification('Выбранные продажи успешно удалены', '', false);
+        //     } catch (error) {
+        //         this.showNotification('Ошибка при удалении продаж', error.message, true);
+        //     }
+        //     this.loading = false;
+        // },
         showNotification(title, subtitle, isDanger = false) {
             this.notificationTitle = title;
             this.notificationSubtitle = subtitle;

@@ -37,7 +37,7 @@
     <!-- Модальное окно форма создания/редактирования -->
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
         <WarehousesMovementCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" :editingItem="editingItem" @delete-rows="handleDeleteRows"/>
+            @deleted-error="handleDeletedError" :editingItem="editingItem"/> <!--@delete-rows="handleDeleteRows" -->
     </SideModalDialog>
     <!-- Компонент уведомлений -->
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -113,23 +113,23 @@ export default {
                 this.loading = false;
             }
         },
-        async handleDeleteRows(selectedRows) {
-            if (!selectedRows.length) return;
+        // async handleDeleteRows(selectedRows) {
+        //     if (!selectedRows.length) return;
 
-            this.loading = true;
-            try {
-                for (const row of selectedRows) {
-                    if (row.id) {
-                        await SaleController.deleteItem(row.id);
-                    }
-                }
-                await this.fetchItems(this.data?.currentPage || 1, true);
-                this.showNotification('Выбранные продажи успешно удалены', '', false);
-            } catch (error) {
-                this.showNotification('Ошибка при удалении продаж', error.message, true);
-            }
-            this.loading = false;
-        },
+        //     this.loading = true;
+        //     try {
+        //         for (const row of selectedRows) {
+        //             if (row.id) {
+        //                 await SaleController.deleteItem(row.id);
+        //             }
+        //         }
+        //         await this.fetchItems(this.data?.currentPage || 1, true);
+        //         this.showNotification('Выбранные продажи успешно удалены', '', false);
+        //     } catch (error) {
+        //         this.showNotification('Ошибка при удалении продаж', error.message, true);
+        //     }
+        //     this.loading = false;
+        // },
         showNotification(title, subtitle, isDanger = false) {
             this.notificationTitle = title;
             this.notificationSubtitle = subtitle;

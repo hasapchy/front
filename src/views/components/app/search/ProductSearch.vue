@@ -17,9 +17,9 @@
                             </div>
                             <div class="text-[#337AB7] text-sm">
                                 <template v-if="product.type === true">
-                                    {{ console.log('stock_quantity:', product.stock_quantity) }} {{
+                                    <!-- {{ console.log('stock_quantity:', product.stock_quantity) }} {{
                                         product.unit?.short_name ||
-                                        product.unit_short_name || '' }}
+                                        product.unit_short_name || '' }} -->
                                 </template>
                                 <template v-else>
                                     ∞
@@ -46,9 +46,9 @@
                         </div>
                         <div class="text-[#337AB7] text-sm">
                             <template v-if="product.type === true">
-                                {{ console.log('stock_quantity:', product.stock_quantity) }} {{ product.unit?.short_name
+                                <!-- {{ console.log('stock_quantity:', product.stock_quantity) }} {{ product.unit?.short_name
                                     || product.unit_short_name
-                                    || '' }}
+                                    || '' }} -->
                             </template>
                             <template v-else>
                                 ∞
@@ -206,7 +206,6 @@ export default {
             default: '',
         },
         discount: {
-            type: Number,
             default: 0
         },
         discountType: {
@@ -286,9 +285,9 @@ export default {
                         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                         .slice(0, 10);
                 }
-                console.log('Last products fetched:', this.lastProducts);
+                // console.log('Last products fetched:', this.lastProducts);
             } catch (error) {
-                console.error('Error fetching last products:', error);
+                // console.error('Error fetching last products:', error);
                 this.lastProducts = [];
             }
         },
@@ -299,9 +298,9 @@ export default {
                     const results = await ProductController.searchItems(this.productSearch, this.onlyProducts ? true : null);
                     this.productResults = results;
                     this.productSearchLoading = false;
-                    console.log('Search results:', this.productResults);
+                    // console.log('Search results:', this.productResults);
                 } catch (error) {
-                    console.error('Error searching products:', error);
+                    // console.error('Error searching products:', error);
                     this.productResults = [];
                     this.productSearchLoading = false;
                 }
@@ -311,7 +310,7 @@ export default {
         }, 250),
         selectProduct(product) {
             try {
-                console.log('Selecting product:', product);
+                // console.log('Selecting product:', product);
                 this.showDropdown = false;
                 this.productSearch = '';
                 this.productResults = [];
@@ -339,9 +338,9 @@ export default {
                 }
                 this.updateTotals();
                 this.$refs.productInput.blur();
-                console.log('Product added/updated:', this.products);
+                // console.log('Product added/updated:', this.products);
             } catch (error) {
-                console.error('Error selecting product:', error);
+                // console.error('Error selecting product:', error);
             }
         },
         onPriceTypeChange(product) {
@@ -353,7 +352,7 @@ export default {
         removeSelectedProduct(id) {
             this.products = this.products.filter(product => product.productId !== id);
             this.updateTotals();
-            console.log('Product removed, current products:', this.products);
+            // console.log('Product removed, current products:', this.products);
         },
         handleBlur() {
             // оставляем задержку, но уменьшаем, чтобы избежать конфликта

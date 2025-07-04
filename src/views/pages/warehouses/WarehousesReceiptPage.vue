@@ -37,7 +37,7 @@
     <!-- Модальное окно форма создания/редактирования -->
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
         <WarehousesReceiptCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" :editingItem="editingItem" @delete-rows="handleDeleteRows" />
+            @deleted-error="handleDeletedError" :editingItem="editingItem"  /> <!--@delete-rows="handleDeleteRows" -->
     </SideModalDialog>
     <!-- Компонент уведомлений -->
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -52,7 +52,8 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
-
+import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
+import { markRaw } from 'vue';
 export default {
     components: {
         NotificationToast,
@@ -60,7 +61,8 @@ export default {
         SideModalDialog,
         Pagination,
         DraggableTable,
-        WarehousesReceiptCreatePage
+        WarehousesReceiptCreatePage,
+        ClientButtonCell,
     },
     data() {
         return {
@@ -76,8 +78,17 @@ export default {
             columnsConfig: [
                 { name: 'id', label: '#' },
                 { name: 'date', label: 'Дата' },
-                { name: 'client', label: 'Поставщик' },
+                {
+                    name: 'client',
+                    label: 'Поставщик',
+                    component: markRaw(ClientButtonCell),
+                    props: (item) => ({
+                        client: item.client,
+
+                    })
+                },
                 { name: 'warehouseName', label: 'Склад' },
+                { name: 'cashName', label: 'Касса' },
                 { name: 'products', label: 'Товары', html: true },
                 { name: 'amount', label: 'Общая стоимость' },
                 { name: 'note', label: 'Примечание' },
@@ -90,6 +101,9 @@ export default {
     },
     methods: {
         itemMapper(i, c) {
+            if (c === 'cashName') {
+                return i.cashNameDisplay();
+            }
             switch (c) {
                 case 'products':
                     return i.productsHtmlList();
@@ -97,6 +111,8 @@ export default {
                     return i.formatDate();
                 case 'client':
                     return i.client?.fullName() || 'Не указан';
+                case 'amount':
+                    return i.priceInfo();
                 default:
                     return i[c];
             }
@@ -115,23 +131,23 @@ export default {
                 this.loading = false;
             }
         },
-        async handleDeleteRows(selectedRows) {
-            if (!selectedRows.length) return;
+        // async handleDeleteRows(selectedRows) {
+        //     if (!selectedRows.length) return;
 
-            this.loading = true;
-            try {
-                for (const row of selectedRows) {
-                    if (row.id) {
-                        await SaleController.deleteItem(row.id);
-                    }
-                }
-                await this.fetchItems(this.data?.currentPage || 1, true);
-                this.showNotification('Выбранные продажи успешно удалены', '', false);
-            } catch (error) {
-                this.showNotification('Ошибка при удалении продаж', error.message, true);
-            }
-            this.loading = false;
-        },
+        //     this.loading = true;
+        //     try {
+        //         for (const row of selectedRows) {
+        //             if (row.id) {
+        //                 await SaleController.deleteItem(row.id);
+        //             }
+        //         }
+        //         await this.fetchItems(this.data?.currentPage || 1, true);
+        //         this.showNotification('Выбранные продажи успешно удалены', '', false);
+        //     } catch (error) {
+        //         this.showNotification('Ошибка при удалении продаж', error.message, true);
+        //     }
+        //     this.loading = false;
+        // },
         showNotification(title, subtitle, isDanger = false) {
             this.notificationTitle = title;
             this.notificationSubtitle = subtitle;

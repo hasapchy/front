@@ -51,7 +51,7 @@
                 <option value="">Нет</option>
                 <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">{{
                     parent.name
-                    }}
+                }}
                 </option>
             </select>
         </div>
@@ -214,6 +214,7 @@ export default {
                         price: p.price
                     }))
                 };
+                console.log('Saving sale with formData:', formData);
                 let resp;
                 if (this.editingItemId != null) {
                     resp = await SaleController.updateItem(this.editingItemId, formData);
@@ -270,6 +271,10 @@ export default {
             handler(newType) {
                 if (newType === 'balance') {
                     this.cashId = '';
+                    const defaultCurrency = this.currencies.find(c => c.is_default);
+                    if (defaultCurrency) {
+                        this.currencyId = defaultCurrency.id;
+                    }
                 }
             }
         },
@@ -295,7 +300,7 @@ export default {
                 if (newEditingItem) {
                     this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
                     this.note = newEditingItem.note || '';
-                    this.type = newEditingItem.type || 'cash';
+                    this.type = (newEditingItem.cashId || newEditingItem.transactionId) ? 'cash' : 'balance';
                     this.warehouseId = newEditingItem.warehouseId || (this.allWarehouses.length ? this.allWarehouses[0].id : '');
                     this.currencyId = newEditingItem.currencyId || '';
                     this.projectId = newEditingItem.projectId || '';

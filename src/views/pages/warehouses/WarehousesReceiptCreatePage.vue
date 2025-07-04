@@ -208,6 +208,7 @@ export default {
         }
     },
     watch: {
+        
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {

@@ -13,8 +13,8 @@
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading" key="table">
             <DraggableTable table-key="admin.orders" :columns-config="columnsConfig" :table-data="data.items"
-                :filter-query="searchQuery" :item-mapper="itemMapper" :onItemClick="i => showModal(i)"
-                :all-statuses="allStatuses" @delete-rows="handleDeleteRows" @change-status="handleChangeStatus" />
+                :item-mapper="itemMapper" :onItemClick="i => showModal(i)" />
+            <!--@delete-rows="handleDeleteRows" @change-status="handleChangeStatus" :all-statuses="allStatuses"  :filter-query="searchQuery"-->
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i>
@@ -41,7 +41,8 @@ import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import OrderController from '@/api/OrderController';
 import OrderCreatePage from '@/views/pages/orders/OrderCreatePage.vue';
 import AppController from '@/api/AppController';
-
+import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
+import { markRaw } from 'vue';
 
 export default {
     components: {
@@ -50,7 +51,8 @@ export default {
         PrimaryButton,
         Pagination,
         DraggableTable,
-        OrderCreatePage
+        OrderCreatePage,
+        ClientButtonCell
     },
     data() {
         return {
@@ -68,7 +70,26 @@ export default {
             columnsConfig: [
                 { name: 'id', label: '#' },
                 { name: 'date', label: 'Дата / Пользователь' },
-                { name: 'client', label: 'Клиент', html: true },
+                {
+                    name: 'client',
+                    label: 'Клиент',
+                    component: markRaw(ClientButtonCell),
+                    props: (item) => ({
+                        client: item.client,
+
+                    })
+                },
+
+                { name: 'discountInfo', label: 'Скидка', html: true },
+                {
+                    name: 'userName',
+                    label: 'Создал',
+                    component: 'UserNameCell',
+                    props: (item) => ({
+                        userId: item.userId,
+                        userName: item.userName
+                    })
+                },
                 {
                     name: 'statusName',
                     label: 'Статус',
@@ -155,22 +176,22 @@ export default {
             if (!silent) this.loading = false;
         },
 
-        async handleDeleteRows(selectedRows) {
-            if (!selectedRows.length) return;
-            this.loading = true;
-            try {
-                for (const row of selectedRows) {
-                    if (row.id) {
-                        await OrderController.deleteItem(row.id);
-                    }
-                }
-                await this.fetchItems(this.data.currentPage, true);
-                this.showNotification('Выбранные заказы удалены', '', false);
-            } catch (error) {
-                this.showNotification('Ошибка при удалении заказов', error.message, true);
-            }
-            this.loading = false;
-        },
+        // async handleDeleteRows(selectedRows) {
+        //     if (!selectedRows.length) return;
+        //     this.loading = true;
+        //     try {
+        //         for (const row of selectedRows) {
+        //             if (row.id) {
+        //                 await OrderController.deleteItem(row.id);
+        //             }
+        //         }
+        //         await this.fetchItems(this.data.currentPage, true);
+        //         this.showNotification('Выбранные заказы удалены', '', false);
+        //     } catch (error) {
+        //         this.showNotification('Ошибка при удалении заказов', error.message, true);
+        //     }
+        //     this.loading = false;
+        // },
 
         showModal(item = null) {
             this.modalDialog = true;

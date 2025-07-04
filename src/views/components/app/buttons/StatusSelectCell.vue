@@ -8,13 +8,14 @@
     </div>
 
     <!-- Выпадающий список -->
-    <ul v-if="isOpen" class="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-60 overflow-auto !text-[12px]">
+    <ul v-if="isOpen"
+      class="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-60 overflow-auto !text-[12px]">
       <template v-for="group in sortedStatuses" :key="group.category?.id">
-      <li v-for="s in group.items" :key="s.id"
-        class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-        @click="selectStatus(s.id)" :style="{ backgroundColor: getColorStyle(s), color: '#000' }">
-        <span>{{ s.name }}</span>
-      </li>
+        <li v-for="s in group.items" :key="s.id"
+          class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+          @click="selectStatus(s.id)" :style="{ backgroundColor: getColorStyle(s), color: '#000' }">
+          <span>{{ s.name }}</span>
+        </li>
       </template>
     </ul>
 

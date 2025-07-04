@@ -38,8 +38,8 @@
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.transactions" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" @delete-rows="handleDeleteRows"
-                :filter-query="searchQuery" />
+                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
+            <!--@delete-rows="handleDeleteRows"  :filter-query="searchQuery" -->
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
@@ -65,6 +65,8 @@ import TransactionController from '@/api/TransactionController';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import CashRegisterController from '@/api/CashRegisterController';
 import TransactionsBalance from '@/views/pages/transactions/TransactionsBalance.vue';
+import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
+import { markRaw } from 'vue';
 
 export default {
     components: {
@@ -74,7 +76,8 @@ export default {
         Pagination,
         DraggableTable,
         TransactionCreatePage,
-        TransactionsBalance
+        TransactionsBalance,
+        ClientButtonCell,
     },
     data() {
         return {
@@ -102,7 +105,15 @@ export default {
                 { name: 'categoryName', label: 'Категория' },
                 { name: 'note', label: 'Примечание' },
                 { name: 'projectName', label: 'Проект' },
-                { name: 'clientId', label: 'Клиент' },
+                {
+                    name: 'client',
+                    label: 'Клиент',
+                    component: markRaw(ClientButtonCell),
+                    props: (item) => ({
+                        client: item.client,
+
+                    })
+                },
                 { name: 'dateUser', label: 'Дата' },
             ],
         }
@@ -128,7 +139,7 @@ export default {
                     return i.cashAmountData();
                 case 'origAmount':
                     return i.origAmountData();
-                case 'clientId':
+                case 'client':
                     if (!i.client) return '';
                     const name = i.client.fullName();
                     const firstPhone = i.client.phones?.[0]?.phone;
@@ -170,24 +181,23 @@ export default {
                 this.loading = false;
             }
         },
+        // async handleDeleteRows(selectedRows) {
+        //     if (!selectedRows.length) return;
 
-        async handleDeleteRows(selectedRows) {
-            if (!selectedRows.length) return;
-
-            this.loading = true;
-            try {
-                for (const row of selectedRows) {
-                    if (row.id) {
-                        await TransactionController.deleteItem(row.id);
-                    }
-                }
-                await this.fetchItems(this.data?.currentPage || 1, true);
-                this.showNotification('Выбранные продажи успешно удалены', '', false);
-            } catch (error) {
-                this.showNotification('Ошибка при удалении продаж', error.message, true);
-            }
-            this.loading = false;
-        },
+        //     this.loading = true;
+        //     try {
+        //         for (const row of selectedRows) {
+        //             if (row.id) {
+        //                 await TransactionController.deleteItem(row.id);
+        //             }
+        //         }
+        //         await this.fetchItems(this.data?.currentPage || 1, true);
+        //         this.showNotification('Выбранные продажи успешно удалены', '', false);
+        //     } catch (error) {
+        //         this.showNotification('Ошибка при удалении продаж', error.message, true);
+        //     }
+        //     this.loading = false;
+        // },
         showNotification(title, subtitle, isDanger = false) {
             this.notificationTitle = title;
             this.notificationSubtitle = subtitle;
