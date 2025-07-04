@@ -1,6 +1,4 @@
 <template>
-    <!-- Cash registers balance -->
-    <!-- Add + Pagination -->
     <div class="flex justify-between items-center mb-4">
         <div class="flex justify-start items-center">
             <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить транзакцию</PrimaryButton>

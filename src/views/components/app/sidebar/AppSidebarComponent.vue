@@ -39,9 +39,9 @@
                 <SidebarLink to="/warehouses" icon="fa-solid fa-warehouse mr-2">
                     Склады
                 </SidebarLink>
-                <SidebarLink to="/components" icon="fa-solid fa-cogs mr-2">
+                <!-- <SidebarLink to="/components" icon="fa-solid fa-cogs mr-2">
                     Компоненты
-                </SidebarLink>
+                </SidebarLink> -->
                 <li class="mb-2">
                     <a href="#" @click="this.$store.state.settings_open = !this.$store.state.settings_open" id="settings-button" :class="['flex items-center p-2 hover:bg-[#53585C]', this.$store.state.settings_open ? 'bg-[#53585C] border-l-2 border-red-500' : '', 'transition-colors text-sm']">
                         <i class="fas fa-cogs mr-2"></i> Настройки

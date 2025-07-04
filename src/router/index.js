@@ -108,12 +108,12 @@ const routes = [
         component: ProjectsPage,
         meta: { title: "Проекты", requiresAuth: true },
       },
-      {
-        path: "/components",
-        name: "Components",
-        component: AppComponentsPage,
-        meta: { title: "Компоненты", requiresAuth: true },
-      },
+      // {
+      //   path: "/components",
+      //   name: "Components",
+      //   component: AppComponentsPage,
+      //   meta: { title: "Компоненты", requiresAuth: true },
+      // },
       {
         path: "/admin/warehouses",
         name: "Admin-Warehouses",

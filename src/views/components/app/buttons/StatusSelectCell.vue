@@ -1,20 +1,20 @@
 <template>
-  <div ref="dropdownRef" class="relative text-sm w-full status-dropdown">
+  <div ref="dropdownRef" class="relative text-sm w-full status-dropdown !text-[12px]">
     <!-- Отображение выбранного -->
-    <div class="p-2 rounded border cursor-pointer flex items-center justify-between" :style="selectedStyle"
+    <div class="p-2 rounded cursor-pointer flex items-center justify-between" :style="selectedStyle"
       @click="toggleDropdown">
       <span class="truncate">{{ selectedStatus?.name || '—' }}</span>
       <i class="fas fa-chevron-down text-xs ml-2 text-gray-600"></i>
     </div>
 
     <!-- Выпадающий список -->
-    <ul v-if="isOpen" class="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-60 overflow-auto">
+    <ul v-if="isOpen" class="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-60 overflow-auto !text-[12px]">
       <template v-for="group in sortedStatuses" :key="group.category?.id">
-        <li v-for="s in group.items" :key="s.id"
-          class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-          @click="selectStatus(s.id)" :style="{ backgroundColor: getColorStyle(s), color: '#000' }">
-          <span>{{ s.name }}</span>
-        </li>
+      <li v-for="s in group.items" :key="s.id"
+        class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+        @click="selectStatus(s.id)" :style="{ backgroundColor: getColorStyle(s), color: '#000' }">
+        <span>{{ s.name }}</span>
+      </li>
       </template>
     </ul>
 

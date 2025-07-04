@@ -1,11 +1,13 @@
 <template>
-    <!-- Добавить + пагинация -->
-    <!-- Верхняя панель фильтров -->
-    <div class="flex justify-between items-center mb-2">
-        <div class="flex items-center gap-4">
-            <!-- Селект склада -->
-            <div>
-                <select v-model="warehouseId" @change="fetchItems">
+    <div class="flex justify-between items-center mb-4">
+        <div class="flex justify-start items-center">
+            <!-- Кнопки -->
+            <PrimaryButton :onclick="openCreateWarehouse" icon="fas fa-plus">Добавить склад</PrimaryButton>
+            <PrimaryButton :onclick="openCreateProduct" icon="fas fa-plus" class="ml-2">Добавить товар</PrimaryButton>
+
+            <!-- Селекты -->
+            <div class="ml-4">
+                <select v-model="warehouseId" @change="fetchItems" class="p-2 border rounded">
                     <option value="">Все склады</option>
                     <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">
                         {{ parent.name }}
@@ -13,9 +15,8 @@
                 </select>
             </div>
 
-            <!-- Селект категории -->
-            <div>
-                <select v-model="categoryId" @change="fetchItems">
+            <div class="ml-2">
+                <select v-model="categoryId" @change="fetchItems" class="p-2 border rounded">
                     <option value="">Все категории</option>
                     <option v-if="allCategories.length" v-for="parent in allCategories" :value="parent.id">
                         {{ parent.name }}
@@ -24,20 +25,11 @@
             </div>
         </div>
 
-        <!-- Пагинация справа -->
+        <!-- Пагинация -->
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
 
-    <!-- Кнопки "Добавить склад" и "Добавить товар" -->
-    <div class="flex gap-2 mb-4">
-        <PrimaryButton icon="fas fa-plus" :onclick="openCreateWarehouse">
-            Добавить склад
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-plus" :onclick="openCreateProduct">
-            Добавить товар
-        </PrimaryButton>
-    </div>
 
     <!-- Таблица с заглушкой -->
     <transition name="fade" mode="out-in">
