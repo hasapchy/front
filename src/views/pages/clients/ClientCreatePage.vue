@@ -88,27 +88,8 @@
             <h3 class="text-md font-semibold mb-2">История баланса</h3>
             <div v-if="balanceLoading" class="text-gray-500">Загрузка...</div>
             <div v-else-if="balanceHistory.length === 0" class="text-gray-500">История отсутствует</div>
-            <table v-else class="min-w-full bg-white shadow-md rounded">
-                <thead class="bg-gray-100">
-                    <tr>
-                        <th class="border px-4 py-2">Дата</th>
-                        <th class="border px-4 py-2">Тип</th>
-                        <th class="border px-4 py-2">Описание</th>
-                        <th class="border px-4 py-2 text-right">Сумма</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="item in balanceHistory" :key="item.source + item.sourceId">
-                        <td class="border px-4 py-2">{{ item.formatDate() }}</td>
-                        <td class="border px-4 py-2">{{ item.label() }}</td>
-                        <td class="border px-4 py-2">{{ item.description }}</td>
-                        <td class="border px-4 py-2 text-right"
-                            :class="item.amount >= 0 ? 'text-green-600' : 'text-red-600'">
-                            {{ item.formattedAmount() }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <DraggableTable v-if="!balanceLoading && balanceHistory.length" table-key="client.balance"
+                :columns-config="columnsBalance" :table-data="balanceHistory" :item-mapper="itemMapperBalance" />
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -128,12 +109,14 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import Inputmask from 'inputmask';
 import ClientBalanceHistoryDto from '@/dto/client/ClientBalanceHistoryDto';
+import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 
 export default {
     components: {
         PrimaryButton,
         AlertDialog,
-        TabBar
+        TabBar,
+        DraggableTable
     },
     props: {
         editingItem: { type: ClientDto, default: null },
@@ -173,7 +156,12 @@ export default {
                     label: 'Баланс'
                 }
             ],
-
+            columnsBalance: [
+                { name: 'date', label: 'Дата', size: 140 },
+                { name: 'type', label: 'Тип' },
+                { name: 'description', label: 'Описание' },
+                { name: 'amount', label: 'Сумма', size: 120, html: true },
+            ],
         }
     },
     mounted() {
@@ -212,6 +200,20 @@ export default {
         },
         removeEmail(index) {
             this.emails.splice(index, 1);
+        },
+        itemMapperBalance(item, column) {
+            switch (column) {
+                case 'date':
+                    return item.formatDate?.() ?? item.date;
+                case 'type':
+                    return item.label?.() ?? item.type;
+                case 'description':
+                    return item.description;
+                case 'amount':
+                    return item.formatAmountWithColor?.() ?? item.amount;
+                default:
+                    return item[column];
+            }
         },
         async save() {
             this.saveLoading = true;
@@ -331,6 +333,7 @@ export default {
                     this.emails = newEditingItem.emails.map(email => email.email) || [];
                     this.discountType = newEditingItem.discountType ?? 'fixed';
                     this.discount = newEditingItem.discount ?? 0;
+                    this.currentTab = 'info';
                 } else {
                     this.clearForm();
                 }
