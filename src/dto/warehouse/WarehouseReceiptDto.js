@@ -8,27 +8,28 @@ export default class WarehouseReceiptDto {
     warehouseId,
     warehouseName,
     amount,
-    // currencyId,
     client = null,
     products = null,
     note = "",
     date = "",
     createdAt = "",
-    updatedAt = ""
+    updatedAt = "",
+    cashId = null,
+    cashName = null
   ) {
     this.id = id;
     this.warehouseId = warehouseId;
     this.warehouseName = warehouseName;
     this.amount = amount;
-    //Паша, переходим без выбора валюты this.currencyId = currencyId;
-    /** @type {ClientDto | null} */
     this.client = client;
-    /** @type {Array<WarehouseReceiptProductDto> | null} */
     this.products = products;
     this.note = note;
     this.date = date;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+
+    this.cashId = cashId;
+    this.cashName = cashName;
   }
 
   productsHtmlList() {
@@ -51,7 +52,11 @@ export default class WarehouseReceiptDto {
   }
 
   priceInfo() {
-    const symbol = this.currencySymbol || "m";
+    const symbol =
+      this.cash && this.cash.currency && this.cash.currency.symbol
+        ? this.cash.currency.symbol
+        : "m";
+
     const total = this.totalPrice ?? this.amount ?? this.price ?? 0;
     return `${total} ${symbol}`;
   }

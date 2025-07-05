@@ -3,87 +3,112 @@
         <h2 class="text-lg font-bold mb-4">Клиент</h2>
         <TabBar :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
         <div>
-            <label class="required">Тип клиента</label>
-            <select v-model="clientType">
-                <option value="individual">Индивидуальный</option>
-                <option value="company">Компания</option>
-            </select>
-        </div>
-        <div>
-            <label class="required">Имя</label>
-            <input type="text" v-model="firstName" required>
-        </div>
-        <div v-if="clientType === 'individual'">
-            <label>Фамилия</label>
-            <input type="text" v-model="lastName">
-        </div>
-        <div v-else>
-            <label>Контактное лицо</label>
-            <input type="text" v-model="contactPerson">
-        </div>
-        <div>
-            <label>Адрес</label>
-            <input type="text" v-model="address">
-        </div>
-        <div>
-            <label>Заметка</label>
-            <input type="text" v-model="note" />
-        </div>
-        <label>Характеристики</label>
-        <div class="flex flex-wrap gap-2">
-            <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-                <input type="checkbox" v-model="status">
-                <span>Активен</span>
-            </label>
-            <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-                <input type="checkbox" v-model="isSupplier">
-                <span>Поставщик</span>
-            </label>
-            <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-                <input type="checkbox" v-model="isConflict">
-                <span>Проблемный клиент</span>
-            </label>
-        </div>
-        <div>
-            <label class="required">Номер телефона</label>
-            <div class="flex items-center space-x-2">
-                <input type="text" v-model="newPhone" ref="phoneInput" @keyup.enter="addPhone" required>
-                <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addPhone" />
+            <div v-if="currentTab === 'info'" class="mb-4">
+                <div>
+                    <label class="required">Тип клиента</label>
+                    <select v-model="clientType">
+                        <option value="individual">Индивидуальный</option>
+                        <option value="company">Компания</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="required">Имя</label>
+                    <input type="text" v-model="firstName" required>
+                </div>
+                <div v-if="clientType === 'individual'">
+                    <label>Фамилия</label>
+                    <input type="text" v-model="lastName">
+                </div>
+                <div v-else>
+                    <label>Контактное лицо</label>
+                    <input type="text" v-model="contactPerson">
+                </div>
+                <div>
+                    <label>Адрес</label>
+                    <input type="text" v-model="address">
+                </div>
+                <div>
+                    <label>Заметка</label>
+                    <input type="text" v-model="note" />
+                </div>
+                <label>Характеристики</label>
+                <div class="flex flex-wrap gap-2">
+                    <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+                        <input type="checkbox" v-model="status">
+                        <span>Активен</span>
+                    </label>
+                    <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+                        <input type="checkbox" v-model="isSupplier">
+                        <span>Поставщик</span>
+                    </label>
+                    <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+                        <input type="checkbox" v-model="isConflict">
+                        <span>Проблемный клиент</span>
+                    </label>
+                </div>
+                <div>
+                    <label class="required">Номер телефона</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" v-model="newPhone" ref="phoneInput" @keyup.enter="addPhone" required>
+                        <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addPhone" />
+                    </div>
+                    <div v-for="(phone, index) in phones" :key="phone" class="flex items-center space-x-2 mt-2">
+                        <input type="text" :value="phone" readonly>
+                        <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" />
+                    </div>
+                </div>
+                <div>
+                    <label>Email</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" v-model="newEmail" @keyup.enter="addEmail">
+                        <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addEmail" />
+                    </div>
+                    <div v-for="(email, index) in emails" :key="email" class="flex items-center space-x-2 mt-2">
+                        <input type="text" :value="email" readonly>
+                        <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removeEmail(index)" />
+                    </div>
+                </div>
+                <div class="flex gap-4 w-full">
+                    <div class="flex flex-col w-full">
+                        <label>Тип скидки</label>
+                        <select v-model="discountType" class="w-full">
+                            <option value="">Выберите тип скидки</option>
+                            <option value="percent">Процентная</option>
+                            <option value="fixed">Фиксированная</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col w-full">
+                        <label>Скидка</label>
+                        <input type="number" v-model="discount" class="w-full" />
+                    </div>
+                </div>
             </div>
-            <div v-for="(phone, index) in phones" :key="phone" class="flex items-center space-x-2 mt-2">
-                <input type="text" :value="phone" readonly>
-                <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" />
-            </div>
-            <!-- <ul>
-            <li v-for="(phone, index) in phones" :key="phone" class="bg-gray-100 p-2 rounded my-2">
-                {{ phone }} <button @click="removePhone(index)">Удалить</button>
-                </li>
-            </ul> -->
         </div>
-        <div>
-            <label>Email</label>
-            <div class="flex items-center space-x-2">
-                <input type="text" v-model="newEmail" @keyup.enter="addEmail">
-                <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addEmail" />
-            </div>
-            <div v-for="(email, index) in emails" :key="email" class="flex items-center space-x-2 mt-2">
-                <input type="text" :value="email" readonly>
-                <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removeEmail(index)" />
-            </div>
-        </div>
-        <div class="flex gap-4 w-full">
-            <div class="flex flex-col w-full">
-                <label>Тип скидки</label>
-                <select v-model="discountType" class="w-full">
-                    <option value="">Выберите тип скидки</option>
-                    <option value="percent">Процентная</option>
-                    <option value="fixed">Фиксированная</option>
-                </select>
-            </div>
-            <div class="flex flex-col w-full">
-                <label>Скидка</label>
-                <input type="number" v-model="discount" class="w-full" />
-            </div>
+        <div v-show="currentTab === 'balance'" class="mt-4">
+            <h3 class="text-md font-semibold mb-2">История баланса</h3>
+            <div v-if="balanceLoading" class="text-gray-500">Загрузка...</div>
+            <div v-else-if="balanceHistory.length === 0" class="text-gray-500">История отсутствует</div>
+            <table v-else class="min-w-full bg-white shadow-md rounded">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="border px-4 py-2">Дата</th>
+                        <th class="border px-4 py-2">Тип</th>
+                        <th class="border px-4 py-2">Описание</th>
+                        <th class="border px-4 py-2 text-right">Сумма</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="item in balanceHistory" :key="item.source + item.sourceId">
+                        <td class="border px-4 py-2">{{ item.formatDate() }}</td>
+                        <td class="border px-4 py-2">{{ item.label() }}</td>
+                        <td class="border px-4 py-2">{{ item.description }}</td>
+                        <td class="border px-4 py-2 text-right"
+                            :class="item.amount >= 0 ? 'text-green-600' : 'text-red-600'">
+                            {{ item.formattedAmount() }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -102,6 +127,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import Inputmask from 'inputmask';
+import ClientBalanceHistoryDto from '@/dto/client/ClientBalanceHistoryDto';
 
 export default {
     components: {
@@ -133,18 +159,21 @@ export default {
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
+            balanceLoading: false,
+            balanceHistory: [],
             ///
-            currentTab: 'form',
+            currentTab: 'info',
             tabs: [
                 {
-                    name: 'form',
-                    label: 'Форма'
+                    name: 'info',
+                    label: 'Информация'
                 },
                 {
                     name: 'balance',
                     label: 'Баланс'
                 }
-            ]
+            ],
+
         }
     },
     mounted() {
@@ -250,6 +279,7 @@ export default {
             this.emails = [];
             this.discountType = 'fixed';
             this.discount = 0;
+            this.currentTab = 'info';
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -261,7 +291,23 @@ export default {
         changeTab(tab) {
             this.currentTab = tab;
         },
-
+        async fetchBalanceHistory() {
+            if (!this.editingItem) return;
+            this.balanceLoading = true;
+            try {
+                this.balanceHistory = await ClientController.getBalanceHistory(this.editingItem.id);
+            } catch (e) {
+                console.error('Ошибка при загрузке истории баланса:', e);
+                this.balanceHistory = [];
+            }
+            this.balanceLoading = false;
+        },
+        changeTab(tab) {
+            this.currentTab = tab;
+            if (tab === 'balance') {
+                this.fetchBalanceHistory();
+            }
+        }
     },
     watch: {
         defaultFirstName(newVal) {

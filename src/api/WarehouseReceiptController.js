@@ -9,7 +9,7 @@ export default class WarehouseReceiptController {
     try {
       const response = await api.get(`/warehouse_receipts?page=${page}`);
       const data = response.data;
-      // console.log(data);
+       console.log(data);
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {
         var client = null;
@@ -26,8 +26,8 @@ export default class WarehouseReceiptController {
             item.client.address,
             item.client.note,
             item.client.status,
-            item.client.discount_type, 
-            item.client.discount, 
+            item.client.discount_type,
+            item.client.discount,
             item.client.created_at,
             item.client.updated_at,
             item.client.emails,
@@ -57,13 +57,14 @@ export default class WarehouseReceiptController {
           item.warehouse_id,
           item.warehouse_name,
           item.amount,
-          // item.currency_id,
           client,
           products,
           item.note,
           item.date,
           item.created_at,
-          item.updated_at
+          item.updated_at,
+          item.cash_id,
+          item.cash_name,
         );
       });
 

@@ -143,19 +143,20 @@ export default {
                 var formData = {
                     client_id: this.selectedClient.id,
                     warehouse_id: this.warehouseId,
-                    currency_id: this.currencyId,
+                    // currency_id: this.currencyId,
                     note: this.note,
                     type: this.type,
                     cash_id: this.type === 'cash' ? this.cashId : null,
-                    currency_id: this.type === 'cash'
-                        ? (this.allCashRegisters.find(c => c.id === this.cashId)?.currency_id)
-                        : null,
+                    // currency_id: this.type === 'cash'
+                    //     ? (this.allCashRegisters.find(c => c.id === this.cashId)?.currency_id)
+                    //     : null,
                     products: this.products.map(product => ({
                         product_id: product.productId,
                         quantity: product.quantity,
                         price: product.price
                     }))
                 };
+                console.log('📦 formData', JSON.stringify(formData, null, 2));
                 if (this.editingItemId != null) {
                     var resp = await WarehouseReceiptController.updateReceipt(
                         this.editingItemId,
@@ -171,7 +172,6 @@ export default {
                 this.$emit('saved-error', error);
             }
             this.saveLoading = false;
-
         },
         async deleteItem() {
             this.closeDeleteDialog();
@@ -208,7 +208,7 @@ export default {
         }
     },
     watch: {
-        
+
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
