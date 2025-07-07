@@ -58,33 +58,18 @@
                     Сначала сохраните заказ, чтобы добавить/просматривать транзакции.
                 </div>
                 <div v-else>
-                    <PrimaryButton icon="fas fa-plus" :onclick="showTransactionModal" class="my-3">Добавить транзакцию
+                    <PrimaryButton icon="fas fa-plus" :onclick="showTransactionModal" class="my-3">
+                        Добавить транзакцию
                     </PrimaryButton>
-                    <table v-if="transactions.length" class="min-w-full bg-white shadow-md rounded mb-6 w-100">
-                        <thead class="bg-gray-100 rounded-t-sm">
-                            <tr class="dragArea list-group w-full">
-                                <th class="border border-gray-300 py-2 px-4 w-12">ID</th>
-                                <th class="border border-gray-300 py-2 px-4 w-12">Сумма</th>
-                                <th class="border border-gray-300 py-2 px-4 w-12">Касса</th>
-                                <th class="border border-gray-300 py-2 px-4 w-12">Дата</th>
-                                <th class="border border-gray-300 py-2 px-4 w-12">Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="t in transactions" :key="t.id">
-                                <td class="py-2 px-4 border-x border-gray-300">{{ t.id }}</td>
-                                <td v-html="t.cashAmountData()" class="py-2 px-4 border-x border-gray-300"></td>
-                                <td class="py-2 px-4 border-x border-gray-300">{{ t.cashName || '-' }}</td>
-                                <td class="py-2 px-4 border-x border-gray-300">{{ t.formatDate() }}</td>
-                                <td class="py-2 px-4 border-x border-gray-300">
-                                    <button @click="editTransaction(t)"><i class="fas fa-edit"></i></button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+
+                    <DraggableTable v-if="transactions.length" table-key="order.transactions"
+                        :columns-config="transactionsColumns" :table-data="transactions"
+                        :item-mapper="transactionItemMapper" :onItemClick="editTransaction" />
+
                     <div v-else class="text-gray-500">Транзакции отсутствуют</div>
                 </div>
             </div>
+
         </div>
     </div>
     <div class="mt-4 p-4 flex flex-wrap items-center justify-between bg-[#edf4fb] gap-4">
@@ -97,7 +82,7 @@
             <div>К оплате: <span class="font-bold">{{ totalPrice.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Оплачено: <span class="font-bold">{{ paidTotalAmount.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Осталось: <span class="font-bold">{{ (totalPrice - paidTotalAmount).toFixed(2) }}{{ currencySymbol
-                    }}</span></div>
+            }}</span></div>
 
         </div>
     </div>
@@ -127,6 +112,8 @@ import ProjectController from '@/api/ProjectController';
 import AppController from '@/api/AppController';
 import TransactionController from '@/api/TransactionController';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
+import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+
 
 export default {
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
@@ -137,7 +124,8 @@ export default {
         AlertDialog,
         SideModalDialog,
         TransactionCreatePage,
-        TabBar
+        TabBar,
+        DraggableTable
     },
     props: {
         editingItem: {
@@ -180,6 +168,13 @@ export default {
             transactionModal: false,
             editingTransaction: null,
             paidTotalAmount: 0,
+            transactionsColumns: [
+                { name: 'id', label: 'ID' },
+                { name: 'amount', label: 'Сумма', html: true },
+                { name: 'cashName', label: 'Касса' },
+                { name: 'date', label: 'Дата' },
+            ],
+
         };
     },
     created() {
@@ -388,7 +383,20 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
+        },
+        transactionItemMapper(item, field) {
+            switch (field) {
+                case 'amount':
+                    return item.cashAmountData?.() || '-';
+                case 'cashName':
+                    return item.cashName || '-';
+                case 'date':
+                    return item.formatDate?.() || '-';
+                default:
+                    return item[field];
+            }
         }
+
     },
     watch: {
         cashId: {
