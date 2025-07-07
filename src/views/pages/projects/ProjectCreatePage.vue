@@ -228,7 +228,6 @@ export default {
             this.clientSearch = '';
             this.clientResults = [];
             this.selectedClient = client;
-            console.log('Selected client:', client);
         },
         deselectClient() {
             this.selectedClient = null;
@@ -262,8 +261,6 @@ export default {
                 this.$emit('saved-error', error);
             }
             this.saveLoading = false;
-            console.log('Отправляем данные на сервер:', payload);
-            console.log('Ответ от сервера:', resp);
         },
         async deleteItem() {
         },
@@ -301,13 +298,10 @@ export default {
                 const response = await api.post(`/projects/${this.editingItemId}/upload-files`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
-                console.log('Ответ сервера:', response.data);
                 this.files = response.data.files;
-                console.log('Обновленные файлы:', this.files);
                 event.target.value = '';
             } catch (e) {
                 alert('Ошибка загрузки файлов');
-                console.error('Ошибка:', e);
             }
             this.uploading = false;
         },
@@ -335,11 +329,9 @@ export default {
                 const response = await api.post(`/projects/${this.editingItemId}/delete-file`, {
                     path: file.path
                 });
-                console.log('Ответ сервера:', response.data);
                 this.files = response.data.files; // Обновляем список файлов
             } catch (e) {
                 alert('Ошибка удаления файла');
-                console.error('Ошибка:', e);
             }
 
             this.closeDeleteFileDialog(); // Закрываем диалог
@@ -356,7 +348,6 @@ export default {
                 this.files = response.data.files;
             } catch (e) {
                 alert('Ошибка удаления файла');
-                console.error(e);
             }
         },
     },

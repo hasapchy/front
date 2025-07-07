@@ -30,7 +30,8 @@
         <th v-for="(element, index) in columns" :key="element.name"
           :class="{ hidden: !element.visible, relative: true }"
           class="text-left border border-gray-300 py-2 px-4 font-medium cursor-pointer select-none"
-          :style="{ width: element.size ? element.size + 'px' : 'auto' }" @click.prevent="sortBy(element.name)">
+          :style="{ width: element.size ? element.size + 'px' : 'auto' }" @dblclick.prevent="sortBy(element.name)"
+          :title="'Кликните 2 раза по ' + element.label + ' для сортировки'">
           <span>{{ element.label }}</span>
           <span v-if="sortKey === element.name" class="ml-1">
             <i v-if="sortOrder === 1" class="fas fa-sort-up"></i>
@@ -77,6 +78,7 @@
 import { VueDraggableNext } from 'vue-draggable-next';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
+import dayjs from 'dayjs';
 export default {
   name: 'ResizableTable',
   components: { draggable: VueDraggableNext, TableFilterButton, StatusSelectCell, },
@@ -103,20 +105,29 @@ export default {
       if (!this.sortKey) {
         return this.tableData;
       }
+
       return [...this.tableData].sort((a, b) => {
+        // 1. Отдельная логика сортировки по дате
+        if (this.sortKey === 'dateUser') {
+          return (
+            (dayjs(a.date).valueOf() - dayjs(b.date).valueOf()) *
+            this.sortOrder
+          );
+        }
+
         const va = this.itemMapper(a, this.sortKey);
         const vb = this.itemMapper(b, this.sortKey);
-        const da = Date.parse(va), db = Date.parse(vb);
-        if (!isNaN(da) && !isNaN(db)) {
-          return (da - db) * this.sortOrder;
-        }
+
+        // 2. Числовая сортировка
         if (!isNaN(parseFloat(va)) && !isNaN(parseFloat(vb))) {
           return (parseFloat(va) - parseFloat(vb)) * this.sortOrder;
         }
-        return (va ?? '').toString().localeCompare((vb ?? '').toString()) * this.sortOrder;
 
+        // 3. Строковая сортировка
+        return (va ?? '').toString().localeCompare((vb ?? '').toString()) * this.sortOrder;
       });
     }
+
   },
   methods: {
     loadColumns() {

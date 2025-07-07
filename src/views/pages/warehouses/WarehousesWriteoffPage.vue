@@ -27,8 +27,8 @@
     <!-- Таблица с заглушкой -->
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.warehouse_writeoffs" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
+            <DraggableTable table-key="admin.warehouse_writeoffs" :columns-config="columnsConfig"
+                :table-data="data.items" :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
@@ -75,7 +75,7 @@ export default {
             // table config
             columnsConfig: [
                 { name: 'id', label: '#' },
-                { name: 'date', label: 'Дата' },
+                { name: 'dateUser', label: 'Дата / пользователь' },
                 { name: 'warehouseName', label: 'Склад' },
                 { name: 'products', label: 'Товары', html: true },
                 { name: 'note', label: 'Примечание' },
@@ -91,8 +91,8 @@ export default {
             switch (c) {
                 case 'products':
                     return i.productsHtmlList();
-                case 'date':
-                    return i.formatUpdatedAt();
+                case 'dateUser':
+                    return `${i.formatCreatedAt()} / ${i.userName}`;
                 case 'client':
                     return i.client?.fullName() || 'Не указан';
                 default:

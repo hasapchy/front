@@ -69,36 +69,25 @@ export default {
 
             columnsConfig: [
                 { name: 'id', label: '#' },
-                { name: 'date', label: 'Дата / Пользователь' },
+                { name: 'dateUser', label: 'Дата / Пользователь' },
                 {
                     name: 'client',
                     label: 'Клиент',
                     component: markRaw(ClientButtonCell),
-                    props: (item) => ({
-                        client: item.client,
+                    props: (i) => ({
+                        client: i.client,
 
-                    })
-                },
-
-                { name: 'discountInfo', label: 'Скидка', html: true },
-                {
-                    name: 'userName',
-                    label: 'Создал',
-                    component: 'UserNameCell',
-                    props: (item) => ({
-                        userId: item.userId,
-                        userName: item.userName
                     })
                 },
                 {
                     name: 'statusName',
                     label: 'Статус',
                     component: 'StatusSelectCell',
-                    props: (item) => ({
-                        id: item.id,
-                        value: item.statusId,
+                    props: (i) => ({
+                        id: i.id,
+                        value: i.statusId,
                         allStatuses: this.allStatuses,
-                        onChange: (newStatusId) => this.handleChangeStatus([item.id], newStatusId),
+                        onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId),
                     })
                 },
                 { name: 'categoryName', label: 'Категория' },
@@ -123,45 +112,40 @@ export default {
         }
     },
     methods: {
-        itemMapper(item, col) {
-            switch (col) {
+        itemMapper(i, c) {
+            switch (c) {
                 case 'products':
-                    return item.productsHtmlList();
-                case 'date':
-                    return `${item.formatDate()} / ${item.userName}`;
+                    return i.productsHtmlList();
+              case 'dateUser':
+                    return `${i.formatDate()} / ${i.userName}`;
                 case 'client':
-                    if (!item.client) return '<span class="text-gray-500">Не указан</span>';
-                    const name = item.client.fullName();
-                    const phone = item.client.phones?.[0]?.phone;
+                    if (!i.client) return '<span class="text-gray-500">Не указан</span>';
+                    const name = i.client.fullName();
+                    const phone = i.client.phones?.[0]?.phone;
                     return phone
                         ? `<div>${name} (<span>${phone}</span>)</div>`
                         : name;
                 case 'statusName':
-                    return item.statusName || '-';
+                    return i.statusName || '-';
                 case 'categoryName':
-                    return item.categoryName || '-';
+                    return i.categoryName || '-';
                 case 'cashName':
-                    return item.cashName || '-';
+                    return i.cashName || '-';
                 case 'warehouseName':
-                    return item.warehouseName || '-';
+                    return i.warehouseName || '-';
                 case 'totalPrice':
-                    return item.priceInfo
-                        ? item.priceInfo()
-                        : `${item.totalPrice} ${item.currencySymbol || ''}`;
+                    return i.priceInfo
+                        ? i.priceInfo()
+                        : `${i.totalPrice} ${i.currencySymbol || ''}`;
                 case 'note':
-                    return item.note || '';
+                    return i.note || '';
                 case 'description':
-                    return item.description || '';
-                case 'discountInfo':
-                    if (item.discount && item.discount > 0) {
-                        return `${item.totalPrice} ${item.currencySymbol} (скидка: ${item.discount} ${item.currencySymbol})`;
-                    }
-                    return '-';
+                    return i.description || '';
                 case 'projectName':
-                    return item.projectName || '-';
+                    return i.projectName || '-';
 
                 default:
-                    return item[col];
+                    return i[c];
             }
         },
 

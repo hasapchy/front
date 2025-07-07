@@ -12,7 +12,7 @@
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.sales" :columns-config="columnsConfig" :table-data="data.items"
-                 :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
+                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
             <!--@delete-rows="handleDeleteRows" :filter-query="searchQuery" -->
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
@@ -63,7 +63,7 @@ export default {
             // table config
             columnsConfig: [
                 { name: 'id', label: '#' },
-                { name: 'date', label: 'Дата' },
+                { name: 'dateUser', label: 'Дата / Пользователь' },
                 {
                     name: 'client',
                     label: 'Покупатель',
@@ -93,7 +93,7 @@ export default {
             switch (c) {
                 case 'products':
                     return i.productsHtmlList();
-                case 'date':
+                 case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
                 case 'price':
 

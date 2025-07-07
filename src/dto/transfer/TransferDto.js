@@ -30,6 +30,6 @@ export default class TransferDto {
     }
 
     formatDate() {
-        return this.date !== null ? dayjsDateTime(this.date) : '-';
-    }
+     return dayjsDateTime(this.date);
+   }
 }

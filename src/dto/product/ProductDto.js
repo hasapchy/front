@@ -1,3 +1,4 @@
+import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
 class ProductDto {
   constructor({
     id,
@@ -56,6 +57,9 @@ class ProductDto {
   typeName() {
     return this.type == 1 || this.type === "1" ? "product" : "service";
   }
+  formatDate() {
+     return dayjsDateTime(this.date);
+   }
 
   icons() {
     if (this.typeName() === "product") {

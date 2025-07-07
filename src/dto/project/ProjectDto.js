@@ -1,4 +1,4 @@
-import { dayjsDate } from "@/utils/dateUtils";
+import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
 import ClientDto from "../client/ClientDto";
 import "dayjs/locale/ru";
 
@@ -33,8 +33,8 @@ export default class ProjectDto {
   }
 
   formatDate() {
-    return this.date !== null ? dayjsDate(this.date) : "-";
-  }
+     return dayjsDateTime(this.date);
+   }
 
   formatCreatedAt() {
     return dayjsDate(this.createdAt);

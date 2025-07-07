@@ -1,4 +1,4 @@
-import { dayjsDate } from "@/utils/dateUtils";
+import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
 import ClientDto from "../client/ClientDto";
 import OrderProductDto from "./OrderProductDto";
 
@@ -61,7 +61,7 @@ export default class OrderDto {
     this.updatedAt = updatedAt;
   }
 
- priceInfo() {
+  priceInfo() {
     if (this.discount && this.discount > 0) {
       return `${this.totalPrice} ${this.currencySymbol} (из ${this.price} ${this.currencySymbol}, скидка ${this.discount} ${this.currencySymbol})`;
     }
@@ -85,7 +85,7 @@ export default class OrderDto {
   }
 
   formatDate() {
-    return this.date !== null ? dayjsDate(this.date) : "-";
+    return dayjsDateTime(this.date);
   }
 
   formatCreatedAt() {

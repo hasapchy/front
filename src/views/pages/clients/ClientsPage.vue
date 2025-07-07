@@ -65,7 +65,8 @@ export default {
                 { name: 'note', label: 'Заметка' },
                 { name: 'discount', label: 'Скидка' },
                 { name: 'status', label: 'Статус', html: true },
-                { name: 'createdAt', label: 'Дата создания' },
+                { name: 'dateUser', label: 'Дата / Пользователь' },
+
             ],
         }
     },
@@ -87,8 +88,9 @@ export default {
                     return i.discountFormatted();
                 case 'status':
                     return i.statusIcon();
-                case 'createdAt':
+                case 'dateUser':
                     return i.formatCreatedAt();
+                    
                 default:
                     return i[c];
             }

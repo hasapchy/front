@@ -59,11 +59,9 @@ export default {
             columnsConfig: [
                 { name: 'name', label: 'Название' },
                 { name: 'budget', label: 'Бюджет проекта' },
-                { name: 'date', label: 'Дата' },
+                { name: 'dateUser', label: 'Дата / пользователь' },
                 { name: 'clientId', label: 'Клиент' },
                 { name: 'users', label: 'Доступ' },
-                { name: 'userName', label: 'Создал' },
-                { name: 'createdAt', label: 'Дата создания' }
             ],
         }
     },
@@ -81,8 +79,8 @@ export default {
                     return (i.users || '').length + ' пользователей(-ль)';
                 case 'createdAt':
                     return i.formatCreatedAt();
-                case 'date':
-                    return i.formatDate();
+                case 'dateUser':
+                    return `${i.formatDate()} / ${i.userName}`;
                 default:
                     return i[c];
             }

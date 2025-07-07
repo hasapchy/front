@@ -65,10 +65,8 @@ export default {
                 { name: 'category_name', label: 'Категория' },
                 { name: 'retail_price', label: 'Розничная цена' },
                 { name: 'wholesale_price', label: 'Оптовая цена' },
-                // { name: 'parentName', label: 'Родительская категория' },
-                // { name: 'users', label: 'Доступ' },
-                // { name: 'userName', label: 'Создатель' },
-                // { name: 'createdAt', label: 'Дата создания' }
+                { name: 'dateuser', label: 'Дата / Пользователь', html: true },
+                { name: 'createdAt', label: 'Дата создания' },
             ],
         }
     },
@@ -86,6 +84,8 @@ export default {
                     return i.wholesalePriceFormatted();
                 case 'image':
                     return i.image ? i.imgUrl() : null;
+                case 'dateUser':
+                    return `${i.formatDate()} / ${i.userName}`;
                 default:
                     return i[c];
             }

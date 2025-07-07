@@ -1,6 +1,6 @@
 import ClientPhoneDto from "./ClientPhoneDto";
 import ClientEmailDto from "./ClientEmailDto";
-import { dayjsDate } from "@/utils/dateUtils";
+import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
 
 // ClientDto описывает структуру клиента
 export default class ClientDto {
@@ -97,7 +97,7 @@ export default class ClientDto {
     }
 
     formatCreatedAt() {
-        return dayjsDate(this.createdAt);
+        return dayjsDateTime(this.createdAt);
     }
 
     formatUpdatedAt() {

@@ -37,7 +37,7 @@
     <!-- Модальное окно форма создания/редактирования -->
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
         <WarehousesMovementCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" :editingItem="editingItem"/> <!--@delete-rows="handleDeleteRows" -->
+            @deleted-error="handleDeletedError" :editingItem="editingItem" /> <!--@delete-rows="handleDeleteRows" -->
     </SideModalDialog>
     <!-- Компонент уведомлений -->
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -75,7 +75,7 @@ export default {
             // table config
             columnsConfig: [
                 { name: 'id', label: '#' },
-                { name: 'date', label: 'Дата' },
+                { name: 'dateUser', label: 'Дата / Пользователь' },
                 { name: 'direction', label: 'Направление', html: true },
                 { name: 'products', label: 'Товары', html: true },
                 { name: 'note', label: 'Примечание' },
@@ -93,8 +93,8 @@ export default {
                     return i.direction();
                 case 'products':
                     return i.productsHtmlList();
-                case 'date':
-                    return i.formatDate();
+                case 'dateUser':
+                    return `${i.formatDate()} / ${i.userName}`;
                 default:
                     return i[c];
             }

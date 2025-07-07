@@ -60,7 +60,8 @@ export default {
                 { name: 'name', label: 'Название' },
                 { name: 'balance', label: 'Баланс' },
                 { name: 'users', label: 'Доступ' },
-                { name: 'createdAt', label: 'Дата создания' }
+                { name: 'createdAt', label: 'Дата создания' },
+                 { name: 'dateUser', label: 'Дата / Пользователь', html: true },
             ],
         }
     },
@@ -78,6 +79,8 @@ export default {
                     return (i.users || '').length + ' пользователей(-ль)';
                 case 'createdAt':
                     return i.formatCreatedAt();
+                case 'dateUser':
+                    return `${i.formatDate()} / ${i.userName}`;
                 default:
                     return i[c];
             }

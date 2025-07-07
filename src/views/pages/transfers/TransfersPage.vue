@@ -58,9 +58,8 @@ export default {
                 { name: 'cashFromName', label: 'Касса отправитель' },
                 { name: 'amount', label: 'Сумма трансфера', html: true },
                 { name: 'cashToName', label: 'Куда' },
-                { name: 'userName', label: 'Пользователь' },
                 { name: 'note', label: 'Заметка' },
-                { name: 'date', label: 'Дата' },
+                { name: 'dateUser', label: 'Дата' },
             ],
         }
     },
@@ -73,8 +72,8 @@ export default {
             switch (c) {
                 case 'amount':
                     return i.amountDescription();
-                case 'date':
-                    return i.formatDate();
+                case 'dateUser':
+                    return `${i.formatDate()} / ${i.userName}`;
                 default:
                     return i[c];
             }

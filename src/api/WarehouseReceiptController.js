@@ -9,7 +9,7 @@ export default class WarehouseReceiptController {
     try {
       const response = await api.get(`/warehouse_receipts?page=${page}`);
       const data = response.data;
-       console.log(data);
+      console.log(data);
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {
         var client = null;
@@ -60,11 +60,13 @@ export default class WarehouseReceiptController {
           client,
           products,
           item.note,
+          item.user_id,
+          item.user_name,
           item.date,
           item.created_at,
           item.updated_at,
           item.cash_id,
-          item.cash_name,
+          item.cash_name
         );
       });
 

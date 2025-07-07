@@ -37,7 +37,7 @@
     <!-- Модальное окно форма создания/редактирования -->
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
         <WarehousesReceiptCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" :editingItem="editingItem"  /> <!--@delete-rows="handleDeleteRows" -->
+            @deleted-error="handleDeletedError" :editingItem="editingItem" /> <!--@delete-rows="handleDeleteRows" -->
     </SideModalDialog>
     <!-- Компонент уведомлений -->
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -77,7 +77,7 @@ export default {
             // table config
             columnsConfig: [
                 { name: 'id', label: '#' },
-                { name: 'date', label: 'Дата' },
+                { name: 'dateUser', label: 'Дата / пользователь' },
                 {
                     name: 'client',
                     label: 'Поставщик',
@@ -107,8 +107,8 @@ export default {
             switch (c) {
                 case 'products':
                     return i.productsHtmlList();
-                case 'date':
-                    return i.formatDate();
+                case 'dateUser':
+                    return `${i.formatDate()} / ${i.userName}`;
                 case 'client':
                     return i.client?.fullName() || 'Не указан';
                 case 'amount':

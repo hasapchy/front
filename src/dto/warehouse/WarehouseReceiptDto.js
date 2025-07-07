@@ -1,4 +1,4 @@
-import { dayjsDate } from "@/utils/dateUtils";
+import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
 import ClientDto from "../client/ClientDto";
 import WarehouseReceiptProductDto from "./WarehouseReceiptProductDto";
 
@@ -11,6 +11,8 @@ export default class WarehouseReceiptDto {
     client = null,
     products = null,
     note = "",
+    userId,
+    userName,
     date = "",
     createdAt = "",
     updatedAt = "",
@@ -24,6 +26,8 @@ export default class WarehouseReceiptDto {
     this.client = client;
     this.products = products;
     this.note = note;
+    this.userId = userId;
+    this.userName = userName;
     this.date = date;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
@@ -62,7 +66,7 @@ export default class WarehouseReceiptDto {
   }
 
   formatDate() {
-    return this.date !== null ? dayjsDate(this.date) : "-";
+    return dayjsDateTime(this.date);
   }
 
   formatCreatedAt() {
