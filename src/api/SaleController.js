@@ -68,6 +68,7 @@ export default class SaleController {
           item.user_name,
           item.project_id,
           item.project_name,
+          item.transaction_id,
           client,
           products,
           item.note,

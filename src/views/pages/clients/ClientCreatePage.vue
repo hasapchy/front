@@ -108,7 +108,6 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import Inputmask from 'inputmask';
-import ClientBalanceHistoryDto from '@/dto/client/ClientBalanceHistoryDto';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 
 export default {
@@ -157,9 +156,9 @@ export default {
                 }
             ],
             columnsBalance: [
-                { name: 'date', label: 'Дата', size: 140 },
+                { name: 'date', label: 'Дата', size: 100 },
                 { name: 'type', label: 'Тип' },
-                { name: 'description', label: 'Описание' },
+                { name: 'description', label: 'Описание', size: 300 },
                 { name: 'amount', label: 'Сумма', size: 120, html: true },
             ],
         }
@@ -201,18 +200,18 @@ export default {
         removeEmail(index) {
             this.emails.splice(index, 1);
         },
-        itemMapperBalance(item, column) {
-            switch (column) {
+        itemMapperBalance(i, c) {
+            switch (c) {
                 case 'date':
-                    return item.formatDate?.() ?? item.date;
+                    return i.formatDate();
                 case 'type':
-                    return item.label?.() ?? item.type;
+                    return i.label?.() ?? item.type;
                 case 'description':
-                    return item.description;
+                    return i.description;
                 case 'amount':
-                    return item.formatAmountWithColor?.() ?? item.amount;
+                    return i.formatAmountWithColor?.();
                 default:
-                    return item[column];
+                    return i[c];
             }
         },
         async save() {

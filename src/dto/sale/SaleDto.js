@@ -20,6 +20,7 @@ export default class SaleDto {
     userName,
     projectId,
     projectName,
+    transactionId = null,
     client = null,
     products = null,
     note = "",
@@ -43,6 +44,7 @@ export default class SaleDto {
     this.userName = userName;
     this.projectId = projectId;
     this.projectName = projectName;
+    this.transactionId = transactionId;
     /** @type {ClientDto | null} */
     this.client = client;
     /** @type {Array<SaleProductDto> | null} */
@@ -85,8 +87,8 @@ export default class SaleDto {
   }
 
   formatDate() {
-     return dayjsDateTime(this.date);
-   }
+    return dayjsDateTime(this.date);
+  }
 
   formatCreatedAt() {
     return dayjsDate(this.createdAt);

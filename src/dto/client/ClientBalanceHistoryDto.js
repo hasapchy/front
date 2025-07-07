@@ -1,3 +1,4 @@
+import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
 export default class ClientBalanceHistoryDto {
   constructor(source, sourceId, date, amount, description) {
     this.source = source; // тип источника: 'sale', 'receipt', 'transaction', 'order'
@@ -13,7 +14,7 @@ export default class ClientBalanceHistoryDto {
   }
 
   formatDate() {
-    return new Date(this.date).toLocaleDateString(); // или используй dayjs
+    return dayjsDateTime(this.date);
   }
 
   label() {
@@ -31,9 +32,12 @@ export default class ClientBalanceHistoryDto {
     }
   }
   formatAmountWithColor() {
-    const amount = parseFloat(this.amount ?? 0);
-    const formatted = amount.toFixed(2) + "m";
-    const colorClass = amount >= 0 ? "text-green-600" : "text-red-600";
-    return `<span class="${colorClass}">${formatted}</span>`;
+    const amount = parseFloat(this.amount ?? 0).toFixed(2);
+    const sign = this.amount >= 0 ? "+" : "-";
+    const colorClass =
+      this.amount >= 0
+        ? "text-[#5CB85C] font-semibold"
+        : "text-[#EE4F47] font-semibold";
+    return `<span class="${colorClass}">${sign}${amount}</span>`;
   }
 }
