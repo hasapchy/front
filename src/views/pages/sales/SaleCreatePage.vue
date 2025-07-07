@@ -2,33 +2,19 @@
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">Продажа</h2>
         <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
-        <div class="mt-2">
-            <label class="block mb-1">Проект</label>
-            <select v-model="projectId" :disabled="!!editingItemId">
-                <option value="">Нет</option>
-                <option v-if="allProjects.length" v-for="parent in allProjects" :value="parent.id">{{ parent.name }}
-                </option>
-            </select>
-        </div>
         <div>
             <label>Дата</label>
             <input type="datetime-local" v-model="date" :disabled="!!editingItemId">
         </div>
-        <div class="mt-2">
-            <label class="block mb-1 required">Склад</label>
-            <div class="flex items-center space-x-2">
-                <select v-model="warehouseId" required :disabled="!!editingItemId">
-                    <option value="">Нет</option>
-                    <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">{{
-                        parent.name }}
-                    </option>
-                </select>
-            </div>
-        </div>
-
-        <div class="mt-2">
-            <label>Примечание</label>
-            <input type="text" v-model="note" :disabled="!!editingItemId">
+        <div v-if="type === 'cash'" class="mt-2">
+            <label class="block mb-1 required">Касса</label>
+            <select v-model="cashId" :disabled="!!editingItemId">
+                <option value="">Нет</option>
+                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">{{
+                    parent.name
+                    }}
+                </option>
+            </select>
         </div>
         <div class="mt-2">
             <label class="block mb-1 required">Тип оплаты</label>
@@ -45,15 +31,31 @@
                 </label>
             </div>
         </div>
-        <div v-if="type === 'cash'" class="mt-2">
-            <label class="block mb-1 required">Касса</label>
-            <select v-model="cashId" :disabled="!!editingItemId">
+        <div class="mt-2">
+            <label class="block mb-1">Проект</label>
+            <select v-model="projectId" :disabled="!!editingItemId">
                 <option value="">Нет</option>
-                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">{{
-                    parent.name
-                }}
+                <option v-if="allProjects.length" v-for="parent in allProjects" :value="parent.id">{{ parent.name }}
                 </option>
             </select>
+        </div>
+
+        <div class="mt-2">
+            <label>Примечание</label>
+            <input type="text" v-model="note" :disabled="!!editingItemId">
+        </div>
+
+
+        <div class="mt-2">
+            <label class="block mb-1 required">Склад</label>
+            <div class="flex items-center space-x-2">
+                <select v-model="warehouseId" required :disabled="!!editingItemId">
+                    <option value="">Нет</option>
+                    <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">{{
+                        parent.name }}
+                    </option>
+                </select>
+            </div>
         </div>
         <ProductSearch v-model="products" :disabled="!!editingItemId" :show-quantity="true" :show-price="true"
             :show-price-type="true" :is-sale="true" :currency-symbol="currencySymbol" v-model:discount="discount"

@@ -60,8 +60,8 @@
             <select v-model="categoryId">
                 <option value="">Нет</option>
                 <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">
-                     {{ cat.typeClass() }} {{ cat.name }}
-                     </option>
+                    {{ cat.typeClass() }} {{ cat.name }}
+                </option>
             </select>
         </div>
         <div class="mt-2">
@@ -71,6 +71,10 @@
                 <option v-if="allProjects.length" v-for="parent in allProjects" :value="parent.id">{{ parent.name }}
                 </option>
             </select>
+        </div>
+        <div class="mt-2">
+            <label>Заметка</label>
+            <input type="text" v-model="note" />
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -138,6 +142,7 @@ export default {
             categoryId: this.editingItem ? this.editingItem.categoryId : '',
             projectId: this.editingItem ? this.editingItem.projectId : '',
             date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
+            note: this.editingItem ? this.editingItem.note : '',
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
             currencies: [],
@@ -223,6 +228,7 @@ export default {
                         orig_amount: this.origAmount,
                         currency_id: this.currencyIdComputed,
                         category_id: this.categoryId,
+                        note: this.note,
                         project_id: this.projectId,
                         date: this.date,
                         client_id: this.selectedClient?.id,
@@ -261,7 +267,7 @@ export default {
             this.type = "income";
             this.cashId = this.allCashRegisters.length ? this.allCashRegisters[0].id : '';
             this.origAmount = 0;
-            //this.currencyId = '';
+            this.note = '';
             this.categoryId = '';
             this.projectId = '';
             this.date = new Date().toISOString().substring(0, 16);
@@ -293,6 +299,17 @@ export default {
             },
             immediate: true
         },
+        type(newType) {
+            if (!this.editingItemId) {
+                if (newType === "income") {
+                    this.categoryId = 5;
+                } else if (newType === "outcome") {
+                    this.categoryId = 16;
+                } else {
+                    this.categoryId = "";
+                }
+            }
+        },
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
@@ -301,6 +318,7 @@ export default {
                     this.cashId = newEditingItem.cashId || this.defaultCashId || '';
                     this.cashAmount = newEditingItem.cashAmount || null;
                     this.cashCurrencyId = newEditingItem.cashCurrencyId || null;
+                    this.note = newEditingItem.note || '';
                     this.origAmount = newEditingItem.origAmount || 0;
                     this.currencyId = newEditingItem.origCurrencyId || '';
                     this.categoryId = newEditingItem.categoryId || '';
@@ -317,7 +335,7 @@ export default {
                     this.cashCurrencyId = null;
                     this.origAmount = 0;
                     this.currencyId = selectedCash?.currency_id || '';
-                    this.categoryId = '';
+                    this.categoryId = 5;
                     this.projectId = '';
                     this.date = new Date().toISOString().substring(0, 16);
                     this.selectedClient = null;

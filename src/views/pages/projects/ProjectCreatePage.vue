@@ -1,99 +1,20 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">Проект</h2>
-
-
+        <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
         <div>
             <label>Название</label>
             <input type="text" v-model="name">
+        </div>
+        <div>
+            <label>Дата проекта</label>
+            <input type="datetime-local" v-model="dateModel" />
         </div>
         <div>
             <label>Бюджет проекта</label>
             <input type="number" v-model="budget">
         </div>
         <div>
-            <label>Дата проекта</label>
-            <input type="datetime-local" v-model="dateModel" />
-        </div>
-        <!-- Начало блока поиска клиентов -->
-
-        <div v-if="selectedClient == null" class="relative">
-            <label class="block mb-1">Поиск клиента</label>
-            <input type="text" v-model="clientSearch" placeholder="Введите имя или номер клиента"
-                class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="showDropdown = false">
-            <transition name="appear">
-                <ul v-show="showDropdown"
-                    class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-                    <li v-if="clientSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
-                    <!-- <li v-else-if="clientSearch.length === 0" class="p-2 text-gray-500">Ожидание запроса...</li> -->
-                    <template v-else-if="clientSearch.length === 0">
-                        <li v-for="client in lastClients" :key="client.id" @mousedown.prevent="selectClient(client)"
-                            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                            <div class="flex justify-between">
-                                <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                                <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
-                            </div>
-                        </li>
-                    </template>
-                    <li v-else-if="clientSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
-                    <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
-                    <li v-for="client in clientResults" :key="client.id"
-                        @mousedown.prevent="() => { selectClient(client) }"
-                        class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                        <div class="flex justify-between">
-                            <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                            <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
-                        </div>
-                        <span :class="client.balance > 0 ? 'text-green-500' : 'text-red-500'">
-                            {{ client.balanceFormatted() }}
-                            <!-- {{ client.currencySymbol }} -->
-                            <span v-if="client.balanceNumeric() > 0">(Клиент должен нам)</span>
-                            <span v-else-if="client.balanceNumeric() < 0">(Мы должны клиенту)</span>
-                            <span v-else>(0)</span>
-                        </span>
-                    </li>
-                </ul>
-            </transition>
-        </div>
-        <div v-else class="">
-            <div class="p-2 pt-0 mt-2 border-2 border-gray-400/60 rounded-md">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <label>Клиент</label>
-                        <p><span class="font-semibold text-sm">Имя:</span> {{ selectedClient.fullName() }}</p>
-                        <p><span class="font-semibold text-sm">Номер:</span> {{ selectedClient.phones[0].phone }}
-                        </p>
-                        <p><span class="font-semibold text-sm">Баланс:</span>
-                            <span :class="selectedClient.balanceNumeric() > 0 ? 'text-green-500' : 'text-red-500'">
-                                {{ selectedClient.balanceFormatted() }}
-                                <!-- {{ selectedClient.currencySymbol }} -->
-                                <span v-if="selectedClient.balanceNumeric() > 0">(Клиент должен нам)</span>
-                                <span v-else-if="selectedClient.balanceNumeric() < 0">(Мы должны клиенту)</span>
-                                <span v-else>(0)</span>
-                            </span>
-                        </p>
-                        <!-- <p><strong>Баланс:</strong>
-                        <span
-                        class="{{ optional($selectedClient->balance)->balance > 0 ? 'text-green-500' : 'text-red-500' }}">
-                        {{ number_format((optional($selectedClient->balance)->balance ?? 0) * $conversionRate, 2) }}
-                        {{ $conversionService->getSelectedCurrency($sessionCurrencyCode)->symbol }}
-                        @if (optional($selectedClient->balance)->balance > 0)
-                                (Клиент должен нам)
-                            @elseif(optional($selectedClient->balance)->balance < 0)
-                            (Мы должны клиенту)
-                            @else
-                            (0)
-                            @endif
-                        </span>
-                    </p> -->
-                    </div>
-                    <button v-on:click="deselectClient" class="text-red-500 text-2xl cursor-pointer">&times;</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Конец блока поиска клиентов -->
-        <div class="mt-4">
             <label>Назначить пользователей</label>
             <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
                 <label v-for="user, index in users" :key="user.id"
@@ -103,7 +24,7 @@
                 </label>
             </div>
         </div>
-        <div class="mt-4">
+        <div >
             <label>Файлы</label>
             <input type="file" multiple @change="handleFileChange" />
             <ul>
@@ -118,18 +39,13 @@
             </ul>
         </div>
     </div>
-
-
-
-
-    <!-- {{ editingItem.id }} -->
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="'Подтвердите удаление категории'" :confirm-text="'Удалить категорию'" :leave-text="'Отмена'" />
+        :descr="'Подтвердите удаление проекта'" :confirm-text="'Удалить проект'" :leave-text="'Отмена'" />
     <AlertDialog :dialog="deleteFileDialog" @confirm="confirmDeleteFile" @leave="closeDeleteFileDialog"
         :descr="`Подтвердите удаление файла '${files[deleteFileIndex]?.name || 'без имени'}'`"
         :confirm-text="'Удалить файл'" :leave-text="'Отмена'" />
@@ -146,13 +62,15 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import debounce from 'lodash.debounce';
 import ProjectController from '@/api/ProjectController';
 import api from '@/api/axiosInstance';
+import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 
 
 export default {
     components: {
         PrimaryButton,
         AlertDialog,
-        TabBar
+        TabBar,
+        ClientSearch
     },
     props: {
         editingItem: {
