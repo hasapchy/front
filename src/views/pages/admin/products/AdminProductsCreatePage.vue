@@ -223,22 +223,21 @@ export default {
 
         },
         async deleteItem() {
-            // this.closeDeleteDialog();
-            // if (this.editingItemId == null) {
-            //     return;
-            // }
-            // this.deleteLoading = true;
-            // try {
-            //     var resp = await CategoryController.deleteItem(
-            //         this.editingItemId);
-            //     if (resp.message) {
-            //         this.$emit('deleted');
-            //         this.clearForm();
-            //     }
-            // } catch (error) {
-            //     this.$emit('deleted-error', this.getApiErrorMessage(error));
-            // }
-            // this.deleteLoading = false;
+            this.closeDeleteDialog();
+            if (this.editingItemId == null) {
+                return;
+            }
+            this.deleteLoading = true;
+            try {
+                const resp = await ProductController.deleteItem(this.editingItemId);
+                if (resp.message) {
+                    this.$emit('deleted');
+                    this.clearForm();
+                }
+            } catch (error) {
+                this.$emit('deleted-error', this.getApiErrorMessage(error));
+            }
+            this.deleteLoading = false;
         },
         generateBarcode() {
             const prefix = Math.floor(Math.random() * 10) + 20; // Generates a number between 20 and 29
