@@ -5,7 +5,7 @@
         <div class="mt-2 flex items-center">
             <div>
                 <div class="mt-2">
-                    <label class="block mb-1">Тип</label>
+                    <label class="block mb-1 required">Тип</label>
                     <select v-model="type">
                         <option value="">Выберите тип</option>
                         <option value="product">Товар</option>
@@ -17,7 +17,7 @@
                     <input type="file" @change="onFileChange" ref="imageInput">
                 </div>
                 <div class="mt-2">
-                    <label>Название</label>
+                    <label class="required">Название</label>
                     <input type="text" v-model="name" class="">
                 </div>
 
@@ -34,7 +34,7 @@
             </div>
         </div>
         <div class="mt-2">
-            <label class="block mb-1">Категория</label>
+            <label class="block mb-1 required">Категория</label>
             <div class="flex items-center space-x-2">
                 <select v-model="category_id">
                     <option value="">Нет</option>
@@ -59,27 +59,9 @@
             </select>
         </div>
         <div class="mt-2">
-            <label>Артикул</label>
+            <label class="required">Артикул</label>
             <input type="text" v-model="sku" :disabled="editingItemId !== null">
         </div>
-
-        <div class="mt-2">
-            <label class="block mb-1">Статус</label>
-            <select v-model="status_id">
-                <option value="">Нет</option>
-                <option v-if="statuses.length" v-for="s in statuses" :value="s.id">{{
-                    s.name }}
-                </option>
-            </select>
-        </div>
-        <!-- <div class=" mt-2">
-        <label class="block mb-1">Валюта</label>
-        <select v-model="currency_id">
-            <option value="">Нет</option>
-            <option v-if="currencies.length" v-for="parent in currencies" :value="parent.id">{{ parent.name }}
-            </option>
-        </select>
-    </div> -->
         <div class="mt-2 flex space-x-2">
             <div class="w-1/3">
                 <label>Закупочная цена</label>
@@ -159,7 +141,6 @@ export default {
             selected_image: null,
             category_id: this.editingItem ? this.editingItem.category_id : '',
             unit_id: this.editingItem ? this.editingItem.unit_id : '',
-            status_id: this.editingItem ? this.editingItem.status_id : '',
             barcode: this.editingItem ? this.editingItem.barcode : '',
             retail_price: this.editingItem ? this.editingItem.retail_price : 0,
             wholesale_price: this.editingItem ? this.editingItem.wholesale_price : 0,
@@ -170,8 +151,6 @@ export default {
             currencies: [],
             units: [],
             allCategories: [],
-            statuses: [],
-            //
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
@@ -182,7 +161,6 @@ export default {
         this.fetchUnits();
         this.fetchCurrencies();
         this.fetchAllCategories();
-        this.fetchProductStatuses();
     },
     computed: {
         selectedUnit() {
@@ -203,9 +181,6 @@ export default {
         async fetchAllCategories() {
             this.allCategories = await CategoryController.getAllItems();
         },
-        async fetchProductStatuses() {
-            this.statuses = await AppController.getProductStatuses();
-        },
 
         onFileChange(event) {
             const file = event.target.files[0];
@@ -222,9 +197,7 @@ export default {
                     description: this.description,
                     sku: this.sku,
                     category_id: this.category_id,
-                    // currency_id: this.currency_id,
                     unit_id: this.unit_id,
-                    status_id: this.status_id,
                     barcode: this.barcode,
                     retail_price: this.retail_price,
                     wholesale_price: this.wholesale_price,
@@ -244,7 +217,7 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('saved-error', error);
+                this.$emit('saved-error', this.getApiErrorMessage(error));
             }
             this.saveLoading = false;
 
@@ -263,7 +236,7 @@ export default {
             //         this.clearForm();
             //     }
             // } catch (error) {
-            //     this.$emit('deleted-error', error);
+            //     this.$emit('deleted-error', this.getApiErrorMessage(error));
             // }
             // this.deleteLoading = false;
         },
@@ -304,8 +277,20 @@ export default {
             this.closeModal();
         },
         handleSavedError(m) {
-            this.$emit('saved-error', error);
+            this.$emit('saved-error', this.getApiErrorMessage(error));
         },
+        getApiErrorMessage(e) {
+            if (e?.response && e.response.data) {
+                if (e.response.data.errors) {
+                    return Object.values(e.response.data.errors).flat();
+                }
+                if (e.response.data.message) {
+                    return [e.response.data.message];
+                }
+            }
+            if (e?.message) return [e.message];
+            return ["Ошибка"];
+        }
 
     },
     watch: {
@@ -324,7 +309,6 @@ export default {
                     this.image = newEditingItem.image || '';
                     this.category_id = newEditingItem.category_id || '';
                     this.unit_id = newEditingItem.unit_id || '';
-                    this.status_id = newEditingItem.status_id || '';
                     this.barcode = newEditingItem.barcode || '';
                     this.retail_price = newEditingItem.retail_price || 0;
                     this.wholesale_price = newEditingItem.wholesale_price || 0;
@@ -339,7 +323,6 @@ export default {
                     this.image = '';
                     this.category_id = '';
                     this.unit_id = '';
-                    this.status_id = '';
                     this.barcode = '';
                     this.retail_price = 0;
                     this.wholesale_price = 0;

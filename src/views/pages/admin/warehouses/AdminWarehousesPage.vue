@@ -100,7 +100,7 @@ export default {
             this.notification = true;
             setTimeout(() => {
                 this.notification = false;
-            }, 3000);
+            }, 10000);
         },
         showModal(item = null) {
             this.modalDialog = true;

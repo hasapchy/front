@@ -14,7 +14,6 @@ class ProductDto {
     unit_name,
     unit_short_name,
     unit_calc_area,
-    status_id,
     barcode,
     is_serialized,
     created_at,
@@ -40,7 +39,6 @@ class ProductDto {
     this.unit_name = unit_name;
     this.unit_short_name = unit_short_name;
     this.unit_calc_area = unit_calc_area;
-    this.status_id = status_id;
     this.barcode = barcode;
     this.is_serialized = is_serialized;
     this.created_at = created_at;

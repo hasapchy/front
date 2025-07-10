@@ -90,7 +90,7 @@ export default {
                         onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId),
                     })
                 },
-                { name: 'categoryName', label: 'Категория' },
+                { name: 'categoryName', label: 'Тип' },
                 { name: 'cashName', label: 'Касса' },
                 { name: 'warehouseName', label: 'Склад' },
                 { name: 'products', label: 'Товары', html: true },
@@ -213,7 +213,7 @@ export default {
             this.notification = true;
             setTimeout(() => {
                 this.notification = false;
-            }, 3000);
+            }, 10000);
         },
         async fetchStatuses() {
             this.allStatuses = await AppController.getOrderStatuses();

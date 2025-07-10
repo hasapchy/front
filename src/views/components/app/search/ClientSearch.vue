@@ -1,7 +1,7 @@
 <template>
     <div>
         <div v-if="selectedClient == null" class="relative">
-            <label class="block mb-1" :class="{ 'required': required }">Клиент</label>
+            <label class="block mb-1 required">Клиент</label>
             <input type="text" v-model="clientSearch" placeholder="Введите имя или номер клиента"
                 class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="showDropdown = false"
                 :disabled="disabled" />
@@ -46,7 +46,7 @@
             <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
                 <div class="flex justify-between items-center">
                     <div>
-                        <label>Клиент</label>
+                        <label class="required">Клиент</label>
                         <p><span class="font-semibold text-sm">Имя:</span> {{ selectedClient.fullName() }}</p>
                         <p><span class="font-semibold text-sm">Номер:</span> {{ selectedClient.phones[0].phone }}</p>
                         <p><span class="font-semibold text-sm">Баланс:</span>

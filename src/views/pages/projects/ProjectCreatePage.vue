@@ -3,7 +3,7 @@
         <h2 class="text-lg font-bold mb-4">Проект</h2>
         <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
         <div>
-            <label>Название</label>
+            <label class="required">Название</label>
             <input type="text" v-model="name">
         </div>
         <div>
@@ -24,7 +24,7 @@
                 </label>
             </div>
         </div>
-        <div >
+        <div>
             <label>Файлы</label>
             <input type="file" multiple @change="handleFileChange" />
             <ul>
@@ -176,7 +176,7 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('saved-error', error);
+                this.$emit('saved-error', this.getApiErrorMessage(error));
             }
             this.saveLoading = false;
         },
@@ -197,6 +197,18 @@ export default {
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
+       getApiErrorMessages(e) {
+    if (e?.response && e.response.data) {
+        if (e.response.data.errors) {
+            return Object.values(e.response.data.errors).flat();
+        }
+        if (e.response.data.message) {
+            return [e.response.data.message];
+        }
+    }
+    if (e?.message) return [e.message];
+    return ["Ошибка"];
+},
         async handleFileChange(event) {
             if (!this.editingItemId) {
                 alert('Сначала сохраните проект, затем прикрепляйте файлы');

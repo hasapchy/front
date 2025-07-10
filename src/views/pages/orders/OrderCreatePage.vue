@@ -6,7 +6,7 @@
             <div v-show="currentTab === 'info'">
                 <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
                 <div>
-                    <label class="required">Категория</label>
+                    <label class="required">Тип</label>
                     <select v-model="categoryId" required>
                         <option value="">Нет</option>
                         <option v-for="parent in allCategories" :value="parent.id">{{ parent.name }}</option>
@@ -343,7 +343,7 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('saved-error', error);
+                this.$emit('saved-error', this.getApiErrorMessage(error));
             }
             this.saveLoading = false;
         },
@@ -359,7 +359,7 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('deleted-error', error);
+                this.$emit('deleted-error', this.getApiErrorMessage(error));
             }
             this.deleteLoading = false;
         },
@@ -395,8 +395,19 @@ export default {
                 default:
                     return item[field];
             }
+        },
+       getApiErrorMessages(e) {
+    if (e?.response && e.response.data) {
+        if (e.response.data.errors) {
+            return Object.values(e.response.data.errors).flat();
         }
-
+        if (e.response.data.message) {
+            return [e.response.data.message];
+        }
+    }
+    if (e?.message) return [e.message];
+    return ["Ошибка"];
+}
     },
     watch: {
         cashId: {

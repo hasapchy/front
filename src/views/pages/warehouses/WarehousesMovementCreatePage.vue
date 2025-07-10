@@ -124,7 +124,7 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('saved-error', error);
+                this.$emit('saved-error', this.getApiErrorMessage(error));
             }
             this.saveLoading = false;
 
@@ -143,7 +143,7 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('deleted-error', error);
+                this.$emit('deleted-error', this.getApiErrorMessage(error));
             }
             this.deleteLoading = false;
         },
@@ -160,8 +160,18 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
+        },getApiErrorMessages(e) {
+    if (e?.response && e.response.data) {
+        if (e.response.data.errors) {
+            return Object.values(e.response.data.errors).flat();
         }
-
+        if (e.response.data.message) {
+            return [e.response.data.message];
+        }
+    }
+    if (e?.message) return [e.message];
+    return ["Ошибка"];
+}
     },
     watch: {
         editingItem: {

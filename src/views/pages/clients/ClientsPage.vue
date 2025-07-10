@@ -1,26 +1,22 @@
 <template>
-    <!-- Добавить + пагинация -->
     <div class="flex justify-between items-center mb-4">
         <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить клиента</PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
-    <!-- Таблица с заглушкой -->
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="common.clients" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }"   />  <!--@delete-rows="handleDeleteRows" :filter-query="searchQuery"-->
+                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
         </div>
     </transition>
-    <!-- Модальное окно форма создания/редактирования -->
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
         <ClientCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" :editingItem="editingItem" />
     </SideModalDialog>
-    <!-- Компонент уведомлений -->
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" />
 </template>
@@ -46,16 +42,13 @@ export default {
     data() {
         return {
             data: null,
-            //
             loading: false,
             notification: false,
             notificationTitle: '',
             notificationSubtitle: '',
             notificationIsDanger: false,
-            //
             modalDialog: false,
             editingItem: null,
-            // table config
             columnsConfig: [
                 { name: 'id', label: '#', width: 'w-15' },
                 { name: 'firstName', label: 'ФИО/Компания', html: true },
@@ -75,7 +68,6 @@ export default {
         this.$store.commit('SET_SETTINGS_OPEN', false);
     },
     methods: {
-        // table mapper
         itemMapper(i, c) {
             switch (c) {
                 case 'firstName':
@@ -90,12 +82,11 @@ export default {
                     return i.statusIcon();
                 case 'dateUser':
                     return i.formatCreatedAt();
-                    
+
                 default:
                     return i[c];
             }
         },
-        //
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
@@ -110,23 +101,6 @@ export default {
                 this.loading = false;
             }
         },
-        // async handleDeleteRows(selectedRows) {
-        //     if (!selectedRows.length) return;
-
-        //     this.loading = true;
-        //     try {
-        //         for (const row of selectedRows) {
-        //             if (row.id) {
-        //                 await ClientController.deleteItem(row.id);
-        //             }
-        //         }
-        //         await this.fetchItems(this.data?.currentPage || 1, true);
-        //         this.showNotification('Выбранные продажи успешно удалены', '', false);
-        //     } catch (error) {
-        //         this.showNotification('Ошибка при удалении продаж', error.message, true);
-        //     }
-        //     this.loading = false;
-        // },
         showNotification(title, subtitle, isDanger = false) {
             this.notificationTitle = title;
             this.notificationSubtitle = subtitle;
@@ -134,7 +108,7 @@ export default {
             this.notification = true;
             setTimeout(() => {
                 this.notification = false;
-            }, 3000);
+            }, 10000);
         },
         showModal(item = null) {
             this.modalDialog = true;
@@ -175,10 +149,7 @@ export default {
 }
 
 .fade-enter,
-.fade-leave-to
-
-/* .fade-leave-active in <2.1.8 */
-    {
+.fade-leave-to {
     opacity: 0;
 }
 </style>

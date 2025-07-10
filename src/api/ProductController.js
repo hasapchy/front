@@ -24,7 +24,6 @@ export default class ProductController {
                     unit_name: item.unit_name,
                     unit_short_name: item.unit_short_name,
                     unit_calc_area: item.unit_calc_area,
-                    status_id: item.status_id,
                     barcode: item.barcode,
                     is_serialized: item.is_serialized,
                     created_at: item.created_at,
@@ -72,7 +71,6 @@ export default class ProductController {
                     unit_name: item.unit_name,
                     unit_short_name: item.unit_short_name,
                     unit_calc_area: item.unit_calc_area,
-                    status_id: item.status_id,
                     barcode: item.barcode,
                     is_serialized: item.is_serialized,
                     created_at: item.created_at,
@@ -80,10 +78,6 @@ export default class ProductController {
                     retail_price: item.retail_price,
                     wholesale_price: item.wholesale_price,
                     purchase_price: item.purchase_price,
-                    // currency_id: item.currency_id,
-                    // currency_name: item.currency_name,
-                    // currency_code: item.currency_code,
-                    // currency_symbol: item.currency_symbol
                 });
             });
 

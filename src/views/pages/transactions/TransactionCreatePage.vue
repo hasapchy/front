@@ -88,24 +88,20 @@
 
 
 <script>
-import ClientController from '@/api/ClientController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import debounce from 'lodash.debounce';
 import ProjectController from '@/api/ProjectController';
 import TransactionDto from '@/dto/transaction/TransactionDto';
 import ClientDto from '@/dto/client/ClientDto';
 import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
 import TransactionController from '@/api/TransactionController';
-import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
-
 
 export default {
     components: {
         PrimaryButton,
         AlertDialog,
-        ClientSearch,
+        ClientSearch: () => import('@/views/components/app/search/ClientSearch.vue')
     },
     props: {
         editingItem: {
@@ -158,9 +154,7 @@ export default {
     computed: {
         currencyIdComputed: {
             get() {
-                // при редактировании — оставить выбранную
                 if (this.editingItemId) return this.currencyId;
-                // иначе — валюта кассы
                 const cash = this.allCashRegisters.find(c => c.id === this.cashId);
                 return cash?.currency_id || '';
             },
@@ -240,7 +234,7 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('saved-error', error);
+                this.$emit('saved-error', this.getApiErrorMessage(error));
             }
             this.saveLoading = false;
 
@@ -259,7 +253,7 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('deleted-error', error);
+                this.$emit('deleted-error', this.getApiErrorMessage(error));
             }
             this.deleteLoading = false;
         },
@@ -274,14 +268,24 @@ export default {
             this.selectedClient = null;
             this.editingItemId = null;
         },
-
         showDeleteDialog() {
             this.deleteDialog = true;
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
+        },
+       getApiErrorMessages(e) {
+    if (e?.response && e.response.data) {
+        if (e.response.data.errors) {
+            return Object.values(e.response.data.errors).flat();
         }
-
+        if (e.response.data.message) {
+            return [e.response.data.message];
+        }
+    }
+    if (e?.message) return [e.message];
+    return ["Ошибка"];
+}
     },
     watch: {
         defaultCashId: {

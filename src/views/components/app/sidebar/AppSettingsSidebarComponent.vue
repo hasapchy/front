@@ -16,7 +16,7 @@
             </ul>
             <ul>
                 <SidebarLink to="/admin/categories" icon="fa-solid fa-list-alt mr-2" :settings="true">
-                    Категории
+                    Категории товара/услуг
                 </SidebarLink>
             </ul>
             <ul>

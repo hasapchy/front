@@ -4,15 +4,14 @@
         <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
         <div>
             <label>Дата</label>
-            <input type="datetime-local" v-model="date" :disabled="!!editingItemId">
+            <input type="datetime-local" v-model="date" :disabled="!!editingItemId" />
         </div>
         <div v-if="type === 'cash'" class="mt-2">
             <label class="block mb-1 required">Касса</label>
             <select v-model="cashId" :disabled="!!editingItemId">
                 <option value="">Нет</option>
-                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">{{
-                    parent.name
-                    }}
+                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">
+                    {{ parent.name }}
                 </option>
             </select>
         </div>
@@ -20,13 +19,13 @@
             <label class="block mb-1 required">Тип оплаты</label>
             <div>
                 <label class="inline-flex items-center">
-                    <input type="radio" v-model="type" value="cash" :disabled="!!editingItemId">
+                    <input type="radio" v-model="type" value="cash" :disabled="!!editingItemId" />
                     <span class="ml-2">В кассу</span>
                 </label>
             </div>
             <div>
                 <label class="inline-flex items-center">
-                    <input type="radio" v-model="type" value="balance" :disabled="!!editingItemId">
+                    <input type="radio" v-model="type" value="balance" :disabled="!!editingItemId" />
                     <span class="ml-2">В баланс клиента</span>
                 </label>
             </div>
@@ -35,24 +34,24 @@
             <label class="block mb-1">Проект</label>
             <select v-model="projectId" :disabled="!!editingItemId">
                 <option value="">Нет</option>
-                <option v-if="allProjects.length" v-for="parent in allProjects" :value="parent.id">{{ parent.name }}
+                <option v-if="allProjects.length" v-for="parent in allProjects" :value="parent.id">
+                    {{ parent.name }}
                 </option>
             </select>
         </div>
 
         <div class="mt-2">
             <label>Примечание</label>
-            <input type="text" v-model="note" :disabled="!!editingItemId">
+            <input type="text" v-model="note" :disabled="!!editingItemId" />
         </div>
-
 
         <div class="mt-2">
             <label class="block mb-1 required">Склад</label>
             <div class="flex items-center space-x-2">
                 <select v-model="warehouseId" required :disabled="!!editingItemId">
                     <option value="">Нет</option>
-                    <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">{{
-                        parent.name }}
+                    <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">
+                        {{ parent.name }}
                     </option>
                 </select>
             </div>
@@ -72,52 +71,52 @@
         :confirm-text="'Удалить продажу'" :leave-text="'Отмена'" />
 </template>
 
-
 <script>
-import AppController from '@/api/AppController';
-import CashRegisterController from '@/api/CashRegisterController';
-import ClientController from '@/api/ClientController';
-import ProductController from '@/api/ProductController';
-import ProjectController from '@/api/ProjectController';
-import WarehouseController from '@/api/WarehouseController';
-import WarehouseReceiptController from '@/api/WarehouseReceiptController';
-import SaleController from '@/api/SaleController';
-import SaleDto from '@/dto/sale/SaleDto';
-import SaleProductDto from '@/dto/sale/SaleProductDto';
-import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import debounce from 'lodash.debounce';
-import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
-import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
-
+import AppController from "@/api/AppController";
+import CashRegisterController from "@/api/CashRegisterController";
+import ClientController from "@/api/ClientController";
+import ProductController from "@/api/ProductController";
+import ProjectController from "@/api/ProjectController";
+import WarehouseController from "@/api/WarehouseController";
+import WarehouseReceiptController from "@/api/WarehouseReceiptController";
+import SaleController from "@/api/SaleController";
+import SaleDto from "@/dto/sale/SaleDto";
+import SaleProductDto from "@/dto/sale/SaleProductDto";
+import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
+import debounce from "lodash.debounce";
+import ClientSearch from "@/views/components/app/search/ClientSearch.vue";
+import ProductSearch from "@/views/components/app/search/ProductSearch.vue";
 
 export default {
     components: {
         PrimaryButton,
         AlertDialog,
-        ClientSearch,
-        ProductSearch
+        ClientSearch: () => import("@/views/components/app/search/ClientSearch.vue"),
+        ProductSearch,
     },
     props: {
         editingItem: {
             type: SaleDto,
             required: false,
-            default: null
-        }
+            default: null,
+        },
     },
     data() {
         return {
-            date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
-            note: this.editingItem ? this.editingItem.note : '',
-            type: this.editingItem ? this.editingItem.type : 'cash',
-            warehouseId: this.editingItem ? this.editingItem.warehouseId || '' : '',
-            currencyId: this.editingItem ? this.editingItem.currencyId || '' : '',
-            projectId: this.editingItem ? this.editingItem.projectId : '',
-            cashId: this.editingItem ? this.editingItem.cashId : '',
+            date: this.editingItem
+                ? this.editingItem.date
+                : new Date().toISOString().substring(0, 16),
+            note: this.editingItem ? this.editingItem.note : "",
+            type: this.editingItem ? this.editingItem.type : "cash",
+            warehouseId: this.editingItem ? this.editingItem.warehouseId || "" : "",
+            currencyId: this.editingItem ? this.editingItem.currencyId || "" : "",
+            projectId: this.editingItem ? this.editingItem.projectId : "",
+            cashId: this.editingItem ? this.editingItem.cashId : "",
             products: this.editingItem ? this.editingItem.products : [],
             discount: this.editingItem ? this.editingItem.discount : 0,
-            discountType: this.editingItem ? this.editingItem.discount_type : 'fixed',
-            // 
+            discountType: this.editingItem ? this.editingItem.discount_type : "fixed",
+            //
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
             // Состояния загрузки
@@ -128,7 +127,7 @@ export default {
             allProjects: [],
             allCashRegisters: [],
             currencies: [],
-        }
+        };
     },
     created() {
         this.fetchAllWarehouses();
@@ -138,21 +137,22 @@ export default {
     },
     computed: {
         selectedCurrency() {
-            return this.currencies.find(currency => currency.id == this.currency_id);
+            return this.currencies.find((currency) => currency.id == this.currency_id);
         },
         selectedCash() {
-            return this.allCashRegisters.find(c => c.id == this.cashId);
+            return this.allCashRegisters.find((c) => c.id == this.cashId);
         },
         subtotal() {
-            return this.products.reduce((sum, p) =>
-                sum + (Number(p.price) || 0) * (Number(p.quantity) || 0), 0
+            return this.products.reduce(
+                (sum, p) => sum + (Number(p.price) || 0) * (Number(p.quantity) || 0),
+                0
             );
         },
         discountAmount() {
             const disc = Number(this.discount) || 0;
             if (!disc) return 0;
-            if (this.discountType === 'percent') {
-                return this.subtotal * disc / 100;
+            if (this.discountType === "percent") {
+                return (this.subtotal * disc) / 100;
             }
             return Math.min(disc, this.subtotal);
         },
@@ -161,16 +161,16 @@ export default {
         },
 
         defaultCurrencySymbol() {
-            const def = this.currencies.find(c => c.is_default);
-            return def ? def.symbol : '';
+            const def = this.currencies.find((c) => c.is_default);
+            return def ? def.symbol : "";
         },
         currencySymbol() {
-            return this.type === 'cash'
-                ? (this.selectedCash?.currency_symbol || '')
-                : (this.defaultCurrencySymbol || '');
+            return this.type === "cash"
+                ? this.selectedCash?.currency_symbol || ""
+                : this.defaultCurrencySymbol || "";
         },
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    emits: ["saved", "saved-error", "deleted", "deleted-error"],
     methods: {
         async fetchAllWarehouses() {
             this.allWarehouses = await WarehouseController.getAllItems();
@@ -201,22 +201,21 @@ export default {
                     client_id: this.selectedClient?.id,
                     project_id: this.projectId || null,
                     warehouse_id: this.warehouseId,
-                    currency_id: this.type === 'cash'
-                        ? this.selectedCash?.currency_id
-                        : this.currencyId,
-                    cash_id: this.type === 'cash' ? this.cashId : null,
+                    currency_id:
+                        this.type === "cash" ? this.selectedCash?.currency_id : this.currencyId,
+                    cash_id: this.type === "cash" ? this.cashId : null,
                     type: this.type,
                     date: this.date,
                     note: this.note,
                     discount: this.discount,
                     discount_type: this.discountType,
-                    products: this.products.map(p => ({
+                    products: this.products.map((p) => ({
                         product_id: p.productId,
                         quantity: p.quantity,
-                        price: p.price
-                    }))
+                        price: p.price,
+                    })),
                 };
-                console.log('Saving sale with formData:', formData);
+                console.log("Saving sale with formData:", formData);
                 let resp;
                 if (this.editingItemId != null) {
                     resp = await SaleController.updateItem(this.editingItemId, formData);
@@ -224,11 +223,11 @@ export default {
                     resp = await SaleController.storeItem(formData);
                 }
                 if (resp.message) {
-                    this.$emit('saved');
+                    this.$emit("saved");
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('saved-error', error);
+                this.$emit('saved-error', this.getApiErrorMessage(error));
             }
             this.saveLoading = false;
         },
@@ -241,22 +240,22 @@ export default {
             try {
                 var resp = await SaleController.deleteItem(this.editingItemId);
                 if (resp.message) {
-                    this.$emit('deleted');
+                    this.$emit("deleted");
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('deleted-error', error);
+                this.$emit('deleted-error', this.getApiErrorMessage(error));
             }
             this.deleteLoading = false;
         },
         clearForm() {
             this.date = new Date().toISOString().substring(0, 16);
-            this.note = '';
-            this.type = 'cash';
-            this.warehouseId = this.allWarehouses.length ? this.allWarehouses[0].id : '';
-            this.currencyId = '';
-            this.projectId = '';
-            this.cashId = this.allCashRegisters.length ? this.allCashRegisters[0].id : '';
+            this.note = "";
+            this.type = "cash";
+            this.warehouseId = this.allWarehouses.length ? this.allWarehouses[0].id : "";
+            this.currencyId = "";
+            this.projectId = "";
+            this.cashId = this.allCashRegisters.length ? this.allCashRegisters[0].id : "";
             this.selectedClient = null;
             this.products = [];
             this.editingItemId = null;
@@ -266,28 +265,40 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
+        },
+       getApiErrorMessages(e) {
+    if (e?.response && e.response.data) {
+        if (e.response.data.errors) {
+            return Object.values(e.response.data.errors).flat();
         }
+        if (e.response.data.message) {
+            return [e.response.data.message];
+        }
+    }
+    if (e?.message) return [e.message];
+    return ["Ошибка"];
+},
     },
     watch: {
         type: {
             handler(newType) {
-                if (newType === 'balance') {
-                    this.cashId = '';
-                    const defaultCurrency = this.currencies.find(c => c.is_default);
+                if (newType === "balance") {
+                    this.cashId = "";
+                    const defaultCurrency = this.currencies.find((c) => c.is_default);
                     if (defaultCurrency) {
                         this.currencyId = defaultCurrency.id;
                     }
                 }
-            }
+            },
         },
         cashId: {
             handler(newCashId) {
-                const selectedCash = this.allCashRegisters.find(cash => cash.id == newCashId);
+                const selectedCash = this.allCashRegisters.find((cash) => cash.id == newCashId);
                 if (selectedCash && selectedCash.currency_id) {
                     this.currencyId = selectedCash.currency_id;
                 }
             },
-            immediate: true
+            immediate: true,
         },
         allWarehouses: {
             handler(newWarehouses) {
@@ -295,30 +306,35 @@ export default {
                     this.warehouseId = newWarehouses[0].id;
                 }
             },
-            immediate: true
+            immediate: true,
         },
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
                     this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
-                    this.note = newEditingItem.note || '';
-                    this.type = (newEditingItem.cashId || newEditingItem.transactionId) ? 'cash' : 'balance';
-                    this.warehouseId = newEditingItem.warehouseId || (this.allWarehouses.length ? this.allWarehouses[0].id : '');
-                    this.currencyId = newEditingItem.currencyId || '';
-                    this.projectId = newEditingItem.projectId || '';
-                    this.cashId = newEditingItem.cashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
+                    this.note = newEditingItem.note || "";
+                    this.type =
+                        newEditingItem.cashId || newEditingItem.transactionId ? "cash" : "balance";
+                    this.warehouseId =
+                        newEditingItem.warehouseId ||
+                        (this.allWarehouses.length ? this.allWarehouses[0].id : "");
+                    this.currencyId = newEditingItem.currencyId || "";
+                    this.projectId = newEditingItem.projectId || "";
+                    this.cashId =
+                        newEditingItem.cashId ||
+                        (this.allCashRegisters.length ? this.allCashRegisters[0].id : "");
                     this.selectedClient = newEditingItem.client || null;
                     this.editingItemId = newEditingItem.id || null;
                     this.products = newEditingItem.products || [];
                     this.discount = newEditingItem.discount || 0;
-                    this.discountType = newEditingItem.discount_type || 'fixed';
+                    this.discountType = newEditingItem.discount_type || "fixed";
                 } else {
                     this.clearForm();
                 }
             },
             deep: true,
-            immediate: true
-        }
-    }
-}
+            immediate: true,
+        },
+    },
+};
 </script>

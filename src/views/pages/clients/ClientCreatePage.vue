@@ -89,7 +89,8 @@
             <div v-if="balanceLoading" class="text-gray-500">Загрузка...</div>
             <div v-else-if="balanceHistory.length === 0" class="text-gray-500">История отсутствует</div>
             <DraggableTable v-if="!balanceLoading && balanceHistory.length" table-key="client.balance"
-                :columns-config="columnsBalance" :table-data="balanceHistory" :item-mapper="itemMapperBalance" />
+                :columns-config="columnsBalance" :table-data="balanceHistory" :item-mapper="itemMapperBalance"
+                :onItemClick="handleBalanceItemClick" />
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -99,6 +100,15 @@
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление клиента'" :confirm-text="'Удалить клиента'" :leave-text="'Отмена'" />
+    <SideModalDialog :showForm="entityModalOpen" :onclose="() => { entityModalOpen = false; selectedEntity = null }">
+        <template v-if="selectedEntity">
+            <TransactionCreatePage v-if="selectedEntity.type === 'transaction'" :editing-item="selectedEntity.data" />
+            <SaleCreatePage v-else-if="selectedEntity.type === 'sale'" :editing-item-id="selectedEntity.id" />
+            <OrderCreatePage v-else-if="selectedEntity.type === 'order'" :editing-item-id="selectedEntity.id" />
+            <WarehousesReceiptCreatePage v-else-if="selectedEntity.type === 'receipt'"
+                :editing-item-id="selectedEntity.id" />
+        </template>
+    </SideModalDialog>
 </template>
 
 <script>
@@ -109,13 +119,21 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import Inputmask from 'inputmask';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import TransactionController from '@/api/TransactionController';
+import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
+import SaleCreatePage from '@/views/pages/sales/SaleCreatePage.vue';
 
 export default {
     components: {
         PrimaryButton,
         AlertDialog,
         TabBar,
-        DraggableTable
+        DraggableTable,
+        SideModalDialog,
+        TransactionCreatePage,
+        SaleCreatePage,
+
     },
     props: {
         editingItem: { type: ClientDto, default: null },
@@ -143,6 +161,9 @@ export default {
             deleteLoading: false,
             balanceLoading: false,
             balanceHistory: [],
+            selectedEntity: null,
+            entityModalOpen: false,
+
             ///
             currentTab: 'info',
             tabs: [
@@ -188,6 +209,66 @@ export default {
                 this.newPhone = '';
             }
         },
+        getModalProps(entity) {
+            if (entity.type === 'transaction') {
+                return {
+                    editingItem: entity.data,
+                };
+            }
+            return {
+                editingItemId: entity.id,
+            };
+        },
+        getModalComponent(type) {
+            switch (type) {
+                case 'sale':
+                    return () => import('@/views/pages/sales/SaleCreatePage.vue');
+                case 'order':
+                    return () => import('@/views/pages/orders/OrderCreatePage.vue');
+                case 'transaction':
+                    return () => import('@/views/pages/transactions/TransactionCreatePage.vue');
+                case 'receipt':
+                    return () => import('@/views/pages/warehouses/WarehousesReceiptCreatePage.vue');
+                default:
+                    return null;
+            }
+        },
+        async handleBalanceItemClick(item) {
+            console.log('[click] Клик по строке баланса', item);
+
+            switch (item.source) {
+                case 'transaction':
+                    try {
+                        const resp = await TransactionController.getItem(item.sourceId);
+                        console.log('RESP', resp);
+                        this.selectedEntity = {
+                            type: 'transaction',
+                            data: resp.item,
+                        };
+                        this.entityModalOpen = true;
+                    } catch (e) {
+                        console.error('Ошибка при загрузке транзакции:', e);
+                    }
+
+                    break;
+
+                case 'sale':
+                case 'order':
+                case 'receipt':
+                    this.selectedEntity = {
+                        type: item.source,
+                        id: item.sourceId
+                    };
+                    this.entityModalOpen = true;
+                    break;
+
+                default:
+                    this.selectedEntity = null;
+
+            }
+
+        },
+
         removePhone(index) {
             this.phones.splice(index, 1);
         },
@@ -245,7 +326,7 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('saved-error', error);
+                this.$emit('saved-error', this.getApiErrorMessage(error));
             }
             this.saveLoading = false;
         },
@@ -262,7 +343,7 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('deleted-error', error);
+                this.$emit('deleted-error', this.getApiErrorMessage(error));
             }
             this.deleteLoading = false;
         },
@@ -289,9 +370,6 @@ export default {
             this.deleteDialog = false;
         },
         ///
-        changeTab(tab) {
-            this.currentTab = tab;
-        },
         async fetchBalanceHistory() {
             if (!this.editingItem) return;
             this.balanceLoading = true;
@@ -308,7 +386,20 @@ export default {
             if (tab === 'balance') {
                 this.fetchBalanceHistory();
             }
+        },
+       getApiErrorMessages(e) {
+    if (e?.response && e.response.data) {
+        if (e.response.data.errors) {
+            return Object.values(e.response.data.errors).flat();
         }
+        if (e.response.data.message) {
+            return [e.response.data.message];
+        }
+    }
+    if (e?.message) return [e.message];
+    return ["Ошибка"];
+}
+
     },
     watch: {
         defaultFirstName(newVal) {

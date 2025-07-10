@@ -2,7 +2,7 @@
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">Касса</h2>
         <div>
-            <label>Название</label>
+            <label class="required">Название</label>
             <input type="text" v-model="name">
         </div>
         <div class=" mt-2">
@@ -115,7 +115,7 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('saved-error', error);
+                this.$emit('saved-error', this.getApiErrorMessage(error));
             }
             this.saveLoading = false;
 
@@ -134,7 +134,7 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('deleted-error', error);
+                this.$emit('deleted-error', this.getApiErrorMessage(error));
             }
             this.deleteLoading = false;
         },
