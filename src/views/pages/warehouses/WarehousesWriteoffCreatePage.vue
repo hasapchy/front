@@ -142,7 +142,7 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
-        },getApiErrorMessages(e) {
+        },getApiErrorMessage(e) {
     if (e?.response && e.response.data) {
         if (e.response.data.errors) {
             return Object.values(e.response.data.errors).flat();
