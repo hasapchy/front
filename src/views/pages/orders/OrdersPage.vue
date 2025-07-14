@@ -116,7 +116,7 @@ export default {
             switch (c) {
                 case 'products':
                     return i.productsHtmlList();
-              case 'dateUser':
+                case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
                 case 'client':
                     if (!i.client) return '<span class="text-gray-500">Не указан</span>';
@@ -227,9 +227,23 @@ export default {
                 await this.fetchItems(this.data.currentPage, true);
                 this.showNotification('Статус обновлён', '', false);
             } catch (e) {
-                this.showNotification('Ошибка смены статуса', e.message, true);
+                const errors = this.getApiErrorMessage(e);
+                this.showNotification('Ошибка смены статуса', errors.join('\n'), true);
             }
             this.loading = false;
+        },
+
+        getApiErrorMessage(e) {
+            if (e?.response && e.response.data) {
+                if (e.response.data.errors) {
+                    return Object.values(e.response.data.errors).flat();
+                }
+                if (e.response.data.message) {
+                    return [e.response.data.message];
+                }
+            }
+            if (e?.message) return [e.message];
+            return ["Ошибка"];
         },
     }
 };

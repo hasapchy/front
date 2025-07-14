@@ -1,10 +1,9 @@
 <template>
   <div ref="dropdownRef" class="relative text-sm w-full status-dropdown !text-[12px]">
-    <!-- Отображение выбранного -->
     <div class="p-2 rounded cursor-pointer flex items-center justify-between" :style="selectedStyle"
       @click="toggleDropdown">
-      <span class="truncate">{{ selectedStatus?.name || '—' }}</span>
-      <i class="fas fa-chevron-down text-xs ml-2 text-gray-600"></i>
+      <span class="truncate text-white">{{ selectedStatus?.name || '—' }}</span>
+      <i class="fas fa-chevron-down text-xs ml-2 text-white"></i>
     </div>
 
     <!-- Выпадающий список -->
@@ -13,7 +12,7 @@
       <template v-for="group in sortedStatuses" :key="group.category?.id">
         <li v-for="s in group.items" :key="s.id"
           class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
-          @click="selectStatus(s.id)" :style="{ backgroundColor: getColorStyle(s), color: '#000' }">
+          @click="selectStatus(s.id)" :style="{ backgroundColor: getColorStyle(s), color: '#fff' }">
           <span>{{ s.name }}</span>
         </li>
       </template>
@@ -45,15 +44,18 @@ export default {
     selectedStyle() {
       const hex = this.selectedStatus?.category?.color;
       if (!hex) return {};
-      const { r, g, b } = this.hexToRgb(hex);
+      // const { r, g, b } = this.hexToRgb(hex);
+      // return {
+      //   backgroundColor: `rgba(${r}, ${g}, ${b}, 0.2)`,
+      //   color: '#000',
+      // };
       return {
-        backgroundColor: `rgba(${r}, ${g}, ${b}, 0.2)`,
+        backgroundColor: hex,
         color: '#000',
       };
     },
     sortedStatuses() {
       const grouped = {};
-
       for (const status of this.allStatuses) {
         const catId = status.category?.id ?? 0;
         if (!grouped[catId]) {
@@ -64,8 +66,6 @@ export default {
         }
         grouped[catId].items.push(status);
       }
-
-      // Преобразуем в массив и сортируем по category.id
       return Object.values(grouped).sort((a, b) => {
         const aId = a.category?.id ?? 0;
         const bId = b.category?.id ?? 0;
@@ -84,8 +84,9 @@ export default {
     getColorStyle(status) {
       const hex = status.category?.color;
       if (!hex) return 'transparent';
-      const { r, g, b } = this.hexToRgb(hex);
-      return `rgba(${r}, ${g}, ${b}, 0.15)`;
+      // const { r, g, b } = this.hexToRgb(hex);
+      // return `rgba(${r}, ${g}, ${b}, 0.15)`;
+      return hex; 
     },
     hexToRgb(hex) {
       const clean = hex.replace('#', '');
