@@ -12,9 +12,14 @@
                         class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
                         <div class="flex justify-between items-center">
                             <div class="flex items-center">
-                                <span v-html="product.icons()"></span>
+                                <div class="w-7 h-7 flex items-center justify-center mr-2">
+                                    <img v-if="product.imgUrl()" :src="product.imgUrl()" alt="icon"
+                                        class="w-7 h-7 object-cover rounded" loading="lazy" />
+                                    <span v-else v-html="product.icons()"></span>
+                                </div>
                                 {{ product.name }}
                             </div>
+
                             <div class="text-[#337AB7] text-sm">
                                 <template v-if="product.type === true">
                                     <!-- {{ console.log('stock_quantity:', product.stock_quantity) }} {{
@@ -41,9 +46,14 @@
                     class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center">
-                            <span v-html="product.icons()"></span>
+                            <div class="w-7 h-7 flex items-center justify-center mr-2">
+                                <img v-if="product.imgUrl()" :src="product.imgUrl()" alt="icon"
+                                    class="w-7 h-7 object-cover rounded" loading="lazy" />
+                                <span v-else v-html="product.icons()"></span>
+                            </div>
                             {{ product.name }}
                         </div>
+
                         <div class="text-[#337AB7] text-sm">
                             <template v-if="product.type === true">
                                 <!-- {{ console.log('stock_quantity:', product.stock_quantity) }} {{ product.unit?.short_name

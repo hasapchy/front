@@ -56,8 +56,8 @@ class ProductDto {
     return this.type == 1 || this.type === "1" ? "product" : "service";
   }
   formatDate() {
-     return dayjsDateTime(this.date);
-   }
+    return dayjsDateTime(this.date);
+  }
 
   icons() {
     if (this.typeName() === "product") {
@@ -90,6 +90,12 @@ class ProductDto {
     return isNaN(price) ? "" : price.toFixed(2).replace(/\.0+$/, "");
     // + ' ' + (this.currency_symbol || '')
   }
-}
 
+  imgUrl() {
+    if (this.image && this.image.length > 0) {
+      return `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.image}`;
+    }
+    return null;
+  }
+}
 export default ProductDto;
