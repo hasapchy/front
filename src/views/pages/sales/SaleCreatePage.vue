@@ -92,7 +92,7 @@ export default {
     components: {
         PrimaryButton,
         AlertDialog,
-        ClientSearch: () => import("@/views/components/app/search/ClientSearch.vue"),
+        ClientSearch,
         ProductSearch,
     },
     props: {

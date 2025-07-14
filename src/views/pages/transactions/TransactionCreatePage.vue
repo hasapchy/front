@@ -96,12 +96,13 @@ import ClientDto from '@/dto/client/ClientDto';
 import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
 import TransactionController from '@/api/TransactionController';
+import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 
 export default {
     components: {
         PrimaryButton,
         AlertDialog,
-        ClientSearch: () => import('@/views/components/app/search/ClientSearch.vue')
+        ClientSearch
     },
     props: {
         editingItem: {
@@ -203,6 +204,7 @@ export default {
             }
         },
         async save() {
+            console.log('==[SAVE]== selectedClient:', this.selectedClient);
             this.saveLoading = true;
 
             try {
@@ -274,18 +276,18 @@ export default {
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
-       getApiErrorMessage(e) {
-    if (e?.response && e.response.data) {
-        if (e.response.data.errors) {
-            return Object.values(e.response.data.errors).flat();
+        getApiErrorMessage(e) {
+            if (e?.response && e.response.data) {
+                if (e.response.data.errors) {
+                    return Object.values(e.response.data.errors).flat();
+                }
+                if (e.response.data.message) {
+                    return [e.response.data.message];
+                }
+            }
+            if (e?.message) return [e.message];
+            return ["Ошибка"];
         }
-        if (e.response.data.message) {
-            return [e.response.data.message];
-        }
-    }
-    if (e?.message) return [e.message];
-    return ["Ошибка"];
-}
     },
     watch: {
         defaultCashId: {

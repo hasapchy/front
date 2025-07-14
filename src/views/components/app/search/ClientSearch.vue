@@ -74,13 +74,14 @@
 <script>
 import ClientController from '@/api/ClientController';
 import debounce from 'lodash.debounce';
-import ClientCreatePage from '@/views/pages/clients/ClientCreatePage.vue';
+// import ClientCreatePage from '@/views/pages/clients/ClientCreatePage.vue';
+import { defineAsyncComponent } from 'vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import ClientDto from '@/dto/client/ClientDto';
 
 export default {
     components: {
-        ClientCreatePage,
+        ClientCreatePage: defineAsyncComponent(() => import('@/views/pages/clients/ClientCreatePage.vue')),
         SideModalDialog,
     },
     props: {
@@ -136,6 +137,7 @@ export default {
             }
         }, 250),
         selectClient(client) {
+            console.log('==[SELECT CLIENT]==', client);
             this.showDropdown = false;
             this.clientSearch = '';
             this.clientResults = [];
