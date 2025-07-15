@@ -16,6 +16,7 @@
     "axios": "^1.7.9",
     "dayjs": "^1.11.13",
     "inputmask": "^5.0.9",
+    "jsbarcode": "^3.12.1",
     "lodash.debounce": "^4.0.8",
     "mitt": "^3.0.1",
     "tailwindcss": "^4.0.4",

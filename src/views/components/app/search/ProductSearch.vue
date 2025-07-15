@@ -19,15 +19,18 @@
                                 </div>
                                 {{ product.name }}
                             </div>
-
-                            <div class="text-[#337AB7] text-sm">
-                                <template v-if="product.type === true">
-                                    <!-- {{ console.log('stock_quantity:', product.stock_quantity) }} {{
-                                        product.unit?.short_name ||
-                                        product.unit_short_name || '' }} -->
+                            <div class="text-[#337AB7] text-xs flex flex-col items-end min-w-[90px]">
+                                <template v-if="product.typeName() === 'product'">
+                                    <div>
+                                        {{ product.stock_quantity }}
+                                        {{ product.unit_short_name ||
+                                            product.unit_name || '' }}
+                                        цена {{ product.retailPriceFormatted() }}m
+                                    </div>
                                 </template>
                                 <template v-else>
-                                    ∞
+                                    <div>∞{{ product.unit_short_name ||
+                                        product.unit_name || '' }} | {{ product.retailPriceFormatted() }}m</div>
                                 </template>
                             </div>
 

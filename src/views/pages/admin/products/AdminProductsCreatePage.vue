@@ -90,7 +90,14 @@
             <div class="flex items-center space-x-2">
                 <input type="text" v-model="barcode" :disabled="editingItemId !== null">
                 <PrimaryButton v-if="editingItemId == null" icon="fas fa-barcode" :is-info="true"
-                    :onclick="generateBarcode" :is-full="true"> Сгенерировать </PrimaryButton>
+                    :onclick="generateBarcode" :is-full="false">
+                </PrimaryButton>
+                <template v-if="barcode">
+                    <svg id="barcode-svg" class="w-32 h-12" />
+                    <canvas id="barcode-canvas" style="display:none;"></canvas>
+                    <PrimaryButton @click="downloadBarcodePng" icon="fas fa-download" :is-info="true">
+                    </PrimaryButton>
+                </template>
             </div>
         </div>
     </div>
@@ -118,6 +125,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import AdminCategoryCreatePage from '@/views/pages/admin/categories/AdminCategoryCreatePage.vue';
+import JsBarcode from "jsbarcode";
 
 export default {
     components: {
@@ -240,7 +248,7 @@ export default {
             this.deleteLoading = false;
         },
         generateBarcode() {
-            const prefix = Math.floor(Math.random() * 10) + 20; // Generates a number between 20 and 29
+            const prefix = Math.floor(Math.random() * 10) + 20;
             const ean = String(prefix) + String(Math.floor(Math.random() * 9999999999)).padStart(10, '0');
             const checksum = this.calculateEAN13Checksum(ean);
             this.barcode = ean + checksum;
@@ -252,11 +260,50 @@ export default {
             }
             return (10 - (sum % 10)) % 10;
         },
+        renderBarcodeToCanvas(code) {
+            const svg = document.getElementById("barcode-svg");
+            const serializer = new XMLSerializer();
+            const svgStr = serializer.serializeToString(svg);
+            const img = new window.Image();
+            const svg64 = btoa(unescape(encodeURIComponent(svgStr)));
+            const image64 = 'data:image/svg+xml;base64,' + svg64;
+
+            img.onload = function () {
+                const canvas = document.getElementById("barcode-canvas");
+                canvas.width = svg.width.baseVal.value || 300;
+                canvas.height = svg.height.baseVal.value || 100;
+                const ctx = canvas.getContext("2d");
+                ctx.fillStyle = "#fff";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+            img.src = image64;
+        },
+        downloadBarcodePng() {
+            const canvas = document.getElementById("barcode-canvas");
+            const pngUrl = canvas.toDataURL("image/png");
+            const a = document.createElement('a');
+            a.href = pngUrl;
+            a.download = `barcode_${this.barcode}.png`;
+            a.click();
+        },
         clearForm() {
+            this.type = this.defaultType || "product";
             this.name = '';
-            this.selectedUsers = [];
-            this.selectedParentCategoryId = '';
+            this.description = '';
+            this.sku = '';
+            this.image = null;
+            this.selected_image = null;
+            this.category_id = '';
+            this.unit_id = '';
+            this.barcode = '';
+            this.retail_price = 0;
+            this.wholesale_price = 0;
+            this.purchase_price = 0;
             this.editingItemId = null;
+            if (this.$refs.imageInput) {
+                this.$refs.imageInput.value = null;
+            }
             this.fetchAllCategories();
         },
         showDeleteDialog() {
@@ -296,6 +343,14 @@ export default {
         defaultName(newVal) {
             if (!this.editingItem && !this.editingItemId) {
                 this.name = newVal || '';
+            }
+        },
+        barcode(newVal) {
+            if (newVal) {
+                this.$nextTick(() => {
+                    JsBarcode("#barcode-svg", newVal, { format: "ean13", displayValue: true });
+                    this.renderBarcodeToCanvas(newVal);
+                });
             }
         },
         editingItem: {
