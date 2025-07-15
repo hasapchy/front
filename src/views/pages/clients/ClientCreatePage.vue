@@ -115,20 +115,34 @@
       </div>
     </div>
     <div v-show="currentTab === 'balance'" class="mt-4">
-      <h3 class="text-md font-semibold mb-2">История баланса</h3>
-      <div v-if="balanceLoading" class="text-gray-500">Загрузка...</div>
-      <div v-else-if="balanceHistory.length === 0" class="text-gray-500">
-        История отсутствует
-      </div>
-      <DraggableTable
-        v-if="!balanceLoading && balanceHistory.length"
-        table-key="client.balance"
-        :columns-config="columnsBalance"
-        :table-data="balanceHistory"
-        :item-mapper="itemMapperBalance"
-        :onItemClick="handleBalanceItemClick"
-      />
-    </div>
+  <h3 class="text-md font-semibold mb-2">История баланса</h3>
+  <!-- Итоговый баланс здесь -->
+  <div class="mb-2 flex items-center gap-2">
+    <span>Итоговый баланс:</span>
+    <span
+      :class="{
+        'text-[#5CB85C] font-bold': editingItem && editingItem.balanceNumeric() >= 0,
+        'text-[#EE4F47] font-bold': editingItem && editingItem.balanceNumeric() < 0
+      }"
+    >
+      {{ editingItem ? editingItem.balanceFormatted() : "0.00" }} TMT
+    </span>
+  </div>
+
+  <div v-if="balanceLoading" class="text-gray-500">Загрузка...</div>
+  <div v-else-if="balanceHistory.length === 0" class="text-gray-500">
+    История отсутствует
+  </div>
+  <DraggableTable
+    v-if="!balanceLoading && balanceHistory.length"
+    table-key="client.balance"
+    :columns-config="columnsBalance"
+    :table-data="balanceHistory"
+    :item-mapper="itemMapperBalance"
+    :onItemClick="handleBalanceItemClick"
+  />
+</div>
+
   </div>
   <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
     <PrimaryButton
