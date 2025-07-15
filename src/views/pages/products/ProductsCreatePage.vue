@@ -67,21 +67,18 @@
                 <label>Закупочная цена</label>
                 <div class="flex items-center rounded-l">
                     <input type="number" v-model="purchase_price">
-                    <!-- <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span> -->
                 </div>
             </div>
             <div class="w-1/3">
                 <label>Оптовая цена</label>
                 <div class="flex items-center rounded-l">
                     <input type="number" v-model="wholesale_price">
-                    <!-- <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span> -->
                 </div>
             </div>
             <div class="w-1/3">
                 <label>Розничная цена</label>
                 <div class="flex items-center rounded-l">
                     <input type="number" v-model="retail_price">
-                    <!-- <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span> -->
                 </div>
             </div>
         </div>
@@ -153,7 +150,6 @@ export default {
             retail_price: this.editingItem ? this.editingItem.retail_price : 0,
             wholesale_price: this.editingItem ? this.editingItem.wholesale_price : 0,
             purchase_price: this.editingItem ? this.editingItem.purchase_price : 0,
-            // currency_id: this.editingItem ? this.editingItem.currency_id : '',
             editingItemId: this.editingItem ? this.editingItem.id : null,
             //
             currencies: [],
@@ -174,9 +170,7 @@ export default {
         selectedUnit() {
             return this.units.find(unit => unit.id == this.unit_id);
         },
-        // selectedCurrency() {
-        //     return this.currencies.find(currency => currency.id == this.currency_id);
-        // }
+
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
@@ -366,7 +360,6 @@ export default {
                     this.retail_price = newEditingItem.retail_price || 0;
                     this.wholesale_price = newEditingItem.wholesale_price || 0;
                     this.purchase_price = newEditingItem.purchase_price || 0;
-                    // this.currency_id = newEditingItem.currency_id || '';
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     this.type = this.defaultType || "product";
@@ -380,7 +373,6 @@ export default {
                     this.retail_price = 0;
                     this.wholesale_price = 0;
                     this.purchase_price = 0;
-                    // this.currency_id = '';
                     this.editingItemId = null;
                     this.selected_image = null;
                 }

@@ -54,22 +54,13 @@
                     @update:totalPrice="totalPrice = $event" required />
             </div>
             <div v-show="currentTab === 'transactions'">
-                <div v-if="!editingItemId" class="p-4 text-gray-500">
+                <OrderTransactionsTab v-if="editingItemId" :order-id="editingItemId" :client="selectedClient"
+                    :project-id="projectId" :cash-id="cashId" :currency-symbol="currencySymbol"
+                    @updated-paid="paidTotalAmount = $event" />
+                <div v-else class="p-4 text-gray-500">
                     Сначала сохраните заказ, чтобы добавить/просматривать транзакции.
                 </div>
-                <div v-else>
-                    <PrimaryButton icon="fas fa-plus" :onclick="showTransactionModal" class="my-3">
-                        Добавить транзакцию
-                    </PrimaryButton>
-
-                    <DraggableTable v-if="transactions.length" table-key="order.transactions"
-                        :columns-config="transactionsColumns" :table-data="transactions"
-                        :item-mapper="transactionItemMapper" :onItemClick="editTransaction" />
-
-                    <div v-else class="text-gray-500">Транзакции отсутствуют</div>
-                </div>
             </div>
-
         </div>
     </div>
     <div class="mt-4 p-4 flex flex-wrap items-center justify-between bg-[#edf4fb] gap-4">
@@ -82,19 +73,12 @@
             <div>К оплате: <span class="font-bold">{{ totalPrice.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Оплачено: <span class="font-bold">{{ paidTotalAmount.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Осталось: <span class="font-bold">{{ (totalPrice - paidTotalAmount).toFixed(2) }}{{ currencySymbol
-            }}</span></div>
+                    }}</span></div>
 
         </div>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление заказа'" :confirm-text="'Удалить заказ'" :leave-text="'Отмена'" />
-    <SideModalDialog :showForm="transactionModal" :onclose="closeTransactionModal">
-        <template v-if="transactionModal">
-            <TransactionCreatePage :editingItem="editingTransaction" :initial-client="selectedClient"
-                :initial-project-id="projectId" :order-id="editingItemId" :default-cash-id="cashId"
-                @saved="handleTransactionSaved" @deleted="handleTransactionDeleted" />
-        </template>
-    </SideModalDialog>
 
 </template>
 
@@ -103,20 +87,15 @@ import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import CashRegisterController from '@/api/CashRegisterController';
-import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import OrderController from '@/api/OrderController';
 import WarehouseController from '@/api/WarehouseController';
 import ProjectController from '@/api/ProjectController';
 import AppController from '@/api/AppController';
-import TransactionController from '@/api/TransactionController';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
-import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import OrderStatusController from '@/api/OrderStatusController';
 import OrderCategoryController from '@/api/OrderCategoryController';
-
-
+import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue';
 
 export default {
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
@@ -125,10 +104,8 @@ export default {
         ProductSearch,
         PrimaryButton,
         AlertDialog,
-        SideModalDialog,
-        TransactionCreatePage,
         TabBar,
-        DraggableTable
+        OrderTransactionsTab
     },
     props: {
         editingItem: {
@@ -157,7 +134,6 @@ export default {
             products: this.editingItem?.products || [],
             discount: this.editingItem ? this.editingItem.discount : 0,
             discountType: this.editingItem ? this.editingItem.discount_type : 'fixed',
-            transactions: [],
             editingItemId: this.editingItem?.id || null,
             allWarehouses: [],
             allProjects: [],
@@ -168,16 +144,7 @@ export default {
             saveLoading: false,
             deleteLoading: false,
             deleteDialog: false,
-            transactionModal: false,
-            editingTransaction: null,
             paidTotalAmount: 0,
-            transactionsColumns: [
-                { name: 'id', label: 'ID' },
-                { name: 'amount', label: 'Сумма', html: true },
-                { name: 'cashName', label: 'Касса' },
-                { name: 'date', label: 'Дата' },
-            ],
-
         };
     },
     created() {
@@ -212,18 +179,11 @@ export default {
             if (this.discountType === 'percent') {
                 return this.subtotal * disc / 100;
             }
-            // фиксированная скидка: не больше суммы
             return Math.min(disc, this.subtotal);
         },
         totalPrice() {
             return this.subtotal - this.discountAmount;
         },
-        paidTotal() {
-            return this.transactions.reduce((sum, t) => {
-                const amount = Number(t.amount || t.cash_amount || 0);
-                return sum + amount;
-            }, 0);
-        }
     },
     methods: {
         async fetchAllWarehouses() {
@@ -257,59 +217,8 @@ export default {
         async fetchOrderStatuses() {
             this.allStatuses = await OrderStatusController.getAllItems();
         },
-        async fetchTransactions() {
-            if (!this.editingItemId) {
-                this.transactions = [];
-                return;
-            }
-            try {
-                const response = await TransactionController.getItems(1, null, "all_time", this.editingItemId);
-                this.transactions = response.items;
-            } catch (error) {
-                this.transactions = [];
-            }
-        },
-        showTransactionModal() {
-            this.editingTransaction = null;
-            this.transactionModal = true;
-        },
-        closeTransactionModal() {
-            this.transactionModal = false;
-            this.editingTransaction = null;
-        },
-        handleTransactionSaved() {
-            this.transactionModal = false;
-            this.fetchTransactions();
-            this.fetchPaidTotal();
-        },
-        handleTransactionDeleted() {
-            this.transactionModal = false;
-            this.fetchTransactions();
-            this.fetchPaidTotal();
-        },
-        editTransaction(transaction) {
-            this.editingTransaction = transaction;
-            this.transactionModal = true;
-        },
         changeTab(tabName) {
             this.currentTab = tabName;
-            if (tabName === 'transactions') {
-                this.fetchTransactions();
-                this.fetchPaidTotal();
-            }
-        },
-        async fetchPaidTotal() {
-            if (!this.editingItemId) {
-                this.paidTotalAmount = 0;
-                return;
-            }
-            try {
-                const resp = await TransactionController.getTotalPaidByOrderId(this.editingItemId);
-                this.paidTotalAmount = parseFloat(resp.total) || 0;
-            } catch (e) {
-                console.error('Ошибка при получении total:', e);
-                this.paidTotalAmount = 0;
-            }
         },
 
         async save() {
@@ -376,7 +285,6 @@ export default {
             this.note = '';
             this.description = ''
             this.products = [];
-            this.transactions = [];
             this.editingItemId = null;
             this.statusId = 1;
             this.paidTotalAmount = 0;
@@ -386,18 +294,6 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
-        },
-        transactionItemMapper(item, field) {
-            switch (field) {
-                case 'amount':
-                    return item.cashAmountData?.() || '-';
-                case 'cashName':
-                    return item.cashName || '-';
-                case 'date':
-                    return item.formatDate?.() || '-';
-                default:
-                    return item[field];
-            }
         },
         getApiErrorMessage(e) {
             if (e?.response && e.response.data) {
@@ -460,17 +356,11 @@ export default {
                     this.note = newEditingItem.note || '';
                     this.description = this.editingItem?.description || '';
                     this.products = newEditingItem.products || [];
-                    // this.currentTab = 'info';
                     this.discount = newEditingItem.discount || 0;
                     this.discountType = newEditingItem.discount_type || 'fixed';
                     this.editingItemId = newEditingItem.id || null;
-
-                    this.fetchTransactions();
-                    this.fetchPaidTotal();
-
                 } else {
                     this.clearForm();
-                    // this.currentTab = 'info';
                 }
             },
             deep: true,

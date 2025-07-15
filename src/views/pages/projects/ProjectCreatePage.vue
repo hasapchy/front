@@ -197,18 +197,18 @@ export default {
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
-       getApiErrorMessage(e) {
-    if (e?.response && e.response.data) {
-        if (e.response.data.errors) {
-            return Object.values(e.response.data.errors).flat();
-        }
-        if (e.response.data.message) {
-            return [e.response.data.message];
-        }
-    }
-    if (e?.message) return [e.message];
-    return ["Ошибка"];
-},
+        getApiErrorMessage(e) {
+            if (e?.response && e.response.data) {
+                if (e.response.data.errors) {
+                    return Object.values(e.response.data.errors).flat();
+                }
+                if (e.response.data.message) {
+                    return [e.response.data.message];
+                }
+            }
+            if (e?.message) return [e.message];
+            return ["Ошибка"];
+        },
         async handleFileChange(event) {
             if (!this.editingItemId) {
                 alert('Сначала сохраните проект, затем прикрепляйте файлы');
@@ -236,35 +236,33 @@ export default {
             this.uploading = false;
         },
         showDeleteFileDialog(index) {
-            this.deleteFileIndex = index; // Сохраняем индекс файла
-            this.deleteFileDialog = true; // Показываем диалог
+            this.deleteFileIndex = index;
+            this.deleteFileDialog = true;
         },
         closeDeleteFileDialog() {
             this.deleteFileDialog = false;
-            this.deleteFileIndex = -1; // Сбрасываем индекс
+            this.deleteFileIndex = -1;
         },
         async confirmDeleteFile() {
             if (this.deleteFileIndex === -1 || !this.editingItemId) {
                 this.closeDeleteFileDialog();
                 return;
             }
-
             const file = this.files[this.deleteFileIndex];
             if (!file) {
                 this.closeDeleteFileDialog();
                 return;
             }
-
             try {
                 const response = await api.post(`/projects/${this.editingItemId}/delete-file`, {
                     path: file.path
                 });
-                this.files = response.data.files; // Обновляем список файлов
+                this.files = response.data.files;
             } catch (e) {
                 alert('Ошибка удаления файла');
             }
 
-            this.closeDeleteFileDialog(); // Закрываем диалог
+            this.closeDeleteFileDialog();
         },
         async deleteFile(index) {
             if (!this.editingItemId) return;
@@ -282,7 +280,6 @@ export default {
         },
     },
     watch: {
-        // Поиск клиентов
         clientSearch: {
             handler: 'searchClients',
             immediate: true
@@ -313,27 +310,4 @@ export default {
         }
     }
 }
-
 </script>
-
-<!-- Стили для поиска клиентов: -->
-<style scoped>
-.appear-enter-active,
-.appear-leave-active {
-    transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.appear-enter-from,
-.appear-leave-to {
-    transform: scaleY(0);
-    opacity: 0;
-    transform-origin: top;
-}
-
-.appear-enter-to,
-.appear-leave-from {
-    transform: scaleY(1);
-    opacity: 1;
-    transform-origin: top;
-}
-</style>
