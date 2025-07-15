@@ -5,7 +5,7 @@
             <div class="mb-5"></div>
             <!-- <h2 class="text-lg font-semibold mb-4 p-2">Настройки</h2> -->
             <ul>
-                <SidebarLink to="/admin/cash-registers" icon="fa-solid fa-cash-register mr-2" :settings="true">
+                <SidebarLink to="/cash-registers" icon="fa-solid fa-cash-register mr-2" :settings="true">
                     Кассы
                 </SidebarLink>
             </ul>
@@ -15,17 +15,27 @@
                 </SidebarLink>
             </ul>
             <ul>
-                <SidebarLink to="/admin/categories" icon="fa-solid fa-list-alt mr-2" :settings="true">
+                <SidebarLink to="/categories" icon="fa-solid fa-list-alt mr-2" :settings="true">
                     Категории товара/услуг
                 </SidebarLink>
             </ul>
             <ul>
-                <SidebarLink to="/admin/products" icon="fa-solid fa-box mr-2" :settings="true">
+                <SidebarLink to="/order_statuses" icon="fa-solid fa-list-alt mr-2" :settings="true">
+                    Статусы заказов
+                </SidebarLink>
+            </ul>
+            <ul>
+                <SidebarLink to="/order_categories" icon="fa-solid fa-list-alt mr-2" :settings="true">
+                    Типы заказов
+                </SidebarLink>
+            </ul>
+            <ul>
+                <SidebarLink to="/products" icon="fa-solid fa-box mr-2" :settings="true">
                     Товары
                 </SidebarLink>
             </ul>
             <ul>
-                <SidebarLink to="/admin/services" icon="fa-solid fa-paint-roller mr-2" :settings="true">
+                <SidebarLink to="/services" icon="fa-solid fa-paint-roller mr-2" :settings="true">
                     Услуги
                 </SidebarLink>
             </ul>
@@ -105,8 +115,8 @@
                 @endif
 
                 <li class="mb-2">
-                    <a href="{{ route('admin.order-statuses') }}"
-                        class="flex items-center p-2  hover:bg-gray-600 {{ request()->routeIs('admin.order-statuses') ? 'bg-gray-600 border-l-2 border-red-500' : '' }}">
+                    <a href="{{ route('admin.order_statuses') }}"
+                        class="flex items-center p-2  hover:bg-gray-600 {{ request()->routeIs('admin.order_statuses') ? 'bg-gray-600 border-l-2 border-red-500' : '' }}">
                         <i class="fas fa-tasks mr-2"></i> Статусы заказов
                     </a>
                 </li>

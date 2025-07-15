@@ -1,6 +1,4 @@
 import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
-import ClientDto from "../client/ClientDto";
-import OrderProductDto from "./OrderProductDto";
 
 export default class OrderDto {
   constructor(

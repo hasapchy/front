@@ -169,7 +169,7 @@ import debounce from 'lodash.debounce';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import WarehouseReceiptProductDto from '@/dto/warehouse/WarehouseReceiptProductDto';
 import SaleProductDto from '@/dto/sale/SaleProductDto';
-import AdminProductsCreatePage from '@/views/pages/admin/products/AdminProductsCreatePage.vue';
+import AdminProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 
 export default {

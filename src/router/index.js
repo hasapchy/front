@@ -9,16 +9,18 @@ import HomePage from "@/views/pages/home/HomePage.vue";
 import WarehousesPage from "@/views/pages/warehouses/WarehousesPage.vue";
 import AppComponentsPage from "@/views/pages/app/AppComponentsPage.vue";
 import AdminWarehousesPage from "@/views/pages/admin/warehouses/AdminWarehousesPage.vue";
-import AdminCategoriesPage from "@/views/pages/admin/categories/AdminCategoriesPage.vue";
-import AdminProductsPage from "@/views/pages/admin/products/AdminProductsPage.vue";
+import CategoriesPage from "@/views/pages/categories/CategoriesPage.vue";
+import ProductsPage from "@/views/pages/products/ProductsPage.vue";
 import ClientsPage from "@/views/pages/clients/ClientsPage.vue";
-import AdminCashRegistersPage from "@/views/pages/admin/cash_registers/AdminCashRegistersPage.vue";
+import CashRegistersPage from "@/views/pages/cash_registers/CashRegistersPage.vue";
 import ProjectsPage from "@/views/pages/projects/ProjectsPage.vue";
-import AdminServicesPage from "@/views/pages/admin/products/AdminServicesPage.vue";
+import ServicesPage from "@/views/pages/products/ServicesPage.vue";
 import TransactionsPage from "@/views/pages/transactions/TransactionsPage.vue";
 import TransfersPage from "@/views/pages/transfers/TransfersPage.vue";
 import SalesPage from "@/views/pages/sales/SalesPage.vue";
 import OrdersPage from "@/views/pages/orders/OrdersPage.vue";
+import OrderStatusesPage from "@/views/pages/orders/OrderStatusesPage.vue";
+import OrderCategoriesPage from "@/views/pages/orders/OrderCategoriesPage.vue";
 
 const routes = [
   {
@@ -39,7 +41,7 @@ const routes = [
         component: SalesPage,
         meta: { title: "Продажи", requiresAuth: true, showSearch: true },
       },
-       {
+      {
         path: "/orders",
         name: "Orders",
         component: OrdersPage,
@@ -66,7 +68,7 @@ const routes = [
             },
             {
               name: "Кассы",
-              path: "/admin/cash-registers",
+              path: "/cash-registers",
             },
           ],
         },
@@ -85,7 +87,7 @@ const routes = [
             },
             {
               name: "Кассы",
-              path: "/admin/cash-registers",
+              path: "cash-registers",
             },
           ],
         },
@@ -121,45 +123,57 @@ const routes = [
         meta: { title: "Склады", requiresAuth: true },
       },
       {
-        path: "/admin/categories",
-        name: "Admin-Categories",
-        component: AdminCategoriesPage,
+        path: "/categories",
+        name: "Categories",
+        component: CategoriesPage,
         meta: { title: "Категории", requiresAuth: true },
       },
       {
-        path: "/admin/products",
-        name: "Admin-Products",
-        component: AdminProductsPage,
+        path: "/order_statuses",
+        name: "order_statuses",
+        component: OrderStatusesPage,
+        meta: { title: "Статусы заказов", requiresAuth: true },
+      },
+      {
+        path: "/order_categories",
+        name: "order_categories",
+        component: OrderCategoriesPage,
+        meta: { title: "Типы заказов", requiresAuth: true },
+      },
+      {
+        path: "/products",
+        name: "Products",
+        component: ProductsPage,
         meta: {
           title: "Товары",
           requiresAuth: true,
           binded: [
             {
               name: "Услуги",
-              path: "/admin/services",
+              path: "/services",
             },
           ],
         },
       },
       {
-        path: "/admin/services",
-        name: "Admin-Sevices",
-        component: AdminServicesPage,
+        path: "/services",
+        name: "Sevices",
+        component: ServicesPage,
         meta: {
           title: "Услуги",
           requiresAuth: true,
           binded: [
             {
               name: "Товары",
-              path: "/admin/products",
+              path: "/products",
             },
           ],
         },
       },
       {
-        path: "/admin/cash-registers",
-        name: "Admin-Cash-Registers",
-        component: AdminCashRegistersPage,
+        path: "/cash-registers",
+        name: "Cash-Registers",
+        component: CashRegistersPage,
         meta: {
           title: "Кассы",
           requiresAuth: true,

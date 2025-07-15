@@ -32,7 +32,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import ProductController from '@/api/ProductController';
-import AdminProductsCreatePage from '@/views/pages/admin/products/AdminProductsCreatePage.vue';
+import AdminProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 
 export default {
     components: {

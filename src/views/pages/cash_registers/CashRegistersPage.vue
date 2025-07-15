@@ -1,14 +1,14 @@
 <template>
     <!-- Добавить + пагинация -->
     <div class="flex justify-between items-center mb-4">
-        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить товар</PrimaryButton>
+        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить кассу</PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
     <!-- Таблица с заглушкой -->
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.products" :columns-config="columnsConfig" :table-data="data.items"
+            <DraggableTable table-key="admin.cash_registers" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
@@ -17,7 +17,7 @@
     </transition>
     <!-- Модальное окно форма создания/редактирования -->
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
-        <AdminProductsCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <AdminCashRegisterCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" :editingItem="editingItem" />
     </SideModalDialog>
     <!-- Компонент уведомлений -->
@@ -31,17 +31,17 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
-import ProductController from '@/api/ProductController';
-import AdminProductsCreatePage from '@/views/pages/admin/products/AdminProductsCreatePage.vue';
+import CashRegisterController from '@/api/CashRegisterController';
+import AdminCashRegisterCreatePage from '@/views/pages/cash_registers/CashRegisterCreatePage.vue';
 
 export default {
     components: {
         NotificationToast,
         PrimaryButton,
         SideModalDialog,
-        AdminProductsCreatePage,
         Pagination,
-        DraggableTable
+        DraggableTable,
+        AdminCashRegisterCreatePage
     },
     data() {
         return {
@@ -57,16 +57,11 @@ export default {
             editingItem: null,
             // table config
             columnsConfig: [
-                { name: 'id', label: '#', size: 15 },
-                { name: 'image', label: 'Изобр.', image: true },
                 { name: 'name', label: 'Название' },
-                { name: 'sku', label: 'SKU' },
-                { name: 'barcode', label: 'Баркод' },
-                { name: 'category_name', label: 'Категория' },
-                { name: 'retail_price', label: 'Розничная цена' },
-                { name: 'wholesale_price', label: 'Оптовая цена' },
-                { name: 'dateuser', label: 'Дата / Пользователь', html: true },
+                { name: 'balance', label: 'Баланс' },
+                { name: 'users', label: 'Доступ' },
                 { name: 'createdAt', label: 'Дата создания' },
+                 { name: 'dateUser', label: 'Дата / Пользователь', html: true },
             ],
         }
     },
@@ -78,12 +73,12 @@ export default {
         // table mapper
         itemMapper(i, c) {
             switch (c) {
-                case 'retail_price':
-                    return i.retailPriceFormatted();
-                case 'wholesale_price':
-                    return i.wholesalePriceFormatted();
-                case 'image':
-                    return i.image ? i.imgUrl() : null;
+                case 'balance':
+                    return i.balance + ' ' + i.currency_symbol;
+                case 'users':
+                    return (i.users || '').length + ' пользователей(-ль)';
+                case 'createdAt':
+                    return i.formatCreatedAt();
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
                 default:
@@ -96,10 +91,10 @@ export default {
                 this.loading = true;
             }
             try {
-                const new_data = await ProductController.getItems(page);
+                const new_data = await CashRegisterController.getItems(page);
                 this.data = new_data;
             } catch (error) {
-                this.showNotification('Ошибка получения списка товаров', error.message, true);
+                this.showNotification('Ошибка получения списка касс', error.message, true);
             }
             if (!silent) {
                 this.loading = false;
@@ -122,20 +117,20 @@ export default {
             this.modalDialog = false;
         },
         handleSaved() {
-            this.showNotification('Товар успешно добавлен', '', false);
+            this.showNotification('Касса успешно добавлена', '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleSavedError(m) {
-            this.showNotification('Ошибка сохранения товара', m, true);
+            this.showNotification('Ошибка сохранения кассы', m, true);
         },
         handleDeleted() {
-            this.showNotification('Товар успешно удален', '', false);
+            this.showNotification('Касса успешно удалена', '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleDeletedError(m) {
-            this.showNotification('Ошибка удаления товара', m, true);
+            this.showNotification('Ошибка удаления кассы', m, true);
         }
     },
     computed: {

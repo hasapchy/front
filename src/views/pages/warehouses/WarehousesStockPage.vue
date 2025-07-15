@@ -67,7 +67,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import WarehouseStockController from '@/api/WarehouseStockController';
-import AdminProductsCreatePage from '@/views/pages/admin/products/AdminProductsCreatePage.vue';
+import AdminProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import CategoryController from '@/api/CategoryController';
 import WarehouseController from '@/api/WarehouseController';
 import AdminWarehouseCreatePage from '@/views/pages/admin/warehouses/AdminWarehouseCreatePage.vue';

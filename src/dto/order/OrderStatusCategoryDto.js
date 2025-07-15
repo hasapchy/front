@@ -1,14 +1,10 @@
 export default class OrderStatusCategoryDto {
-    /**
-     * @param {number} id
-     * @param {string} name
-     * @param {number} userId
-     * @param {string} color
-     */
-    constructor(id, name, userId, color) {
-        this.id = id;
-        this.name = name;
-        this.userId = userId;
-        this.color = color;
-    }
+  constructor(id, name, color, userId, createdAt, updatedAt) {
+    this.id = id;
+    this.name = name;
+    this.color = color;
+    this.userId = userId;
+    this.createdAt = createdAt;
+    this.updatedAt = updatedAt;
+  }
 }

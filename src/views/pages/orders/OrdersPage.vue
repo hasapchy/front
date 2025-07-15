@@ -40,8 +40,8 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import OrderController from '@/api/OrderController';
 import OrderCreatePage from '@/views/pages/orders/OrderCreatePage.vue';
-import AppController from '@/api/AppController';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
+import OrderStatusController from '@/api/OrderStatusController';
 import { markRaw } from 'vue';
 
 export default {
@@ -216,7 +216,7 @@ export default {
             }, 10000);
         },
         async fetchStatuses() {
-            this.allStatuses = await AppController.getOrderStatuses();
+            this.allStatuses = await OrderStatusController.getAllItems();
         },
 
         async handleChangeStatus(ids, statusId) {

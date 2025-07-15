@@ -1,16 +1,29 @@
-import OrderStatusCategoryDto from '@/dto/order/OrderStatusCategoryDto';
-
+import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
 export default class OrderStatusDto {
-    /**
-     * @param {number} id
-     * @param {string} name
-     * @param {number} categoryId
-     * @param {OrderStatusCategoryDto|null} categoryDto
-     */
-    constructor(id, name, categoryId, categoryDto = null) {
-        this.id = id;
-        this.name = name;
-        this.categoryId = categoryId;
-        this.category = categoryDto;
-    }
+  constructor(
+    id,
+    name,
+    categoryId,
+    category = null,
+    createdAt = "",
+    updatedAt = ""
+  ) {
+    this.id = id;
+    this.name = name;
+    this.categoryId = categoryId;
+    this.category = category;
+    this.createdAt = createdAt;
+    this.updatedAt = updatedAt;
+  }
+  formatDate() {
+    return dayjsDateTime(this.date);
+  }
+
+  formatCreatedAt() {
+    return dayjsDateTime(this.createdAt);
+  }
+
+  formatUpdatedAt() {
+    return dayjsDateTime(this.updatedAt);
+  }
 }

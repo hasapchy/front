@@ -1,10 +1,30 @@
+import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
 export default class OrderCategoryDto {
-    /**
-     * @param {number} id
-     * @param {string} name
-     */
-    constructor(id, name) {
-        this.id = id;
-        this.name = name;
-    }
+  constructor(
+    id,
+    name,
+    userId,
+    userName = null,
+    createdAt = "",
+    updatedAt = ""
+  ) {
+    this.id = id;
+    this.name = name;
+    this.userId = userId;
+    this.userName = userName;
+    this.createdAt = createdAt;
+    this.updatedAt = updatedAt;
+  }
+
+  formatDate() {
+    return dayjsDateTime(this.date);
+  }
+
+  formatCreatedAt() {
+    return dayjsDateTime(this.createdAt);
+  }
+
+  formatUpdatedAt() {
+    return dayjsDateTime(this.updatedAt);
+  }
 }

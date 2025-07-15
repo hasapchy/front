@@ -113,6 +113,9 @@ import AppController from '@/api/AppController';
 import TransactionController from '@/api/TransactionController';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import OrderStatusController from '@/api/OrderStatusController';
+import OrderCategoryController from '@/api/OrderCategoryController';
+
 
 
 export default {
@@ -233,7 +236,7 @@ export default {
             this.allProjects = await ProjectController.getAllItems();
         },
         async fetchAllCategories() {
-            this.allCategories = await AppController.getOrderCategories();
+            this.allCategories = await OrderCategoryController.getAllItems();
             if (!this.editingItem && this.allCategories.length) {
                 this.categoryId = this.allCategories[0].id;
             }
@@ -252,7 +255,7 @@ export default {
             }
         },
         async fetchOrderStatuses() {
-            this.allStatuses = await AppController.getOrderStatuses();
+            this.allStatuses = await OrderStatusController.getAllItems();
         },
         async fetchTransactions() {
             if (!this.editingItemId) {

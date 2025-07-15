@@ -124,7 +124,7 @@ import ProductDto from '@/dto/product/ProductDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
-import AdminCategoryCreatePage from '@/views/pages/admin/categories/AdminCategoryCreatePage.vue';
+import AdminCategoryCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import JsBarcode from "jsbarcode";
 
 export default {
@@ -337,7 +337,6 @@ export default {
             if (e?.message) return [e.message];
             return ["Ошибка"];
         }
-
     },
     watch: {
         defaultName(newVal) {
