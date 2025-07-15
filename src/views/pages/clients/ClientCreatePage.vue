@@ -1,15 +1,10 @@
 <template>
   <div class="flex flex-col overflow-auto h-full p-4">
     <h2 class="text-lg font-bold mb-4">Клиент</h2>
-    <TabBar
-      :tabs="tabs"
-      :active-tab="currentTab"
-      :tab-click="
-        (t) => {
-          changeTab(t);
-        }
-      "
-    />
+    <TabBar :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => {
+      changeTab(t);
+    }
+      " />
     <div>
       <div v-if="currentTab === 'info'" class="mb-4">
         <div>
@@ -57,26 +52,12 @@
         <div>
           <label class="required">Номер телефона</label>
           <div class="flex items-center space-x-2">
-            <input
-              type="text"
-              v-model="newPhone"
-              ref="phoneInput"
-              @keyup.enter="addPhone"
-              required
-            />
+            <input type="text" v-model="newPhone" ref="phoneInput" @keyup.enter="addPhone" required />
             <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addPhone" />
           </div>
-          <div
-            v-for="(phone, index) in phones"
-            :key="phone"
-            class="flex items-center space-x-2 mt-2"
-          >
+          <div v-for="(phone, index) in phones" :key="phone" class="flex items-center space-x-2 mt-2">
             <input type="text" :value="phone" readonly />
-            <PrimaryButton
-              icon="fas fa-close"
-              :is-danger="true"
-              :onclick="() => removePhone(index)"
-            />
+            <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" />
           </div>
         </div>
         <div>
@@ -85,17 +66,9 @@
             <input type="text" v-model="newEmail" @keyup.enter="addEmail" />
             <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addEmail" />
           </div>
-          <div
-            v-for="(email, index) in emails"
-            :key="email"
-            class="flex items-center space-x-2 mt-2"
-          >
+          <div v-for="(email, index) in emails" :key="email" class="flex items-center space-x-2 mt-2">
             <input type="text" :value="email" readonly />
-            <PrimaryButton
-              icon="fas fa-close"
-              :is-danger="true"
-              :onclick="() => removeEmail(index)"
-            />
+            <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removeEmail(index)" />
           </div>
         </div>
         <div class="flex gap-4 w-full">
@@ -113,86 +86,19 @@
           </div>
         </div>
       </div>
+      <div v-show="currentTab === 'balance'" class="mt-4">
+        <ClientBalanceTab v-if="editingItem" :editing-item="editingItem" />
+      </div>
     </div>
-    <div v-show="currentTab === 'balance'" class="mt-4">
-  <h3 class="text-md font-semibold mb-2">История баланса</h3>
-  <!-- Итоговый баланс здесь -->
-  <div class="mb-2 flex items-center gap-2">
-    <span>Итоговый баланс:</span>
-    <span
-      :class="{
-        'text-[#5CB85C] font-bold': editingItem && editingItem.balanceNumeric() >= 0,
-        'text-[#EE4F47] font-bold': editingItem && editingItem.balanceNumeric() < 0
-      }"
-    >
-      {{ editingItem ? editingItem.balanceFormatted() : "0.00" }} TMT
-    </span>
-  </div>
-
-  <div v-if="balanceLoading" class="text-gray-500">Загрузка...</div>
-  <div v-else-if="balanceHistory.length === 0" class="text-gray-500">
-    История отсутствует
-  </div>
-  <DraggableTable
-    v-if="!balanceLoading && balanceHistory.length"
-    table-key="client.balance"
-    :columns-config="columnsBalance"
-    :table-data="balanceHistory"
-    :item-mapper="itemMapperBalance"
-    :onItemClick="handleBalanceItemClick"
-  />
-</div>
 
   </div>
   <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-    <PrimaryButton
-      v-if="editingItem != null"
-      :onclick="showDeleteDialog"
-      :is-danger="true"
-      :is-loading="deleteLoading"
-      icon="fas fa-remove"
-      >Удалить</PrimaryButton
-    >
-    <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading"
-      >Сохранить</PrimaryButton
-    >
+    <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading"
+      icon="fas fa-remove">Удалить</PrimaryButton>
+    <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
   </div>
-  <AlertDialog
-    :dialog="deleteDialog"
-    @confirm="deleteItem"
-    @leave="closeDeleteDialog"
-    :descr="'Подтвердите удаление клиента'"
-    :confirm-text="'Удалить клиента'"
-    :leave-text="'Отмена'"
-  />
-  <SideModalDialog
-    :showForm="entityModalOpen"
-    :onclose="
-      () => {
-        entityModalOpen = false;
-        selectedEntity = null;
-      }
-    "
-  >
-    <template v-if="selectedEntity">
-      <TransactionCreatePage
-        v-if="selectedEntity.type === 'transaction'"
-        :editing-item="selectedEntity.data"
-      />
-      <SaleCreatePage
-        v-else-if="selectedEntity.type === 'sale'"
-        :editing-item-id="selectedEntity.id"
-      />
-      <OrderCreatePage
-        v-else-if="selectedEntity.type === 'order'"
-        :editing-item-id="selectedEntity.id"
-      />
-      <WarehousesReceiptCreatePage
-        v-else-if="selectedEntity.type === 'receipt'"
-        :editing-item-id="selectedEntity.id"
-      />
-    </template>
-  </SideModalDialog>
+  <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
+    :descr="'Подтвердите удаление клиента'" :confirm-text="'Удалить клиента'" :leave-text="'Отмена'" />
 </template>
 
 <script>
@@ -202,21 +108,13 @@ import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import TabBar from "@/views/components/app/forms/TabBar.vue";
 import Inputmask from "inputmask";
-import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
-import TransactionController from "@/api/TransactionController";
-import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
-import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
-import SaleCreatePage from "@/views/pages/sales/SaleCreatePage.vue";
-
+import ClientBalanceTab from "@/views/pages/clients/ClientBalanceTab.vue";
 export default {
   components: {
     PrimaryButton,
     AlertDialog,
     TabBar,
-    DraggableTable,
-    SideModalDialog,
-    TransactionCreatePage,
-    SaleCreatePage,
+    ClientBalanceTab
   },
   props: {
     editingItem: { type: ClientDto, default: null },
@@ -244,12 +142,6 @@ export default {
       saveLoading: false,
       deleteDialog: false,
       deleteLoading: false,
-      balanceLoading: false,
-      balanceHistory: [],
-      selectedEntity: null,
-      entityModalOpen: false,
-
-      ///
       currentTab: "info",
       tabs: [
         {
@@ -260,12 +152,6 @@ export default {
           name: "balance",
           label: "Баланс",
         },
-      ],
-      columnsBalance: [
-        { name: "date", label: "Дата", size: 100 },
-        { name: "type", label: "Тип" },
-        { name: "description", label: "Описание", size: 300 },
-        { name: "amount", label: "Сумма", size: 120, html: true },
       ],
     };
   },
@@ -294,64 +180,6 @@ export default {
         this.newPhone = "";
       }
     },
-    getModalProps(entity) {
-      if (entity.type === "transaction") {
-        return {
-          editingItem: entity.data,
-        };
-      }
-      return {
-        editingItemId: entity.id,
-      };
-    },
-    getModalComponent(type) {
-      switch (type) {
-        case "sale":
-          return () => import("@/views/pages/sales/SaleCreatePage.vue");
-        case "order":
-          return () => import("@/views/pages/orders/OrderCreatePage.vue");
-        case "transaction":
-          return () => import("@/views/pages/transactions/TransactionCreatePage.vue");
-        case "receipt":
-          return () => import("@/views/pages/warehouses/WarehousesReceiptCreatePage.vue");
-        default:
-          return null;
-      }
-    },
-    async handleBalanceItemClick(item) {
-      console.log("[click] Клик по строке баланса", item);
-
-      switch (item.source) {
-        case "transaction":
-          try {
-            const resp = await TransactionController.getItem(item.sourceId);
-            console.log("RESP", resp);
-            this.selectedEntity = {
-              type: "transaction",
-              data: resp.item,
-            };
-            this.entityModalOpen = true;
-          } catch (e) {
-            console.error("Ошибка при загрузке транзакции:", e);
-          }
-
-          break;
-
-        case "sale":
-        case "order":
-        case "receipt":
-          this.selectedEntity = {
-            type: item.source,
-            id: item.sourceId,
-          };
-          this.entityModalOpen = true;
-          break;
-
-        default:
-          this.selectedEntity = null;
-      }
-    },
-
     removePhone(index) {
       this.phones.splice(index, 1);
     },
@@ -363,20 +191,6 @@ export default {
     },
     removeEmail(index) {
       this.emails.splice(index, 1);
-    },
-    itemMapperBalance(i, c) {
-      switch (c) {
-        case "date":
-          return i.formatDate();
-        case "type":
-          return i.label?.() ?? item.type;
-        case "description":
-          return i.description;
-        case "amount":
-          return i.formatAmountWithColor?.();
-        default:
-          return i[c];
-      }
     },
     async save() {
       this.saveLoading = true;
@@ -452,25 +266,8 @@ export default {
     closeDeleteDialog() {
       this.deleteDialog = false;
     },
-    ///
-    async fetchBalanceHistory() {
-      if (!this.editingItem) return;
-      this.balanceLoading = true;
-      try {
-        this.balanceHistory = await ClientController.getBalanceHistory(
-          this.editingItem.id
-        );
-      } catch (e) {
-        console.error("Ошибка при загрузке истории баланса:", e);
-        this.balanceHistory = [];
-      }
-      this.balanceLoading = false;
-    },
     changeTab(tab) {
       this.currentTab = tab;
-      if (tab === "balance") {
-        this.fetchBalanceHistory();
-      }
     },
     getApiErrorMessage(e) {
       if (e?.response && e.response.data) {
