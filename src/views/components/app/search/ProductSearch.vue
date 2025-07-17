@@ -56,12 +56,8 @@
                             </div>
                             {{ product.name }}
                         </div>
-
                         <div class="text-[#337AB7] text-sm">
                             <template v-if="product.type === true">
-                                <!-- {{ console.log('stock_quantity:', product.stock_quantity) }} {{ product.unit?.short_name
-                                    || product.unit_short_name
-                                    || '' }} -->
                             </template>
                             <template v-else>
                                 ∞
@@ -82,9 +78,6 @@
                     <th v-if="showPrice" class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
                         {{ isReceipt ? 'Закупочная цена' : 'Цена' }}
                     </th>
-                    <!-- <th v-if="showPriceType && !isReceipt"
-                        class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
-                        Тип цены</th> -->
                     <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
                 </tr>
             </thead>
@@ -99,12 +92,6 @@
                         <div class="flex items-center space-x-2">
                             <input type="number" v-model.number="product.price" class="w-full p-1 text-right"
                                 :disabled="disabled" min="0.01" @input="updateTotals" />
-                            <!-- <select v-if="isSale && showPriceType" v-model="product.priceType"
-                                class="border p-1 text-sm w-20" :disabled="disabled"
-                                @change="onPriceTypeChange(product)">
-                                <option value="retail">Розн.</option>
-                                <option value="wholesale">Опт.</option>
-                            </select> -->
                         </div>
                     </td>
                     <td v-if="showPriceType && !isReceipt && !isSale" class="py-2 px-4 border-x border-gray-300">
@@ -233,8 +220,6 @@ export default {
             productResults: [],
             lastProducts: [],
             showDropdown: false,
-            // discount: 0,
-            // discountType: 'fixed',
             modalCreateProduct: false,
             defaultProductType: 'product',
             defaultProductName: '',
@@ -298,9 +283,7 @@ export default {
                         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                         .slice(0, 10);
                 }
-                // console.log('Last products fetched:', this.lastProducts);
             } catch (error) {
-                // console.error('Error fetching last products:', error);
                 this.lastProducts = [];
             }
         },
@@ -311,9 +294,7 @@ export default {
                     const results = await ProductController.searchItems(this.productSearch, this.onlyProducts ? true : null);
                     this.productResults = results;
                     this.productSearchLoading = false;
-                    // console.log('Search results:', this.productResults);
                 } catch (error) {
-                    // console.error('Error searching products:', error);
                     this.productResults = [];
                     this.productSearchLoading = false;
                 }
@@ -323,7 +304,6 @@ export default {
         }, 250),
         selectProduct(product) {
             try {
-                // console.log('Selecting product:', product);
                 this.showDropdown = false;
                 this.productSearch = '';
                 this.productResults = [];
@@ -351,9 +331,7 @@ export default {
                 }
                 this.updateTotals();
                 this.$refs.productInput.blur();
-                // console.log('Product added/updated:', this.products);
             } catch (error) {
-                // console.error('Error selecting product:', error);
             }
         },
         onPriceTypeChange(product) {
@@ -365,10 +343,8 @@ export default {
         removeSelectedProduct(id) {
             this.products = this.products.filter(product => product.productId !== id);
             this.updateTotals();
-            // console.log('Product removed, current products:', this.products);
         },
         handleBlur() {
-            // оставляем задержку, но уменьшаем, чтобы избежать конфликта
             requestAnimationFrame(() => {
                 this.showDropdown = false;
             });

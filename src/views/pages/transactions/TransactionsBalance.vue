@@ -12,7 +12,7 @@
                                 'text-[#EE4F47]': balance.type === 'outcome',
                                 'text-[#337AB7]': balance.type === 'default',
                                 'font-semibold text-lg': true
-                            }">{{ Number(balance.value).toFixed(2) }}</span>
+                            }">{{ Number(balance.value).toFixed(2) }} </span>
                         </div>
                     </div>
                 </div>
@@ -47,7 +47,6 @@ export default {
         async fetchItems() {
             this.loading = true;
             try {
-                // 1. Вычисляем реальные start/end в зависимости от dateFilter
                 let start = null, end = null;
                 switch (this.dateFilter) {
                     case 'today':
@@ -78,13 +77,9 @@ export default {
                         break;
                     case 'all_time':
                     default:
-                    // оставляем start/end = null
                 }
-
-                // 2. Формируем cashIds
                 const cashIds = this.cashRegisterId !== null ? [this.cashRegisterId] : [];
 
-                // 3. Запрашиваем баланс с нужным диапазоном
                 this.data = await CashRegisterController.getCashBalance(
                     cashIds,
                     start,

@@ -10,8 +10,8 @@
             <label class="block mb-1 required">Касса</label>
             <select v-model="cashId" :disabled="!!editingItemId">
                 <option value="">Нет</option>
-                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">
-                    {{ parent.name }}
+                <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
+                    {{ parent.name }} ({{ parent.currency_symbol }})
                 </option>
             </select>
         </div>
@@ -32,11 +32,14 @@
         </div>
         <div class="mt-2">
             <label class="block mb-1">Проект</label>
-            <select v-model="projectId" :disabled="!!editingItemId">
+            <select v-model="projectId" :disabled="!!editingItemId" v-if="allProjects.length">
                 <option value="">Нет</option>
-                <option v-if="allProjects.length" v-for="parent in allProjects" :value="parent.id">
+                <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">
                     {{ parent.name }}
                 </option>
+            </select>
+            <select v-model="projectId" :disabled="!!editingItemId" v-else>
+                <option value="">Нет</option>
             </select>
         </div>
 
@@ -48,18 +51,20 @@
         <div class="mt-2">
             <label class="block mb-1 required">Склад</label>
             <div class="flex items-center space-x-2">
-                <select v-model="warehouseId" required :disabled="!!editingItemId">
+                <select v-model="warehouseId" required :disabled="!!editingItemId" v-if="allWarehouses.length">
                     <option value="">Нет</option>
-                    <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">
+                    <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">
                         {{ parent.name }}
                     </option>
+                </select>
+                <select v-model="warehouseId" required :disabled="!!editingItemId" v-else>
+                    <option value="">Нет</option>
                 </select>
             </div>
         </div>
         <ProductSearch v-model="products" :disabled="!!editingItemId" :show-quantity="true" :show-price="true"
             :show-price-type="true" :is-sale="true" :currency-symbol="currencySymbol" v-model:discount="discount"
-            v-model:discountType="discountType" @update:subtotal="subtotal = $event"
-            @update:totalPrice="totalPrice = $event" required />
+            v-model:discountType="discountType" required />
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
@@ -74,17 +79,12 @@
 <script>
 import AppController from "@/api/AppController";
 import CashRegisterController from "@/api/CashRegisterController";
-import ClientController from "@/api/ClientController";
-import ProductController from "@/api/ProductController";
 import ProjectController from "@/api/ProjectController";
 import WarehouseController from "@/api/WarehouseController";
-import WarehouseReceiptController from "@/api/WarehouseReceiptController";
 import SaleController from "@/api/SaleController";
 import SaleDto from "@/dto/sale/SaleDto";
-import SaleProductDto from "@/dto/sale/SaleProductDto";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
-import debounce from "lodash.debounce";
 import ClientSearch from "@/views/components/app/search/ClientSearch.vue";
 import ProductSearch from "@/views/components/app/search/ProductSearch.vue";
 
@@ -116,10 +116,8 @@ export default {
             products: this.editingItem ? this.editingItem.products : [],
             discount: this.editingItem ? this.editingItem.discount : 0,
             discountType: this.editingItem ? this.editingItem.discount_type : "fixed",
-            //
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
-            // Состояния загрузки
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
@@ -159,16 +157,16 @@ export default {
         totalPrice() {
             return this.subtotal - this.discountAmount;
         },
-
-        defaultCurrencySymbol() {
-            const def = this.currencies.find((c) => c.is_default);
-            return def ? def.symbol : "";
+        defaultCurrency() {
+            return this.currencies.find((c) => c.is_default);
         },
         currencySymbol() {
-            return this.type === "cash"
-                ? this.selectedCash?.currency_symbol || ""
-                : this.defaultCurrencySymbol || "";
-        },
+            if (this.type === "cash") {
+                return this.selectedCash?.currency_symbol || "";
+            } else {
+                return this.defaultCurrency?.symbol || "";
+            }
+        }
     },
     emits: ["saved", "saved-error", "deleted", "deleted-error"],
     methods: {

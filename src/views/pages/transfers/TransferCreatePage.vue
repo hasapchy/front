@@ -5,22 +5,24 @@
             <label class="block mb-1">Касса отправитель</label>
             <select v-model="cashIdFrom" :disabled="!!editingItemId">
                 <option value="">-- Выберите кассу --</option>
-                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id"
-                    :disabled="parent.id === cashIdTo">{{
-                        parent.name
-                    }}
-                </option>
+                <template v-if="allCashRegisters.length">
+                    <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id"
+                        :disabled="parent.id === cashIdTo">
+                       {{ parent.name }} ({{ parent.currency_symbol }})
+                    </option>
+                </template>
             </select>
         </div>
         <div class="mt-2">
             <label class="block mb-1">Касса получатель</label>
             <select v-model="cashIdTo" :disabled="!!editingItemId">
                 <option value="">-- Выберите кассу --</option>
-                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id"
-                    :disabled="parent.id === cashIdFrom">{{
-                        parent.name
-                    }}
-                </option>
+                <template v-if="allCashRegisters.length">
+                    <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id"
+                        :disabled="parent.id === cashIdFrom">
+                        {{ parent.name }} ({{ parent.currency_symbol }})
+                    </option>
+                </template>
             </select>
         </div>
         <div class="mt-2">
@@ -31,23 +33,7 @@
             <label>Примечание</label>
             <input type="text" v-model="note" :disabled="!!editingItemId">
         </div>
-        <!-- <div v-if="cashCurrencyId != currencyId && editingItemId" class="flex items-center space-x-2">
-        <div class="w-full mt-2">
-            <label>Сконвертированная сумма</label>
-            <input type="number" v-model="cashAmount" :disabled="!!editingItemId">
-        </div>
-        <div class="w-full mt-2">
-            <label class="block mb-1">Валюта кассы</label>
-            <select v-model="cashCurrencyId" :disabled="!!editingItemId">
-                <option value="">Нет</option>
-                <option v-if="currencies.length" v-for="parent in currencies" :value="parent.id">{{ parent.symbol }} -
-                    {{ parent.name }}
-                </option>
-            </select>
-        </div>
-    </div> -->
     </div>
-    <!-- {{ editingItem.id }} -->
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
@@ -65,7 +51,6 @@ import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
 import TransferDto from '@/dto/transfer/TransferDto';
 import TransferController from '@/api/TransferController';
-
 
 export default {
     components: {
@@ -113,23 +98,12 @@ export default {
         async save() {
             this.saveLoading = true;
             try {
-                //     if (this.editingItemId != null) {
-                //         var resp = await TransactionController.updateItem(
-                //             this.editingItemId,
-                //             {
-                //                 category_id: this.categoryId,
-                //                 project_id: this.projectId,
-                //                 date: this.date,
-                //                 client_id: this.selectedClient?.id
-                //             });
-                //     } else {
                 var resp = await TransferController.storeItem({
                     cash_id_from: this.cashIdFrom,
                     cash_id_to: this.cashIdTo,
                     amount: this.origAmount,
                     note: this.note
                 });
-                //     }
                 if (resp.message) {
                     this.$emit('saved');
                     this.clearForm();
@@ -171,18 +145,19 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
-        },getApiErrorMessage(e) {
-    if (e?.response && e.response.data) {
-        if (e.response.data.errors) {
-            return Object.values(e.response.data.errors).flat();
-        }
-        if (e.response.data.message) {
-            return [e.response.data.message];
-        }
-    }
-    if (e?.message) return [e.message];
-    return ["Ошибка"];
-}
+        },
+        getApiErrorMessage(e) {
+            if (e?.response && e.response.data) {
+                if (e.response.data.errors) {
+                    return Object.values(e.response.data.errors).flat();
+                }
+                if (e.response.data.message) {
+                    return [e.response.data.message];
+                }
+            }
+            if (e?.message) return [e.message];
+            return ["Ошибка"];
+        },
     },
     watch: {
         editingItem: {
@@ -206,5 +181,4 @@ export default {
 
     }
 }
-
 </script>

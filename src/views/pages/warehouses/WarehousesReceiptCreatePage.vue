@@ -12,11 +12,14 @@
         <div class="mt-2">
             <label class="block mb-1 required">Склад</label>
             <div class="flex items-center space-x-2">
-                <select v-model="warehouseId" :disabled="!!editingItemId">
+                <select v-model="warehouseId" :disabled="!!editingItemId" v-if="allWarehouses.length">
                     <option value="">Нет</option>
-                    <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">{{
-                        parent.name }}
+                    <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">
+                        {{ parent.name }}
                     </option>
+                </select>
+                <select v-model="warehouseId" :disabled="!!editingItemId" v-else>
+                    <option value="">Нет</option>
                 </select>
             </div>
         </div>
@@ -41,7 +44,7 @@
             <select v-model="cashId" :disabled="!!editingItemId">
                 <option value="">Нет</option>
                 <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">
-                    {{ c.name }}
+                    {{ c.name }} ({{ c.currency_symbol }})
                 </option>
             </select>
         </div>
@@ -206,18 +209,18 @@ export default {
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
-       getApiErrorMessage(e) {
-    if (e?.response && e.response.data) {
-        if (e.response.data.errors) {
-            return Object.values(e.response.data.errors).flat();
+        getApiErrorMessage(e) {
+            if (e?.response && e.response.data) {
+                if (e.response.data.errors) {
+                    return Object.values(e.response.data.errors).flat();
+                }
+                if (e.response.data.message) {
+                    return [e.response.data.message];
+                }
+            }
+            if (e?.message) return [e.message];
+            return ["Ошибка"];
         }
-        if (e.response.data.message) {
-            return [e.response.data.message];
-        }
-    }
-    if (e?.message) return [e.message];
-    return ["Ошибка"];
-}
     },
     watch: {
 

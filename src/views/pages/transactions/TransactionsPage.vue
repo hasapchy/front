@@ -6,15 +6,13 @@
                 <!-- <label class="block mb-1">Касса</label> -->
                 <select v-model="cashRegisterId" @change="fetchItems">
                     <option value="">Все кассы</option>
-                    <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">
-                        {{ parent.name }} ({{ parent.currency_code }})
-                    </option>
+                    <template v-if="allCashRegisters.length">
+                        <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
+                            {{ parent.name }} ({{ parent.currency_symbol }})
+                        </option>
+                    </template>
                 </select>
 
-                <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-4">
-                    <input type="date" v-model="startDate" @change="fetchItems" class="w-full p-2 border rounded" />
-                    <input type="date" v-model="endDate" @change="fetchItems" class="w-full p-2 border rounded" />
-                </div>
             </div>
             <div class="">
                 <select v-model="dateFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
@@ -27,6 +25,10 @@
                     <option value="last_month">Прошлый месяц</option>
                     <option value="custom">Выбрать даты</option>
                 </select>
+            </div>
+            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-4">
+                <input type="date" v-model="startDate" @change="fetchItems" class="w-full p-2 border rounded" />
+                <input type="date" v-model="endDate" @change="fetchItems" class="w-full p-2 border rounded" />
             </div>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
@@ -130,7 +132,6 @@ export default {
         async fetchAllCashRegisters() {
             this.allCashRegisters = await CashRegisterController.getAllItems();
         },
-        // table mapper
         itemMapper(i, c) {
             switch (c) {
                 case 'type':
@@ -181,23 +182,6 @@ export default {
                 this.loading = false;
             }
         },
-        // async handleDeleteRows(selectedRows) {
-        //     if (!selectedRows.length) return;
-
-        //     this.loading = true;
-        //     try {
-        //         for (const row of selectedRows) {
-        //             if (row.id) {
-        //                 await TransactionController.deleteItem(row.id);
-        //             }
-        //         }
-        //         await this.fetchItems(this.data?.currentPage || 1, true);
-        //         this.showNotification('Выбранные продажи успешно удалены', '', false);
-        //     } catch (error) {
-        //         this.showNotification('Ошибка при удалении продаж', error.message, true);
-        //     }
-        //     this.loading = false;
-        // },
         showNotification(title, subtitle, isDanger = false) {
             this.notificationTitle = title;
             this.notificationSubtitle = subtitle;

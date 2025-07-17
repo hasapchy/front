@@ -9,7 +9,8 @@
                     <label class="required">Тип</label>
                     <select v-model="categoryId" required>
                         <option value="">Нет</option>
-                        <option v-for="parent in allCategories" :value="parent.id">{{ parent.name }}</option>
+                        <option v-for="parent in allCategories" :key="parent.id" :value="parent.id">{{ parent.name }}
+                        </option>
                     </select>
                 </div>
                 <div>
@@ -20,7 +21,9 @@
                     <label class="required">Касса</label>
                     <select v-model="cashId" :disabled="!!editingItemId">
                         <option value="">Нет</option>
-                        <option v-for="c in allCashRegisters" :value="c.id">{{ c.name }}</option>
+                        <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">
+                            {{ c.name }} ({{ c.currencyCode }})
+                        </option>
                     </select>
                 </div>
                 <div>
@@ -32,7 +35,8 @@
                     <label>Проект</label>
                     <select v-model="projectId" :disabled="!!editingItemId">
                         <option value="">Нет</option>
-                        <option v-for="parent in allProjects" :value="parent.id">{{ parent.name }}</option>
+                        <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">{{ parent.name }}
+                        </option>
                     </select>
                 </div>
                 <div>
@@ -45,13 +49,13 @@
                     <label class="required">Склад</label>
                     <select v-model="warehouseId" required :disabled="!!editingItemId">
                         <option value="">Нет</option>
-                        <option v-for="parent in allWarehouses" :value="parent.id">{{ parent.name }}</option>
+                        <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">{{ parent.name }}
+                        </option>
                     </select>
                 </div>
                 <ProductSearch v-model="products" :show-quantity="true" :show-price="true" :show-price-type="true"
                     :is-sale="true" :currency-symbol="currencySymbol" v-model:discount="discount"
-                    v-model:discountType="discountType" @update:subtotal="subtotal = $event"
-                    @update:totalPrice="totalPrice = $event" required />
+                    v-model:discountType="discountType" required />
             </div>
             <div v-show="currentTab === 'transactions'">
                 <OrderTransactionsTab v-if="editingItemId" :order-id="editingItemId" :client="selectedClient"
@@ -73,7 +77,7 @@
             <div>К оплате: <span class="font-bold">{{ totalPrice.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Оплачено: <span class="font-bold">{{ paidTotalAmount.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Осталось: <span class="font-bold">{{ (totalPrice - paidTotalAmount).toFixed(2) }}{{ currencySymbol
-                    }}</span></div>
+            }}</span></div>
 
         </div>
     </div>

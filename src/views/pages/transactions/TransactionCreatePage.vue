@@ -18,8 +18,8 @@
             <label class="block mb-1 required">Касса</label>
             <select v-model="cashId" :disabled="!!editingItemId" required>
                 <option value="">Нет</option>
-                <option v-if="allCashRegisters.length" v-for="parent in allCashRegisters" :value="parent.id">
-                    {{ parent.name }} ({{ parent.currencySymbol }})
+                <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
+                   {{ parent.name }} ({{ parent.currency_symbol }})
                 </option>
             </select>
         </div>
@@ -32,10 +32,11 @@
                 <label class="block mb-1 required">Валюта</label>
                 <select v-model="currencyIdComputed" :disabled="!!editingItemId" required>
                     <option value="">Нет</option>
-                    <option v-if="currencies.length" v-for="parent in currencies" :value="parent.id">{{ parent.symbol }}
-                        -
-                        {{ parent.name }}
-                    </option>
+                    <template v-if="currencies.length">
+                        <option v-for="parent in currencies" :key="parent.id" :value="parent.id">
+                            {{ parent.symbol }} - {{ parent.name }}
+                        </option>
+                    </template>
                 </select>
             </div>
         </div>
@@ -48,10 +49,12 @@
                 <label class="block mb-1">Валюта кассы</label>
                 <select v-model="cashCurrencyId" :disabled="!!editingItemId">
                     <option value="">Нет</option>
-                    <option v-if="currencies.length" v-for="parent in currencies" :value="parent.id">{{ parent.symbol }}
-                        -
-                        {{ parent.name }}
-                    </option>
+                    <template v-if="currencies.length">
+                        <option v-for="parent in currencies" :key="parent.id" :value="parent.id">
+                            {{ parent.symbol }} -
+                            {{ parent.name }}
+                        </option>
+                    </template>
                 </select>
             </div>
         </div>
@@ -68,8 +71,9 @@
             <label class="block mb-1">Проект</label>
             <select v-model="projectId">
                 <option value="">Нет</option>
-                <option v-if="allProjects.length" v-for="parent in allProjects" :value="parent.id">{{ parent.name }}
-                </option>
+                <template v-if="allProjects.length">
+                    <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">{{ parent.name }}</option>
+                </template>
             </select>
         </div>
         <div class="mt-2">
@@ -97,7 +101,6 @@ import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
 import TransactionController from '@/api/TransactionController';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
-
 export default {
     components: {
         PrimaryButton,
@@ -195,10 +198,6 @@ export default {
         },
         async fetchAllCashRegisters() {
             this.allCashRegisters = await CashRegisterController.getAllItems();
-            this.allCashRegisters = this.allCashRegisters.map(cash => {
-                const currency = this.currencies.find(c => c.id === cash.currency_id);
-                return { ...cash, currencySymbol: currency.symbol };
-            });
             if (this.allCashRegisters.length && !this.cashId && !this.defaultCashId) {
                 this.cashId = this.allCashRegisters[0].id;
             }
@@ -287,7 +286,7 @@ export default {
             }
             if (e?.message) return [e.message];
             return ["Ошибка"];
-        }
+        },
     },
     watch: {
         defaultCashId: {

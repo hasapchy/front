@@ -36,11 +36,14 @@
         <div class="mt-2">
             <label class="block mb-1 required">Категория</label>
             <div class="flex items-center space-x-2">
-                <select v-model="category_id">
+                <select v-model="category_id" v-if="allCategories.length">
                     <option value="">Нет</option>
-                    <option v-if="allCategories.length" v-for="parent in allCategories" :value="parent.id">{{
+                    <option v-for="parent in allCategories" :key="parent.id" :value="parent.id">{{
                         parent.name }}
                     </option>
+                </select>
+                <select v-model="category_id" v-else>
+                    <option value="">Нет</option>
                 </select>
                 <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showModal" />
             </div>
@@ -51,11 +54,14 @@
         </div>
         <div class=" mt-2">
             <label class="block mb-1">Единица измерения</label>
-            <select v-model="unit_id">
+            <select v-model="unit_id" v-if="units.length">
                 <option value="">Нет</option>
-                <option v-if="units.length" v-for="parent in units" :value="parent.id">{{ parent.name }} ({{
+                <option v-for="parent in units" :key="parent.id" :value="parent.id">{{ parent.name }} ({{
                     parent.short_name }})
                 </option>
+            </select>
+            <select v-model="unit_id" v-else>
+                <option value="">Нет</option>
             </select>
         </div>
         <div class="mt-2">
