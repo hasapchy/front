@@ -53,7 +53,7 @@ export default {
             editingTransaction: null,
             paidTotalAmount: 0,
             columnsConfig: [
-                { name: 'id', label: 'ID' },
+                { name: 'id', label: '№', size: 30 },
                 { name: 'amount', label: 'Сумма', html: true },
                 { name: 'cashName', label: 'Касса' },
                 { name: 'date', label: 'Дата' },

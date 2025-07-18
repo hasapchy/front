@@ -45,19 +45,15 @@ import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
 import UsersController from '@/api/UsersController';
 import CashRegisterDto from '@/dto/cash_register/CashRegisterDto';
+import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 export default {
-    components: {
-        PrimaryButton,
-        AlertDialog
-    },
+    mixins: [getApiErrorMessage],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    components: { PrimaryButton, AlertDialog },
     props: {
-        editingItem: {
-            type: CashRegisterDto,
-            required: false,
-            default: null
-        }
+        editingItem: { type: CashRegisterDto, required: false, default: null }
     },
     data() {
         return {
@@ -82,7 +78,6 @@ export default {
             return this.currencies.find(currency => currency.id == this.currency_id);
         }
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
         async fetchUsers() {
             this.users = await UsersController.getAllUsers();

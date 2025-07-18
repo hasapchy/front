@@ -40,19 +40,16 @@
 import CategoryController from '@/api/CategoryController';
 import UsersController from '@/api/UsersController';
 import CategoryDto from '@/dto/category/CategoryDto';
+import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+
 export default {
-    components: {
-        PrimaryButton,
-        AlertDialog
-    },
+    mixins: [getApiErrorMessage],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    components: { PrimaryButton, AlertDialog },
     props: {
-        editingItem: {
-            type: CategoryDto,
-            required: false,
-            default: null
-        }
+        editingItem: { type: CategoryDto, required: false, default: null }
     },
     data() {
         return {
@@ -71,7 +68,6 @@ export default {
         this.fetchUsers();
         this.fetchAllCategories();
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
         async fetchUsers() {
             this.users = await UsersController.getAllUsers();
@@ -138,18 +134,7 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
-        },getApiErrorMessage(e) {
-    if (e?.response && e.response.data) {
-        if (e.response.data.errors) {
-            return Object.values(e.response.data.errors).flat();
-        }
-        if (e.response.data.message) {
-            return [e.response.data.message];
-        }
-    }
-    if (e?.message) return [e.message];
-    return ["Ошибка"];
-}
+        },
     },
     watch: {
         editingItem: {

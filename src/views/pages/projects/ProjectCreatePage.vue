@@ -8,7 +8,7 @@
         </div>
         <div>
             <label>Дата проекта</label>
-            <input type="datetime-local" v-model="dateModel" />
+            <input type="datetime-local" v-model="date" :disabled="!!editingItemId">
         </div>
         <div>
             <label>Бюджет проекта</label>
@@ -59,25 +59,17 @@ import TabBar from '@/views/components/app/forms/TabBar.vue';
 import ProjectDto from '@/dto/project/ProjectDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import debounce from 'lodash.debounce';
 import ProjectController from '@/api/ProjectController';
 import api from '@/api/axiosInstance';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
-
+import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 
 export default {
-    components: {
-        PrimaryButton,
-        AlertDialog,
-        TabBar,
-        ClientSearch
-    },
+    mixins: [getApiErrorMessage],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch },
     props: {
-        editingItem: {
-            type: ProjectDto,
-            required: false,
-            default: null
-        }
+        editingItem: { type: ProjectDto, required: false, default: null }
     },
     data() {
         return {
@@ -92,36 +84,16 @@ export default {
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
-            // Поиск клиентов
-            clientSearch: '',
-            clientSearchLoading: false,
-            clientResults: [],
-            lastClients: [],
-            showDropdown: false,
-
             files: this.editingItem?.files || [],
             uploading: false,
             deleteFileDialog: false,
             deleteFileIndex: -1,
         }
     },
-    computed: {
-        dateModel: {
-            get() {
-                const d = new Date(this.dateObj);
-                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-                return d.toISOString().slice(0, 16);
-            },
-            set(val) {
-                this.dateObj = new Date(val);
-            }
-        }
-    },
     created() {
         this.fetchUsers();
         this.fetchLastClients();
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
         async fetchUsers() {
             this.users = await UsersController.getAllUsers();
@@ -129,26 +101,6 @@ export default {
         async fetchLastClients() {
             const paginated = await ClientController.getItems(1);
             this.lastClients = paginated.items.slice(0, 10);
-        },
-        // Поиск клиентов
-        searchClients: debounce(async function () {
-            if (this.clientSearch.length >= 4) {
-                this.clientSearchLoading = true;
-                const results = await ClientController.search(this.clientSearch);
-                this.clientSearchLoading = false;
-                this.clientResults = results;
-            } else {
-                this.clientResults = [];
-            }
-        }, 250),
-        selectClient(client) {
-            this.showDropdown = false;
-            this.clientSearch = '';
-            this.clientResults = [];
-            this.selectedClient = client;
-        },
-        deselectClient() {
-            this.selectedClient = null;
         },
         async save() {
             if (this.uploading) {
@@ -196,18 +148,6 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
-        },
-        getApiErrorMessage(e) {
-            if (e?.response && e.response.data) {
-                if (e.response.data.errors) {
-                    return Object.values(e.response.data.errors).flat();
-                }
-                if (e.response.data.message) {
-                    return [e.response.data.message];
-                }
-            }
-            if (e?.message) return [e.message];
-            return ["Ошибка"];
         },
         async handleFileChange(event) {
             if (!this.editingItemId) {

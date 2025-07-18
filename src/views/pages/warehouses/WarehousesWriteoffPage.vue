@@ -1,5 +1,4 @@
 <template>
-    <!-- Добавить + пагинация -->
     <div class="flex justify-between items-center mb-2">
         <div class="flex justify-start items-center">
             <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Списать</PrimaryButton>
@@ -24,7 +23,6 @@
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
-    <!-- Таблица с заглушкой -->
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.warehouse_writeoffs" :columns-config="columnsConfig"
@@ -34,12 +32,10 @@
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
         </div>
     </transition>
-    <!-- Модальное окно форма создания/редактирования -->
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
         <WarehousesWriteoffCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" :editingItem="editingItem" />
     </SideModalDialog>
-    <!-- Компонент уведомлений -->
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" />
 </template>
@@ -52,8 +48,11 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import WarehouseWriteoffController from '@/api/WarehouseWriteoffController';
 import WarehousesWriteoffCreatePage from '@/views/pages/warehouses/WarehousesWriteoffCreatePage.vue';
+import notificationMixin from '@/mixins/notificationMixin';
+import modalMixin from '@/mixins/modalMixin';
 
 export default {
+    mixins: [modalMixin, notificationMixin],
     components: {
         NotificationToast,
         PrimaryButton,
@@ -66,15 +65,10 @@ export default {
         return {
             data: null,
             loading: false,
-            notification: false,
-            notificationTitle: '',
-            notificationSubtitle: '',
-            notificationIsDanger: false,
-            modalDialog: false,
             editingItem: null,
-            // table config
             columnsConfig: [
-                { name: 'id', label: '#' },
+                { name: 'select', label: '#',  size: 15},
+                { name: 'id', label: '№', size: 30 },
                 { name: 'dateUser', label: 'Дата / пользователь' },
                 { name: 'warehouseName', label: 'Склад' },
                 { name: 'products', label: 'Товары', html: true },
@@ -113,22 +107,6 @@ export default {
                 this.loading = false;
             }
         },
-        showNotification(title, subtitle, isDanger = false) {
-            this.notificationTitle = title;
-            this.notificationSubtitle = subtitle;
-            this.notificationIsDanger = isDanger;
-            this.notification = true;
-            setTimeout(() => {
-                this.notification = false;
-            }, 10000);
-        },
-        showModal(item = null) {
-            this.modalDialog = true;
-            this.editingItem = item;
-        },
-        closeModal() {
-            this.modalDialog = false;
-        },
         handleSaved() {
             this.showNotification('Товары списаны', '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
@@ -150,15 +128,3 @@ export default {
     },
 }
 </script>
-
-<style>
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.2s;
-}
-
-.fade-enter,
-.fade-leave-to {
-    opacity: 0;
-}
-</style>

@@ -1,11 +1,9 @@
 <template>
-    <!-- Добавить + пагинация -->
     <div class="flex justify-between items-center mb-4">
         <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить трансфер</PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
-    <!-- Таблица с заглушкой -->
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.transfers" :columns-config="columnsConfig" :table-data="data.items"
@@ -15,12 +13,10 @@
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
         </div>
     </transition>
-    <!-- Модальное окно форма создания/редактирования -->
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
         <TransferCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" :editingItem="editingItem" />
     </SideModalDialog>
-    <!-- Компонент уведомлений -->
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" />
 </template>
@@ -33,8 +29,11 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TransferController from '@/api/TransferController';
 import TransferCreatePage from '@/views/pages/transfers/TransferCreatePage.vue';
+import notificationMixin from '@/mixins/notificationMixin';
+import modalMixin from '@/mixins/modalMixin';
 
 export default {
+    mixins: [modalMixin, notificationMixin],
     components: {
         NotificationToast,
         PrimaryButton,
@@ -47,14 +46,11 @@ export default {
         return {
             data: null,
             loading: false,
-            notification: false,
-            notificationTitle: '',
-            notificationSubtitle: '',
-            notificationIsDanger: false,
-            modalDialog: false,
+
             editingItem: null,
             columnsConfig: [
-                { name: 'id', label: '#', size: 'w-15' },
+                { name: 'select', label: '#',  size: 15},
+                { name: 'id', label: '№', size: 30 },
                 { name: 'cashFromName', label: 'Касса отправитель' },
                 { name: 'amount', label: 'Сумма трансфера', html: true },
                 { name: 'cashToName', label: 'Куда' },
@@ -92,22 +88,6 @@ export default {
                 this.loading = false;
             }
         },
-        showNotification(title, subtitle, isDanger = false) {
-            this.notificationTitle = title;
-            this.notificationSubtitle = subtitle;
-            this.notificationIsDanger = isDanger;
-            this.notification = true;
-            setTimeout(() => {
-                this.notification = false;
-            }, 10000);
-        },
-        showModal(item = null) {
-            this.modalDialog = true;
-            this.editingItem = item;
-        },
-        closeModal() {
-            this.modalDialog = false;
-        },
         handleSaved() {
             this.showNotification('Трансфер успешно добавлен', '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
@@ -129,15 +109,3 @@ export default {
     },
 }
 </script>
-
-<style>
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.2s;
-}
-
-.fade-enter,
-.fade-leave-to {
-    opacity: 0;
-}
-</style>

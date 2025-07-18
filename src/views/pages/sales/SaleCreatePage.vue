@@ -87,20 +87,14 @@ import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import ClientSearch from "@/views/components/app/search/ClientSearch.vue";
 import ProductSearch from "@/views/components/app/search/ProductSearch.vue";
+import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 
 export default {
-    components: {
-        PrimaryButton,
-        AlertDialog,
-        ClientSearch,
-        ProductSearch,
-    },
+    mixins: [getApiErrorMessage],
+    emits: ["saved", "saved-error", "deleted", "deleted-error"],
+    components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch, },
     props: {
-        editingItem: {
-            type: SaleDto,
-            required: false,
-            default: null,
-        },
+        editingItem: { type: SaleDto, required: false, default: null, },
     },
     data() {
         return {
@@ -168,7 +162,6 @@ export default {
             }
         }
     },
-    emits: ["saved", "saved-error", "deleted", "deleted-error"],
     methods: {
         async fetchAllWarehouses() {
             this.allWarehouses = await WarehouseController.getAllItems();
@@ -185,13 +178,6 @@ export default {
                 this.cashId = this.allCashRegisters[0].id;
             }
         },
-        // метод-менялка цены при переключении
-        // onPriceTypeChange(product) {
-        //     product.price = product.priceType === 'retail'
-        //         ? product.retail_price
-        //         : product.wholesale_price;
-        // },
-
         async save() {
             this.saveLoading = true;
             try {
@@ -263,18 +249,6 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
-        },
-        getApiErrorMessage(e) {
-            if (e?.response && e.response.data) {
-                if (e.response.data.errors) {
-                    return Object.values(e.response.data.errors).flat();
-                }
-                if (e.response.data.message) {
-                    return [e.response.data.message];
-                }
-            }
-            if (e?.message) return [e.message];
-            return ["Ошибка"];
         },
     },
     watch: {

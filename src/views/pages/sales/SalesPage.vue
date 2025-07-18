@@ -1,5 +1,4 @@
 <template>
-    <!-- Добавить + пагинация -->
     <div class="flex justify-between items-center mb-2">
         <div class="flex justify-start items-center">
             <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить продажу</PrimaryButton>
@@ -8,7 +7,6 @@
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
-    <!-- Таблица с заглушкой -->
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.sales" :columns-config="columnsConfig" :table-data="data.items"
@@ -19,12 +17,10 @@
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
         </div>
     </transition>
-    <!-- Модальное окно форма создания/редактирования -->
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
         <SaleCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" :editingItem="editingItem" />
     </SideModalDialog>
-    <!-- Компонент уведомлений -->
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" />
 </template>
@@ -39,8 +35,11 @@ import SaleController from '@/api/SaleController';
 import SaleCreatePage from '@/views/pages/sales/SaleCreatePage.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import { markRaw } from 'vue';
+import notificationMixin from '@/mixins/notificationMixin';
+import modalMixin from '@/mixins/modalMixin';
 
 export default {
+    mixins: [modalMixin, notificationMixin],
     components: {
         NotificationToast,
         PrimaryButton,
@@ -54,25 +53,13 @@ export default {
         return {
             data: null,
             loading: false,
-            notification: false,
-            notificationTitle: '',
-            notificationSubtitle: '',
-            notificationIsDanger: false,
-            modalDialog: false,
-            editingItem: null,
-            // table config
-            columnsConfig: [
-                { name: 'id', label: '#' },
-                { name: 'dateUser', label: 'Дата / Пользователь' },
-                {
-                    name: 'client',
-                    label: 'Покупатель',
-                    component: markRaw(ClientButtonCell),
-                    props: (item) => ({
-                        client: item.client,
 
-                    })
-                },
+            editingItem: null,
+            columnsConfig: [
+                { name: 'select', label: '#', size: 15 },
+                { name: 'id', label: '№', size: 30 },
+                { name: 'dateUser', label: 'Дата / Пользователь' },
+                { name: 'client', label: 'Покупатель', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
                 { name: 'cashName', label: 'Касса' },
                 { name: 'warehouseName', label: 'Склад' },
                 { name: 'products', label: 'Товары', html: true },
@@ -93,7 +80,7 @@ export default {
             switch (c) {
                 case 'products':
                     return i.productsHtmlList();
-                 case 'dateUser':
+                case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
                 case 'price':
 
@@ -124,39 +111,6 @@ export default {
                 this.loading = false;
             }
         },
-        // async handleDeleteRows(selectedRows) {
-        //     if (!selectedRows.length) return;
-
-        //     this.loading = true;
-        //     try {
-        //         for (const row of selectedRows) {
-        //             if (row.id) {
-        //                 await SaleController.deleteItem(row.id);
-        //             }
-        //         }
-        //         await this.fetchItems(this.data?.currentPage || 1, true);
-        //         this.showNotification('Выбранные продажи успешно удалены', '', false);
-        //     } catch (error) {
-        //         this.showNotification('Ошибка при удалении продаж', error.message, true);
-        //     }
-        //     this.loading = false;
-        // },
-        showNotification(title, subtitle, isDanger = false) {
-            this.notificationTitle = title;
-            this.notificationSubtitle = subtitle;
-            this.notificationIsDanger = isDanger;
-            this.notification = true;
-            setTimeout(() => {
-                this.notification = false;
-            }, 10000);
-        },
-        showModal(item = null) {
-            this.modalDialog = true;
-            this.editingItem = item;
-        },
-        closeModal() {
-            this.modalDialog = false;
-        },
         handleSaved() {
             this.showNotification('Добавлена запись продажи', '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
@@ -181,15 +135,3 @@ export default {
     },
 }
 </script>
-
-<style>
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.2s;
-}
-
-.fade-enter,
-.fade-leave-to {
-    opacity: 0;
-}
-</style>

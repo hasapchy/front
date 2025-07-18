@@ -26,7 +26,7 @@ export default {
   props: {
     id: Number,
     value: Number,
-    allStatuses: {
+    statuses: {
       type: Array,
       required: true
     },
@@ -39,7 +39,7 @@ export default {
   },
   computed: {
     selectedStatus() {
-      return this.allStatuses.find(s => s.id === this.value);
+      return this.statuses.find(s => s.id === this.value);
     },
     selectedStyle() {
       const hex = this.selectedStatus?.category?.color;
@@ -56,7 +56,7 @@ export default {
     },
     sortedStatuses() {
       const grouped = {};
-      for (const status of this.allStatuses) {
+      for (const status of this.statuses) {
         const catId = status.category?.id ?? 0;
         if (!grouped[catId]) {
           grouped[catId] = {
@@ -86,7 +86,7 @@ export default {
       if (!hex) return 'transparent';
       // const { r, g, b } = this.hexToRgb(hex);
       // return `rgba(${r}, ${g}, ${b}, 0.15)`;
-      return hex; 
+      return hex;
     },
     hexToRgb(hex) {
       const clean = hex.replace('#', '');

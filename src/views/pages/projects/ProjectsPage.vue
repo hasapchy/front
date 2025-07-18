@@ -1,26 +1,22 @@
 <template>
-    <!-- Добавить + пагинация -->
     <div class="flex justify-between items-center mb-4">
         <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить проект</PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
-    <!-- Таблица с заглушкой -->
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.projects" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" /> <!--@delete-rows="handleDeleteRows" -->
+                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
         </div>
     </transition>
-    <!-- Модальное окно форма создания/редактирования -->
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
         <ProjectCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" :editingItem="editingItem" />
     </SideModalDialog>
-    <!-- Компонент уведомлений -->
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" />
 </template>
@@ -33,30 +29,20 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import ProjectController from '@/api/ProjectController';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
+import notificationMixin from '@/mixins/notificationMixin';
+import modalMixin from '@/mixins/modalMixin';
 
 export default {
-    components: {
-        NotificationToast,
-        PrimaryButton,
-        SideModalDialog,
-        Pagination,
-        DraggableTable,
-        ProjectCreatePage
-    },
+    mixins: [modalMixin, notificationMixin],
+    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ProjectCreatePage },
     data() {
         return {
             data: null,
-            //
             loading: false,
-            notification: false,
-            notificationTitle: '',
-            notificationSubtitle: '',
-            notificationIsDanger: false,
-            //
-            modalDialog: false,
             editingItem: null,
-            // table config
             columnsConfig: [
+                { name: 'select', label: '#', size: 15 },
+                { name: 'id', label: '№', size: 30 },
                 { name: 'name', label: 'Название' },
                 { name: 'budget', label: 'Бюджет проекта' },
                 { name: 'dateUser', label: 'Дата / пользователь' },
@@ -70,7 +56,6 @@ export default {
         this.$store.commit('SET_SETTINGS_OPEN', false);
     },
     methods: {
-        // table mapper
         itemMapper(i, c) {
             switch (c) {
                 case 'clientId':
@@ -85,7 +70,6 @@ export default {
                     return i[c];
             }
         },
-        //
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
@@ -99,39 +83,6 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
-        },
-        // async handleDeleteRows(selectedRows) {
-        //     if (!selectedRows.length) return;
-
-        //     this.loading = true;
-        //     try {
-        //         for (const row of selectedRows) {
-        //             if (row.id) {
-        //                 await ProjectController.deleteItem(row.id);
-        //             }
-        //         }
-        //         await this.fetchItems(this.data?.currentPage || 1, true);
-        //         this.showNotification('Выбранные продажи успешно удалены', '', false);
-        //     } catch (error) {
-        //         this.showNotification('Ошибка при удалении продаж', error.message, true);
-        //     }
-        //     this.loading = false;
-        // },
-        showNotification(title, subtitle, isDanger = false) {
-            this.notificationTitle = title;
-            this.notificationSubtitle = subtitle;
-            this.notificationIsDanger = isDanger;
-            this.notification = true;
-            setTimeout(() => {
-                this.notification = false;
-            }, 10000);
-        },
-        showModal(item = null) {
-            this.modalDialog = true;
-            this.editingItem = item;
-        },
-        closeModal() {
-            this.modalDialog = false;
         },
         handleSaved() {
             this.showNotification('Проект успешно добавлен', '', false);
@@ -154,18 +105,3 @@ export default {
     },
 }
 </script>
-
-<style>
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.2s;
-}
-
-.fade-enter,
-.fade-leave-to
-
-/* .fade-leave-active in <2.1.8 */
-    {
-    opacity: 0;
-}
-</style>

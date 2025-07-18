@@ -23,6 +23,7 @@
     </TableFilterButton>
   </div>
 
+
   <!-- Таблица -->
   <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
     <thead class="bg-gray-100 rounded-t-sm">
@@ -32,16 +33,22 @@
           class="text-left border border-gray-300 py-2 px-4 font-medium cursor-pointer select-none"
           :style="{ width: element.size ? element.size + 'px' : 'auto' }" @dblclick.prevent="sortBy(element.name)"
           :title="'Кликните 2 раза по ' + element.label + ' для сортировки'">
-          <span>{{ element.label }}</span>
-          <span v-if="sortKey === element.name" class="ml-1">
-            <i v-if="sortOrder === 1" class="fas fa-sort-up"></i>
-            <i v-else class="fas fa-sort-down"></i>
-          </span>
-          <span v-else class="ml-1 text-gray-300">
-            <i class="fas fa-sort"></i>
-          </span>
-          <span v-if="element.visible" class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize"
-            @mousedown.prevent="startResize($event, index)"></span>
+          <template v-if="element.name === 'select'">
+            <input type="checkbox" :checked="isAllSelected" ref="headerCheckbox" @change="toggleSelectAll"
+              style="cursor:pointer;" />
+          </template>
+          <template v-else>
+            <span>{{ element.label }}</span>
+            <span v-if="sortKey === element.name" class="ml-1">
+              <i v-if="sortOrder === 1" class="fas fa-sort-up"></i>
+              <i v-else class="fas fa-sort-down"></i>
+            </span>
+            <span v-else class="ml-1 text-gray-300">
+              <i class="fas fa-sort"></i>
+            </span>
+            <span v-if="element.visible" class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize"
+              @mousedown.prevent="startResize($event, index)"></span>
+          </template>
         </th>
       </draggable>
     </thead>
@@ -55,6 +62,10 @@
         :class="{ 'border-b border-gray-300': idx !== sortedData.length - 1 }" @click="(e) => itemClick(item, e)">
         <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`" class="py-2 px-4 border-x border-gray-300"
           :class="{ hidden: !column.visible }" :style="{ width: column.size ? column.size + 'px' : 'auto' }">
+          <template v-if="column.name === 'select'">
+            <input type="checkbox" :checked="selectedIds.includes(item.id)" @change.stop="toggleSelectRow(item.id)"
+              style="cursor:pointer;" />
+          </template>
           <template v-if="column.component">
             <component :is="column.component" v-bind="column.props?.(item)" />
           </template>
@@ -88,6 +99,7 @@ export default {
     tableData: { type: Array, required: true },
     itemMapper: { type: Function, required: true },
     onItemClick: { type: Function },
+    controller: { type: Object, required: true },
   },
   data() {
     return {
@@ -98,6 +110,7 @@ export default {
       resizingColumn: null,
       startX: 0,
       startWidth: 0,
+      selectedIds: [],
     };
   },
   computed: {
@@ -107,27 +120,33 @@ export default {
       }
 
       return [...this.tableData].sort((a, b) => {
-        // 1. Отдельная логика сортировки по дате
         if (this.sortKey === 'dateUser') {
           return (
             (dayjs(a.date).valueOf() - dayjs(b.date).valueOf()) *
             this.sortOrder
           );
         }
-
         const va = this.itemMapper(a, this.sortKey);
         const vb = this.itemMapper(b, this.sortKey);
-
-        // 2. Числовая сортировка
         if (!isNaN(parseFloat(va)) && !isNaN(parseFloat(vb))) {
           return (parseFloat(va) - parseFloat(vb)) * this.sortOrder;
         }
 
-        // 3. Строковая сортировка
         return (va ?? '').toString().localeCompare((vb ?? '').toString()) * this.sortOrder;
       });
-    }
-
+    },
+    visibleIds() {
+      return this.sortedData.map(item => item.id);
+    },
+    isAllSelected() {
+      return this.visibleIds.length > 0 && this.visibleIds.every(id => this.selectedIds.includes(id));
+    },
+    isNoneSelected() {
+      return this.visibleIds.every(id => !this.selectedIds.includes(id));
+    },
+    isSomeSelected() {
+      return !this.isAllSelected && !this.isNoneSelected;
+    },
   },
   methods: {
     loadColumns() {
@@ -151,8 +170,6 @@ export default {
         }));
       }
     },
-
-
     resetColumns() {
       this.columns = this.columnsConfig.map((col, index) => ({
         ...col,
@@ -180,6 +197,12 @@ export default {
       if (e?.target?.closest('.status-dropdown')) {
         return;
       }
+      if (
+        e?.target?.type === 'checkbox' ||
+        e?.target?.closest('td')?.getAttribute('data-col-name') === 'select'
+      ) {
+        return;
+      }
       this.onItemClick?.(i);
     },
     saveSort() {
@@ -197,8 +220,6 @@ export default {
       }
       this.saveSort();
     },
-
-    /* ---------- Новое от Эмиля.Это на случай, если ты начнешь смотреть ресайз колонок ---------- */
     startResize(e, index) {
       this.resizing = true;
       this.resizingColumn = index;
@@ -220,6 +241,22 @@ export default {
       document.removeEventListener('mousemove', this.onMouseMove);
       document.removeEventListener('mouseup', this.stopResize);
     },
+    toggleSelectAll() {
+      if (this.isAllSelected) {
+        this.selectedIds = this.selectedIds.filter(id => !this.visibleIds.includes(id));
+      } else {
+        this.selectedIds = Array.from(new Set([...this.selectedIds, ...this.visibleIds]));
+      }
+      this.$emit('selectionChange', this.selectedIds.slice());
+    },
+    toggleSelectRow(id) {
+      if (this.selectedIds.includes(id)) {
+        this.selectedIds = this.selectedIds.filter(x => x !== id);
+      } else {
+        this.selectedIds = [...this.selectedIds, id];
+      }
+      this.$emit('selectionChange', this.selectedIds.slice());
+    },
   },
   mounted() {
     this.loadColumns();
@@ -239,20 +276,14 @@ export default {
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('mouseup', this.stopResize);
   },
+  watch: {
+    isSomeSelected(val) {
+      this.$nextTick(() => {
+        const el = this.$refs.headerCheckbox;
+        if (el) el.indeterminate = val;
+      });
+    },
+  },
+
 };
 </script>
-
-<style scoped>
-th,
-td {
-  text-align: left;
-}
-
-.resize-handle {
-  transition: background-color 0.15s ease;
-}
-
-.resize-handle:hover {
-  background-color: rgba(0, 0, 0, 0.15);
-}
-</style>

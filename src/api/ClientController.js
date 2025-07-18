@@ -127,15 +127,15 @@ export default class ClientController {
     }
   }
 
-  // static async deleteItem(id) {
-  //     try {
-  //         const { data } = await api.delete(`/categories/${id}`);
-  //         return data;
-  //     } catch (error) {
-  //         console.error('Ошибка при удалении категории:', error);
-  //         throw error;
-  //     }
-  // }
+  static async deleteItem(id) {
+    try {
+      const { data } = await api.delete(`/clients/${id}`);
+      return data;
+    } catch (error) {
+      console.error("Ошибка при удалении клиента:", error);
+      throw error;
+    }
+  }
 
   static async getBalanceHistory(clientId) {
     try {

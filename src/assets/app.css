@@ -28,8 +28,6 @@ label span {
     font-weight: 500;
 }
 
-
-
 input[type="text"],
 input[type="number"],
 input[type="email"],
@@ -253,7 +251,10 @@ input[type="checkbox"] {
     gap: 8px;
 }
 
-body, select, input, textarea {
+body,
+select,
+input,
+textarea {
     font-family: 'Open Sans', sans-serif;
     font-size: 12px;
 }
@@ -261,4 +262,27 @@ body, select, input, textarea {
 label.required::after {
     content: " *";
     color: red;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.2s;
+}
+
+.fade-enter,
+.fade-leave-to {
+    opacity: 0;
+}
+
+th,
+td {
+    text-align: left;
+}
+
+.resize-handle {
+    transition: background-color 0.15s ease;
+}
+
+.resize-handle:hover {
+    background-color: rgba(0, 0, 0, 0.15);
 }

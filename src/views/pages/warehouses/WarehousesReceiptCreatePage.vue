@@ -72,39 +72,28 @@
 <script>
 import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
-import ClientController from '@/api/ClientController';
-import ProductController from '@/api/ProductController';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import WarehouseController from '@/api/WarehouseController';
 import WarehouseReceiptDto from '@/dto/warehouse/WarehouseReceiptDto';
-import WarehouseReceiptProductDto from '@/dto/warehouse/WarehouseReceiptProductDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
-import debounce from 'lodash.debounce';
-
+import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 
 export default {
-    components: {
-        PrimaryButton,
-        AlertDialog,
-        ClientSearch,
-        ProductSearch
-    },
+    mixins: [getApiErrorMessage],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    components: { PrimaryButton, AlertDialog },
+    components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch },
     props: {
-        editingItem: {
-            type: WarehouseReceiptDto,
-            required: false,
-            default: null
-        }
+        editingItem: { type: WarehouseReceiptDto, required: false, default: null }
     },
     data() {
         return {
             date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
             note: this.editingItem ? this.editingItem.note : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId || '' : '',
-            // currencyId: this.editingItem ? this.editingItem.currencyId || '' : '',
             type: this.editingItem ? this.editingItem.type : 'cash',
             cashId: this.editingItem ? this.editingItem.cashId : '',
             products: this.editingItem ? this.editingItem.products : [],
@@ -125,7 +114,6 @@ export default {
         this.fetchCurrencies();
         this.fetchAllCashRegisters();
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
         async fetchAllWarehouses() {
             this.allWarehouses = await WarehouseController.getAllItems();
@@ -146,7 +134,6 @@ export default {
                 var formData = {
                     client_id: this.selectedClient.id,
                     warehouse_id: this.warehouseId,
-                    // currency_id: this.currencyId,
                     note: this.note,
                     type: this.type,
                     cash_id: this.type === 'cash' ? this.cashId : null,
@@ -209,18 +196,6 @@ export default {
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
-        getApiErrorMessage(e) {
-            if (e?.response && e.response.data) {
-                if (e.response.data.errors) {
-                    return Object.values(e.response.data.errors).flat();
-                }
-                if (e.response.data.message) {
-                    return [e.response.data.message];
-                }
-            }
-            if (e?.message) return [e.message];
-            return ["Ошибка"];
-        }
     },
     watch: {
 

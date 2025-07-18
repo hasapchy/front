@@ -69,8 +69,11 @@ import CashRegisterController from '@/api/CashRegisterController';
 import TransactionsBalance from '@/views/pages/transactions/TransactionsBalance.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import { markRaw } from 'vue';
+import notificationMixin from '@/mixins/notificationMixin';
+import modalMixin from '@/mixins/modalMixin';
 
 export default {
+    mixins: [modalMixin, notificationMixin],
     components: {
         NotificationToast,
         PrimaryButton,
@@ -85,21 +88,15 @@ export default {
         return {
             data: null,
             loading: false,
-            notification: false,
-            notificationTitle: '',
-            notificationSubtitle: '',
-            notificationIsDanger: false,
-            modalDialog: false,
             editingItem: null,
             allCashRegisters: [],
-            // filters
             cashRegisterId: '',
             dateFilter: 'all_time',
             startDate: null,
             endDate: null,
-            // table config
             columnsConfig: [
-                { name: 'id', label: '№', width: 'w-15' },
+                { name: 'select', label: '#', size: 15 },
+                { name: 'id', label: '№', size: 30 },
                 { name: 'type', label: 'Тип', html: true },
                 { name: 'cashName', label: 'Касса' },
                 { name: 'cashAmount', label: 'Сумма', html: true },
@@ -182,15 +179,6 @@ export default {
                 this.loading = false;
             }
         },
-        showNotification(title, subtitle, isDanger = false) {
-            this.notificationTitle = title;
-            this.notificationSubtitle = subtitle;
-            this.notificationIsDanger = isDanger;
-            this.notification = true;
-            setTimeout(() => {
-                this.notification = false;
-            }, 10000);
-        },
         showModal(item = null) {
             this.editingItem = null;
             if (item?.isTransfer === 1) {
@@ -199,9 +187,6 @@ export default {
             }
             this.modalDialog = true;
             this.editingItem = item;
-        },
-        closeModal() {
-            this.modalDialog = false;
         },
         handleSaved() {
             this.showNotification('Транзакция успешно добавлена', '', false);
@@ -229,15 +214,3 @@ export default {
     },
 }
 </script>
-
-<style>
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.2s;
-}
-
-.fade-enter,
-.fade-leave-to {
-    opacity: 0;
-}
-</style>

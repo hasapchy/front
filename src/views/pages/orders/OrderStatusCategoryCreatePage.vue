@@ -24,8 +24,11 @@ import OrderStatusCategoryController from '@/api/OrderStatusCategoryController';
 import OrderStatusCategoryDto from '@/dto/order/OrderStatusCategoryDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 
 export default {
+    mixins: [getApiErrorMessage],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     components: { PrimaryButton, AlertDialog },
     props: {
         editingItem: { type: OrderStatusCategoryDto, required: false, default: null }
@@ -40,7 +43,6 @@ export default {
             deleteLoading: false
         }
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
         async save() {
             this.saveLoading = true;
@@ -88,18 +90,6 @@ export default {
         },
         showDeleteDialog() { this.deleteDialog = true; },
         closeDeleteDialog() { this.deleteDialog = false; },
-        getApiErrorMessage(e) {
-            if (e?.response && e.response.data) {
-                if (e.response.data.errors) {
-                    return Object.values(e.response.data.errors).flat();
-                }
-                if (e.response.data.message) {
-                    return [e.response.data.message];
-                }
-            }
-            if (e?.message) return [e.message];
-            return ["Ошибка"];
-        }
     },
     watch: {
         editingItem: {

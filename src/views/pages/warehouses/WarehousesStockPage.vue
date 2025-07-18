@@ -1,11 +1,8 @@
 <template>
     <div class="flex justify-between items-center mb-4">
         <div class="flex justify-start items-center">
-            <!-- Кнопки -->
             <PrimaryButton :onclick="openCreateWarehouse" icon="fas fa-plus">Добавить склад</PrimaryButton>
             <PrimaryButton :onclick="openCreateProduct" icon="fas fa-plus" class="ml-2">Добавить товар</PrimaryButton>
-
-            <!-- Селекты -->
             <div class="ml-4">
                 <select v-model="warehouseId" @change="fetchItems" class="p-2 border rounded">
                     <option value="">Все склады</option>
@@ -14,7 +11,6 @@
                     </option>
                 </select>
             </div>
-
             <div class="ml-2">
                 <select v-model="categoryId" @change="fetchItems" class="p-2 border rounded">
                     <option value="">Все категории</option>
@@ -24,14 +20,11 @@
                 </select>
             </div>
         </div>
-
-        <!-- Пагинация -->
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
 
 
-    <!-- Таблица с заглушкой -->
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.warehouse_stocks" :columns-config="columnsConfig" :table-data="data.items"
@@ -41,12 +34,6 @@
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
         </div>
     </transition>
-    <!-- Модальное окно форма создания/редактирования -->
-    <!-- <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
-        <AdminProductsCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" :editingItem="editingItem" />
-    </SideModalDialog> -->
-    <!-- Компонент уведомлений -->
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" />
     <SideModalDialog :showForm="modalCreateWarehouse" :onclose="() => modalCreateWarehouse = false" :level="1">
@@ -54,10 +41,9 @@
     </SideModalDialog>
 
     <SideModalDialog :showForm="modalCreateProduct" :onclose="() => modalCreateProduct = false" :level="1">
-        <AdminProductsCreatePage :editingItem="null" :defaultType="'product'" @saved="onProductSaved"
+        <ProductsCreatePage :editingItem="null" :defaultType="'product'" @saved="onProductSaved"
             @saved-error="() => modalCreateProduct = false" />
     </SideModalDialog>
-
 </template>
 
 <script>
@@ -67,17 +53,20 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import WarehouseStockController from '@/api/WarehouseStockController';
-import AdminProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
+import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import CategoryController from '@/api/CategoryController';
 import WarehouseController from '@/api/WarehouseController';
 import AdminWarehouseCreatePage from '@/views/pages/admin/warehouses/AdminWarehouseCreatePage.vue';
+import notificationMixin from '@/mixins/notificationMixin';
+import modalMixin from '@/mixins/modalMixin';
 
 export default {
+    mixins: [modalMixin, notificationMixin],
     components: {
         NotificationToast,
         PrimaryButton,
         SideModalDialog,
-        AdminProductsCreatePage,
+        ProductsCreatePage,
         Pagination,
         DraggableTable,
         AdminWarehouseCreatePage
@@ -86,22 +75,16 @@ export default {
         return {
             data: null,
             loading: false,
-            notification: false,
-            notificationTitle: '',
-            notificationSubtitle: '',
-            notificationIsDanger: false,
-            modalDialog: false,
             editingItem: null,
-            // filters
             allWarehouses: [],
             allCategories: [],
             warehouseId: '',
             categoryId: '',
             modalCreateWarehouse: false,
             modalCreateProduct: false,
-            // table config
             columnsConfig: [
-                { name: 'id', label: '#' },
+                { name: 'select', label: '#', size: 15 },
+                { name: 'id', label: '№', size: 30 },
                 { name: 'warehouseName', label: 'Склад' },
                 { name: 'image', label: 'Изобр.', image: true },
                 { name: 'productName', label: 'Товар' },
@@ -124,7 +107,6 @@ export default {
         async fetchAllWarehouses() {
             this.allWarehouses = await WarehouseController.getAllItems();
         },
-
         itemMapper(i, c) {
             switch (c) {
                 case 'image':
@@ -153,22 +135,6 @@ export default {
                 this.loading = false;
             }
         },
-        showNotification(title, subtitle, isDanger = false) {
-            this.notificationTitle = title;
-            this.notificationSubtitle = subtitle;
-            this.notificationIsDanger = isDanger;
-            this.notification = true;
-            setTimeout(() => {
-                this.notification = false;
-            }, 10000);
-        },
-        showModal(item = null) {
-            // this.modalDialog = true;
-            // this.editingItem = item;
-        },
-        closeModal() {
-            // this.modalDialog = false;
-        },
         openCreateWarehouse() {
             this.modalCreateWarehouse = true;
         },
@@ -183,40 +149,9 @@ export default {
         },
         onProductSaved() {
             this.modalCreateProduct = false;
-            this.fetchItems(); // если нужно обновить таблицу
+            this.fetchItems();
             this.showNotification('Товар успешно добавлен', '');
         }
-
-        // handleSaved() {
-        //     this.showNotification('Товар на складе успешно добавлен', '', false);
-        //     this.fetchItems(this.data?.currentPage || 1, true);
-        //     this.closeModal();
-        // },
-        // handleSavedError(m) {
-        //     this.showNotification('Ошибка сохранения товара на складе', m, true);
-        // },
-        // handleDeleted() {
-        //     this.showNotification('Товар на складе успешно удален', '', false);
-        //     this.fetchItems(this.data?.currentPage || 1, true);
-        //     this.closeModal();
-        // },
-        // handleDeletedError(m) {
-        //     this.showNotification('Ошибка удаления товара на складе', m, true);
-        // }
-    },
-    computed: {
     },
 }
 </script>
-
-<style>
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.2s;
-}
-
-.fade-enter,
-.fade-leave-to {
-    opacity: 0;
-}
-</style>

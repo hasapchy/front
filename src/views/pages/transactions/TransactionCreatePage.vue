@@ -19,7 +19,7 @@
             <select v-model="cashId" :disabled="!!editingItemId" required>
                 <option value="">Нет</option>
                 <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
-                   {{ parent.name }} ({{ parent.currency_symbol }})
+                    {{ parent.name }} ({{ parent.currency_symbol }})
                 </option>
             </select>
         </div>
@@ -101,35 +101,18 @@ import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
 import TransactionController from '@/api/TransactionController';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
+import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+
 export default {
-    components: {
-        PrimaryButton,
-        AlertDialog,
-        ClientSearch
-    },
+    mixins: [getApiErrorMessage],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    components: { PrimaryButton, AlertDialog, ClientSearch },
     props: {
-        editingItem: {
-            type: TransactionDto,
-            required: false,
-            default: null
-        },
-        initialClient: {
-            type: ClientDto,
-            default: null
-        },
-        initialProjectId: {
-            type: [String, Number, null],
-            default: null
-        },
-        orderId: {
-            type: [String, Number],
-            required: false
-        },
-        defaultCashId: {
-            type: Number,
-            default: null,
-            required: false
-        }
+        editingItem: { type: TransactionDto, required: false, default: null },
+        initialClient: { type: ClientDto, default: null },
+        initialProjectId: { type: [String, Number, null], default: null },
+        orderId: { type: [String, Number], required: false },
+        defaultCashId: { type: Number, default: null, required: false }
     },
     data() {
         return {
@@ -185,7 +168,6 @@ export default {
             }
         }
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
         async fetchCurrencies() {
             this.currencies = await AppController.getCurrencies();
@@ -274,18 +256,6 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
-        },
-        getApiErrorMessage(e) {
-            if (e?.response && e.response.data) {
-                if (e.response.data.errors) {
-                    return Object.values(e.response.data.errors).flat();
-                }
-                if (e.response.data.message) {
-                    return [e.response.data.message];
-                }
-            }
-            if (e?.message) return [e.message];
-            return ["Ошибка"];
         },
     },
     watch: {

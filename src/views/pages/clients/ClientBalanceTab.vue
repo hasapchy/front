@@ -16,7 +16,7 @@
             История отсутствует
         </div>
         <DraggableTable v-if="!balanceLoading && balanceHistory.length" table-key="client.balance"
-            :columns-config="columnsBalance" :table-data="balanceHistory" :item-mapper="itemMapperBalance"
+            :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
             :onItemClick="handleBalanceItemClick" />
 
         <!-- Модалка для entity -->
@@ -56,7 +56,7 @@ export default {
             balanceHistory: [],
             selectedEntity: null,
             entityModalOpen: false,
-            columnsBalance: [
+            columnsConfig: [
                 { name: "date", label: "Дата", size: 100 },
                 { name: "type", label: "Тип" },
                 { name: "description", label: "Описание", size: 300 },
@@ -81,7 +81,7 @@ export default {
             }
             this.balanceLoading = false;
         },
-        itemMapperBalance(i, c) {
+        itemMapper(i, c) {
             switch (c) {
                 case "date":
                     return i.formatDate();

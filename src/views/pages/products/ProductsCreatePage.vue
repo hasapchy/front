@@ -104,7 +104,6 @@
             </div>
         </div>
     </div>
-    <!-- {{ defaultType }} -->
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
@@ -112,7 +111,6 @@
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление категории'" :confirm-text="'Удалить категорию'" :leave-text="'Отмена'" />
-    <!-- Модальное окно форма создания категории -->
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal" :level="1">
         <AdminCategoryCreatePage @saved="handleSaved" @saved-error="handleSavedError" />
     </SideModalDialog>
@@ -128,15 +126,13 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import AdminCategoryCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
+import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import JsBarcode from "jsbarcode";
 
 export default {
-    components: {
-        PrimaryButton,
-        AlertDialog,
-        SideModalDialog,
-        AdminCategoryCreatePage
-    },
+    mixins: [getApiErrorMessage],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage },
     props: {
         editingItem: { type: ProductDto, required: false, default: null },
         defaultType: { type: String, required: false, default: 'product' },
@@ -157,14 +153,12 @@ export default {
             wholesale_price: this.editingItem ? this.editingItem.wholesale_price : 0,
             purchase_price: this.editingItem ? this.editingItem.purchase_price : 0,
             editingItemId: this.editingItem ? this.editingItem.id : null,
-            //
             currencies: [],
             units: [],
             allCategories: [],
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
-            modalDialog: false,
         }
     },
     created() {
@@ -178,7 +172,6 @@ export default {
         },
 
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
         async fetchUnits() {
             this.units = await AppController.getUnits();
@@ -315,9 +308,6 @@ export default {
         showModal() {
             this.modalDialog = true;
         },
-        closeModal() {
-            this.modalDialog = false;
-        },
         handleSaved() {
             this.fetchAllCategories();
             this.closeModal();
@@ -325,18 +315,6 @@ export default {
         handleSavedError(m) {
             this.$emit('saved-error', this.getApiErrorMessage(error));
         },
-        getApiErrorMessage(e) {
-            if (e?.response && e.response.data) {
-                if (e.response.data.errors) {
-                    return Object.values(e.response.data.errors).flat();
-                }
-                if (e.response.data.message) {
-                    return [e.response.data.message];
-                }
-            }
-            if (e?.message) return [e.message];
-            return ["Ошибка"];
-        }
     },
     watch: {
         defaultName(newVal) {

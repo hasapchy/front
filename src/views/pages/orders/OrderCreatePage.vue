@@ -100,22 +100,14 @@ import TabBar from '@/views/components/app/forms/TabBar.vue';
 import OrderStatusController from '@/api/OrderStatusController';
 import OrderCategoryController from '@/api/OrderCategoryController';
 import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue';
+import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 
 export default {
+    mixins: [getApiErrorMessage],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
-    components: {
-        ClientSearch,
-        ProductSearch,
-        PrimaryButton,
-        AlertDialog,
-        TabBar,
-        OrderTransactionsTab
-    },
+    components: { ClientSearch, ProductSearch, PrimaryButton, AlertDialog, TabBar, OrderTransactionsTab },
     props: {
-        editingItem: {
-            type: Object,
-            default: null
-        }
+        editingItem: { type: Object, default: null }
     },
     data() {
         return {
@@ -144,7 +136,7 @@ export default {
             allCategories: [],
             allCashRegisters: [],
             currencies: [],
-            allStatuses: [],
+            statuses: [],
             saveLoading: false,
             deleteLoading: false,
             deleteDialog: false,
@@ -219,7 +211,7 @@ export default {
             }
         },
         async fetchOrderStatuses() {
-            this.allStatuses = await OrderStatusController.getAllItems();
+            this.statuses = await OrderStatusController.getAllItems();
         },
         changeTab(tabName) {
             this.currentTab = tabName;
@@ -298,18 +290,6 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
-        },
-        getApiErrorMessage(e) {
-            if (e?.response && e.response.data) {
-                if (e.response.data.errors) {
-                    return Object.values(e.response.data.errors).flat();
-                }
-                if (e.response.data.message) {
-                    return [e.response.data.message];
-                }
-            }
-            if (e?.message) return [e.message];
-            return ["Ошибка"];
         },
     },
     watch: {

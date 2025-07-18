@@ -39,8 +39,11 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import OrderStatusCategoryCreatePage from '@/views/pages/orders/OrderStatusCategoryCreatePage.vue';
+import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 
 export default {
+    mixins: [getApiErrorMessage],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     components: { PrimaryButton, AlertDialog, SideModalDialog, OrderStatusCategoryCreatePage },
     props: {
         editingItem: { type: OrderStatusDto, required: false, default: null }
@@ -60,7 +63,6 @@ export default {
     created() {
         this.fetchAllCategories();
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
         async fetchAllCategories() {
             this.allCategories = await OrderStatusCategoryController.getAllItems();
@@ -114,18 +116,6 @@ export default {
         closeDeleteDialog() { this.deleteDialog = false; },
         showModal() { this.modalDialog = true; },
         closeModal() { this.modalDialog = false; },
-        getApiErrorMessage(e) {
-            if (e?.response && e.response.data) {
-                if (e.response.data.errors) {
-                    return Object.values(e.response.data.errors).flat();
-                }
-                if (e.response.data.message) {
-                    return [e.response.data.message];
-                }
-            }
-            if (e?.message) return [e.message];
-            return ["Ошибка"];
-        }
     },
     watch: {
         editingItem: {

@@ -33,50 +33,36 @@
 
 
 <script>
-import AppController from '@/api/AppController';
-import ProductController from '@/api/ProductController';
 import WarehouseController from '@/api/WarehouseController';
 import WarehouseWriteoffDto from '@/dto/warehouse/WarehouseWriteoffDto';
-import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import WarehouseWriteoffController from '@/api/WarehouseWriteoffController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import debounce from 'lodash.debounce';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
-
+import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 
 export default {
-    components: {
-        PrimaryButton,
-        AlertDialog,
-        ProductSearch
-    },
+    mixins: [getApiErrorMessage],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    components: { PrimaryButton, AlertDialog, ProductSearch },
     props: {
-        editingItem: {
-            type: WarehouseWriteoffDto,
-            required: false,
-            default: null
-        }
+        editingItem: { type: WarehouseWriteoffDto, required: false, default: null }
     },
     data() {
         return {
             note: this.editingItem ? this.editingItem.note : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId || '' : '',
             products: this.editingItem ? this.editingItem.products : [],
-            // 
             editingItemId: this.editingItem ? this.editingItem.id : null,
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
-            ///
             allWarehouses: [],
         }
     },
     created() {
         this.fetchAllWarehouses();
     },
-
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
         async fetchAllWarehouses() {
             this.allWarehouses = await WarehouseController.getAllItems();
@@ -142,18 +128,7 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
-        },getApiErrorMessage(e) {
-    if (e?.response && e.response.data) {
-        if (e.response.data.errors) {
-            return Object.values(e.response.data.errors).flat();
-        }
-        if (e.response.data.message) {
-            return [e.response.data.message];
-        }
-    }
-    if (e?.message) return [e.message];
-    return ["Ошибка"];
-}
+        },
     },
     watch: {
         editingItem: {

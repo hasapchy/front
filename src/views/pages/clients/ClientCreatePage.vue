@@ -109,13 +109,12 @@ import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import TabBar from "@/views/components/app/forms/TabBar.vue";
 import Inputmask from "inputmask";
 import ClientBalanceTab from "@/views/pages/clients/ClientBalanceTab.vue";
+import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+
 export default {
-  components: {
-    PrimaryButton,
-    AlertDialog,
-    TabBar,
-    ClientBalanceTab
-  },
+  mixins: [getApiErrorMessage],
+  emits: ["saved", "saved-error", "deleted", "deleted-error"],
+  components: { PrimaryButton, AlertDialog, TabBar, ClientBalanceTab },
   props: {
     editingItem: { type: ClientDto, default: null },
     defaultFirstName: { type: String, default: "" },
@@ -167,7 +166,6 @@ export default {
     });
     mask.mask(phoneInput);
   },
-  emits: ["saved", "saved-error", "deleted", "deleted-error"],
   methods: {
     addPhone() {
       if (this.newPhone) {
@@ -268,18 +266,6 @@ export default {
     },
     changeTab(tab) {
       this.currentTab = tab;
-    },
-    getApiErrorMessage(e) {
-      if (e?.response && e.response.data) {
-        if (e.response.data.errors) {
-          return Object.values(e.response.data.errors).flat();
-        }
-        if (e.response.data.message) {
-          return [e.response.data.message];
-        }
-      }
-      if (e?.message) return [e.message];
-      return ["Ошибка"];
     },
   },
   watch: {

@@ -4,10 +4,12 @@
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
+    <BatchActions v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="common.clients" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
+                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" :controller="controller"
+                @selectionChange="selectedIds = $event" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
@@ -19,6 +21,8 @@
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" />
+    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
+        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -29,28 +33,25 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import ClientController from '@/api/ClientController';
 import ClientCreatePage from './ClientCreatePage.vue';
+import BatchActions from '@/views/components/app/buttons/BatchButton.vue';
+import batchActionsMixin from '@/mixins/batchActionsMixin'
+import notificationMixin from '@/mixins/notificationMixin';
+import modalMixin from '@/mixins/modalMixin';
+import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 
 export default {
-    components: {
-        NotificationToast,
-        PrimaryButton,
-        SideModalDialog,
-        Pagination,
-        DraggableTable,
-        ClientCreatePage
-    },
+    mixins: [batchActionsMixin, notificationMixin, modalMixin],
+    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchActions, AlertDialog },
     data() {
         return {
             data: null,
             loading: false,
-            notification: false,
-            notificationTitle: '',
-            notificationSubtitle: '',
-            notificationIsDanger: false,
-            modalDialog: false,
             editingItem: null,
+            controller: ClientController,
+            selectedIds: [],
             columnsConfig: [
-                { name: 'id', label: '#', width: 'w-15' },
+                { name: 'select', label: '#', size: 15 },
+                { name: 'id', label: '№', size: 30 },
                 { name: 'firstName', label: 'ФИО/Компания', html: true },
                 { name: 'phones', label: 'Номер телефона', html: true },
                 { name: 'emails', label: 'Email', html: true },
@@ -59,7 +60,6 @@ export default {
                 { name: 'discount', label: 'Скидка' },
                 { name: 'status', label: 'Статус', html: true },
                 { name: 'dateUser', label: 'Дата / Пользователь' },
-
             ],
         }
     },
@@ -101,22 +101,6 @@ export default {
                 this.loading = false;
             }
         },
-        showNotification(title, subtitle, isDanger = false) {
-            this.notificationTitle = title;
-            this.notificationSubtitle = subtitle;
-            this.notificationIsDanger = isDanger;
-            this.notification = true;
-            setTimeout(() => {
-                this.notification = false;
-            }, 10000);
-        },
-        showModal(item = null) {
-            this.modalDialog = true;
-            this.editingItem = item;
-        },
-        closeModal() {
-            this.modalDialog = false;
-        },
         handleSaved() {
             this.showNotification('Клиент успешно добавлен', '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
@@ -132,24 +116,12 @@ export default {
         },
         handleDeletedError(m) {
             this.showNotification('Ошибка удаления клиента', m, true);
-        }
+        },
     },
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
-        }
+        },
     },
 }
 </script>
-
-<style>
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.2s;
-}
-
-.fade-enter,
-.fade-leave-to {
-    opacity: 0;
-}
-</style>

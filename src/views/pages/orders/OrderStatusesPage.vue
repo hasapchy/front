@@ -29,8 +29,11 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import OrderStatusController from '@/api/OrderStatusController';
 import OrderStatusCreatePage from './OrderStatusCreatePage.vue';
+import notificationMixin from '@/mixins/notificationMixin';
+import modalMixin from '@/mixins/modalMixin';
 
 export default {
+    mixins: [modalMixin, notificationMixin],
     components: {
         NotificationToast, PrimaryButton, SideModalDialog, OrderStatusCreatePage, Pagination, DraggableTable
     },
@@ -38,13 +41,10 @@ export default {
         return {
             data: null,
             loading: false,
-            notification: false,
-            notificationTitle: '',
-            notificationSubtitle: '',
-            notificationIsDanger: false,
-            modalDialog: false,
             editingItem: null,
             columnsConfig: [
+                { name: 'select', label: '#', size: 15 },
+                { name: 'id', label: '№', size: 30 },
                 { name: 'name', label: 'Название' },
                 { name: 'categoryName', label: 'Категория' },
                 { name: 'createdAt', label: 'Дата создания' }
@@ -79,8 +79,6 @@ export default {
             this.notification = true;
             setTimeout(() => { this.notification = false; }, 10000);
         },
-        showModal(item = null) { this.modalDialog = true; this.editingItem = item; },
-        closeModal() { this.modalDialog = false; },
         handleSaved() {
             this.showNotification('Статус успешно добавлен', '', false);
             this.fetchItems(this.data?.currentPage || 1, true);

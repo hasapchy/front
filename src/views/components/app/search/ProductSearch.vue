@@ -145,7 +145,7 @@
         </table>
     </div>
     <SideModalDialog :showForm="modalCreateProduct" :onclose="() => modalCreateProduct = false" :level="1">
-        <AdminProductsCreatePage :defaultType="defaultProductType" :defaultName="defaultProductName" :editingItem="null"
+        <ProductsCreatePage :defaultType="defaultProductType" :defaultName="defaultProductName" :editingItem="null"
             @saved="onProductCreated" @saved-error="() => modalCreateProduct = false" />
     </SideModalDialog>
 </template>
@@ -156,12 +156,12 @@ import debounce from 'lodash.debounce';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import WarehouseReceiptProductDto from '@/dto/warehouse/WarehouseReceiptProductDto';
 import SaleProductDto from '@/dto/sale/SaleProductDto';
-import AdminProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
+import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 
 export default {
     components: {
-        AdminProductsCreatePage,
+        ProductsCreatePage,
         SideModalDialog,
     },
     props: {

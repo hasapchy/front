@@ -8,7 +8,7 @@
                 <template v-if="allCashRegisters.length">
                     <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id"
                         :disabled="parent.id === cashIdTo">
-                       {{ parent.name }} ({{ parent.currency_symbol }})
+                        {{ parent.name }} ({{ parent.currency_symbol }})
                     </option>
                 </template>
             </select>
@@ -51,18 +51,14 @@ import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
 import TransferDto from '@/dto/transfer/TransferDto';
 import TransferController from '@/api/TransferController';
+import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 
 export default {
-    components: {
-        PrimaryButton,
-        AlertDialog
-    },
+    mixins: [getApiErrorMessage],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    components: { PrimaryButton, AlertDialog },
     props: {
-        editingItem: {
-            type: TransferDto,
-            required: false,
-            default: null
-        }
+        editingItem: { type: TransferDto, required: false, default: null }
     },
     data() {
         return {
@@ -87,7 +83,6 @@ export default {
         this.fetchCurrencies();
         this.fetchAllCashRegisters();
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     methods: {
         async fetchCurrencies() {
             this.currencies = await AppController.getCurrencies();
@@ -145,18 +140,6 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
-        },
-        getApiErrorMessage(e) {
-            if (e?.response && e.response.data) {
-                if (e.response.data.errors) {
-                    return Object.values(e.response.data.errors).flat();
-                }
-                if (e.response.data.message) {
-                    return [e.response.data.message];
-                }
-            }
-            if (e?.message) return [e.message];
-            return ["Ошибка"];
         },
     },
     watch: {

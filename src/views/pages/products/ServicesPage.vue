@@ -1,11 +1,9 @@
 <template>
-    <!-- Добавить + пагинация -->
     <div class="flex justify-between items-center mb-4">
         <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить услугу</PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
-    <!-- Таблица с заглушкой -->
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.products" :columns-config="columnsConfig" :table-data="data.items"
@@ -15,12 +13,10 @@
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
         </div>
     </transition>
-    <!-- Модальное окно форма создания/редактирования -->
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
-        <AdminProductsCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" :editingItem="editingItem" default-type="service"/>
+        <ProductsCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+            @deleted-error="handleDeletedError" :editingItem="editingItem" default-type="service" />
     </SideModalDialog>
-    <!-- Компонент уведомлений -->
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" />
 </template>
@@ -32,43 +28,35 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import ProductController from '@/api/ProductController';
-import AdminProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
+import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
+import notificationMixin from '@/mixins/notificationMixin';
+import modalMixin from '@/mixins/modalMixin';
 
 export default {
+    mixins: [modalMixin, notificationMixin],
     components: {
         NotificationToast,
         PrimaryButton,
         SideModalDialog,
-        AdminProductsCreatePage,
+        ProductsCreatePage,
         Pagination,
         DraggableTable
     },
     data() {
         return {
             data: null,
-            //
             loading: false,
-            notification: false,
-            notificationTitle: '',
-            notificationSubtitle: '',
-            notificationIsDanger: false,
-            //
-            modalDialog: false,
             editingItem: null,
-            // table config
             columnsConfig: [
-                { name: 'id', label: '#', size: 15 },
+                { name: 'select', label: '#',  size: 15},
+                { name: 'id', label: '№', size: 30 },
                 { name: 'image', label: 'Изобр.', image: true },
                 { name: 'name', label: 'Название' },
                 { name: 'sku', label: 'SKU' },
                 { name: 'barcode', label: 'Баркод' },
                 { name: 'category_name', label: 'Категория' },
                 { name: 'retail_price', label: 'Розничная цена' },
-                { name: 'wholesale_price', label: 'Оптовая цена' },
-                // { name: 'parentName', label: 'Родительская категория' },
-                // { name: 'users', label: 'Доступ' },
-                // { name: 'userName', label: 'Создатель' },
-                // { name: 'createdAt', label: 'Дата создания' }
+                { name: 'wholesale_price', label: 'Оптовая цена' }
             ],
         }
     },
@@ -77,7 +65,6 @@ export default {
         this.$store.commit('SET_SETTINGS_OPEN', true);
     },
     methods: {
-        // table mapper
         itemMapper(i, c) {
             switch (c) {
                 case 'retail_price':
@@ -90,7 +77,6 @@ export default {
                     return i[c];
             }
         },
-        //
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
@@ -104,22 +90,6 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
-        },
-        showNotification(title, subtitle, isDanger = false) {
-            this.notificationTitle = title;
-            this.notificationSubtitle = subtitle;
-            this.notificationIsDanger = isDanger;
-            this.notification = true;
-            setTimeout(() => {
-                this.notification = false;
-            }, 10000);
-        },
-        showModal(item = null) {
-            this.modalDialog = true;
-            this.editingItem = item;
-        },
-        closeModal() {
-            this.modalDialog = false;
         },
         handleSaved() {
             this.showNotification('Товар успешно добавлен', '', false);
@@ -142,18 +112,3 @@ export default {
     },
 }
 </script>
-
-<style>
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.2s;
-}
-
-.fade-enter,
-.fade-leave-to
-
-/* .fade-leave-active in <2.1.8 */
-    {
-    opacity: 0;
-}
-</style>

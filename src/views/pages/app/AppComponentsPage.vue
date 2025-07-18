@@ -29,8 +29,11 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
+import notificationMixin from '@/mixins/notificationMixin';
+import modalMixin from '@/mixins/modalMixin';
 
 export default {
+    mixins: [modalMixin, notificationMixin],
     components: {
         AlertDialog,
         PrimaryButton,
@@ -40,7 +43,6 @@ export default {
     data() {
         return {
             deleteDialog: false,
-            modalDialog: false,
             notificationScs: false,
             notificationErr: false,
             loading: false
@@ -55,9 +57,6 @@ export default {
         },
         showModal() {
             this.modalDialog = true;
-        },
-        closeModal() {
-            this.modalDialog = false;
         },
         toggleLoading() {
             this.loading = true;
