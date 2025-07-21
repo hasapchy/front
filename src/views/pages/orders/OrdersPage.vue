@@ -7,7 +7,9 @@
         </div>
         <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" @changePage="fetchItems" />
     </div>
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
+        :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
+        :handle-change-status="handleChangeStatus" />
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading" key="table">
             <DraggableTable table-key="admin.orders" :columns-config="columnsConfig" :table-data="data.items"
@@ -54,6 +56,7 @@ export default {
             loading: false,
             statuses: [],
             selectedIds: [],
+            showBatchStatusSelect: false,
             //editingItem: null,
             loadingDelete: false,
             controller: OrderController,
@@ -178,6 +181,8 @@ export default {
                 this.showNotification("Ошибка смены статуса", errors.join("\n"), true);
             }
             this.loading = false;
+            this.selectedIds = [];
+            this.showBatchStatusSelect = false;
         },
     },
 };

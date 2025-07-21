@@ -55,6 +55,13 @@ export default {
           action: this.deleteItems,
           disabled: this.loadingBatch,
         },
+        {
+          label: 'Сменить статус', 
+          icon: "fas fa-trash",
+          type: "info",
+          action: null, 
+          render: true, 
+        },
       ];
     },
   },
