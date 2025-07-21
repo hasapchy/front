@@ -2,31 +2,16 @@
     <div class="flex justify-between items-center mb-2">
         <div class="flex justify-start items-center">
             <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Переместить</PrimaryButton>
-            <!-- <div class="mr-2">
-                <select v-model="warehouseId" @change="fetchItems">'
-                    <option value="">Все склады</option>
-                    <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">
-                        {{ parent.name }}
-                    </option>
-                </select>
-            </div>
-            <div class="mr-2">
-                <select v-model="categoryId" @change="fetchItems">'
-                    <option value="">Все категории</option>
-                    <option v-if="allCategories.length" v-for="parent in allCategories" :value="parent.id">
-                        {{ parent.name }}
-                    </option>
-                </select>
-            </div> -->
         </div>
-        <!-- <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить товар</PrimaryButton> -->
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
+    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.warehouse_movements" :columns-config="columnsConfig"
-                :table-data="data.items" :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
+                :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
+                :onItemClick="(i) => { showModal(i) }" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
@@ -34,10 +19,12 @@
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
         <WarehousesMovementCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" :editingItem="editingItem" /> <!--@delete-rows="handleDeleteRows" -->
+            @deleted-error="handleDeletedError" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" />
+        :is-danger="notificationIsDanger" @close="closeNotification" />
+    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
+        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -50,25 +37,24 @@ import WarehouseMovementController from '@/api/WarehouseMovementController';
 import WarehousesMovementCreatePage from '@/views/pages/warehouses/WarehousesMovementCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
+import batchActionsMixin from '@/mixins/batchActionsMixin';
+import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin],
-    components: {
-        NotificationToast,
-        PrimaryButton,
-        SideModalDialog,
-        Pagination,
-        DraggableTable,
-        WarehousesMovementCreatePage
-    },
+    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin],
+    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, WarehousesMovementCreatePage, BatchButton, AlertDialog },
     data() {
         return {
             data: null,
             loading: false,
-            editingItem: null,
+            selectedIds: [],
+            controller: WarehouseMovementController,
+            //editingItem: null,
             columnsConfig: [
-                { name: 'select', label: '#',  size: 15},
-                { name: 'id', label: '№', size: 30 },
+                { name: 'select', label: '#', size: 15 },
+                { name: 'id', label: '№', size: 60 },
                 { name: 'dateUser', label: 'Дата / Пользователь' },
                 { name: 'direction', label: 'Направление', html: true },
                 { name: 'products', label: 'Товары', html: true },

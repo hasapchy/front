@@ -137,7 +137,7 @@ export default {
             }
         }, 250),
         selectClient(client) {
-            console.log('==[SELECT CLIENT]==', client);
+            // console.log('==[SELECT CLIENT]==', client);
             this.showDropdown = false;
             this.clientSearch = '';
             this.clientResults = [];

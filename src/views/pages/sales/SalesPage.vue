@@ -1,17 +1,20 @@
 <template>
     <div class="flex justify-between items-center mb-2">
         <div class="flex justify-start items-center">
-            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить продажу</PrimaryButton>
+            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
+                :disabled="!$store.getters.hasPermission('sales_create')">
+                Добавить продажу
+            </PrimaryButton>
         </div>
-        <!-- <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить товар</PrimaryButton> -->
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
+    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.sales" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
-            <!--@delete-rows="handleDeleteRows" :filter-query="searchQuery" -->
+                :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
+                :onItemClick="(i) => { showModal(i) }" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
@@ -22,7 +25,9 @@
             @deleted-error="handleDeletedError" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" />
+        :is-danger="notificationIsDanger" @close="closeNotification" />
+    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
+        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -37,27 +42,24 @@ import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vu
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import batchActionsMixin from '@/mixins/batchActionsMixin';
+import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
+import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin],
-    components: {
-        NotificationToast,
-        PrimaryButton,
-        SideModalDialog,
-        Pagination,
-        DraggableTable,
-        SaleCreatePage,
-        ClientButtonCell,
-    },
+    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin],
+    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, ClientButtonCell, BatchButton, AlertDialog },
     data() {
         return {
             data: null,
             loading: false,
-
-            editingItem: null,
+            selectedIds: [],
+            controller: SaleController,
+            //editingItem: null,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: '№', size: 30 },
+                { name: 'id', label: '№', size: 60 },
                 { name: 'dateUser', label: 'Дата / Пользователь' },
                 { name: 'client', label: 'Покупатель', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
                 { name: 'cashName', label: 'Касса' },

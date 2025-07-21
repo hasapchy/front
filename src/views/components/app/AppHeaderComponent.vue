@@ -28,7 +28,7 @@
 <script>
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
-import UserController from '@/api/UserController';
+import AuthController from '@/api/AuthController';
 import PrimaryButton from './buttons/PrimaryButton.vue';
 import Search from '@/views/components/app/search/Search.vue';
 
@@ -50,7 +50,7 @@ export default {
     },
     methods: {
         async logout() {
-            await UserController.logout();
+            await AuthController.logout();
             this.$store.state.user = null;
             this.$router.push('/auth/login');
         },

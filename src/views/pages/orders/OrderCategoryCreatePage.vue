@@ -8,8 +8,14 @@
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
+            :is-loading="deleteLoading" icon="fas fa-remove"
+            :disabled="!$store.getters.hasPermission('order_categories_delete')">
+            Удалить
+        </PrimaryButton>
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('order_categories_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('order_categories_create'))">
+            Сохранить
+        </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление категории заказа'" :confirm-text="'Удалить категорию заказа'"

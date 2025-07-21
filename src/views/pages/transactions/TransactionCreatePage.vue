@@ -83,8 +83,14 @@
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
+            :is-loading="deleteLoading" icon="fas fa-remove"
+            :disabled="!$store.getters.hasPermission('transactions_delete')">
+            Удалить
+        </PrimaryButton>
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('transactions_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('transactions_create'))">
+            Сохранить
+        </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление транзакции'" :confirm-text="'Удалить транзакцию'" :leave-text="'Отмена'" />
@@ -185,7 +191,6 @@ export default {
             }
         },
         async save() {
-            console.log('==[SAVE]== selectedClient:', this.selectedClient);
             this.saveLoading = true;
 
             try {
@@ -230,7 +235,6 @@ export default {
             this.deleteLoading = true;
             try {
                 var resp = await TransactionController.deleteItem(this.editingItemId);
-                console.log('Ответ сервера при удалении:', resp);
                 if (resp.message || resp.success || resp) {
                     this.$emit('deleted');
                     this.clearForm();

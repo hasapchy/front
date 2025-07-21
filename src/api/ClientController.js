@@ -132,7 +132,10 @@ export default class ClientController {
       const { data } = await api.delete(`/clients/${id}`);
       return data;
     } catch (error) {
-      console.error("Ошибка при удалении клиента:", error);
+      const serverMessage = error?.response?.data?.message;
+      if (serverMessage) {
+        throw new Error(serverMessage); 
+      }
       throw error;
     }
   }

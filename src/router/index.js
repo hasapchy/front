@@ -7,7 +7,6 @@ import BlankLayout from "@/views/layouts/BlankLayout.vue";
 import LoginPage from "@/views/pages/auth/LoginPage.vue";
 import HomePage from "@/views/pages/home/HomePage.vue";
 import WarehousesPage from "@/views/pages/warehouses/WarehousesPage.vue";
-import AppComponentsPage from "@/views/pages/app/AppComponentsPage.vue";
 import AdminWarehousesPage from "@/views/pages/admin/warehouses/AdminWarehousesPage.vue";
 import CategoriesPage from "@/views/pages/categories/CategoriesPage.vue";
 import ProductsPage from "@/views/pages/products/ProductsPage.vue";
@@ -21,6 +20,7 @@ import SalesPage from "@/views/pages/sales/SalesPage.vue";
 import OrdersPage from "@/views/pages/orders/OrdersPage.vue";
 import OrderStatusesPage from "@/views/pages/orders/OrderStatusesPage.vue";
 import OrderCategoriesPage from "@/views/pages/orders/OrderCategoriesPage.vue";
+import UsersPage from "@/views/pages/users/UsersPage.vue";
 
 const routes = [
   {
@@ -39,13 +39,12 @@ const routes = [
         path: "/sales",
         name: "Sales",
         component: SalesPage,
-        meta: { title: "Продажи", requiresAuth: true, showSearch: true },
-      },
-      {
-        path: "/orders",
-        name: "Orders",
-        component: OrdersPage,
-        meta: { title: "Заказы", requiresAuth: true, showSearch: true },
+        meta: {
+          title: "Продажи",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "sales_view",
+        },
       },
       {
         path: "/orders",
@@ -87,7 +86,7 @@ const routes = [
             },
             {
               name: "Кассы",
-              path: "cash-registers",
+              path: "/cash-registers",
             },
           ],
         },
@@ -110,12 +109,6 @@ const routes = [
         component: ProjectsPage,
         meta: { title: "Проекты", requiresAuth: true },
       },
-      // {
-      //   path: "/components",
-      //   name: "Components",
-      //   component: AppComponentsPage,
-      //   meta: { title: "Компоненты", requiresAuth: true },
-      // },
       {
         path: "/admin/warehouses",
         name: "Admin-Warehouses",
@@ -139,6 +132,12 @@ const routes = [
         name: "order_categories",
         component: OrderCategoriesPage,
         meta: { title: "Типы заказов", requiresAuth: true },
+      },
+      {
+        path: "/users",
+        name: "users",
+        component: UsersPage,
+        meta: { title: "Пользователи", requiresAuth: true },
       },
       {
         path: "/products",
@@ -213,14 +212,22 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem("token");
+
   if (to.meta.requiresAuth && !token) {
-    next("/auth/login");
-  } else {
-    if (!to.meta.showSearch) {
-      store.dispatch("setSearchQuery", "");
-    }
-    next();
+    return next("/auth/login");
   }
+
+  const userPermissions = store.getters["permissions"];
+
+  if (to.meta.permission && !userPermissions.includes(to.meta.permission)) {
+    return next({ path: "/" });
+  }
+
+  if (!to.meta.showSearch) {
+    store.dispatch("setSearchQuery", "");
+  }
+
+  next();
 });
 
 export default router;

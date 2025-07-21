@@ -16,7 +16,7 @@
             История отсутствует
         </div>
         <DraggableTable v-if="!balanceLoading && balanceHistory.length" table-key="client.balance"
-            :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
+            :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
             :onItemClick="handleBalanceItemClick" />
 
         <!-- Модалка для entity -->
@@ -59,7 +59,7 @@ export default {
             columnsConfig: [
                 { name: "date", label: "Дата", size: 100 },
                 { name: "type", label: "Тип" },
-                { name: "description", label: "Описание", size: 300 },
+                { name: "description", label: "Описание", size: 600 },
                 { name: "amount", label: "Сумма", size: 120, html: true },
             ],
         };

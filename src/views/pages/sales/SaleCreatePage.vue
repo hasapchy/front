@@ -4,7 +4,8 @@
         <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
         <div>
             <label>Дата</label>
-            <input type="datetime-local" v-model="date" :disabled="!!editingItemId" />
+            <input type="datetime-local" v-model="date"
+                :disabled="editingItemId && !$store.getters.hasPermission('edit_any_date')" />
         </div>
         <div v-if="type === 'cash'" class="mt-2">
             <label class="block mb-1 required">Касса</label>
@@ -68,8 +69,13 @@
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
+            :is-loading="deleteLoading" icon="fas fa-remove" :disabled="!$store.getters.hasPermission('sales_delete')">
+            Удалить
+        </PrimaryButton>
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('sales_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('sales_create'))">
+            Сохранить
+        </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление. Данные будут отражены на стоке и балансе клиента!'"
@@ -199,7 +205,7 @@ export default {
                         price: p.price,
                     })),
                 };
-                console.log("Saving sale with formData:", formData);
+                // console.log("Saving sale with formData:", formData);
                 let resp;
                 if (this.editingItemId != null) {
                     resp = await SaleController.updateItem(this.editingItemId, formData);

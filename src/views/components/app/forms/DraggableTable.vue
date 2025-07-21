@@ -23,7 +23,6 @@
     </TableFilterButton>
   </div>
 
-
   <!-- Таблица -->
   <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
     <thead class="bg-gray-100 rounded-t-sm">
@@ -34,8 +33,7 @@
           :style="{ width: element.size ? element.size + 'px' : 'auto' }" @dblclick.prevent="sortBy(element.name)"
           :title="'Кликните 2 раза по ' + element.label + ' для сортировки'">
           <template v-if="element.name === 'select'">
-            <input type="checkbox" :checked="isAllSelected" ref="headerCheckbox" @change="toggleSelectAll"
-              style="cursor:pointer;" />
+            <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" style="cursor:pointer;" />
           </template>
           <template v-else>
             <span>{{ element.label }}</span>
@@ -82,7 +80,6 @@
       </tr>
     </tbody>
   </table>
-
 </template>
 
 <script>
@@ -91,7 +88,8 @@ import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vu
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import dayjs from 'dayjs';
 export default {
-  name: 'ResizableTable',
+  name: 'DragaggableTable',
+  emits: ['selectionChange'],
   components: { draggable: VueDraggableNext, TableFilterButton, StatusSelectCell, },
   props: {
     tableKey: { type: String, required: true },
@@ -99,7 +97,6 @@ export default {
     tableData: { type: Array, required: true },
     itemMapper: { type: Function, required: true },
     onItemClick: { type: Function },
-    controller: { type: Object, required: true },
   },
   data() {
     return {
@@ -140,12 +137,6 @@ export default {
     },
     isAllSelected() {
       return this.visibleIds.length > 0 && this.visibleIds.every(id => this.selectedIds.includes(id));
-    },
-    isNoneSelected() {
-      return this.visibleIds.every(id => !this.selectedIds.includes(id));
-    },
-    isSomeSelected() {
-      return !this.isAllSelected && !this.isNoneSelected;
     },
   },
   methods: {
@@ -276,14 +267,5 @@ export default {
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('mouseup', this.stopResize);
   },
-  watch: {
-    isSomeSelected(val) {
-      this.$nextTick(() => {
-        const el = this.$refs.headerCheckbox;
-        if (el) el.indeterminate = val;
-      });
-    },
-  },
-
 };
 </script>

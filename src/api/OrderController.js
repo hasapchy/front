@@ -107,9 +107,9 @@ export default class OrderController {
 
   static async updateItem(id, item) {
     try {
-      console.log("👉 Отправка обновления заказа:");
-      console.log("ID заказа:", id);
-      console.log("Payload:", JSON.stringify(item, null, 2));
+      // console.log(" Отправка обновления заказа:");
+      // console.log("ID заказа:", id);
+      // console.log("Payload:", JSON.stringify(item, null, 2));
 
       const { data } = await api.put(`/orders/${id}`, {
         ...item,

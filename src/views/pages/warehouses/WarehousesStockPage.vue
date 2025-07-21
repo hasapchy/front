@@ -23,25 +23,24 @@
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
-
-
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.warehouse_stocks" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
+                :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
+                :onItemClick="(i) => { showModal(i) }" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
         </div>
     </transition>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" />
+        :is-danger="notificationIsDanger" @close="closeNotification" />
     <SideModalDialog :showForm="modalCreateWarehouse" :onclose="() => modalCreateWarehouse = false" :level="1">
         <AdminWarehouseCreatePage @saved="onWarehouseSaved" @saved-error="() => modalCreateWarehouse = false" />
     </SideModalDialog>
 
     <SideModalDialog :showForm="modalCreateProduct" :onclose="() => modalCreateProduct = false" :level="1">
-        <ProductsCreatePage :editingItem="null" :defaultType="'product'" @saved="onProductSaved"
+        <ProductsCreatePage :defaultType="'product'" @saved="onProductSaved"
             @saved-error="() => modalCreateProduct = false" />
     </SideModalDialog>
 </template>
@@ -62,20 +61,12 @@ import modalMixin from '@/mixins/modalMixin';
 
 export default {
     mixins: [modalMixin, notificationMixin],
-    components: {
-        NotificationToast,
-        PrimaryButton,
-        SideModalDialog,
-        ProductsCreatePage,
-        Pagination,
-        DraggableTable,
-        AdminWarehouseCreatePage
-    },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, AdminWarehouseCreatePage },
     data() {
         return {
             data: null,
             loading: false,
-            editingItem: null,
+            //editingItem: null,
             allWarehouses: [],
             allCategories: [],
             warehouseId: '',
@@ -84,7 +75,7 @@ export default {
             modalCreateProduct: false,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: '№', size: 30 },
+                { name: 'id', label: '№', size: 60 },
                 { name: 'warehouseName', label: 'Склад' },
                 { name: 'image', label: 'Изобр.', image: true },
                 { name: 'productName', label: 'Товар' },
@@ -140,7 +131,7 @@ export default {
         },
         onWarehouseSaved() {
             this.modalCreateWarehouse = false;
-            this.fetchAllWarehouses(); // обновим список
+            this.fetchAllWarehouses();
             this.showNotification('Склад успешно добавлен', '');
         },
 

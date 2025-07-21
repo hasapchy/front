@@ -3,7 +3,6 @@
         <div class="flex justify-start items-center">
             <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить транзакцию</PrimaryButton>
             <div class="mx-4">
-                <!-- <label class="block mb-1">Касса</label> -->
                 <select v-model="cashRegisterId" @change="fetchItems">
                     <option value="">Все кассы</option>
                     <template v-if="allCashRegisters.length">
@@ -36,25 +35,25 @@
     </div>
     <TransactionsBalance ref="balanceRef" :cash-register-id="cashRegisterId || null" :start-date="startDate"
         :end-date="endDate" :date-filter="dateFilter" />
-    <!-- Table with placeholder -->
+    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.transactions" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" />
-            <!--@delete-rows="handleDeleteRows"  :filter-query="searchQuery" -->
+                :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
+                :onItemClick="(i) => { showModal(i) }" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
         </div>
     </transition>
-    <!-- Modal form for creating/editing -->
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
         <TransactionCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" :editingItem="editingItem" :default-cash-id="cashRegisterId || null" />
     </SideModalDialog>
-    <!-- Notification component -->
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" />
+        :is-danger="notificationIsDanger" @close="closeNotification" />
+    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
+        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -71,24 +70,21 @@ import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vu
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
+import batchActionsMixin from '@/mixins/batchActionsMixin';
+import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin],
-    components: {
-        NotificationToast,
-        PrimaryButton,
-        SideModalDialog,
-        Pagination,
-        DraggableTable,
-        TransactionCreatePage,
-        TransactionsBalance,
-        ClientButtonCell,
-    },
+    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin],
+    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalance, ClientButtonCell, BatchButton },
     data() {
         return {
             data: null,
             loading: false,
-            editingItem: null,
+            selectedIds: [],
+            controller: TransactionController,
+            //editingItem: null,
             allCashRegisters: [],
             cashRegisterId: '',
             dateFilter: 'all_time',
@@ -96,7 +92,7 @@ export default {
             endDate: null,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: '№', size: 30 },
+                { name: 'id', label: '№', size: 60 },
                 { name: 'type', label: 'Тип', html: true },
                 { name: 'cashName', label: 'Касса' },
                 { name: 'cashAmount', label: 'Сумма', html: true },

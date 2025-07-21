@@ -7,7 +7,7 @@
         </div>
         <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" @changePage="fetchItems" />
     </div>
-    <BatchActions v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading" key="table">
             <DraggableTable table-key="admin.orders" :columns-config="columnsConfig" :table-data="data.items"
@@ -22,7 +22,7 @@
             @deleted-error="handleDeletedError" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" />
+        :is-danger="notificationIsDanger" @close="closeNotification" />
     <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
         :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
@@ -38,7 +38,7 @@ import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
 import OrderStatusController from "@/api/OrderStatusController";
 import { markRaw } from "vue";
-import BatchActions from "@/views/components/app/buttons/BatchButton.vue";
+import BatchButton from "@/views/components/app/buttons/BatchButton.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import batchActionsMixin from "@/mixins/batchActionsMixin";
@@ -47,18 +47,14 @@ import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, modalMixin, batchActionsMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, ClientButtonCell, BatchActions, AlertDialog },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, ClientButtonCell, BatchButton, AlertDialog },
     data() {
         return {
             data: null,
             loading: false,
-            statues: [],
+            statuses: [],
             selectedIds: [],
-            notification: false,
-            notificationTitle: "",
-            notificationSubtitle: "",
-            notificationIsDanger: false,
-            editingItem: null,
+            //editingItem: null,
             loadingDelete: false,
             controller: OrderController,
             columnsConfig: [
@@ -66,7 +62,7 @@ export default {
                 { name: "id", label: "№", size: 20 },
                 { name: "dateUser", label: "Дата / Пользователь" },
                 { name: "client", label: "Клиент", component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, }), },
-                { name: "statusName", label: "Статус", component: "StatusSelectCell", props: (i) => ({ id: i.id, value: i.statusId, statues: this.statues, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId), }), },
+                { name: "statusName", label: "Статус", component: "StatusSelectCell", props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId), }), },
                 { name: "categoryName", label: "Тип" },
                 { name: "cashName", label: "Касса" },
                 { name: "warehouseName", label: "Склад" },
@@ -167,7 +163,7 @@ export default {
             }, 10000);
         },
         async fetchStatuses() {
-            this.statues = await OrderStatusController.getAllItems();
+            this.statuses = await OrderStatusController.getAllItems();
         },
 
         async handleChangeStatus(ids, statusId) {

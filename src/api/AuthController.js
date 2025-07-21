@@ -1,6 +1,6 @@
 import api from './axiosInstance';
 
-const UserController = {
+const AuthController = {
     async login(email, password) {
         try {
             const { data } = await api.post('/user/login', { email, password });
@@ -48,4 +48,4 @@ const UserController = {
     }
 };
 
-export default UserController;
+export default AuthController;

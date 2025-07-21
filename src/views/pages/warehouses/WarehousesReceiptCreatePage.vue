@@ -59,8 +59,14 @@
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
+            :is-loading="deleteLoading" icon="fas fa-remove"
+            :disabled="!$store.getters.hasPermission('warehouse_receipts_delete')">
+            Удалить
+        </PrimaryButton>
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_receipts_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('warehouse_receipts_create'))">
+            Сохранить
+        </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление. Данные будут отражены на стоке и балансе клиента!'"
@@ -146,7 +152,7 @@ export default {
                         price: product.price
                     }))
                 };
-                console.log('📦 formData', JSON.stringify(formData, null, 2));
+                // console.log(' formData', JSON.stringify(formData, null, 2));
                 if (this.editingItemId != null) {
                     var resp = await WarehouseReceiptController.updateReceipt(
                         this.editingItemId,

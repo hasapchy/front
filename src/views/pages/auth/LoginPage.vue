@@ -39,14 +39,8 @@
                                     </label>
                                 </div>
                             </div>
-
-                            <!-- <div class="flex items-center justify-between"> -->
-                                <!-- <button type="submit" @click.prevent="login"
-                                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-                                    Войти
-                                </button> -->
-                                <PrimaryButton :onclick="login" :is-loading="loading" :is-info="true" :is-full="true">Войти</PrimaryButton>
-                            <!-- </div> -->
+                            <PrimaryButton :onclick="login" :is-loading="loading" :is-info="true" :is-full="true">Войти
+                            </PrimaryButton>
                         </form>
                     </div>
                 </div>
@@ -59,7 +53,7 @@
 import useVuelidate from '@vuelidate/core';
 import { required, email, minLength } from '@vuelidate/validators';
 import ValidationErrorMessage from '@/views/components/app/forms/ValidationErrorMessage.vue';
-import UserController from '@/api/UserController';
+import AuthController from '@/api/AuthController';
 
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 
@@ -90,9 +84,12 @@ export default {
             }
             this.loading = true;
             try {
-                await UserController.login(this.email, this.password);
-                this.$store.state.user = await UserController.getUser()
-                this.$router.push('/'); // Перенаправляем после успешного входа
+                await AuthController.login(this.email, this.password);
+                const user = await AuthController.getUser();
+                this.$store.dispatch('setUser', user);
+                this.$store.dispatch('setPermissions', user.permissions);
+
+                this.$router.push('/');
             } catch (error) {
                 alert(`Ошибка авторизации ${error}`);
             }

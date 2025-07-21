@@ -1,14 +1,15 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить клиента</PrimaryButton>
+        <PrimaryButton :onclick="() => { showModal(null) }" :disabled="!$store.getters.hasPermission('clients_create')"
+            icon="fas fa-plus">Добавить клиента</PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
-    <BatchActions v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="common.clients" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" :controller="controller"
+                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }"
                 @selectionChange="selectedIds = $event" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
@@ -20,7 +21,7 @@
             @deleted-error="handleDeletedError" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" />
+        :is-danger="notificationIsDanger" @close="closeNotification" />
     <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
         :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
@@ -33,7 +34,7 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import ClientController from '@/api/ClientController';
 import ClientCreatePage from './ClientCreatePage.vue';
-import BatchActions from '@/views/components/app/buttons/BatchButton.vue';
+import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin'
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -41,17 +42,17 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 
 export default {
     mixins: [batchActionsMixin, notificationMixin, modalMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchActions, AlertDialog },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog },
     data() {
         return {
             data: null,
             loading: false,
-            editingItem: null,
+            //editingItem: null,
             controller: ClientController,
             selectedIds: [],
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: '№', size: 30 },
+                { name: 'id', label: '№', size: 60 },
                 { name: 'firstName', label: 'ФИО/Компания', html: true },
                 { name: 'phones', label: 'Номер телефона', html: true },
                 { name: 'emails', label: 'Email', html: true },

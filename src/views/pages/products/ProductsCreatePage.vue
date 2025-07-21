@@ -106,8 +106,14 @@
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
+            :is-loading="deleteLoading" icon="fas fa-remove"
+            :disabled="!$store.getters.hasPermission('products_delete')">
+            Удалить
+        </PrimaryButton>
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('products_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('products_create'))">
+            Сохранить
+        </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление категории'" :confirm-text="'Удалить категорию'" :leave-text="'Отмена'" />
@@ -127,10 +133,11 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import AdminCategoryCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import modalMixin from '@/mixins/modalMixin';
 import JsBarcode from "jsbarcode";
 
 export default {
-    mixins: [getApiErrorMessage],
+    mixins: [getApiErrorMessage, modalMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage },
     props: {

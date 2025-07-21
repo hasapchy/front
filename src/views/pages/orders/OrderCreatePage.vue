@@ -83,7 +83,6 @@
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление заказа'" :confirm-text="'Удалить заказ'" :leave-text="'Отмена'" />
-
 </template>
 
 <script>

@@ -9,7 +9,7 @@
             </PrimaryButton>
 
             <DraggableTable v-if="transactions.length" table-key="order.transactions" :columns-config="columnsConfig"
-                :table-data="transactions" :item-mapper="itemMapper" :onItemClick="editTransaction" />
+                :table-data="transactions" :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="editTransaction" />
 
             <div v-else class="text-gray-500">Транзакции отсутствуют</div>
         </div>
@@ -53,7 +53,7 @@ export default {
             editingTransaction: null,
             paidTotalAmount: 0,
             columnsConfig: [
-                { name: 'id', label: '№', size: 30 },
+                { name: 'id', label: '№', size: 60 },
                 { name: 'amount', label: 'Сумма', html: true },
                 { name: 'cashName', label: 'Касса' },
                 { name: 'date', label: 'Дата' },

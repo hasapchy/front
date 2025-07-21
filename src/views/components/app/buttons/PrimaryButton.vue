@@ -1,6 +1,11 @@
 <template>
-    <button :disabled="isLoading" :class="{ 'opacity-50 cursor-not-allowed': isLoading, ...buttonClasses }"
-        @click="onclick">
+    <button :disabled="isLoading || isDisabled" :class="[
+        buttonClasses,
+        {
+            'cursor-pointer': !isDisabled && !isLoading,
+            'opacity-50 cursor-not-allowed': isDisabled || isLoading
+        }
+    ]" @click="handleClick">
         <transition name="fade">
             <i v-if="isLoading" class="fas fa-spinner fa-spin"></i>
             <i v-else-if="icon" :class="icon"></i>
@@ -11,7 +16,6 @@
 </template>
 
 <script>
-// class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 focus:outline-none focus:shadow-outline transition duration-300 cursor-pointer"
 export default {
     props: {
         icon: {
@@ -48,6 +52,10 @@ export default {
             type: Boolean,
             required: false,
             default: false
+        },
+        disabled: {
+            type: Boolean,
+            default: false
         }
     },
     computed: {
@@ -63,35 +71,19 @@ export default {
                 'hover:bg-[#D53935]': this.isDanger && !this.isLight && !this.isInfo,
                 'hover:bg-[#3571A4]': this.isInfo && !this.isDanger && !this.isLight,
                 'hover:bg-gray-300/50': this.isLight && !this.isDanger && !this.isInfo,
-                'px-3 py-2 rounded focus:outline-none focus:shadow-outline transition duration-300 cursor-pointer': true,
+                'px-3 py-2 rounded focus:outline-none focus:shadow-outline transition duration-300': true,
                 'w-full': this.isFull
             }
+        },
+        isDisabled() {
+            return this.disabled;
+        }
+    },
+    methods: {
+        handleClick(e) {
+            if (this.isDisabled || this.isLoading) return;
+            if (this.onclick) this.onclick(e);
         }
     }
 }
 </script>
-
-<style>
-.fade-enter-active,
-.fade-leave-active {
-    transition: all 0.05s;
-}
-
-.fade-enter-from,
-.fade-leave-to
-
-/* .fade-leave-active in <2.1.8 */
-    {
-    opacity: 0;
-    font-size: 0;
-}
-
-.fade-enter-to,
-.fade-leave-from
-
-/* .fade-leave-active in <2.1.8 */
-    {
-    opacity: 1;
-    font-size: auto;
-}
-</style>
