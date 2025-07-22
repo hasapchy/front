@@ -14,7 +14,7 @@
             <div v-if="loading" class="text-gray-400">Загрузка...</div>
             <div v-else-if="timeline.length === 0" class="text-gray-400">Нет данных</div>
             <div v-else>
-                <div v-for="item in sortedTimeline" :key="item.type + '_' + item.id" class="mb-3">
+                <div v-for="item in timeline" :key="item.type + '_' + item.id">
                     <div class="text-gray-600 text-xs">{{ formatDate(item.created_at) }}</div>
                     <div>
                         <template v-if="item.type === 'comment'">
@@ -103,13 +103,14 @@ export default {
 
             this.sending = true;
             try {
-                const response = await CommentController.create(this.type, this.id, body);
+                const { comment } = await CommentController.create(this.type, this.id, body);
                 this.newComment = '';
                 this.timeline.unshift({
-                    ...response,
+                    ...comment,
                     type: 'comment',
-                    created_at: response.created_at || new Date().toISOString(),
+                    created_at: comment.created_at || new Date().toISOString(),
                 });
+
             } catch (e) {
                 console.error('Ошибка отправки комментария:', e);
                 alert('Не удалось отправить комментарий');
@@ -126,11 +127,11 @@ export default {
         }
 
     },
-    computed: {
-        sortedTimeline() {
-            return [...this.timeline].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        }
-    }
+    // computed: {
+    //     sortedTimeline() {
+    //         return [...this.timeline].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    //     }
+    // }
 
 };
 </script>

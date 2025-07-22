@@ -312,9 +312,9 @@ export default {
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
-        showModal() {
-            this.modalDialog = true;
-        },
+        // showModal() {
+        //     this.modalDialog = true;
+        // },
         handleSaved() {
             this.fetchAllCategories();
             this.closeModal();
