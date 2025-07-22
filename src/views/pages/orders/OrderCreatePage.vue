@@ -22,7 +22,7 @@
                     <select v-model="cashId" :disabled="!!editingItemId">
                         <option value="">Нет</option>
                         <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">
-                            {{ c.name }} ({{ c.currencyCode }})
+                            {{ c.name }} ({{ c.currency_symbol }})
                         </option>
                     </select>
                 </div>
@@ -67,20 +67,27 @@
             </div>
         </div>
     </div>
-    <div class="mt-4 p-4 flex flex-wrap items-center justify-between bg-[#edf4fb] gap-4">
-        <div class="flex space-x-2">
+    <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
+        <!-- Кнопки -->
+        <div class="flex items-center space-x-2">
             <PrimaryButton v-if="editingItemId" :onclick="showDeleteDialog" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-remove">Удалить</PrimaryButton>
-            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">Сохранить</PrimaryButton>
+                :is-loading="deleteLoading" icon="fas fa-remove">
+                
+            </PrimaryButton>
+            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
+                
+            </PrimaryButton>
         </div>
-        <div class="flex items-center space-x-4 font-medium text-gray-700">
+
+        <!-- Информация в одной строке -->
+        <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
             <div>К оплате: <span class="font-bold">{{ totalPrice.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Оплачено: <span class="font-bold">{{ paidTotalAmount.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Осталось: <span class="font-bold">{{ (totalPrice - paidTotalAmount).toFixed(2) }}{{ currencySymbol
-            }}</span></div>
-
+                    }}</span></div>
         </div>
     </div>
+
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление заказа'" :confirm-text="'Удалить заказ'" :leave-text="'Отмена'" />
 </template>
@@ -201,10 +208,10 @@ export default {
         },
         async fetchAllCashRegisters() {
             this.allCashRegisters = await CashRegisterController.getAllItems();
-            this.allCashRegisters = this.allCashRegisters.map(cash => {
-                const currency = this.currencies.find(c => c.id === cash.currency_id);
-                return { ...cash, currencySymbol: currency.symbol };
-            });
+            // this.allCashRegisters = this.allCashRegisters.map(cash => {
+            //     const currency = this.currencies.find(c => c.id === cash.currency_id);
+            //     return { ...cash, currencySymbol: currency.symbol };
+            // });
             if (this.allCashRegisters.length && !this.cashId && !this.defaultCashId) {
                 this.cashId = this.allCashRegisters[0].id;
             }

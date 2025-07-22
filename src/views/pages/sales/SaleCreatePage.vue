@@ -269,15 +269,6 @@ export default {
                 }
             },
         },
-        cashId: {
-            handler(newCashId) {
-                const selectedCash = this.allCashRegisters.find((cash) => cash.id == newCashId);
-                if (selectedCash && selectedCash.currency_id) {
-                    this.currencyId = selectedCash.currency_id;
-                }
-            },
-            immediate: true,
-        },
         allWarehouses: {
             handler(newWarehouses) {
                 if (newWarehouses.length && !this.warehouseId && !this.editingItem) {

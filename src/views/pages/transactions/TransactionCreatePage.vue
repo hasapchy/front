@@ -59,7 +59,7 @@
             </div>
         </div>
         <div class="mt-2">
-            <label class="block mb-1">Категория</label>
+            <label class="block mb-1 required">Категория</label>
             <select v-model="categoryId">
                 <option value="">Нет</option>
                 <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">
@@ -269,15 +269,15 @@ export default {
             },
             immediate: true
         },
-        cashId: {
-            handler(i) {
-                if (!this.editingItemId) {
-                    const cash = this.allCashRegisters.find(c => c.id === i);
-                    this.currencyId = cash?.currency_id || '';
-                }
-            },
-            immediate: true
-        },
+        // cashId: {
+        //     handler(i) {
+        //         if (!this.editingItemId) {
+        //             const cash = this.allCashRegisters.find(c => c.id === i);
+        //             this.currencyId = cash?.currency_id || '';
+        //         }
+        //     },
+        //     immediate: true
+        // },
         type(newType) {
             if (!this.editingItemId) {
                 if (newType === "income") {
@@ -293,7 +293,6 @@ export default {
             handler(newEditingItem) {
                 if (newEditingItem) {
                     this.type = newEditingItem.typeName() || "income";
-                    this.name = newEditingItem.name || '';
                     this.cashId = newEditingItem.cashId || this.defaultCashId || '';
                     this.cashAmount = newEditingItem.cashAmount || null;
                     this.cashCurrencyId = newEditingItem.cashCurrencyId || null;
@@ -307,7 +306,6 @@ export default {
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     this.type = "income";
-                    this.name = '';
                     this.cashId = this.defaultCashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
                     const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
                     this.cashAmount = null;
@@ -324,8 +322,6 @@ export default {
             deep: true,
             immediate: true
         },
-
     }
 }
-
 </script>

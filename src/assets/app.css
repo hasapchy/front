@@ -286,3 +286,7 @@ td {
 .resize-handle:hover {
     background-color: rgba(0, 0, 0, 0.15);
 }
+
+:root {
+    --timeline-width: 400px;
+}

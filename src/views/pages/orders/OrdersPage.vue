@@ -22,7 +22,12 @@
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
         <OrderCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" :editingItem="editingItem" />
+
+        <template #timeline>
+            <TimelinePanel v-if="editingItem" :type="'order'" :id="editingItem.id" @toggle="closeModal" />
+        </template>
     </SideModalDialog>
+
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
     <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
@@ -46,10 +51,11 @@ import notificationMixin from "@/mixins/notificationMixin";
 import batchActionsMixin from "@/mixins/batchActionsMixin";
 import modalMixin from "@/mixins/modalMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
+import TimelinePanel from "@/views/components/app/dialog/TimelinePanel.vue";
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, modalMixin, batchActionsMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, ClientButtonCell, BatchButton, AlertDialog },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, ClientButtonCell, BatchButton, AlertDialog, TimelinePanel },
     data() {
         return {
             data: null,
@@ -57,6 +63,7 @@ export default {
             statuses: [],
             selectedIds: [],
             showBatchStatusSelect: false,
+            showTimeline: true,
             //editingItem: null,
             loadingDelete: false,
             controller: OrderController,
