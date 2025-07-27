@@ -119,4 +119,9 @@ export default class SaleController {
       throw error;
     }
   }
+
+  static async getItem(id) {
+    const { data } = await api.get(`/sales/${id}`);
+    return data;
+  }
 }

@@ -70,12 +70,12 @@
     <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
         <!-- Кнопки -->
         <div class="flex items-center space-x-2">
-            <PrimaryButton v-if="editingItemId" :onclick="showDeleteDialog" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-remove">
-                
+            <PrimaryButton icon="fas fa-check" :onclick="saveWithoutClose" :is-loading="saveLoading">
             </PrimaryButton>
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
-                
+            </PrimaryButton>
+            <PrimaryButton v-if="editingItemId" :onclick="showDeleteDialog" :is-danger="true"
+                :is-loading="deleteLoading" icon="fas fa-remove">
             </PrimaryButton>
         </div>
 
@@ -83,8 +83,8 @@
         <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
             <div>К оплате: <span class="font-bold">{{ totalPrice.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>Оплачено: <span class="font-bold">{{ paidTotalAmount.toFixed(2) }}{{ currencySymbol }}</span></div>
-            <div>Осталось: <span class="font-bold">{{ (totalPrice - paidTotalAmount).toFixed(2) }}{{ currencySymbol
-                    }}</span></div>
+            <div>Итого: <span class="font-bold">{{ (totalPrice - paidTotalAmount).toFixed(2) }}{{ currencySymbol
+            }}</span></div>
         </div>
     </div>
 
@@ -110,7 +110,7 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 
 export default {
     mixins: [getApiErrorMessage],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error'],
     components: { ClientSearch, ProductSearch, PrimaryButton, AlertDialog, TabBar, OrderTransactionsTab },
     props: {
         editingItem: { type: Object, default: null }
@@ -208,10 +208,6 @@ export default {
         },
         async fetchAllCashRegisters() {
             this.allCashRegisters = await CashRegisterController.getAllItems();
-            // this.allCashRegisters = this.allCashRegisters.map(cash => {
-            //     const currency = this.currencies.find(c => c.id === cash.currency_id);
-            //     return { ...cash, currencySymbol: currency.symbol };
-            // });
             if (this.allCashRegisters.length && !this.cashId && !this.defaultCashId) {
                 this.cashId = this.allCashRegisters[0].id;
             }
@@ -230,7 +226,6 @@ export default {
                     client_id: this.selectedClient?.id,
                     project_id: this.projectId || null,
                     cash_id: this.cashId || null,
-                    // currency_id: this.currencyIdComputed || null,
                     currency_id: this.currencyId || null,
                     warehouse_id: this.warehouseId || null,
                     status_id: this.statusId || 1,
@@ -255,6 +250,44 @@ export default {
                 if (resp.message) {
                     this.$emit('saved');
                     this.clearForm();
+                }
+            } catch (error) {
+                this.$emit('saved-error', this.getApiErrorMessage(error));
+            }
+            this.saveLoading = false;
+        },
+
+        async saveWithoutClose() {
+            this.saveLoading = true;
+            try {
+                const formData = {
+                    client_id: this.selectedClient?.id,
+                    project_id: this.projectId || null,
+                    cash_id: this.cashId || null,
+                    currency_id: this.currencyId || null,
+                    warehouse_id: this.warehouseId || null,
+                    status_id: this.statusId || 1,
+                    category_id: this.categoryId,
+                    date: this.date,
+                    note: this.note,
+                    discount: this.discount,
+                    discount_type: this.discountType,
+                    description: this.description,
+                    products: this.products.map(p => ({
+                        product_id: p.productId,
+                        quantity: p.quantity,
+                        price: p.price
+                    }))
+                };
+                let resp;
+                if (this.editingItemId) {
+                    resp = await OrderController.updateItem(this.editingItemId, formData);
+                } else {
+                    resp = await OrderController.storeItem(formData);
+                    this.editingItemId = resp?.id || null;
+                }
+                if (resp.message) {
+                    this.$emit('saved-silent');
                 }
             } catch (error) {
                 this.$emit('saved-error', this.getApiErrorMessage(error));

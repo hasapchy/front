@@ -67,19 +67,22 @@ export default class OrderDto {
   }
 
   productsHtmlList() {
-    if (this.products === null) {
+    if (this.products === null || this.products.length === 0) {
       return "";
     }
-    var res = "<ul>";
-    this.products.forEach((product) => {
-      res += `<li style="display: flex; align-items: center; gap: 10px;">`;
-      if (product.productImage !== null) {
-        res += `<img src="${product.imgUrl()}" alt="" width="20px" class="rounded">`;
-      }
-      res += `${product.productName} - ${product.quantity}${product.unitShortName}</li>`;
-    });
-    res += "</ul>";
-    return res;
+    if (this.products.length === 1) {
+      const product = this.products[0];
+      return `<span>${product.productName} - ${product.quantity}${product.unitShortName}</span>`;
+    }
+    // Формируем строку для тултипа
+    const tooltip = this.products
+      .map(
+        (product) => `${product.productName} - ${product.quantity}${product.unitShortName}`
+      )
+      .join('\n');
+    // Показываем первый товар и троеточие, остальное в тултипе
+    const first = this.products[0];
+    return `<span title="${tooltip}">${first.productName} - ${first.quantity}${first.unitShortName} ...</span>`;
   }
 
   formatDate() {

@@ -2,8 +2,8 @@
   <div ref="dropdownRef" class="relative text-sm status-dropdown inline-block">
     <div class="px-3 py-2 rounded cursor-pointer flex items-center justify-between min-w-[120px]" :style="selectedStyle"
       @click="toggleDropdown">
-      <span class="truncate text-[12px]">{{ selectedStatus?.name || 'Выбрать статус' }}</span>
-      <i class="fas fa-chevron-down text-xs ml-2"></i>
+      <span class="truncate text-[12px] text-white">{{ selectedStatus?.name || 'Выбрать статус' }}</span>
+      <i class="fas fa-chevron-down text-xs ml-2 text-white"></i>
     </div>
 
     <ul v-if="isOpen" class="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-60 overflow-auto">
@@ -44,7 +44,7 @@ export default {
 
       if (!hex) {
         return {
-          backgroundColor: '#f2f2f2',
+          backgroundColor: '#3571A4',
           color: '#555',
         };
       }

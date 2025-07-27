@@ -143,15 +143,20 @@ export default {
     loadColumns() {
       const saved = localStorage.getItem(`tableColumns_${this.tableKey}`);
       if (saved) {
-        const savedColumns = JSON.parse(saved);
-        this.columns = savedColumns.map((savedCol) => {
-          const original = this.columnsConfig.find(c => c.name === savedCol.name) || {};
-          return {
-            ...savedCol,
-            component: original.component,
-            props: original.props,
-          };
-        });
+        try {
+          const savedColumns = JSON.parse(saved);
+          this.columns = savedColumns.map((savedCol) => {
+            const original = this.columnsConfig.find(c => c.name === savedCol.name) || {};
+            return {
+              ...savedCol,
+              component: original.component,
+              props: original.props,
+            };
+          });
+        } catch (error) {
+          console.warn('Failed to load saved columns, using default configuration:', error);
+          this.resetColumns();
+        }
       } else {
         this.columns = this.columnsConfig.map((col, index) => ({
           ...col,
@@ -171,7 +176,12 @@ export default {
       this.saveColumns();
     },
     saveColumns() {
-      localStorage.setItem(`tableColumns_${this.tableKey}`, JSON.stringify(this.columns));
+      // Filter out non-serializable properties before saving
+      const serializableColumns = this.columns.map(col => {
+        const { component, props, ...serializableCol } = col;
+        return serializableCol;
+      });
+      localStorage.setItem(`tableColumns_${this.tableKey}`, JSON.stringify(serializableColumns));
     },
     toggleVisible(index) {
       this.columns[index].visible = !this.columns[index].visible;

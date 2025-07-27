@@ -52,8 +52,8 @@
         <div>
           <label class="required">Номер телефона</label>
           <div class="flex items-center space-x-2">
-            <input type="text" v-model="newPhone" ref="phoneInput" @keyup.enter="addPhone" required />
-            <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addPhone" />
+            <input type="text" v-model="newPhone" ref="phoneInput" @keyup.enter="addPhone" @blur="addPhone" required />
+            <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" />
           </div>
           <div v-for="(phone, index) in phones" :key="phone" class="flex items-center space-x-2 mt-2">
             <input type="text" :value="phone" readonly />
@@ -141,6 +141,7 @@ export default {
       emails: this.editingItem ? this.editingItem.emails.map((email) => email.email) : [],
       discountType: this.editingItem ? this.editingItem.discountType : "fixed",
       discount: this.editingItem ? this.editingItem.discount : 0,
+      editingItemId: this.editingItem?.id || null,
       newPhone: "",
       newEmail: "",
       saveLoading: false,
@@ -174,13 +175,18 @@ export default {
   methods: {
     addPhone() {
       if (this.newPhone) {
-        const cleanedPhone = this.newPhone.replace(/[\s-()]/g, "");
+        const cleanedPhone = this.newPhone.replace(/\D/g, ""); // только цифры
+        if (cleanedPhone.length !== 11) {
+          this.phoneError = "Номер должен содержать ровно 11 цифр";
+          return;
+        }
         if (this.phones.includes(cleanedPhone)) {
-          alert("Этот номер телефона уже добавлен!");
+          this.showNotification("Ошибка", "Этот номер телефона уже добавлен!", true);
           return;
         }
         this.phones.push(cleanedPhone);
         this.newPhone = "";
+        this.phoneError = "";
       }
     },
     removePhone(index) {

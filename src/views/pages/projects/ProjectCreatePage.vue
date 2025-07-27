@@ -1,42 +1,47 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">Проект</h2>
-        <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
-        <div>
-            <label class="required">Название</label>
-            <input type="text" v-model="name">
-        </div>
-        <div>
-            <label>Дата проекта</label>
-            <input type="datetime-local" v-model="date" :disabled="!!editingItemId">
-        </div>
-        <div>
-            <label>Бюджет проекта</label>
-            <input type="number" v-model="budget">
-        </div>
-        <div>
-            <label>Назначить пользователей</label>
-            <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
-                <label v-for="user, index in users" :key="user.id"
-                    class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-                    <input type="checkbox" :value="user.id" v-model="selectedUsers" :id="'user-' + user.id">
-                    <span class="text-black">{{ user.name }}</span>
-                </label>
+        <TabBar :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => { currentTab = t }" />
+        <div v-show="currentTab === 'info'">
+            <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
+            <div>
+                <label class="required">Название</label>
+                <input type="text" v-model="name">
+            </div>
+            <div>
+                <label>Дата проекта</label>
+                <input type="datetime-local" v-model="date" :disabled="!!editingItemId">
+            </div>
+            <div>
+                <label>Бюджет проекта</label>
+                <input type="number" v-model="budget">
+            </div>
+            <div>
+                <label class="required">Назначить пользователей</label>
+                <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
+                    <label v-for="user in users" :key="user.id"
+                        class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+                        <input type="checkbox" :value="user.id.toString()" v-model="selectedUsers"
+                            :id="'user-' + user.id" />
+                        <span class="text-black">{{ user.name }}</span>
+                    </label>
+                </div>
             </div>
         </div>
-        <div>
+        <div v-show="currentTab === 'files'">
             <label>Файлы</label>
             <input type="file" multiple @change="handleFileChange" />
-            <ul>
-                <li v-for="(file, index) in files" :key="index" class="flex items-center space-x-2">
-                    <a :href="editingItem.getFileUrl(file)" :download="file.name" target="_blank"
-                        class="text-blue-600 hover:underline">
-                        {{ file.name || file.path }}
-                    </a>
-                    <button @click="showDeleteFileDialog(index)"
-                        class="text-red-500 hover:text-red-700">Удалить</button>
+            <ul v-if="editingItem">
+                <li v-for="file in editingItem.getFormattedFiles()" :key="file.path" class="flex items-center gap-2">
+                    <i :class="file.icon"></i>
+                    <a :href="file.url" target="_blank" download class="text-blue-600 hover:underline">{{ file.name
+                    }}</a>
+                    <button @click="showDeleteFileDialogByPath(file.path)" class="text-red-500">Удалить</button>
                 </li>
             </ul>
+        </div>
+        <div v-show="currentTab === 'balance'">
+            <ProjectBalanceTab v-if="editingItem" :editing-item="editingItem" />
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -57,10 +62,8 @@
         :confirm-text="'Удалить файл'" :leave-text="'Отмена'" />
 </template>
 
-
 <script>
 import UsersController from '@/api/UsersController';
-import ClientController from '@/api/ClientController';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import ProjectDto from '@/dto/project/ProjectDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
@@ -69,11 +72,12 @@ import ProjectController from '@/api/ProjectController';
 import api from '@/api/axiosInstance';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
 
 export default {
     mixins: [getApiErrorMessage],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
-    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch },
+    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab },
     props: {
         editingItem: { type: ProjectDto, required: false, default: null }
     },
@@ -81,9 +85,10 @@ export default {
         return {
             name: this.editingItem ? this.editingItem.name : '',
             budget: this.editingItem ? this.editingItem.budget : 0,
-            date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
-            dateObj: this.editingItem ? new Date(this.editingItem.date) : new Date(),
-            selectedUsers: this.editingItem ? this.editingItem.users.map(user => user.id.toString()) : [],
+            date: this.editingItem && this.editingItem.date
+                ? new Date(this.editingItem.date).toISOString().substring(0, 16)
+                : new Date().toISOString().substring(0, 16),
+            selectedUsers: [],
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
             users: [],
@@ -94,19 +99,26 @@ export default {
             uploading: false,
             deleteFileDialog: false,
             deleteFileIndex: -1,
+            currentTab: 'info',
+            tabs: [
+                { name: 'info', label: 'Информация' },
+                { name: 'files', label: 'Файлы' },
+                { name: "balance", label: "Баланс" },
+            ],
         }
     },
     created() {
-        this.fetchUsers();
-        this.fetchLastClients();
+        this.fetchUsers()
     },
     methods: {
         async fetchUsers() {
             this.users = await UsersController.getAllUsers();
-        },
-        async fetchLastClients() {
-            const paginated = await ClientController.getItems(1);
-            this.lastClients = paginated.items.slice(0, 10);
+
+            if (this.editingItem && Array.isArray(this.editingItem.users)) {
+                this.selectedUsers = this.editingItem.users
+                    .filter(u => u && u.id != null)
+                    .map(u => u.id.toString());
+            }
         },
         async save() {
             if (this.uploading) {
@@ -116,19 +128,20 @@ export default {
             this.saveLoading = true;
             try {
                 let resp;
-                const payload = {
+                const formData = {
                     name: this.name,
                     budget: this.budget,
-                    date: this.dateObj.toISOString(),
-                    client_id: this.selectedClient.id,
+                    date: new Date(this.date).toISOString(),
+                    client_id: this.selectedClient?.id,
                     users: this.selectedUsers,
                 };
 
                 if (this.editingItemId != null) {
-                    resp = await ProjectController.updateItem(this.editingItemId, payload);
+                    resp = await ProjectController.updateItem(this.editingItemId, formData);
                 } else {
-                    resp = await ProjectController.storeItem(payload);
+                    resp = await ProjectController.storeItem(formData);
                 }
+
                 if (resp.message) {
                     this.$emit('saved');
                     this.clearForm();
@@ -136,18 +149,19 @@ export default {
             } catch (error) {
                 this.$emit('saved-error', this.getApiErrorMessage(error));
             }
+
             this.saveLoading = false;
         },
         async deleteItem() {
         },
         clearForm() {
             this.name = '';
-            this.date = new Date().toISOString().substring(0, 16);
             this.budget = 0;
+            this.date = new Date().toISOString().substring(0, 16);
             this.selectedClient = null;
             this.selectedUsers = [];
+            this.files = [];
             this.editingItemId = null;
-            this.fetchUsers();
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -164,17 +178,9 @@ export default {
             const files = event.target.files;
             if (!files.length) return;
 
-            const formData = new FormData();
-            for (let i = 0; i < files.length; i++) {
-                formData.append('files[]', files[i]);
-            }
-
             this.uploading = true;
             try {
-                const response = await api.post(`/projects/${this.editingItemId}/upload-files`, formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-                this.files = response.data.files;
+                this.files = await ProjectController.uploadFiles(this.editingItemId, files);
                 event.target.value = '';
             } catch (e) {
                 alert('Ошибка загрузки файлов');
@@ -190,20 +196,12 @@ export default {
             this.deleteFileIndex = -1;
         },
         async confirmDeleteFile() {
-            if (this.deleteFileIndex === -1 || !this.editingItemId) {
-                this.closeDeleteFileDialog();
-                return;
-            }
+            if (this.deleteFileIndex === -1 || !this.editingItemId) return;
             const file = this.files[this.deleteFileIndex];
-            if (!file) {
-                this.closeDeleteFileDialog();
-                return;
-            }
+            if (!file) return;
+
             try {
-                const response = await api.post(`/projects/${this.editingItemId}/delete-file`, {
-                    path: file.path
-                });
-                this.files = response.data.files;
+                this.files = await ProjectController.deleteFile(this.editingItemId, file.path);
             } catch (e) {
                 alert('Ошибка удаления файла');
             }
@@ -231,25 +229,24 @@ export default {
                 if (newEditingItem) {
                     this.name = newEditingItem.name || '';
                     this.budget = newEditingItem.budget || 0;
-                    this.date = newEditingItem.date || '';
+                    this.date = newEditingItem.date
+                        ? new Date(newEditingItem.date).toISOString().substring(0, 16)
+                        : new Date().toISOString().substring(0, 16);
                     this.selectedClient = newEditingItem.client || null;
                     this.selectedUsers = Array.isArray(newEditingItem.users)
-                        ? newEditingItem.users
+                        ? newEditingItem.users.map(u => u.toString?.() || u.id?.toString?.()).filter(Boolean)
                         : [];
-                    this.editingItemId = newEditingItem.id || null;
                     this.files = newEditingItem.files || [];
+                    this.editingItemId = newEditingItem.id || null;
                 } else {
-                    this.name = '';
-                    this.date = '';
-                    this.budget = 0;
-                    this.selectedClient = null;
-                    this.selectedUsers = [];
-                    this.editingItemId = null;
+                    this.date = new Date().toISOString().substring(0, 16);
+                    this.clearForm();
                 }
             },
             deep: true,
             immediate: true
         }
     }
+
 }
 </script>

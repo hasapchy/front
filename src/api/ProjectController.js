@@ -133,13 +133,46 @@ export default class ProjectController {
     }
   }
 
-  // static async deleteItem(id) {
-  //     try {
-  //         const { data } = await api.delete(`/categories/${id}`);
-  //         return data;
-  //     } catch (error) {
-  //         console.error('Ошибка при удалении категории:', error);
-  //         throw error;
-  //     }
-  // }
+  static async deleteItem(id) {
+    try {
+      const { data } = await api.delete(`/projects/${id}`);
+      return data;
+    } catch (error) {
+      console.error("Ошибка при удалении проекта:", error);
+      throw error;
+    }
+  }
+
+  static async uploadFiles(projectId, files) {
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append("files[]", files[i]);
+    }
+
+    const response = await api.post(
+      `/projects/${projectId}/upload-files`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+    return response.data.files;
+  }
+
+  static async deleteFile(projectId, filePath) {
+    const response = await api.post(`/projects/${projectId}/delete-file`, {
+      path: filePath,
+    });
+    return response.data.files;
+  }
+
+  static async getBalanceHistory(projectId) {
+    try {
+      const { data } = await api.get(`/projects/${projectId}/balance-history`);
+      return data; // { history, balance, budget }
+    } catch (error) {
+      console.error("Ошибка при получении истории баланса проекта:", error);
+      throw error;
+    }
+  }
 }

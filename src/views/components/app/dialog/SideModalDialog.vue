@@ -13,6 +13,15 @@
                     <slot />
                 </div>
 
+                <!-- Вертикальная панель с кнопкой таймлайна -->
+                <div v-if="showTimelineButton" class="w-12 bg-gray-100 border-l border-gray-200 flex flex-col items-center justify-center">
+                    <button @click="toggleTimeline" 
+                            class="transform -rotate-90 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors duration-200 flex items-center space-x-2">
+                        <i :class="timelineCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right'" class="text-xs"></i>
+                        <span>Таймлайн</span>
+                    </button>
+                </div>
+
                 <!-- Правая часть: таймлайн, если есть -->
                 <slot name="timeline" />
             </div>
@@ -26,6 +35,7 @@ export default {
     components: {
         PrimaryButton
     },
+    emits: ['toggle-timeline'],
     props: {
         showForm: {
             type: Boolean,
@@ -39,12 +49,26 @@ export default {
             type: Number,
             required: false,
             default: 0
+        },
+        timelineCollapsed: {
+            type: Boolean,
+            default: true
+        },
+        showTimelineButton: {
+            type: Boolean,
+            default: true
         }
     },
     computed: {
         modalWidth() {
-            const timelineWidth = 420;
-            return `calc((100vw - ${timelineWidth}px) / 3 - ${40 * this.level}px)`;
+            const timelineWidth = this.timelineCollapsed ? 0 : 420;
+            const buttonWidth = this.showTimelineButton ? 48 : 0; // 48px = 12 * 4 (w-12)
+            return `calc((100vw - ${timelineWidth + buttonWidth}px) / 2.2 - ${40 * this.level}px)`;
+        }
+    },
+    methods: {
+        toggleTimeline() {
+            this.$emit('toggle-timeline');
         }
     }
 }

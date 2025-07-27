@@ -28,7 +28,7 @@
                     class="mt-2 text-red-500 text-sm">Удалить</button>
             </div>
             <div v-else-if="editingItem?.image" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
-                <img :src="editingItem?.imgUrl()" alt="Selected Image" class="w-32 h-32 object-cover rounded">
+                <img :src="getProductImageSrc(editingItem)" alt="Selected Image" class="w-32 h-32 object-cover rounded">
                 <button @click="() => { this.editingItem.image = '' }"
                     class="mt-2 text-red-500 text-sm">Удалить</button>
             </div>
@@ -141,25 +141,25 @@ export default {
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage },
     props: {
-        editingItem: { type: ProductDto, required: false, default: null },
+        editingItem: { type: Object, required: false, default: null },
         defaultType: { type: String, required: false, default: 'product' },
         defaultName: { type: String, required: false, default: '' }
     },
     data() {
         return {
-            type: this.editingItem ? this.editingItem.typeName() : this.defaultType || "product",
-            name: this.editingItem ? this.editingItem.name : this.defaultName || '',
+            type: this.editingItem ? (this.editingItem.typeName ? this.editingItem.typeName() : 'product') : this.defaultType || "product",
+            name: this.editingItem ? (this.editingItem.name || this.editingItem.productName) : this.defaultName || '',
             description: this.editingItem ? this.editingItem.description : '',
             sku: this.editingItem ? this.editingItem.sku : '',
-            image: this.editingItem ? this.editingItem.image : '',
+            image: this.editingItem ? (this.editingItem.image || this.editingItem.productImage) : '',
             selected_image: null,
-            category_id: this.editingItem ? this.editingItem.category_id : '',
-            unit_id: this.editingItem ? this.editingItem.unit_id : '',
+            category_id: this.editingItem ? (this.editingItem.category_id || this.editingItem.categoryId) : '',
+            unit_id: this.editingItem ? (this.editingItem.unit_id || this.editingItem.unitId) : '',
             barcode: this.editingItem ? this.editingItem.barcode : '',
             retail_price: this.editingItem ? this.editingItem.retail_price : 0,
             wholesale_price: this.editingItem ? this.editingItem.wholesale_price : 0,
             purchase_price: this.editingItem ? this.editingItem.purchase_price : 0,
-            editingItemId: this.editingItem ? this.editingItem.id : null,
+            editingItemId: this.editingItem ? (this.editingItem.id || this.editingItem.productId) : null,
             currencies: [],
             units: [],
             allCategories: [],
@@ -212,8 +212,10 @@ export default {
                     purchase_price: this.purchase_price,
                 };
                 if (this.editingItemId != null) {
+                    // Если это WarehouseStockDto, используем productId для обновления товара
+                    const itemId = this.editingItem && this.editingItem.productId ? this.editingItem.productId : this.editingItemId;
                     var resp = await ProductController.updateItem(
-                        this.editingItemId,
+                        itemId,
                         item,
                         this.$refs.imageInput?.files[0]
                     );
@@ -237,7 +239,9 @@ export default {
             }
             this.deleteLoading = true;
             try {
-                const resp = await ProductController.deleteItem(this.editingItemId);
+                // Если это WarehouseStockDto, используем productId для удаления товара
+                const itemId = this.editingItem && this.editingItem.productId ? this.editingItem.productId : this.editingItemId;
+                const resp = await ProductController.deleteItem(itemId);
                 if (resp.message) {
                     this.$emit('deleted');
                     this.clearForm();
@@ -322,6 +326,13 @@ export default {
         handleSavedError(m) {
             this.$emit('saved-error', this.getApiErrorMessage(error));
         },
+        getProductImageSrc(item) {
+            if (!item) return '';
+            if (item.imgUrl) return item.imgUrl();
+            if (item.productImage)
+                return import.meta.env.VITE_APP_BASE_URL + '/storage/' + item.productImage;
+            return '';
+        },
     },
     watch: {
         defaultName(newVal) {
@@ -340,20 +351,20 @@ export default {
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
-                    this.type = newEditingItem.typeName() || this.defaultType || "product";
-                    this.name = newEditingItem.name || '';
+                    this.type = newEditingItem.typeName ? newEditingItem.typeName() : 'product';
+                    this.name = newEditingItem.name || newEditingItem.productName || '';
                     this.description = newEditingItem.description || '';
                     this.sku = newEditingItem.sku || '';
-                    this.image = newEditingItem.image || '';
-                    this.category_id = newEditingItem.category_id || '';
-                    this.unit_id = newEditingItem.unit_id || '';
+                    this.image = newEditingItem.image || newEditingItem.productImage || '';
+                    this.category_id = newEditingItem.category_id || newEditingItem.categoryId || '';
+                    this.unit_id = newEditingItem.unit_id || newEditingItem.unitId || '';
                     this.barcode = newEditingItem.barcode || '';
                     this.retail_price = newEditingItem.retail_price || 0;
                     this.wholesale_price = newEditingItem.wholesale_price || 0;
                     this.purchase_price = newEditingItem.purchase_price || 0;
-                    this.editingItemId = newEditingItem.id || null;
+                    this.editingItemId = newEditingItem.id || newEditingItem.productId || null;
                 } else {
-                    this.type = this.defaultType || "product";
+                    this.type = 'product';
                     this.name = '';
                     this.description = '';
                     this.sku = '';

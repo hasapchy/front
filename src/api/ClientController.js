@@ -140,22 +140,26 @@ export default class ClientController {
     }
   }
 
-  static async getBalanceHistory(clientId) {
+  static async getBalanceHistory(id) {
     try {
-      const { data } = await api.get(`/clients/${clientId}/balance-history`);
-      return data.history.map(
-        (item) =>
-          new ClientBalanceHistoryDto(
-            item.source,
-            item.source_id,
-            item.date,
-            item.amount,
-            item.description
-          )
-      );
+      const response = await api.get(`/clients/${id}/balance-history`);
+      const data = response.data;
+      // Если data — объект с history, используем его, иначе предполагаем массив
+      const historyArray = Array.isArray(data) ? data : (data.history || []);
+      const items = historyArray.map((item) => {
+        return new ClientBalanceHistoryDto(
+          item.source,
+          item.source_id, // Исправлено: было item.sourceId
+          item.date,
+          item.amount,
+          item.description
+        );
+      });
+      return items;
     } catch (error) {
-      console.error("Ошибка при получении истории баланса:", error);
+      console.error("Ошибка при получении истории баланса клиента:", error);
       throw error;
     }
   }
+
 }

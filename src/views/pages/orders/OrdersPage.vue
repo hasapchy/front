@@ -9,7 +9,7 @@
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
         :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
-        :handle-change-status="handleChangeStatus" />
+        :handle-change-status="handleChangeStatus" :show-status-select="true" />
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading" key="table">
             <DraggableTable table-key="admin.orders" :columns-config="columnsConfig" :table-data="data.items"
@@ -19,12 +19,13 @@
             <i class="fas fa-spinner fa-spin text-2xl"></i>
         </div>
     </transition>
-    <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
-        <OrderCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" :editingItem="editingItem" />
+    <SideModalDialog :showForm="modalDialog" :onclose="closeModal" :timelineCollapsed="timelineCollapsed" 
+        :showTimelineButton="!!editingItem" @toggle-timeline="toggleTimeline">
+        <OrderCreatePage @saved="handleSaved" @saved-silent="handleSavedSilent" @saved-error="handleSavedError"
+            @deleted="handleDeleted" @deleted-error="handleDeletedError" :editingItem="editingItem" />
 
         <template #timeline>
-            <TimelinePanel v-if="editingItem" :type="'order'" :id="editingItem.id" @toggle="closeModal" />
+            <TimelinePanel v-if="editingItem && !timelineCollapsed" :type="'order'" :id="editingItem.id" @toggle-timeline="toggleTimeline" />
         </template>
     </SideModalDialog>
 
@@ -63,8 +64,8 @@ export default {
             statuses: [],
             selectedIds: [],
             showBatchStatusSelect: false,
-            showTimeline: true,
-            //editingItem: null,
+            timelineCollapsed: true, // По умолчанию таймлайн свернут
+            editingItem: null, // Добавлено для SideModalDialog и OrderCreatePage
             loadingDelete: false,
             controller: OrderController,
             columnsConfig: [
@@ -142,7 +143,6 @@ export default {
             if (!silent) this.loading = false;
         },
 
-
         handleSaved() {
             this.showNotification("Заказ сохранён", "", false);
             this.fetchItems(this.data.currentPage, true);
@@ -163,6 +163,11 @@ export default {
             this.showNotification("Ошибка удаления заказа", err.message, true);
         },
 
+        handleSavedSilent() {
+            this.showNotification("Заказ сохранён", "", false);
+            this.fetchItems(this.data.currentPage, true);
+        },
+
         showNotification(title, subtitle = "", isDanger = false) {
             this.notificationTitle = title;
             this.notificationSubtitle = subtitle;
@@ -172,6 +177,7 @@ export default {
                 this.notification = false;
             }, 10000);
         },
+        
         async fetchStatuses() {
             this.statuses = await OrderStatusController.getAllItems();
         },
@@ -190,6 +196,20 @@ export default {
             this.loading = false;
             this.selectedIds = [];
             this.showBatchStatusSelect = false;
+        },
+
+        toggleTimeline() {
+            // Переключаем состояние таймлайна
+            this.timelineCollapsed = !this.timelineCollapsed;
+        },
+
+        showModal(item) {
+            this.editingItem = item;
+            this.modalDialog = true;
+        },
+        closeModal() {
+            this.modalDialog = false;
+            this.editingItem = null;
         },
     },
 };

@@ -148,4 +148,36 @@ export default class ProductController {
       throw error;
     }
   }
+
+  static async getItem(id) {
+    try {
+      const response = await api.get(`/products/${id}`);
+      const item = response.data;
+      return new ProductDto({
+        id: item.id,
+        type: item.type,
+        name: item.name,
+        description: item.description,
+        sku: item.sku,
+        image: item.image,
+        category_id: item.category_id,
+        category_name: item.category_name,
+        stock_quantity: item.stock_quantity,
+        unit_id: item.unit_id,
+        unit_name: item.unit_name,
+        unit_short_name: item.unit_short_name,
+        unit_calc_area: item.unit_calc_area,
+        barcode: item.barcode,
+        is_serialized: item.is_serialized,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        retail_price: item.retail_price,
+        wholesale_price: item.wholesale_price,
+        purchase_price: item.purchase_price,
+      });
+    } catch (error) {
+      console.error("Ошибка при получении товара по ID:", error);
+      throw error;
+    }
+  }
 }

@@ -143,4 +143,9 @@ export default class OrderController {
       throw e;
     }
   }
+
+  static async getItem(id) {
+    const { data } = await api.get(`/orders/${id}`);
+    return data;
+  }
 }

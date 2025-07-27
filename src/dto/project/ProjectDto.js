@@ -33,8 +33,8 @@ export default class ProjectDto {
   }
 
   formatDate() {
-     return dayjsDateTime(this.date);
-   }
+    return dayjsDateTime(this.date);
+  }
 
   formatCreatedAt() {
     return dayjsDate(this.createdAt);
@@ -46,5 +46,26 @@ export default class ProjectDto {
 
   getFileUrl(file) {
     return file?.path ? `/storage/${file.path}` : "#";
+  }
+
+  getFileIcon(file) {
+    const ext = (file?.name || file?.path || "").split(".").pop().toLowerCase();
+    if (["pdf"].includes(ext)) return "far fa-file-pdf";
+    if (["doc", "docx"].includes(ext)) return "far fa-file-word";
+    if (["xls", "xlsx"].includes(ext)) return "far fa-file-excel";
+    if (["png", "jpg", "jpeg", "gif", "bmp", "svg"].includes(ext))
+      return "far fa-file-image";
+    if (["zip", "rar", "7z"].includes(ext)) return "far fa-file-archive";
+    if (["txt", "md"].includes(ext)) return "far fa-file-alt";
+    return "far fa-file";
+  }
+
+  getFormattedFiles() {
+    return (this.files || []).map((file) => ({
+      name: file.name || file.path,
+      url: this.getFileUrl(file),
+      icon: this.getFileIcon(file),
+      path: file.path,
+    }));
   }
 }

@@ -43,6 +43,11 @@
         <ProductsCreatePage :defaultType="'product'" @saved="onProductSaved"
             @saved-error="() => modalCreateProduct = false" />
     </SideModalDialog>
+
+    <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
+        <ProductsCreatePage :editingItem="editingItem" @saved="onProductEdited"
+            @saved-error="handleSavedError" />
+    </SideModalDialog>
 </template>
 
 <script>
@@ -58,6 +63,7 @@ import WarehouseController from '@/api/WarehouseController';
 import AdminWarehouseCreatePage from '@/views/pages/admin/warehouses/AdminWarehouseCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import ProductController from '@/api/ProductController';
 
 export default {
     mixins: [modalMixin, notificationMixin],
@@ -73,6 +79,8 @@ export default {
             categoryId: '',
             modalCreateWarehouse: false,
             modalCreateProduct: false,
+            editingItem: null,
+            modalDialog: false,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: '№', size: 60 },
@@ -142,7 +150,32 @@ export default {
             this.modalCreateProduct = false;
             this.fetchItems();
             this.showNotification('Товар успешно добавлен', '');
-        }
+        },
+        onProductEdited() {
+            this.closeModal();
+            this.editingItem = null;
+            this.fetchItems();
+            this.showNotification('Товар успешно обновлен', '');
+        },
+        handleSavedError(err) {
+            this.showNotification('Ошибка сохранения товара', err.message, true);
+        },
+        async showModal(item) {
+            // Получаем все товары на текущей странице (или ищем по id)
+            const page = 1; // или текущая страница, если есть
+            try {
+                const productsPage = await ProductController.getItems(page);
+                const found = productsPage.items.find(p => p.id === item.productId);
+                if (found) {
+                    this.editingItem = found;
+                    this.modalDialog = true;
+                } else {
+                    this.showNotification('Товар не найден', '', true);
+                }
+            } catch (error) {
+                this.showNotification('Ошибка загрузки товара', error.message, true);
+            }
+        },
     },
 }
 </script>
