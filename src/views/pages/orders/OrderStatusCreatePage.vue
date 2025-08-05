@@ -31,6 +31,8 @@
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление статуса'" :confirm-text="'Удалить статус'" :leave-text="'Отмена'" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal" :level="1">
         <OrderStatusCategoryCreatePage @saved="fetchAllCategories; closeModal()" />
     </SideModalDialog>
@@ -45,10 +47,12 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import OrderStatusCategoryCreatePage from '@/views/pages/orders/OrderStatusCategoryCreatePage.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import formChangesMixin from "@/mixins/formChangesMixin";
+
 
 export default {
-    mixins: [getApiErrorMessage],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    mixins: [getApiErrorMessage, formChangesMixin],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, SideModalDialog, OrderStatusCategoryCreatePage },
     props: {
         editingItem: { type: OrderStatusDto, required: false, default: null }
@@ -69,6 +73,15 @@ export default {
         this.fetchAllCategories();
     },
     methods: {
+                // Переопределяем метод getFormState из миксина
+        getFormState() {
+            return {
+                name: this.name,
+                description: this.description,
+                color: this.color,
+                status: this.status
+            };
+        },
         async fetchAllCategories() {
             this.allCategories = await OrderStatusCategoryController.getAllItems();
         },
@@ -116,11 +129,12 @@ export default {
             this.categoryId = '';
             this.editingItemId = null;
             this.fetchAllCategories();
+            this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() { this.deleteDialog = true; },
         closeDeleteDialog() { this.deleteDialog = false; },
         showModal() { this.modalDialog = true; },
-        closeModal() { this.modalDialog = false; },
+        closeModal() { this.modalDialog = false; }
     },
     watch: {
         editingItem: {

@@ -9,7 +9,6 @@ export default class WarehouseReceiptController {
     try {
       const response = await api.get(`/warehouse_receipts?page=${page}`);
       const data = response.data;
-      console.log(data);
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {
         var client = null;

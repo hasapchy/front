@@ -12,7 +12,6 @@ class AppController {
     try {
       const response = await api.get("/app/currency");
       const data = response.data;
-      // console.log(data);
       return data.map(
         (item) =>
           new CurrencyDto({
@@ -35,7 +34,6 @@ class AppController {
     try {
       const response = await api.get("/app/units");
       const data = await response.data;
-      // console.log(data);
 
       return data.map(
         (item) =>
@@ -50,7 +48,6 @@ class AppController {
     try {
       const response = await api.get("/app/product_statuses");
       const data = await response.data;
-      // console.log(data);
 
       return data.map(
         (item) =>
@@ -68,7 +65,6 @@ class AppController {
     try {
       const response = await api.get("/app/transaction_categories");
       const data = await response.data;
-      // console.log(data);
 
       return data.map(
         (item) =>

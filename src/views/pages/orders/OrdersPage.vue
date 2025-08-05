@@ -19,10 +19,10 @@
             <i class="fas fa-spinner fa-spin text-2xl"></i>
         </div>
     </transition>
-    <SideModalDialog :showForm="modalDialog" :onclose="closeModal" :timelineCollapsed="timelineCollapsed" 
+    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed" 
         :showTimelineButton="!!editingItem" @toggle-timeline="toggleTimeline">
-        <OrderCreatePage @saved="handleSaved" @saved-silent="handleSavedSilent" @saved-error="handleSavedError"
-            @deleted="handleDeleted" @deleted-error="handleDeletedError" :editingItem="editingItem" />
+        <OrderCreatePage ref="ordercreatepageForm" @saved="handleSaved" @saved-silent="handleSavedSilent" @saved-error="handleSavedError"
+            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
 
         <template #timeline>
             <TimelinePanel v-if="editingItem && !timelineCollapsed" :type="'order'" :id="editingItem.id" @toggle-timeline="toggleTimeline" />
@@ -129,6 +129,15 @@ export default {
 
                 default:
                     return i[c];
+            }
+        },
+        handleModalClose() {
+            // Проверяем, есть ли изменения в форме
+            const formRef = this.$refs.ordercreatepageForm;
+            if (formRef && formRef.handleCloseRequest) {
+                formRef.handleCloseRequest();
+            } else {
+                this.closeModal();
             }
         },
 

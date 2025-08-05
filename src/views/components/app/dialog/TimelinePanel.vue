@@ -126,9 +126,7 @@ export default {
         async fetchTimeline() {
             this.loading = true;
             try {
-                console.log("Загружаю таймлайн...");
                 this.timeline = await CommentController.getTimeline(this.type, this.id);
-                console.log("Результат:", this.timeline);
             } catch (e) {
                 console.error('Ошибка загрузки таймлайна:', e);
             }

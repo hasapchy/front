@@ -117,6 +117,8 @@
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление категории'" :confirm-text="'Удалить категорию'" :leave-text="'Отмена'" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal" :level="1">
         <AdminCategoryCreatePage @saved="handleSaved" @saved-error="handleSavedError" />
     </SideModalDialog>
@@ -134,11 +136,12 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import AdminCategoryCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import modalMixin from '@/mixins/modalMixin';
+import formChangesMixin from '@/mixins/formChangesMixin';
 import JsBarcode from "jsbarcode";
 
 export default {
-    mixins: [getApiErrorMessage, modalMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    mixins: [getApiErrorMessage, modalMixin, formChangesMixin],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage },
     props: {
         editingItem: { type: Object, required: false, default: null },
@@ -309,6 +312,24 @@ export default {
                 this.$refs.imageInput.value = null;
             }
             this.fetchAllCategories();
+            this.resetFormChanges(); // Сбрасываем состояние изменений
+        },
+        // Переопределяем метод getFormState из миксина
+        getFormState() {
+            return {
+                type: this.type,
+                name: this.name,
+                description: this.description,
+                sku: this.sku,
+                image: this.image,
+                selected_image: this.selected_image,
+                category_id: this.category_id,
+                unit_id: this.unit_id,
+                barcode: this.barcode,
+                retail_price: this.retail_price,
+                wholesale_price: this.wholesale_price,
+                purchase_price: this.purchase_price,
+            };
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -378,6 +399,10 @@ export default {
                     this.editingItemId = null;
                     this.selected_image = null;
                 }
+                // Сохраняем новое начальное состояние
+                this.$nextTick(() => {
+                    this.saveInitialState();
+                });
             },
             deep: true,
             immediate: true

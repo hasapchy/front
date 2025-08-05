@@ -13,9 +13,10 @@
             <i class="fas fa-spinner fa-spin text-2xl"></i>
         </div>
     </transition>
-    <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
-        <UsersCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" :editingItem="editingItem" />
+    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
+        <UsersCreatePage ref="userscreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
+            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
+            :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
@@ -40,13 +41,13 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
     mixins: [notificationMixin, modalMixin, batchActionsMixin, getApiErrorMessageMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, UsersCreatePage, Pagination, DraggableTable, BatchButton,AlertDialog },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, UsersCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog },
     data() {
         return {
             data: null,
             loading: false,
             selectedIds: [],
-            controller:UsersController,
+            controller: UsersController,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'ID', size: 60 },
@@ -72,6 +73,15 @@ export default {
                 this.showNotification('Ошибка загрузки пользователей', error.message, true);
             }
             if (!silent) this.loading = false;
+        },
+        handleModalClose() {
+            // Проверяем, есть ли изменения в форме
+            const formRef = this.$refs.userscreatepageForm;
+            if (formRef && formRef.handleCloseRequest) {
+                formRef.handleCloseRequest();
+            } else {
+                this.closeModal();
+            }
         },
         itemMapper(item, column) {
             switch (column) {

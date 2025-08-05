@@ -39,6 +39,8 @@
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление категории'" :confirm-text="'Удалить категорию'" :leave-text="'Отмена'" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
 </template>
 
 
@@ -47,12 +49,14 @@ import CategoryController from '@/api/CategoryController';
 import UsersController from '@/api/UsersController';
 import CategoryDto from '@/dto/category/CategoryDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import formChangesMixin from "@/mixins/formChangesMixin";
+
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 
 export default {
-    mixins: [getApiErrorMessage],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    mixins: [getApiErrorMessage, formChangesMixin],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog },
     props: {
         editingItem: { type: CategoryDto, required: false, default: null }
@@ -74,7 +78,21 @@ export default {
         this.fetchUsers();
         this.fetchAllCategories();
     },
+    mounted() {
+        // Сохраняем начальное состояние после монтирования компонента
+        this.$nextTick(() => {
+            this.saveInitialState();
+        });
+    },
     methods: {
+                // Переопределяем метод getFormState из миксина
+        getFormState() {
+            return {
+                name: this.name,
+                selectedUsers: [...this.selectedUsers],
+                selectedParentCategoryId: this.selectedParentCategoryId
+            };
+        },
         async fetchUsers() {
             this.users = await UsersController.getAllUsers();
         },
@@ -134,13 +152,14 @@ export default {
             this.editingItemId = null;
             this.fetchAllCategories();
             this.fetchUsers();
+            this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
             this.deleteDialog = true;
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
-        },
+        }
     },
     watch: {
         editingItem: {
@@ -157,6 +176,10 @@ export default {
                     this.selectedUsers = [];
                     this.editingItemId = null;
                 }
+                // Сохраняем новое начальное состояние
+                this.$nextTick(() => {
+                    this.saveInitialState();
+                });
             },
             deep: true,
             immediate: true

@@ -22,6 +22,8 @@
 </template>
 
 <script>
+import soundManager from '@/utils/soundUtils.js';
+
 export default {
     name: 'NotificationToast',
     emits: ['close'],
@@ -30,6 +32,18 @@ export default {
         subtitle: { type: [String, Array], required: true },
         isDanger: { type: Boolean, default: false },
         show: { type: Boolean, default: false }
+    },
+    watch: {
+        show(newVal) {
+            if (newVal) {
+                // Воспроизводим звук при показе уведомления
+                if (this.isDanger) {
+                    soundManager.playError();
+                } else {
+                    soundManager.playSuccess();
+                }
+            }
+        }
     }
 };
 </script>

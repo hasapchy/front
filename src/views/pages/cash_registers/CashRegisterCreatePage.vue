@@ -42,6 +42,8 @@
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление кассы'" :confirm-text="'Удалить кассу'" :leave-text="'Отмена'" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
 </template>
 
 
@@ -51,11 +53,13 @@ import CashRegisterController from '@/api/CashRegisterController';
 import UsersController from '@/api/UsersController';
 import CashRegisterDto from '@/dto/cash_register/CashRegisterDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import formChangesMixin from "@/mixins/formChangesMixin";
+
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 export default {
-    mixins: [getApiErrorMessage],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    mixins: [getApiErrorMessage, formChangesMixin],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog },
     props: {
         editingItem: { type: CashRegisterDto, required: false, default: null }
@@ -78,12 +82,27 @@ export default {
         this.fetchUsers();
         this.fetchCurrencies();
     },
+    mounted() {
+        // Сохраняем начальное состояние после монтирования компонента
+        this.$nextTick(() => {
+            this.saveInitialState();
+        });
+    },
     computed: {
         selectedCurrency() {
             return this.currencies.find(currency => currency.id == this.currency_id);
         }
     },
     methods: {
+                // Переопределяем метод getFormState из миксина
+        getFormState() {
+            return {
+                name: this.name,
+                selectedUsers: [...this.selectedUsers],
+                balance: this.balance,
+                currency_id: this.currency_id
+            };
+        },
         async fetchUsers() {
             this.users = await UsersController.getAllUsers();
         },
@@ -146,6 +165,7 @@ export default {
             this.editingItemId = null;
             this.fetchCurrencies();
             this.fetchUsers();
+            this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -173,6 +193,10 @@ export default {
                     this.currency_id = '';
                     this.editingItemId = null;
                 }
+                // Сохраняем новое начальное состояние
+                this.$nextTick(() => {
+                    this.saveInitialState();
+                });
             },
             deep: true,
             immediate: true

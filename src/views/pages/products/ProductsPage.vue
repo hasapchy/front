@@ -15,9 +15,9 @@
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
         </div>
     </transition>
-    <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
-        <ProductsCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" :editingItem="editingItem" />
+    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
+        <ProductsCreatePage ref="productForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
@@ -114,6 +114,14 @@ export default {
         },
         handleDeletedError(m) {
             this.showNotification('Ошибка удаления товара', m, true);
+        },
+        handleModalClose() {
+            // Проверяем, есть ли изменения в форме
+            if (this.$refs.productForm && this.$refs.productForm.handleCloseRequest) {
+                this.$refs.productForm.handleCloseRequest();
+            } else {
+                this.closeModal();
+            }
         }
     },
     computed: {

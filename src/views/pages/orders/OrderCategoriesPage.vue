@@ -17,9 +17,9 @@
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
         </div>
     </transition>
-    <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
-        <OrderCategoryCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" :editingItem="editingItem" />
+    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
+        <OrderCategoryCreatePage ref="ordercategorycreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
@@ -69,6 +69,15 @@ export default {
                     return i.formatCreatedAt();
                 default:
                     return i[c];
+            }
+        },
+        handleModalClose() {
+            // Проверяем, есть ли изменения в форме
+            const formRef = this.$refs.ordercategorycreatepageForm;
+            if (formRef && formRef.handleCloseRequest) {
+                formRef.handleCloseRequest();
+            } else {
+                this.closeModal();
             }
         },
         async fetchItems(page = 1, silent = false) {

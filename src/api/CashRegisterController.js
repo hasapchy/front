@@ -9,7 +9,6 @@ export default class CashRegisterController {
     try {
       const response = await api.get(`/cash_registers?page=${page}`);
       const data = response.data;
-      // console.log(data);
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {
         return new CashRegisterDto(
@@ -45,7 +44,6 @@ export default class CashRegisterController {
     try {
       const response = await api.get(`/cash_registers/all`);
       const data = response.data;
-      // console.log(data);
       // Преобразуем полученные данные в DTO
       const items = data.map((item) => {
         return new CashRegisterDto(

@@ -47,6 +47,8 @@
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление трансфера'" :confirm-text="'Удалить трфнсфер'" :leave-text="'Отмена'" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
 </template>
 
 
@@ -58,10 +60,12 @@ import CashRegisterController from '@/api/CashRegisterController';
 import TransferDto from '@/dto/transfer/TransferDto';
 import TransferController from '@/api/TransferController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import formChangesMixin from "@/mixins/formChangesMixin";
+
 
 export default {
-    mixins: [getApiErrorMessage],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    mixins: [getApiErrorMessage, formChangesMixin],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog },
     props: {
         editingItem: { type: TransferDto, required: false, default: null }
@@ -89,7 +93,24 @@ export default {
         this.fetchCurrencies();
         this.fetchAllCashRegisters();
     },
+    mounted() {
+        // Сохраняем начальное состояние после монтирования компонента
+        this.$nextTick(() => {
+            this.saveInitialState();
+        });
+    },
     methods: {
+                // Переопределяем метод getFormState из миксина
+        getFormState() {
+            return {
+                cashIdFrom: this.cashIdFrom,
+                cashIdTo: this.cashIdTo,
+                origAmount: this.origAmount,
+                date: this.date,
+                note: this.note,
+                currencyId: this.currencyId
+            };
+        },
         async fetchCurrencies() {
             this.currencies = await AppController.getCurrencies();
         },
@@ -140,13 +161,14 @@ export default {
             this.note = '';
             this.currencyId = '';
             this.editingItemId = null;
+            this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
             this.deleteDialog = true;
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
-        },
+        }
     },
     watch: {
         editingItem: {
@@ -163,6 +185,10 @@ export default {
                 } else {
                     this.clearForm();
                 }
+                // Сохраняем новое начальное состояние
+                this.$nextTick(() => {
+                    this.saveInitialState();
+                });
             },
             deep: true,
             immediate: true

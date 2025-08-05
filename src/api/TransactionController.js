@@ -20,7 +20,6 @@ export default class TransactionController {
         },
       });
       const data = response.data;
-      // console.log(data);
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {
         var client = null;

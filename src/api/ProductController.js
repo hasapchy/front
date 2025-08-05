@@ -9,8 +9,6 @@ export default class ProductController {
         `/${products ? "products" : "services"}?page=${page}`
       );
       const data = response.data;
-      // console.log(data);
-      // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {
         return new ProductDto({
           id: item.id,
@@ -62,7 +60,6 @@ export default class ProductController {
         },
       });
       const data = response.data;
-      // console.log(data);
       // Преобразуем полученные данные в DTO
       const items = data.map((item) => {
         return new ProductDto({

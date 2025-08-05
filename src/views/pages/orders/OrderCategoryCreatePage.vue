@@ -20,6 +20,8 @@
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление категории заказа'" :confirm-text="'Удалить категорию заказа'"
         :leave-text="'Отмена'" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
 </template>
 
 <script>
@@ -28,10 +30,12 @@ import OrderCategoryDto from '@/dto/order/OrderCategoryDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import formChangesMixin from "@/mixins/formChangesMixin";
+
 
 export default {
-    mixins: [getApiErrorMessage],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    mixins: [getApiErrorMessage, formChangesMixin],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog },
     props: {
         editingItem: { type: OrderCategoryDto, required: false, default: null }
@@ -46,6 +50,14 @@ export default {
         }
     },
     methods: {
+                // Переопределяем метод getFormState из миксина
+        getFormState() {
+            return {
+                name: this.name,
+                description: this.description,
+                status: this.status
+            };
+        },
         async save() {
             this.saveLoading = true;
             try {
@@ -82,6 +94,7 @@ export default {
         clearForm() {
             this.name = '';
             this.editingItemId = null;
+            this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() { this.deleteDialog = true; },
         closeDeleteDialog() { this.deleteDialog = false; },

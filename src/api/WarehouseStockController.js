@@ -12,7 +12,6 @@ export default class WarehouseStockController {
                 }
             });
             const data = response.data;
-            // console.log(data);
             // Преобразуем полученные данные в DTO
             const items = data.items.map(item => {
                 return new WarehouseStockDto(

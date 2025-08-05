@@ -90,6 +90,8 @@
 
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление заказа'" :confirm-text="'Удалить заказ'" :leave-text="'Отмена'" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
 </template>
 
 <script>
@@ -107,10 +109,12 @@ import OrderStatusController from '@/api/OrderStatusController';
 import OrderCategoryController from '@/api/OrderCategoryController';
 import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import formChangesMixin from "@/mixins/formChangesMixin";
+
 
 export default {
-    mixins: [getApiErrorMessage],
-    emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error'],
+    mixins: [getApiErrorMessage, formChangesMixin],
+    emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { ClientSearch, ProductSearch, PrimaryButton, AlertDialog, TabBar, OrderTransactionsTab },
     props: {
         editingItem: { type: Object, default: null }
@@ -157,6 +161,12 @@ export default {
         this.fetchAllCashRegisters();
         this.fetchOrderStatuses();
     },
+    mounted() {
+        // Сохраняем начальное состояние после монтирования компонента
+        this.$nextTick(() => {
+            this.saveInitialState();
+        });
+    },
     computed: {
         currencySymbol() {
             return this.currencies.find(c => c.id === this.currencyId)?.symbol || '';
@@ -188,6 +198,22 @@ export default {
         },
     },
     methods: {
+        // Переопределяем метод getFormState из миксина
+        getFormState() {
+            return {
+                selectedClient: this.selectedClient,
+                categoryId: this.categoryId,
+                date: this.date,
+                cashId: this.cashId,
+                description: this.description,
+                projectId: this.projectId,
+                note: this.note,
+                warehouseId: this.warehouseId,
+                products: [...this.products],
+                discount: this.discount,
+                discountType: this.discountType,
+            };
+        },
         async fetchAllWarehouses() {
             this.allWarehouses = await WarehouseController.getAllItems();
             if (!this.editingItem && this.allWarehouses.length) {
@@ -323,6 +349,7 @@ export default {
             this.editingItemId = null;
             this.statusId = 1;
             this.paidTotalAmount = 0;
+            this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -385,6 +412,10 @@ export default {
                 } else {
                     this.clearForm();
                 }
+                // Сохраняем новое начальное состояние
+                this.$nextTick(() => {
+                    this.saveInitialState();
+                });
             },
             deep: true,
             immediate: true

@@ -71,6 +71,8 @@
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление. Данные будут отражены на стоке и балансе клиента!'"
         :confirm-text="'Удалить запись оприходования'" :leave-text="'Отмена'" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
 
 </template>
 
@@ -86,10 +88,12 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import formChangesMixin from "@/mixins/formChangesMixin";
+
 
 export default {
-    mixins: [getApiErrorMessage],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    mixins: [getApiErrorMessage, formChangesMixin],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog },
     components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch },
     props: {
@@ -121,6 +125,16 @@ export default {
         this.fetchAllCashRegisters();
     },
     methods: {
+                // Переопределяем метод getFormState из миксина
+        getFormState() {
+            return {
+                warehouseId: this.warehouseId,
+                supplierId: this.supplierId,
+                date: this.date,
+                note: this.note,
+                products: [...this.products]
+            };
+        },
         async fetchAllWarehouses() {
             this.allWarehouses = await WarehouseController.getAllItems();
         },
@@ -152,7 +166,7 @@ export default {
                         price: product.price
                     }))
                 };
-                // console.log(' formData', JSON.stringify(formData, null, 2));
+
                 if (this.editingItemId != null) {
                     var resp = await WarehouseReceiptController.updateReceipt(
                         this.editingItemId,
@@ -195,6 +209,7 @@ export default {
             this.selectedClient = null;
             this.products = [];
             this.editingItemId = null;
+            this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
             this.deleteDialog = true;

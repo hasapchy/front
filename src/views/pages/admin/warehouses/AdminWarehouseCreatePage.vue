@@ -9,7 +9,7 @@
         <div class="mt-4">
             <label>Назначить пользователей</label>
             <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
-                <label v-for="user, index in users" :key="user.id"
+                <label v-for="user in users" :key="user.id"
                     class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
                     <input type="checkbox" :value="user.id" v-model="selectedUsers" :id="'user-' + user.id">
                     <span>{{ user.name }}</span>
@@ -30,6 +30,8 @@
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление склада'" :confirm-text="'Удалить склад'" :leave-text="'Отмена'" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
 </template>
 
 
@@ -39,7 +41,10 @@ import WarehouseController from '@/api/WarehouseController';
 import WarehouseDto from '@/dto/warehouse/WarehouseDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import formChangesMixin from "@/mixins/formChangesMixin";
 export default {
+    mixins: [getApiErrorMessage, formChangesMixin],
     components: {
         PrimaryButton,
         AlertDialog
@@ -66,8 +71,21 @@ export default {
     created() {
         this.fetchUsers();
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    mounted() {
+        // Сохраняем начальное состояние после монтирования компонента
+        this.$nextTick(() => {
+            this.saveInitialState();
+        });
+    },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     methods: {
+        // Переопределяем метод getFormState из миксина
+        getFormState() {
+            return {
+                name: this.name,
+                selectedUsers: [...this.selectedUsers]
+            };
+        },
         async fetchUsers() {
             this.users = await UsersController.getAllUsers();
         },
@@ -118,6 +136,7 @@ export default {
         clearForm() {
             this.name = '';
             this.selectedUsers = [];
+            this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -140,6 +159,10 @@ export default {
                     this.selectedUsers = [];
                     this.warehouseId = null;
                 }
+                // Сохраняем новое начальное состояние
+                this.$nextTick(() => {
+                    this.saveInitialState();
+                });
             },
             deep: true,
             immediate: true

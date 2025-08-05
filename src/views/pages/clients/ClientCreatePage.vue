@@ -104,6 +104,8 @@
   </div>
   <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
     :descr="'Подтвердите удаление клиента'" :confirm-text="'Удалить клиента'" :leave-text="'Отмена'" />
+  <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+    :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
   <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
     :is-danger="notificationIsDanger" @close="closeNotification" />
 </template>
@@ -119,10 +121,11 @@ import Inputmask from "inputmask";
 import ClientBalanceTab from "@/views/pages/clients/ClientBalanceTab.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
+import formChangesMixin from "@/mixins/formChangesMixin";
 
 export default {
-  mixins: [getApiErrorMessage, notificationMixin],
-  emits: ["saved", "saved-error", "deleted", "deleted-error"],
+  mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
+  emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
   components: { PrimaryButton, AlertDialog, NotificationToast, TabBar, ClientBalanceTab },
   props: {
     editingItem: { type: ClientDto, default: null },
@@ -177,6 +180,25 @@ export default {
     mask.mask(phoneInput);
   },
   methods: {
+    // Переопределяем метод getFormState из миксина
+    getFormState() {
+      return {
+        firstName: this.firstName,
+        lastName: this.lastName,
+        contactPerson: this.contactPerson,
+        clientType: this.clientType,
+        address: this.address,
+        note: this.note,
+        status: this.status,
+        isConflict: this.isConflict,
+        isSupplier: this.isSupplier,
+        phones: [...this.phones],
+        emails: [...this.emails],
+        discountType: this.discountType,
+        discount: this.discount,
+      };
+    },
+    
     addPhone() {
       if (this.newPhone) {
         const cleanedPhone = this.newPhone.replace(/\D/g, ""); // только цифры
@@ -273,6 +295,7 @@ export default {
       this.discountType = "fixed";
       this.discount = 0;
       this.currentTab = "info";
+      this.resetFormChanges(); // Сбрасываем состояние изменений
     },
     showDeleteDialog() {
       this.deleteDialog = true;
@@ -310,6 +333,10 @@ export default {
         } else {
           this.clearForm();
         }
+        // Сохраняем новое начальное состояние
+        this.$nextTick(() => {
+          this.saveInitialState();
+        });
       },
       deep: true,
       immediate: true,

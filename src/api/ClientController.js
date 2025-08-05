@@ -8,7 +8,6 @@ export default class ClientController {
     try {
       const response = await api.get(`/clients?page=${page}`);
       const data = response.data;
-      // console.log(data);
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {
         return new ClientDto(
@@ -51,7 +50,6 @@ export default class ClientController {
     try {
       const response = await api.get(`/clients/search?search_request=${term}`);
       const data = response.data;
-      // console.log(data);
       // Преобразуем полученные данные в DTO
       const items = data.map((item) => {
         return new ClientDto(
@@ -85,7 +83,6 @@ export default class ClientController {
   //     try {
   //         const response = await api.get(`/categories/all`);
   //         const data = response.data;
-  //         console.log(data);
   //         // Преобразуем полученные данные в DTO
   //         const items = data.map(item => {
   //             return new CategoryDto(

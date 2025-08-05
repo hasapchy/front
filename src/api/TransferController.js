@@ -7,7 +7,6 @@ export default class TransferController {
     try {
       const response = await api.get(`/transfers?page=${page}`);
       const data = response.data;
-      console.log(data);
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {
         return new TransferDto(
@@ -51,7 +50,6 @@ export default class TransferController {
   //     try {
   //         const response = await api.get(`/categories/all`);
   //         const data = response.data;
-  //         console.log(data);
   //         // Преобразуем полученные данные в DTO
   //         const items = data.map(item => {
   //             return new CategoryDto(

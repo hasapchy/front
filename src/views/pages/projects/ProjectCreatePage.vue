@@ -57,6 +57,8 @@
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление проекта'" :confirm-text="'Удалить проект'" :leave-text="'Отмена'" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
     <AlertDialog :dialog="deleteFileDialog" @confirm="confirmDeleteFile" @leave="closeDeleteFileDialog"
         :descr="`Подтвердите удаление файла '${files[deleteFileIndex]?.name || 'без имени'}'`"
         :confirm-text="'Удалить файл'" :leave-text="'Отмена'" />
@@ -72,11 +74,13 @@ import ProjectController from '@/api/ProjectController';
 import api from '@/api/axiosInstance';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import formChangesMixin from "@/mixins/formChangesMixin";
+
 import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
 
 export default {
-    mixins: [getApiErrorMessage],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    mixins: [getApiErrorMessage, formChangesMixin],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab },
     props: {
         editingItem: { type: ProjectDto, required: false, default: null }
@@ -110,7 +114,23 @@ export default {
     created() {
         this.fetchUsers()
     },
+    mounted() {
+        // Сохраняем начальное состояние после монтирования компонента
+        this.$nextTick(() => {
+            this.saveInitialState();
+        });
+    },
     methods: {
+                // Переопределяем метод getFormState из миксина
+        getFormState() {
+            return {
+                name: this.name,
+                budget: this.budget,
+                date: this.date,
+                selectedClient: this.selectedClient?.id || null,
+                selectedUsers: [...this.selectedUsers]
+            };
+        },
         async fetchUsers() {
             this.users = await UsersController.getAllUsers();
 
@@ -162,6 +182,7 @@ export default {
             this.selectedUsers = [];
             this.files = [];
             this.editingItemId = null;
+            this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -242,6 +263,10 @@ export default {
                     this.date = new Date().toISOString().substring(0, 16);
                     this.clearForm();
                 }
+                // Сохраняем новое начальное состояние
+                this.$nextTick(() => {
+                    this.saveInitialState();
+                });
             },
             deep: true,
             immediate: true

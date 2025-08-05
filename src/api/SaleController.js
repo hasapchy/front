@@ -9,7 +9,6 @@ export default class SaleController {
     try {
       const response = await api.get(`/sales?page=${page}`);
       const data = response.data;
-      // console.log(data);
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {
         var client = null;

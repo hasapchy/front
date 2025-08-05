@@ -35,6 +35,8 @@
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите отмену списания. Данные будут отражены на стоке!'"
         :confirm-text="'Удалить запись списания'" :leave-text="'Отмена'" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
 </template>
 
 
@@ -46,10 +48,12 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import formChangesMixin from "@/mixins/formChangesMixin";
+
 
 export default {
-    mixins: [getApiErrorMessage],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    mixins: [getApiErrorMessage, formChangesMixin],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, ProductSearch },
     props: {
         editingItem: { type: WarehouseWriteoffDto, required: false, default: null }
@@ -70,6 +74,15 @@ export default {
         this.fetchAllWarehouses();
     },
     methods: {
+                // Переопределяем метод getFormState из миксина
+        getFormState() {
+            return {
+                warehouseId: this.warehouseId,
+                date: this.date,
+                note: this.note,
+                products: [...this.products]
+            };
+        },
         async fetchAllWarehouses() {
             this.allWarehouses = await WarehouseController.getAllItems();
             if (!this.warehouseId && !this.editingItem && this.allWarehouses.length > 0) {
@@ -128,13 +141,14 @@ export default {
             this.warehouseId = '';
             this.products = [];
             this.editingItemId = null;
+            this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
             this.deleteDialog = true;
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
-        },
+        }
     },
     watch: {
         editingItem: {

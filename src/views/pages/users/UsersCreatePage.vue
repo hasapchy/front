@@ -80,6 +80,8 @@
 
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление пользователя'" :confirm-text="'Удалить'" :leave-text="'Отмена'" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
 </template>
 
 <script>
@@ -87,6 +89,8 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UsersController from '@/api/UsersController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import formChangesMixin from "@/mixins/formChangesMixin";
+
 import {
     permissionIcon,
     permissionLabel,
@@ -98,8 +102,8 @@ import TabBar from '@/views/components/app/forms/TabBar.vue';
 import AuthController from '@/api/AuthController';
 
 export default {
-    mixins: [getApiErrorMessage],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
+    mixins: [getApiErrorMessage, formChangesMixin],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, TabBar },
     props: {
         editingItem: { type: Object, required: false, default: null },
@@ -155,6 +159,12 @@ export default {
     created() {
         this.fetchPermissions();
     },
+    mounted() {
+        // Сохраняем начальное состояние после монтирования компонента
+        this.$nextTick(() => {
+            this.saveInitialState();
+        });
+    },
     watch: {
         editingItem: {
             handler(newEditingItem) {
@@ -173,6 +183,16 @@ export default {
         },
     },
     methods: {
+                // Переопределяем метод getFormState из миксина
+        getFormState() {
+            return {
+                name: this.form.name,
+                email: this.form.email,
+                password: this.form.password,
+                position: this.form.position,
+                permissions: [...this.form.permissions]
+            };
+        },
         async fetchPermissions() {
             this.allPermissions = await UsersController.getAllPermissions();
         },
@@ -183,6 +203,7 @@ export default {
             this.form.position = '';
             this.form.permissions = [];
             this.editingItemId = null;
+            this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         isGroupChecked(group) {
             const groupPermissions = this.allPermissions
@@ -241,8 +262,7 @@ export default {
                 this.$emit('saved-error', this.getApiErrorMessage(e));
             }
             this.saveLoading = false;
-        }
-        ,
+        },
         changeTab(tab) {
             this.currentTab = tab;
         },
@@ -265,5 +285,26 @@ export default {
             this.deleteDialog = false;
         },
     },
+    watch: {
+        editingItem: {
+            handler(newEditingItem) {
+                if (newEditingItem) {
+                    this.form.name = newEditingItem.name || '';
+                    this.form.email = newEditingItem.email || '';
+                    this.form.position = newEditingItem.position || '';
+                    this.form.permissions = newEditingItem.permissions || [];
+                    this.editingItemId = newEditingItem.id || null;
+                } else {
+                    this.clearForm();
+                }
+                // Сохраняем новое начальное состояние
+                this.$nextTick(() => {
+                    this.saveInitialState();
+                });
+            },
+            deep: true,
+            immediate: true
+        }
+    }
 };
 </script>

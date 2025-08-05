@@ -46,9 +46,9 @@
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
         </div>
     </transition>
-    <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
-        <TransactionCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" :editingItem="editingItem" :default-cash-id="cashRegisterId || null" />
+    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
+        <TransactionCreatePage ref="transactioncreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" :default-cash-id="cashRegisterId || null" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
@@ -121,6 +121,15 @@ export default {
     methods: {
         updateBalace() {
             this.$refs.balanceRef.fetchItems();
+        },
+        handleModalClose() {
+            // Проверяем, есть ли изменения в форме
+            const formRef = this.$refs.transactioncreatepageForm;
+            if (formRef && formRef.handleCloseRequest) {
+                formRef.handleCloseRequest();
+            } else {
+                this.closeModal();
+            }
         },
         async fetchAllCashRegisters() {
             this.allCashRegisters = await CashRegisterController.getAllItems();

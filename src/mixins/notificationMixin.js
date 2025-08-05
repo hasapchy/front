@@ -1,3 +1,5 @@
+import soundManager from '@/utils/soundUtils.js';
+
 export default {
   data() {
     return {
@@ -19,6 +21,13 @@ export default {
       this.notificationIsDanger = isDanger;
       this.notification = true;
 
+      // Воспроизводим звук
+      if (isDanger) {
+        soundManager.playError();
+      } else {
+        soundManager.playSuccess();
+      }
+
       this.notificationTimeoutId = setTimeout(() => {
         this.notification = false;
       }, 10000);
@@ -26,6 +35,6 @@ export default {
     closeNotification() {
       clearTimeout(this.notificationTimeoutId);
       this.notification = false;
-    },
+    }
   },
 };

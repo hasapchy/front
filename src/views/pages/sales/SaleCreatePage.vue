@@ -80,6 +80,8 @@
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="'Подтвердите удаление. Данные будут отражены на стоке и балансе клиента!'"
         :confirm-text="'Удалить продажу'" :leave-text="'Отмена'" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
 </template>
 
 <script>
@@ -94,10 +96,12 @@ import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import ClientSearch from "@/views/components/app/search/ClientSearch.vue";
 import ProductSearch from "@/views/components/app/search/ProductSearch.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import formChangesMixin from "@/mixins/formChangesMixin";
+
 
 export default {
-    mixins: [getApiErrorMessage],
-    emits: ["saved", "saved-error", "deleted", "deleted-error"],
+    mixins: [getApiErrorMessage, formChangesMixin],
+    emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
     components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch, },
     props: {
         editingItem: { type: SaleDto, required: false, default: null, },
@@ -132,6 +136,12 @@ export default {
         this.fetchAllProjects();
         this.fetchCurrencies();
         this.fetchAllCashRegisters();
+    },
+    mounted() {
+        // Сохраняем начальное состояние после монтирования компонента
+        this.$nextTick(() => {
+            this.saveInitialState();
+        });
     },
     computed: {
         selectedCurrency() {
@@ -169,6 +179,25 @@ export default {
         }
     },
     methods: {
+        // Переопределяем метод getFormState из миксина
+        getFormState() {
+            return {
+                selectedClient: this.selectedClient?.id || null,
+                date: this.date,
+                type: this.type,
+                cashId: this.cashId,
+                projectId: this.projectId,
+                note: this.note,
+                warehouseId: this.warehouseId,
+                products: this.products.map(p => ({
+                    productId: p.productId,
+                    quantity: p.quantity,
+                    price: p.price
+                })),
+                discount: this.discount,
+                discountType: this.discountType,
+            };
+        },
         async fetchAllWarehouses() {
             this.allWarehouses = await WarehouseController.getAllItems();
         },
@@ -205,7 +234,7 @@ export default {
                         price: p.price,
                     })),
                 };
-                // console.log("Saving sale with formData:", formData);
+
                 let resp;
                 if (this.editingItemId != null) {
                     resp = await SaleController.updateItem(this.editingItemId, formData);
@@ -249,6 +278,7 @@ export default {
             this.selectedClient = null;
             this.products = [];
             this.editingItemId = null;
+            this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -300,6 +330,10 @@ export default {
                 } else {
                     this.clearForm();
                 }
+                // Сохраняем новое начальное состояние
+                this.$nextTick(() => {
+                    this.saveInitialState();
+                });
             },
             deep: true,
             immediate: true,
