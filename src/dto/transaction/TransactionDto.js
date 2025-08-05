@@ -18,7 +18,6 @@ export default class TransactionDto {
     origCurrencyName,
     origCurrencyCode,
     origCurrencySymbol,
-    order_id = null,
     userId,
     userName,
     categoryId,
@@ -31,7 +30,8 @@ export default class TransactionDto {
     note = "",
     date = "",
     createdAt = "",
-    updatedAt = ""
+    updatedAt = "",
+    orders = []
   ) {
     this.id = id;
     this.type = type;
@@ -48,7 +48,6 @@ export default class TransactionDto {
     this.origCurrencyName = origCurrencyName;
     this.origCurrencyCode = origCurrencyCode;
     this.origCurrencySymbol = origCurrencySymbol;
-    this.orderId = order_id;
     this.userId = userId;
     this.userName = userName;
     this.categoryId = categoryId;
@@ -63,6 +62,7 @@ export default class TransactionDto {
     this.date = date;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+    this.orders = orders;
   }
 
   typeName() {

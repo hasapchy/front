@@ -13,9 +13,9 @@ export default {
       clearTimeout(this.notificationTimeoutId);
 
       this.notificationTitle = title;
-      this.notificationSubtitle = Array.isArray(subtitle)
-        ? subtitle
-        : subtitle?.toString().split("\n");
+      // Если subtitle уже массив (например, от getApiErrorMessage), используем его как есть
+      // Если это строка, используем её напрямую без разделения
+      this.notificationSubtitle = Array.isArray(subtitle) ? subtitle : subtitle;
       this.notificationIsDanger = isDanger;
       this.notification = true;
 

@@ -168,15 +168,7 @@ export default {
             this.fetchItems(this.data.currentPage, true);
         },
 
-        showNotification(title, subtitle = "", isDanger = false) {
-            this.notificationTitle = title;
-            this.notificationSubtitle = subtitle;
-            this.notificationIsDanger = isDanger;
-            this.notification = true;
-            setTimeout(() => {
-                this.notification = false;
-            }, 10000);
-        },
+
         
         async fetchStatuses() {
             this.statuses = await OrderStatusController.getAllItems();

@@ -104,6 +104,8 @@
   </div>
   <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
     :descr="'Подтвердите удаление клиента'" :confirm-text="'Удалить клиента'" :leave-text="'Отмена'" />
+  <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
+    :is-danger="notificationIsDanger" @close="closeNotification" />
 </template>
 
 <script>
@@ -111,15 +113,17 @@ import ClientController from "@/api/ClientController";
 import ClientDto from "@/dto/client/ClientDto";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
+import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import TabBar from "@/views/components/app/forms/TabBar.vue";
 import Inputmask from "inputmask";
 import ClientBalanceTab from "@/views/pages/clients/ClientBalanceTab.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import notificationMixin from "@/mixins/notificationMixin";
 
 export default {
-  mixins: [getApiErrorMessage],
+  mixins: [getApiErrorMessage, notificationMixin],
   emits: ["saved", "saved-error", "deleted", "deleted-error"],
-  components: { PrimaryButton, AlertDialog, TabBar, ClientBalanceTab },
+  components: { PrimaryButton, AlertDialog, NotificationToast, TabBar, ClientBalanceTab },
   props: {
     editingItem: { type: ClientDto, default: null },
     defaultFirstName: { type: String, default: "" },
@@ -232,7 +236,8 @@ export default {
           this.clearForm();
         }
       } catch (error) {
-        this.$emit("saved-error", this.getApiErrorMessage(error));
+        const errorMessage = this.getApiErrorMessage(error);
+        this.$emit("saved-error", errorMessage);
       }
       this.saveLoading = false;
     },

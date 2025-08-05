@@ -3,6 +3,21 @@ import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
 export default class OrderDto {
   constructor(
     id,
+    note = "",
+    description = "",
+    statusId,
+    statusName,
+    categoryId,
+    categoryName,
+    clientId,
+    userId,
+    userName,
+    cashId,
+    cashName,
+    warehouseId,
+    warehouseName,
+    projectId,
+    projectName,
     price,
     discount,
     totalPrice,
@@ -10,27 +25,28 @@ export default class OrderDto {
     currencyName,
     currencyCode,
     currencySymbol,
-    cashId,
-    cashName,
-    warehouseId,
-    warehouseName,
-    userId,
-    userName,
-    projectId,
-    projectName,
-    statusId,
-    statusName,
-    categoryId,
-    categoryName,
-    client = null,
-    products = null,
-    note = "",
-    description = "",
     date = "",
     createdAt = "",
-    updatedAt = ""
+    updatedAt = "",
+    client = null,
+    products = null
   ) {
     this.id = id;
+    this.note = note;
+    this.description = description;
+    this.statusId = statusId;
+    this.statusName = statusName;
+    this.categoryId = categoryId;
+    this.categoryName = categoryName;
+    this.clientId = clientId;
+    this.userId = userId;
+    this.userName = userName;
+    this.cashId = cashId;
+    this.cashName = cashName;
+    this.warehouseId = warehouseId;
+    this.warehouseName = warehouseName;
+    this.projectId = projectId;
+    this.projectName = projectName;
     this.price = price;
     this.discount = discount;
     this.totalPrice = totalPrice;
@@ -38,25 +54,11 @@ export default class OrderDto {
     this.currencyName = currencyName;
     this.currencyCode = currencyCode;
     this.currencySymbol = currencySymbol;
-    this.cashId = cashId;
-    this.cashName = cashName;
-    this.warehouseId = warehouseId;
-    this.warehouseName = warehouseName;
-    this.userId = userId;
-    this.userName = userName;
-    this.projectId = projectId;
-    this.projectName = projectName;
-    this.statusId = statusId;
-    this.statusName = statusName;
-    this.categoryId = categoryId;
-    this.categoryName = categoryName;
-    this.client = client;
-    this.products = products;
-    this.note = note;
-    this.description = description;
     this.date = date;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+    this.client = client;
+    this.products = products;
   }
 
   priceInfo() {

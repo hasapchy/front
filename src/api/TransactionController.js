@@ -61,7 +61,6 @@ export default class TransactionController {
           item.orig_currency_name,
           item.orig_currency_code,
           item.orig_currency_symbol,
-          item.order_id,
           item.user_id,
           item.user_name,
           item.category_id,
@@ -74,7 +73,8 @@ export default class TransactionController {
           item.note,
           item.date,
           item.created_at,
-          item.updated_at
+          item.updated_at,
+          item.orders || []
         );
       });
 
@@ -115,6 +115,19 @@ export default class TransactionController {
       return data;
     } catch (error) {
       console.error("Ошибка при создании транзакции:", error);
+      throw error;
+    }
+  }
+
+  static async createTransactionForOrder(orderId, transactionData) {
+    try {
+      const { data } = await api.post("/transactions", {
+        ...transactionData,
+        order_id: orderId
+      });
+      return data;
+    } catch (error) {
+      console.error("Ошибка при создании транзакции для заказа:", error);
       throw error;
     }
   }

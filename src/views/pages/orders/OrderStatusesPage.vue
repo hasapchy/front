@@ -79,13 +79,7 @@ export default {
             }
             if (!silent) this.loading = false;
         },
-        showNotification(title, subtitle, isDanger = false) {
-            this.notificationTitle = title;
-            this.notificationSubtitle = subtitle;
-            this.notificationIsDanger = isDanger;
-            this.notification = true;
-            setTimeout(() => { this.notification = false; }, 10000);
-        },
+
         handleSaved() {
             this.showNotification('Статус успешно добавлен', '', false);
             this.fetchItems(this.data?.currentPage || 1, true);

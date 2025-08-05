@@ -51,6 +51,21 @@ export default class OrderController {
         }
         return new OrderDto(
           item.id,
+          item.note ?? "",
+          item.description ?? "",
+          item.status_id,
+          item.status_name,
+          item.category_id,
+          item.category_name,
+          item.client_id,
+          item.user_id,
+          item.user_name,
+          item.cash_id ?? null,
+          item.cash_name ?? null,
+          item.warehouse_id,
+          item.warehouse_name,
+          item.project_id,
+          item.project_name,
           item.price,
           item.discount ?? 0,
           item.total_price,
@@ -58,25 +73,11 @@ export default class OrderController {
           item.currency_name,
           item.currency_code,
           item.currency_symbol,
-          item.cash_id ?? null,
-          item.cash_name ?? null,
-          item.warehouse_id,
-          item.warehouse_name,
-          item.user_id,
-          item.user_name,
-          item.project_id,
-          item.project_name,
-          item.status_id,
-          item.status_name,
-          item.category_id,
-          item.category_name,
-          client,
-          products,
-          item.note ?? "",
-          item.description ?? "",
           item.date,
           item.created_at,
-          item.updated_at
+          item.updated_at,
+          client,
+          products
         );
       });
       const paginatedResponse = new PaginatedResponse(
@@ -147,5 +148,39 @@ export default class OrderController {
   static async getItem(id) {
     const { data } = await api.get(`/orders/${id}`);
     return data;
+  }
+
+  static async getOrderTransactions(orderId) {
+    try {
+      const response = await api.get(`/transactions`, {
+        params: { order_id: orderId }
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Ошибка при получении транзакций заказа:", error);
+      throw error;
+    }
+  }
+
+  static async linkTransactionToOrder(orderId, transactionId) {
+    try {
+      const { data } = await api.post(`/orders/${orderId}/transactions`, {
+        transaction_id: transactionId
+      });
+      return data;
+    } catch (error) {
+      console.error("Ошибка при связывании транзакции с заказом:", error);
+      throw error;
+    }
+  }
+
+  static async unlinkTransactionFromOrder(orderId, transactionId) {
+    try {
+      const { data } = await api.delete(`/orders/${orderId}/transactions/${transactionId}`);
+      return data;
+    } catch (error) {
+      console.error("Ошибка при отвязывании транзакции от заказа:", error);
+      throw error;
+    }
   }
 }

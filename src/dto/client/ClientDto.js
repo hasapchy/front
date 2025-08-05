@@ -25,7 +25,7 @@ export default class ClientDto {
   ) {
     this.id = id; // Идентификатор клиента
     this.clientType = clientType; // Тип клиента
-    this.balance = balance; // Баланс клиента
+    this.balance = balance === null ? 0 : balance; // Баланс клиента
     this.isSupplier =
       isSupplier == 1 || isSupplier == "1" || isSupplier == true ? true : false; // Является ли поставщиком
     this.isConflict =
@@ -134,10 +134,21 @@ export default class ClientDto {
   }
   static fromApi(data) {
     if (!data) return null;
+    
+    // Извлекаем значение balance из объекта или используем 0
+    let balanceValue = 0;
+    if (data.balance) {
+      if (typeof data.balance === 'object' && data.balance.balance) {
+        balanceValue = data.balance.balance;
+      } else if (typeof data.balance === 'string' || typeof data.balance === 'number') {
+        balanceValue = data.balance;
+      }
+    }
+    
     return new ClientDto(
       data.id,
       data.client_type,
-      data.balance,
+      balanceValue,
       data.is_supplier,
       data.is_conflict,
       data.first_name,

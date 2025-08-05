@@ -25,20 +25,26 @@
                             Создать клиента "{{ clientSearch }}"
                         </button>
                     </li>
-                    <li v-for="client in clientResults" :key="client.id" @mousedown.prevent="() => selectClient(client)"
-                        class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                        <div class="flex justify-between">
-                            <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                            <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
-                        </div>
-                        <span
-                            :class="client.balance == 0 ? 'text-[#337AB7]' : client.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
-                            {{ client.balanceFormatted() }}
-                            <span v-if="client.balanceNumeric() > 0">(Клиент должен нам)</span>
-                            <span v-else-if="client.balanceNumeric() < 0">(Мы должны клиенту)</span>
-                            <span v-else>(Взаимный расчет)</span>
-                        </span>
-                    </li>
+                                         <li v-for="client in clientResults" :key="client.id" @mousedown.prevent="() => selectClient(client)"
+                         class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
+                         <div class="flex justify-between">
+                             <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
+                             <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
+                         </div>
+                         <span
+                             :class="client.balanceNumeric() == 0 ? 'text-[#337AB7]' : client.balanceNumeric() > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
+                             {{ client.balanceFormatted() }}
+                             <span v-if="client.balanceNumeric() > 0">(Клиент должен нам)</span>
+                             <span v-else-if="client.balanceNumeric() < 0">(Мы должны клиенту)</span>
+                             <span v-else>(Взаимный расчет)</span>
+                         </span>
+                     </li>
+                     <li v-if="clientResults.length > 0" class="p-2 border-t border-gray-300 bg-gray-50">
+                         <button class="text-blue-600 underline cursor-pointer w-full text-left"
+                             @mousedown.prevent="openCreateClientModal">
+                             <i class="fas fa-plus mr-2"></i>Создать клиента "{{ clientSearch }}"
+                         </button>
+                     </li>
                 </ul>
             </transition>
         </div>
@@ -66,8 +72,7 @@
         </div>
     </div>
     <SideModalDialog :showForm="modalCreateClient" :onclose="() => modalCreateClient = false" :level="1">
-        <ClientCreatePage :editingItem="null" :defaultFirstName="defaultClientName" @saved="onClientCreated"
-            @saved-error="() => modalCreateClient = false" />
+        <ClientCreatePage :editingItem="null" :defaultFirstName="defaultClientName" @saved="onClientCreated" @saved-error="onClientCreatedError" />
     </SideModalDialog>
 </template>
 
@@ -155,6 +160,8 @@ export default {
             if (newClient) {
                 this.selectClient(ClientDto.fromApi(newClient));
             }
+        },
+        onClientCreatedError(error) {
         }
     },
     watch: {

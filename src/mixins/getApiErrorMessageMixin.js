@@ -6,16 +6,18 @@ export default {
       if (error?.response?.data) {
         const data = error.response.data;
 
-        if (typeof data.message === "string") {
-          messages.push(data.message);
-        }
-
+        // Сначала проверяем наличие детальных ошибок валидации
         if (typeof data.errors === "object") {
           for (const field in data.errors) {
             if (Array.isArray(data.errors[field])) {
               messages.push(...data.errors[field]);
             }
           }
+        }
+
+        // Если нет детальных ошибок, добавляем общее сообщение
+        if (messages.length === 0 && typeof data.message === "string") {
+          messages.push(data.message);
         }
       }
 

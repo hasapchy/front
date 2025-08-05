@@ -80,7 +80,7 @@ export default {
         itemMapper(i, c) {
             switch (c) {
                 case 'balance':
-                    return i.balance + ' ' + i.currency_symbol;
+                    return (i.balance || 0) + ' ' + i.currency_symbol;
                 case 'users':
                     return (i.users || '').length + ' пользователей(-ль)';
                 case 'createdAt':
