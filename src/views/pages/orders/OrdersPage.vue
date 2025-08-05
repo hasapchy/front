@@ -25,7 +25,7 @@
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
 
         <template #timeline>
-            <TimelinePanel v-if="editingItem && !timelineCollapsed" :type="'order'" :id="editingItem.id" @toggle-timeline="toggleTimeline" />
+            <TimelinePanel ref="timelinePanel" v-if="editingItem && !timelineCollapsed" :type="'order'" :id="editingItem.id" @toggle-timeline="toggleTimeline" />
         </template>
     </SideModalDialog>
 
@@ -155,6 +155,10 @@ export default {
         handleSaved() {
             this.showNotification("Заказ сохранён", "", false);
             this.fetchItems(this.data.currentPage, true);
+            // Обновляем таймлайн если он открыт
+            if (this.$refs.timelinePanel && !this.timelineCollapsed) {
+                this.$refs.timelinePanel.refreshTimeline();
+            }
             this.closeModal();
         },
 
@@ -165,6 +169,8 @@ export default {
         handleDeleted() {
             this.showNotification("Заказ удалён", "", false);
             this.fetchItems(this.data.currentPage, true);
+            // Закрываем таймлайн при удалении заказа
+            this.timelineCollapsed = true;
             this.closeModal();
         },
 
@@ -175,6 +181,10 @@ export default {
         handleSavedSilent() {
             this.showNotification("Заказ сохранён", "", false);
             this.fetchItems(this.data.currentPage, true);
+            // Обновляем таймлайн если он открыт
+            if (this.$refs.timelinePanel && !this.timelineCollapsed) {
+                this.$refs.timelinePanel.refreshTimeline();
+            }
         },
 
 
@@ -190,6 +200,11 @@ export default {
                 await OrderController.batchUpdateStatus({ ids, status_id: statusId });
                 await this.fetchItems(this.data.currentPage, true);
                 this.showNotification("Статус обновлён", "", false);
+                
+                // Обновляем таймлайн если редактируемый заказ был изменен
+                if (this.editingItem && ids.includes(this.editingItem.id) && this.$refs.timelinePanel && !this.timelineCollapsed) {
+                    this.$refs.timelinePanel.refreshTimeline();
+                }
             } catch (e) {
                 const errors = this.getApiErrorMessage(e);
                 this.showNotification("Ошибка смены статуса", errors.join("\n"), true);
@@ -207,10 +222,14 @@ export default {
         showModal(item) {
             this.editingItem = item;
             this.modalDialog = true;
+            // Сбрасываем состояние таймлайна при открытии нового заказа
+            this.timelineCollapsed = true;
         },
         closeModal() {
             this.modalDialog = false;
             this.editingItem = null;
+            // Закрываем таймлайн при закрытии модального окна
+            this.timelineCollapsed = true;
         },
     },
 };
