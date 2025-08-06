@@ -60,7 +60,6 @@ export default class ProductController {
         },
       });
       const data = response.data;
-      // Преобразуем полученные данные в DTO
       const items = data.map((item) => {
         return new ProductDto({
           id: item.id,

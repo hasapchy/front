@@ -97,5 +97,32 @@ class ProductDto {
     }
     return null;
   }
+
+  static fromApi(data) {
+    if (!data) return null;
+    
+    return new ProductDto({
+      id: data.id,
+      type: data.type,
+      name: data.name,
+      description: data.description,
+      sku: data.sku,
+      image: data.image,
+      category_id: data.category_id,
+      category_name: data.category_name,
+      stock_quantity: data.stock_quantity,
+      unit_id: data.unit_id,
+      unit_name: data.unit_name,
+      unit_short_name: data.unit_short_name,
+      unit_calc_area: data.unit_calc_area,
+      barcode: data.barcode,
+      is_serialized: data.is_serialized,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      retail_price: data.retail_price,
+      wholesale_price: data.wholesale_price,
+      purchase_price: data.purchase_price,
+    });
+  }
 }
 export default ProductDto;
