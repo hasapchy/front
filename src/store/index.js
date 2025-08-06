@@ -6,6 +6,10 @@ export default createStore({
     permissions: [],
     settings_open: false,
     searchQuery: "",
+    notification: false,
+    notificationTitle: "",
+    notificationSubtitle: "",
+    notificationIsDanger: false,
   },
 
   mutations: {
@@ -21,6 +25,15 @@ export default createStore({
     SET_SEARCH_QUERY(state, query) {
       state.searchQuery = query;
     },
+    SHOW_NOTIFICATION(state, { title, subtitle, isDanger }) {
+      state.notificationTitle = title;
+      state.notificationSubtitle = subtitle;
+      state.notificationIsDanger = isDanger;
+      state.notification = true;
+    },
+    CLOSE_NOTIFICATION(state) {
+      state.notification = false;
+    },
   },
 
   actions: {
@@ -33,11 +46,24 @@ export default createStore({
     setPermissions({ commit }, permissions) {
       commit("SET_PERMISSIONS", permissions);
     },
+    showNotification({ commit }, { title, subtitle = '', isDanger = false }) {
+      commit('SHOW_NOTIFICATION', { title, subtitle, isDanger });
+      setTimeout(() => {
+        commit('CLOSE_NOTIFICATION');
+      }, 10000);
+    },
+    closeNotification({ commit }) {
+      commit('CLOSE_NOTIFICATION');
+    },
   },
 
   getters: {
     user: (state) => state.user,
     permissions: (state) => state.permissions,
     hasPermission: (state) => (perm) => state.permissions.includes(perm),
+    notification: (state) => state.notification,
+    notificationTitle: (state) => state.notificationTitle,
+    notificationSubtitle: (state) => state.notificationSubtitle,
+    notificationIsDanger: (state) => state.notificationIsDanger,
   },
 });

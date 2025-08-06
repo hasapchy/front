@@ -6,17 +6,21 @@
             <div class="ml-4">
                 <select v-model="warehouseId" @change="fetchItems" class="p-2 border rounded">
                     <option value="">Все склады</option>
-                    <option v-if="allWarehouses.length" v-for="parent in allWarehouses" :value="parent.id">
-                        {{ parent.name }}
-                    </option>
+                    <template v-if="allWarehouses.length">
+                        <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">
+                            {{ parent.name }}
+                        </option>
+                    </template>
                 </select>
             </div>
             <div class="ml-2">
                 <select v-model="categoryId" @change="fetchItems" class="p-2 border rounded">
                     <option value="">Все категории</option>
-                    <option v-if="allCategories.length" v-for="parent in allCategories" :value="parent.id">
-                        {{ parent.name }}
-                    </option>
+                    <template v-if="allCategories.length">
+                        <option v-for="parent in allCategories" :key="parent.id" :value="parent.id">
+                            {{ parent.name }}
+                        </option>
+                    </template>
                 </select>
             </div>
         </div>
@@ -41,7 +45,7 @@
 
     <SideModalDialog :showForm="modalCreateProduct" :onclose="() => modalCreateProduct = false" :level="1">
         <ProductsCreatePage :defaultType="'product'" @saved="onProductSaved"
-            @saved-error="() => modalCreateProduct = false" />
+            @saved-error="handleSavedError" />
     </SideModalDialog>
 
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
@@ -158,7 +162,7 @@ export default {
             this.showNotification('Товар успешно обновлен', '');
         },
         handleSavedError(err) {
-            this.showNotification('Ошибка сохранения товара', err.message, true);
+            this.showNotification('Ошибка сохранения товара', err, true);
         },
         async showModal(item) {
             // Получаем все товары на текущей странице (или ищем по id)

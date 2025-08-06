@@ -146,7 +146,7 @@
     </div>
     <SideModalDialog :showForm="modalCreateProduct" :onclose="() => modalCreateProduct = false" :level="1">
         <ProductsCreatePage :defaultType="defaultProductType" :defaultName="defaultProductName" :editingItem="null"
-            @saved="onProductCreated" @saved-error="() => modalCreateProduct = false" />
+            @saved="onProductCreated" @saved-error="onProductCreatedError" />
     </SideModalDialog>
 </template>
 
@@ -158,8 +158,10 @@ import WarehouseReceiptProductDto from '@/dto/warehouse/WarehouseReceiptProductD
 import SaleProductDto from '@/dto/sale/SaleProductDto';
 import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import notificationMixin from '@/mixins/notificationMixin';
 
 export default {
+    mixins: [notificationMixin],
     components: {
         ProductsCreatePage,
         SideModalDialog,
@@ -366,6 +368,9 @@ export default {
             if (newProduct) {
                 this.selectProduct(newProduct);
             }
+        },
+        onProductCreatedError(error) {
+            this.showNotification('Ошибка создания товара', error, true);
         },
     },
     watch: {

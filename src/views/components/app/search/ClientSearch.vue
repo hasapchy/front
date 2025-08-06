@@ -83,8 +83,10 @@ import debounce from 'lodash.debounce';
 import { defineAsyncComponent } from 'vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import ClientDto from '@/dto/client/ClientDto';
+import notificationMixin from '@/mixins/notificationMixin';
 
 export default {
+    mixins: [notificationMixin],
     components: {
         ClientCreatePage: defineAsyncComponent(() => import('@/views/pages/clients/ClientCreatePage.vue')),
         SideModalDialog,
@@ -161,7 +163,8 @@ export default {
             }
         },
         onClientCreatedError(error) {
-        }
+            this.showNotification('Ошибка создания клиента', error, true);
+        },
     },
     watch: {
         clientSearch: {
