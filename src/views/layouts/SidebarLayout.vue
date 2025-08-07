@@ -11,6 +11,13 @@
                     <router-view />
                 </main>
             </div>
+            <NotificationToast
+                :title="$store.getters.notificationTitle"
+                :subtitle="$store.getters.notificationSubtitle"
+                :show="$store.getters.notification"
+                :is-danger="$store.getters.notificationIsDanger"
+                @close="$store.dispatch('closeNotification')"
+            />
         </div>
         <div v-else key="loader" class="h-screen flex items-center justify-center">
             <i class="fas fa-spinner fa-spin text-2xl"></i>
@@ -22,12 +29,14 @@
 import AppHeaderComponent from '../components/app/AppHeaderComponent.vue';
 import AppSidebarComponent from '../components/app/sidebar/AppSidebarComponent.vue';
 import AppSettingsSidebarComponent from '../components/app/sidebar/AppSettingsSidebarComponent.vue';
+import NotificationToast from '../components/app/dialog/NotificationToast.vue';
 
 export default {
     components: {
         AppHeaderComponent,
         AppSidebarComponent,
-        AppSettingsSidebarComponent
+        AppSettingsSidebarComponent,
+        NotificationToast
     }
 }
 </script>

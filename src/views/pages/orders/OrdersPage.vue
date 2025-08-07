@@ -163,7 +163,7 @@ export default {
         },
 
         handleSavedError(err) {
-            this.showNotification("Ошибка сохранения заказа", err.message, true);
+            this.showNotification("Ошибка сохранения заказа", err, true);
         },
 
         handleDeleted() {
@@ -175,7 +175,7 @@ export default {
         },
 
         handleDeletedError(err) {
-            this.showNotification("Ошибка удаления заказа", err.message, true);
+            this.showNotification("Ошибка удаления заказа", err, true);
         },
 
         handleSavedSilent() {
