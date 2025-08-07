@@ -21,6 +21,7 @@ import OrdersPage from "@/views/pages/orders/OrdersPage.vue";
 import OrderStatusesPage from "@/views/pages/orders/OrderStatusesPage.vue";
 import OrderCategoriesPage from "@/views/pages/orders/OrderCategoriesPage.vue";
 import UsersPage from "@/views/pages/users/UsersPage.vue";
+import SystemSettingsPage from "@/views/pages/settings/SystemSettingsPage.vue";
 
 const routes = [
   {
@@ -186,6 +187,16 @@ const routes = [
               path: "/transactions",
             },
           ],
+        },
+      },
+      {
+        path: "/settings",
+        name: "Settings",
+        component: SystemSettingsPage,
+        meta: { 
+          title: "Настройки системы", 
+          requiresAuth: true,
+          permission: "system_settings_view"
         },
       },
     ],

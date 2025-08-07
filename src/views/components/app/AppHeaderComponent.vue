@@ -3,7 +3,7 @@
         <div class="container">
             <div class="flex items-center justify-between">
                 <div class="flex items-end gap-6">
-                    <h1 class="text-xl font-semibold">{{ title }}</h1>
+                    <h1 class="text-xl font-semibold">{{ displayTitle }}</h1>
                     <!-- Табы -->
                     <div class="flex">
                         <router-link v-for="tab in binded" :key="tab.path" :to="tab.path"
@@ -29,8 +29,10 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import AuthController from '@/api/AuthController';
+import SettingsController from '@/api/SettingsController';
 import PrimaryButton from './buttons/PrimaryButton.vue';
 import Search from '@/views/components/app/search/Search.vue';
+import { eventBus } from '@/eventBus';
 
 export default {
     components: {
@@ -46,14 +48,49 @@ export default {
             title,
             binded,
             showSearch,
+            settings: {
+                company_name: '',
+                company_logo: ''
+            }
         };
     },
+    
+    async mounted() {
+        await this.loadSettings();
+        // Слушаем события обновления настроек
+        eventBus.on('settings-updated', this.loadSettings);
+    },
+    
+    beforeUnmount() {
+        // Удаляем слушатель события
+        eventBus.off('settings-updated', this.loadSettings);
+    },
+    
     methods: {
         async logout() {
             await AuthController.logout();
             this.$store.state.user = null;
             this.$router.push('/auth/login');
         },
+        
+        async loadSettings() {
+            try {
+                const data = await SettingsController.getSettings();
+                this.settings = data;
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
     },
+    
+    computed: {
+        // Переопределяем title для отображения названия компании на главной странице
+        displayTitle() {
+            if (this.$route.path === '/' && this.settings.company_name) {
+                return this.settings.company_name;
+            }
+            return this.title;
+        }
+    }
 };
 </script>
