@@ -38,12 +38,7 @@
                     </li>
                 </template>
                 <li v-else-if="productSearch.length < 3" class="p-2 text-gray-500">Минимум 3 символа</li>
-                <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">Не найдено
-                    <button class="text-blue-600 underline ml-2 cursor-pointer"
-                        @mousedown.prevent="openCreateProductModal">
-                        Создать "{{ productSearch }}"
-                    </button>
-                </li>
+                <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
                 <li v-else v-for="product in productResults" :key="product.id"
                     @mousedown.prevent="selectProduct(product)"
                     class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
@@ -63,6 +58,25 @@
                                 ∞
                             </template>
                         </div>
+                    </div>
+                </li>
+                <li class="p-2 border-t border-gray-300 bg-gray-50 sticky bottom-0">
+                    <div class="flex space-x-2">
+                                                 <PrimaryButton 
+                             :is-info="true" 
+                             :is-full="true"
+                             icon="fas fa-plus"
+                             @mousedown.prevent="openCreateProductModal">
+                             Создать товар/услугу{{ productSearch ? ` "${productSearch}"` : '' }}
+                         </PrimaryButton>
+                                                 <PrimaryButton 
+                             v-if="isOrder"
+                             :is-light="true" 
+                             :is-full="true"
+                             icon="fas fa-plus"
+                             @mousedown.prevent="openCreateTempProductModal">
+                             Создать временный товар{{ productSearch ? ` "${productSearch}"` : '' }}
+                         </PrimaryButton>
                     </div>
                 </li>
             </ul>
@@ -148,23 +162,32 @@
         <ProductsCreatePage :defaultType="defaultProductType" :defaultName="defaultProductName" :editingItem="null"
             @saved="onProductCreated" @saved-error="onProductCreatedError" />
     </SideModalDialog>
+    <SideModalDialog :showForm="modalCreateTempProduct" :onclose="() => modalCreateTempProduct = false" :level="1">
+        <OrderTempProductCreatePage :defaultName="defaultProductName" :editingItem="null"
+            @saved="onTempProductCreated" @saved-error="onProductCreatedError" />
+    </SideModalDialog>
 </template>
 
 <script>
 import ProductController from '@/api/ProductController';
 import debounce from 'lodash.debounce';
+import ProductSearchDto from '@/dto/product/ProductSearchDto';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import WarehouseReceiptProductDto from '@/dto/warehouse/WarehouseReceiptProductDto';
 import SaleProductDto from '@/dto/sale/SaleProductDto';
 import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
+import OrderTempProductCreatePage from '@/views/pages/orders/OrderTempProductCreatePage.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 
 export default {
     mixins: [notificationMixin],
     components: {
         ProductsCreatePage,
+        OrderTempProductCreatePage,
         SideModalDialog,
+        PrimaryButton,
     },
     props: {
         modelValue: {
@@ -213,6 +236,10 @@ export default {
         discountType: {
             type: String,
             default: 'fixed'
+        },
+        isOrder: {
+            type: Boolean,
+            default: false
         }
     },
     data() {
@@ -223,6 +250,7 @@ export default {
             lastProducts: [],
             showDropdown: false,
             modalCreateProduct: false,
+            modalCreateTempProduct: false,
             defaultProductType: 'product',
             defaultProductName: '',
         };
@@ -363,6 +391,10 @@ export default {
             this.defaultProductName = this.productSearch;
             this.modalCreateProduct = true;
         },
+        openCreateTempProductModal() {
+            this.defaultProductName = this.productSearch;
+            this.modalCreateTempProduct = true;
+        },
         onProductCreated(newProduct) {
             this.modalCreateProduct = false;
             if (newProduct) {
@@ -371,6 +403,25 @@ export default {
         },
         onProductCreatedError(error) {
             this.showNotification('Ошибка создания товара', error, true);
+        },
+        onTempProductCreated(newProduct) {
+            this.modalCreateTempProduct = false;
+            if (newProduct) {
+                // Для одноразового товара создаем специальный объект
+                const tempProduct = {
+                    productId: 'temp_' + Date.now(), // Уникальный ID для одноразового товара
+                    productName: newProduct.name,
+                    quantity: newProduct.quantity,
+                    price: newProduct.price,
+                    description: newProduct.description,
+                    unitId: newProduct.unitId,
+                    isTempProduct: true
+                };
+                
+                // Добавляем в список товаров
+                this.products = [...this.products, tempProduct];
+                this.updateTotals();
+            }
         },
     },
     watch: {

@@ -1,9 +1,7 @@
 import ClientPhoneDto from "./ClientPhoneDto";
-import ClientEmailDto from "./ClientEmailDto";
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
 
-// ClientDto описывает структуру клиента
-export default class ClientDto {
+// ClientSearchDto описывает структуру клиента для поиска (только необходимые поля)
+export default class ClientSearchDto {
   constructor(
     id,
     clientType,
@@ -13,14 +11,7 @@ export default class ClientDto {
     firstName,
     lastName,
     contactPerson,
-    address,
-    note,
     status,
-    discountType,
-    discount,
-    createdAt,
-    updatedAt,
-    emails = [],
     phones = []
   ) {
     this.id = id; // Идентификатор клиента
@@ -31,16 +22,7 @@ export default class ClientDto {
     this.firstName = firstName; // Имя клиента
     this.lastName = lastName; // Фамилия клиента
     this.contactPerson = contactPerson; // Контактное лицо
-    this.address = address; // Адрес клиента
-    this.note = note; // Заметка
     this.status = Boolean(status); // Статус клиента
-    this.discountType = discountType; // Тип скидки
-    this.discount = discount; // Скидка
-    this.createdAt = createdAt; // Дата создания клиента
-    this.updatedAt = updatedAt; // Дата обновления клиента
-    this.emails = emails.map(
-      (email) => new ClientEmailDto(email.id, email.client_id, email.email)
-    ); // Список email-ов
     this.phones = phones.map(
       (phone) => new ClientPhoneDto(phone.id, phone.client_id, phone.phone)
     ); // Список телефонов
@@ -70,7 +52,7 @@ export default class ClientDto {
         '<i class="fas fa-building text-[#3571A4] mr-2" title="Компания"></i>';
     } else {
       res +=
-        '<i class="fas fa-user text-[#3571A4] mr-2" title="Индивидульный клиент"></i>';
+        '<i class="fas fa-user text-[#3571A4] mr-2" title="Индивидуальный клиент"></i>';
     }
     if (this.isConflict) {
       res +=
@@ -83,53 +65,6 @@ export default class ClientDto {
     return res;
   }
 
-  statusIcon() {
-    if (this.status) {
-      return '<i class="fas fa-circle-check text-[#5CB85C]" title="Активен"></i>';
-    } else {
-      return '<i class="fas fa-times text-[#D53935]" title="Неактивен"></i>';
-    }
-  }
-
-  phonesHtmlList() {
-    var res = "<ul>";
-    this.phones.forEach((phone) => {
-      res += `<li>${phone.phone}</li>`;
-    });
-    res += "</ul>";
-    return res;
-  }
-  emailsHtmlList() {
-    var res = "<ul>";
-    this.emails.forEach((email) => {
-      res += `<li>${email.email}</li>`;
-    });
-    res += "</ul>";
-    return res;
-  }
-
-  discountFormatted() {
-    const discount = this.discount !== undefined ? this.discount : "";
-    let discountType = "";
-    if (this.discountType !== undefined && this.discountType) {
-      if (this.discountType === "fixed") {
-        discountType = "фиксированная";
-      } else if (this.discountType === "percent") {
-        discountType = "процентная";
-      } else {
-        discountType = this.discountType;
-      }
-    }
-    return discount + (discountType ? ` (${discountType})` : "");
-  }
-
-  formatCreatedAt() {
-    return dayjsDateTime(this.createdAt);
-  }
-
-  formatUpdatedAt() {
-    return dayjsDate(this.updatedAt);
-  }
   static fromApi(data) {
     if (!data) return null;
     
@@ -143,7 +78,7 @@ export default class ClientDto {
       }
     }
     
-    return new ClientDto(
+    return new ClientSearchDto(
       data.id,
       data.client_type,
       balanceValue,
@@ -152,14 +87,7 @@ export default class ClientDto {
       data.first_name,
       data.last_name,
       data.contact_person,
-      data.address,
-      data.note,
       data.status,
-      data.discount_type,
-      data.discount,
-      data.created_at,
-      data.updated_at,
-      data.emails || [],
       data.phones || []
     );
   }

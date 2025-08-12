@@ -36,7 +36,8 @@ input[type="file"],
 input[type="date"],
 input[type="datetime"],
 input[type="datetime-local"],
-select {
+select,
+textarea {
     width: 100%;
     padding: 7px;
     border: 1px solid #bbb;
@@ -61,14 +62,18 @@ input[type="password"]:focus-visible,
 input[type="password"]:visited,
 select:focus,
 select:focus-visible,
-select:visited {
+select:visited,
+textarea:focus,
+textarea:focus-visible,
+textarea:visited {
     outline: none;
     border-color: #337AB7 !important;
     border-width: 2px;
 }
 
 input:disabled,
-select:disabled {
+select:disabled,
+textarea:disabled {
     background-color: #f5f5f5;
     cursor: not-allowed;
 }

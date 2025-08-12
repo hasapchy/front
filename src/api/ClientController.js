@@ -1,6 +1,7 @@
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import api from "./axiosInstance";
 import ClientDto from "@/dto/client/ClientDto";
+import ClientSearchDto from "@/dto/client/ClientSearchDto";
 import ClientBalanceHistoryDto from "@/dto/client/ClientBalanceHistoryDto";
 
 export default class ClientController {
@@ -50,9 +51,9 @@ export default class ClientController {
     try {
       const response = await api.get(`/clients/search?search_request=${term}`);
       const data = response.data;
-      // Преобразуем полученные данные в DTO
+      // Преобразуем полученные данные в DTO для поиска (только необходимые поля)
       const items = data.map((item) => {
-        return new ClientDto(
+        return new ClientSearchDto(
           item.id,
           item.client_type,
           item.balance,
@@ -61,21 +62,14 @@ export default class ClientController {
           item.first_name,
           item.last_name,
           item.contact_person,
-          item.address,
-          item.note,
           item.status,
-          item.discount_type,
-          item.discount,
-          item.created_at,
-          item.updated_at,
-          item.emails,
           item.phones
         );
       });
       return items;
-    } catch (error) {
-      console.error("Ошибка при поиске клиентов:", error);
-      throw error;
+    } catch (summary) {
+      console.error("Ошибка при поиске клиентов:", summary);
+      throw summary;
     }
   }
 

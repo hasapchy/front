@@ -1,5 +1,6 @@
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import ProductDto from "@/dto/product/ProductDto";
+import ProductSearchDto from "@/dto/product/ProductSearchDto";
 import api from "./axiosInstance";
 
 export default class ProductController {
@@ -60,8 +61,9 @@ export default class ProductController {
         },
       });
       const data = response.data;
+      // Преобразуем полученные данные в DTO для поиска (только необходимые поля)
       const items = data.map((item) => {
-        return new ProductDto({
+        return new ProductSearchDto({
           id: item.id,
           type: item.type,
           name: item.name,
@@ -74,11 +76,6 @@ export default class ProductController {
           unit_id: item.unit_id,
           unit_name: item.unit_name,
           unit_short_name: item.unit_short_name,
-          unit_calc_area: item.unit_calc_area,
-          barcode: item.barcode,
-          is_serialized: item.is_serialized,
-          created_at: item.created_at,
-          updated_at: item.updated_at,
           retail_price: item.retail_price,
           wholesale_price: item.wholesale_price,
           purchase_price: item.purchase_price,

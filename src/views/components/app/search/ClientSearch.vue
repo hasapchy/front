@@ -2,30 +2,25 @@
     <div>
         <div v-if="selectedClient == null" class="relative">
             <label class="block mb-1 required">Клиент</label>
-            <input type="text" v-model="clientSearch" placeholder="Введите имя или номер клиента"
-                class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="showDropdown = false"
-                :disabled="disabled" />
+                         <input type="text" v-model="clientSearch" placeholder="Введите имя или номер клиента"
+                 class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="handleBlur"
+                 :disabled="disabled" />
             <transition name="appear">
                 <ul v-show="showDropdown"
                     class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
                     <li v-if="clientSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
-                    <template v-else-if="clientSearch.length === 0">
-                        <li v-for="client in lastClients" :key="client.id" @mousedown.prevent="selectClient(client)"
-                            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                            <div class="flex justify-between">
-                                <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                                <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
-                            </div>
-                        </li>
-                    </template>
-                    <li v-else-if="clientSearch.length < 4" class="p-2 text-gray-500">Минимум 4 символа</li>
-                    <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">Не найдено
-                        <button class="text-blue-600 underline ml-2 cursor-pointer"
-                            @mousedown.prevent="openCreateClientModal">
-                            Создать клиента "{{ clientSearch }}"
-                        </button>
-                    </li>
-                                         <li v-for="client in clientResults" :key="client.id" @mousedown.prevent="() => selectClient(client)"
+                                         <template v-else-if="clientSearch.length === 0">
+                         <li v-for="client in lastClients" :key="client.id" @mousedown.prevent="selectClient(client)"
+                             class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
+                             <div class="flex justify-between">
+                                 <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
+                                 <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
+                             </div>
+                         </li>
+                     </template>
+                     <li v-else-if="clientSearch.length < 3" class="p-2 text-gray-500">Минимум 3 символа</li>
+                     <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
+                     <li v-for="client in clientResults" :key="client.id" @mousedown.prevent="() => selectClient(client)"
                          class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
                          <div class="flex justify-between">
                              <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
@@ -39,11 +34,14 @@
                              <span v-else>(Взаимный расчет)</span>
                          </span>
                      </li>
-                     <li v-if="clientResults.length > 0" class="p-2 border-t border-gray-300 bg-gray-50">
-                         <button class="text-blue-600 underline cursor-pointer w-full text-left"
+                     <li class="p-2 border-t border-gray-300 bg-gray-50 sticky bottom-0">
+                         <PrimaryButton 
+                             :is-info="true" 
+                             :is-full="true"
+                             icon="fas fa-plus"
                              @mousedown.prevent="openCreateClientModal">
-                             <i class="fas fa-plus mr-2"></i>Создать клиента "{{ clientSearch }}"
-                         </button>
+                             Создать клиента{{ clientSearch ? ` "${clientSearch}"` : '' }}
+                         </PrimaryButton>
                      </li>
                 </ul>
             </transition>
@@ -71,7 +69,7 @@
             </div>
         </div>
     </div>
-    <SideModalDialog :showForm="modalCreateClient" :onclose="() => modalCreateClient = false" :level="1">
+              <SideModalDialog :showForm="modalCreateClient" :onclose="() => modalCreateClient = false" :level="1">
         <ClientCreatePage :editingItem="null" :defaultFirstName="defaultClientName" @saved="onClientCreated" @saved-error="onClientCreatedError" />
     </SideModalDialog>
 </template>
@@ -82,7 +80,9 @@ import debounce from 'lodash.debounce';
 // import ClientCreatePage from '@/views/pages/clients/ClientCreatePage.vue';
 import { defineAsyncComponent } from 'vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import ClientDto from '@/dto/client/ClientDto';
+import ClientSearchDto from '@/dto/client/ClientSearchDto';
 import notificationMixin from '@/mixins/notificationMixin';
 
 export default {
@@ -90,6 +90,7 @@ export default {
     components: {
         ClientCreatePage: defineAsyncComponent(() => import('@/views/pages/clients/ClientCreatePage.vue')),
         SideModalDialog,
+        PrimaryButton,
     },
     props: {
         onlySuppliers: {
@@ -131,18 +132,23 @@ export default {
                 .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
                 .slice(0, 10);
         },
-        searchClients: debounce(async function () {
-            if (this.clientSearch.length >= 3) {
-                this.clientSearchLoading = true;
-                const results = await ClientController.search(this.clientSearch);
-                this.clientSearchLoading = false;
-                this.clientResults = this.onlySuppliers
-                    ? results.filter((client) => client.isSupplier)
-                    : results;
-            } else {
-                this.clientResults = [];
-            }
-        }, 250),
+                 searchClients: debounce(async function () {
+             if (this.clientSearch.length >= 3) {
+                 this.clientSearchLoading = true;
+                 try {
+                     const results = await ClientController.search(this.clientSearch);
+                     this.clientResults = this.onlySuppliers
+                         ? results.filter((client) => client.isSupplier)
+                         : results;
+                 } catch (error) {
+                     this.clientResults = [];
+                 } finally {
+                     this.clientSearchLoading = false;
+                 }
+             } else {
+                 this.clientResults = [];
+             }
+         }, 250),
         selectClient(client) {
             this.showDropdown = false;
             this.clientSearch = '';
@@ -152,10 +158,10 @@ export default {
         deselectClient() {
             this.$emit('update:selectedClient', null);
         },
-        openCreateClientModal() {
-            this.defaultClientName = this.clientSearch;
-            this.modalCreateClient = true;
-        },
+                 openCreateClientModal() {
+             this.defaultClientName = this.clientSearch;
+             this.modalCreateClient = true;
+         },
         onClientCreated(newClient) {
             this.modalCreateClient = false;
             if (newClient) {
@@ -165,6 +171,11 @@ export default {
         onClientCreatedError(error) {
             this.showNotification('Ошибка создания клиента', error, true);
         },
+                 handleBlur() {
+             requestAnimationFrame(() => {
+                 this.showDropdown = false;
+             });
+         },
     },
     watch: {
         clientSearch: {
