@@ -96,8 +96,8 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="(product, index) in products" :key="index" class="border-b border-gray-300">
-                    <td class="py-2 px-4 border-x border-gray-300">{{ product.productName }}</td>
+                                 <tr v-for="(product, index) in products" :key="index" class="border-b border-gray-300">
+                     <td class="py-2 px-4 border-x border-gray-300">{{ product.productName || product.name }}</td>
                     <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
                         <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right"
                             :disabled="disabled" min="0.01" @input="updateTotals" />
@@ -411,6 +411,7 @@ export default {
                 const tempProduct = {
                     productId: null, // null для временного товара (будет обработано на бэкенде)
                     productName: newProduct.name,
+                    name: newProduct.name, // Добавляем поле name для совместимости
                     quantity: newProduct.quantity,
                     price: newProduct.price,
                     description: newProduct.description,

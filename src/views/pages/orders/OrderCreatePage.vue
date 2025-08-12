@@ -70,7 +70,7 @@
     <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
         <!-- Кнопки -->
         <div class="flex items-center space-x-2">
-            <PrimaryButton icon="fas fa-check" :onclick="saveWithoutClose" :is-loading="saveLoading">
+            <PrimaryButton v-if="editingItemId" icon="fas fa-check" :onclick="saveWithoutClose" :is-loading="saveLoading">
             </PrimaryButton>
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
             </PrimaryButton>
@@ -283,10 +283,12 @@ export default {
                     resp = await OrderController.updateItem(this.editingItemId, formData);
                 } else {
                     resp = await OrderController.storeItem(formData);
+                    this.editingItemId = resp?.id || null;
                 }
                 if (resp.message) {
                     this.$emit('saved');
-                    this.clearForm();
+                    // НЕ очищаем форму здесь, чтобы избежать создания дублирующих заказов
+                    // Форма будет очищена только при закрытии страницы или явном сбросе
                 }
             } catch (error) {
                 this.$emit('saved-error', this.getApiErrorMessage(error));
@@ -327,6 +329,7 @@ export default {
                             unit_id: p.unitId || p.unit_id || null,
                         }))
                 };
+                
                 let resp;
                 if (this.editingItemId) {
                     resp = await OrderController.updateItem(this.editingItemId, formData);
@@ -334,6 +337,7 @@ export default {
                     resp = await OrderController.storeItem(formData);
                     this.editingItemId = resp?.id || null;
                 }
+                
                 if (resp.message) {
                     this.$emit('saved-silent');
                 }
@@ -429,7 +433,6 @@ export default {
                     this.description = this.editingItem?.description || '';
                     // Нормализуем позиции: разделяем обычные и одноразовые
                     const rawProducts = newEditingItem.products || [];
-                    console.log('OrderEdit rawProducts:', JSON.parse(JSON.stringify(rawProducts)));
                     this.products = rawProducts.map(p => {
                         // Бэкенд/фронт могут прислать разные кейсы (snake_case / camelCase)
                         // временный, если нет product_id и нет productId
@@ -468,7 +471,6 @@ export default {
                 }
                 // Сохраняем новое начальное состояние
                 this.$nextTick(() => {
-                    console.log('OrderEdit normalized products:', JSON.parse(JSON.stringify(this.products)));
                     this.saveInitialState();
                 });
             },
