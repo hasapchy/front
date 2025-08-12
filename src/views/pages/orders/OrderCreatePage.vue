@@ -262,14 +262,14 @@ export default {
                     discount_type: this.discountType,
                     description: this.description,
                     products: this.products
-                        .filter(p => !!p.productId)
+                        .filter(p => p.productId && !p.isTempProduct)
                         .map(p => ({
                             product_id: p.productId,
                             quantity: p.quantity,
                             price: p.price
                         })),
                     temp_products: this.products
-                        .filter(p => !p.productId)
+                        .filter(p => !p.productId || p.isTempProduct)
                         .map(p => ({
                             name: p.name || p.productName,
                             description: p.description || '',
@@ -311,14 +311,14 @@ export default {
                     discount_type: this.discountType,
                     description: this.description,
                     products: this.products
-                        .filter(p => !!p.productId)
+                        .filter(p => p.productId && !p.isTempProduct)
                         .map(p => ({
                             product_id: p.productId,
                             quantity: p.quantity,
                             price: p.price
                         })),
                     temp_products: this.products
-                        .filter(p => !p.productId)
+                        .filter(p => !p.productId || p.isTempProduct)
                         .map(p => ({
                             name: p.name || p.productName,
                             description: p.description || '',

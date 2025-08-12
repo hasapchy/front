@@ -409,7 +409,7 @@ export default {
             if (newProduct) {
                 // Для одноразового товара создаем специальный объект
                 const tempProduct = {
-                    productId: 'temp_' + Date.now(), // Уникальный ID для одноразового товара
+                    productId: null, // null для временного товара (будет обработано на бэкенде)
                     productName: newProduct.name,
                     quantity: newProduct.quantity,
                     price: newProduct.price,
