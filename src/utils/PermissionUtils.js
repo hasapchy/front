@@ -26,6 +26,7 @@ export function permissionGroupLabel(name) {
     warehouse_stocks: "Склад — Остатки",
 
     warehouses: "Склады",
+    settings_edit: "Настройки",
     users: "Пользователи",
     orders: "Заказы",
     categories: "Категории",
@@ -41,6 +42,7 @@ export function permissionGroupLabel(name) {
     cash_registers: "Кассы",
 
     settings: "Общие настройки",
+    system_settings: "Настройки системы",
   };
 
   return map[prefix] || prefix;
@@ -58,6 +60,8 @@ export function permissionLabel(name) {
       return "Редактирование";
     case "delete":
       return "Удаление";
+    case "date":
+      return "Дата";
 
     default:
       return action || name;

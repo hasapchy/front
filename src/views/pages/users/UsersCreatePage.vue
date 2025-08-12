@@ -43,7 +43,7 @@
                         <div v-for="(actions, group) in sortedGroupedPermissions" :key="group"
                             class="mb-2 border rounded p-2">
                             <div class="flex items-center justify-between mb-1">
-                                <span class="font-semibold capitalize">
+                                <span class="font-semibold">
                                     {{ permissionGroupLabel(actions[0]?.name || group) }}
                                 </span>
                                 <label class="flex items-center space-x-1 text-sm">

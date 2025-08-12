@@ -51,6 +51,12 @@
                     Услуги
                 </SidebarLink>
             </ul>
+
+            <ul v-if="hasPermission('system_settings_view')">
+                <SidebarLink to="/settings" icon="fa-solid fa-cogs mr-2" :settings="true">
+                    Настройки системы
+                </SidebarLink>
+            </ul>
         </div>
     </div>
 </template>
