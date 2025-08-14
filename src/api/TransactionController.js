@@ -8,7 +8,8 @@ export default class TransactionController {
     page = 1,
     cash_id = null,
     date_filter_type = "all_time",
-    order_id = null
+    order_id = null,
+    search = null
   ) {
     try {
       const response = await api.get("/transactions", {
@@ -17,6 +18,7 @@ export default class TransactionController {
           cash_id: cash_id,
           date_filter_type: date_filter_type,
           order_id: order_id,
+          search: search,
         },
       });
       const data = response.data;

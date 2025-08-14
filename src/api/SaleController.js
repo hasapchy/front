@@ -5,9 +5,13 @@ import ClientDto from "@/dto/client/ClientDto";
 import SaleProductDto from "@/dto/sale/SaleProductDto";
 
 export default class SaleController {
-  static async getItemsPaginated(page = 1) {
+  static async getItemsPaginated(page = 1, search = null) {
     try {
-      const response = await api.get(`/sales?page=${page}`);
+      const params = { page: page };
+      if (search) {
+        params.search = search;
+      }
+      const response = await api.get("/sales", { params });
       const data = response.data;
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {

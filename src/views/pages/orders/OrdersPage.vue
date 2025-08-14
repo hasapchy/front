@@ -53,6 +53,7 @@ import batchActionsMixin from "@/mixins/batchActionsMixin";
 import modalMixin from "@/mixins/modalMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import TimelinePanel from "@/views/components/app/dialog/TimelinePanel.vue";
+import { eventBus } from "@/eventBus";
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, modalMixin, batchActionsMixin],
@@ -90,6 +91,13 @@ export default {
         this.fetchStatuses();
 
         this.$store.commit("SET_SETTINGS_OPEN", false);
+        
+        // Слушаем события поиска через eventBus
+        eventBus.on('global-search', this.handleSearch);
+    },
+    beforeUnmount() {
+        // Удаляем слушатель события
+        eventBus.off('global-search', this.handleSearch);
     },
     computed: {
         searchQuery() {
@@ -141,10 +149,15 @@ export default {
             }
         },
 
+        handleSearch(query) {
+            // Обновляем store напрямую
+            this.$store.dispatch('setSearchQuery', query);
+            this.fetchItems(1, false);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                const newData = await OrderController.getItemsPaginated(page);
+                const newData = await OrderController.getItemsPaginated(page, this.searchQuery);
                 this.data = newData;
             } catch (error) {
                 this.showNotification("Ошибка получения списка заказов", error.message, true);

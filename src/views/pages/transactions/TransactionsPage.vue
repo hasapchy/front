@@ -74,6 +74,7 @@ import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin],
@@ -84,7 +85,6 @@ export default {
             loading: false,
             selectedIds: [],
             controller: TransactionController,
-            //editingItem: null,
             allCashRegisters: [],
             cashRegisterId: '',
             dateFilter: 'all_time',
@@ -117,6 +117,13 @@ export default {
         this.fetchItems();
         this.fetchAllCashRegisters();
         this.$store.commit('SET_SETTINGS_OPEN', false);
+        
+        // Слушаем события поиска через eventBus
+        eventBus.on('global-search', this.handleSearch);
+    },
+    beforeUnmount() {
+        // Удаляем слушатель события
+        eventBus.off('global-search', this.handleSearch);
     },
     methods: {
         updateBalace() {
@@ -155,6 +162,11 @@ export default {
                     return i[c];
             }
         },
+        handleSearch(query) {
+            // Обновляем store напрямую
+            this.$store.dispatch('setSearchQuery', query);
+            this.fetchItems(1, false);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
@@ -166,14 +178,16 @@ export default {
                         page,
                         this.cashRegisterId,
                         this.dateFilter,
-                        this.startDate,
-                        this.endDate
+                        null, // order_id
+                        this.searchQuery
                     );
                 } else {
                     new_data = await TransactionController.getItems(
                         page,
                         this.cashRegisterId,
-                        this.dateFilter
+                        this.dateFilter,
+                        null, // order_id
+                        this.searchQuery
                     );
                 }
                 this.data = new_data;

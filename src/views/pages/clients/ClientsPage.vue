@@ -39,6 +39,7 @@ import batchActionsMixin from '@/mixins/batchActionsMixin'
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [batchActionsMixin, notificationMixin, modalMixin],
@@ -47,7 +48,6 @@ export default {
         return {
             data: null,
             loading: false,
-            //editingItem: null,
             controller: ClientController,
             selectedIds: [],
             columnsConfig: [
@@ -67,6 +67,13 @@ export default {
     created() {
         this.fetchItems();
         this.$store.commit('SET_SETTINGS_OPEN', false);
+        
+        // Слушаем события поиска через eventBus
+        eventBus.on('global-search', this.handleSearch);
+    },
+    beforeUnmount() {
+        // Удаляем слушатель события
+        eventBus.off('global-search', this.handleSearch);
     },
     methods: {
         itemMapper(i, c) {
@@ -88,12 +95,17 @@ export default {
                     return i[c];
             }
         },
+        handleSearch(query) {
+            // Обновляем store напрямую
+            this.$store.dispatch('setSearchQuery', query);
+            this.fetchItems(1, false);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
             }
             try {
-                const new_data = await ClientController.getItems(page);
+                const new_data = await ClientController.getItems(page, this.searchQuery);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification('Ошибка получения списка клиентов', error.message, true);
