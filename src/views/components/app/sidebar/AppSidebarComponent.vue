@@ -1,15 +1,15 @@
 <template>
     <aside class="w-40 bg-[#282E33] text-white flex-shrink-0 transform transition-transform duration-300">
         <!-- Logo -->
-
-
         <div class="shrink-0 flex items-center justify-center">
             <a href="/">
                 <img 
-                    v-if="settings.company_logo" 
-                    :src="settings.company_logo" 
+                    v-if="logoUrl" 
+                    :src="logoUrl" 
                     alt="Company Logo" 
                     class="h-16 w-auto object-contain"
+                    @load="onLogoLoad"
+                    @error="onLogoError"
                 />
             </a>
         </div>
@@ -74,11 +74,18 @@ export default {
             settings: {
                 company_name: '',
                 company_logo: ''
-            }
+            },
+            logoUrl: localStorage.getItem('companyLogoCache') || '', // Use cached logo if available
+            logoCache: localStorage.getItem('companyLogoCache') || ''
         };
     },
     
     async mounted() {
+        // If we have a cached logo, show it immediately
+        if (this.logoUrl) {
+            this.logoUrl = this.logoCache;
+        }
+        
         await this.loadSettings();
         eventBus.on('settings-updated', this.loadSettings);
     },
@@ -98,9 +105,32 @@ export default {
             try {
                 const data = await SettingsController.getSettings();
                 this.settings = data;
+                
+                // Update logo URL and cache
+                if (data.company_logo && data.company_logo !== this.logoCache) {
+                    this.logoUrl = data.company_logo;
+                    this.logoCache = data.company_logo;
+                    localStorage.setItem('companyLogoCache', data.company_logo);
+                }
             } catch (error) {
                 console.error('Error loading settings:', error);
             }
+        },
+        
+        onLogoLoad() {
+            // Logo loaded successfully, update cache
+            if (this.logoUrl && this.logoUrl !== this.logoCache) {
+                this.logoCache = this.logoUrl;
+                localStorage.setItem('companyLogoCache', this.logoUrl);
+            }
+        },
+        
+        onLogoError(event) {
+            console.error('Logo failed to load:', event.target.src);
+            // Remove invalid logo from cache
+            localStorage.removeItem('companyLogoCache');
+            this.logoUrl = '';
+            this.logoCache = '';
         }
     }
 }
