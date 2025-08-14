@@ -54,7 +54,7 @@
                     </select>
                 </div>
                 <ProductSearch v-model="products" :show-quantity="true" :show-price="true" :show-price-type="true"
-                    :is-sale="true" :currency-symbol="currencySymbol" v-model:discount="discount"
+                    :is-sale="true" :isOrder="true" :currency-symbol="currencySymbol" v-model:discount="discount"
                     v-model:discountType="discountType" required />
             </div>
             <div v-show="currentTab === 'transactions'">
@@ -70,7 +70,7 @@
     <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
         <!-- Кнопки -->
         <div class="flex items-center space-x-2">
-            <PrimaryButton icon="fas fa-check" :onclick="saveWithoutClose" :is-loading="saveLoading">
+            <PrimaryButton v-if="editingItemId" icon="fas fa-check" :onclick="saveWithoutClose" :is-loading="saveLoading">
             </PrimaryButton>
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
             </PrimaryButton>
@@ -261,21 +261,34 @@ export default {
                     discount: this.discount,
                     discount_type: this.discountType,
                     description: this.description,
-                    products: this.products.map(p => ({
-                        product_id: p.productId,
-                        quantity: p.quantity,
-                        price: p.price
-                    }))
+                    products: this.products
+                        .filter(p => p.productId && !p.isTempProduct)
+                        .map(p => ({
+                            product_id: p.productId,
+                            quantity: p.quantity,
+                            price: p.price
+                        })),
+                    temp_products: this.products
+                        .filter(p => !p.productId || p.isTempProduct)
+                        .map(p => ({
+                            name: p.name || p.productName,
+                            description: p.description || '',
+                            quantity: p.quantity,
+                            price: p.price,
+                            unit_id: p.unitId || p.unit_id || null,
+                        }))
                 };
                 let resp;
                 if (this.editingItemId) {
                     resp = await OrderController.updateItem(this.editingItemId, formData);
                 } else {
                     resp = await OrderController.storeItem(formData);
+                    this.editingItemId = resp?.id || null;
                 }
                 if (resp.message) {
                     this.$emit('saved');
-                    this.clearForm();
+                    // НЕ очищаем форму здесь, чтобы избежать создания дублирующих заказов
+                    // Форма будет очищена только при закрытии страницы или явном сбросе
                 }
             } catch (error) {
                 this.$emit('saved-error', this.getApiErrorMessage(error));
@@ -299,12 +312,24 @@ export default {
                     discount: this.discount,
                     discount_type: this.discountType,
                     description: this.description,
-                    products: this.products.map(p => ({
-                        product_id: p.productId,
-                        quantity: p.quantity,
-                        price: p.price
-                    }))
+                    products: this.products
+                        .filter(p => p.productId && !p.isTempProduct)
+                        .map(p => ({
+                            product_id: p.productId,
+                            quantity: p.quantity,
+                            price: p.price
+                        })),
+                    temp_products: this.products
+                        .filter(p => !p.productId || p.isTempProduct)
+                        .map(p => ({
+                            name: p.name || p.productName,
+                            description: p.description || '',
+                            quantity: p.quantity,
+                            price: p.price,
+                            unit_id: p.unitId || p.unit_id || null,
+                        }))
                 };
+                
                 let resp;
                 if (this.editingItemId) {
                     resp = await OrderController.updateItem(this.editingItemId, formData);
@@ -312,6 +337,7 @@ export default {
                     resp = await OrderController.storeItem(formData);
                     this.editingItemId = resp?.id || null;
                 }
+                
                 if (resp.message) {
                     this.$emit('saved-silent');
                 }
@@ -405,7 +431,38 @@ export default {
                     this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
                     this.note = newEditingItem.note || '';
                     this.description = this.editingItem?.description || '';
-                    this.products = newEditingItem.products || [];
+                    // Нормализуем позиции: разделяем обычные и одноразовые
+                    const rawProducts = newEditingItem.products || [];
+                    this.products = rawProducts.map(p => {
+                        // Бэкенд/фронт могут прислать разные кейсы (snake_case / camelCase)
+                        // временный, если нет product_id и нет productId
+                        const isTemp = (p.product_id == null) && (p.productId == null);
+                        if (isTemp) {
+                            return {
+                                name: p.product_name || p.productName || p.name,
+                                description: p.description || '',
+                                quantity: Number(p.quantity) || 0,
+                                price: Number(p.price) || 0,
+                                unitId: (p.unit_id ?? p.unitId) ?? null,
+                                icons() { return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>'; },
+                            };
+                        }
+                        return {
+                            productId: p.product_id ?? p.productId,
+                            productName: p.product_name || p.productName || p.name,
+                            name: p.product_name || p.productName || p.name,
+                            quantity: Number(p.quantity) || 0,
+                            price: Number(p.price) || 0,
+                            unitId: (p.unit_id ?? p.unitId) ?? null,
+                            // Для товара/услуги, если хотите — можно подменить иконку по типу продукта
+                            icons() {
+                                const isProduct = p.product_type == 1 || p.product_type === '1' || p.type == 1 || p.type === '1';
+                                return isProduct
+                                    ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
+                                    : '<i class="fas fa-concierge-bell text-[#3571A4]" title="Услуга"></i>';
+                            }
+                        };
+                    });
                     this.discount = newEditingItem.discount || 0;
                     this.discountType = newEditingItem.discount_type || 'fixed';
                     this.editingItemId = newEditingItem.id || null;

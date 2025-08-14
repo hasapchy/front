@@ -19,10 +19,11 @@ export default class SaleProductDto {
         this.unitShortName = unitShortName;
         this.quantity = quantity;
         this.price = price;
+        this.type = null; // 1=товар, 0=услуга (заполняется при наличии)
     }
 
     static fromProductDto(productDto, def = false) {
-        return new SaleProductDto(
+        const dto = new SaleProductDto(
             null, // id
             null,
             productDto.id,
@@ -34,9 +35,24 @@ export default class SaleProductDto {
             def ? 1 : 0,
             def ? productDto.sale_price :0,
         );
+        dto.type = productDto.type;
+        return dto;
     }
 
     imgUrl() {
-        return this.productImage.length > 0 ? `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.productImage}` : null
+        if (!this.productImage) return null;
+        if (typeof this.productImage !== 'string') return null;
+        return this.productImage.length > 0 ? `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.productImage}` : null;
+    }
+
+    icons() {
+        const url = this.imgUrl && this.imgUrl();
+        if (url) {
+            return `<img src="${url}" alt="icon" class="w-5 h-5 object-cover rounded" />`;
+        }
+        const isProduct = this.type == 1 || this.type === '1';
+        return isProduct
+            ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
+            : '<i class="fas fa-concierge-bell text-[#3571A4]" title="Услуга"></i>';
     }
 }

@@ -1,5 +1,5 @@
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
-class ProductDto {
+// ProductSearchDto описывает структуру продукта для поиска (только необходимые поля)
+export default class ProductSearchDto {
   constructor({
     id,
     type,
@@ -13,18 +13,9 @@ class ProductDto {
     unit_id,
     unit_name,
     unit_short_name,
-    unit_calc_area,
-    barcode,
-    is_serialized,
-    created_at,
-    updated_at,
     retail_price,
     wholesale_price,
     purchase_price,
-    // currency_id,
-    // currency_name,
-    // currency_code,
-    // currency_symbol
   }) {
     this.id = id;
     this.type = type;
@@ -38,25 +29,13 @@ class ProductDto {
     this.unit_id = unit_id;
     this.unit_name = unit_name;
     this.unit_short_name = unit_short_name;
-    this.unit_calc_area = unit_calc_area;
-    this.barcode = barcode;
-    this.is_serialized = is_serialized;
-    this.created_at = created_at;
-    this.updated_at = updated_at;
     this.retail_price = retail_price;
     this.wholesale_price = wholesale_price;
     this.purchase_price = purchase_price;
-    // this.currency_id = currency_id;
-    // this.currency_name = currency_name;
-    // this.currency_code = currency_code;
-    // this.currency_symbol = currency_symbol;
   }
 
   typeName() {
     return Boolean(this.type) ? "product" : "service";
-  }
-  formatDate() {
-    return dayjsDateTime(this.date);
   }
 
   icons() {
@@ -68,9 +47,10 @@ class ProductDto {
   }
 
   imgUrl() {
-    return this.image.length > 0
-      ? `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.image}`
-      : null;
+    if (this.image && this.image.length > 0) {
+      return `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.image}`;
+    }
+    return null;
   }
 
   retailPriceFormatted() {
@@ -88,20 +68,12 @@ class ProductDto {
       price = parseFloat(price);
     }
     return isNaN(price) ? "" : price.toFixed(2).replace(/\.0+$/, "");
-    // + ' ' + (this.currency_symbol || '')
-  }
-
-  imgUrl() {
-    if (this.image && this.image.length > 0) {
-      return `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.image}`;
-    }
-    return null;
   }
 
   static fromApi(data) {
     if (!data) return null;
     
-    return new ProductDto({
+    return new ProductSearchDto({
       id: data.id,
       type: data.type,
       name: data.name,
@@ -114,15 +86,9 @@ class ProductDto {
       unit_id: data.unit_id,
       unit_name: data.unit_name,
       unit_short_name: data.unit_short_name,
-      unit_calc_area: data.unit_calc_area,
-      barcode: data.barcode,
-      is_serialized: data.is_serialized,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
       retail_price: data.retail_price,
       wholesale_price: data.wholesale_price,
       purchase_price: data.purchase_price,
     });
   }
 }
-export default ProductDto;
