@@ -46,6 +46,7 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin],
@@ -56,7 +57,6 @@ export default {
             loading: false,
             selectedIds: [],
             controller: SaleController,
-
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: '№', size: 60 },
@@ -73,6 +73,13 @@ export default {
     created() {
         this.fetchItems();
         this.$store.commit('SET_SETTINGS_OPEN', false);
+        
+        // Слушаем события поиска через eventBus
+        eventBus.on('global-search', this.handleSearch);
+    },
+    beforeUnmount() {
+        // Удаляем слушатель события
+        eventBus.off('global-search', this.handleSearch);
     },
     methods: {
         itemMapper(i, c) {
@@ -106,12 +113,17 @@ export default {
                 this.closeModal();
             }
         },
+        handleSearch(query) {
+            // Обновляем store напрямую
+            this.$store.dispatch('setSearchQuery', query);
+            this.fetchItems(1, false);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
             }
             try {
-                const new_data = await SaleController.getItemsPaginated(page);
+                const new_data = await SaleController.getItemsPaginated(page, this.searchQuery);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification('Ошибка получения списка продаж', error.message, true);

@@ -66,7 +66,7 @@
         </div>
         <div class="mt-2">
             <label class="required">Артикул</label>
-            <input type="text" v-model="sku" :disabled="editingItemId !== null">
+            <input type="text" v-model="sku" placeholder="AB00001" :disabled="editingItemId !== null">
         </div>
         <div class="mt-2 flex space-x-2">
             <div class="w-1/3">

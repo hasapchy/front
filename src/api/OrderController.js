@@ -5,9 +5,13 @@ import ClientDto from "@/dto/client/ClientDto";
 import OrderProductDto from "@/dto/order/OrderProductDto";
 
 export default class OrderController {
-  static async getItemsPaginated(page = 1) {
+  static async getItemsPaginated(page = 1, search = null) {
     try {
-      const response = await api.get(`/orders?page=${page}`);
+      const params = { page: page };
+      if (search) {
+        params.search = search;
+      }
+      const response = await api.get("/orders", { params });
       const data = response.data;
       const items = data.items.map((item) => {
         var client = null;
