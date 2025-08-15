@@ -1,65 +1,65 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">Продажа</h2>
+        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editSale') : $t('createSale') }}</h2>
         <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
         <div>
-            <label>Дата</label>
+            <label>{{ $t('date') }}</label>
             <input type="datetime-local" v-model="date"
                 :disabled="editingItemId && !$store.getters.hasPermission('edit_any_date')" />
         </div>
         <div v-if="type === 'cash'" class="mt-2">
-            <label class="block mb-1 required">Касса</label>
+            <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
             <select v-model="cashId" :disabled="!!editingItemId">
-                <option value="">Нет</option>
+                <option value="">{{ $t('no') }}</option>
                 <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
                     {{ parent.name }} ({{ parent.currency_symbol }})
                 </option>
             </select>
         </div>
         <div class="mt-2">
-            <label class="block mb-1 required">Тип оплаты</label>
+            <label class="block mb-1 required">{{ $t('paymentType') }}</label>
             <div>
                 <label class="inline-flex items-center">
                     <input type="radio" v-model="type" value="cash" :disabled="!!editingItemId" />
-                    <span class="ml-2">В кассу</span>
+                    <span class="ml-2">{{ $t('toCash') }}</span>
                 </label>
             </div>
             <div>
                 <label class="inline-flex items-center">
                     <input type="radio" v-model="type" value="balance" :disabled="!!editingItemId" />
-                    <span class="ml-2">В баланс клиента</span>
+                    <span class="ml-2">{{ $t('toClientBalance') }}</span>
                 </label>
             </div>
         </div>
         <div class="mt-2">
-            <label class="block mb-1">Проект</label>
+            <label class="block mb-1">{{ $t('project') }}</label>
             <select v-model="projectId" :disabled="!!editingItemId" v-if="allProjects.length">
-                <option value="">Нет</option>
+                <option value="">{{ $t('no') }}</option>
                 <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">
                     {{ parent.name }}
                 </option>
             </select>
             <select v-model="projectId" :disabled="!!editingItemId" v-else>
-                <option value="">Нет</option>
+                <option value="">{{ $t('no') }}</option>
             </select>
         </div>
 
         <div class="mt-2">
-            <label>Примечание</label>
+            <label>{{ $t('note') }}</label>
             <input type="text" v-model="note" :disabled="!!editingItemId" />
         </div>
 
         <div class="mt-2">
-            <label class="block mb-1 required">Склад</label>
+            <label class="block mb-1 required">{{ $t('warehouse') }}</label>
             <div class="flex items-center space-x-2">
                 <select v-model="warehouseId" required :disabled="!!editingItemId" v-if="allWarehouses.length">
-                    <option value="">Нет</option>
+                    <option value="">{{ $t('no') }}</option>
                     <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">
                         {{ parent.name }}
                     </option>
                 </select>
                 <select v-model="warehouseId" required :disabled="!!editingItemId" v-else>
-                    <option value="">Нет</option>
+                    <option value="">{{ $t('no') }}</option>
                 </select>
             </div>
         </div>
@@ -70,18 +70,18 @@
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove" :disabled="!$store.getters.hasPermission('sales_delete')">
-            Удалить
+            {{ $t('delete') }}
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('sales_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('sales_create'))">
-            Сохранить
+            {{ $t('save') }}
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="'Подтвердите удаление. Данные будут отражены на стоке и балансе клиента!'"
-        :confirm-text="'Удалить продажу'" :leave-text="'Отмена'" />
+        :descr="$t('deleteSaleConfirm')"
+                  :confirm-text="$t('deleteSale')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
+        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 <script>

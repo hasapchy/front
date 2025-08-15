@@ -1,8 +1,8 @@
 <template>
     <div class="flex justify-between items-center mb-4">
         <PrimaryButton :onclick="() => { showModal(null) }"
-            :disabled="!$store.getters.hasPermission('order_categories_create')" icon="fas fa-plus">Добавить категорию
-            заказа</PrimaryButton>
+            :disabled="!$store.getters.hasPermission('order_categories_create')" icon="fas fa-plus">{{ $t('addOrderCategory') }}
+        </PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
@@ -23,8 +23,8 @@
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
-        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
+            :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -54,8 +54,8 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: '№', size: 60 },
-                { name: 'name', label: 'Название' },
-                { name: 'createdAt', label: 'Дата создания' }
+                { name: 'name', label: this.$t('name') },
+                { name: 'createdAt', label: this.$t('creationDate') }
             ],
         }
     },
@@ -91,7 +91,7 @@ export default {
         },
 
         handleSaved() {
-            this.showNotification('Категория заказа успешно добавлена', '', false);
+                            this.showNotification(this.$t('orderCategorySuccessfullyAdded'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
@@ -99,7 +99,7 @@ export default {
             this.showNotification('Ошибка сохранения категории заказа', m, true);
         },
         handleDeleted() {
-            this.showNotification('Категория заказа успешно удалена', '', false);
+                            this.showNotification(this.$t('orderCategorySuccessfullyDeleted'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },

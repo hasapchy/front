@@ -1,13 +1,13 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить услугу</PrimaryButton>
+        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('addService') }}</PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
-        <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.products" :columns-config="columnsConfig" :table-data="data.items"
+        <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
+            <DraggableTable table-key="admin.products" :columns-config="translatedColumnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
@@ -21,8 +21,8 @@
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
-        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
+            :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -39,9 +39,10 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin],
+    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog },
     data() {
         return {
@@ -52,14 +53,14 @@ export default {
 
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: '№', size: 60 },
-                { name: 'image', label: 'Изобр.', image: true },
-                { name: 'name', label: 'Название' },
-                { name: 'sku', label: 'SKU' },
-                { name: 'barcode', label: 'Баркод' },
-                { name: 'category_name', label: 'Категория' },
-                { name: 'retail_price', label: 'Розничная цена' },
-                { name: 'wholesale_price', label: 'Оптовая цена' }
+                { name: 'id', label: 'number', size: 60 },
+                { name: 'image', label: 'image', image: true },
+                { name: 'name', label: 'name' },
+                { name: 'sku', label: 'sku' },
+                { name: 'barcode', label: 'barcode' },
+                { name: 'category_name', label: 'category' },
+                { name: 'retail_price', label: 'retailPrice' },
+                { name: 'wholesale_price', label: 'wholesalePrice' }
             ],
         }
     },
@@ -88,27 +89,27 @@ export default {
                 const new_data = await ProductController.getItems(page, false);
                 this.data = new_data;
             } catch (error) {
-                this.showNotification('Ошибка получения списка товаров', error.message, true);
+                this.showNotification(this.$t('errorGettingProductList'), error.message, true);
             }
             if (!silent) {
                 this.loading = false;
             }
         },
         handleSaved() {
-            this.showNotification('Товар успешно добавлен', '', false);
+            this.showNotification(this.$t('productSuccessfullyAdded'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleSavedError(m) {
-            this.showNotification('Ошибка сохранения товара', m, true);
+            this.showNotification(this.$t('errorSavingProduct'), m, true);
         },
         handleDeleted() {
-            this.showNotification('Товар успешно удален', '', false);
+            this.showNotification(this.$t('productSuccessfullyDeleted'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleDeletedError(m) {
-            this.showNotification('Ошибка удаления товара', m, true);
+            this.showNotification(this.$t('errorDeletingProduct'), m, true);
         }
     },
     computed: {

@@ -1,20 +1,19 @@
 <template>
     <div class="mt-4">
-        <h3 class="text-md font-semibold mb-2">История баланса проекта</h3>
+        <h3 class="text-md font-semibold mb-2">{{ $t('balanceHistory') }}</h3>
         <div class="mb-2 flex items-center gap-2">
-            <span>Итоговый баланс:</span>
+                          <span>{{ $t('finalBalance') }}:</span>
             <span :class="{
                 'text-[#5CB85C] font-bold': balance >= 0,
                 'text-[#EE4F47] font-bold': balance < 0
             }">
                 {{ balanceFormatted }} TMT
             </span>
-            <span class="ml-4">Бюджет: <b>{{ budgetFormatted }} TMT</b></span>
+            <span class="ml-4">{{ $t('budget') }}: <b>{{ budgetFormatted }} TMT</b></span>
         </div>
-
-        <div v-if="balanceLoading" class="text-gray-500">Загрузка...</div>
+        <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
         <div v-else-if="balanceHistory.length === 0" class="text-gray-500">
-            История отсутствует
+            {{ $t('noHistory') }}
         </div>
         <DraggableTable v-if="!balanceLoading && balanceHistory.length" table-key="project.balance"
             :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
@@ -55,11 +54,10 @@ export default {
             entityModalOpen: false,
             entityLoading: false,
             columnsConfig: [
-                { name: "date", label: "Дата", size: 100 },
-                { name: "source", label: "Тип" },
-                { name: "user", label: "Пользователь", size: 150 },
-                { name: "description", label: "Описание", size: 450 },
-                { name: "amount", label: "Сумма", size: 120, html: true },
+                { name: "date", label: this.$t("date"), size: 100 },
+                { name: "source", label: this.$t("type") },
+                { name: "description", label: this.$t("description"), size: 600 },
+                { name: "amount", label: this.$t("amount"), size: 120, html: true },
             ],
             ENTITY_CONFIG: {
                 transaction: {
@@ -272,10 +270,10 @@ export default {
                         },
                         label() {
                             switch (item.source) {
-                                case "transaction": return "Транзакция";
-                                case "sale": return "Продажа";
-                                case "order": return "Заказ";
-                                case "receipt": return "Оприходование";
+                                case "transaction": return this.$t('transaction');
+                                case "sale": return this.$t('sale');
+                                case "order": return this.$t('order');
+                                case "receipt": return this.$t('receipt');
                                 default: return item.source;
                             }
                         }
@@ -284,7 +282,7 @@ export default {
                 this.balance = data.balance;
                 this.budget = data.budget;
             } catch (e) {
-                console.error("Ошибка при загрузке истории баланса проекта:", e);
+                console.error(this.$t("errorLoadingBalanceHistory"), e);
                 this.balanceHistory = [];
                 this.balance = 0;
                 this.budget = 0;

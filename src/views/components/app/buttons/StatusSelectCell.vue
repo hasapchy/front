@@ -2,7 +2,7 @@
   <div ref="dropdownRef" class="relative status-dropdown inline-block">
     <div class="px-3 py-2 rounded cursor-pointer flex items-center justify-between min-w-[120px]" :style="selectedStyle"
       @click="toggleDropdown">
-      <span class="truncate text-[12px] text-white">{{ selectedStatus?.name || 'Выбрать статус' }}</span>
+      <span class="truncate text-[12px] text-white">{{ selectedStatus?.name || $t('selectStatus') }}</span>
       <i class="fas fa-chevron-down text-xs ml-2 text-white"></i>
     </div>
 

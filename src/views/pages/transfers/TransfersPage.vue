@@ -1,13 +1,13 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить трансфер</PrimaryButton>
+        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('addTransfer') }}</PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.transfers" :columns-config="columnsConfig" :table-data="data.items"
+            <DraggableTable table-key="admin.transfers" :columns-config="translatedColumnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
@@ -21,8 +21,8 @@
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
-        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
+            :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -61,12 +61,12 @@ export default {
 
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: '№', size: 60 },
-                { name: 'cashFromName', label: 'Касса отправитель' },
-                { name: 'amount', label: 'Сумма трансфера', html: true },
-                { name: 'cashToName', label: 'Куда' },
-                { name: 'note', label: 'Заметка' },
-                { name: 'dateUser', label: 'Дата' },
+                { name: 'id', label: 'number', size: 60 },
+                { name: 'cashFromName', label: 'senderCashRegister' },
+                { name: 'amount', label: 'transferAmount', html: true },
+                { name: 'cashToName', label: 'destination' },
+                { name: 'note', label: 'note' },
+                { name: 'dateUser', label: 'date' },
             ],
         }
     },
@@ -102,30 +102,36 @@ export default {
                 const new_data = await TransferController.getItems(page);
                 this.data = new_data;
             } catch (error) {
-                this.showNotification('Ошибка получения списка трансферов', error.message, true);
+                this.showNotification(this.$t('errorGettingTransferList'), error.message, true);
             }
             if (!silent) {
                 this.loading = false;
             }
         },
         handleSaved() {
-            this.showNotification('Трансфер успешно добавлен', '', false);
+            this.showNotification(this.$t('transferSuccessfullyAdded'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleSavedError(m) {
-            this.showNotification('Ошибка сохранения трансфера', m, true);
+            this.showNotification(this.$t('errorSavingTransfer'), m, true);
         },
         handleDeleted() {
-            this.showNotification('Трансфер успешно удален', '', false);
+            this.showNotification(this.$t('transferSuccessfullyDeleted'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleDeletedError(m) {
-            this.showNotification('Ошибка удаления трансфера', m, true);
+            this.showNotification(this.$t('errorDeletingTransfer'), m, true);
         }
     },
     computed: {
+        translatedColumnsConfig() {
+            return this.columnsConfig.map(column => ({
+                ...column,
+                label: column.label === '#' ? '#' : this.$t(column.label)
+            }));
+        }
     },
 }
 </script>

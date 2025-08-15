@@ -1,23 +1,23 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">Товар | Услуга</h2>
+        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editProduct') : $t('createProduct') }}</h2>
 
         <div class="mt-2 flex items-center">
             <div>
                 <div class="mt-2">
-                    <label class="block mb-1 required">Тип</label>
+                    <label class="block mb-1 required">{{ $t('type') }}</label>
                     <select v-model="type">
-                        <option value="">Выберите тип</option>
-                        <option value="product">Товар</option>
-                        <option value="service">Услуга</option>
+                        <option value="">{{ $t('selectType') }}</option>
+                        <option value="product">{{ $t('product') }}</option>
+                        <option value="service">{{ $t('service') }}</option>
                     </select>
                 </div>
                 <div>
-                    <label>Изображение</label>
+                    <label>{{ $t('image') }}</label>
                     <input type="file" @change="onFileChange" ref="imageInput">
                 </div>
                 <div class="mt-2">
-                    <label class="required">Название</label>
+                    <label class="required">{{ $t('name') }}</label>
                     <input type="text" v-model="name" class="">
                 </div>
 
@@ -25,80 +25,82 @@
             <div v-if="selected_image" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
                 <img :src="selected_image" alt="Selected Image" class="w-32 h-32 object-cover rounded">
                 <button @click="() => { this.selected_image = null; this.image = null }"
-                    class="mt-2 text-red-500 text-sm">Удалить</button>
+                    class="mt-2 text-red-500 text-sm">{{ $t('removeImage') }}</button>
             </div>
             <div v-else-if="editingItem?.image" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
                 <img :src="getProductImageSrc(editingItem)" alt="Selected Image" class="w-32 h-32 object-cover rounded">
                 <button @click="() => { this.editingItem.image = '' }"
-                    class="mt-2 text-red-500 text-sm">Удалить</button>
+                    class="mt-2 text-red-500 text-sm">{{ $t('removeImage') }}</button>
             </div>
         </div>
         <div class="mt-2">
-            <label class="block mb-1 required">Категория</label>
+            <label class="block mb-1 required">{{ $t('category') }}</label>
             <div class="flex items-center space-x-2">
                 <select v-model="category_id" v-if="allCategories.length">
-                    <option value="">Нет</option>
+                    <option value="">{{ $t('noCategory') }}</option>
                     <option v-for="parent in allCategories" :key="parent.id" :value="parent.id">{{
                         parent.name }}
                     </option>
                 </select>
                 <select v-model="category_id" v-else>
-                    <option value="">Нет</option>
+                    <option value="">{{ $t('noCategory') }}</option>
                 </select>
                 <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showModal" />
             </div>
         </div>
         <div class="mt-2">
-            <label>Описание</label>
+            <label>{{ $t('description') }}</label>
             <input type="text" v-model="description">
         </div>
         <div class=" mt-2">
-            <label class="block mb-1">Единица измерения</label>
+            <label class="block mb-1">{{ $t('unit') }}</label>
             <select v-model="unit_id" v-if="units.length">
-                <option value="">Нет</option>
+                <option value="">{{ $t('noUnit') }}</option>
                 <option v-for="parent in units" :key="parent.id" :value="parent.id">{{ parent.name }} ({{
                     parent.short_name }})
                 </option>
             </select>
             <select v-model="unit_id" v-else>
-                <option value="">Нет</option>
+                <option value="">{{ $t('noUnit') }}</option>
             </select>
         </div>
         <div class="mt-2">
-            <label class="required">Артикул</label>
+            <label class="required">{{ $t('sku') }}</label>
             <input type="text" v-model="sku" placeholder="AB00001" :disabled="editingItemId !== null">
         </div>
         <div class="mt-2 flex space-x-2">
             <div class="w-1/3">
-                <label>Закупочная цена</label>
+                <label>{{ $t('purchasePrice') }}</label>
                 <div class="flex items-center rounded-l">
                     <input type="number" v-model="purchase_price">
                 </div>
             </div>
             <div class="w-1/3">
-                <label>Оптовая цена</label>
+                <label>{{ $t('wholesalePrice') }}</label>
                 <div class="flex items-center rounded-l">
                     <input type="number" v-model="wholesale_price">
                 </div>
             </div>
             <div class="w-1/3">
-                <label>Розничная цена</label>
+                <label>{{ $t('retailPrice') }}</label>
                 <div class="flex items-center rounded-l">
                     <input type="number" v-model="retail_price">
                 </div>
             </div>
         </div>
         <div class="mt-2">
-            <label>Баркод (EAN-13)</label>
+            <label>{{ $t('barcode') }}</label>
             <div class="flex items-center space-x-2">
                 <input type="text" v-model="barcode" :disabled="editingItemId !== null">
                 <PrimaryButton v-if="editingItemId == null" icon="fas fa-barcode" :is-info="true"
                     :onclick="generateBarcode" :is-full="false">
+                    {{ $t('generateBarcode') }}
                 </PrimaryButton>
                 <template v-if="barcode">
                     <svg id="barcode-svg" class="w-32 h-12" />
                     <canvas id="barcode-canvas" style="display:none;"></canvas>
                     <PrimaryButton @click="downloadBarcodePng" icon="fas fa-download" :is-info="true">
+                        {{ $t('downloadBarcode') }}
                     </PrimaryButton>
                 </template>
             </div>
@@ -108,17 +110,17 @@
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove"
             :disabled="!$store.getters.hasPermission('products_delete')">
-            Удалить
+            {{ $t('delete') }}
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('products_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('products_create'))">
-            Сохранить
+            {{ $t('save') }}
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="'Подтвердите удаление категории'" :confirm-text="'Удалить категорию'" :leave-text="'Отмена'" />
+                  :descr="$t('deleteCategory')" :confirm-text="$t('deleteCategory')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
+        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal" :level="1">
         <AdminCategoryCreatePage @saved="handleSaved" @saved-error="handleSavedError" />
     </SideModalDialog>

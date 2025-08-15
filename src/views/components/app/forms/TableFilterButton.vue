@@ -2,7 +2,7 @@
     <div class="relative inline-block" ref="dropdown">
         <!-- Кнопка-ссылка -->
         <button @click="toggleMenu" class="text-[#337AB7] hover:underline cursor-pointer">
-            Настроить таблицу
+            {{ $t('configureTable') }}
             <i v-if="isOpen" class="fas fa-angle-up text-xs"></i>
             <i v-else class="fas fa-angle-down text-xs"></i>
         </button>
@@ -14,7 +14,7 @@
                 <slot></slot>
                 <div class="flex flex-row-reverse">
                     <button @click="toggleMenu" class="text-[#337AB7] hover:underline mr-3 cursor-pointer">
-                        Готово
+                        {{ $t('done') }}
                     </button>
                 </div>
             </div>

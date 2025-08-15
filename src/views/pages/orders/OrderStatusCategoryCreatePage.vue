@@ -1,12 +1,12 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">Категория статусов</h2>
+        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editOrderStatusCategory') : $t('createOrderStatusCategory') }}</h2>
         <div>
-            <label class="required">Название</label>
+            <label class="required">{{ $t('categoryName') }}</label>
             <input type="text" v-model="name">
         </div>
         <div class="mt-4">
-            <label>Цвет (опционально)</label>
+            <label>{{ $t('colorOptional') }}</label>
             <input type="color" v-model="color">
         </div>
     </div>
@@ -14,15 +14,15 @@
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove"
             :disabled="!$store.getters.hasPermission('order_statuscategories_delete')">
-            Удалить
+            {{ $t('delete') }}
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('order_statuscategories_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('order_statuscategories_create'))">
-            Сохранить
+            {{ $t('save') }}
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="'Подтвердите удаление категории статусов'" :confirm-text="'Удалить'" :leave-text="'Отмена'" />
+        :descr="$t('deleteOrderStatusCategory')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
 </template>
 
 <script>

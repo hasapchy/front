@@ -1,26 +1,26 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">Создать временный товар</h2>
+        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editTempProduct') : $t('createTempProduct') }}</h2>
         
         <div class="space-y-4">
             <div>
-                <label class="required">Название товара</label>
+                <label class="required">{{ $t('productName') }}</label>
                 <input type="text" v-model="name" required class="w-full border rounded p-2" />
             </div>
             
             <div>
-                <label>Описание</label>
+                <label>{{ $t('description') }}</label>
                 <textarea v-model="description" class="w-full border rounded p-2" rows="3"></textarea>
             </div>
             
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="required">Количество</label>
+                    <label class="required">{{ $t('quantity') }}</label>
                     <input type="number" v-model.number="quantity" required min="0.01" step="0.01" class="w-full border rounded p-2" />
                 </div>
                 
                 <div>
-                    <label class="required">Цена</label>
+                    <label class="required">{{ $t('price') }}</label>
                     <input type="number" v-model.number="price" required min="0" step="0.01" class="w-full border rounded p-2" />
                 </div>
             </div>
@@ -98,17 +98,17 @@ export default {
         
         async save() {
             if (!this.name.trim()) {
-                this.$emit('saved-error', 'Название товара обязательно');
+                this.$emit('saved-error', this.$t('productNameRequired'));
                 return;
             }
             
             if (this.quantity <= 0) {
-                this.$emit('saved-error', 'Количество должно быть больше 0');
+                this.$emit('saved-error', this.$t('quantityMustBePositive'));
                 return;
             }
             
             if (this.price < 0) {
-                this.$emit('saved-error', 'Цена не может быть отрицательной');
+                this.$emit('saved-error', this.$t('priceCannotBeNegative'));
                 return;
             }
             if (!this.unitId) {
@@ -129,7 +129,7 @@ export default {
                 
                 this.$emit('saved', tempProduct);
             } catch (error) {
-                this.$emit('saved-error', error.message || 'Ошибка создания товара');
+                this.$emit('saved-error', error.message || this.$t('errorCreatingProduct'));
             } finally {
                 this.saveLoading = false;
             }

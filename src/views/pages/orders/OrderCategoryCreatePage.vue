@@ -1,8 +1,8 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">Категория заказа</h2>
+        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editOrderCategory') : $t('createOrderCategory') }}</h2>
         <div>
-            <label class="required">Название</label>
+                          <label class="required">{{ $t('name') }}</label>
             <input type="text" v-model="name">
         </div>
     </div>
@@ -10,18 +10,18 @@
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove"
             :disabled="!$store.getters.hasPermission('order_categories_delete')">
-            Удалить
+            {{ $t('delete') }}
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('order_categories_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('order_categories_create'))">
-            Сохранить
+            {{ $t('save') }}
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="'Подтвердите удаление категории заказа'" :confirm-text="'Удалить категорию заказа'"
-        :leave-text="'Отмена'" />
+        :descr="$t('deleteOrderCategory')" :confirm-text="$t('deleteOrderCategory')"
+                  :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
+        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 <script>

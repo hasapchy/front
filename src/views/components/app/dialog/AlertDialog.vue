@@ -1,10 +1,9 @@
 <template>
     <teleport to="body">
         <transition name="fade-dialog">
-            <div v-if="dialog" class="fixed z-99" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-                <div class="fixed inset-0 bg-black/50 transition-opacity" aria-hidden="true"></div>
-
-                <div class="fixed inset-0 z-99 w-screen overflow-y-auto">
+            <div v-if="dialog" class="relative z-50">
+                <div class="fixed inset-0 transition-opacity"></div>
+                <div class="fixed inset-0 z-10 overflow-y-auto">
                     <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
                         <div
                             class="fixed transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
@@ -20,19 +19,19 @@
                                         </svg>
                                     </div>
                                     <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                        <h3 class="text-base font-semibold text-gray-900" id="modal-title">{{ title }}
+                                        <h3 class="text-base font-semibold text-gray-900" id="modal-title">{{ displayTitle }}
                                         </h3>
                                         <div class="mt-2">
-                                            <p class="text-sm text-gray-500">{{ descr }}
+                                            <p class="text-sm text-gray-500">{{ displayDescr }}
                                             </p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="my-4 flex space-x-2 mx-5 justify-end">
-                                <PrimaryButton :is-danger="true" :onclick="onConfirm">{{ confirmText }}
+                                <PrimaryButton :is-danger="true" :onclick="onConfirm">{{ displayConfirmText }}
                                 </PrimaryButton>
-                                <PrimaryButton :is-light="true" :onclick="onLeave">{{ leaveText }}</PrimaryButton>
+                                <PrimaryButton :is-light="true" :onclick="onLeave">{{ displayLeaveText }}</PrimaryButton>
                             </div>
                         </div>
                     </div>
@@ -52,22 +51,22 @@ export default {
         title: {
             type: String,
             required: false,
-            default: 'Внимание'
+            default: ''
         },
         descr: {
             type: String,
             required: false,
-            default: 'Вы уверены, что хотите закрыть без сохранения?'
+            default: ''
         },
         confirmText: {
             type: String,
             required: false,
-            default: 'Закрыть без сохранения'
+            default: ''
         },
         leaveText: {
             type: String,
             required: false,
-            default: 'Остаться'
+            default: ''
         },
         dialog: {
             type: Boolean,
@@ -80,6 +79,20 @@ export default {
         onConfirm: {
             type: Function,
             required: true
+        }
+    },
+    computed: {
+        displayTitle() {
+            return this.title || this.$t('attention');
+        },
+        displayDescr() {
+            return this.descr || this.$t('confirmCloseWithoutSaving');
+        },
+        displayConfirmText() {
+            return this.confirmText || this.$t('closeWithoutSaving');
+        },
+        displayLeaveText() {
+            return this.leaveText || this.$t('stay');
         }
     }
 }

@@ -18,7 +18,7 @@
         </draggable>
       </ul>
       <div class="flex flex-row-reverse">
-        <button @click="resetColumns" class="text-[#337AB7] hover:underline mr-3 cursor-pointer">Сбросить</button>
+        <button @click="resetColumns" class="text-[#337AB7] hover:underline mr-3 cursor-pointer">{{ $t('reset') }}</button>
       </div>
     </TableFilterButton>
   </div>
@@ -31,7 +31,7 @@
           :class="{ hidden: !element.visible, relative: true }"
           class="text-left border border-gray-300 py-2 px-4 font-medium cursor-pointer select-none"
           :style="{ width: element.size ? element.size + 'px' : 'auto' }" @dblclick.prevent="sortBy(element.name)"
-          :title="'Кликните 2 раза по ' + element.label + ' для сортировки'">
+          :title="$t('doubleClickToSort') + ' ' + element.label">
           <template v-if="element.name === 'select'">
             <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" style="cursor:pointer;" />
           </template>
@@ -53,7 +53,7 @@
     <tbody>
       <tr v-if="sortedData.length === 0" class="text-center">
         <td class="py-2 px-4 border-x border-gray-300" :colspan="columns.length">
-          Нет данных
+          {{ $t('noData') }}
         </td>
       </tr>
       <tr v-for="(item, idx) in sortedData" :key="idx" class="cursor-pointer hover:bg-gray-100 transition-all"
@@ -149,6 +149,7 @@ export default {
             const original = this.columnsConfig.find(c => c.name === savedCol.name) || {};
             return {
               ...savedCol,
+              label: original.label || savedCol.label, // Используем актуальный label из columnsConfig
               component: original.component,
               props: original.props,
             };
@@ -258,6 +259,22 @@ export default {
       }
       this.$emit('selectionChange', this.selectedIds.slice());
     },
+  },
+  watch: {
+    columnsConfig: {
+      handler() {
+        // Обновляем заголовки при изменении columnsConfig (например, при смене языка)
+        this.loadColumns();
+      },
+      deep: true
+    },
+    '$i18n.locale': {
+      handler() {
+        // Принудительно обновляем заголовки при смене языка
+        this.loadColumns();
+      },
+      immediate: false
+    }
   },
   mounted() {
     this.loadColumns();

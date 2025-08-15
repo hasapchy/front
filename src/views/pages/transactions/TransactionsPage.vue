@@ -1,10 +1,10 @@
 <template>
     <div class="flex justify-between items-center mb-4">
         <div class="flex justify-start items-center">
-            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить транзакцию</PrimaryButton>
+            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('addTransaction') }}</PrimaryButton>
             <div class="mx-4">
                 <select v-model="cashRegisterId" @change="fetchItems">
-                    <option value="">Все кассы</option>
+                    <option value="">{{ $t('allCashRegisters') }}</option>
                     <template v-if="allCashRegisters.length">
                         <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
                             {{ parent.name }} ({{ parent.currency_symbol }})
@@ -15,14 +15,14 @@
             </div>
             <div class="">
                 <select v-model="dateFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
-                    <option value="all_time">За все время</option>
-                    <option value="today">Сегодня</option>
-                    <option value="yesterday">Вчера</option>
-                    <option value="this_week">Эта неделя</option>
-                    <option value="this_month">Этот месяц</option>
-                    <option value="last_week">Прошлая неделя</option>
-                    <option value="last_month">Прошлый месяц</option>
-                    <option value="custom">Выбрать даты</option>
+                    <option value="all_time">{{ $t('allTime') }}</option>
+                    <option value="today">{{ $t('today') }}</option>
+                    <option value="yesterday">{{ $t('yesterday') }}</option>
+                    <option value="this_week">{{ $t('thisWeek') }}</option>
+                    <option value="this_month">{{ $t('thisMonth') }}</option>
+                    <option value="last_week">{{ $t('lastWeek') }}</option>
+                    <option value="last_month">{{ $t('lastMonth') }}</option>
+                    <option value="custom">{{ $t('selectDates') }}</option>
                 </select>
             </div>
             <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-4">
@@ -38,7 +38,7 @@
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.transactions" :columns-config="columnsConfig" :table-data="data.items"
+            <DraggableTable table-key="admin.transactions" :columns-config="translatedColumnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
@@ -52,8 +52,8 @@
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
-        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
+            :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -92,24 +92,24 @@ export default {
             endDate: null,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: '№', size: 60 },
-                { name: 'type', label: 'Тип', html: true },
-                { name: 'cashName', label: 'Касса' },
-                { name: 'cashAmount', label: 'Сумма', html: true },
-                { name: 'origAmount', label: 'Указанная сумма' },
-                { name: 'categoryName', label: 'Категория' },
-                { name: 'note', label: 'Примечание' },
-                { name: 'projectName', label: 'Проект' },
+                { name: 'id', label: 'number', size: 60 },
+                { name: 'type', label: 'type', html: true },
+                { name: 'cashName', label: 'cashRegister' },
+                { name: 'cashAmount', label: 'amount', html: true },
+                { name: 'origAmount', label: 'originalAmount' },
+                { name: 'categoryName', label: 'category' },
+                { name: 'note', label: 'note' },
+                { name: 'projectName', label: 'project' },
                 {
                     name: 'client',
-                    label: 'Клиент',
+                    label: 'customer',
                     component: markRaw(ClientButtonCell),
                     props: (item) => ({
                         client: item.client,
 
                     })
                 },
-                { name: 'dateUser', label: 'Дата' },
+                { name: 'dateUser', label: 'date' },
             ],
         }
     },
@@ -192,7 +192,7 @@ export default {
                 }
                 this.data = new_data;
             } catch (error) {
-                this.showNotification('Ошибка получения списка транзакций', error.message, true);
+                this.showNotification(this.$t('errorGettingTransactionList'), error.message, true);
             }
             if (!silent) {
                 this.loading = false;
@@ -201,34 +201,40 @@ export default {
         showModal(item = null) {
             this.editingItem = null;
             if (item?.isTransfer === 1) {
-                this.showNotification('Нельзя редактировать транзакцию', 'Транзакция является трансфером', true);
+                this.showNotification(this.$t('cannotEditTransfer'), this.$t('transferTransaction'), true);
                 return;
             }
             this.modalDialog = true;
             this.editingItem = item;
         },
         handleSaved() {
-            this.showNotification('Транзакция успешно добавлена', '', false);
+            this.showNotification(this.$t('transactionSuccessfullyAdded'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.updateBalace();
             this.closeModal();
         },
         handleSavedError(m) {
-            this.showNotification('Ошибка сохранения транзакции', m, true);
+            this.showNotification(this.$t('errorSavingTransaction'), m, true);
         },
         handleDeleted() {
-            this.showNotification('Транзакция успешно удалена', '', false);
+            this.showNotification(this.$t('transactionSuccessfullyDeleted'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.updateBalace();
             this.closeModal();
         },
         handleDeletedError(m) {
-            this.showNotification('Ошибка удаления транзакции', m, true);
+            this.showNotification(this.$t('errorDeletingTransaction'), m, true);
         }
     },
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
+        },
+        translatedColumnsConfig() {
+            return this.columnsConfig.map(column => ({
+                ...column,
+                label: column.label === '#' ? '#' : this.$t(column.label)
+            }));
         }
     },
 }

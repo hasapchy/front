@@ -1,11 +1,11 @@
 <template>
     <div class="flex justify-between items-center mb-4">
         <div class="flex justify-start items-center">
-            <PrimaryButton :onclick="openCreateWarehouse" icon="fas fa-plus">Добавить склад</PrimaryButton>
-            <PrimaryButton :onclick="openCreateProduct" icon="fas fa-plus" class="ml-2">Добавить товар</PrimaryButton>
+                    <PrimaryButton :onclick="openCreateWarehouse" icon="fas fa-plus">{{ $t('addWarehouse') }}</PrimaryButton>
+        <PrimaryButton :onclick="openCreateProduct" icon="fas fa-plus" class="ml-2">{{ $t('addProduct') }}</PrimaryButton>
             <div class="ml-4">
                 <select v-model="warehouseId" @change="fetchItems" class="p-2 border rounded">
-                    <option value="">Все склады</option>
+                    <option value="">{{ $t('allWarehouses') }}</option>
                     <template v-if="allWarehouses.length">
                         <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">
                             {{ parent.name }}
@@ -15,7 +15,7 @@
             </div>
             <div class="ml-2">
                 <select v-model="categoryId" @change="fetchItems" class="p-2 border rounded">
-                    <option value="">Все категории</option>
+                    <option value="">{{ $t('allCategories') }}</option>
                     <template v-if="allCategories.length">
                         <option v-for="parent in allCategories" :key="parent.id" :value="parent.id">
                             {{ parent.name }}
@@ -29,7 +29,7 @@
     </div>
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.warehouse_stocks" :columns-config="columnsConfig" :table-data="data.items"
+            <DraggableTable table-key="admin.warehouse_stocks" :columns-config="translatedColumnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
@@ -87,14 +87,22 @@ export default {
             modalDialog: false,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: '№', size: 60 },
-                { name: 'warehouseName', label: 'Склад' },
-                { name: 'image', label: 'Изобр.', image: true },
-                { name: 'productName', label: 'Товар' },
-                { name: 'quantity', label: 'Количество' },
-                { name: 'categoryName', label: 'Категория' },
-                { name: 'createdAt', label: 'Дата создания' }
+                { name: 'id', label: 'number', size: 60 },
+                { name: 'warehouseName', label: 'warehouse' },
+                { name: 'image', label: 'image', image: true },
+                { name: 'productName', label: 'product' },
+                { name: 'quantity', label: 'quantity' },
+                { name: 'categoryName', label: 'category' },
+                { name: 'createdAt', label: 'createdAt' }
             ],
+        }
+    },
+    computed: {
+        translatedColumnsConfig() {
+            return this.columnsConfig.map(column => ({
+                ...column,
+                label: column.label === '#' ? '#' : this.$t(column.label)
+            }));
         }
     },
     created() {

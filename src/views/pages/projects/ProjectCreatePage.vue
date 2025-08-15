@@ -1,23 +1,23 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? editingItem.name : 'Проект' }}</h2>
-        <TabBar :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => { if (!uploading) currentTab = t }" />
+        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editProject') : $t('createProject') }}</h2>
+        <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { currentTab = t }" />
         <div v-show="currentTab === 'info'">
             <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
             <div>
-                <label class="required">Название</label>
+                <label class="required">{{ $t('name') }}</label>
                 <input type="text" v-model="name">
             </div>
             <div>
-                <label>Дата проекта</label>
+                <label>{{ $t('projectDate') }}</label>
                 <input type="datetime-local" v-model="date" :disabled="!!editingItemId">
             </div>
             <div>
-                <label>Бюджет проекта</label>
+                <label>{{ $t('projectBudget') }}</label>
                 <input type="number" v-model="budget">
             </div>
             <div>
-                <label class="required">Назначить пользователей</label>
+                <label class="required">{{ $t('assignUsers') }}</label>
                 <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
                     <label v-for="user in users" :key="user.id"
                         class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
@@ -29,81 +29,16 @@
             </div>
         </div>
         <div v-show="currentTab === 'files'">
-            <label class="text-lg font-medium text-gray-700 mb-4 block">Файлы проекта</label>
-            <input type="file" multiple @change="handleFileChange" :disabled="uploading" 
-                   class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-            
-            <!-- Индикатор загрузки -->
-            <div v-if="uploading" class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div class="flex items-center space-x-3">
-                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                    <span class="text-blue-800">Загрузка файлов...</span>
-                </div>
-            </div>
-            
-            <!-- Список файлов -->
-            <div v-if="editingItem && editingItem.hasFiles()" class="mt-6">
-                <h3 class="text-md font-medium text-gray-700 mb-3">Прикрепленные файлы ({{ editingItem.getFilesCount() }})</h3>
-                <div class="grid gap-3">
-                    <div v-for="file in editingItem.getFormattedFiles()" :key="file.path" 
-                         class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start space-x-3 flex-1">
-                                <!-- Иконка файла -->
-                                <div class="flex-shrink-0">
-                                    <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                                        <i :class="file.icon" class="text-gray-600 text-lg"></i>
-                                    </div>
-                                </div>
-                                
-                                <!-- Информация о файле -->
-                                <div class="flex-1 min-w-0">
-                                    <h4 class="text-sm font-medium text-gray-900 truncate">
-                                        <a :href="file.url" target="_blank" download 
-                                           class="hover:text-blue-600 transition-colors duration-200">
-                                            {{ file.name }}
-                                        </a>
-                                    </h4>
-                                    <div class="mt-1 flex items-center space-x-4 text-xs text-gray-500">
-                                        <span v-if="file.formattedSize" class="flex items-center">
-                                            <i class="fas fa-weight-hanging mr-1"></i>
-                                            {{ file.formattedSize }}
-                                        </span>
-                                        <span v-if="file.formattedUploadDate" class="flex items-center">
-                                            <i class="fas fa-calendar-alt mr-1"></i>
-                                            {{ file.formattedUploadDate }}
-                                        </span>
-                                        <span class="flex items-center">
-                                            <i class="fas fa-file mr-1"></i>
-                                            {{ file.mimeType || 'Неизвестный тип' }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Кнопка удаления -->
-                            <div class="flex-shrink-0 ml-3">
-                                <PrimaryButton 
-                                    :onclick="() => showDeleteFileDialog(file.path)"
-                                    :is-danger="true"
-                                    icon="fas fa-trash"
-                                    class="!px-2 !py-1 text-xs">
-                                    Удалить
-                                </PrimaryButton>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Сообщение об отсутствии файлов -->
-            <div v-else-if="editingItem" class="mt-6 p-8 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg text-center">
-                <div class="text-gray-400 mb-3">
-                    <i class="fas fa-file-upload text-4xl"></i>
-                </div>
-                <h3 class="text-lg font-medium text-gray-600 mb-2">Файлы не прикреплены</h3>
-                <p class="text-gray-500">Загрузите файлы для проекта, используя поле выше</p>
-            </div>
+            <label>{{ $t('files') }}</label>
+            <input type="file" multiple @change="handleFileChange" />
+            <ul v-if="editingItem">
+                <li v-for="file in editingItem.getFormattedFiles()" :key="file.path" class="flex items-center gap-2">
+                    <i :class="file.icon"></i>
+                    <a :href="file.url" target="_blank" download class="text-blue-600 hover:underline">{{ file.name
+                    }}</a>
+                    <button @click="showDeleteFileDialogByPath(file.path)" class="text-red-500">{{ $t('delete') }}</button>
+                </li>
+            </ul>
         </div>
         <div v-show="currentTab === 'balance'">
             <ProjectBalanceTab v-if="editingItem" :editing-item="editingItem" />
@@ -112,23 +47,21 @@
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove"
-            :disabled="!$store.getters.hasPermission('projects_delete') || uploading">
-            Удалить
+            :disabled="!$store.getters.hasPermission('projects_delete')">
+            {{ $t('delete') }}
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('projects_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('projects_create')) || uploading">
-            Сохранить
+            (editingItemId == null && !$store.getters.hasPermission('projects_create'))">
+            {{ $t('save') }}
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="'Подтвердите удаление проекта'" :confirm-text="'Удалить проект'" :leave-text="'Отмена'" />
+        :descr="$t('deleteProject')" :confirm-text="$t('deleteProject')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="uploading ? 'Дождитесь завершения загрузки файлов перед закрытием формы' : 'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" 
-        :confirm-text="uploading ? 'Ок' : 'Закрыть без сохранения'" 
-        :leave-text="uploading ? 'Ок' : 'Остаться'" />
+        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     <AlertDialog :dialog="deleteFileDialog" @confirm="confirmDeleteFile" @leave="closeDeleteFileDialog"
-        :descr="`Подтвердите удаление файла '${editingItem?.files?.find(f => f.path === deleteFileIndex)?.name || 'без имени'}'`"
-        :confirm-text="'Удалить файл'" :leave-text="'Отмена'" />
+        :descr="`${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`"
+                  :confirm-text="$t('deleteFile')" :leave-text="$t('cancel')" />
 </template>
 
 <script>
@@ -171,10 +104,18 @@ export default {
             deleteFileIndex: -1,
             currentTab: 'info',
             tabs: [
-                { name: 'info', label: 'Информация' },
-                { name: 'files', label: 'Файлы' },
-                { name: "balance", label: "Баланс" },
+                { name: 'info', label: 'info' },
+                { name: 'files', label: 'files' },
+                { name: "balance", label: "balance" },
             ],
+        }
+    },
+    computed: {
+        translatedTabs() {
+            return this.tabs.map(tab => ({
+                ...tab,
+                label: this.$t(tab.label)
+            }));
         }
     },
     created() {
@@ -206,7 +147,7 @@ export default {
         },
         async save() {
             if (this.uploading) {
-                alert('Дождитесь завершения загрузки файлов');
+                alert(this.$t('waitForFileUpload'));
                 return;
             }
             this.saveLoading = true;
@@ -256,7 +197,7 @@ export default {
         },
         async handleFileChange(event) {
             if (!this.editingItemId) {
-                alert('Сначала сохраните проект, затем прикрепляйте файлы');
+                alert(this.$t('saveProjectFirstThenAttachFiles'));
                 event.target.value = '';
                 return;
             }
@@ -267,7 +208,7 @@ export default {
             try {
                 const uploadedFiles = await ProjectController.uploadFiles(this.editingItemId, files);
                 // Обновляем файлы в editingItem для немедленного отображения
-                if (this.editingItem) {
+                if (this.editingItem && this.editingItem.files) {
                     this.editingItem.files = uploadedFiles;
                 }
                 event.target.value = '';
@@ -290,7 +231,7 @@ export default {
             try {
                 const updatedFiles = await ProjectController.deleteFile(this.editingItemId, this.deleteFileIndex);
                 // Обновляем файлы в editingItem для немедленного отображения
-                if (this.editingItem) {
+                if (this.editingItem && this.editingItem.files) {
                     this.editingItem.files = updatedFiles;
                 }
             } catch (e) {

@@ -1,6 +1,6 @@
 <template>
     <div class="relative">
-        <input v-model="searchQuery" type="text" placeholder="Поиск по ID, имени, телефону, email или адресу"
+        <input v-model="searchQuery" type="text" :placeholder="$t('searchPlaceholder')"
             class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#337AB7]" />
         <i v-if="searchQuery"
             class="fas fa-times absolute right-8 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer"
