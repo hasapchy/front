@@ -34,14 +34,14 @@ const routes = [
         path: "/",
         name: "Home",
         component: HomePage,
-        meta: { title: "Моя компания", requiresAuth: true },
+        meta: { title: "myCompany", requiresAuth: true },
       },
       {
         path: "/sales",
         name: "Sales",
         component: SalesPage,
         meta: {
-          title: "Продажи",
+          title: "sales",
           requiresAuth: true,
           showSearch: true,
           permission: "sales_view",
@@ -51,23 +51,23 @@ const routes = [
         path: "/orders",
         name: "Orders",
         component: OrdersPage,
-        meta: { title: "Заказы", requiresAuth: true, showSearch: true },
+        meta: { title: "orders", requiresAuth: true, showSearch: true },
       },
       {
         path: "/transactions",
         name: "Transactions",
         component: TransactionsPage,
         meta: {
-          title: "Финансы",
+          title: "finance",
           requiresAuth: true,
           showSearch: true,
           binded: [
             {
-              name: "Трансферы",
+              name: "transfers",
               path: "/transfers",
             },
             {
-              name: "Кассы",
+              name: "cashRegisters",
               path: "/cash-registers",
             },
           ],
@@ -78,15 +78,15 @@ const routes = [
         name: "Transfers",
         component: TransfersPage,
         meta: {
-          title: "Трансферы",
+          title: "transfers",
           requiresAuth: true,
           binded: [
             {
-              name: "Финансы",
+              name: "finance",
               path: "/transactions",
             },
             {
-              name: "Кассы",
+              name: "cashRegisters",
               path: "/cash-registers",
             },
           ],
@@ -96,60 +96,60 @@ const routes = [
         path: "/warehouses",
         name: "Warehouses",
         component: WarehousesPage,
-        meta: { title: "Склады", requiresAuth: true },
+        meta: { title: "warehouses", requiresAuth: true },
       },
       {
         path: "/clients",
         name: "Clients",
         component: ClientsPage,
-        meta: { title: "Клиенты", requiresAuth: true, showSearch: true },
+        meta: { title: "clients", requiresAuth: true, showSearch: true },
       },
       {
         path: "/projects",
         name: "Projects",
         component: ProjectsPage,
-        meta: { title: "Проекты", requiresAuth: true },
+        meta: { title: "projects", requiresAuth: true },
       },
       {
         path: "/admin/warehouses",
         name: "Admin-Warehouses",
         component: AdminWarehousesPage,
-        meta: { title: "Склады", requiresAuth: true },
+        meta: { title: "warehouses", requiresAuth: true },
       },
       {
         path: "/categories",
         name: "Categories",
         component: CategoriesPage,
-        meta: { title: "Категории", requiresAuth: true },
+        meta: { title: "categories", requiresAuth: true },
       },
       {
         path: "/order_statuses",
         name: "order_statuses",
         component: OrderStatusesPage,
-        meta: { title: "Статусы заказов", requiresAuth: true },
+        meta: { title: "orderStatuses", requiresAuth: true },
       },
       {
         path: "/order_categories",
         name: "order_categories",
         component: OrderCategoriesPage,
-        meta: { title: "Типы заказов", requiresAuth: true },
+        meta: { title: "orderTypes", requiresAuth: true },
       },
       {
         path: "/users",
         name: "users",
         component: UsersPage,
-        meta: { title: "Пользователи", requiresAuth: true },
+        meta: { title: "users", requiresAuth: true },
       },
       {
         path: "/products",
         name: "Products",
         component: ProductsPage,
         meta: {
-          title: "Товары",
+          title: "products",
           requiresAuth: true,
           binded: [
             {
-              name: "Услуги",
+              name: "services",
               path: "/services",
             },
           ],
@@ -160,11 +160,11 @@ const routes = [
         name: "Sevices",
         component: ServicesPage,
         meta: {
-          title: "Услуги",
+          title: "services",
           requiresAuth: true,
           binded: [
             {
-              name: "Товары",
+              name: "products",
               path: "/products",
             },
           ],
@@ -175,15 +175,15 @@ const routes = [
         name: "Cash-Registers",
         component: CashRegistersPage,
         meta: {
-          title: "Кассы",
+          title: "cashRegisters",
           requiresAuth: true,
           binded: [
             {
-              name: "Трансферы",
+              name: "transfers",
               path: "/transfers",
             },
             {
-              name: "Финансы",
+              name: "finance",
               path: "/transactions",
             },
           ],
@@ -194,7 +194,7 @@ const routes = [
         name: "Settings",
         component: SystemSettingsPage,
         meta: { 
-          title: "Настройки системы", 
+          title: "systemSettings", 
           requiresAuth: true,
           permission: "system_settings_view"
         },

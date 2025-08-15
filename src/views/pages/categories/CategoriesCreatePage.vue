@@ -1,25 +1,26 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">Категория</h2>
+        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editCategory') : $t('createCategory') }}</h2>
         <div>
-            <label class="required">Название</label>
+                          <label class="required">{{ $t('name') }}</label>
             <input type="text" v-model="name">
         </div>
 
         <div class="mt-4">
-            <label>Назначить пользователей</label>
+            <label>{{ $t('assignUsers') }}</label>
             <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
-                <label v-for="user, index in users" :key="user.id"
-                    class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-                    <input type="checkbox" :value="user.id" v-model="selectedUsers" :id="'user-' + user.id">
-                    <span class="text-black">{{ user.name }}</span>
-                </label>
+                <template v-for="user in users" :key="user.id">
+                    <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+                        <input type="checkbox" :value="user.id" v-model="selectedUsers" :id="'user-' + user.id">
+                        <span class="text-black">{{ user.name }}</span>
+                    </label>
+                </template>
             </div>
         </div>
         <div class=" mt-4 mb-2">
-            <label class="block mb-1">Родительская категория</label>
+                          <label class="block mb-1">{{ $t('parentCategory') }}</label>
             <select v-model="selectedParentCategoryId">
-                <option value="">Нет</option>
+                                  <option value="">{{ $t('no') }}</option>
                 <option v-if="allCategories.length" v-for="parent in allCategories" :value="parent.id">{{ parent.name }}
                 </option>
             </select>
@@ -30,17 +31,17 @@
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove"
             :disabled="!$store.getters.hasPermission('categories_delete')">
-            Удалить
+            {{ $t('delete') }}
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('categories_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('categories_create'))">
-            Сохранить
+            {{ $t('save') }}
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="'Подтвердите удаление категории'" :confirm-text="'Удалить категорию'" :leave-text="'Отмена'" />
+        :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
+        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 

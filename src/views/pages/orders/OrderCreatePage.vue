@@ -1,54 +1,54 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">Заказ</h2>
-        <TabBar :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
+        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editOrder') : $t('createOrder') }}</h2>
+        <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
         <div>
             <div v-show="currentTab === 'info'">
                 <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
                 <div>
-                    <label class="required">Тип</label>
+                    <label class="required">{{ $t('type') }}</label>
                     <select v-model="categoryId" required>
-                        <option value="">Нет</option>
+                        <option value="">{{ $t('no') }}</option>
                         <option v-for="parent in allCategories" :key="parent.id" :value="parent.id">{{ parent.name }}
                         </option>
                     </select>
                 </div>
                 <div>
-                    <label>Дата</label>
+                    <label>{{ $t('date') }}</label>
                     <input type="datetime-local" v-model="date" :disabled="!!editingItemId">
                 </div>
                 <div>
-                    <label class="required">Касса</label>
+                    <label class="required">{{ $t('cashRegister') }}</label>
                     <select v-model="cashId" :disabled="!!editingItemId">
-                        <option value="">Нет</option>
+                        <option value="">{{ $t('no') }}</option>
                         <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">
                             {{ c.name }} ({{ c.currency_symbol }})
                         </option>
                     </select>
                 </div>
                 <div>
-                    <label>Описание</label>
+                    <label>{{ $t('description') }}</label>
                     <textarea v-model="description" :disabled="!!editingItemId"
                         class="w-full border rounded p-2"></textarea>
                 </div>
                 <div>
-                    <label>Проект</label>
+                    <label>{{ $t('project') }}</label>
                     <select v-model="projectId" :disabled="!!editingItemId">
-                        <option value="">Нет</option>
+                        <option value="">{{ $t('no') }}</option>
                         <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">{{ parent.name }}
                         </option>
                     </select>
                 </div>
                 <div>
-                    <label>Примечание</label>
+                    <label>{{ $t('note') }}</label>
                     <input type="text" v-model="note" :disabled="!!editingItemId">
                 </div>
             </div>
             <div v-show="currentTab === 'products'">
                 <div>
-                    <label class="required">Склад</label>
+                    <label class="required">{{ $t('warehouse') }}</label>
                     <select v-model="warehouseId" required :disabled="!!editingItemId">
-                        <option value="">Нет</option>
+                        <option value="">{{ $t('no') }}</option>
                         <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">{{ parent.name }}
                         </option>
                     </select>
@@ -62,7 +62,7 @@
                     :project-id="projectId" :cash-id="cashId" :currency-symbol="currencySymbol"
                     @updated-paid="paidTotalAmount = $event" />
                 <div v-else class="p-4 text-gray-500">
-                    Сначала сохраните заказ, чтобы добавить/просматривать транзакции.
+                    {{ $t('saveOrderFirst') }}
                 </div>
             </div>
         </div>
@@ -81,17 +81,17 @@
 
         <!-- Информация в одной строке -->
         <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
-            <div>К оплате: <span class="font-bold">{{ totalPrice.toFixed(2) }}{{ currencySymbol }}</span></div>
-            <div>Оплачено: <span class="font-bold">{{ paidTotalAmount.toFixed(2) }}{{ currencySymbol }}</span></div>
-            <div>Итого: <span class="font-bold">{{ (totalPrice - paidTotalAmount).toFixed(2) }}{{ currencySymbol
+            <div>{{ $t('toPay') }}: <span class="font-bold">{{ totalPrice.toFixed(2) }}{{ currencySymbol }}</span></div>
+            <div>{{ $t('paid') }}: <span class="font-bold">{{ paidTotalAmount.toFixed(2) }}{{ currencySymbol }}</span></div>
+            <div>{{ $t('total') }}: <span class="font-bold">{{ (totalPrice - paidTotalAmount).toFixed(2) }}{{ currencySymbol
             }}</span></div>
         </div>
     </div>
 
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="'Подтвердите удаление заказа'" :confirm-text="'Удалить заказ'" :leave-text="'Отмена'" />
+        :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
+        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 <script>
@@ -123,9 +123,9 @@ export default {
         return {
             currentTab: 'info',
             tabs: [
-                { name: 'info', label: 'Информация' },
-                { name: 'products', label: 'Товары' },
-                { name: 'transactions', label: 'Транзакции' }
+                { name: 'info', label: 'info' },
+                { name: 'products', label: 'products' },
+                { name: 'transactions', label: 'transactions' }
             ],
             selectedClient: this.editingItem?.client || null,
             projectId: this.editingItem?.projectId || '',
@@ -196,6 +196,12 @@ export default {
         totalPrice() {
             return this.subtotal - this.discountAmount;
         },
+        translatedTabs() {
+            return this.tabs.map(tab => ({
+                ...tab,
+                label: this.$t(tab.label)
+            }));
+        }
     },
     methods: {
         // Переопределяем метод getFormState из миксина

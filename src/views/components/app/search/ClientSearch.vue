@@ -1,14 +1,14 @@
 <template>
     <div>
         <div v-if="selectedClient == null" class="relative">
-            <label class="block mb-1 required">Клиент</label>
-                         <input type="text" v-model="clientSearch" placeholder="Введите имя или номер клиента"
+            <label class="block mb-1 required">{{ $t('client') }}</label>
+                         <input type="text" v-model="clientSearch" :placeholder="$t('enterClientNameOrNumber')"
                  class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="handleBlur"
                  :disabled="disabled" />
             <transition name="appear">
                 <ul v-show="showDropdown"
                     class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-                    <li v-if="clientSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
+                    <li v-if="clientSearchLoading" class="p-2 text-gray-500">{{ $t('loading') }}</li>
                                          <template v-else-if="clientSearch.length === 0">
                          <li v-for="client in lastClients" :key="client.id" @mousedown.prevent="selectClient(client)"
                              class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
@@ -18,8 +18,8 @@
                              </div>
                          </li>
                      </template>
-                     <li v-else-if="clientSearch.length < 3" class="p-2 text-gray-500">Минимум 3 символа</li>
-                     <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
+                     <li v-else-if="clientSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}</li>
+                     <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">{{ $t('notFound') }}</li>
                      <li v-for="client in clientResults" :key="client.id" @mousedown.prevent="() => selectClient(client)"
                          class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
                          <div class="flex justify-between">
@@ -29,9 +29,9 @@
                          <span
                              :class="client.balanceNumeric() == 0 ? 'text-[#337AB7]' : client.balanceNumeric() > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
                              {{ client.balanceFormatted() }}
-                             <span v-if="client.balanceNumeric() > 0">(Клиент должен нам)</span>
-                             <span v-else-if="client.balanceNumeric() < 0">(Мы должны клиенту)</span>
-                             <span v-else>(Взаимный расчет)</span>
+                             <span v-if="client.balanceNumeric() > 0">({{ $t('clientOwesUs') }})</span>
+                             <span v-else-if="client.balanceNumeric() < 0">({{ $t('weOweClient') }})</span>
+                             <span v-else>({{ $t('mutualSettlement') }})</span>
                          </span>
                      </li>
                      <li class="p-2 border-t border-gray-300 bg-gray-50 sticky bottom-0">
@@ -40,7 +40,7 @@
                              :is-full="true"
                              icon="fas fa-plus"
                              @mousedown.prevent="openCreateClientModal">
-                             Создать клиента{{ clientSearch ? ` "${clientSearch}"` : '' }}
+                             {{ $t('createClient') }}{{ clientSearch ? ` "${clientSearch}"` : '' }}
                          </PrimaryButton>
                      </li>
                 </ul>
@@ -50,16 +50,16 @@
             <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
                 <div class="flex justify-between items-center">
                     <div>
-                        <label class="required">Клиент</label>
-                        <p><span class="font-semibold text-sm">Имя:</span> {{ selectedClient.fullName() }}</p>
-                        <p><span class="font-semibold text-sm">Номер:</span> {{ selectedClient.phones[0].phone }}</p>
-                        <p><span class="font-semibold text-sm">Баланс:</span>
+                        <label class="required">{{ $t('client') }}</label>
+                        <p><span class="font-semibold text-sm">{{ $t('name') }}:</span> {{ selectedClient.fullName() }}</p>
+                        <p><span class="font-semibold text-sm">{{ $t('phone') }}:</span> {{ selectedClient.phones[0].phone }}</p>
+                        <p><span class="font-semibold text-sm">{{ $t('balance') }}:</span>
                             <span
                                 :class="selectedClient.balanceNumeric() == 0 ? 'text-[#337AB7]' : selectedClient.balanceNumeric() > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
                                 {{ selectedClient.balanceFormatted() }}
-                                <span v-if="selectedClient.balanceNumeric() > 0">(Клиент должен нам)</span>
-                                <span v-else-if="selectedClient.balanceNumeric() < 0">(Мы должны клиенту)</span>
-                                <span v-else>(Взаимный расчет)</span>
+                                <span v-if="selectedClient.balanceNumeric() > 0">({{ $t('clientOwesUs') }})</span>
+                                <span v-else-if="selectedClient.balanceNumeric() < 0">({{ $t('weOweClient') }})</span>
+                                <span v-else>({{ $t('mutualSettlement') }})</span>
                             </span>
                         </p>
                     </div>
@@ -169,7 +169,7 @@ export default {
             }
         },
         onClientCreatedError(error) {
-            this.showNotification('Ошибка создания клиента', error, true);
+            this.showNotification(this.$t('errorCreatingClient'), error, true);
         },
                  handleBlur() {
              requestAnimationFrame(() => {

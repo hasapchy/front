@@ -1,23 +1,23 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">Проект</h2>
-        <TabBar :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => { currentTab = t }" />
+        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editProject') : $t('createProject') }}</h2>
+        <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { currentTab = t }" />
         <div v-show="currentTab === 'info'">
             <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
             <div>
-                <label class="required">Название</label>
+                <label class="required">{{ $t('name') }}</label>
                 <input type="text" v-model="name">
             </div>
             <div>
-                <label>Дата проекта</label>
+                <label>{{ $t('projectDate') }}</label>
                 <input type="datetime-local" v-model="date" :disabled="!!editingItemId">
             </div>
             <div>
-                <label>Бюджет проекта</label>
+                <label>{{ $t('projectBudget') }}</label>
                 <input type="number" v-model="budget">
             </div>
             <div>
-                <label class="required">Назначить пользователей</label>
+                <label class="required">{{ $t('assignUsers') }}</label>
                 <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
                     <label v-for="user in users" :key="user.id"
                         class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
@@ -29,14 +29,14 @@
             </div>
         </div>
         <div v-show="currentTab === 'files'">
-            <label>Файлы</label>
+            <label>{{ $t('files') }}</label>
             <input type="file" multiple @change="handleFileChange" />
             <ul v-if="editingItem">
                 <li v-for="file in editingItem.getFormattedFiles()" :key="file.path" class="flex items-center gap-2">
                     <i :class="file.icon"></i>
                     <a :href="file.url" target="_blank" download class="text-blue-600 hover:underline">{{ file.name
                     }}</a>
-                    <button @click="showDeleteFileDialogByPath(file.path)" class="text-red-500">Удалить</button>
+                    <button @click="showDeleteFileDialogByPath(file.path)" class="text-red-500">{{ $t('delete') }}</button>
                 </li>
             </ul>
         </div>
@@ -48,20 +48,20 @@
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove"
             :disabled="!$store.getters.hasPermission('projects_delete')">
-            Удалить
+            {{ $t('delete') }}
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('projects_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('projects_create'))">
-            Сохранить
+            {{ $t('save') }}
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="'Подтвердите удаление проекта'" :confirm-text="'Удалить проект'" :leave-text="'Отмена'" />
+        :descr="$t('deleteProject')" :confirm-text="$t('deleteProject')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
+        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     <AlertDialog :dialog="deleteFileDialog" @confirm="confirmDeleteFile" @leave="closeDeleteFileDialog"
-        :descr="`Подтвердите удаление файла '${files[deleteFileIndex]?.name || 'без имени'}'`"
-        :confirm-text="'Удалить файл'" :leave-text="'Отмена'" />
+        :descr="`${$t('deleteFileConfirm')} '${files[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`"
+                  :confirm-text="$t('deleteFile')" :leave-text="$t('cancel')" />
 </template>
 
 <script>
@@ -105,10 +105,18 @@ export default {
             deleteFileIndex: -1,
             currentTab: 'info',
             tabs: [
-                { name: 'info', label: 'Информация' },
-                { name: 'files', label: 'Файлы' },
-                { name: "balance", label: "Баланс" },
+                { name: 'info', label: 'info' },
+                { name: 'files', label: 'files' },
+                { name: "balance", label: "balance" },
             ],
+        }
+    },
+    computed: {
+        translatedTabs() {
+            return this.tabs.map(tab => ({
+                ...tab,
+                label: this.$t(tab.label)
+            }));
         }
     },
     created() {
@@ -142,7 +150,7 @@ export default {
         },
         async save() {
             if (this.uploading) {
-                alert('Дождитесь завершения загрузки файлов');
+                alert(this.$t('waitForFileUpload'));
                 return;
             }
             this.saveLoading = true;
@@ -192,7 +200,7 @@ export default {
         },
         async handleFileChange(event) {
             if (!this.editingItemId) {
-                alert('Сначала сохраните проект, затем прикрепляйте файлы');
+                alert(this.$t('saveProjectFirstThenAttachFiles'));
                 event.target.value = '';
                 return;
             }

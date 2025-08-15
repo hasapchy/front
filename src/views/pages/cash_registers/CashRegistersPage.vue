@@ -1,7 +1,7 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <PrimaryButton :onclick="() => { showModal(null) }"
-            :disabled="!$store.getters.hasPermission('cash_registers_create')" icon="fas fa-plus">Добавить кассу
+                <PrimaryButton :onclick="() => { showModal(null) }" 
+            :disabled="!$store.getters.hasPermission('cash_registers_create')" icon="fas fa-plus">{{ $t('addCashRegister') }}
         </PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
@@ -23,8 +23,8 @@
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
-        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
+            :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -63,12 +63,12 @@ export default {
             //editingItem: null,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: '№', size: 60 },
-                { name: 'name', label: 'Название' },
-                { name: 'balance', label: 'Баланс' },
-                { name: 'users', label: 'Доступ' },
-                { name: 'createdAt', label: 'Дата создания' },
-                { name: 'dateUser', label: 'Дата / Пользователь', html: true },
+                { name: 'id', label: this.$t('number'), size: 60 },
+                { name: 'name', label: this.$t('name') },
+                { name: 'balance', label: this.$t('balance') },
+                { name: 'users', label: this.$t('access') },
+                { name: 'createdAt', label: this.$t('creationDate') },
+                { name: 'dateUser', label: this.$t('dateUser'), html: true },
             ],
         }
     },
@@ -82,7 +82,7 @@ export default {
                 case 'balance':
                     return (i.balance || 0) + ' ' + i.currency_symbol;
                 case 'users':
-                    return (i.users || '').length + ' пользователей(-ль)';
+                    return (i.users || '').length + ' ' + this.$t('users');
                 case 'createdAt':
                     return i.formatCreatedAt();
                 case 'dateUser':
@@ -108,27 +108,27 @@ export default {
                 const new_data = await CashRegisterController.getItems(page);
                 this.data = new_data;
             } catch (error) {
-                this.showNotification('Ошибка получения списка касс', error.message, true);
+                this.showNotification(this.$t('errorGettingCashRegisterList'), error.message, true);
             }
             if (!silent) {
                 this.loading = false;
             }
         },
         handleSaved() {
-            this.showNotification('Касса успешно добавлена', '', false);
+            this.showNotification(this.$t('cashRegisterSuccessfullyAdded'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleSavedError(m) {
-            this.showNotification('Ошибка сохранения кассы', m, true);
+            this.showNotification(this.$t('errorSavingCashRegister'), m, true);
         },
         handleDeleted() {
-            this.showNotification('Касса успешно удалена', '', false);
+            this.showNotification(this.$t('cashRegisterSuccessfullyDeleted'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleDeletedError(m) {
-            this.showNotification('Ошибка удаления кассы', m, true);
+            this.showNotification(this.$t('errorDeletingCashRegister'), m, true);
         }
     },
     computed: {

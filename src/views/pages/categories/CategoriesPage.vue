@@ -1,14 +1,14 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <PrimaryButton :onclick="() => { showModal(null) }" :disabled="!$store.getters.hasPermission('sales_create')"
-            icon="fas fa-plus">Добавить категорию</PrimaryButton>
+        <PrimaryButton :onclick="() => { showModal(null) }" 
+  icon="fas fa-plus">{{ $t('addCategory') }}</PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
-        <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.categories" :columns-config="columnsConfig" :table-data="data.items"
+        <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
+            <DraggableTable table-key="admin.categories" :columns-config="translatedColumnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
@@ -22,8 +22,8 @@
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
-        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
+            :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -40,9 +40,10 @@ import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin],
+    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
     components: {
         NotificationToast,
         PrimaryButton,
@@ -62,12 +63,12 @@ export default {
             //editingItem: null,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: '№', size: 60 },
-                { name: 'name', label: 'Название' },
-                { name: 'parentName', label: 'Родительская категория' },
-                { name: 'users', label: 'Доступ' },
-                { name: 'userName', label: 'Создатель' },
-                { name: 'createdAt', label: 'Дата создания' }
+                { name: 'id', label: 'number', size: 60 },
+                { name: 'name', label: 'name' },
+                { name: 'parentName', label: 'parentCategory' },
+                { name: 'users', label: 'access' },
+                { name: 'userName', label: 'creator' },
+                { name: 'createdAt', label: 'creationDate' }
             ],
         }
     },
@@ -79,7 +80,7 @@ export default {
         itemMapper(i, c) {
             switch (c) {
                 case 'users':
-                    return (i.users || '').length + ' пользователей(-ль)';
+                    return (i.users || '').length + ' ' + this.$t('users');
                 case 'createdAt':
                     return i.formatCreatedAt();
                 default:
@@ -104,27 +105,27 @@ export default {
                 const new_data = await CategoryController.getItems(page);
                 this.data = new_data;
             } catch (error) {
-                this.showNotification('Ошибка получения списка категорий', error.message, true);
+                this.showNotification(this.$t('errorGettingCategoryList'), error.message, true);
             }
             if (!silent) {
                 this.loading = false;
             }
         },
         handleSaved() {
-            this.showNotification('Категория успешно добавлена', '', false);
+                            this.showNotification(this.$t('categorySuccessfullyAdded'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleSavedError(m) {
-            this.showNotification('Ошибка сохранения категории', m, true);
+            this.showNotification(this.$t('errorSavingCategory'), m, true);
         },
         handleDeleted() {
-            this.showNotification('Категория успешно удалена', '', false);
+                            this.showNotification(this.$t('categorySuccessfullyDeleted'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleDeletedError(m) {
-            this.showNotification('Ошибка удаления категории', m, true);
+            this.showNotification(this.$t('errorDeletingCategory'), m, true);
         }
     },
     computed: {

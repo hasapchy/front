@@ -3,7 +3,7 @@
         <div class="flex justify-start items-center">
             <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
                 :disabled="!$store.getters.hasPermission('sales_create')">
-                Добавить продажу
+                {{ $t('addSale') }}
             </PrimaryButton>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
@@ -12,7 +12,7 @@
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.sales" :columns-config="columnsConfig" :table-data="data.items"
+            <DraggableTable table-key="admin.sales" :columns-config="translatedColumnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
@@ -26,8 +26,8 @@
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
-        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
+            :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -59,14 +59,14 @@ export default {
             controller: SaleController,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: '№', size: 60 },
-                { name: 'dateUser', label: 'Дата / Пользователь' },
-                { name: 'client', label: 'Покупатель', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
-                { name: 'cashName', label: 'Касса' },
-                { name: 'warehouseName', label: 'Склад' },
-                { name: 'products', label: 'Товары', html: true },
-                { name: 'price', label: 'Сумма продажи' },
-                { name: 'note', label: 'Примечание' },
+                { name: 'id', label: 'number', size: 60 },
+                { name: 'dateUser', label: 'dateUser' },
+                { name: 'client', label: 'buyer', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
+                { name: 'cashName', label: 'cashRegister' },
+                { name: 'warehouseName', label: 'warehouse' },
+                { name: 'products', label: 'products', html: true },
+                { name: 'price', label: 'saleAmount' },
+                { name: 'note', label: 'note' },
             ],
         }
     },
@@ -94,7 +94,7 @@ export default {
                 case 'price':
                     return i.priceInfo();
                 case 'client':
-                    if (!i.client) return '<span class="text-gray-500">Не указан</span>';
+                    if (!i.client) return '<span class="text-gray-500">' + this.$t('notSpecified') + '</span>';
                     const name = i.client.fullName();
                     const phone = i.client.phones?.[0]?.phone;
                     return phone
@@ -126,32 +126,38 @@ export default {
                 const new_data = await SaleController.getItemsPaginated(page, this.searchQuery);
                 this.data = new_data;
             } catch (error) {
-                this.showNotification('Ошибка получения списка продаж', error.message, true);
+                this.showNotification(this.$t('errorGettingSaleList'), error.message, true);
             }
             if (!silent) {
                 this.loading = false;
             }
         },
         handleSaved() {
-            this.showNotification('Добавлена запись продажи', '', false);
+            this.showNotification(this.$t('saleRecordAdded'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleSavedError(m) {
-            this.showNotification('Ошибка сохранения записи', m, true);
+            this.showNotification(this.$t('errorSavingRecord'), m, true);
         },
         handleDeleted() {
-            this.showNotification('Запись успешно удалена', '', false);
+            this.showNotification(this.$t('recordSuccessfullyDeleted'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleDeletedError(m) {
-            this.showNotification('Ошибка удаления записи', m, true);
+            this.showNotification(this.$t('errorDeletingRecord'), m, true);
         }
     },
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
+        },
+        translatedColumnsConfig() {
+            return this.columnsConfig.map(column => ({
+                ...column,
+                label: column.label === '#' ? '#' : this.$t(column.label)
+            }));
         }
     },
 }

@@ -1,13 +1,13 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">Склад</h2>
+        <h2 class="text-lg font-bold mb-4">{{ warehouse ? $t('editWarehouse') : $t('createWarehouse') }}</h2>
         <div>
-            <label>Название</label>
+            <label>{{ $t('name') }}</label>
             <input type="text" v-model="name">
         </div>
 
         <div class="mt-4">
-            <label>Назначить пользователей</label>
+            <label>{{ $t('assignUsers') }}</label>
             <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
                 <label v-for="user in users" :key="user.id"
                     class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
@@ -21,17 +21,17 @@
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove"
             :disabled="!$store.getters.hasPermission('warehouses_delete')">
-            Удалить
+            {{ $t('delete') }}
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouses_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('warehouses_create'))">
-            Сохранить
+            {{ $t('save') }}
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="'Подтвердите удаление склада'" :confirm-text="'Удалить склад'" :leave-text="'Отмена'" />
+        :descr="$t('deleteWarehouse')" :confirm-text="$t('deleteWarehouse')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
+        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 

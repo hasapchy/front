@@ -1,7 +1,7 @@
 <template>
     <div class="flex justify-between items-center mb-2">
         <div class="flex justify-start items-center">
-            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Переместить</PrimaryButton>
+            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('addMovement') }}</PrimaryButton>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
@@ -9,7 +9,7 @@
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.warehouse_movements" :columns-config="columnsConfig"
+            <DraggableTable table-key="admin.warehouse_movements" :columns-config="translatedColumnsConfig"
                 :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
@@ -23,8 +23,8 @@
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
-        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
+                  :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -51,15 +51,23 @@ export default {
             loading: false,
             selectedIds: [],
             controller: WarehouseMovementController,
-            //editingItem: null,
+            editingItem: null,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: '№', size: 60 },
-                { name: 'dateUser', label: 'Дата / Пользователь' },
-                { name: 'direction', label: 'Направление', html: true },
-                { name: 'products', label: 'Товары', html: true },
-                { name: 'note', label: 'Примечание' },
+                { name: 'id', label: 'number', size: 60 },
+                { name: 'dateUser', label: 'dateUser' },
+                { name: 'direction', label: 'direction', html: true },
+                { name: 'products', label: 'products', html: true },
+                { name: 'note', label: 'note' },
             ],
+        }
+    },
+    computed: {
+        translatedColumnsConfig() {
+            return this.columnsConfig.map(column => ({
+                ...column,
+                label: column.label === '#' ? '#' : this.$t(column.label)
+            }));
         }
     },
     created() {
@@ -118,8 +126,6 @@ export default {
         handleDeletedError(m) {
             this.showNotification('Ошибка удаления записи', m, true);
         }
-    },
-    computed: {
-    },
+    }
 }
 </script>

@@ -35,10 +35,10 @@ export default {
         return {
             currentTab: 'stock',
             tabs: [
-                { name: 'stock', label: 'Сток' },
-                { name: 'posting', label: 'Оприходование' },
-                { name: 'movement', label: 'Перемещение' },
-                { name: 'writeoff', label: 'Списание' },
+                { name: 'stock', label: this.$t('stock') },
+                { name: 'posting', label: this.$t('receipt') },
+                { name: 'movement', label: this.$t('movement') },
+                { name: 'writeoff', label: this.$t('writeoff') },
             ]
         }
     },

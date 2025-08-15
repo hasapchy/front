@@ -1,13 +1,13 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить проект</PrimaryButton>
+        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('addProject') }}</PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
-        <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.projects" :columns-config="columnsConfig" :table-data="data.items"
+        <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
+            <DraggableTable table-key="admin.projects" :columns-config="translatedColumnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
@@ -21,8 +21,8 @@
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
-        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
+                  :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -39,9 +39,10 @@ import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin],
+    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ProjectCreatePage, BatchButton, AlertDialog },
     data() {
         return {
@@ -52,12 +53,12 @@ export default {
             //editingItem: null,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: '№', size: 60 },
-                { name: 'name', label: 'Название' },
-                { name: 'budget', label: 'Бюджет проекта' },
-                { name: 'dateUser', label: 'Дата / пользователь' },
-                { name: 'clientId', label: 'Клиент' },
-                { name: 'users', label: 'Доступ' },
+                { name: 'id', label: 'number', size: 60 },
+                { name: 'name', label: 'name' },
+                { name: 'budget', label: 'projectBudget' },
+                { name: 'dateUser', label: 'dateUser' },
+                { name: 'clientId', label: 'client' },
+                { name: 'users', label: 'access' },
             ],
         }
     },
@@ -69,9 +70,9 @@ export default {
         itemMapper(i, c) {
             switch (c) {
                 case 'clientId':
-                    return i.clientId != null ? i.client.fullName() : 'Не указан';
+                    return i.clientId != null ? i.client.fullName() : this.$t('notSpecified');
                 case 'users':
-                    return (i.users || '').length + ' пользователей(-ль)';
+                    return (i.users || '').length + ' ' + this.$t('users');
                 case 'createdAt':
                     return i.formatCreatedAt();
                 case 'dateUser':
@@ -97,27 +98,27 @@ export default {
                 const new_data = await ProjectController.getItems(page);
                 this.data = new_data;
             } catch (error) {
-                this.showNotification('Ошибка получения списка проектов', error.message, true);
+                this.showNotification(this.$t('errorGettingProjectList'), error.message, true);
             }
             if (!silent) {
                 this.loading = false;
             }
         },
         handleSaved() {
-            this.showNotification('Проект успешно добавлен', '', false);
+            this.showNotification(this.$t('projectSuccessfullyAdded'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleSavedError(m) {
-            this.showNotification('Ошибка сохранения проекта', m, true);
+            this.showNotification(this.$t('errorSavingProject'), m, true);
         },
         handleDeleted() {
-            this.showNotification('Проект успешно удален', '', false);
+            this.showNotification(this.$t('projectSuccessfullyDeleted'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleDeletedError(m) {
-            this.showNotification('Ошибка удаления проекта', m, true);
+            this.showNotification(this.$t('errorDeletingProject'), m, true);
         }
     },
     computed: {

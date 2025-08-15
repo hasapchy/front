@@ -1,14 +1,14 @@
 <template>
     <div class="flex justify-between items-center mb-4">
         <PrimaryButton :onclick="() => { showModal(null) }" :disabled="!$store.getters.hasPermission('clients_create')"
-            icon="fas fa-plus">Добавить клиента</PrimaryButton>
+            icon="fas fa-plus">{{ $t('addClient') }}</PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
-        <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="common.clients" :columns-config="columnsConfig" :table-data="data.items"
+        <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
+            <DraggableTable table-key="common.clients" :columns-config="translatedColumnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }"
                 @selectionChange="selectedIds = $event" />
         </div>
@@ -22,8 +22,8 @@
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
-        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
+            :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -40,9 +40,10 @@ import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { eventBus } from '@/eventBus';
+import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 
 export default {
-    mixins: [batchActionsMixin, notificationMixin, modalMixin],
+    mixins: [batchActionsMixin, notificationMixin, modalMixin, tableTranslationMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog },
     data() {
         return {
@@ -52,15 +53,15 @@ export default {
             selectedIds: [],
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: '№', size: 60 },
-                { name: 'firstName', label: 'ФИО/Компания', html: true },
-                { name: 'phones', label: 'Номер телефона', html: true },
-                { name: 'emails', label: 'Email', html: true },
-                { name: 'address', label: 'Адрес' },
-                { name: 'note', label: 'Заметка' },
-                { name: 'discount', label: 'Скидка' },
-                { name: 'status', label: 'Статус', html: true },
-                { name: 'dateUser', label: 'Дата / Пользователь' },
+                { name: 'id', label: 'number', size: 60 },
+                { name: 'firstName', label: 'fullNameCompany', html: true },
+                { name: 'phones', label: 'phoneNumber', html: true },
+                { name: 'emails', label: 'email', html: true },
+                { name: 'address', label: 'address' },
+                { name: 'note', label: 'note' },
+                { name: 'discount', label: 'discount' },
+                { name: 'status', label: 'status', html: true },
+                { name: 'dateUser', label: 'dateUser' },
             ],
         }
     },
@@ -75,6 +76,7 @@ export default {
         // Удаляем слушатель события
         eventBus.off('global-search', this.handleSearch);
     },
+
     methods: {
         itemMapper(i, c) {
             switch (c) {
@@ -108,27 +110,27 @@ export default {
                 const new_data = await ClientController.getItems(page, this.searchQuery);
                 this.data = new_data;
             } catch (error) {
-                this.showNotification('Ошибка получения списка клиентов', error.message, true);
+                this.showNotification(this.$t('errorGettingClientList'), error.message, true);
             }
             if (!silent) {
                 this.loading = false;
             }
         },
         handleSaved() {
-            this.showNotification('Клиент успешно добавлен', '', false);
+            this.showNotification(this.$t('clientSuccessfullyAdded'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleSavedError(m) {
-            this.showNotification('Ошибка сохранения клиента', m, true);
+            this.showNotification(this.$t('errorSavingClient'), m, true);
         },
         handleDeleted() {
-            this.showNotification('Клиент успешн удален', '', false);
+            this.showNotification(this.$t('clientSuccessfullyDeleted'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleDeletedError(m) {
-            this.showNotification('Ошибка удаления клиента', m, true);
+            this.showNotification(this.$t('errorDeletingClient'), m, true);
         },
         handleModalClose() {
             // Проверяем, есть ли изменения в форме
