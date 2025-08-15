@@ -76,7 +76,7 @@ export default {
         return {
             data: null,
             loading: false,
-            //editingItem: null,
+
             allWarehouses: [],
             allCategories: [],
             warehouseId: '',

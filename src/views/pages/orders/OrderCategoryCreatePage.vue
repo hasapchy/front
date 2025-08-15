@@ -50,12 +50,10 @@ export default {
         }
     },
     methods: {
-                // Переопределяем метод getFormState из миксина
+        // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
-                name: this.name,
-                description: this.description,
-                status: this.status
+                name: this.name
             };
         },
         async save() {
@@ -97,7 +95,7 @@ export default {
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() { this.deleteDialog = true; },
-        closeDeleteDialog() { this.deleteDialog = false; },
+        closeDeleteDialog() { this.deleteDialog = false; }
     },
     watch: {
         editingItem: {

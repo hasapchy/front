@@ -5,12 +5,27 @@ export default class WarehouseDto {
     constructor(id, name, users = [], createdAt = '', updatedAt = '') {
         this.id = id; // Идентификатор склада
         this.name = name; // Название склада
-        this.users = users; // Список пользователей (идентификаторы)
+        this.users = users; // Список пользователей (объекты User)
         this.createdAt = createdAt; // Дата создания склада
         this.updatedAt = updatedAt; // Дата обновления склада
     }
 
     formatCreatedAt() {
         return dayjsDate(this.createdAt);
+    }
+
+    // Получить список ID пользователей
+    getUserIds() {
+        return this.users.map(user => user.id);
+    }
+
+    // Получить список имен пользователей
+    getUserNames() {
+        return this.users.map(user => user.name).join(', ');
+    }
+
+    // Проверить, есть ли пользователь с указанным ID
+    hasUser(userId) {
+        return this.users.some(user => user.id == userId);
     }
 }

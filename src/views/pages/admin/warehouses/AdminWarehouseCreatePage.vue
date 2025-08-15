@@ -59,10 +59,9 @@ export default {
     data() {
         return {
             name: this.warehouse ? this.warehouse.name : '',
-            selectedUsers: this.warehouse ? this.warehouse.users.map(user => user.id.toString()) : [],
+            selectedUsers: this.warehouse ? this.warehouse.getUserIds() : [],
             warehouseId: this.warehouse ? this.warehouse.id : null,
             users: [],
-            selectedUsers: [],
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false
@@ -150,9 +149,7 @@ export default {
             handler(newWarehouse) {
                 if (newWarehouse) {
                     this.name = newWarehouse.name || '';
-                    this.selectedUsers = Array.isArray(newWarehouse.users)
-                        ? newWarehouse.users
-                        : [];
+                    this.selectedUsers = newWarehouse.getUserIds() || [];
                     this.warehouseId = newWarehouse.id || null;
                 } else {
                     this.name = '';

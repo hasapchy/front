@@ -49,7 +49,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: ProductController,
-            //editingItem: null,
+
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: '№', size: 60 },

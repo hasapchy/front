@@ -51,7 +51,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: WarehouseMovementController,
-            //editingItem: null,
+
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: '№', size: 60 },

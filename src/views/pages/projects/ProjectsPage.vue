@@ -49,7 +49,6 @@ export default {
             loading: false,
             selectedIds: [],
             controller: ProjectController,
-            //editingItem: null,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: '№', size: 60 },
@@ -69,13 +68,15 @@ export default {
         itemMapper(i, c) {
             switch (c) {
                 case 'clientId':
-                    return i.clientId != null ? i.client.fullName() : 'Не указан';
+                    return i.client && typeof i.client.fullName === 'function' ? i.client.fullName() : '';
                 case 'users':
                     return (i.users || '').length + ' пользователей(-ль)';
                 case 'createdAt':
                     return i.formatCreatedAt();
                 case 'dateUser':
-                    return `${i.formatDate()} / ${i.userName}`;
+                    return `${i.formatDate()} / ${i.userName || i.userId}`;
+                case 'description':
+                    return i.description || 'Не указано';
                 default:
                     return i[c];
             }

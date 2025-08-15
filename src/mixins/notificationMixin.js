@@ -11,11 +11,17 @@ export default {
     };
   },
   methods: {
-    showNotification(title, subtitle = "", isDanger = false) {
-      this.$store.dispatch('showNotification', { title, subtitle, isDanger });
+    showNotification(title, subtitle = "", isDanger = false, duration = 10000) {
+      this.$store.dispatch('showNotification', { title, subtitle, isDanger, duration });
     },
     closeNotification() {
       this.$store.dispatch('closeNotification');
+    },
+    pauseNotificationTimer() {
+      this.$store.dispatch('pauseNotificationTimer');
+    },
+    resumeNotificationTimer() {
+      this.$store.dispatch('resumeNotificationTimer');
     }
   },
 };

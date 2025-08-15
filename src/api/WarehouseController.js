@@ -12,7 +12,7 @@ export default class WarehouseController {
                 return new WarehouseDto(
                     item.id,
                     item.name,
-                    item.users,
+                    item.users || [],
                     item.created_at,
                     item.updated_at
                 );
@@ -36,7 +36,7 @@ export default class WarehouseController {
                 return new WarehouseDto(
                     item.id,
                     item.name,
-                    item.users,
+                    item.users || [],
                     item.created_at,
                     item.updated_at
                 );

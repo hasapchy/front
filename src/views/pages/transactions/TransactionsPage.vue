@@ -84,7 +84,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: TransactionController,
-            //editingItem: null,
+
             allCashRegisters: [],
             cashRegisterId: '',
             dateFilter: 'all_time',

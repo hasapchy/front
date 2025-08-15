@@ -15,7 +15,7 @@ export default class ProjectController {
           client = new ClientDto(
             item.client.id,
             item.client.client_type,
-            item.client.balance,
+            item.client.balance || 0,
             item.client.is_supplier,
             item.client.is_conflict,
             item.client.first_name,
@@ -28,8 +28,8 @@ export default class ProjectController {
             item.client.discount,
             item.client.created_at,
             item.client.updated_at,
-            item.client.emails,
-            item.client.phones
+            item.client.emails || [],
+            item.client.phones || []
           );
         }
         return new ProjectDto(
@@ -41,7 +41,7 @@ export default class ProjectController {
           client,
           item.user_id,
           item.user_name,
-          item.users,
+          item.users || [],
           item.created_at,
           item.updated_at,
           item.files || []
@@ -74,7 +74,7 @@ export default class ProjectController {
           client = new ClientDto(
             item.client.id,
             item.client.client_type,
-            item.client.balance,
+            item.client.balance || 0,
             item.client.is_supplier,
             item.client.is_conflict,
             item.client.first_name,
@@ -83,10 +83,12 @@ export default class ProjectController {
             item.client.address,
             item.client.note,
             item.client.status,
+            item.client.discount_type,
+            item.client.discount,
             item.client.created_at,
             item.client.updated_at,
-            item.client.emails,
-            item.client.phones
+            item.client.emails || [],
+            item.client.phones || []
           );
         }
         return new ProjectDto(
@@ -98,7 +100,7 @@ export default class ProjectController {
           client,
           item.user_id,
           item.user_name,
-          item.users,
+          item.users || [],
           item.created_at,
           item.updated_at,
           item.files || []
@@ -107,6 +109,51 @@ export default class ProjectController {
       return items;
     } catch (error) {
       console.error("Ошибка при получении всего списка проектов:", error);
+      throw error;
+    }
+  }
+
+  static async getItem(id) {
+    try {
+      const response = await api.get(`/projects/${id}`);
+      const item = response.data;
+      
+      const client = item.client ? new ClientDto(
+        item.client.id,
+        item.client.client_type,
+        item.client.balance || 0,
+        item.client.is_supplier,
+        item.client.is_conflict,
+        item.client.first_name,
+        item.client.last_name,
+        item.client.contact_person,
+        item.client.address,
+        item.client.note,
+        item.client.status,
+        item.client.discount_type,
+        item.client.discount,
+        item.client.created_at,
+        item.client.updated_at,
+        item.client.emails || [],
+        item.client.phones || []
+      ) : null;
+
+      return new ProjectDto(
+        item.id,
+        item.name,
+        item.budget,
+        item.date,
+        item.client_id,
+        client,
+        item.user_id,
+        item.user_name,
+        item.users || [],
+        item.created_at,
+        item.updated_at,
+        item.files || []
+      );
+    } catch (error) {
+      console.error("Ошибка при получении проекта:", error);
       throw error;
     }
   }

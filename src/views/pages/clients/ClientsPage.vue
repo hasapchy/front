@@ -47,7 +47,6 @@ export default {
         return {
             data: null,
             loading: false,
-            //editingItem: null,
             controller: ClientController,
             selectedIds: [],
             columnsConfig: [

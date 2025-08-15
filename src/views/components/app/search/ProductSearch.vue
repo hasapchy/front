@@ -253,6 +253,8 @@ export default {
             modalCreateTempProduct: false,
             defaultProductType: 'product',
             defaultProductName: '',
+            tempProductCounter: 1000000, // Простой счетчик для временных товаров (начинаем с большого числа)
+            removedTempProducts: [], // Список удаленных временных товаров
         };
     },
     computed: {
@@ -357,6 +359,10 @@ export default {
                             productDto.priceType = 'purchase';
                         }
                     }
+                    // Убеждаемся, что у обычного товара есть productId
+                    if (productDto && product.id) {
+                        productDto.productId = product.id;
+                    }
                     this.products = [...this.products, productDto];
                 }
                 this.updateTotals();
@@ -371,8 +377,21 @@ export default {
             }
         },
         removeSelectedProduct(id) {
-            this.products = this.products.filter(product => product.productId !== id);
+            // Проверяем, был ли это временный товар
+            const removedProduct = this.products.find(p => p.productId === id);
+            if (removedProduct && removedProduct.isTempProduct) {
+                // Добавляем в список удаленных временных товаров
+                if (!this.removedTempProducts) {
+                    this.removedTempProducts = [];
+                }
+                this.removedTempProducts.push(removedProduct.name);
+            }
+            
+            this.products = this.products.filter(p => p.productId !== id);
             this.updateTotals();
+            
+            // Эмитим событие об удалении товара
+            this.$emit('product-removed', { id, wasTempProduct: removedProduct?.isTempProduct, name: removedProduct?.name });
         },
         handleBlur() {
             requestAnimationFrame(() => {
@@ -395,6 +414,10 @@ export default {
             this.defaultProductName = this.productSearch;
             this.modalCreateTempProduct = true;
         },
+        generateTempProductId() {
+            // Генерируем уникальный ID для временного товара
+            return this.tempProductCounter++;
+        },
         onProductCreated(newProduct) {
             this.modalCreateProduct = false;
             if (newProduct) {
@@ -407,22 +430,32 @@ export default {
         onTempProductCreated(newProduct) {
             this.modalCreateTempProduct = false;
             if (newProduct) {
-                // Для одноразового товара создаем специальный объект
+                // Создаем временный товар с уникальным ID
                 const tempProduct = {
-                    productId: null, // null для временного товара (будет обработано на бэкенде)
+                    productId: this.generateTempProductId(),
                     productName: newProduct.name,
-                    name: newProduct.name, // Добавляем поле name для совместимости
+                    name: newProduct.name,
                     quantity: newProduct.quantity,
                     price: newProduct.price,
                     description: newProduct.description,
                     unitId: newProduct.unitId,
-                    isTempProduct: true
+                    isTempProduct: true,
+                    icons() { return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>'; }
                 };
                 
                 // Добавляем в список товаров
-                this.products = [...this.products, tempProduct];
+                const updatedProducts = [...this.products, tempProduct];
+                this.$emit('update:modelValue', updatedProducts);
                 this.updateTotals();
             }
+        },
+        // Метод для получения списка удаленных временных товаров
+        getRemovedTempProducts() {
+            return [...this.removedTempProducts];
+        },
+        // Метод для сброса списка удаленных временных товаров
+        resetRemovedTempProducts() {
+            this.removedTempProducts = [];
         },
     },
     watch: {

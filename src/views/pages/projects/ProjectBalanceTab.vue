@@ -11,6 +11,7 @@
             </span>
             <span class="ml-4">Бюджет: <b>{{ budgetFormatted }} TMT</b></span>
         </div>
+
         <div v-if="balanceLoading" class="text-gray-500">Загрузка...</div>
         <div v-else-if="balanceHistory.length === 0" class="text-gray-500">
             История отсутствует
@@ -18,16 +19,29 @@
         <DraggableTable v-if="!balanceLoading && balanceHistory.length" table-key="project.balance"
             :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
             @selectionChange="selectedIds = $event" :onItemClick="handleBalanceItemClick" />
+
+
     </div>
 </template>
 
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
-import ProjectController from "@/api/ProjectController";
-// import ProjectBalanceHistoryDto from "@/dto/project/ProjectBalanceHistoryDto"; // если используете
+import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import TransactionController from "@/api/TransactionController";
+import SaleController from "@/api/SaleController";
+import OrderController from "@/api/OrderController";
+import WarehouseReceiptController from "@/api/WarehouseReceiptController";
+import api from "@/api/axiosInstance";
+import SaleDto from "@/dto/sale/SaleDto";
+import OrderDto from "@/dto/order/OrderDto";
+import ClientDto from "@/dto/client/ClientDto";
+import TransactionDto from "@/dto/transaction/TransactionDto";
 
 export default {
-    components: { DraggableTable },
+    components: {
+        DraggableTable,
+        SideModalDialog,
+    },
     props: {
         editingItem: { required: true },
     },
@@ -37,12 +51,195 @@ export default {
             balanceHistory: [],
             balance: 0,
             budget: 0,
+            selectedEntity: null,
+            entityModalOpen: false,
+            entityLoading: false,
             columnsConfig: [
                 { name: "date", label: "Дата", size: 100 },
                 { name: "source", label: "Тип" },
-                { name: "description", label: "Описание", size: 600 },
+                { name: "user", label: "Пользователь", size: 150 },
+                { name: "description", label: "Описание", size: 450 },
                 { name: "amount", label: "Сумма", size: 120, html: true },
             ],
+            ENTITY_CONFIG: {
+                transaction: {
+                    fetch: id => TransactionController.getItem(id).then(r => {
+                        let client = null;
+                        if (r.item.client) {
+                            client = new ClientDto(
+                                r.item.client.id,
+                                r.item.client.client_type,
+                                r.item.client.balance,
+                                r.item.client.is_supplier,
+                                r.item.client.is_conflict,
+                                r.item.client.first_name,
+                                r.item.client.last_name,
+                                r.item.client.contact_person,
+                                r.item.client.address,
+                                r.item.client.note,
+                                r.item.client.status,
+                                r.item.client.discount_type,
+                                r.item.client.discount,
+                                r.item.client.created_at,
+                                r.item.client.updated_at,
+                                r.item.client.emails,
+                                r.item.client.phones
+                            );
+                        }
+                        return new TransactionDto(
+                            r.item.id,
+                            r.item.type,
+                            r.item.is_transfer,
+                            r.item.cash_id,
+                            r.item.cash_name,
+                            r.item.cash_amount,
+                            r.item.cash_currency_id,
+                            r.item.cash_currency_name,
+                            r.item.cash_currency_code,
+                            r.item.cash_currency_symbol,
+                            r.item.orig_amount,
+                            r.item.orig_currency_id,
+                            r.item.orig_currency_name,
+                            r.item.orig_currency_code,
+                            r.item.orig_currency_symbol,
+                            r.item.order_id,
+                            r.item.user_id,
+                            r.item.user_name,
+                            r.item.category_id,
+                            r.item.category_name,
+                            r.item.category_type,
+                            r.item.project_id,
+                            r.item.project_name,
+                            r.item.client_id,
+                            client,
+                            r.item.note,
+                            r.item.date,
+                            r.item.created_at,
+                            r.item.updated_at
+                        );
+                    }),
+                    componentName: 'TransactionCreatePage',
+                    prop: 'editingItem',
+                },
+                sale: {
+                    fetch: id => SaleController.getItem(id).then(r => {
+                        let client = null;
+                        if (r.item.client) {
+                            client = new ClientDto(
+                                r.item.client.id,
+                                r.item.client.client_type,
+                                r.item.client.balance,
+                                r.item.client.is_supplier,
+                                r.item.client.is_conflict,
+                                r.item.client.first_name,
+                                r.item.client.last_name,
+                                r.item.client.contact_person,
+                                r.item.client.address,
+                                r.item.client.note,
+                                r.item.client.status,
+                                r.item.client.discount_type,
+                                r.item.client.discount,
+                                r.item.client.created_at,
+                                r.item.client.updated_at,
+                                r.item.client.emails,
+                                r.item.client.phones
+                            );
+                        }
+                        return new SaleDto(
+                            r.item.id,
+                            r.item.price,
+                            r.item.discount,
+                            r.item.total_price,
+                            r.item.currency_id,
+                            r.item.currency_name,
+                            r.item.currency_code,
+                            r.item.currency_symbol,
+                            r.item.cash_id,
+                            r.item.cash_name,
+                            r.item.warehouse_id,
+                            r.item.warehouse_name,
+                            r.item.user_id,
+                            r.item.user_name,
+                            r.item.project_id,
+                            r.item.project_name,
+                            r.item.transaction_id,
+                            client,
+                            r.item.products,
+                            r.item.note,
+                            r.item.date,
+                            r.item.created_at,
+                            r.item.updated_at
+                        );
+                    }),
+                    componentName: 'SaleCreatePage',
+                    prop: 'editingItem',
+                },
+                order: {
+                    fetch: id => OrderController.getItem(id).then(r => {
+                        let client = null;
+                        if (r.item.client) {
+                            client = new ClientDto(
+                                r.item.client.id,
+                                r.item.client.client_type,
+                                r.item.client.balance,
+                                r.item.client.is_supplier,
+                                r.item.client.is_conflict,
+                                r.item.client.first_name,
+                                r.item.client.last_name,
+                                r.item.client.contact_person,
+                                r.item.client.address,
+                                r.item.client.note,
+                                r.item.client.status,
+                                r.item.client.discount_type,
+                                r.item.client.discount,
+                                r.item.client.created_at,
+                                r.item.client.updated_at,
+                                r.item.client.emails,
+                                r.item.client.phones
+                            );
+                        }
+                        return new OrderDto(
+                            r.item.id,
+                            r.item.price,
+                            r.item.discount ?? 0,
+                            r.item.total_price,
+                            r.item.currency_id,
+                            r.item.currency_name,
+                            r.item.currency_code,
+                            r.item.currency_symbol,
+                            r.item.cash_id ?? null,
+                            r.item.cash_name ?? null,
+                            r.item.warehouse_id,
+                            r.item.warehouse_name,
+                            r.item.user_id,
+                            r.item.user_name,
+                            r.item.project_id,
+                            r.item.project_name,
+                            r.item.status_id,
+                            r.item.status_name,
+                            r.item.category_id,
+                            r.item.category_name,
+                            client,
+                            r.item.products,
+                            r.item.note ?? "",
+                            r.item.description ?? "",
+                            r.item.date,
+                            r.item.created_at,
+                            r.item.updated_at
+                        );
+                    }),
+                    componentName: 'OrderCreatePage',
+                    prop: 'editingItem',
+                },
+                receipt: {
+                    fetch: async id => {
+                        const { data } = await api.get(`/warehouse_receipts/${id}`);
+                        return data.item ?? data;
+                    },
+                    componentName: 'WarehousesReceiptCreatePage',
+                    prop: 'editingItem',
+                },
+            },
         };
     },
     computed: {
@@ -100,6 +297,8 @@ export default {
                     return i.formatDate();
                 case "source":
                     return i.label?.() ?? i.source;
+                case "user":
+                    return i.user_name;
                 case "description":
                     return i.description;
                 case "amount":
@@ -108,8 +307,54 @@ export default {
                     return i[c];
             }
         },
-        handleBalanceItemClick(item) {
-            // Аналогично ClientBalanceTab.vue, если нужно открывать модалки сущностей
+        async handleBalanceItemClick(item) {
+            const config = this.ENTITY_CONFIG[item.source];
+            if (!config) return;
+            this.entityModalOpen = true;
+            this.entityLoading = true;
+            try {
+                const data = await config.fetch(item.sourceId);
+                this.selectedEntity = {
+                    type: item.source,
+                    data,
+                };
+            } catch (e) {
+                this.$notify?.({ type: 'error', text: 'Ошибка при загрузке данных: ' + (e.message || e) });
+                this.entityModalOpen = false;
+                this.selectedEntity = null;
+            } finally {
+                this.entityLoading = false;
+            }
+        },
+        getModalProps(entity) {
+            const config = this.ENTITY_CONFIG[entity.type];
+            return config ? { [config.prop]: entity.data } : {};
+        },
+        async getModalComponent(type) {
+            const config = this.ENTITY_CONFIG[type];
+            if (!config || !config.componentName) return null;
+            
+            try {
+                switch (config.componentName) {
+                    case 'TransactionCreatePage':
+                        return (await import('@/views/pages/transactions/TransactionCreatePage.vue')).default;
+                    case 'SaleCreatePage':
+                        return (await import('@/views/pages/sales/SaleCreatePage.vue')).default;
+                    case 'OrderCreatePage':
+                        return (await import('@/views/pages/orders/OrderCreatePage.vue')).default;
+                    case 'WarehousesReceiptCreatePage':
+                        return (await import('@/views/pages/warehouses/WarehousesReceiptCreatePage.vue')).default;
+                    default:
+                        return null;
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки компонента:', error);
+                return null;
+            }
+        },
+        closeEntityModal() {
+            this.entityModalOpen = false;
+            this.selectedEntity = null;
         },
     },
     watch: {

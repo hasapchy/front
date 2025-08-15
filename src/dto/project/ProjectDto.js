@@ -44,6 +44,21 @@ export default class ProjectDto {
     return dayjsDate(this.updatedAt);
   }
 
+  // Получить список ID пользователей
+  getUserIds() {
+    return this.users.map(user => user.id.toString());
+  }
+
+  // Получить список имен пользователей
+  getUserNames() {
+    return this.users.map(user => user.name).join(', ');
+  }
+
+  // Проверить, есть ли пользователь с указанным ID
+  hasUser(userId) {
+    return this.users.some(user => user.id == userId);
+  }
+
   getFileUrl(file) {
     return file?.path ? `/storage/${file.path}` : "#";
   }
@@ -66,6 +81,27 @@ export default class ProjectDto {
       url: this.getFileUrl(file),
       icon: this.getFileIcon(file),
       path: file.path,
+      size: file.size,
+      mimeType: file.mime_type,
+      uploadedAt: file.uploaded_at,
+      formattedSize: this.formatFileSize(file.size),
+      formattedUploadDate: file.uploaded_at ? dayjsDate(file.uploaded_at) : ''
     }));
+  }
+
+  formatFileSize(bytes) {
+    if (!bytes) return '';
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    if (bytes === 0) return '0 Bytes';
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  hasFiles() {
+    return this.files && this.files.length > 0;
+  }
+
+  getFilesCount() {
+    return this.files ? this.files.length : 0;
   }
 }

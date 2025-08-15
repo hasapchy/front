@@ -4,14 +4,17 @@
         <TabBar :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
         <div>
             <div v-show="currentTab === 'info'">
-                <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
+                <ClientSearch v-model:selectedClient="selectedClient" />
                 <div>
                     <label class="required">Тип</label>
-                    <select v-model="categoryId" required>
-                        <option value="">Нет</option>
-                        <option v-for="parent in allCategories" :key="parent.id" :value="parent.id">{{ parent.name }}
-                        </option>
-                    </select>
+                    <div class="flex items-center space-x-2">
+                        <select v-model="categoryId" required>
+                            <option value="">Нет</option>
+                            <option v-for="parent in allCategories" :key="parent.id" :value="parent.id">{{ parent.name }}
+                            </option>
+                        </select>
+                        <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showCategoryModal" />
+                    </div>
                 </div>
                 <div>
                     <label>Дата</label>
@@ -28,20 +31,23 @@
                 </div>
                 <div>
                     <label>Описание</label>
-                    <textarea v-model="description" :disabled="!!editingItemId"
+                    <textarea v-model="description"
                         class="w-full border rounded p-2"></textarea>
                 </div>
                 <div>
                     <label>Проект</label>
-                    <select v-model="projectId" :disabled="!!editingItemId">
-                        <option value="">Нет</option>
-                        <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">{{ parent.name }}
-                        </option>
-                    </select>
+                    <div class="flex items-center space-x-2">
+                        <select v-model="projectId">
+                            <option value="">Нет</option>
+                            <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">{{ parent.name }}
+                            </option>
+                        </select>
+                        <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showProjectModal" />
+                    </div>
                 </div>
                 <div>
                     <label>Примечание</label>
-                    <input type="text" v-model="note" :disabled="!!editingItemId">
+                    <input type="text" v-model="note">
                 </div>
             </div>
             <div v-show="currentTab === 'products'">
@@ -53,9 +59,9 @@
                         </option>
                     </select>
                 </div>
-                <ProductSearch v-model="products" :show-quantity="true" :show-price="true" :show-price-type="true"
+                <ProductSearch ref="productSearch" v-model="products" :show-quantity="true" :show-price="true" :show-price-type="true"
                     :is-sale="true" :isOrder="true" :currency-symbol="currencySymbol" v-model:discount="discount"
-                    v-model:discountType="discountType" required />
+                    v-model:discountType="discountType" required @product-removed="onProductRemoved" />
             </div>
             <div v-show="currentTab === 'transactions'">
                 <OrderTransactionsTab v-if="editingItemId" :order-id="editingItemId" :client="selectedClient"
@@ -92,6 +98,12 @@
         :descr="'Подтвердите удаление заказа'" :confirm-text="'Удалить заказ'" :leave-text="'Отмена'" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
         :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
+    <SideModalDialog :showForm="projectModalDialog" :onclose="closeProjectModal" :level="1">
+        <ProjectCreatePage @saved="handleProjectSaved" @saved-error="handleProjectSavedError" />
+    </SideModalDialog>
+    <SideModalDialog :showForm="categoryModalDialog" :onclose="closeCategoryModal" :level="1">
+        <OrderCategoryCreatePage @saved="handleCategorySaved" @saved-error="handleCategorySavedError" />
+    </SideModalDialog>
 </template>
 
 <script>
@@ -110,12 +122,15 @@ import OrderCategoryController from '@/api/OrderCategoryController';
 import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
+import OrderCategoryCreatePage from '@/views/pages/orders/OrderCategoryCreatePage.vue';
 
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
     emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { ClientSearch, ProductSearch, PrimaryButton, AlertDialog, TabBar, OrderTransactionsTab },
+    components: { ClientSearch, ProductSearch, PrimaryButton, AlertDialog, TabBar, OrderTransactionsTab, SideModalDialog, ProjectCreatePage, OrderCategoryCreatePage },
     props: {
         editingItem: { type: Object, default: null }
     },
@@ -151,6 +166,9 @@ export default {
             deleteLoading: false,
             deleteDialog: false,
             paidTotalAmount: 0,
+            projectModalDialog: false,
+            categoryModalDialog: false,
+            removedTempProducts: [], // Список удаленных временных товаров
         };
     },
     created() {
@@ -200,7 +218,7 @@ export default {
     methods: {
         // Переопределяем метод getFormState из миксина
         getFormState() {
-            return {
+            const state = {
                 selectedClient: this.selectedClient,
                 categoryId: this.categoryId,
                 date: this.date,
@@ -213,6 +231,8 @@ export default {
                 discount: this.discount,
                 discountType: this.discountType,
             };
+            console.log('Form state saved:', state);
+            return state;
         },
         async fetchAllWarehouses() {
             this.allWarehouses = await WarehouseController.getAllItems();
@@ -221,12 +241,22 @@ export default {
             }
         },
         async fetchAllProjects() {
-            this.allProjects = await ProjectController.getAllItems();
+            try {
+                this.allProjects = await ProjectController.getAllItems();
+            } catch (error) {
+                console.error('Ошибка при получении проектов:', error);
+                this.allProjects = [];
+            }
         },
         async fetchAllCategories() {
-            this.allCategories = await OrderCategoryController.getAllItems();
-            if (!this.editingItem && this.allCategories.length) {
-                this.categoryId = this.allCategories[0].id;
+            try {
+                this.allCategories = await OrderCategoryController.getAllItems();
+                if (!this.editingItem && this.allCategories.length) {
+                    this.categoryId = this.allCategories[0].id;
+                }
+            } catch (error) {
+                console.error('Ошибка при получении категорий заказов:', error);
+                this.allCategories = [];
             }
         },
         async fetchCurrencies() {
@@ -248,6 +278,7 @@ export default {
         async save() {
             this.saveLoading = true;
             try {
+                console.log('Saving order with projectId:', this.projectId, 'type:', typeof this.projectId);
                 const formData = {
                     client_id: this.selectedClient?.id,
                     project_id: this.projectId || null,
@@ -262,21 +293,22 @@ export default {
                     discount_type: this.discountType,
                     description: this.description,
                     products: this.products
-                        .filter(p => p.productId && !p.isTempProduct)
+                        .filter(p => !p.isTempProduct)
                         .map(p => ({
                             product_id: p.productId,
                             quantity: p.quantity,
                             price: p.price
                         })),
                     temp_products: this.products
-                        .filter(p => !p.productId || p.isTempProduct)
+                        .filter(p => p.isTempProduct)
                         .map(p => ({
                             name: p.name || p.productName,
                             description: p.description || '',
                             quantity: p.quantity,
                             price: p.price,
                             unit_id: p.unitId || p.unit_id || null,
-                        }))
+                        })),
+                    remove_temp_products: this.removedTempProducts
                 };
                 let resp;
                 if (this.editingItemId) {
@@ -287,6 +319,11 @@ export default {
                 }
                 if (resp.message) {
                     this.$emit('saved');
+                    // Обновляем начальное состояние формы после успешного сохранения
+                    console.log('Order saved successfully, resetting form changes');
+                    this.resetFormChanges();
+                    // Сбрасываем список удаленных временных товаров
+                    this.removedTempProducts = [];
                     // НЕ очищаем форму здесь, чтобы избежать создания дублирующих заказов
                     // Форма будет очищена только при закрытии страницы или явном сбросе
                 }
@@ -313,21 +350,22 @@ export default {
                     discount_type: this.discountType,
                     description: this.description,
                     products: this.products
-                        .filter(p => p.productId && !p.isTempProduct)
+                        .filter(p => !p.isTempProduct)
                         .map(p => ({
                             product_id: p.productId,
                             quantity: p.quantity,
                             price: p.price
                         })),
                     temp_products: this.products
-                        .filter(p => !p.productId || p.isTempProduct)
+                        .filter(p => p.isTempProduct)
                         .map(p => ({
                             name: p.name || p.productName,
                             description: p.description || '',
                             quantity: p.quantity,
                             price: p.price,
                             unit_id: p.unitId || p.unit_id || null,
-                        }))
+                        })),
+                    remove_temp_products: this.removedTempProducts
                 };
                 
                 let resp;
@@ -340,6 +378,11 @@ export default {
                 
                 if (resp.message) {
                     this.$emit('saved-silent');
+                    // Обновляем начальное состояние формы после успешного сохранения
+                    console.log('Order saved silently, resetting form changes');
+                    this.resetFormChanges();
+                    // Сбрасываем список удаленных временных товаров
+                    this.removedTempProducts = [];
                 }
             } catch (error) {
                 this.$emit('saved-error', this.getApiErrorMessage(error));
@@ -362,7 +405,14 @@ export default {
             }
             this.deleteLoading = false;
         },
+        // Обработчик удаления товара
+        onProductRemoved(productData) {
+            if (productData.wasTempProduct && productData.name) {
+                this.removedTempProducts.push(productData.name);
+            }
+        },
         clearForm() {
+            console.log('Clearing form, current projectId:', this.projectId);
             this.selectedClient = null;
             this.projectId = '';
             this.warehouseId = this.allWarehouses[0]?.id || '';
@@ -375,6 +425,8 @@ export default {
             this.editingItemId = null;
             this.statusId = 1;
             this.paidTotalAmount = 0;
+            this.removedTempProducts = []; // Сбрасываем список удаленных временных товаров
+            console.log('Form cleared, projectId set to:', this.projectId);
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
@@ -382,6 +434,47 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
+        },
+        showProjectModal() {
+            this.projectModalDialog = true;
+        },
+        closeProjectModal() {
+            this.projectModalDialog = false;
+        },
+        handleProjectSaved(project) {
+            // Обновляем список проектов и выбираем новый проект
+            this.fetchAllProjects();
+            if (project && project.id) {
+                this.projectId = project.id;
+            }
+            this.closeProjectModal();
+        },
+        handleProjectSavedError(error) {
+            console.error('Ошибка создания проекта:', error);
+            // Можно добавить уведомление об ошибке
+        },
+        showCategoryModal() {
+            this.categoryModalDialog = true;
+        },
+        closeCategoryModal() {
+            this.categoryModalDialog = false;
+        },
+        handleCategorySaved(category) {
+            // Обновляем список категорий и выбираем новую категорию
+            this.fetchAllCategories();
+            if (category && category.id) {
+                this.categoryId = category.id;
+            }
+            this.closeCategoryModal();
+        },
+        handleCategorySavedError(error) {
+            console.error('Ошибка создания категории заказа:', error);
+            // Можно добавить уведомление об ошибке
+        },
+        generateTempProductId() {
+            // Генерируем уникальный ID для временного товара
+            // Используем timestamp + случайное число для уникальности
+            return Date.now() + Math.floor(Math.random() * 1000);
         },
     },
     watch: {
@@ -422,28 +515,33 @@ export default {
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
+                    console.log('Editing item changed, projectId from server:', newEditingItem.projectId, 'project_id from server:', newEditingItem.project_id);
                     this.selectedClient = newEditingItem.client || null;
-                    this.projectId = newEditingItem.projectId || '';
+                    this.projectId = newEditingItem.projectId || newEditingItem.project_id || '';
+                    console.log('Set projectId to:', this.projectId);
                     this.warehouseId = newEditingItem.warehouseId || (this.allWarehouses.length ? this.allWarehouses[0].id : '');
                     this.cashId = newEditingItem.cashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
                     this.statusId = newEditingItem.statusId || '';
                     this.categoryId = newEditingItem.categoryId || '';
                     this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
                     this.note = newEditingItem.note || '';
-                    this.description = this.editingItem?.description || '';
+                    this.description = newEditingItem.description || '';
                     // Нормализуем позиции: разделяем обычные и одноразовые
                     const rawProducts = newEditingItem.products || [];
                     this.products = rawProducts.map(p => {
                         // Бэкенд/фронт могут прислать разные кейсы (snake_case / camelCase)
-                        // временный, если нет product_id и нет productId
-                        const isTemp = (p.product_id == null) && (p.productId == null);
+                        // Временный товар определяется по флагу isTempProduct или по отсутствию product_id/productId
+                        const isTemp = p.isTempProduct || ((p.product_id == null) && (p.productId == null));
                         if (isTemp) {
                             return {
                                 name: p.product_name || p.productName || p.name,
+                                productName: p.product_name || p.productName || p.name, // Добавляем для совместимости
                                 description: p.description || '',
                                 quantity: Number(p.quantity) || 0,
                                 price: Number(p.price) || 0,
                                 unitId: (p.unit_id ?? p.unitId) ?? null,
+                                productId: p.productId || p.product_id || this.generateTempProductId(), // Генерируем ID если его нет
+                                isTempProduct: true,
                                 icons() { return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>'; },
                             };
                         }
@@ -467,6 +565,7 @@ export default {
                     this.discountType = newEditingItem.discount_type || 'fixed';
                     this.editingItemId = newEditingItem.id || null;
                 } else {
+                    console.log('No editing item, clearing form');
                     this.clearForm();
                 }
                 // Сохраняем новое начальное состояние

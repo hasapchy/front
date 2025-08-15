@@ -60,12 +60,13 @@ export default {
             loading: false,
             selectedIds: [],
              controller: CashRegisterController,
-            //editingItem: null,
+
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: '№', size: 60 },
                 { name: 'name', label: 'Название' },
                 { name: 'balance', label: 'Баланс' },
+                { name: 'is_rounding', label: 'Округление', size: 100 },
                 { name: 'users', label: 'Доступ' },
                 { name: 'createdAt', label: 'Дата создания' },
                 { name: 'dateUser', label: 'Дата / Пользователь', html: true },
@@ -81,6 +82,8 @@ export default {
             switch (c) {
                 case 'balance':
                     return (i.balance || 0) + ' ' + i.currency_symbol;
+                case 'is_rounding':
+                    return i.is_rounding ? 'Включено' : 'Отключено';
                 case 'users':
                     return (i.users || '').length + ' пользователей(-ль)';
                 case 'createdAt':

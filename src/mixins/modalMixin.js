@@ -2,7 +2,8 @@ export default {
   data() {
     return {
       modalDialog: false,
-      // editingItem: null,
+      editingItem: null,
+      showTimeline: false,
     };
   },
   methods: {

@@ -39,6 +39,11 @@ export default {
     
     // Обработка попытки закрытия формы
     handleCloseRequest() {
+      // Проверяем, идет ли загрузка файлов
+      if (this.uploading) {
+        return; // Блокируем закрытие во время загрузки
+      }
+      
       if (this.checkForChanges()) {
         this.closeConfirmDialog = true;
       } else {
@@ -64,6 +69,13 @@ export default {
     
     // Обработчик события beforeunload
     handleBeforeUnload(event) {
+      // Проверяем, идет ли загрузка файлов
+      if (this.uploading) {
+        event.preventDefault();
+        event.returnValue = '';
+        return;
+      }
+      
       if (this.checkForChanges()) {
         event.preventDefault();
         event.returnValue = '';

@@ -56,7 +56,7 @@ export default {
             data: null,
             loading: false,
             selectedIds: [],
-            //editingItem: null,
+
             columnsConfig: [
                 { name: 'name', label: 'Название' },
                 { name: 'users', label: 'Доступ' },

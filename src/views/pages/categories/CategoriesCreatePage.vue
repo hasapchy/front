@@ -8,21 +8,25 @@
 
         <div class="mt-4">
             <label>Назначить пользователей</label>
-            <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
-                <label v-for="user, index in users" :key="user.id"
-                    class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-                    <input type="checkbox" :value="user.id" v-model="selectedUsers" :id="'user-' + user.id">
-                    <span class="text-black">{{ user.name }}</span>
-                </label>
-            </div>
+            <template v-if="users != null && users.length != 0">
+                <div class="flex flex-wrap gap-2">
+                    <label v-for="user in users" :key="user.id"
+                        class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+                        <input type="checkbox" :value="user.id" v-model="selectedUsers" :id="'user-' + user.id">
+                        <span class="text-black">{{ user.name }}</span>
+                    </label>
+                </div>
+            </template>
         </div>
         <div class=" mt-4 mb-2">
             <label class="block mb-1">Родительская категория</label>
-            <select v-model="selectedParentCategoryId">
-                <option value="">Нет</option>
-                <option v-if="allCategories.length" v-for="parent in allCategories" :value="parent.id">{{ parent.name }}
-                </option>
-            </select>
+            <template v-if="allCategories.length">
+                <select v-model="selectedParentCategoryId">
+                    <option value="">Нет</option>
+                    <option v-for="parent in allCategories" :key="parent.id" :value="parent.id">{{ parent.name }}
+                    </option>
+                </select>
+            </template>
         </div>
     </div>
     <!-- {{ editingItem.id }} -->
@@ -64,7 +68,7 @@ export default {
     data() {
         return {
             name: this.editingItem ? this.editingItem.name : '',
-            selectedUsers: this.editingItem ? this.editingItem.users.map(user => user.id.toString()) : [],
+            selectedUsers: this.editingItem ? this.editingItem.getUserIds() : [],
             selectedParentCategoryId: this.editingItem ? this.editingItem.parentId : "",
             editingItemId: this.editingItem ? this.editingItem.id : null,
             users: [],
@@ -166,9 +170,7 @@ export default {
             handler(newEditingItem) {
                 if (newEditingItem) {
                     this.name = newEditingItem.name || '';
-                    this.selectedUsers = Array.isArray(newEditingItem.users)
-                        ? newEditingItem.users
-                        : [];
+                    this.selectedUsers = newEditingItem.getUserIds() || [];
                     this.selectedParentCategoryId = newEditingItem.parentId || '';
                     this.editingItemId = newEditingItem.id || null;
                 } else {

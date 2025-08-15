@@ -15,7 +15,7 @@ export default class CategoryController {
           item.parent_name,
           item.user_id,
           item.user_name,
-          item.users,
+          item.users || [],
           item.created_at,
           item.updated_at
         );
@@ -48,7 +48,7 @@ export default class CategoryController {
           item.parent_name,
           item.user_id,
           item.user_name,
-          item.users,
+          item.users || [],
           item.created_at,
           item.updated_at
         );

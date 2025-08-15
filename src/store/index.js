@@ -10,6 +10,8 @@ export default createStore({
     notificationTitle: "",
     notificationSubtitle: "",
     notificationIsDanger: false,
+    notificationDuration: 10000, // Длительность уведомления в миллисекундах
+    notificationTimeoutId: null, // ID таймера для возможности отмены
   },
 
   mutations: {
@@ -25,14 +27,18 @@ export default createStore({
     SET_SEARCH_QUERY(state, query) {
       state.searchQuery = query;
     },
-    SHOW_NOTIFICATION(state, { title, subtitle, isDanger }) {
+    SHOW_NOTIFICATION(state, { title, subtitle, isDanger, duration }) {
       state.notificationTitle = title;
       state.notificationSubtitle = subtitle;
       state.notificationIsDanger = isDanger;
+      state.notificationDuration = duration || 10000;
       state.notification = true;
     },
     CLOSE_NOTIFICATION(state) {
       state.notification = false;
+    },
+    SET_NOTIFICATION_TIMEOUT_ID(state, timeoutId) {
+      state.notificationTimeoutId = timeoutId;
     },
   },
 
@@ -46,14 +52,46 @@ export default createStore({
     setPermissions({ commit }, permissions) {
       commit("SET_PERMISSIONS", permissions);
     },
-    showNotification({ commit }, { title, subtitle = '', isDanger = false }) {
-      commit('SHOW_NOTIFICATION', { title, subtitle, isDanger });
-      setTimeout(() => {
+    showNotification({ commit, state }, { title, subtitle = '', isDanger = false, duration = 10000 }) {
+      // Очищаем предыдущий таймер если есть
+      if (state.notificationTimeoutId) {
+        clearTimeout(state.notificationTimeoutId);
+      }
+      
+      commit('SHOW_NOTIFICATION', { title, subtitle, isDanger, duration });
+      
+      const timeoutId = setTimeout(() => {
         commit('CLOSE_NOTIFICATION');
-      }, 10000);
+        commit('SET_NOTIFICATION_TIMEOUT_ID', null);
+      }, duration);
+      
+      commit('SET_NOTIFICATION_TIMEOUT_ID', timeoutId);
     },
-    closeNotification({ commit }) {
+    closeNotification({ commit, state }) {
+      // Очищаем таймер при закрытии
+      if (state.notificationTimeoutId) {
+        clearTimeout(state.notificationTimeoutId);
+        commit('SET_NOTIFICATION_TIMEOUT_ID', null);
+      }
       commit('CLOSE_NOTIFICATION');
+    },
+    pauseNotificationTimer({ commit, state }) {
+      // Приостанавливаем таймер при наведении
+      if (state.notificationTimeoutId) {
+        clearTimeout(state.notificationTimeoutId);
+        commit('SET_NOTIFICATION_TIMEOUT_ID', null);
+      }
+    },
+    resumeNotificationTimer({ commit, state, dispatch }) {
+      // Возобновляем таймер при убирании мыши
+      if (state.notification && !state.notificationTimeoutId) {
+        const timeoutId = setTimeout(() => {
+          commit('CLOSE_NOTIFICATION');
+          commit('SET_NOTIFICATION_TIMEOUT_ID', null);
+        }, state.notificationDuration);
+        
+        commit('SET_NOTIFICATION_TIMEOUT_ID', timeoutId);
+      }
     },
   },
 
@@ -65,5 +103,7 @@ export default createStore({
     notificationTitle: (state) => state.notificationTitle,
     notificationSubtitle: (state) => state.notificationSubtitle,
     notificationIsDanger: (state) => state.notificationIsDanger,
+    notificationDuration: (state) => state.notificationDuration,
+    notificationTimeoutId: (state) => state.notificationTimeoutId,
   },
 });

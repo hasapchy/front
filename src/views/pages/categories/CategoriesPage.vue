@@ -59,7 +59,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: CategoryController,
-            //editingItem: null,
+
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: '№', size: 60 },
