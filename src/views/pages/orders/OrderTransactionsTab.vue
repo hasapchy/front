@@ -1,17 +1,17 @@
 <template>
     <div>
         <div v-if="!orderId" class="p-4 text-gray-500">
-            Сначала сохраните заказ, чтобы добавить/просматривать транзакции.
+            {{ $t('saveOrderFirst') }}
         </div>
         <div v-else>
             <PrimaryButton icon="fas fa-plus" :onclick="showTransactionModal" class="my-3">
-                Добавить транзакцию
+                {{ $t('add') }} {{ $t('transaction') }}
             </PrimaryButton>
 
             <DraggableTable v-if="transactions.length" table-key="order.transactions" :columns-config="columnsConfig"
                 :table-data="transactions" :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="editTransaction" />
 
-            <div v-else class="text-gray-500">Транзакции отсутствуют</div>
+            <div v-else class="text-gray-500">{{ $t('noTransactions') }}</div>
         </div>
 
         <SideModalDialog :showForm="transactionModal" :onclose="closeTransactionModal">

@@ -1,10 +1,10 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">Трансфер</h2>
+        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editTransfer') : $t('createTransfer') }}</h2>
         <div class="mt-2">
-            <label class="block mb-1">Касса отправитель</label>
+            <label class="block mb-1">{{ $t('senderCashRegister') }}</label>
             <select v-model="cashIdFrom" :disabled="!!editingItemId">
-                <option value="">-- Выберите кассу --</option>
+                <option value="">{{ $t('selectCashRegister') }}</option>
                 <template v-if="allCashRegisters.length">
                     <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id"
                         :disabled="parent.id === cashIdTo">
@@ -14,9 +14,9 @@
             </select>
         </div>
         <div class="mt-2">
-            <label class="block mb-1">Касса получатель</label>
+            <label class="block mb-1">{{ $t('receiverCashRegister') }}</label>
             <select v-model="cashIdTo" :disabled="!!editingItemId">
-                <option value="">-- Выберите кассу --</option>
+                <option value="">{{ $t('selectCashRegister') }}</option>
                 <template v-if="allCashRegisters.length">
                     <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id"
                         :disabled="parent.id === cashIdFrom">
@@ -26,11 +26,11 @@
             </select>
         </div>
         <div class="mt-2">
-            <label>Сумма</label>
+            <label>{{ $t('amount') }}</label>
             <input type="number" v-model="origAmount" :disabled="!!editingItemId">
         </div>
         <div class="mt-2">
-            <label>Примечание</label>
+            <label>{{ $t('note') }}</label>
             <input type="text" v-model="note" :disabled="!!editingItemId">
         </div>
     </div>
@@ -38,17 +38,17 @@
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove"
             :disabled="!$store.getters.hasPermission('transfers_delete')">
-            Удалить
+            {{ $t('delete') }}
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('transfers_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('transfers_create'))">
-            Сохранить
+            {{ $t('save') }}
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="'Подтвердите удаление трансфера'" :confirm-text="'Удалить трфнсфер'" :leave-text="'Отмена'" />
+        :descr="$t('deleteTransfer')" :confirm-text="$t('deleteTransfer')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
+        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 

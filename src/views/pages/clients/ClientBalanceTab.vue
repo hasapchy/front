@@ -1,8 +1,8 @@
 <template>
     <div class="mt-4">
-        <h3 class="text-md font-semibold mb-2">История баланса</h3>
+        <h3 class="text-md font-semibold mb-2">{{ $t('balanceHistory') }}</h3>
         <div class="mb-2 flex items-center gap-2">
-            <span>Итоговый баланс:</span>
+            <span>{{ $t('finalBalance') }}:</span>
             <span :class="{
                 'text-[#5CB85C] font-bold': editingItem && editingItem.balanceNumeric() >= 0,
                 'text-[#EE4F47] font-bold': editingItem && editingItem.balanceNumeric() < 0
@@ -11,12 +11,12 @@
             </span>
         </div>
 
-        <div v-if="balanceLoading" class="text-gray-500">Загрузка...</div>
+        <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
         <div v-else-if="balanceHistory.length === 0" class="text-gray-500">
-            История отсутствует
+            {{ $t('noHistory') }}
         </div>
         <DraggableTable v-if="!balanceLoading && balanceHistory.length" table-key="client.balance"
-            :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
+            :columns-config="translatedColumnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
             :onItemClick="handleBalanceItemClick" />
 
         <!-- Модалка для entity -->
@@ -63,6 +63,14 @@ export default {
     props: {
         editingItem: { required: true },
     },
+    computed: {
+        translatedColumnsConfig() {
+            return this.columnsConfig.map(column => ({
+                ...column,
+                label: this.$t(column.label)
+            }));
+        }
+    },
     data() {
         return {
             balanceLoading: false,
@@ -71,10 +79,10 @@ export default {
             entityModalOpen: false,
             entityLoading: false, // NEW: loading state for modal
             columnsConfig: [
-                { name: "date", label: "Дата", size: 100 },
-                { name: "type", label: "Тип" },
-                { name: "description", label: "Описание", size: 600 },
-                { name: "amount", label: "Сумма", size: 120, html: true },
+                { name: "date", label: "date", size: 100 },
+                { name: "type", label: "type" },
+                { name: "description", label: "description", size: 600 },
+                { name: "amount", label: "amount", size: 120, html: true },
             ],
             ENTITY_CONFIG: {
                 transaction: {

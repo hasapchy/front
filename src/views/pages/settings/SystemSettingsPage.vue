@@ -1,16 +1,16 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
        <div class="mb-4">
-            <label class="required">Название компании</label>
+            <label class="required">{{ $t('companyName') }}</label>
             <input 
                 type="text" 
                 v-model="form.company_name" 
-                placeholder="Введите название компании"
+                :placeholder="$t('enterCompanyName')"
             />
         </div>
 
         <div class="mb-4">
-            <label class="">Логотип</label>
+            <label class="">{{ $t('companyLogo') }}</label>
             <div class="flex items-center space-x-4">
                 <div class="flex-1">
                     <input 
@@ -20,7 +20,7 @@
                         ref="logoInput"
                     />
                     <div class="text-xs text-gray-500 mt-1">
-                        Рекомендуемый размер: 200x60px. Поддерживаемые форматы: PNG, JPG, SVG
+                        {{ $t('recommendedSize') }}. {{ $t('supportedFormats') }}
                     </div>
                 </div>
             </div>
@@ -32,7 +32,7 @@
                 :onclick="saveSettings" 
                 :is-loading="saveLoading"
                 :disabled="!$store.getters.hasPermission('system_settings_update')">
-                Сохранить
+                {{ $t('save') }}
             </PrimaryButton>
         </div>
     </div>
@@ -96,14 +96,14 @@ export default {
         
         async saveSettings() {
             if (!this.$store.getters.hasPermission('system_settings_update')) {
-                this.$store.dispatch('showError', 'У вас нет прав для изменения настроек');
+                this.$store.dispatch('showError', this.$t('noPermissionSettings'));
                 return;
             }
 
             this.saveLoading = true;
             try {
                 await SettingsController.updateSettings(this.form);
-                this.$store.dispatch('showSuccess', 'Настройки успешно сохранены');
+                this.$store.dispatch('showSuccess', this.$t('settingsSavedSuccessfully'));
                 await this.loadSettings(); // Перезагрузить настройки
                 this.resetFormChanges();
                 

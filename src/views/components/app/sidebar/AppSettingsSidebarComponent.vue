@@ -6,55 +6,55 @@
 
             <ul v-if="hasPermission('users_view')">
                 <SidebarLink to="/users" icon="fa-solid fa-user mr-2" :settings="true">
-                    Пользователи
+                    {{ $t('users') }}
                 </SidebarLink>
             </ul>
 
             <ul v-if="hasPermission('cash-registers_view')">
                 <SidebarLink to="/cash-registers" icon="fa-solid fa-cash-register mr-2" :settings="true">
-                    Кассы
+                    {{ $t('cashRegisters') }}
                 </SidebarLink>
             </ul>
 
             <ul v-if="hasPermission('warehousess_view')">
                 <SidebarLink to="/admin/warehouses" icon="fa-solid fa-warehouse mr-2" :settings="true">
-                    Склады
+                    {{ $t('warehouses') }}
                 </SidebarLink>
             </ul>
 
             <ul v-if="hasPermission('categories_view')">
                 <SidebarLink to="/categories" icon="fa-solid fa-list-alt mr-2" :settings="true">
-                    Категории товара/услуг
+                    {{ $t('productCategories') }}
                 </SidebarLink>
             </ul>
 
             <ul v-if="hasPermission('order_statuses_view')">
                 <SidebarLink to="/order_statuses" icon="fa-solid fa-list-alt mr-2" :settings="true">
-                    Статусы заказов
+                    {{ $t('orderStatuses') }}
                 </SidebarLink>
             </ul>
 
             <ul v-if="hasPermission('order_categories_view')">
                 <SidebarLink to="/order_categories" icon="fa-solid fa-list-alt mr-2" :settings="true">
-                    Типы заказов
+                    {{ $t('orderTypes') }}
                 </SidebarLink>
             </ul>
 
             <ul v-if="hasPermission('products_view')">
                 <SidebarLink to="/products" icon="fa-solid fa-box mr-2" :settings="true">
-                    Товары
+                    {{ $t('products') }}
                 </SidebarLink>
             </ul>
 
             <ul v-if="hasPermission('products_view')">
                 <SidebarLink to="/services" icon="fa-solid fa-paint-roller mr-2" :settings="true">
-                    Услуги
+                    {{ $t('services') }}
                 </SidebarLink>
             </ul>
 
             <ul v-if="hasPermission('system_settings_view')">
                 <SidebarLink to="/settings" icon="fa-solid fa-cogs mr-2" :settings="true">
-                    Настройки системы
+                    {{ $t('systemSettings') }}
                 </SidebarLink>
             </ul>
         </div>

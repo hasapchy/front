@@ -1,15 +1,15 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">Статус заказа</h2>
+        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editOrderStatus') : $t('createOrderStatus') }}</h2>
         <div>
-            <label class="required">Название статуса</label>
+                          <label class="required">{{ $t('statusName') }}</label>
             <input type="text" v-model="name">
         </div>
         <div class="mt-4">
-            <label class="required">Категория статуса</label>
+                          <label class="required">{{ $t('statusCategory') }}</label>
             <div class="flex items-center space-x-2">
                 <select v-model="categoryId">
-                    <option value="">Выберите категорию</option>
+                    <option value="">{{ $t('selectCategory') }}</option>
                     <option v-for="cat in allCategories" :key="cat.id" :value="cat.id">
                         {{ cat.name }}
                     </option>
@@ -22,17 +22,17 @@
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove"
             :disabled="!$store.getters.hasPermission('order_statuscategories_delete')">
-            Удалить
+            {{ $t('delete') }}
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('order_statuscategories_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('order_statuscategories_create'))">
-            Сохранить
+            {{ $t('save') }}
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="'Подтвердите удаление статуса'" :confirm-text="'Удалить статус'" :leave-text="'Отмена'" />
+        :descr="$t('deleteOrderStatus')" :confirm-text="$t('deleteOrderStatus')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
+        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal" :level="1">
         <OrderStatusCategoryCreatePage @saved="fetchAllCategories; closeModal()" />
     </SideModalDialog>

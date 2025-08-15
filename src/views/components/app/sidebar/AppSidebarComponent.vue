@@ -21,27 +21,27 @@
                 </SidebarLink>
 
                 <SidebarLink v-if="hasPermission('orders_view')" to="/orders" icon="fas fa-cart-arrow-down mr-2">
-                    Заказы
+                    {{ $t('orders') }}
                 </SidebarLink>
 
                 <SidebarLink v-if="hasPermission('sales_view')" to="/sales" icon="fas fa-shopping-cart mr-2">
-                    Продажи
+                    {{ $t('sales') }}
                 </SidebarLink>
 
                 <SidebarLink v-if="hasPermission('transactions_view')" to="/transactions" icon="fas fa-coins mr-2">
-                    Финансы
+                    {{ $t('finance') }}
                 </SidebarLink>
 
                 <SidebarLink v-if="hasPermission('clients_view')" to="/clients" icon="fa-solid fa-user-friends mr-2">
-                    Клиенты
+                    {{ $t('clients') }}
                 </SidebarLink>
 
                 <SidebarLink v-if="hasPermission('projects_view')" to="/projects" icon="fa-solid fa-briefcase mr-2">
-                    Проекты
+                    {{ $t('projects') }}
                 </SidebarLink>
 
                 <SidebarLink v-if="hasPermission('warehouses_view')" to="/warehouses" icon="fa-solid fa-warehouse mr-2">
-                    Склады
+                    {{ $t('warehouses') }}
                 </SidebarLink>
 
                 <li class="mb-2">
@@ -51,7 +51,7 @@
                             $store.state.settings_open ? 'bg-[#53585C] border-l-2 border-red-500' : '',
                             'transition-colors text-sm'
                         ]">
-                        <i class="fas fa-cogs mr-2"></i> Настройки
+                        <i class="fas fa-cogs mr-2"></i> {{ $t('settings') }}
                     </a>
                 </li>
             </ul>

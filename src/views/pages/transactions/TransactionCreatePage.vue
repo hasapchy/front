@@ -1,23 +1,23 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">Транзакция</h2>
+        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editTransaction') : $t('createTransaction') }}</h2>
         <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
         <div>
-            <label>Дата</label>
+            <label>{{ $t('date') }}</label>
             <input type="datetime-local" v-model="date">
         </div>
         <div class="mt-2">
-            <label class="block mb-1 required">Тип</label>
+            <label class="block mb-1 required">{{ $t('type') }}</label>
             <select v-model="type" :disabled="!!editingItemId" required>
-                <option value="">Выберите тип</option>
-                <option value="income">✅ Приход</option>
-                <option value="outcome">🔺 Расход</option>
+                <option value="">{{ $t('selectType') }}</option>
+                <option value="income">✅ {{ $t('income') }}</option>
+                <option value="outcome">🔺 {{ $t('outcome') }}</option>
             </select>
         </div>
         <div class="mt-2">
-            <label class="block mb-1 required">Касса</label>
-            <select v-model="cashId" :disabled="!!editingItemId" required>
-                <option value="">Нет</option>
+            <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
+                          <select v-model="cashId" :disabled="!!editingItemId" required>
+                  <option value="">{{ $t('no') }}</option>
                 <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
                     {{ parent.name }} ({{ parent.currency_symbol }})
                 </option>
@@ -25,13 +25,13 @@
         </div>
         <div class="flex items-center space-x-2">
             <div class="w-full mt-2">
-                <label class="required">Сумма</label>
+                <label class="required">{{ $t('amount') }}</label>
                 <input type="number" v-model="origAmount" :disabled="!!editingItemId" required min="0.01">
             </div>
             <div class="w-full mt-2">
-                <label class="block mb-1 required">Валюта</label>
+                <label class="block mb-1 required">{{ $t('currency') }}</label>
                 <select v-model="currencyIdComputed" :disabled="!!editingItemId" required>
-                    <option value="">Нет</option>
+                    <option value="">{{ $t('no') }}</option>
                     <template v-if="currencies.length">
                         <option v-for="parent in currencies" :key="parent.id" :value="parent.id">
                             {{ parent.symbol }} - {{ parent.name }}
@@ -42,13 +42,13 @@
         </div>
         <div v-if="cashCurrencyId != currencyId && editingItemId" class="flex items-center space-x-2">
             <div class="w-full mt-2">
-                <label>Сконвертированная сумма</label>
+                <label>{{ $t('amount') }}</label>
                 <input type="number" v-model="cashAmount" :disabled="!!editingItemId">
             </div>
             <div class="w-full mt-2">
-                <label class="block mb-1">Валюта кассы</label>
+                <label class="block mb-1">{{ $t('cashCurrency') }}</label>
                 <select v-model="cashCurrencyId" :disabled="!!editingItemId">
-                    <option value="">Нет</option>
+                    <option value="">{{ $t('no') }}</option>
                     <template v-if="currencies.length">
                         <option v-for="parent in currencies" :key="parent.id" :value="parent.id">
                             {{ parent.symbol }} -
@@ -59,25 +59,25 @@
             </div>
         </div>
         <div class="mt-2">
-            <label class="block mb-1 required">Категория</label>
+            <label class="block mb-1 required">{{ $t('category') }}</label>
             <select v-model="categoryId">
-                <option value="">Нет</option>
+                <option value="">{{ $t('no') }}</option>
                 <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">
                     {{ cat.typeClass() }} {{ cat.name }}
                 </option>
             </select>
         </div>
         <div class="mt-2">
-            <label class="block mb-1">Проект</label>
+            <label class="block mb-1">{{ $t('project') }}</label>
             <select v-model="projectId">
-                <option value="">Нет</option>
+                <option value="">{{ $t('no') }}</option>
                 <template v-if="allProjects.length">
                     <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">{{ parent.name }}</option>
                 </template>
             </select>
         </div>
         <div class="mt-2">
-            <label>Заметка</label>
+            <label>{{ $t('note') }}</label>
             <input type="text" v-model="note" />
         </div>
     </div>
@@ -85,17 +85,17 @@
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove"
             :disabled="!$store.getters.hasPermission('transactions_delete')">
-            Удалить
+            {{ $t('delete') }}
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('transactions_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('transactions_create'))">
-            Сохранить
+            {{ $t('save') }}
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="'Подтвердите удаление транзакции'" :confirm-text="'Удалить транзакцию'" :leave-text="'Отмена'" />
+        :descr="$t('deleteTransaction')" :confirm-text="$t('deleteTransaction')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
+        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 

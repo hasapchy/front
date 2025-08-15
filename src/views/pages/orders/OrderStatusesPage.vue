@@ -1,13 +1,13 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">Добавить статус</PrimaryButton>
+        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('status') }}</PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
-        <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.order_statuses" :columns-config="columnsConfig" :table-data="data.items"
+        <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
+            <DraggableTable table-key="admin.order_statuses" :columns-config="translatedColumnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
@@ -21,8 +21,8 @@
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
-        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
+                  :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -36,9 +36,10 @@ import OrderStatusCreatePage from './OrderStatusCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin],
+    mixins: [modalMixin, notificationMixin, tableTranslationMixin],
     components: {
         NotificationToast, PrimaryButton, SideModalDialog, OrderStatusCreatePage, Pagination, DraggableTable, AlertDialog
     },
@@ -52,9 +53,9 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: '№', size: 60 },
-                { name: 'name', label: 'Название' },
-                { name: 'categoryName', label: 'Категория' },
-                { name: 'createdAt', label: 'Дата создания' }
+                { name: 'name', label: 'name' },
+                { name: 'categoryName', label: 'category' },
+                { name: 'createdAt', label: 'creationDate' }
             ],
         }
     },
@@ -84,26 +85,26 @@ export default {
             try {
                 this.data = await OrderStatusController.getItems(page);
             } catch (error) {
-                this.showNotification('Ошибка получения списка статусов', error.message, true);
+                this.showNotification(this.$t('errorGettingStatuses'), error.message, true);
             }
             if (!silent) this.loading = false;
         },
 
         handleSaved() {
-            this.showNotification('Статус успешно добавлен', '', false);
+                            this.showNotification(this.$t('statusSuccessfullyAdded'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleSavedError(m) {
-            this.showNotification('Ошибка сохранения статуса', m, true);
+                            this.showNotification(this.$t('errorSavingStatus'), m, true);
         },
         handleDeleted() {
-            this.showNotification('Статус успешно удален', '', false);
+                            this.showNotification(this.$t('statusSuccessfullyDeleted'), '', false);
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
         handleDeletedError(m) {
-            this.showNotification('Ошибка удаления статуса', m, true);
+                            this.showNotification(this.$t('errorDeletingStatus'), m, true);
         }
     }
 }

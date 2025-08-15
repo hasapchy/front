@@ -1,20 +1,20 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">Касса</h2>
+        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editCashRegister') : $t('createCashRegister') }}</h2>
         <div>
-            <label class="required">Название</label>
+            <label class="required">{{ $t('name') }}</label>
             <input type="text" v-model="name">
         </div>
         <div class=" mt-2">
-            <label class="block mb-1">Валюта</label>
+            <label class="block mb-1">{{ $t('currency') }}</label>
             <select v-model="currency_id" :disabled="!!editingItemId">
-                <option value="">Нет</option>
+                <option value="">{{ $t('no') }}</option>
                 <template v-if="currencies.length">
                     <option v-for="parent in currencies" :key="parent.id" :value="parent.id">{{ parent.name }}</option>
                 </template>
             </select>
         </div>
-        <label>Баланс</label>
+        <label>{{ $t('balance') }}</label>
         <div class="flex items-center rounded-l">
             <input type="number" v-model="balance" :disabled="!!editingItemId">
             <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span>
@@ -26,33 +26,31 @@
             </label>
         </div>
         <div class="mt-4">
-            <label>Назначить пользователей</label>
-            <template v-if="users != null && users.length != 0">
-                <div class="flex flex-wrap gap-2">
-                    <label v-for="user in users" :key="user.id"
-                        class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-                        <input type="checkbox" :value="user.id" v-model="selectedUsers" :id="'user-' + user.id">
-                        <span class="text-black">{{ user.name }}</span>
-                    </label>
-                </div>
-            </template>
+            <label>{{ $t('assignUsers') }}</label>
+            <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
+                <label v-for="user in users" :key="user.id"
+                    class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+                    <input type="checkbox" :value="user.id" v-model="selectedUsers" :id="'user-' + user.id">
+                    <span class="text-black">{{ user.name }}</span>
+                </label>
+            </div>
         </div>
     </div>
     <!-- {{ editingItem.id }} -->
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove" :disabled="!$store.getters.hasPermission('cash_registers_delete')">
-            Удалить
+            {{ $t('delete') }}
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('cash_registers_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('cash_registers_create'))">
-            Сохранить
+            {{ $t('save') }}
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="'Подтвердите удаление кассы'" :confirm-text="'Удалить кассу'" :leave-text="'Отмена'" />
+        :descr="$t('deleteCashRegister')" :confirm-text="$t('deleteCashRegister')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
+        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 

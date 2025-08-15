@@ -2,7 +2,7 @@
     <div class="flex justify-between items-center mb-2">
         <div class="flex items-center">
             <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus">
-                Добавить заказ
+                {{ $t('addOrder') }}
             </PrimaryButton>
         </div>
         <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" @changePage="fetchItems" />
@@ -11,8 +11,8 @@
         :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
         :handle-change-status="handleChangeStatus" :show-status-select="true" />
     <transition name="fade" mode="out-in">
-        <div v-if="data && !loading" key="table">
-            <DraggableTable table-key="admin.orders" :columns-config="columnsConfig" :table-data="data.items"
+        <div v-if="data && !loading" :key="`table-${$i18n.locale}`">
+            <DraggableTable table-key="admin.orders" :columns-config="translatedColumnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" :onItemClick="(i) => showModal(i)" @selectionChange="selectedIds = $event" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
@@ -31,8 +31,8 @@
 
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`Удалить выбранные (${selectedIds.length})?`" :confirm-text="'Удалить'"
-        :leave-text="'Отмена'" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
+                  :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -72,17 +72,17 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: "id", label: "№", size: 20 },
-                { name: "dateUser", label: "Дата / Пользователь" },
-                { name: "client", label: "Клиент", component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, }), },
-                { name: "statusName", label: "Статус", component: "StatusSelectCell", props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId), }), },
-                { name: "categoryName", label: "Тип" },
-                { name: "cashName", label: "Касса" },
-                { name: "warehouseName", label: "Склад" },
-                { name: "products", label: "Товары", html: true },
-                { name: "totalPrice", label: "Сумма заказа" },
-                { name: "note", label: "Примечание" },
-                { name: "description", label: "Описание" },
-                { name: "projectName", label: "Проект" },
+                { name: "dateUser", label: 'dateUser' },
+                { name: "client", label: 'client', component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, }), },
+                { name: "statusName", label: 'status', component: "StatusSelectCell", props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId), }), },
+                { name: "categoryName", label: 'type' },
+                { name: "cashName", label: 'cashRegister' },
+                { name: "warehouseName", label: 'warehouse' },
+                { name: "products", label: 'products', html: true },
+                { name: "totalPrice", label: 'orderAmount' },
+                { name: "note", label: 'note' },
+                { name: "description", label: 'description' },
+                { name: "projectName", label: 'project' },
             ],
         };
     },
@@ -95,6 +95,7 @@ export default {
         // Слушаем события поиска через eventBus
         eventBus.on('global-search', this.handleSearch);
     },
+
     beforeUnmount() {
         // Удаляем слушатель события
         eventBus.off('global-search', this.handleSearch);
@@ -103,6 +104,12 @@ export default {
         searchQuery() {
             return this.$store.state.searchQuery;
         },
+        translatedColumnsConfig() {
+            return this.columnsConfig.map(column => ({
+                ...column,
+                label: column.label === '#' || column.label === '№' ? column.label : this.$t(column.label)
+            }));
+        }
     },
     methods: {
         itemMapper(i, c) {
@@ -112,7 +119,7 @@ export default {
                 case "dateUser":
                     return `${i.formatDate()} / ${i.userName}`;
                 case "client":
-                    if (!i.client) return '<span class="text-gray-500">Не указан</span>';
+                    if (!i.client) return '<span class="text-gray-500">' + this.$t('notSpecified') + '</span>';
                     const name = i.client.fullName();
                     const phone = i.client.phones?.[0]?.phone;
                     return phone ? `<div>${name} (<span>${phone}</span>)</div>` : name;
@@ -160,13 +167,13 @@ export default {
                 const newData = await OrderController.getItemsPaginated(page, this.searchQuery);
                 this.data = newData;
             } catch (error) {
-                this.showNotification("Ошибка получения списка заказов", error.message, true);
+                this.showNotification(this.$t('errorGettingOrderList'), error.message, true);
             }
             if (!silent) this.loading = false;
         },
 
         handleSaved() {
-            this.showNotification("Заказ сохранён", "", false);
+            this.showNotification(this.$t('orderSaved'), "", false);
             this.fetchItems(this.data.currentPage, true);
             // Обновляем таймлайн если он открыт
             if (this.$refs.timelinePanel && !this.timelineCollapsed) {
@@ -176,11 +183,11 @@ export default {
         },
 
         handleSavedError(err) {
-            this.showNotification("Ошибка сохранения заказа", err, true);
+            this.showNotification(this.$t('errorSavingOrder'), err, true);
         },
 
         handleDeleted() {
-            this.showNotification("Заказ удалён", "", false);
+            this.showNotification(this.$t('orderDeleted'), "", false);
             this.fetchItems(this.data.currentPage, true);
             // Закрываем таймлайн при удалении заказа
             this.timelineCollapsed = true;
@@ -188,11 +195,11 @@ export default {
         },
 
         handleDeletedError(err) {
-            this.showNotification("Ошибка удаления заказа", err, true);
+            this.showNotification(this.$t('errorDeletingOrder'), err, true);
         },
 
         handleSavedSilent() {
-            this.showNotification("Заказ сохранён", "", false);
+            this.showNotification(this.$t('orderSaved'), "", false);
             this.fetchItems(this.data.currentPage, true);
             // Обновляем таймлайн если он открыт
             if (this.$refs.timelinePanel && !this.timelineCollapsed) {
@@ -212,7 +219,7 @@ export default {
             try {
                 await OrderController.batchUpdateStatus({ ids, status_id: statusId });
                 await this.fetchItems(this.data.currentPage, true);
-                this.showNotification("Статус обновлён", "", false);
+                this.showNotification(this.$t('statusUpdated'), "", false);
                 
                 // Обновляем таймлайн если редактируемый заказ был изменен
                 if (this.editingItem && ids.includes(this.editingItem.id) && this.$refs.timelinePanel && !this.timelineCollapsed) {
@@ -220,7 +227,7 @@ export default {
                 }
             } catch (e) {
                 const errors = this.getApiErrorMessage(e);
-                this.showNotification("Ошибка смены статуса", errors.join("\n"), true);
+                this.showNotification(this.$t('errorChangingStatus'), errors.join("\n"), true);
             }
             this.loading = false;
             this.selectedIds = [];
@@ -243,7 +250,7 @@ export default {
             this.editingItem = null;
             // Закрываем таймлайн при закрытии модального окна
             this.timelineCollapsed = true;
-        },
-    },
+        }
+    }
 };
 </script>

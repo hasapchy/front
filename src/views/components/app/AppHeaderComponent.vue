@@ -15,9 +15,10 @@
 
                 <div class="flex items-center gap-4">
                     <Search v-if="showSearch" />
+                    <LanguageSwitcher @language-changed="onLanguageChanged" />
                     <span v-if="$store.state.user" class="font-semibold mr-5">{{ $store.state.user.name }}</span>
                     <PrimaryButton :icon="'fas fa-sign-out-alt'" :onclick="logout" isLight>
-                        Выйти
+                        {{ $t('logout') }}
                     </PrimaryButton>
                 </div>
             </div>
@@ -32,17 +33,27 @@ import AuthController from '@/api/AuthController';
 import SettingsController from '@/api/SettingsController';
 import PrimaryButton from './buttons/PrimaryButton.vue';
 import Search from '@/views/components/app/search/Search.vue';
+import LanguageSwitcher from './LanguageSwitcher.vue';
 import { eventBus } from '@/eventBus';
 
 export default {
     components: {
         PrimaryButton,
         Search,
+        LanguageSwitcher,
     },
     data() {
         const route = useRoute();
-        const title = computed(() => route.meta.title || 'Система учета');
-        const binded = computed(() => route.meta.binded || []);
+        const title = computed(() => route.meta.title ? this.$t(route.meta.title) : this.$t('accountingSystem'));
+        const binded = computed(() => {
+          if (route.meta.binded) {
+            return route.meta.binded.map(tab => ({
+              ...tab,
+              name: this.$t(tab.name)
+            }));
+          }
+          return [];
+        });
         const showSearch = computed(() => route.meta.showSearch || false);
         return {
             title,
@@ -80,6 +91,11 @@ export default {
             } catch (error) {
                 console.error('Error loading settings:', error);
             }
+        },
+        
+        onLanguageChanged(locale) {
+            // Обновляем заголовок страницы при смене языка
+            this.$forceUpdate();
         }
     },
     

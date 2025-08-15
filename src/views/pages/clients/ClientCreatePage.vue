@@ -1,56 +1,56 @@
 <template>
   <div class="flex flex-col overflow-auto h-full p-4">
-    <h2 class="text-lg font-bold mb-4">Клиент</h2>
-    <TabBar :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => {
+            <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editClient') : $t('createClient') }}</h2>
+    <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
       changeTab(t);
     }
       " />
     <div>
       <div v-if="currentTab === 'info'" class="mb-4">
         <div>
-          <label class="required">Тип клиента</label>
+                      <label class="required">{{ $t('clientType') }}</label>
           <select v-model="clientType">
-            <option value="individual">Индивидуальный</option>
-            <option value="company">Компания</option>
+            <option value="individual">{{ $t('individual') }}</option>
+            <option value="company">{{ $t('company') }}</option>
           </select>
         </div>
         <div>
-          <label class="required">Имя</label>
+          <label class="required">{{ $t('firstName') }}</label>
           <input type="text" v-model="firstName" required />
         </div>
         <div v-if="clientType === 'individual'">
-          <label>Фамилия</label>
+          <label>{{ $t('lastName') }}</label>
           <input type="text" v-model="lastName" />
         </div>
         <div v-else>
-          <label>Контактное лицо</label>
+          <label>{{ $t('contactPerson') }}</label>
           <input type="text" v-model="contactPerson" />
         </div>
         <div>
-          <label>Адрес</label>
+          <label>{{ $t('address') }}</label>
           <input type="text" v-model="address" />
         </div>
         <div>
-          <label>Заметка</label>
+          <label>{{ $t('note') }}</label>
           <input type="text" v-model="note" />
         </div>
-        <label>Характеристики</label>
+        <label>{{ $t('characteristics') }}</label>
         <div class="flex flex-wrap gap-2">
           <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
             <input type="checkbox" v-model="status" />
-            <span>Активен</span>
+                            <span>{{ $t('active') }}</span>
           </label>
           <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
             <input type="checkbox" v-model="isSupplier" />
-            <span>Поставщик</span>
+                            <span>{{ $t('supplier') }}</span>
           </label>
           <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
             <input type="checkbox" v-model="isConflict" />
-            <span>Проблемный клиент</span>
+                            <span>{{ $t('problemClient') }}</span>
           </label>
         </div>
         <div>
-          <label class="required">Номер телефона</label>
+          <label class="required">{{ $t('phoneNumber') }}</label>
           <div class="flex items-center space-x-2">
             <input type="text" v-model="newPhone" ref="phoneInput" @keyup.enter="addPhone" @blur="addPhone" required />
             <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" />
@@ -61,7 +61,7 @@
           </div>
         </div>
         <div>
-          <label>Email</label>
+          <label>{{ $t('email') }}</label>
           <div class="flex items-center space-x-2">
             <input type="text" v-model="newEmail" @keyup.enter="addEmail" />
             <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addEmail" />
@@ -73,15 +73,15 @@
         </div>
         <div class="flex gap-4 w-full">
           <div class="flex flex-col w-full">
-            <label>Тип скидки</label>
+            <label>{{ $t('discountType') }}</label>
             <select v-model="discountType" class="w-full">
-              <option value="">Выберите тип скидки</option>
-              <option value="percent">Процентная</option>
-              <option value="fixed">Фиксированная</option>
+              <option value="">{{ $t('selectDiscountType') }}</option>
+                              <option value="percent">{{ $t('percent') }}</option>
+                <option value="fixed">{{ $t('fixed') }}</option>
             </select>
           </div>
           <div class="flex flex-col w-full">
-            <label>Скидка</label>
+            <label>{{ $t('discount') }}</label>
             <input type="number" v-model="discount" class="w-full" />
           </div>
         </div>
@@ -95,17 +95,17 @@
   <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
     <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading"
       icon="fas fa-remove" :disabled="!$store.getters.hasPermission('clients_delete')">
-      Удалить
+                  {{ $t('delete') }}
     </PrimaryButton>
     <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('clients_update')) ||
       (editingItemId == null && !$store.getters.hasPermission('clients_create'))">
-      Сохранить
+                  {{ $t('save') }}
     </PrimaryButton>
   </div>
   <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-    :descr="'Подтвердите удаление клиента'" :confirm-text="'Удалить клиента'" :leave-text="'Отмена'" />
+            :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
   <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-    :descr="'У вас есть несохраненные изменения. Вы действительно хотите закрыть форму?'" :confirm-text="'Закрыть без сохранения'" :leave-text="'Остаться'" />
+            :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
   <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
     :is-danger="notificationIsDanger" @close="closeNotification" />
 </template>
@@ -158,14 +158,22 @@ export default {
       tabs: [
         {
           name: "info",
-          label: "Информация",
+          label: "info",
         },
         {
           name: "balance",
-          label: "Баланс",
+          label: "balance",
         },
       ],
     };
+  },
+  computed: {
+    translatedTabs() {
+      return this.tabs.map(tab => ({
+        ...tab,
+        label: this.$t(tab.label)
+      }));
+    }
   },
   mounted() {
     const phoneInput = this.$refs.phoneInput;
@@ -180,6 +188,9 @@ export default {
     mask.mask(phoneInput);
   },
   methods: {
+    changeTab(tabName) {
+      this.currentTab = tabName;
+    },
     // Переопределяем метод getFormState из миксина
     getFormState() {
       return {

@@ -1,12 +1,12 @@
 <template>
     <div class="relative">
-        <label class="block mb-1" :class="{ 'required': required }">Поиск товаров и услуг</label>
-        <input type="text" ref="productInput" v-model="productSearch" placeholder="Введите название или код товара"
+        <label class="block mb-1" :class="{ 'required': required }">{{ $t('searchProductsAndServices') }}</label>
+        <input type="text" ref="productInput" v-model="productSearch" :placeholder="$t('enterProductNameOrCode')"
             class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="handleBlur" :disabled="disabled" />
         <transition name="appear">
             <ul v-show="showDropdown"
                 class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-                <li v-if="productSearchLoading" class="p-2 text-gray-500">Загрузка...</li>
+                <li v-if="productSearchLoading" class="p-2 text-gray-500">{{ $t('loading') }}</li>
                 <template v-else-if="productSearch.length === 0">
                     <li v-for="product in lastProducts" :key="product.id" @mousedown.prevent="selectProduct(product)"
                         class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
@@ -25,7 +25,7 @@
                                         {{ product.stock_quantity }}
                                         {{ product.unit_short_name ||
                                             product.unit_name || '' }}
-                                        цена {{ product.retailPriceFormatted() }}m
+                                        {{ $t('price') }} {{ product.retailPriceFormatted() }}m
                                     </div>
                                 </template>
                                 <template v-else>
@@ -37,8 +37,8 @@
                         </div>
                     </li>
                 </template>
-                <li v-else-if="productSearch.length < 3" class="p-2 text-gray-500">Минимум 3 символа</li>
-                <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">Не найдено</li>
+                <li v-else-if="productSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}</li>
+                <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">{{ $t('notFound') }}</li>
                 <li v-else v-for="product in productResults" :key="product.id"
                     @mousedown.prevent="selectProduct(product)"
                     class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
@@ -67,7 +67,7 @@
                              :is-full="true"
                              icon="fas fa-plus"
                              @mousedown.prevent="openCreateProductModal">
-                             Создать товар/услугу{{ productSearch ? ` "${productSearch}"` : '' }}
+                             {{ $t('createProductOrService') }}{{ productSearch ? ` "${productSearch}"` : '' }}
                          </PrimaryButton>
                                                  <PrimaryButton 
                              v-if="isOrder"
@@ -75,22 +75,22 @@
                              :is-full="true"
                              icon="fas fa-plus"
                              @mousedown.prevent="openCreateTempProductModal">
-                             Создать временный товар{{ productSearch ? ` "${productSearch}"` : '' }}
+                             {{ $t('createTemporaryProduct') }}{{ productSearch ? ` "${productSearch}"` : '' }}
                          </PrimaryButton>
                     </div>
                 </li>
             </ul>
         </transition>
 
-        <label class="block mt-4 mb-1">Указанные товары и услуги</label>
+        <label class="block mt-4 mb-1">{{ $t('specifiedProductsAndServices') }}</label>
         <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
             <thead class="bg-gray-100 rounded-t-sm">
                 <tr>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">Название</th>
+                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">{{ $t('name') }}</th>
                     <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-20">
-                        Количество</th>
+                        {{ $t('quantity') }}</th>
                     <th v-if="showPrice" class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
-                        {{ isReceipt ? 'Закупочная цена' : 'Цена' }}
+                        {{ isReceipt ? $t('purchasePrice') : $t('price') }}
                     </th>
                     <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
                 </tr>
@@ -110,8 +110,8 @@
                     </td>
                     <td v-if="showPriceType && !isReceipt && !isSale" class="py-2 px-4 border-x border-gray-300">
                         <select v-model="product.priceType" class="w-full p-1" :disabled="disabled">
-                            <option value="purchase">Закупочная</option>
-                            <option value="retail">Розничная</option>
+                            <option value="purchase">{{ $t('purchasePrice') }}</option>
+                            <option value="retail">{{ $t('retailPrice') }}</option>
                         </select>
                     </td>
                     <td class="px-4 border-x border-gray-300">
@@ -124,7 +124,7 @@
             </tbody>
             <tfoot v-if="products.length && isSale">
                 <tr class="bg-gray-50 font-medium">
-                    <td :colspan="showQuantity ? 2 : 1" class="py-2 px-4 text-right">Сумма без скидки</td>
+                    <td :colspan="showQuantity ? 2 : 1" class="py-2 px-4 text-right">{{ $t('amountWithoutDiscount') }}</td>
                     <td class="py-2 px-4 text-right">
                         {{ subtotal.toFixed(2) }} <span class="ml-1">{{ currencySymbol }}</span>
                     </td>
@@ -133,7 +133,7 @@
                 <tr>
                     <td :colspan="showQuantity ? 3 : 2" class="py-2 px-4">
                         <div class="flex justify-end items-center space-x-2">
-                            <label class="flex">Скидка</label>
+                            <label class="flex">{{ $t('discount') }}</label>
                             <div class="relative">
                                 <input type="number" v-model.number="discountLocal"
                                     class="w-24 p-1 text-right border rounded" :disabled="disabled"
@@ -149,7 +149,7 @@
                     <td></td>
                 </tr>
                 <tr class="bg-gray-100 font-bold">
-                    <td :colspan="showQuantity ? 2 : 1" class="py-2 px-4 text-right">Итого</td>
+                    <td :colspan="showQuantity ? 2 : 1" class="py-2 px-4 text-right">{{ $t('total') }}</td>
                     <td class="py-2 px-4 text-right">
                         {{ totalPrice.toFixed(2) }} <span class="ml-1">{{ currencySymbol }}</span>
                     </td>
