@@ -30,6 +30,7 @@ import TransactionController from "@/api/TransactionController";
 import SaleController from "@/api/SaleController";
 import OrderController from "@/api/OrderController";
 import WarehouseReceiptController from "@/api/WarehouseReceiptController";
+import ProjectController from "@/api/ProjectController";
 import api from "@/api/axiosInstance";
 import SaleDto from "@/dto/sale/SaleDto";
 import OrderDto from "@/dto/order/OrderDto";
