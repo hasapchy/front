@@ -1,7 +1,8 @@
 <template>
     <div class="flex justify-between items-center mb-4">
         <div class="flex justify-start items-center">
-            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('addTransaction') }}</PrimaryButton>
+            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('addTransaction') }}
+            </PrimaryButton>
             <div class="mx-4">
                 <select v-model="cashRegisterId" @change="fetchItems">
                     <option value="">{{ $t('allCashRegisters') }}</option>
@@ -11,8 +12,28 @@
                         </option>
                     </template>
                 </select>
-
             </div>
+
+            <!-- Фильтр по типу транзакции -->
+            <div class="mx-2">
+                <select v-model="transactionTypeFilter" @change="fetchItems" class="w-full p-2 border rounded">
+                    <option value="">{{ $t('allTransactionTypes') }}</option>
+                    <option value="income">{{ $t('income') }}</option>
+                    <option value="outcome">{{ $t('outcome') }}</option>
+                    <option value="transfer">{{ $t('transfer') }}</option>
+                </select>
+            </div>
+
+            <!-- Фильтр по источнику средств -->
+            <div class="mx-2">
+                <CheckboxFilter 
+                    v-model="sourceFilter"
+                    :options="sourceOptions"
+                    placeholder="allSources"
+                    @change="fetchItems"
+                />
+            </div>
+
             <div class="">
                 <select v-model="dateFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
                     <option value="all_time">{{ $t('allTime') }}</option>
@@ -29,17 +50,27 @@
                 <input type="date" v-model="startDate" @change="fetchItems" class="w-full p-2 border rounded" />
                 <input type="date" v-model="endDate" @change="fetchItems" class="w-full p-2 border rounded" />
             </div>
+
+            <!-- Кнопка сброса фильтров -->
+            <div class="ml-4">
+                <PrimaryButton 
+                    :onclick="resetFilters"
+                    icon="fas fa-times"
+                    :isLight="true">
+                    {{ $t('resetFilters') }}
+                </PrimaryButton>
+            </div>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
     <TransactionsBalance ref="balanceRef" :cash-register-id="cashRegisterId || null" :start-date="startDate"
-        :end-date="endDate" :date-filter="dateFilter" />
+        :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter" :source-filter="sourceFilter" />
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.transactions" :columns-config="translatedColumnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
+            <DraggableTable table-key="admin.transactions" :columns-config="translatedColumnsConfig"
+                :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
@@ -47,13 +78,15 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <TransactionCreatePage ref="transactioncreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" :default-cash-id="cashRegisterId || null" />
+        <TransactionCreatePage ref="transactioncreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
+            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
+            :editingItem="editingItem" :default-cash-id="cashRegisterId || null" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
-            :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
+        :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
+        @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -75,10 +108,11 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { eventBus } from '@/eventBus';
+import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 
 export default {
     mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin],
-    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalance, ClientButtonCell, BatchButton },
+    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalance, ClientButtonCell, BatchButton, CheckboxFilter },
     data() {
         return {
             data: null,
@@ -90,6 +124,8 @@ export default {
             dateFilter: 'all_time',
             startDate: null,
             endDate: null,
+            transactionTypeFilter: '',
+            sourceFilter: [],
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
@@ -111,13 +147,19 @@ export default {
                 },
                 { name: 'dateUser', label: 'date' },
             ],
+            sourceOptions: [
+                { value: 'project', label: this.$t('project') },
+                { value: 'sale', label: this.$t('sale') },
+                { value: 'order', label: this.$t('order') },
+                { value: 'other', label: this.$t('other') },
+            ]
         }
     },
     created() {
         this.fetchItems();
         this.fetchAllCashRegisters();
         this.$store.commit('SET_SETTINGS_OPEN', false);
-        
+
         // Слушаем события поиска через eventBus
         eventBus.on('global-search', this.handleSearch);
     },
@@ -179,7 +221,9 @@ export default {
                         this.cashRegisterId,
                         this.dateFilter,
                         null, // order_id
-                        this.searchQuery
+                        this.searchQuery,
+                        this.transactionTypeFilter,
+                        this.sourceFilter
                     );
                 } else {
                     new_data = await TransactionController.getItems(
@@ -187,7 +231,9 @@ export default {
                         this.cashRegisterId,
                         this.dateFilter,
                         null, // order_id
-                        this.searchQuery
+                        this.searchQuery,
+                        this.transactionTypeFilter,
+                        this.sourceFilter
                     );
                 }
                 this.data = new_data;
@@ -224,6 +270,15 @@ export default {
         },
         handleDeletedError(m) {
             this.showNotification(this.$t('errorDeletingTransaction'), m, true);
+        },
+        resetFilters() {
+            this.cashRegisterId = '';
+            this.transactionTypeFilter = '';
+            this.sourceFilter = [];
+            this.dateFilter = 'all_time';
+            this.startDate = null;
+            this.endDate = null;
+            this.fetchItems();
         }
     },
     computed: {

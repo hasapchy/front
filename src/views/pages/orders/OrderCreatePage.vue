@@ -412,7 +412,6 @@ export default {
             }
         },
         clearForm() {
-            console.log('Clearing form, current projectId:', this.projectId);
             this.selectedClient = null;
             this.projectId = '';
             this.warehouseId = this.allWarehouses[0]?.id || '';
@@ -426,7 +425,6 @@ export default {
             this.statusId = 1;
             this.paidTotalAmount = 0;
             this.removedTempProducts = []; // Сбрасываем список удаленных временных товаров
-            console.log('Form cleared, projectId set to:', this.projectId);
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
@@ -515,10 +513,8 @@ export default {
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
-                    console.log('Editing item changed, projectId from server:', newEditingItem.projectId, 'project_id from server:', newEditingItem.project_id);
                     this.selectedClient = newEditingItem.client || null;
                     this.projectId = newEditingItem.projectId || newEditingItem.project_id || '';
-                    console.log('Set projectId to:', this.projectId);
                     this.warehouseId = newEditingItem.warehouseId || (this.allWarehouses.length ? this.allWarehouses[0].id : '');
                     this.cashId = newEditingItem.cashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
                     this.statusId = newEditingItem.statusId || '';
@@ -557,7 +553,7 @@ export default {
                                 const isProduct = p.product_type == 1 || p.product_type === '1' || p.type == 1 || p.type === '1';
                                 return isProduct
                                     ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
-                                    : '<i class="fas fa-concierge-bell text-[#3571A4]" title="Услуга"></i>';
+                                    : '<i class="fas fa-concierge-bell text-[#EAB308]" title="Услуга"></i>';
                             }
                         };
                     });
@@ -565,7 +561,6 @@ export default {
                     this.discountType = newEditingItem.discount_type || 'fixed';
                     this.editingItemId = newEditingItem.id || null;
                 } else {
-                    console.log('No editing item, clearing form');
                     this.clearForm();
                 }
                 // Сохраняем новое начальное состояние

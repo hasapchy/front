@@ -1,6 +1,6 @@
 <template>
   <div ref="dropdownRef" class="relative status-dropdown inline-block">
-    <div class="px-3 py-2 rounded cursor-pointer flex items-center justify-between min-w-[120px]" :style="selectedStyle"
+    <div class="px-2 py-2 rounded cursor-pointer flex items-center justify-between min-w-[120px]" :style="selectedStyle"
       @click="toggleDropdown">
       <span class="truncate text-[12px] text-white">{{ selectedStatus?.name || $t('selectStatus') }}</span>
       <i class="fas fa-chevron-down text-xs ml-2 text-white"></i>
@@ -9,7 +9,7 @@
     <ul v-if="isOpen" class="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-60 overflow-auto">
       <template v-for="group in sortedStatuses" :key="group.category?.id">
         <li v-for="s in group.items" :key="s.id"
-          class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+          class="px-2 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
           @click="selectStatus(s.id)" :style="{ backgroundColor: getColorStyle(s), color: '#fff' }">
           <span>{{ s.name }}</span>
         </li>

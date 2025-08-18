@@ -132,7 +132,7 @@ export default {
             cashCurrencyId: this.editingItem ? this.editingItem.cashCurrencyId : null,
             origAmount: this.editingItem ? this.editingItem.origAmount : 0,
             currencyId: this.editingItem ? this.editingItem.origCurrencyId : '',
-            categoryId: this.editingItem ? this.editingItem.categoryId : '',
+            categoryId: this.editingItem ? this.editingItem.categoryId : 4, // По умолчанию id = 4 для типа income
             projectId: this.editingItem ? this.editingItem.projectId : '',
             date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
             note: this.editingItem ? this.editingItem.note : '',
@@ -273,7 +273,7 @@ export default {
             this.cashId = this.allCashRegisters.length ? this.allCashRegisters[0].id : '';
             this.origAmount = 0;
             this.note = '';
-            this.categoryId = '';
+            this.categoryId = 4; // Устанавливаем id = 4 для типа income по умолчанию
             this.projectId = '';
             this.date = new Date().toISOString().substring(0, 16);
             this.selectedClient = null;
@@ -306,7 +306,7 @@ export default {
         type(newType) {
             if (!this.editingItemId) {
                 if (newType === "income") {
-                    this.categoryId = 5;
+                    this.categoryId = 4; // Устанавливаем id = 4 для типа income
                 } else if (newType === "outcome") {
                     this.categoryId = 16;
                 } else {
@@ -337,7 +337,7 @@ export default {
                     this.cashCurrencyId = null;
                     this.origAmount = 0;
                     this.currencyId = selectedCash?.currency_id || '';
-                    this.categoryId = 5;
+                    this.categoryId = 4; // Устанавливаем id = 4 для типа income по умолчанию
                     this.projectId = '';
                     this.date = new Date().toISOString().substring(0, 16);
                     this.selectedClient = null;

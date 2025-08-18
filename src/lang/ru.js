@@ -673,5 +673,15 @@ export default {
   
   // Фразы для вкладок складов
   movement: 'Перемещение',
-  writeoff: 'Списание'
+  writeoff: 'Списание',
+  
+  // Новые переводы для фильтров транзакций
+  allTransactionTypes: 'Все типы транзакций',
+  allSources: 'Все источники',
+  allStatuses: 'Все статусы',
+  completed: 'Завершено',
+  cancelled: 'Отменено',
+  pending: 'В ожидании',
+  sourceOfFunds: 'Источник средств',
+  resetFilters: 'Сбросить фильтры'
 }
