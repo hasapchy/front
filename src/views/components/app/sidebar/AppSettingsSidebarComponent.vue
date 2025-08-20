@@ -40,6 +40,12 @@
                 </SidebarLink>
             </ul>
 
+            <ul v-if="hasPermission('orders_view')">
+                <SidebarLink to="/order_additional_fields" icon="fa-solid fa-list-alt mr-2" :settings="true">
+                    {{ $t('orderAdditionalFields') }}
+                </SidebarLink>
+            </ul>
+
             <ul v-if="hasPermission('products_view')">
                 <SidebarLink to="/products" icon="fa-solid fa-box mr-2" :settings="true">
                     {{ $t('products') }}

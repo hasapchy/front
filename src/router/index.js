@@ -20,6 +20,7 @@ import SalesPage from "@/views/pages/sales/SalesPage.vue";
 import OrdersPage from "@/views/pages/orders/OrdersPage.vue";
 import OrderStatusesPage from "@/views/pages/orders/OrderStatusesPage.vue";
 import OrderCategoriesPage from "@/views/pages/orders/OrderCategoriesPage.vue";
+import OrderAdditionalFieldsPage from "@/views/pages/orders/OrderAdditionalFieldsPage.vue";
 import UsersPage from "@/views/pages/users/UsersPage.vue";
 import SystemSettingsPage from "@/views/pages/settings/SystemSettingsPage.vue";
 import PerformanceMonitorPage from "@/views/pages/settings/PerformanceMonitorPage.vue";
@@ -134,6 +135,12 @@ const routes = [
         name: "order_categories",
         component: OrderCategoriesPage,
         meta: { title: "orderTypes", requiresAuth: true },
+      },
+      {
+        path: "/order_additional_fields",
+        name: "order_additional_fields",
+        component: OrderAdditionalFieldsPage,
+        meta: { title: "orderAdditionalFields", requiresAuth: true },
       },
       {
         path: "/users",
