@@ -3,6 +3,7 @@ import OrderDto from "@/dto/order/OrderDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import ClientDto from "@/dto/client/ClientDto";
 import OrderProductDto from "@/dto/order/OrderProductDto";
+import OrderAfController from "./OrderAfController";
 
 export default class OrderController {
   static async getItemsPaginated(page = 1, search = null) {
@@ -181,6 +182,81 @@ export default class OrderController {
       return data;
     } catch (error) {
       console.error("Ошибка при отвязывании транзакции от заказа:", error);
+      throw error;
+    }
+  }
+
+  static async getAdditionalFieldsForCategory(categoryId) {
+    try {
+      return await OrderAfController.getFieldsByCategory(categoryId);
+    } catch (error) {
+      console.error("Ошибка при получении дополнительных полей для категории:", error);
+      throw error;
+    }
+  }
+
+  static async getAdditionalFields(categoryId) {
+    try {
+      const response = await api.get(`/orders/category/${categoryId}/additional-fields`);
+      return response.data;
+    } catch (error) {
+      console.error("Ошибка при получении дополнительных полей для категории:", error);
+      throw error;
+    }
+  }
+
+  static async getAdditionalFieldsForCategories(categoryIds) {
+    try {
+      return await OrderAfController.getFieldsByCategories(categoryIds);
+    } catch (error) {
+      console.error("Ошибка при получении дополнительных полей для категорий:", error);
+      throw error;
+    }
+  }
+
+  static async getAdditionalFieldsForOrder(orderId) {
+    try {
+      return await OrderAfController.getFieldsForOrder(orderId);
+    } catch (error) {
+      console.error("Ошибка при получении дополнительных полей для заказа:", error);
+      throw error;
+    }
+  }
+
+  static prepareOrderData(orderData) {
+    const { additional_fields, ...mainData } = orderData;
+    
+    // Подготавливаем дополнительные поля для отправки
+    const preparedAdditionalFields = additional_fields ? 
+      additional_fields.map(field => ({
+        field_id: field.field_id || field.id,
+        value: field.value
+      })) : [];
+
+    return {
+      ...mainData,
+      additional_fields: preparedAdditionalFields
+    };
+  }
+
+  static async storeItemWithAdditionalFields(item) {
+    try {
+      const preparedData = this.prepareOrderData(item);
+      const { data } = await api.post("/orders", preparedData);
+      return data;
+    } catch (error) {
+      console.error("Ошибка при создании заказа с дополнительными полями:", error);
+      throw error;
+    }
+  }
+
+  static async updateItemWithAdditionalFields(id, item) {
+    try {
+      const preparedData = this.prepareOrderData(item);
+      const { data } = await api.put(`/orders/${id}`, preparedData);
+      return data;
+    } catch (error) {
+      console.error("Ошибка при обновлении заказа с дополнительными полями:", error);
       throw error;
     }
   }

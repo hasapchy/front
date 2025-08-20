@@ -1,4 +1,5 @@
 import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import OrderAfValueDto from "./OrderAfValueDto";
 
 export default class OrderDto {
   constructor(
@@ -29,7 +30,8 @@ export default class OrderDto {
     createdAt = "",
     updatedAt = "",
     client = null,
-    products = null
+    products = null,
+    additionalFields = null
   ) {
     this.id = id;
     this.note = note;
@@ -59,6 +61,7 @@ export default class OrderDto {
     this.updatedAt = updatedAt;
     this.client = client;
     this.products = products;
+    this.additionalFields = additionalFields;
   }
 
   priceInfo() {
@@ -97,5 +100,41 @@ export default class OrderDto {
 
   formatUpdatedAt() {
     return dayjsDate(this.updatedAt);
+  }
+
+
+  getAdditionalFields() {
+    if (!this.additionalFields) {
+      return [];
+    }
+    return this.additionalFields.map(field => 
+      OrderAfValueDto.fromApi(field)
+    );
+  }
+
+  getAdditionalFieldsHtml() {
+    const fields = this.getAdditionalFields();
+    if (fields.length === 0) {
+      return '';
+    }
+
+    return fields.map(field => field.getDisplayHtml()).join('');
+  }
+
+  hasAdditionalFields() {
+    return this.additionalFields && this.additionalFields.length > 0;
+  }
+
+  getAdditionalFieldsCount() {
+    return this.additionalFields ? this.additionalFields.length : 0;
+  }
+
+  getRequiredFields() {
+    return this.getAdditionalFields().filter(field => field.isRequired());
+  }
+
+  areRequiredFieldsFilled() {
+    const requiredFields = this.getRequiredFields();
+    return requiredFields.every(field => field.value && field.value.trim() !== '');
   }
 }

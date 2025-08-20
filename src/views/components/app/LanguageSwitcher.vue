@@ -5,7 +5,16 @@
       @click="toggleDropdown"
       class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
     >
-      <span class="flag-icon">{{ currentFlag }}</span>
+      <div class="flag-icon">
+        <img v-if="currentLocale === 'tm'" 
+             src="/flags/640px-Flag_of_Turkmenistan.svg.png" 
+             alt="TM" 
+             class="w-6 h-5 object-contain rounded">
+        <img v-else 
+             src="/flags/640px-Flag_of_Russia.svg.webp" 
+             alt="RU" 
+             class="w-6 h-5 object-contain rounded">
+      </div>
       <span class="language-name">{{ currentLanguageName }}</span>
       <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': isOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -23,7 +32,11 @@
           class="language-option w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
           :class="{ 'bg-blue-50 text-blue-700': currentLocale === 'tm' }"
         >
-          <span class="flag-icon">🇹🇲</span>
+          <div class="flag-icon">
+            <img src="/flags/640px-Flag_of_Turkmenistan.svg.png" 
+                 alt="TM" 
+                 class="w-6 h-5 object-contain rounded">
+          </div>
           <span class="text-sm">TM</span>
         </button>
         
@@ -32,7 +45,11 @@
           class="language-option w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
           :class="{ 'bg-blue-50 text-blue-700': currentLocale === 'ru' }"
         >
-          <span class="flag-icon">🇷🇺</span>
+          <div class="flag-icon">
+            <img src="/flags/640px-Flag_of_Russia.svg.webp" 
+                 alt="RU" 
+                 class="w-6 h-5 object-contain rounded">
+          </div>
           <span class="text-sm">RU</span>
         </button>
       </div>
@@ -52,9 +69,7 @@ export default {
     currentLocale() {
       return this.$i18n.locale
     },
-    currentFlag() {
-      return this.currentLocale === 'tm' ? '🇹🇲' : '🇷🇺'
-    },
+
     currentLanguageName() {
       return this.currentLocale === 'tm' ? 'TM' : 'RU'
     }
@@ -214,8 +229,18 @@ export default {
 }
 
 .flag-icon {
-  font-size: 16px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flag-icon img {
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 @keyframes fadeIn {
