@@ -12,6 +12,13 @@ export default createStore({
     notificationIsDanger: false,
     notificationDuration: 10000, // Длительность уведомления в миллисекундах
     notificationTimeoutId: null, // ID таймера для возможности отмены
+    isLoading: true, // Состояние загрузки для блокировки навигации
+    activeApiCalls: 0, // Счетчик активных API вызовов
+    tokenInfo: {
+      accessTokenExpiresAt: null,
+      refreshTokenExpiresAt: null,
+      needsRefresh: false
+    }
   },
 
   mutations: {
@@ -27,6 +34,19 @@ export default createStore({
     SET_SEARCH_QUERY(state, query) {
       state.searchQuery = query;
     },
+    SET_LOADING(state, isLoading) {
+      state.isLoading = isLoading;
+    },
+    INCREMENT_API_CALLS(state) {
+      state.activeApiCalls++;
+      state.isLoading = true;
+    },
+    DECREMENT_API_CALLS(state) {
+      state.activeApiCalls = Math.max(0, state.activeApiCalls - 1);
+      if (state.activeApiCalls === 0) {
+        state.isLoading = false;
+      }
+    },
     SHOW_NOTIFICATION(state, { title, subtitle, isDanger, duration }) {
       state.notificationTitle = title;
       state.notificationSubtitle = subtitle;
@@ -40,6 +60,14 @@ export default createStore({
     SET_NOTIFICATION_TIMEOUT_ID(state, timeoutId) {
       state.notificationTimeoutId = timeoutId;
     },
+    SET_TOKEN_INFO(state, tokenInfo) {
+      state.tokenInfo = { ...state.tokenInfo, ...tokenInfo };
+    },
+    UPDATE_TOKEN_EXPIRATION(state, { accessTokenExpiresAt, refreshTokenExpiresAt }) {
+      state.tokenInfo.accessTokenExpiresAt = accessTokenExpiresAt;
+      state.tokenInfo.refreshTokenExpiresAt = refreshTokenExpiresAt;
+      state.tokenInfo.needsRefresh = false;
+    },
   },
 
   actions: {
@@ -51,6 +79,15 @@ export default createStore({
     },
     setPermissions({ commit }, permissions) {
       commit("SET_PERMISSIONS", permissions);
+    },
+    setLoading({ commit }, isLoading) {
+      commit("SET_LOADING", isLoading);
+    },
+    startApiCall({ commit }) {
+      commit("INCREMENT_API_CALLS");
+    },
+    endApiCall({ commit }) {
+      commit("DECREMENT_API_CALLS");
     },
     showNotification({ commit, state }, { title, subtitle = '', isDanger = false, duration = 10000 }) {
       // Очищаем предыдущий таймер если есть
@@ -93,17 +130,50 @@ export default createStore({
         commit('SET_NOTIFICATION_TIMEOUT_ID', timeoutId);
       }
     },
+    updateTokenExpiration({ commit }, { accessTokenExpiresAt, refreshTokenExpiresAt }) {
+      commit('UPDATE_TOKEN_EXPIRATION', { accessTokenExpiresAt, refreshTokenExpiresAt });
+    },
+    checkTokenStatus({ commit, state }) {
+      const accessTokenExpiresAt = localStorage.getItem('tokenExpiresAt');
+      const refreshTokenExpiresAt = localStorage.getItem('refreshTokenExpiresAt');
+      
+      if (accessTokenExpiresAt && refreshTokenExpiresAt) {
+        const now = Date.now();
+        const accessExpired = now > parseInt(accessTokenExpiresAt);
+        const refreshExpired = now > parseInt(refreshTokenExpiresAt);
+        
+        commit('SET_TOKEN_INFO', {
+          accessTokenExpiresAt: parseInt(accessTokenExpiresAt),
+          refreshTokenExpiresAt: parseInt(refreshTokenExpiresAt),
+          needsRefresh: accessExpired && !refreshExpired
+        });
+      }
+    },
   },
 
   getters: {
     user: (state) => state.user,
     permissions: (state) => state.permissions,
     hasPermission: (state) => (perm) => state.permissions.includes(perm),
+    isLoading: (state) => state.isLoading,
+    activeApiCalls: (state) => state.activeApiCalls,
     notification: (state) => state.notification,
     notificationTitle: (state) => state.notificationTitle,
     notificationSubtitle: (state) => state.notificationSubtitle,
     notificationIsDanger: (state) => state.notificationIsDanger,
     notificationDuration: (state) => state.notificationDuration,
     notificationTimeoutId: (state) => state.notificationTimeoutId,
+    tokenInfo: (state) => state.tokenInfo,
+    isTokenExpired: (state) => state.tokenInfo.needsRefresh,
+    accessTokenTimeLeft: (state) => {
+      if (!state.tokenInfo.accessTokenExpiresAt) return 0;
+      const timeLeft = state.tokenInfo.accessTokenExpiresAt - Date.now();
+      return Math.max(0, Math.floor(timeLeft / 60000));
+    },
+    refreshTokenTimeLeft: (state) => {
+      if (!state.tokenInfo.refreshTokenExpiresAt) return 0;
+      const timeLeft = state.tokenInfo.refreshTokenExpiresAt - Date.now();
+      return Math.max(0, Math.floor(timeLeft / (24 * 60 * 60 * 1000)));
+    },
   },
 });

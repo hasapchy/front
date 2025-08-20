@@ -137,12 +137,12 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import AdminCategoryCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import modalMixin from '@/mixins/modalMixin';
+
 import formChangesMixin from '@/mixins/formChangesMixin';
 import JsBarcode from "jsbarcode";
 
 export default {
-    mixins: [getApiErrorMessage, modalMixin, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage },
     props: {
@@ -171,6 +171,7 @@ export default {
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
+            modalDialog: false,
         }
     },
     created() {
@@ -339,9 +340,12 @@ export default {
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
-        // showModal() {
-        //     this.modalDialog = true;
-        // },
+        showModal() {
+            this.modalDialog = true;
+        },
+        closeModal() {
+            this.modalDialog = false;
+        },
         handleSaved() {
             this.fetchAllCategories();
             this.closeModal();

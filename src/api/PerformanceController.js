@@ -151,6 +151,16 @@ export default class PerformanceController {
     }
   }
 
+  static async getServerLogs() {
+    try {
+      const response = await api.get("/performance/server-logs");
+      return response.data;
+    } catch (error) {
+      console.error("Ошибка при получении логов сервера:", error);
+      throw error;
+    }
+  }
+
   // Метод для проверки доступности функций
   static async checkFeatureAvailability() {
     const features = {

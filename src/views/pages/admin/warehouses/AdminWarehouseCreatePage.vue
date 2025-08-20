@@ -23,8 +23,8 @@
             :disabled="!$store.getters.hasPermission('warehouses_delete')">
             {{ $t('delete') }}
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouses_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('warehouses_create'))">
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItem != null && !$store.getters.hasPermission('warehouses_update')) ||
+            (editingItem == null && !$store.getters.hasPermission('warehouses_create'))">
             {{ $t('save') }}
         </PrimaryButton>
     </div>
@@ -61,6 +61,7 @@ export default {
             name: this.warehouse ? this.warehouse.name : '',
             selectedUsers: this.warehouse ? this.warehouse.getUserIds() : [],
             warehouseId: this.warehouse ? this.warehouse.id : null,
+            editingItem: this.warehouse,
             users: [],
             saveLoading: false,
             deleteDialog: false,
@@ -69,6 +70,10 @@ export default {
     },
     created() {
         this.fetchUsers();
+        // Инициализируем editingItem из props warehouse
+        if (this.warehouse) {
+            this.editingItem = this.warehouse;
+        }
     },
     mounted() {
         // Сохраняем начальное состояние после монтирования компонента
@@ -91,9 +96,9 @@ export default {
         async save() {
             this.saveLoading = true;
             try {
-                if (this.warehouse?.id != null) {
+                if (this.editingItem?.id != null) {
                     var resp = await WarehouseController.updateWarehouse(
-                        this.warehouse.id,
+                        this.editingItem.id,
                         {
                             name: this.name,
                             users: this.selectedUsers
@@ -116,13 +121,13 @@ export default {
         },
         async deleteItem() {
             this.closeDeleteDialog();
-            if (this.warehouse?.id == null) {
+            if (this.editingItem?.id == null) {
                 return;
             }
             this.deleteLoading = true;
             try {
                 var resp = await WarehouseController.deleteWarehouse(
-                    this.warehouse.id);
+                    this.editingItem.id);
                 if (resp.message) {
                     this.$emit('deleted');
                     this.clearForm();
@@ -143,6 +148,7 @@ export default {
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
+
     },
     watch: {
         warehouse: {
@@ -151,10 +157,12 @@ export default {
                     this.name = newWarehouse.name || '';
                     this.selectedUsers = newWarehouse.getUserIds() || [];
                     this.warehouseId = newWarehouse.id || null;
+                    this.editingItem = newWarehouse;
                 } else {
                     this.name = '';
                     this.selectedUsers = [];
                     this.warehouseId = null;
+                    this.editingItem = null;
                 }
                 // Сохраняем новое начальное состояние
                 this.$nextTick(() => {

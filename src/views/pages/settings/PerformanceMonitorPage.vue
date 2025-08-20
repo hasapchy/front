@@ -5,6 +5,11 @@
       <p class="text-gray-600">Отслеживание производительности запросов к базе данных</p>
     </div>
 
+    <!-- Статус JWT токенов -->
+    <div class="mb-6">
+      <TokenStatusComponent />
+    </div>
+
     <!-- Кнопки управления -->
     <div class="mb-6 flex flex-wrap gap-4">
       <!-- Основные кнопки -->
@@ -205,6 +210,58 @@
           <span>Проверить доступность функций</span>
         </button>
       </div>
+
+    <!-- Логи сервера -->
+    <div class="mb-6">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold text-gray-900">Логи сервера</h2>
+          <button
+            @click="loadServerLogs"
+            :disabled="logsLoading"
+            class="bg-gray-700 hover:bg-gray-800 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+          >
+            <i class="fas fa-sync-alt" :class="{ 'fa-spin': logsLoading }"></i>
+            <span>Обновить</span>
+          </button>
+        </div>
+
+        <div v-if="logsLoading" class="text-gray-600">Загрузка логов...</div>
+        <div v-else-if="logsError" class="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700">{{ logsError }}</div>
+
+        <div v-else>
+          <div v-if="availableLogs.length > 0">
+            <div class="border-b border-gray-200 mb-4">
+              <nav class="flex flex-wrap gap-2">
+                <button
+                  v-for="tab in availableLogs"
+                  :key="tab.key"
+                  @click="selectedLogKey = tab.key"
+                  class="px-3 py-1.5 rounded-md text-sm"
+                  :class="selectedLogKey === tab.key ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                >
+                  {{ tab.label }}
+                </button>
+              </nav>
+            </div>
+
+            <div class="text-sm text-gray-600 mb-2">
+              <span v-if="selectedLog && selectedLog.size">Размер: {{ selectedLog.size }}</span>
+              <span v-if="selectedLog && selectedLog.last_modified" class="ml-4">Изменён: {{ selectedLog.last_modified }}</span>
+            </div>
+
+            <div class="bg-gray-900 text-gray-100 rounded-lg p-4 max-h-96 overflow-auto font-mono text-xs">
+              <div v-if="selectedLog && selectedLog.lines && selectedLog.lines.length > 0">
+                <div v-for="(line, idx) in selectedLog.lines" :key="idx" class="whitespace-pre">{{ line }}</div>
+              </div>
+              <div v-else class="text-gray-400">Нет данных для выбранного лога</div>
+            </div>
+          </div>
+
+          <div v-else class="text-sm text-gray-600">Логи недоступны.</div>
+        </div>
+      </div>
+    </div>
 
     <!-- Информация о базе данных -->
     <div v-if="metrics.database_info" class="mb-6">
@@ -990,10 +1047,12 @@
 <script>
 import PerformanceController from '@/api/PerformanceController';
 import notificationMixin from '@/mixins/notificationMixin';
+import TokenStatusComponent from '@/views/components/app/TokenStatusComponent.vue';
 
 export default {
   name: 'PerformanceMonitorPage',
   mixins: [notificationMixin],
+  components: { TokenStatusComponent },
   data() {
     return {
       metrics: {},
@@ -1003,11 +1062,16 @@ export default {
       showTestDropdown: false,
       performanceRecommendations: null, // Добавляем для хранения рекомендаций
       realTimeMetrics: null, // Добавляем для хранения метрик в реальном времени
-      featureAvailability: null // Добавляем для хранения информации о доступности функций
+      featureAvailability: null, // Добавляем для хранения информации о доступности функций
+      serverLogs: null,
+      logsLoading: false,
+      logsError: null,
+      selectedLogKey: 'laravel'
     };
   },
   async mounted() {
     await this.refreshMetrics();
+    await this.loadServerLogs();
     // Добавляем обработчик клика вне выпадающего списка
     document.addEventListener('click', this.handleClickOutside);
   },
@@ -1016,7 +1080,73 @@ export default {
     // Убираем обработчик при размонтировании компонента
     document.removeEventListener('click', this.handleClickOutside);
   },
+  computed: {
+    availableLogs() {
+      const tabs = [];
+      if (!this.serverLogs) return tabs;
+      if (this.serverLogs.laravel) tabs.push({ key: 'laravel', label: 'Laravel' });
+      if (this.serverLogs.error) tabs.push({ key: 'error', label: 'error.log' });
+      if (this.serverLogs.access) tabs.push({ key: 'access', label: 'access.log' });
+      if (this.serverLogs.system?.php_errors) tabs.push({ key: 'system.php_errors', label: 'PHP errors' });
+      if (this.serverLogs.system?.apache_errors) tabs.push({ key: 'system.apache_errors', label: 'Apache' });
+      if (this.serverLogs.system?.nginx_errors) tabs.push({ key: 'system.nginx_errors', label: 'Nginx' });
+      if (this.selectedLogKey && !tabs.some(t => t.key === this.selectedLogKey) && tabs.length > 0) {
+        this.selectedLogKey = tabs[0].key;
+      }
+      return tabs;
+    },
+    selectedLog() {
+      if (!this.serverLogs) return null;
+      const key = this.selectedLogKey;
+      if (key === 'laravel') return this.serverLogs.laravel;
+      if (key === 'error') return this.serverLogs.error;
+      if (key === 'access') return this.serverLogs.access;
+      if (key === 'system.php_errors') return { lines: this.serverLogs.system?.php_errors || [] };
+      if (key === 'system.apache_errors') return { lines: this.serverLogs.system?.apache_errors || [] };
+      if (key === 'system.nginx_errors') return { lines: this.serverLogs.system?.nginx_errors || [] };
+      return null;
+    }
+  },
   methods: {
+    async loadServerLogs() {
+      this.logsLoading = true;
+      this.logsError = null;
+      try {
+        const logs = await PerformanceController.getServerLogs();
+        this.serverLogs = logs;
+      } catch (error) {
+        this.logsError = error.response?.data?.message || error.message || 'Не удалось загрузить логи';
+        this.showNotification('Ошибка загрузки логов', this.logsError, true);
+      } finally {
+        this.logsLoading = false;
+      }
+    },
+
+    async refreshSystemInfo() {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        const metrics = await PerformanceController.getDatabaseMetrics();
+        // Обновляем только системную информацию
+        this.metrics = { ...this.metrics, ...metrics };
+        this.showNotification('Системная информация обновлена', '', false);
+      } catch (error) {
+        this.showNotification('Ошибка обновления системной информации', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
+        
+        if (error.response?.data?.message) {
+          this.error = error.response.data.message;
+        } else if (error.response?.data?.error) {
+          this.error = error.response.data.error;
+        } else if (error.message) {
+          this.error = error.message;
+        } else {
+          this.error = 'Неизвестная ошибка при обновлении системной информации';
+        }
+      } finally {
+        this.loading = false;
+      }
+    },
     async refreshMetrics() {
       this.loading = true;
       this.error = null;
