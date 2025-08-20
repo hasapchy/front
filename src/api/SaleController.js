@@ -41,8 +41,8 @@ export default class SaleController {
             item.client.discount,
             item.client.created_at,
             item.client.updated_at,
-            item.client.emails,
-            item.client.phones
+            item.client.emails || [],
+            item.client.phones || []
           );
         } else if (item.client_first_name || item.client_last_name) {
           // Fallback для случая, когда клиент загружен через JOIN
@@ -61,8 +61,8 @@ export default class SaleController {
             null,
             null,
             null,
-            null,
-            null,
+            [],
+            [],
             null
           );
         }

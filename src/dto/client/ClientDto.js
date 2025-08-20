@@ -38,10 +38,10 @@ export default class ClientDto {
     this.discount = discount; // Скидка
     this.createdAt = createdAt; // Дата создания клиента
     this.updatedAt = updatedAt; // Дата обновления клиента
-    this.emails = emails.map(
+    this.emails = (emails || []).map(
       (email) => new ClientEmailDto(email.id, email.client_id, email.email)
     ); // Список email-ов
-    this.phones = phones.map(
+    this.phones = (phones || []).map(
       (phone) => new ClientPhoneDto(phone.id, phone.client_id, phone.phone)
     ); // Список телефонов
   }

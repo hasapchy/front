@@ -52,7 +52,7 @@
                     <div>
                         <label class="required">{{ $t('client') }}</label>
                         <p><span class="font-semibold text-sm">{{ $t('name') }}:</span> {{ selectedClient.fullName() }}</p>
-                        <p><span class="font-semibold text-sm">{{ $t('phone') }}:</span> {{ selectedClient.phones[0].phone }}</p>
+                        <p><span class="font-semibold text-sm">{{ $t('phone') }}:</span> {{ selectedClient.phones[0]?.phone || $t('noPhone') }}</p>
                         <p><span class="font-semibold text-sm">{{ $t('balance') }}:</span>
                             <span
                                 :class="selectedClient.balanceNumeric() == 0 ? 'text-[#337AB7]' : selectedClient.balanceNumeric() > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
