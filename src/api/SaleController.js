@@ -5,12 +5,20 @@ import ClientDto from "@/dto/client/ClientDto";
 import SaleProductDto from "@/dto/sale/SaleProductDto";
 
 export default class SaleController {
-  static async getItemsPaginated(page = 1, search = null) {
+  static async getItemsPaginated(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null) {
     try {
       const params = { page: page };
       if (search) {
         params.search = search;
       }
+      if (dateFilter && dateFilter !== 'all_time') {
+        params.date_filter_type = dateFilter;
+        if (dateFilter === 'custom' && startDate && endDate) {
+          params.start_date = startDate;
+          params.end_date = endDate;
+        }
+      }
+
       const response = await api.get("/sales", { params });
       const data = response.data;
       // Преобразуем полученные данные в DTO

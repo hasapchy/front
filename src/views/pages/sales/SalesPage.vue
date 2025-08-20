@@ -5,6 +5,26 @@
                 :disabled="!$store.getters.hasPermission('sales_create')">
                 {{ $t('addSale') }}
             </PrimaryButton>
+            
+            <!-- Фильтр по дате -->
+            <div class="ml-4">
+                <select v-model="dateFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
+                    <option value="all_time">{{ $t('allTime') }}</option>
+                    <option value="today">{{ $t('today') }}</option>
+                    <option value="yesterday">{{ $t('yesterday') }}</option>
+                    <option value="this_week">{{ $t('thisWeek') }}</option>
+                    <option value="this_month">{{ $t('thisMonth') }}</option>
+                    <option value="last_week">{{ $t('lastWeek') }}</option>
+                    <option value="last_month">{{ $t('lastMonth') }}</option>
+                    <option value="custom">{{ $t('selectDates') }}</option>
+                </select>
+            </div>
+            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-4">
+                <input type="date" v-model="startDate" @change="fetchItems" class="w-full p-2 border rounded" />
+                <input type="date" v-model="endDate" @change="fetchItems" class="w-full p-2 border rounded" />
+            </div>
+
+
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
@@ -48,6 +68,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { eventBus } from '@/eventBus';
 
+
 export default {
     mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, ClientButtonCell, BatchButton, AlertDialog },
@@ -68,6 +89,9 @@ export default {
                 { name: 'price', label: 'saleAmount' },
                 { name: 'note', label: 'note' },
             ],
+            dateFilter: 'all_time',
+            startDate: null,
+            endDate: null,
         }
     },
     created() {
@@ -123,7 +147,7 @@ export default {
                 this.loading = true;
             }
             try {
-                const new_data = await SaleController.getItemsPaginated(page, this.searchQuery);
+                const new_data = await SaleController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingSaleList'), error.message, true);
@@ -147,7 +171,8 @@ export default {
         },
         handleDeletedError(m) {
             this.showNotification(this.$t('errorDeletingRecord'), m, true);
-        }
+        },
+
     },
     computed: {
         searchQuery() {

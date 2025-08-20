@@ -6,11 +6,21 @@ import OrderProductDto from "@/dto/order/OrderProductDto";
 import OrderAfController from "./OrderAfController";
 
 export default class OrderController {
-  static async getItemsPaginated(page = 1, search = null) {
+  static async getItemsPaginated(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, statusFilter = []) {
     try {
       const params = { page: page };
       if (search) {
         params.search = search;
+      }
+      if (dateFilter && dateFilter !== 'all_time') {
+        params.date_filter_type = dateFilter;
+        if (dateFilter === 'custom' && startDate && endDate) {
+          params.start_date = startDate;
+          params.end_date = endDate;
+        }
+      }
+      if (statusFilter && statusFilter.length > 0) {
+        params.status_ids = statusFilter.join(',');
       }
       const response = await api.get("/orders", { params });
       const data = response.data;

@@ -4,6 +4,44 @@
             <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus">
                 {{ $t('addOrder') }}
             </PrimaryButton>
+            
+            <!-- Фильтр по дате -->
+            <div class="ml-4">
+                <select v-model="dateFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
+                    <option value="all_time">{{ $t('allTime') }}</option>
+                    <option value="today">{{ $t('today') }}</option>
+                    <option value="yesterday">{{ $t('yesterday') }}</option>
+                    <option value="this_week">{{ $t('thisWeek') }}</option>
+                    <option value="this_month">{{ $t('thisMonth') }}</option>
+                    <option value="last_week">{{ $t('lastWeek') }}</option>
+                    <option value="last_month">{{ $t('lastMonth') }}</option>
+                    <option value="custom">{{ $t('selectDates') }}</option>
+                </select>
+            </div>
+            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-4">
+                <input type="date" v-model="startDate" @change="fetchItems" class="w-full p-2 border rounded" />
+                <input type="date" v-model="endDate" @change="fetchItems" class="w-full p-2 border rounded" />
+            </div>
+
+            <!-- Фильтр по статусам -->
+            <div class="ml-4">
+                <CheckboxFilter 
+                    v-model="statusFilter"
+                    :options="statusOptions"
+                    placeholder="allStatuses"
+                    @change="fetchItems"
+                />
+            </div>
+
+            <!-- Кнопка сброса фильтров -->
+            <div class="ml-4">
+                <PrimaryButton 
+                    :onclick="resetFilters"
+                    icon="fas fa-times"
+                    :isLight="true">
+                    {{ $t('resetFilters') }}
+                </PrimaryButton>
+            </div>
         </div>
         <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" @changePage="fetchItems" />
     </div>
@@ -25,7 +63,7 @@
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
 
         <template #timeline>
-            <TimelinePanel ref="timelinePanel" v-if="editingItem && !timelineCollapsed" :type="'order'" :id="editingItem.id" @toggle-timeline="toggleTimeline" />
+            <TimelinePanel v-if="editingItem && !timelineCollapsed" ref="timelinePanel" :type="'order'" :id="editingItem.id" @toggle-timeline="toggleTimeline" />
         </template>
     </SideModalDialog>
 
@@ -54,10 +92,11 @@ import modalMixin from "@/mixins/modalMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import TimelinePanel from "@/views/components/app/dialog/TimelinePanel.vue";
 import { eventBus } from "@/eventBus";
+import CheckboxFilter from "@/views/components/app/forms/CheckboxFilter.vue";
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, modalMixin, batchActionsMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, ClientButtonCell, BatchButton, AlertDialog, TimelinePanel },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, ClientButtonCell, BatchButton, AlertDialog, TimelinePanel, CheckboxFilter },
     data() {
         return {
             data: null,
@@ -84,6 +123,11 @@ export default {
                 { name: "description", label: 'description' },
                 { name: "projectName", label: 'project' },
             ],
+            dateFilter: 'all_time',
+            startDate: null,
+            endDate: null,
+            statusFilter: [],
+            statusOptions: [],
         };
     },
     created() {
@@ -100,6 +144,7 @@ export default {
         // Удаляем слушатель события
         eventBus.off('global-search', this.handleSearch);
     },
+
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
@@ -164,7 +209,7 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                const newData = await OrderController.getItemsPaginated(page, this.searchQuery);
+                const newData = await OrderController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, this.statusFilter);
                 this.data = newData;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingOrderList'), error.message, true);
@@ -211,6 +256,10 @@ export default {
         
         async fetchStatuses() {
             this.statuses = await OrderStatusController.getAllItems();
+            this.statusOptions = this.statuses.map(status => ({
+                value: status.id,
+                label: status.name
+            }));
         },
 
         async handleChangeStatus(ids, statusId) {
@@ -250,6 +299,13 @@ export default {
             this.editingItem = null;
             // Закрываем таймлайн при закрытии модального окна
             this.timelineCollapsed = true;
+        },
+        resetFilters() {
+            this.dateFilter = 'all_time';
+            this.startDate = '';
+            this.endDate = '';
+            this.statusFilter = []; // Сбрасываем фильтр по статусам
+            this.fetchItems();
         }
     }
 };

@@ -706,5 +706,15 @@ export default {
   languageChanged: 'Dil üýtgedildi',
   turkmen: 'Türkmençe',
   russian: 'Rusça',
-  accountingSystem: 'Hasap tutma sistemi'
+  accountingSystem: 'Hasap tutma sistemi',
+  
+  // Новые переводы для фильтров транзакций
+  allTransactionTypes: 'Ähli tranzaksiya görnüşleri',
+  allSources: 'Ähli çeşmeler',
+  allStatuses: 'Ähli ýagdaýlar',
+  completed: 'Tamamlandy',
+  cancelled: 'Ýatyryldy',
+  pending: 'Garaşylýar',
+  sourceOfFunds: 'Pul çeşmesi',
+  resetFilters: 'Filtri arassala'
 }

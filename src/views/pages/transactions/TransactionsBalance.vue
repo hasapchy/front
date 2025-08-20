@@ -32,7 +32,9 @@ export default {
         cashRegisterId: { type: Number, default: null },
         startDate: { type: String, default: null },
         endDate: { type: String, default: null },
-        dateFilter: { type: String, default: 'all_time' }
+        dateFilter: { type: String, default: 'all_time' },
+        transactionTypeFilter: { type: String, default: '' },
+        sourceFilter: { type: Array, default: () => [] }
     },
     data() {
         return {
@@ -111,10 +113,27 @@ export default {
                 }
                 const cashIds = this.cashRegisterId !== null ? [this.cashRegisterId] : [];
 
+                // Создаем параметры для API
+                const params = {
+                    cash_register_ids: cashIds.join(','),
+                    start_date: start,
+                    end_date: end,
+                    transaction_type: this.transactionTypeFilter || undefined,
+                    source: this.sourceFilter.length > 0 ? this.sourceFilter.join(',') : undefined
+                };
+
+                // Убираем undefined параметры
+                Object.keys(params).forEach(key => {
+                    if (params[key] === undefined) {
+                        delete params[key];
+                    }
+                });
+
                 this.data = await CashRegisterController.getCashBalance(
                     cashIds,
                     start,
-                    end
+                    end,
+                    params
                 );
             } finally {
                 this.loading = false;
@@ -126,6 +145,8 @@ export default {
         dateFilter: 'fetchItems',
         startDate: 'fetchItems',
         endDate: 'fetchItems',
+        transactionTypeFilter: 'fetchItems',
+        sourceFilter: 'fetchItems',
     },
 }
 </script>

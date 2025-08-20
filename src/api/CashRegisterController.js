@@ -72,8 +72,9 @@ export default class CashRegisterController {
    * @param {number[]} cashIds — массив id касс (пустой для всех)
    * @param {string|null} startDate — 'DD.MM.YYYY'
    * @param {string|null} endDate   — 'DD.MM.YYYY'
+   * @param {Object} additionalParams — дополнительные параметры фильтрации
    */
-  static async getCashBalance(cashIds = [], startDate = null, endDate = null) {
+  static async getCashBalance(cashIds = [], startDate = null, endDate = null, additionalParams = {}) {
     try {
       const params = {};
       if (cashIds.length) {
@@ -84,6 +85,14 @@ export default class CashRegisterController {
       }
       if (endDate) {
         params.end_date = endDate;
+      }
+
+      // Добавляем дополнительные параметры фильтрации
+      if (additionalParams.transaction_type) {
+        params.transaction_type = additionalParams.transaction_type;
+      }
+      if (additionalParams.source) {
+        params.source = additionalParams.source;
       }
 
       const response = await api.get("/cash_registers/balance", { params });
