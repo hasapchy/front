@@ -86,7 +86,6 @@ export default {
                     return i[c];
             }
         },
-        //
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;

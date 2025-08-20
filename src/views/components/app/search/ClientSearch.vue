@@ -52,7 +52,7 @@
                     <div>
                         <label class="required">{{ $t('client') }}</label>
                         <p><span class="font-semibold text-sm">{{ $t('name') }}:</span> {{ selectedClient.fullName() }}</p>
-                        <p><span class="font-semibold text-sm">{{ $t('phone') }}:</span> {{ selectedClient.phones[0].phone }}</p>
+                        <p><span class="font-semibold text-sm">{{ $t('phone') }}:</span> {{ selectedClient.phones[0]?.phone || $t('noPhone') }}</p>
                         <p><span class="font-semibold text-sm">{{ $t('balance') }}:</span>
                             <span
                                 :class="selectedClient.balanceNumeric() == 0 ? 'text-[#337AB7]' : selectedClient.balanceNumeric() > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
@@ -69,7 +69,7 @@
             </div>
         </div>
     </div>
-              <SideModalDialog :showForm="modalCreateClient" :onclose="() => modalCreateClient = false" :level="1">
+    <SideModalDialog :showForm="modalCreateClient" :onclose="() => modalCreateClient = false" :level="1">
         <ClientCreatePage :editingItem="null" :defaultFirstName="defaultClientName" @saved="onClientCreated" @saved-error="onClientCreatedError" />
     </SideModalDialog>
 </template>
@@ -77,12 +77,10 @@
 <script>
 import ClientController from '@/api/ClientController';
 import debounce from 'lodash.debounce';
-// import ClientCreatePage from '@/views/pages/clients/ClientCreatePage.vue';
 import { defineAsyncComponent } from 'vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import ClientDto from '@/dto/client/ClientDto';
-import ClientSearchDto from '@/dto/client/ClientSearchDto';
 import notificationMixin from '@/mixins/notificationMixin';
 
 export default {
@@ -98,7 +96,7 @@ export default {
             default: false,
         },
         selectedClient: {
-            type: Object,
+            type: [Object, Number],
             default: null,
         },
         disabled: {
@@ -158,20 +156,26 @@ export default {
         deselectClient() {
             this.$emit('update:selectedClient', null);
         },
-                 openCreateClientModal() {
+        openCreateClientModal() {
              this.defaultClientName = this.clientSearch;
              this.modalCreateClient = true;
          },
         onClientCreated(newClient) {
             this.modalCreateClient = false;
             if (newClient) {
-                this.selectClient(ClientDto.fromApi(newClient));
+                try {
+                    const clientDto = ClientDto.fromApi(newClient);
+                    this.selectClient(clientDto);
+                } catch (error) {
+                    console.error('Ошибка при создании ClientDto:', error);
+                }
             }
         },
         onClientCreatedError(error) {
+            console.error('Ошибка при создании клиента:', error);
             this.showNotification(this.$t('errorCreatingClient'), error, true);
         },
-                 handleBlur() {
+        handleBlur() {
              requestAnimationFrame(() => {
                  this.showDropdown = false;
              });

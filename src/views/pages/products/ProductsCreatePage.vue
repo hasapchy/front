@@ -137,12 +137,12 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import AdminCategoryCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-import modalMixin from '@/mixins/modalMixin';
+
 import formChangesMixin from '@/mixins/formChangesMixin';
 import JsBarcode from "jsbarcode";
 
 export default {
-    mixins: [getApiErrorMessage, modalMixin, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage },
     props: {
@@ -152,25 +152,26 @@ export default {
     },
     data() {
         return {
-            type: this.editingItem ? (this.editingItem.typeName ? this.editingItem.typeName() : 'product') : this.defaultType || "product",
-            name: this.editingItem ? (this.editingItem.name || this.editingItem.productName) : this.defaultName || '',
-            description: this.editingItem ? this.editingItem.description : '',
-            sku: this.editingItem ? this.editingItem.sku : '',
-            image: this.editingItem ? (this.editingItem.image || this.editingItem.productImage) : '',
+            type: this.defaultType || "product",
+            name: this.defaultName || '',
+            description: '',
+            sku: '',
+            image: '',
             selected_image: null,
-            category_id: this.editingItem ? (this.editingItem.category_id || this.editingItem.categoryId) : '',
-            unit_id: this.editingItem ? (this.editingItem.unit_id || this.editingItem.unitId) : '',
-            barcode: this.editingItem ? this.editingItem.barcode : '',
-            retail_price: this.editingItem ? this.editingItem.retail_price : 0,
-            wholesale_price: this.editingItem ? this.editingItem.wholesale_price : 0,
-            purchase_price: this.editingItem ? this.editingItem.purchase_price : 0,
-            editingItemId: this.editingItem ? (this.editingItem.id || this.editingItem.productId) : null,
+            category_id: '',
+            unit_id: '',
+            barcode: '',
+            retail_price: 0,
+            wholesale_price: 0,
+            purchase_price: 0,
+            editingItemId: null,
             currencies: [],
             units: [],
             allCategories: [],
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
+            modalDialog: false,
         }
     },
     created() {
@@ -339,9 +340,12 @@ export default {
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
-        // showModal() {
-        //     this.modalDialog = true;
-        // },
+        showModal() {
+            this.modalDialog = true;
+        },
+        closeModal() {
+            this.modalDialog = false;
+        },
         handleSaved() {
             this.fetchAllCategories();
             this.closeModal();

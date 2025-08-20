@@ -108,20 +108,18 @@ export default {
     },
     data() {
         return {
-            date: this.editingItem
-                ? this.editingItem.date
-                : new Date().toISOString().substring(0, 16),
-            note: this.editingItem ? this.editingItem.note : "",
-            type: this.editingItem ? this.editingItem.type : "cash",
-            warehouseId: this.editingItem ? this.editingItem.warehouseId || "" : "",
-            currencyId: this.editingItem ? this.editingItem.currencyId || "" : "",
-            projectId: this.editingItem ? this.editingItem.projectId : "",
-            cashId: this.editingItem ? this.editingItem.cashId : "",
-            products: this.editingItem ? this.editingItem.products : [],
-            discount: this.editingItem ? this.editingItem.discount : 0,
-            discountType: this.editingItem ? this.editingItem.discount_type : "fixed",
-            editingItemId: this.editingItem ? this.editingItem.id : null,
-            selectedClient: this.editingItem ? this.editingItem.client : null,
+            date: new Date().toISOString().substring(0, 16),
+            note: "",
+            type: "cash",
+            warehouseId: "",
+            currencyId: "",
+            projectId: "",
+            cashId: "",
+            products: [],
+            discount: 0,
+            discountType: "fixed",
+            editingItemId: null,
+            selectedClient: null,
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
@@ -326,7 +324,7 @@ export default {
                     this.editingItemId = newEditingItem.id || null;
                     this.products = newEditingItem.products || [];
                     this.discount = newEditingItem.discount || 0;
-                    this.discountType = newEditingItem.discount_type || "fixed";
+                    this.discountType = newEditingItem.discountType || "fixed";
                 } else {
                     this.clearForm();
                 }

@@ -49,8 +49,10 @@
                         :class="[
                             'flex items-center p-2 hover:bg-[#53585C]',
                             $store.state.settings_open ? 'bg-[#53585C] border-l-2 border-red-500' : '',
-                            'transition-colors text-sm'
-                        ]">
+                            'transition-colors text-sm',
+                            $store.getters.isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
+                        ]"
+                        :disabled="$store.getters.isLoading">
                         <i class="fas fa-cogs mr-2"></i> {{ $t('settings') }}
                     </a>
                 </li>

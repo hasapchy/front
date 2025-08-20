@@ -7,6 +7,7 @@ import router from "./router";
 import store from "./store";
 import i18n from "./i18n";
 import AuthController from "./api/AuthController";
+import { setStore } from "./store/storeManager";
 
 async function bootstrapApp() {
   const token = localStorage.getItem("token");
@@ -21,6 +22,9 @@ async function bootstrapApp() {
       localStorage.removeItem("token");
     }
   }
+
+  // Инициализируем storeManager
+  setStore(store);
 
   createApp(App).use(router).use(store).use(i18n).mount("#app");
 }
