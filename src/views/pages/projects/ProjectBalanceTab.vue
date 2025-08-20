@@ -7,9 +7,9 @@
                 'text-[#5CB85C] font-bold': balance >= 0,
                 'text-[#EE4F47] font-bold': balance < 0
             }">
-                {{ balanceFormatted }} TMT
+                {{ balanceFormatted }} {{ currencyCode }}
             </span>
-            <span class="ml-4">{{ $t('budget') }}: <b>{{ budgetFormatted }} TMT</b></span>
+            <span class="ml-4">{{ $t('budget') }}: <b>{{ budgetFormatted }} {{ currencyCode }}</b></span>
         </div>
         <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
         <div v-else-if="balanceHistory.length === 0" class="text-gray-500">
@@ -29,8 +29,9 @@ import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import TransactionController from "@/api/TransactionController";
 import SaleController from "@/api/SaleController";
 import OrderController from "@/api/OrderController";
-import WarehouseReceiptController from "@/api/WarehouseReceiptController";
 import ProjectController from "@/api/ProjectController";
+import AppController from "@/api/AppController";
+
 import api from "@/api/axiosInstance";
 import SaleDto from "@/dto/sale/SaleDto";
 import OrderDto from "@/dto/order/OrderDto";
@@ -47,6 +48,8 @@ export default {
     },
     data() {
         return {
+            // Константы
+            currencyCode: '',
             balanceLoading: false,
             balanceHistory: [],
             balance: 0,
@@ -65,25 +68,7 @@ export default {
                     fetch: id => TransactionController.getItem(id).then(r => {
                         let client = null;
                         if (r.item.client) {
-                            client = new ClientDto(
-                                r.item.client.id,
-                                r.item.client.client_type,
-                                r.item.client.balance,
-                                r.item.client.is_supplier,
-                                r.item.client.is_conflict,
-                                r.item.client.first_name,
-                                r.item.client.last_name,
-                                r.item.client.contact_person,
-                                r.item.client.address,
-                                r.item.client.note,
-                                r.item.client.status,
-                                r.item.client.discount_type,
-                                r.item.client.discount,
-                                r.item.client.created_at,
-                                r.item.client.updated_at,
-                                r.item.client.emails,
-                                r.item.client.phones
-                            );
+                            client = ClientDto.fromApi(r.item.client);
                         }
                         return new TransactionDto(
                             r.item.id,
@@ -124,25 +109,7 @@ export default {
                     fetch: id => SaleController.getItem(id).then(r => {
                         let client = null;
                         if (r.item.client) {
-                            client = new ClientDto(
-                                r.item.client.id,
-                                r.item.client.client_type,
-                                r.item.client.balance,
-                                r.item.client.is_supplier,
-                                r.item.client.is_conflict,
-                                r.item.client.first_name,
-                                r.item.client.last_name,
-                                r.item.client.contact_person,
-                                r.item.client.address,
-                                r.item.client.note,
-                                r.item.client.status,
-                                r.item.client.discount_type,
-                                r.item.client.discount,
-                                r.item.client.created_at,
-                                r.item.client.updated_at,
-                                r.item.client.emails,
-                                r.item.client.phones
-                            );
+                            client = ClientDto.fromApi(r.item.client);
                         }
                         return new SaleDto(
                             r.item.id,
@@ -177,25 +144,7 @@ export default {
                     fetch: id => OrderController.getItem(id).then(r => {
                         let client = null;
                         if (r.item.client) {
-                            client = new ClientDto(
-                                r.item.client.id,
-                                r.item.client.client_type,
-                                r.item.client.balance,
-                                r.item.client.is_supplier,
-                                r.item.client.is_conflict,
-                                r.item.client.first_name,
-                                r.item.client.last_name,
-                                r.item.client.contact_person,
-                                r.item.client.address,
-                                r.item.client.note,
-                                r.item.client.status,
-                                r.item.client.discount_type,
-                                r.item.client.discount,
-                                r.item.client.created_at,
-                                r.item.client.updated_at,
-                                r.item.client.emails,
-                                r.item.client.phones
-                            );
+                            client = ClientDto.fromApi(r.item.client);
                         }
                         return new OrderDto(
                             r.item.id,
@@ -249,10 +198,22 @@ export default {
             return this.budget ? parseFloat(this.budget).toFixed(2) : "0.00";
         },
     },
-    mounted() {
+    async mounted() {
+        // Получаем дефолтную валюту
+        await this.fetchDefaultCurrency();
         this.fetchBalanceHistory();
     },
     methods: {
+        async fetchDefaultCurrency() {
+            try {
+                const currencies = await AppController.getCurrencies();
+                const defaultCurrency = currencies.find(c => c.is_default);
+                this.currencyCode = defaultCurrency ? defaultCurrency.code : 'TMT';
+            } catch (error) {
+                console.error('Ошибка при получении дефолтной валюты:', error);
+                this.currencyCode = 'TMT';
+            }
+        },
         async fetchBalanceHistory() {
             if (!this.editingItem) return;
             this.balanceLoading = true;

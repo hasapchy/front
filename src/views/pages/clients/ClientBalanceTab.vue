@@ -1,22 +1,22 @@
 <template>
     <div class="mt-4">
         <h3 class="text-md font-semibold mb-2">{{ $t('balanceHistory') }}</h3>
-        <div class="mb-2 flex items-center gap-2">
+        <div v-if="editingItem" class="mb-2 flex items-center gap-2">
             <span>{{ $t('finalBalance') }}:</span>
             <span :class="{
-                'text-[#5CB85C] font-bold': editingItem && editingItem.balanceNumeric() >= 0,
-                'text-[#EE4F47] font-bold': editingItem && editingItem.balanceNumeric() < 0
+                'text-[#5CB85C] font-bold': editingItem.balanceNumeric && editingItem.balanceNumeric() >= 0,
+                'text-[#EE4F47] font-bold': editingItem.balanceNumeric && editingItem.balanceNumeric() < 0
             }">
-                {{ editingItem ? editingItem.balanceFormatted() : "0.00" }} TMT
+                {{ editingItem.balanceFormatted ? editingItem.balanceFormatted() : "0.00" }} {{ currencyCode }}
             </span>
         </div>
 
         <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="balanceHistory.length === 0" class="text-gray-500">
+        <div v-else-if="!balanceHistory || balanceHistory.length === 0" class="text-gray-500">
             {{ $t('noHistory') }}
         </div>
-        <DraggableTable v-if="!balanceLoading && balanceHistory.length" table-key="client.balance"
-            :columns-config="translatedColumnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
+        <DraggableTable v-if="!balanceLoading && balanceHistory && balanceHistory.length > 0 && editingItem" table-key="client.balance"
+            :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
             :onItemClick="handleBalanceItemClick" />
 
         <!-- Модалка для entity -->
@@ -26,8 +26,14 @@
                     <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
                 </div>
             </template>
-            <template v-else-if="selectedEntity">
-                <component :is="getModalComponent(selectedEntity.type)" v-bind="getModalProps(selectedEntity)" />
+            <template v-else-if="selectedEntity && selectedEntity.type && selectedEntity.data">
+                <component 
+                    :is="getModalComponent(selectedEntity.type)" 
+                    v-bind="getModalProps(selectedEntity)"
+                    @saved="onEntitySaved"
+                    @saved-error="onEntitySavedError"
+                    @deleted="onEntityDeleted"
+                    @deleted-error="onEntityDeletedError" />
             </template>
         </SideModalDialog>
     </div>
@@ -36,6 +42,7 @@
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import { markRaw } from 'vue';
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import SaleCreatePage from "@/views/pages/sales/SaleCreatePage.vue";
 import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
@@ -44,7 +51,8 @@ import TransactionController from "@/api/TransactionController";
 import ClientController from "@/api/ClientController";
 import SaleController from "@/api/SaleController";
 import OrderController from "@/api/OrderController";
-import WarehouseReceiptController from "@/api/WarehouseReceiptController";
+import AppController from "@/api/AppController";
+
 import api from "@/api/axiosInstance";
 import SaleDto from "@/dto/sale/SaleDto";
 import OrderDto from "@/dto/order/OrderDto";
@@ -55,59 +63,64 @@ export default {
     components: {
         DraggableTable,
         SideModalDialog,
-        TransactionCreatePage,
-        SaleCreatePage,
-        OrderCreatePage,
-        WarehousesReceiptCreatePage,
+        TransactionCreatePage: markRaw(TransactionCreatePage),
+        SaleCreatePage: markRaw(SaleCreatePage),
+        OrderCreatePage: markRaw(OrderCreatePage),
+        WarehousesReceiptCreatePage: markRaw(WarehousesReceiptCreatePage),
     },
+    emits: ['balance-updated'],
     props: {
-        editingItem: { required: true },
-    },
-    computed: {
-        translatedColumnsConfig() {
-            return this.columnsConfig.map(column => ({
-                ...column,
-                label: this.$t(column.label)
-            }));
-        }
+        editingItem: { 
+            required: false,
+            default: null,
+            validator: function(value) {
+                return value === null || (value && typeof value === 'object' && value.id !== undefined);
+            }
+        },
     },
     data() {
         return {
+            // Константы
+            currencyCode: '',
+
             balanceLoading: false,
             balanceHistory: [],
             selectedEntity: null,
             entityModalOpen: false,
             entityLoading: false, // NEW: loading state for modal
             columnsConfig: [
-                { name: "date", label: "date", size: 100 },
-                { name: "type", label: "type" },
-                { name: "description", label: "description", size: 600 },
-                { name: "amount", label: "amount", size: 120, html: true },
+                { name: "date", label: this.$t("date"), size: 100 },
+                { name: "type", label: this.$t("type") },
+                { name: "description", label: this.$t("description"), size: 600 },
+                { name: "amount", label: this.$t("amount"), size: 120, html: true },
             ],
             ENTITY_CONFIG: {
                 transaction: {
                     fetch: id => TransactionController.getItem(id).then(r => {
                         let client = null;
                         if (r.item.client) {
-                            client = new ClientDto(
-                                r.item.client.id,
-                                r.item.client.client_type,
-                                r.item.client.balance,
-                                r.item.client.is_supplier,
-                                r.item.client.is_conflict,
-                                r.item.client.first_name,
-                                r.item.client.last_name,
-                                r.item.client.contact_person,
-                                r.item.client.address,
-                                r.item.client.note,
-                                r.item.client.status,
-                                r.item.client.discount_type,
-                                r.item.client.discount,
-                                r.item.client.created_at,
-                                r.item.client.updated_at,
-                                r.item.client.emails,
-                                r.item.client.phones
-                            );
+                            client = ClientDto.fromApi(r.item.client);
+                        } else if (r.item.client_id && this.editingItem && this.editingItem.id) {
+                            // Если клиент не загружен, но есть client_id, создаем базовый объект клиента
+                            client = ClientDto.fromApi({
+                                id: r.item.client_id,
+                                client_type: this.editingItem.clientType || 'individual',
+                                balance: this.editingItem.balance || '0.00',
+                                is_supplier: this.editingItem.isSupplier || false,
+                                is_conflict: this.editingItem.isConflict || false,
+                                first_name: this.editingItem.firstName || 'Неизвестный',
+                                last_name: this.editingItem.lastName || 'Клиент',
+                                contact_person: this.editingItem.contactPerson || '',
+                                address: this.editingItem.address || '',
+                                note: this.editingItem.note || '',
+                                status: this.editingItem.status || 'active',
+                                discount_type: this.editingItem.discountType || 'none',
+                                discount: this.editingItem.discount || 0,
+                                created_at: this.editingItem.createdAt || new Date().toISOString(),
+                                updated_at: this.editingItem.updatedAt || new Date().toISOString(),
+                                emails: this.editingItem.emails || [],
+                                phones: this.editingItem.phones || []
+                            });
                         }
                         return new TransactionDto(
                             r.item.id,
@@ -141,32 +154,14 @@ export default {
                             r.item.updated_at
                         );
                     }),
-                    component: TransactionCreatePage,
+                    component: markRaw(TransactionCreatePage),
                     prop: 'editingItem',
                 },
                 sale: {
                     fetch: id => SaleController.getItem(id).then(r => {
                         let client = null;
                         if (r.item.client) {
-                            client = new ClientDto(
-                                r.item.client.id,
-                                r.item.client.client_type,
-                                r.item.client.balance,
-                                r.item.client.is_supplier,
-                                r.item.client.is_conflict,
-                                r.item.client.first_name,
-                                r.item.client.last_name,
-                                r.item.client.contact_person,
-                                r.item.client.address,
-                                r.item.client.note,
-                                r.item.client.status,
-                                r.item.client.discount_type,
-                                r.item.client.discount,
-                                r.item.client.created_at,
-                                r.item.client.updated_at,
-                                r.item.client.emails,
-                                r.item.client.phones
-                            );
+                            client = ClientDto.fromApi(r.item.client);
                         }
                         return new SaleDto(
                             r.item.id,
@@ -194,32 +189,14 @@ export default {
                             r.item.updated_at
                         );
                     }),
-                    component: SaleCreatePage,
+                    component: markRaw(SaleCreatePage),
                     prop: 'editingItem',
                 },
                 order: {
                     fetch: id => OrderController.getItem(id).then(r => {
                         let client = null;
                         if (r.item.client) {
-                            client = new ClientDto(
-                                r.item.client.id,
-                                r.item.client.client_type,
-                                r.item.client.balance,
-                                r.item.client.is_supplier,
-                                r.item.client.is_conflict,
-                                r.item.client.first_name,
-                                r.item.client.last_name,
-                                r.item.client.contact_person,
-                                r.item.client.address,
-                                r.item.client.note,
-                                r.item.client.status,
-                                r.item.client.discount_type,
-                                r.item.client.discount,
-                                r.item.client.created_at,
-                                r.item.client.updated_at,
-                                r.item.client.emails,
-                                r.item.client.phones
-                            );
+                            client = ClientDto.fromApi(r.item.client);
                         }
                         return new OrderDto(
                             r.item.id,
@@ -251,7 +228,7 @@ export default {
                             r.item.updated_at
                         );
                     }),
-                    component: OrderCreatePage,
+                    component: markRaw(OrderCreatePage),
                     prop: 'editingItem',
                 },
                 receipt: {
@@ -259,18 +236,34 @@ export default {
                         const { data } = await api.get(`/warehouse_receipts/${id}`);
                         return data.item ?? data;
                     },
-                    component: WarehousesReceiptCreatePage,
+                    component: markRaw(WarehousesReceiptCreatePage),
                     prop: 'editingItem',
                 },
             },
         };
     },
-    mounted() {
-        this.fetchBalanceHistory();
+    async mounted() {
+        // Получаем дефолтную валюту
+        await this.fetchDefaultCurrency();
+        
+        // mounted будет вызван только когда editingItem существует благодаря v-if в родительском компоненте
+        if (this.editingItem && this.editingItem.id) {
+            this.fetchBalanceHistory();
+        }
     },
     methods: {
+        async fetchDefaultCurrency() {
+            try {
+                const currencies = await AppController.getCurrencies();
+                const defaultCurrency = currencies.find(c => c.is_default);
+                this.currencyCode = defaultCurrency ? defaultCurrency.code : 'TMT';
+            } catch (error) {
+                console.error('Ошибка при получении дефолтной валюты:', error);
+                this.currencyCode = 'TMT';
+            }
+        },
         async fetchBalanceHistory() {
-            if (!this.editingItem) return;
+            if (!this.editingItem || !this.editingItem.id) return;
             this.balanceLoading = true;
             try {
                 this.balanceHistory = await ClientController.getBalanceHistory(
@@ -279,8 +272,9 @@ export default {
             } catch (e) {
                 console.error("Ошибка при загрузке истории баланса:", e);
                 this.balanceHistory = [];
+            } finally {
+                this.balanceLoading = false;
             }
-            this.balanceLoading = false;
         },
         itemMapper(i, c) {
             switch (c) {
@@ -297,17 +291,24 @@ export default {
             }
         },
         async handleBalanceItemClick(item) {
+            if (!this.editingItem || !this.editingItem.id) return;
+            
             const config = this.ENTITY_CONFIG[item.source];
             if (!config) return;
             this.entityModalOpen = true;
             this.entityLoading = true;
             try {
                 const data = await config.fetch(item.sourceId);
-                this.selectedEntity = {
-                    type: item.source,
-                    data,
-                };
+                if (data) {
+                    this.selectedEntity = {
+                        type: item.source,
+                        data,
+                    };
+                } else {
+                    throw new Error('Данные не загружены');
+                }
             } catch (e) {
+                console.error('Ошибка при загрузке данных:', e);
                 this.$notify?.({ type: 'error', text: 'Ошибка при загрузке данных: ' + (e.message || e) });
                 this.entityModalOpen = false;
                 this.selectedEntity = null;
@@ -317,20 +318,100 @@ export default {
         },
         getModalProps(entity) {
             const config = this.ENTITY_CONFIG[entity.type];
-            return config ? { [config.prop]: entity.data } : {};
+            if (!config) return {};
+            
+            // Если это транзакция и у неё нет клиента, но есть client_id, создаем базовый объект клиента
+            if (entity.type === 'transaction' && entity.data && !entity.data.client && entity.data.clientId && this.editingItem && this.editingItem.id) {
+                const client = ClientDto.fromApi({
+                    id: entity.data.clientId,
+                    client_type: this.editingItem.clientType || 'individual',
+                    balance: this.editingItem.balance || '0.00',
+                    is_supplier: this.editingItem.isSupplier || false,
+                    is_conflict: this.editingItem.isConflict || false,
+                    first_name: this.editingItem.firstName || 'Неизвестный',
+                    last_name: this.editingItem.lastName || 'Клиент',
+                    contact_person: this.editingItem.contactPerson || '',
+                    address: this.editingItem.address || '',
+                    note: this.editingItem.note || '',
+                    status: this.editingItem.status || 'active',
+                    discount_type: this.editingItem.discountType || 'none',
+                    discount: this.editingItem.discount || 0,
+                    created_at: this.editingItem.createdAt || new Date().toISOString(),
+                    updated_at: this.editingItem.updatedAt || new Date().toISOString(),
+                    emails: this.editingItem.emails || [],
+                    phones: this.editingItem.phones || []
+                });
+                return { [config.prop]: { ...entity.data, client } };
+            }
+            
+            return { [config.prop]: entity.data };
         },
         getModalComponent(type) {
-            return this.ENTITY_CONFIG[type]?.component || null;
+            const component = this.ENTITY_CONFIG[type]?.component;
+            return component ? markRaw(component) : null;
         },
         closeEntityModal() {
             this.entityModalOpen = false;
             this.selectedEntity = null;
+            this.entityLoading = false;
+        },
+        onEntitySaved() {
+            // Обновляем историю баланса после сохранения
+            if (this.editingItem && this.editingItem.id) {
+                this.fetchBalanceHistory();
+                // Обновляем баланс клиента
+                this.updateClientBalance();
+            }
+            // Уведомляем родительский компонент об обновлении
+            this.$emit('balance-updated');
+            this.closeEntityModal();
+        },
+        onEntitySavedError(error) {
+            console.error('Ошибка при сохранении:', error);
+            this.closeEntityModal();
+        },
+        onEntityDeleted() {
+            // Обновляем историю баланса после удаления
+            if (this.editingItem && this.editingItem.id) {
+                this.fetchBalanceHistory();
+                // Обновляем баланс клиента
+                this.updateClientBalance();
+            }
+            // Уведомляем родительский компонент об обновлении
+            this.$emit('balance-updated');
+            this.closeEntityModal();
+        },
+        onEntityDeletedError(error) {
+            console.error('Ошибка при удалении:', error);
+            this.closeEntityModal();
+        },
+        async updateClientBalance() {
+            if (this.editingItem && this.editingItem.id) {
+                try {
+                    // Обновляем данные клиента с сервера для получения актуального баланса
+                    const response = await api.get(`/clients/${this.editingItem.id}`);
+                    const clientData = response.data.item || response.data;
+                    if (clientData && clientData.balance_amount !== undefined) {
+                        // Обновляем баланс клиента
+                        this.editingItem.balance = clientData.balance_amount;
+                    }
+                } catch (error) {
+                    console.error('Ошибка при обновлении баланса клиента:', error);
+                }
+            }
         },
     },
     watch: {
         editingItem: {
-            handler() {
-                this.fetchBalanceHistory();
+            handler(newVal) {
+                if (newVal && newVal.id) {
+                    this.fetchBalanceHistory();
+                } else {
+                    this.balanceHistory = [];
+                    this.selectedEntity = null;
+                    this.entityModalOpen = false;
+                    this.entityLoading = false;
+                }
             },
             immediate: true,
         },

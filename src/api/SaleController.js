@@ -44,6 +44,27 @@ export default class SaleController {
             item.client.emails,
             item.client.phones
           );
+        } else if (item.client_first_name || item.client_last_name) {
+          // Fallback для случая, когда клиент загружен через JOIN
+          client = new ClientDto(
+            item.client_id,
+            null,
+            null,
+            null,
+            null,
+            item.client_first_name,
+            item.client_last_name,
+            item.client_contact_person,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          );
         }
         var products = null;
         if (item.products) {

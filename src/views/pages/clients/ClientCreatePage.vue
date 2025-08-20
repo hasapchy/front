@@ -1,10 +1,9 @@
 <template>
   <div class="flex flex-col overflow-auto h-full p-4">
             <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editClient') : $t('createClient') }}</h2>
-    <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
+    <TabBar :key="`tabs-${$i18n.locale}`" :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => {
       changeTab(t);
-    }
-      " />
+    }" />
     <div>
       <div v-if="currentTab === 'info'" class="mb-4">
         <div>
@@ -86,8 +85,8 @@
           </div>
         </div>
       </div>
-      <div v-show="currentTab === 'balance'" class="mt-4">
-        <ClientBalanceTab v-if="editingItem" :editing-item="editingItem" />
+      <div v-show="currentTab === 'balance' && editingItem" class="mt-4">
+        <ClientBalanceTab :editing-item="editingItem" />
       </div>
     </div>
 
@@ -156,24 +155,10 @@ export default {
       deleteLoading: false,
       currentTab: "info",
       tabs: [
-        {
-          name: "info",
-          label: "info",
-        },
-        {
-          name: "balance",
-          label: "balance",
-        },
-      ],
+        { name: "info", label: "info" },
+        { name: "balance", label: "balance" }
+      ]
     };
-  },
-  computed: {
-    translatedTabs() {
-      return this.tabs.map(tab => ({
-        ...tab,
-        label: this.$t(tab.label)
-      }));
-    }
   },
   mounted() {
     const phoneInput = this.$refs.phoneInput;

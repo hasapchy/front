@@ -5,6 +5,59 @@ import ClientSearchDto from "@/dto/client/ClientSearchDto";
 import ClientBalanceHistoryDto from "@/dto/client/ClientBalanceHistoryDto";
 
 export default class ClientController {
+  static async getItem(id) {
+    try {
+      const response = await api.get(`/clients/${id}`);
+      const item = response.data.item || response.data;
+      
+      // Парсим JSON данные телефонов и email'ов
+      let phones = [];
+      let emails = [];
+      
+      try {
+        if (item.phones_json) {
+          phones = JSON.parse(item.phones_json);
+        }
+        if (item.emails_json) {
+          emails = JSON.parse(item.emails_json);
+        }
+      } catch (e) {
+        console.warn('Ошибка парсинга JSON для клиента:', item.id, e);
+      }
+      
+      // Если JSON парсинг не сработал, пробуем получить данные напрямую
+      if (!phones || phones.length === 0) {
+        phones = item.phones || [];
+      }
+      if (!emails || emails.length === 0) {
+        emails = item.emails || [];
+      }
+
+      return new ClientDto(
+        item.id,
+        item.client_type,
+        item.balance_amount || 0,
+        item.is_supplier,
+        item.is_conflict,
+        item.first_name,
+        item.last_name,
+        item.contact_person,
+        item.address,
+        item.note,
+        item.status,
+        item.discount_type,
+        item.discount,
+        item.created_at,
+        item.updated_at,
+        emails,
+        phones
+      );
+    } catch (error) {
+      console.error("Ошибка при получении клиента:", error);
+      throw error;
+    }
+  }
+
   static async getItems(page = 1, search = null) {
     try {
       const params = { page: page };
@@ -13,12 +66,36 @@ export default class ClientController {
       }
       const response = await api.get("/clients", { params });
       const data = response.data;
+      
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {
+        // Парсим JSON данные телефонов и email'ов
+        let phones = [];
+        let emails = [];
+        
+        try {
+          if (item.phones_json) {
+            phones = JSON.parse(item.phones_json);
+          }
+          if (item.emails_json) {
+            emails = JSON.parse(item.emails_json);
+          }
+        } catch (e) {
+          console.warn('Ошибка парсинга JSON для клиента:', item.id, e);
+        }
+        
+        // Если JSON парсинг не сработал, пробуем получить данные напрямую
+        if (!phones || phones.length === 0) {
+          phones = item.phones || [];
+        }
+        if (!emails || emails.length === 0) {
+          emails = item.emails || [];
+        }
+
         return new ClientDto(
           item.id,
           item.client_type,
-          item.balance,
+          item.balance_amount || 0,
           item.is_supplier,
           item.is_conflict,
           item.first_name,
@@ -31,8 +108,8 @@ export default class ClientController {
           item.discount,
           item.created_at,
           item.updated_at,
-          item.emails,
-          item.phones
+          emails,
+          phones
         );
       });
 
@@ -55,19 +132,36 @@ export default class ClientController {
     try {
       const response = await api.get(`/clients/search?search_request=${term}`);
       const data = response.data;
+      
       // Преобразуем полученные данные в DTO для поиска (только необходимые поля)
       const items = data.map((item) => {
+        // Парсим JSON данные телефонов
+        let phones = [];
+        
+        try {
+          if (item.phones_json) {
+            phones = JSON.parse(item.phones_json);
+          }
+        } catch (e) {
+          console.warn('Ошибка парсинга JSON телефонов для клиента:', item.id, e);
+        }
+        
+        // Если JSON парсинг не сработал, пробуем получить данные напрямую
+        if (!phones || phones.length === 0) {
+          phones = item.phones || [];
+        }
+
         return new ClientSearchDto(
           item.id,
           item.client_type,
-          item.balance,
+          item.balance_amount || 0,
           item.is_supplier,
           item.is_conflict,
           item.first_name,
           item.last_name,
           item.contact_person,
           item.status,
-          item.phones
+          phones
         );
       });
       return items;
@@ -99,8 +193,8 @@ export default class ClientController {
   //     } catch (error) {
   //         console.error('Ошибка при получении категорий:', error);
   //         throw error;
+  //         }
   //     }
-  // }
 
   static async storeItem(item) {
     try {

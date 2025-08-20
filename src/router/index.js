@@ -22,6 +22,7 @@ import OrderStatusesPage from "@/views/pages/orders/OrderStatusesPage.vue";
 import OrderCategoriesPage from "@/views/pages/orders/OrderCategoriesPage.vue";
 import UsersPage from "@/views/pages/users/UsersPage.vue";
 import SystemSettingsPage from "@/views/pages/settings/SystemSettingsPage.vue";
+import PerformanceMonitorPage from "@/views/pages/settings/PerformanceMonitorPage.vue";
 
 const routes = [
   {
@@ -195,6 +196,16 @@ const routes = [
         component: SystemSettingsPage,
         meta: { 
           title: "systemSettings", 
+          requiresAuth: true,
+          permission: "system_settings_view"
+        },
+      },
+      {
+        path: "/performance",
+        name: "Performance",
+        component: PerformanceMonitorPage,
+        meta: { 
+          title: "performanceMonitor", 
           requiresAuth: true,
           permission: "system_settings_view"
         },

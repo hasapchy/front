@@ -3,9 +3,6 @@ import CurrencyDto from "../dto/app/CurrencyDto";
 import api from "./axiosInstance";
 import ProductStatusDto from "@/dto/product/ProductStatusDto";
 import TransactionCategoryDto from "@/dto/transaction/TransactionCategoryDto";
-import OrderStatusDto from "@/dto/order/OrderStatusDto";
-import OrderStatusCategoryDto from "@/dto/order/OrderStatusCategoryDto";
-import OrderCategoryDto from "@/dto/order/OrderCategoryDto";
 
 class AppController {
   async getCurrencies() {
@@ -79,43 +76,6 @@ class AppController {
       throw error;
     }
   }
-  // async getOrderStatuses() {
-  //   try {
-  //     const response = await api.get("/app/order_statuses");
-  //     const data = response.data;
-  //     return data.map((item) => {
-  //       // item: { id, name, category_id, category: { id, name, user_id, color } }
-  //       let categoryDto = null;
-  //       if (item.category) {
-  //         categoryDto = new OrderStatusCategoryDto(
-  //           item.category.id,
-  //           item.category.name,
-  //           item.category.user_id,
-  //           item.category.color
-  //         );
-  //       }
-  //       return new OrderStatusDto(
-  //         item.id,
-  //         item.name,
-  //         item.category_id,
-  //         categoryDto
-  //       );
-  //     });
-  //   } catch (error) {
-  //     console.error("Error fetching order statuses:", error);
-  //     throw error;
-  //   }
-  // }
-  // async getOrderCategories() {
-  //   try {
-  //     const response = await api.get("/app/order_categories");
-  //     const data = response.data;
-  //     return data.map((item) => new OrderCategoryDto(item.id, item.name));
-  //   } catch (error) {
-  //     console.error("Error fetching order categories:", error);
-  //     throw error;
-  //   }
-  // }
 }
 
 export default new AppController();
