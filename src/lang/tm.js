@@ -45,15 +45,16 @@ export default {
   fieldNameRequired: 'Meýdan ady hökmany',
   fieldTypeRequired: 'Meýdan görnüşi hökmany',
   categoriesRequired: 'Azyndan bir kategoriýa saýlanmaly',
+  noOrderCategories: 'sargyt kategoriýalary ýok',
   selectOptionsRequired: '"Sanawdan saýla" görnüşindäki meýdan üçin wariantlar görkezilmeli',
   options: 'Wariantlar',
   defaultValue: 'Bellenen mukdar',
-  text: 'Tekst',
-  number: 'Sany',
-  date: 'Sene',
-  datetime: 'Sene we wagty',
-  boolean: 'Hawa/Ýok',
-  select: 'Sanawdan saýla',
+  fieldTypeText: 'Tekst',
+  fieldTypeNumber: 'San',
+  fieldTypeDate: 'Sene',
+  fieldTypeDatetime: 'Sene we wagty',
+  fieldTypeBoolean: 'Hawa/Ýok',
+  fieldTypeSelect: 'Sanawdan saýla',
   yes: 'Hawa',
   addOption: 'Wariant goş',
   optionPlaceholder: 'Warianty ýazyň',
@@ -716,5 +717,13 @@ export default {
   cancelled: 'Ýatyryldy',
   pending: 'Garaşylýar',
   sourceOfFunds: 'Pul çeşmesi',
-  resetFilters: 'Filtri arassala'
+  resetFilters: 'Filtri arassala',
+  
+  // Файлы
+  noFilesUploaded: 'Faýllar ýüklenmedi',
+  uploadingFiles: 'Faýllar ýüklenýär',
+  fileName: 'Faýl ady',
+  fileSize: 'Ölçegi',
+  fileType: 'Faýl görnüşi',
+  actions: 'Amallar'
 }

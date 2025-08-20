@@ -148,8 +148,18 @@ export default {
             this.fetchItems(this.data.currentPage, true);
         },
 
-        showModal(item) {
-            this.editingItem = item;
+        async showModal(item) {
+            if (item) {
+                // Загружаем полные данные элемента для редактирования
+                try {
+                    this.editingItem = await OrderAfController.getItemById(item.id);
+                } catch (error) {
+                    console.error('Ошибка при загрузке данных для редактирования:', error);
+                    this.editingItem = item; // Fallback на исходные данные
+                }
+            } else {
+                this.editingItem = null;
+            }
             this.modalDialog = true;
         },
 

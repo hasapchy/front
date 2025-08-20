@@ -2,7 +2,7 @@
     <transition name="fade">
         <div v-if="show" 
              :class="[
-                'fixed top-4 right-4 p-3 rounded-lg shadow-lg relative overflow-hidden cursor-pointer max-w-xs notification-toast',
+                'fixed top-4 right-4 p-4 rounded-lg shadow-lg relative overflow-hidden cursor-pointer max-w-sm notification-toast',
                 isDanger ? 'bg-[#EE4F47] text-white' : 'bg-[#5CB85C] text-white',
                 'z-100'
              ]"
@@ -12,18 +12,20 @@
             <div class="absolute bottom-0 left-0 h-0.5 bg-white bg-opacity-30 transition-all duration-100 ease-linear progress-bar"
                  :style="{ width: progressWidth + '%' }"></div>
             
-                         <div class="block">
-                 <div class="inline-block w-full">
-                     <h3 class="font-bold text-sm mb-1 leading-tight">{{ title }}</h3>
-                     <ul v-if="Array.isArray(subtitle) && subtitle.length > 0" class="space-y-0.5">
-                         <li v-for="(err, i) in subtitle" :key="i" class="text-xs leading-tight">{{ err }}</li>
-                     </ul>
-                     <p v-else-if="subtitle" class="text-xs leading-tight">{{ subtitle }}</p>
-                 </div>
-                 <button @click="$emit('close')" class="absolute top-2 right-2 text-white hover:opacity-70 text-lg leading-none font-bold">
-                     &times;
-                 </button>
-             </div>
+            <!-- Кнопка закрытия -->
+            <button @click="$emit('close')" 
+                    class="absolute top-2 right-2 text-white hover:opacity-70 text-lg leading-none font-bold w-6 h-6 flex items-center justify-center">
+                &times;
+            </button>
+            
+            <!-- Контент уведомления -->
+            <div class="pr-8"> <!-- Отступ справа для кнопки закрытия -->
+                <h3 class="font-bold text-sm mb-1 leading-tight">{{ title }}</h3>
+                <ul v-if="Array.isArray(subtitle) && subtitle.length > 0" class="space-y-0.5">
+                    <li v-for="(err, i) in subtitle" :key="i" class="text-xs leading-tight">{{ err }}</li>
+                </ul>
+                <p v-else-if="subtitle" class="text-xs leading-tight">{{ subtitle }}</p>
+            </div>
         </div>
     </transition>
 </template>
@@ -167,6 +169,8 @@ export default {
      margin-bottom: 0.25rem;
      line-height: 1.2;
      display: block !important;
+     word-wrap: break-word;
+     overflow-wrap: break-word;
  }
 
  .notification-toast ul {
@@ -180,12 +184,16 @@ export default {
      padding: 0;
      line-height: 1.2;
      display: block !important;
+     word-wrap: break-word;
+     overflow-wrap: break-word;
  }
 
  .notification-toast p {
      margin: 0;
      line-height: 1.2;
      display: block !important;
+     word-wrap: break-word;
+     overflow-wrap: break-word;
  }
 
  /* Полная изоляция от flexbox */
@@ -194,5 +202,13 @@ export default {
      flex-grow: 0 !important;
      flex-shrink: 0 !important;
      flex-basis: auto !important;
+ }
+
+ /* Убеждаемся, что кнопка закрытия не накладывается на текст */
+ .notification-toast button {
+     z-index: 10;
+     position: absolute;
+     top: 0.5rem;
+     right: 0.5rem;
  }
 </style>

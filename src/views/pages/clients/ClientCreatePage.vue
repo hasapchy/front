@@ -86,8 +86,8 @@
           </div>
         </div>
       </div>
-      <div v-show="currentTab === 'balance'" class="mt-4">
-        <ClientBalanceTab v-if="editingItem" :editing-item="editingItem" />
+      <div v-show="currentTab === 'balance' && editingItem" class="mt-4">
+        <ClientBalanceTab :editing-item="editingItem" />
       </div>
     </div>
 
@@ -169,7 +169,10 @@ export default {
   },
   computed: {
     translatedTabs() {
-      return this.tabs.map(tab => ({
+      // Показываем вкладку баланса только при редактировании существующего клиента
+      const availableTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name !== 'balance');
+      
+      return availableTabs.map(tab => ({
         ...tab,
         label: this.$t(tab.label)
       }));
@@ -189,6 +192,10 @@ export default {
   },
   methods: {
     changeTab(tabName) {
+      // Не позволяем переключиться на вкладку баланса при создании нового клиента
+      if (tabName === 'balance' && !this.editingItem) {
+        return;
+      }
       this.currentTab = tabName;
     },
     // Переопределяем метод getFormState из миксина
@@ -343,6 +350,8 @@ export default {
           this.currentTab = "info";
         } else {
           this.clearForm();
+          // При создании нового клиента всегда показываем вкладку info
+          this.currentTab = "info";
         }
         // Сохраняем новое начальное состояние
         this.$nextTick(() => {

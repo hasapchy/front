@@ -6,7 +6,7 @@
             <div v-show="currentTab === 'info'">
                 <div>
                     <label class="required">{{ $t('fieldName') }}</label>
-                    <input type="text" v-model="name" required :disabled="!!editingItemId" class="w-full border rounded p-2">
+                    <input type="text" v-model="name" required class="w-full border rounded p-2">
                 </div>
                 <div>
                     <label class="required">{{ $t('fieldType') }}</label>
@@ -19,11 +19,14 @@
                 </div>
                 <div>
                     <label class="required">{{ $t('categories') }}</label>
-                    <div class="flex flex-wrap gap-2">
+                    <div v-if="allCategories.length > 0" class="flex flex-wrap gap-2">
                         <label v-for="category in allCategories" :key="category.id" class="flex items-center space-x-2">
-                            <input type="checkbox" :value="category.id" v-model="categoryIds" :disabled="!!editingItemId">
+                            <input type="checkbox" :value="category.id" v-model="categoryIds">
                             <span>{{ category.name }}</span>
                         </label>
+                    </div>
+                    <div v-else class="text-gray-500 italic">
+                        {{ $t('noOrderCategories') }}
                     </div>
                 </div>
                 <div v-if="type === 'select'">
@@ -41,15 +44,15 @@
                 <div>
                     <label>{{ $t('required') }}</label>
                     <div class="flex items-center space-x-2">
-                        <input type="checkbox" v-model="required" :disabled="!!editingItemId">
+                        <input type="checkbox" v-model="required">
                         <span>{{ $t('fieldRequired') }}</span>
                     </div>
                 </div>
                 <div v-if="type !== 'boolean'">
                     <label>{{ $t('defaultValue') }}</label>
-                    <input v-if="type === 'date' || type === 'datetime'" :type="type === 'date' ? 'date' : 'datetime-local'" v-model="defaultValue" :disabled="!!editingItemId" class="w-full border rounded p-2">
-                    <input v-else-if="type === 'int'" type="number" v-model="defaultValue" :disabled="!!editingItemId" class="w-full border rounded p-2">
-                    <input v-else type="text" v-model="defaultValue" :disabled="!!editingItemId" class="w-full border rounded p-2">
+                    <input v-if="type === 'date' || type === 'datetime'" :type="type === 'date' ? 'date' : 'datetime-local'" v-model="defaultValue" class="w-full border rounded p-2">
+                    <input v-else-if="type === 'int'" type="number" v-model="defaultValue" class="w-full border rounded p-2">
+                    <input v-else type="text" v-model="defaultValue" class="w-full border rounded p-2">
                 </div>
             </div>
             <div v-show="currentTab === 'preview'">
@@ -71,7 +74,7 @@
                         <div v-else-if="type === 'datetime'">
                             <input type="datetime-local" class="w-full border rounded p-2" :value="displayDefaultValue">
                         </div>
-                        <div v-else-if="type === 'int'">
+                        <div v-else-if="type === ''">
                             <input type="number" class="w-full border rounded p-2" :value="displayDefaultValue">
                         </div>
                         <div v-else-if="type === 'boolean'">
@@ -88,9 +91,6 @@
     <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
         <!-- Кнопки -->
         <div class="flex items-center space-x-2">
-            <PrimaryButton v-if="editingItemId" icon="fas fa-check" :onclick="saveWithoutClose" :is-loading="saveLoading">
-                {{ $t('save') }}
-            </PrimaryButton>
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
                 {{ $t('save') }}
             </PrimaryButton>
@@ -139,12 +139,12 @@ export default {
             editingItemId: null,
             allCategories: [],
             fieldTypes: [
-                { value: 'string', label: 'text' },
-                { value: 'int', label: 'number' },
-                { value: 'date', label: 'date' },
-                { value: 'datetime', label: 'datetime' },
-                { value: 'boolean', label: 'boolean' },
-                { value: 'select', label: 'select' }
+                { value: 'string', label: 'fieldTypeText' },
+                { value: 'int', label: 'fieldTypeNumber' },
+                { value: 'date', label: 'fieldTypeDate' },
+                { value: 'datetime', label: 'fieldTypeDatetime' },
+                { value: 'boolean', label: 'fieldTypeBoolean' },
+                { value: 'select', label: 'fieldTypeSelect' }
             ],
             saveLoading: false,
             deleteLoading: false,
@@ -155,25 +155,23 @@ export default {
         this.fetchAllCategories();
         this.loadEditingData();
     },
-    // Убираем watch для пользователя, так как он больше не нужен
     mounted() {
         this.$nextTick(() => {
             this.saveInitialState();
         });
     },
-    watch: {
-        editingItem: {
-            handler(newVal) {
-                if (newVal) {
-                    this.loadEditingData();
-                } else {
-                    // Сброс данных при закрытии формы
-                    this.resetForm();
-                }
-            },
-            immediate: true
-        }
-    },
+            watch: {
+            editingItem: {
+                handler(newVal) {
+                    if (newVal) {
+                        this.loadEditingData();
+                    } else {
+                        this.resetForm();
+                    }
+                },
+                immediate: true
+            }
+        },
     computed: {
         translatedTabs() {
             return this.tabs.map(tab => ({
@@ -200,7 +198,19 @@ export default {
             if (this.editingItem) {
                 this.name = this.editingItem.name || '';
                 this.type = this.editingItem.type || '';
-                this.categoryIds = this.editingItem.category_ids || this.editingItem.categoryIds || [];
+                
+                // Правильно обрабатываем категории - проверяем все возможные варианты
+                if (this.editingItem.category_ids && Array.isArray(this.editingItem.category_ids)) {
+                    this.categoryIds = this.editingItem.category_ids;
+                } else if (this.editingItem.categoryIds && Array.isArray(this.editingItem.categoryIds)) {
+                    this.categoryIds = this.editingItem.categoryIds;
+                } else if (this.editingItem.categories && Array.isArray(this.editingItem.categories)) {
+                    // Если категории приходят как объекты с id, извлекаем только id
+                    this.categoryIds = this.editingItem.categories.map(cat => cat.id || cat);
+                } else {
+                    this.categoryIds = [];
+                }
+                
                 this.options = this.editingItem.options || [];
                 this.required = this.editingItem.required || false;
                 this.defaultValue = this.editingItem.default_value || this.editingItem.defaultValue || '';
@@ -236,7 +246,6 @@ export default {
                 this.allCategories = await OrderCategoryController.getAllItems();
             } catch (error) {
                 console.error('Ошибка при получении категорий:', error);
-                // В случае ошибки устанавливаем пустой массив
                 this.allCategories = [];
             }
         },

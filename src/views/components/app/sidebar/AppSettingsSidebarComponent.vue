@@ -16,7 +16,7 @@
                 </SidebarLink>
             </ul>
 
-            <ul v-if="hasPermission('warehousess_view')">
+            <ul v-if="hasPermission('warehouses_view')">
                 <SidebarLink to="/admin/warehouses" icon="fa-solid fa-warehouse mr-2" :settings="true">
                     {{ $t('warehouses') }}
                 </SidebarLink>

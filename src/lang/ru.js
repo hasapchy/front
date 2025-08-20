@@ -46,15 +46,16 @@ export default {
   fieldNameRequired: 'Название поля обязательно',
   fieldTypeRequired: 'Тип поля обязателен',
   categoriesRequired: 'Необходимо выбрать хотя бы одну категорию',
+  noOrderCategories: 'категорий для заказа нет',
   selectOptionsRequired: 'Для поля типа "Выбор из списка" необходимо указать варианты',
   options: 'Варианты',
   defaultValue: 'Значение по умолчанию',
-  text: 'Текст',
-  number: 'Число',
-  date: 'Дата',
-  datetime: 'Дата и время',
-  boolean: 'Да/Нет',
-  select: 'Выбор из списка',
+  fieldTypeText: 'Текст',
+  fieldTypeNumber: 'Число',
+  fieldTypeDate: 'Дата',
+  fieldTypeDatetime: 'Дата и время',
+  fieldTypeBoolean: 'Да/Нет',
+  fieldTypeSelect: 'Выбор из списка',
   yes: 'Да',
   no: 'Нет',
   addOption: 'Добавить вариант',
@@ -719,5 +720,13 @@ export default {
   cancelled: 'Отменено',
   pending: 'В ожидании',
   sourceOfFunds: 'Источник средств',
-  resetFilters: 'Сбросить фильтры'
+  resetFilters: 'Сбросить фильтры',
+  
+  // Файлы
+  noFilesUploaded: 'Файлы не загружены',
+  uploadingFiles: 'Загрузка файлов',
+  fileName: 'Имя файла',
+  fileSize: 'Размер',
+  fileType: 'Тип файла',
+  actions: 'Действия'
 }

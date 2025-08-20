@@ -1,7 +1,7 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editProject') : $t('createProject') }}</h2>
-        <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { currentTab = t }" />
+        <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
         <div v-show="currentTab === 'info'">
             <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
             <div>
@@ -28,20 +28,75 @@
                 </div>
             </div>
         </div>
-        <div v-show="currentTab === 'files'">
+        <div v-show="currentTab === 'files' && editingItem">
             <label>{{ $t('files') }}</label>
-            <input type="file" multiple @change="handleFileChange" />
-            <ul v-if="editingItem">
-                <li v-for="file in editingItem.getFormattedFiles()" :key="file.path" class="flex items-center gap-2">
-                    <i :class="file.icon"></i>
-                    <a :href="file.url" target="_blank" download class="text-blue-600 hover:underline">{{ file.name
-                    }}</a>
-                    <button @click="showDeleteFileDialogByPath(file.path)" class="text-red-500">{{ $t('delete') }}</button>
-                </li>
-            </ul>
+            <input type="file" multiple @change="handleFileChange" :disabled="uploading" />
+            
+            <!-- Прогресс загрузки -->
+            <div v-if="uploading" class="mt-4 p-4 bg-blue-50 rounded-lg">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-blue-700 font-medium">{{ $t('uploadingFiles') }}...</span>
+                    <span class="text-blue-600">{{ uploadProgress }}%</span>
+                </div>
+                <div class="w-full bg-blue-200 rounded-full h-2">
+                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" :style="{width: uploadProgress + '%'}"></div>
+                </div>
+            </div>
+            
+            <!-- Таблица файлов -->
+            <div v-if="editingItem && editingItem.getFormattedFiles().length > 0" class="mt-4">
+                <table class="w-full border-collapse border border-gray-300">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="border border-gray-300 px-3 py-2 text-left font-medium">{{ $t('fileName') }}</th>
+                            <th class="border border-gray-300 px-3 py-2 text-left font-medium">{{ $t('fileSize') }}</th>
+                            <th class="border border-gray-300 px-3 py-2 text-left font-medium">{{ $t('fileType') }}</th>
+                            <th class="border border-gray-300 px-3 py-2 text-left font-medium">{{ $t('actions') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="file in editingItem.getFormattedFiles()" :key="file.path" class="hover:bg-gray-50">
+                            <td class="border border-gray-300 px-3 py-2">
+                                <div class="flex items-center gap-3">
+                                    <i :class="file.icon" class="text-gray-600 text-xl"></i>
+                                    <a :href="file.url" target="_blank" download class="text-blue-600 hover:underline font-medium">
+                                        {{ file.name }}
+                                    </a>
+                                </div>
+                            </td>
+                            <td class="border border-gray-300 px-3 py-2">{{ formatFileSize(file.size) }}</td>
+                            <td class="border border-gray-300 px-3 py-2">{{ file.mimeType || getFileType(file.name) }}</td>
+                            <td class="border border-gray-300 px-3 py-2">
+                                <PrimaryButton 
+                                    icon="fas fa-trash" 
+                                    :onclick="() => showDeleteFileDialog(file.path)" 
+                                    :is-danger="true"
+                                    :is-small="true">
+                                    {{ $t('delete') }}
+                                </PrimaryButton>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <!-- Кнопка массового удаления -->
+                <div v-if="selectedFileIds.length > 0" class="mt-4 flex justify-end">
+                    <PrimaryButton 
+                        icon="fas fa-trash" 
+                        :onclick="showDeleteMultipleFilesDialog" 
+                        :is-danger="true">
+                        {{ $t('deleteSelected') }} ({{ selectedFileIds.length }})
+                    </PrimaryButton>
+                </div>
+            </div>
+            
+            <!-- Сообщение об отсутствии файлов -->
+            <div v-else-if="editingItem && !uploading" class="mt-4 p-4 text-center text-gray-500 bg-gray-50 rounded-lg">
+                {{ $t('noFilesUploaded') }}
+            </div>
         </div>
-        <div v-show="currentTab === 'balance'">
-            <ProjectBalanceTab v-if="editingItem" :editing-item="editingItem" />
+        <div v-show="currentTab === 'balance' && editingItem">
+            <ProjectBalanceTab :editing-item="editingItem" />
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -60,7 +115,9 @@
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
         :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     <AlertDialog :dialog="deleteFileDialog" @confirm="confirmDeleteFile" @leave="closeDeleteFileDialog"
-        :descr="`${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`"
+        :descr="deleteFileIndex === 'multiple' ? 
+            `${$t('confirmDeleteSelected')} (${selectedFileIds.length})?` : 
+            `${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`"
                   :confirm-text="$t('deleteFile')" :leave-text="$t('cancel')" />
 </template>
 
@@ -100,23 +157,30 @@ export default {
             deleteLoading: false,
 
             uploading: false,
+            uploadProgress: 0,
             deleteFileDialog: false,
             deleteFileIndex: -1,
+            selectedFileIds: [],
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'info' },
                 { name: 'files', label: 'files' },
                 { name: "balance", label: "balance" },
             ],
+
         }
     },
     computed: {
         translatedTabs() {
-            return this.tabs.map(tab => ({
+            // Показываем вкладки files и balance только при редактировании существующего проекта
+            const availableTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name === 'info');
+            
+            return availableTabs.map(tab => ({
                 ...tab,
                 label: this.$t(tab.label)
             }));
-        }
+        },
+
     },
     created() {
         this.fetchUsers()
@@ -126,9 +190,21 @@ export default {
         this.$nextTick(() => {
             this.saveInitialState();
         });
+        
+        // Добавляем глобальную функцию для удаления файлов
+        window.deleteFile = (filePath) => {
+            this.showDeleteFileDialog(filePath);
+        };
     },
     methods: {
-                // Переопределяем метод getFormState из миксина
+        changeTab(tabName) {
+            // Не позволяем переключиться на вкладки files и balance при создании нового проекта
+            if ((tabName === 'files' || tabName === 'balance') && !this.editingItem) {
+                return;
+            }
+            this.currentTab = tabName;
+        },
+        // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
                 name: this.name,
@@ -205,20 +281,47 @@ export default {
             if (!files.length) return;
 
             this.uploading = true;
+            this.uploadProgress = 0;
+            
             try {
+                // Имитируем прогресс загрузки
+                const progressInterval = setInterval(() => {
+                    if (this.uploadProgress < 90) {
+                        this.uploadProgress += Math.random() * 10;
+                    }
+                }, 200);
+
                 const uploadedFiles = await ProjectController.uploadFiles(this.editingItemId, files);
+                
+                clearInterval(progressInterval);
+                this.uploadProgress = 100;
+                
                 // Обновляем файлы в editingItem для немедленного отображения
                 if (this.editingItem && this.editingItem.files) {
                     this.editingItem.files = uploadedFiles;
                 }
                 event.target.value = '';
+                
+                // Скрываем прогресс через секунду
+                setTimeout(() => {
+                    this.uploading = false;
+                    this.uploadProgress = 0;
+                }, 1000);
+                
             } catch (e) {
+                this.uploading = false;
+                this.uploadProgress = 0;
                 alert('Ошибка загрузки файлов');
             }
-            this.uploading = false;
         },
         showDeleteFileDialog(filePath) {
             this.deleteFileIndex = filePath;
+            this.deleteFileDialog = true;
+        },
+        
+        showDeleteMultipleFilesDialog() {
+            if (this.selectedFileIds.length === 0) return;
+            this.deleteFileIndex = 'multiple';
             this.deleteFileDialog = true;
         },
         closeDeleteFileDialog() {
@@ -229,9 +332,21 @@ export default {
             if (this.deleteFileIndex === -1 || !this.editingItemId) return;
             
             try {
-                const updatedFiles = await ProjectController.deleteFile(this.editingItemId, this.deleteFileIndex);
+                let updatedFiles;
+                
+                if (this.deleteFileIndex === 'multiple') {
+                    // Массовое удаление выбранных файлов
+                    for (const filePath of this.selectedFileIds) {
+                        updatedFiles = await ProjectController.deleteFile(this.editingItemId, filePath);
+                    }
+                    this.selectedFileIds = []; // Очищаем выбранные файлы
+                } else {
+                    // Удаление одного файла
+                    updatedFiles = await ProjectController.deleteFile(this.editingItemId, this.deleteFileIndex);
+                }
+                
                 // Обновляем файлы в editingItem для немедленного отображения
-                if (this.editingItem && this.editingItem.files) {
+                if (this.editingItem && this.editingItem.files && updatedFiles) {
                     this.editingItem.files = updatedFiles;
                 }
             } catch (e) {
@@ -241,7 +356,47 @@ export default {
             this.closeDeleteFileDialog();
         },
 
+        // Форматирование размера файла
+        formatFileSize(bytes) {
+            if (!bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        },
+
+        // Определение типа файла по расширению
+        getFileType(filename) {
+            if (!filename) return '';
+            const ext = filename.split('.').pop().toLowerCase();
+            const typeMap = {
+                'pdf': 'PDF Document',
+                'doc': 'Word Document',
+                'docx': 'Word Document',
+                'xls': 'Excel Spreadsheet',
+                'xlsx': 'Excel Spreadsheet',
+                'txt': 'Text Document',
+                'png': 'PNG Image',
+                'jpg': 'JPEG Image',
+                'jpeg': 'JPEG Image',
+                'gif': 'GIF Image',
+                'zip': 'ZIP Archive',
+                'rar': 'RAR Archive'
+            };
+            return typeMap[ext] || 'Unknown File Type';
+        },
+
+
+
     },
+    
+    beforeUnmount() {
+        // Удаляем глобальную функцию при размонтировании
+        if (window.deleteFile) {
+            delete window.deleteFile;
+        }
+    },
+    
     watch: {
         editingItem: {
             handler(newEditingItem) {
@@ -258,6 +413,8 @@ export default {
                 } else {
                     this.date = new Date().toISOString().substring(0, 16);
                     this.clearForm();
+                    // При создании нового проекта всегда показываем вкладку info
+                    this.currentTab = "info";
                 }
                 // Сохраняем новое начальное состояние
                 this.$nextTick(() => {

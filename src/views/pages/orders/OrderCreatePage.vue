@@ -57,7 +57,7 @@
                     <div v-if="additionalFields.length > 0" class="space-y-4">
 
                         <div v-for="field in additionalFields" :key="field.id" class="space-y-2">
-                            <label :class="{ 'required': field.required }">
+                            <label :class="{ 'required': field.required }" class="block text-sm font-medium">
                                 {{ field.name }}
                             </label>
                             
@@ -441,20 +441,33 @@ export default {
 
         async save() {
             // Проверяем обязательные поля
+            const validationErrors = [];
+            
             if (!this.categoryId) {
-                alert('Поле "Категория" обязательно для заполнения');
-                return;
+                validationErrors.push('Поле "Категория" обязательно для заполнения');
             }
             if (!this.cashId) {
-                alert('Поле "Касса" обязательно для заполнения');
-                return;
+                validationErrors.push('Поле "Касса" обязательно для заполнения');
             }
             if (!this.warehouseId) {
-                alert('Поле "Склад" обязательно для заполнения');
-                return;
+                validationErrors.push('Поле "Склад" обязательно для заполнения');
             }
             if (this.discount && !this.discountType) {
-                alert('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
+                validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
+            }
+            
+            // Проверяем обязательные дополнительные поля
+            this.additionalFields.forEach(field => {
+                if (field.required) {
+                    const value = this.additionalFieldValues[field.id];
+                    if (value === null || value === undefined || value === '' || value === false) {
+                        validationErrors.push(`Поле "${field.name}" обязательно для заполнения`);
+                    }
+                }
+            });
+            
+            if (validationErrors.length > 0) {
+                this.$emit('saved-error', validationErrors.join('\n'));
                 return;
             }
             
@@ -503,6 +516,37 @@ export default {
         },
 
         async saveWithoutClose() {
+            // Проверяем обязательные поля
+            const validationErrors = [];
+            
+            if (!this.categoryId) {
+                validationErrors.push('Поле "Категория" обязательно для заполнения');
+            }
+            if (!this.cashId) {
+                validationErrors.push('Поле "Касса" обязательно для заполнения');
+            }
+            if (!this.warehouseId) {
+                validationErrors.push('Поле "Склад" обязательно для заполнения');
+            }
+            if (this.discount && !this.discountType) {
+                validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
+            }
+            
+            // Проверяем обязательные дополнительные поля
+            this.additionalFields.forEach(field => {
+                if (field.required) {
+                    const value = this.additionalFieldValues[field.id];
+                    if (value === null || value === undefined || value === '' || value === false) {
+                        validationErrors.push(`Поле "${field.name}" обязательно для заполнения`);
+                    }
+                }
+            });
+            
+            if (validationErrors.length > 0) {
+                this.$emit('saved-error', validationErrors.join('\n'));
+                return;
+            }
+            
             this.saveLoading = true;
             try {
                 const formData = this.getFormState();

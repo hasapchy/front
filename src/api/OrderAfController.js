@@ -156,13 +156,28 @@ export default class OrderAfController {
 
 
   static prepareFieldData(data) {
+    // Правильно обрабатываем значение по умолчанию в зависимости от типа поля
+    let defaultValue = null;
+    if (data.default !== null && data.default !== undefined && data.default !== '') {
+      if (data.type === 'boolean') {
+        // Для boolean преобразуем в строку '1' или '0'
+        defaultValue = data.default ? '1' : '0';
+      } else if (data.type === 'int') {
+        // Для числа преобразуем в строку
+        defaultValue = String(data.default);
+      } else {
+        // Для остальных типов (string, date, datetime, select) оставляем как есть
+        defaultValue = String(data.default);
+      }
+    }
+
     return {
       name: data.name?.trim(),
       type: data.type,
       category_ids: data.category_ids || [],
       options: data.type === 'select' ? data.options : null,
       required: data.required || false,
-      default: data.default || null
+      default: defaultValue
     };
   }
 }
