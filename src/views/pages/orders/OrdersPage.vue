@@ -96,7 +96,7 @@ import CheckboxFilter from "@/views/components/app/forms/CheckboxFilter.vue";
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, modalMixin, batchActionsMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, ClientButtonCell, BatchButton, AlertDialog, TimelinePanel, CheckboxFilter },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, CheckboxFilter },
     data() {
         return {
             data: null,

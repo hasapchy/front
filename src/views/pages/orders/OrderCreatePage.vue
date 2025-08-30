@@ -8,7 +8,7 @@
                 <div>
                     <label class="required">{{ $t('category') }}</label>
                     <div class="flex items-center space-x-2">
-                        <select v-model="categoryId" required :disabled="!!editingItemId" @change="onCategoryChange">
+                        <select v-model="categoryId" required @change="onCategoryChange">
                             <option value="">{{ $t('no') }}</option>
                             <option v-for="category in allCategories" :key="category.id" :value="category.id">
                                 {{ category.name }}
@@ -19,11 +19,11 @@
                 </div>
                 <div>
                     <label>{{ $t('date') }}</label>
-                    <input type="datetime-local" v-model="date" :disabled="!!editingItemId">
+                    <input type="datetime-local" v-model="date">
                 </div>
                 <div>
                     <label class="required">{{ $t('cashRegister') }}</label>
-                    <select v-model="cashId" :disabled="!!editingItemId">
+                    <select v-model="cashId">
                         <option value="">{{ $t('no') }}</option>
                         <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">
                             {{ c.name }} ({{ c.currency_symbol }})
@@ -32,13 +32,13 @@
                 </div>
                 <div>
                     <label>{{ $t('description') }}</label>
-                    <textarea v-model="description" :disabled="!!editingItemId"
+                    <textarea v-model="description"
                         class="w-full border rounded p-2"></textarea>
                 </div>
                 <div>
                     <label>{{ $t('project') }}</label>
                     <div class="flex items-center space-x-2">
-                        <select v-model="projectId" :disabled="!!editingItemId">
+                        <select v-model="projectId">
                             <option value="">{{ $t('no') }}</option>
                             <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">{{ parent.name }}
                             </option>
@@ -48,7 +48,7 @@
                 </div>
                 <div>
                     <label>{{ $t('note') }}</label>
-                    <input type="text" v-model="note" :disabled="!!editingItemId">
+                    <input type="text" v-model="note">
                 </div>
                 
                 <!-- Дополнительные поля -->
@@ -63,7 +63,7 @@
                             
                             <!-- Поле типа select -->
                             <select v-if="field.type === 'select'" v-model="additionalFieldValues[field.id]" 
-                                    :required="field.required" :disabled="!!editingItemId" 
+                                    :required="field.required" 
                                     class="w-full border rounded p-2">
                                 <option value="">{{ $t('selectOption') }}</option>
                                 <option v-for="option in field.options" :key="option" :value="option">{{ option }}</option>
@@ -72,32 +72,32 @@
                             <!-- Поле типа date -->
                             <input v-else-if="field.type === 'date'" type="date" 
                                    v-model="additionalFieldValues[field.id]" 
-                                   :required="field.required" :disabled="!!editingItemId" 
+                                   :required="field.required" 
                                    class="w-full border rounded p-2">
                             
                             <!-- Поле типа datetime -->
                             <input v-else-if="field.type === 'datetime'" type="datetime-local" 
                                    v-model="additionalFieldValues[field.id]" 
-                                   :required="field.required" :disabled="!!editingItemId" 
+                                   :required="field.required" 
                                    class="w-full border rounded p-2">
                             
                             <!-- Поле типа int -->
                             <input v-else-if="field.type === 'int'" type="number" 
                                    v-model="additionalFieldValues[field.id]" 
-                                   :required="field.required" :disabled="!!editingItemId" 
+                                   :required="field.required" 
                                    class="w-full border rounded p-2">
                             
                             <!-- Поле типа boolean -->
                             <div v-else-if="field.type === 'boolean'" class="flex items-center space-x-2">
                                 <input type="checkbox" 
                                        v-model="additionalFieldValues[field.id]" 
-                                       :required="field.required" :disabled="!!editingItemId">
+                                       :required="field.required">
                             </div>
                             
                             <!-- Поле типа string (по умолчанию) -->
                             <input v-else type="text" 
                                    v-model="additionalFieldValues[field.id]" 
-                                   :required="field.required" :disabled="!!editingItemId" 
+                                   :required="field.required" 
                                    class="w-full border rounded p-2">
                         </div>
                     </div>
@@ -109,7 +109,7 @@
             <div v-show="currentTab === 'products'">
                 <div>
                     <label class="required">{{ $t('warehouse') }}</label>
-                    <select v-model="warehouseId" required :disabled="!!editingItemId">
+                    <select v-model="warehouseId" required>
                         <option value="">{{ $t('no') }}</option>
                         <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">{{ parent.name }}
                         </option>
@@ -239,6 +239,18 @@ export default {
         this.fetchOrderStatuses();
     },
     mounted() {
+        // Программно создаем watcher для editingItem
+        this.$watch('editingItem', async (newItem, oldItem) => {
+            if (newItem !== oldItem) {
+                await this.handleEditingItemChange(newItem);
+            }
+        }, { immediate: true });
+        
+        // Обрабатываем editingItem при монтировании если он уже есть
+        if (this.editingItem) {
+            this.handleEditingItemChange(this.editingItem);
+        }
+        
         // Сохраняем начальное состояние после монтирования компонента
         this.$nextTick(() => {
             this.saveInitialState();
@@ -292,28 +304,12 @@ export default {
             },
             immediate: false
         },
-        editingItem: {
-            handler(newItem) {
-                if (newItem && newItem.additional_fields) {
-                    // Загружаем существующие значения дополнительных полей при редактировании
-                    this.additionalFieldValues = {};
-                    newItem.additional_fields.forEach(field => {
-                        this.additionalFieldValues[field.field_id] = field.value;
-                    });
-                    
-                    // Если есть категория, загружаем дополнительные поля для неё
-                    if (newItem.categoryId && this.categoryId === newItem.categoryId) {
-                        this.loadAdditionalFields(newItem.categoryId);
-                    }
-                }
-            },
-            immediate: true
-        },
+
         allCategories: {
             handler(newCategories) {
                 if (newCategories.length > 0 && this.categoryId) {
                     // Когда категории загружены и есть выбранная категория, загружаем дополнительные поля
-                    this.loadAdditionalFields(this.categoryId);
+                    this.loadAdditionalFields(this.categoryId, false);
                 }
             },
             immediate: false
@@ -336,10 +332,26 @@ export default {
                 discount_type: this.discountType,
                 status_id: this.statusId,
                 currency_id: this.currencyId,
-                additional_fields: Object.keys(this.additionalFieldValues).map(fieldId => ({
-                    field_id: parseInt(fieldId),
-                    value: this.additionalFieldValues[fieldId]
-                })).filter(field => field.value !== '' && field.value !== null && field.value !== false)
+                additional_fields: Object.keys(this.additionalFieldValues).map(fieldId => {
+                    const rawValue = this.additionalFieldValues[fieldId];
+                    let stringValue = '';
+                    
+                    // Преобразуем значение в строку с учетом типа
+                    if (rawValue === null || rawValue === undefined) {
+                        stringValue = '';
+                    } else if (typeof rawValue === 'boolean') {
+                        stringValue = rawValue ? 'true' : 'false';
+                    } else if (typeof rawValue === 'number') {
+                        stringValue = rawValue.toString();
+                    } else {
+                        stringValue = String(rawValue);
+                    }
+                    
+                    return {
+                        field_id: parseInt(fieldId),
+                        value: stringValue
+                    };
+                }).filter(field => field.value !== '' && field.value !== 'null' && field.value !== 'false')
             };
             return state;
         },
@@ -366,7 +378,7 @@ export default {
                 
                 // Принудительно вызываем загрузку дополнительных полей для текущей категории
                 if (this.categoryId) {
-                    this.loadAdditionalFields(this.categoryId);
+                    this.loadAdditionalFields(this.categoryId, false);
                 }
             } catch (error) {
                 console.error('fetchAllCategories: ошибка:', error);
@@ -391,18 +403,33 @@ export default {
 
         onCategoryChange(event) {
             if (this.categoryId) {
-                this.loadAdditionalFields(this.categoryId);
+                // Сохраняем текущие значения дополнительных полей
+                const currentValues = { ...this.additionalFieldValues };
+                
+                // Загружаем новые поля для выбранной категории
+                this.loadAdditionalFields(this.categoryId, false);
+                
+                // Восстанавливаем значения для полей, которые уже существуют
+                this.$nextTick(() => {
+                    Object.keys(currentValues).forEach(fieldId => {
+                        if (this.additionalFieldValues.hasOwnProperty(fieldId)) {
+                            this.additionalFieldValues[fieldId] = currentValues[fieldId];
+                        }
+                    });
+                });
             } else {
                 this.additionalFields = [];
                 this.additionalFieldValues = {};
             }
         },
 
-        async loadAdditionalFields(categoryId) {
+        async loadAdditionalFields(categoryId, preserveValues = true) {
             try {
                 if (!categoryId) {
                     this.additionalFields = [];
-                    this.additionalFieldValues = {};
+                    if (!preserveValues) {
+                        this.additionalFieldValues = {};
+                    }
                     return;
                 }
                 
@@ -426,16 +453,23 @@ export default {
                     
                     if (!this.additionalFieldValues.hasOwnProperty(field.id)) {
                         if (field.type === 'boolean') {
+                            // Для булевых полей устанавливаем true/false, но при отправке преобразуем в строку
                             this.additionalFieldValues[field.id] = defaultValue === 'true' || defaultValue === true;
+                        } else if (field.type === 'int' || field.type === 'number') {
+                            // Для числовых полей устанавливаем число или пустую строку
+                            this.additionalFieldValues[field.id] = defaultValue || '';
                         } else {
-                            this.additionalFieldValues[field.id] = defaultValue;
+                            // Для остальных полей устанавливаем строку
+                            this.additionalFieldValues[field.id] = defaultValue || '';
                         }
                     }
                 });
             } catch (error) {
                 console.error('Ошибка при загрузке дополнительных полей:', error);
                 this.additionalFields = [];
-                this.additionalFieldValues = {};
+                if (!preserveValues) {
+                    this.additionalFieldValues = {};
+                }
             }
         },
 
@@ -460,7 +494,17 @@ export default {
             this.additionalFields.forEach(field => {
                 if (field.required) {
                     const value = this.additionalFieldValues[field.id];
-                    if (value === null || value === undefined || value === '' || value === false) {
+                    let isEmpty = false;
+                    
+                    if (field.type === 'boolean') {
+                        // Для булевых полей проверяем, что значение не undefined/null
+                        isEmpty = value === null || value === undefined;
+                    } else {
+                        // Для остальных полей проверяем, что значение не пустое
+                        isEmpty = value === null || value === undefined || value === '' || value === false;
+                    }
+                    
+                    if (isEmpty) {
                         validationErrors.push(`Поле "${field.name}" обязательно для заполнения`);
                     }
                 }
@@ -536,7 +580,17 @@ export default {
             this.additionalFields.forEach(field => {
                 if (field.required) {
                     const value = this.additionalFieldValues[field.id];
-                    if (value === null || value === undefined || value === '' || value === false) {
+                    let isEmpty = false;
+                    
+                    if (field.type === 'boolean') {
+                        // Для булевых полей проверяем, что значение не undefined/null
+                        isEmpty = value === null || value === undefined;
+                    } else {
+                        // Для остальных полей проверяем, что значение не пустое
+                        isEmpty = value === null || value === undefined || value === '' || value === false;
+                    }
+                    
+                    if (isEmpty) {
                         validationErrors.push(`Поле "${field.name}" обязательно для заполнения`);
                     }
                 }
@@ -676,6 +730,42 @@ export default {
             // Генерируем уникальный ID для временного товара
             // Используем timestamp + случайное число для уникальности
             return Date.now() + Math.floor(Math.random() * 1000);
+        },
+
+        async handleEditingItemChange(newItem) {
+            if (!newItem) {
+                // При создании нового заказа очищаем дополнительные поля
+                this.additionalFieldValues = {};
+                this.additionalFields = [];
+                return;
+            }
+            
+            // Проверяем разные варианты названия поля
+            const additionalFields = newItem?.additionalFields || newItem?.additional_fields;
+            
+            // Сначала загружаем поля для категории
+            if (newItem.categoryId) {
+                await this.loadAdditionalFields(newItem.categoryId);
+            }
+            
+            // Затем устанавливаем значения из заказа, если они есть
+            if (additionalFields && additionalFields.length > 0) {
+                additionalFields.forEach(field => {
+                    // Преобразуем значение в нужный тип в зависимости от типа поля
+                    let value = field.value;
+                    
+                    // Если значение пришло как строка, но нужно преобразовать в нужный тип
+                    if (typeof value === 'string') {
+                        if (value === 'true') value = true;
+                        else if (value === 'false') value = false;
+                        else if (value === 'null' || value === '') value = '';
+                        // Для числовых полей оставляем как есть, если это число
+                        else if (!isNaN(value) && value !== '') value = value;
+                    }
+                    
+                    this.additionalFieldValues[field.field_id] = value;
+                });
+            }
         },
     },
     watch: {

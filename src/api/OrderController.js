@@ -159,7 +159,82 @@ export default class OrderController {
 
   static async getItem(id) {
     const { data } = await api.get(`/orders/${id}`);
-    return data;
+    const item = data.item || data;
+    
+    // Преобразуем клиента в DTO если он есть
+    var client = null;
+    if (item.client) {
+      client = new ClientDto(
+        item.client.id,
+        item.client.client_type,
+        item.client.balance,
+        item.client.is_supplier,
+        item.client.is_conflict,
+        item.client.first_name,
+        item.client.last_name,
+        item.client.contact_person,
+        item.client.address,
+        item.client.note,
+        item.client.status,
+        item.client.discount_type,
+        item.client.discount,
+        item.client.created_at,
+        item.client.updated_at,
+        item.client.emails,
+        item.client.phones
+      );
+    }
+    
+    // Преобразуем продукты в DTO если они есть
+    var products = null;
+    if (item.products) {
+      products = item.products.map((product) => {
+        return new OrderProductDto(
+          product.id,
+          product.order_id,
+          product.product_id,
+          product.product_name,
+          product.product_image,
+          product.unit_id,
+          product.unit_name,
+          product.unit_short_name,
+          product.quantity,
+          product.price
+        );
+      });
+    }
+    
+    return new OrderDto(
+      item.id,
+      item.note ?? "",
+      item.description ?? "",
+      item.status_id,
+      item.status_name,
+      item.category_id,
+      item.category_name,
+      item.client_id,
+      item.user_id,
+      item.user_name,
+      item.cash_id ?? null,
+      item.cash_name ?? null,
+      item.warehouse_id,
+      item.warehouse_name,
+      item.project_id,
+      item.project_name,
+      item.price,
+      item.discount ?? 0,
+      item.total_price,
+      item.currency_id,
+      item.currency_name,
+      item.currency_code,
+      item.currency_symbol,
+      item.date,
+      item.created_at,
+      item.updated_at,
+      client,
+      products,
+      item.additional_fields || []
+    );
   }
 
   static async getOrderTransactions(orderId) {

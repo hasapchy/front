@@ -64,6 +64,7 @@ export default {
   orderTypes: 'Типы заказов',
   services: 'Услуги',
   systemSettings: 'Настройки системы',
+  generalSettings: 'Общие настройки',
   
   // Переключение языка
   languageChanged: 'Язык изменен',

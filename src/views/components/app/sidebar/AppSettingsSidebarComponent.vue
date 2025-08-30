@@ -65,7 +65,7 @@
             </ul>
 
             <ul v-if="hasPermission('system_settings_view')">
-                <SidebarLink to="/performance" icon="fa-solid fa-chart-line mr-2" :settings="true">
+                <SidebarLink to="/settings/performance" icon="fa-solid fa-chart-line mr-2" :settings="true">
                     {{ $t('performanceMonitor') }}
                 </SidebarLink>
             </ul>

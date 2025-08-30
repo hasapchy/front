@@ -1,9 +1,5 @@
 <template>
   <div class="p-6">
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 mb-2">Мониторинг производительности БД</h1>
-      <p class="text-gray-600">Отслеживание производительности запросов к базе данных</p>
-    </div>
 
     <!-- Статус JWT токенов -->
     <div class="mb-6">

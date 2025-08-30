@@ -62,6 +62,7 @@ export default {
   orderTypes: 'Sargyt görnüşleri',
   services: 'Hyzmatlar',
   systemSettings: 'Sistem sazlamalary',
+  generalSettings: 'Umumy sazlamalar',
   
   // Действия
   add: 'Goş',
