@@ -6,6 +6,7 @@ export default {
   loading: 'Загрузка...',
   logout: 'Выйти',
   info: 'Информация',
+  balance: 'Баланс',
   
   // Навигация
   home: 'Главная',
@@ -768,6 +769,9 @@ export default {
   pending: 'В ожидании',
   sourceOfFunds: 'Источник средств',
   resetFilters: 'Сбросить фильтры',
+  showPaidOrders: 'Показать оплаченные заказы',
+  hidePaidOrders: 'Скрыть оплаченные заказы',
+  paidOrdersFilter: 'Фильтр оплаченных заказов',
   
   // Файлы
   noFilesUploaded: 'Файлы не загружены',

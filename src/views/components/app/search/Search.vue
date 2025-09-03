@@ -25,11 +25,9 @@ export default {
         }
     },
     watch: {
-        // при любом изменении маршрута сбрасываем поиск
         $route() {
             this.setSearchQuery('');
         },
-        // слушаем изменения поискового запроса
         searchQuery: {
             handler(newValue) {
                 this.debouncedSearch(newValue);
@@ -50,21 +48,17 @@ export default {
             this.searchQuery = '';
         },
         debouncedSearch(query) {
-            // Очищаем предыдущий таймаут
             if (this.searchTimeout) {
                 clearTimeout(this.searchTimeout);
             }
             
-            // Устанавливаем новый таймаут для поиска через 500мс
             this.searchTimeout = setTimeout(() => {
                 this.performSearch(query);
             }, 500);
         },
         performSearch(query) {
-            // Отправляем событие для текущей страницы
             this.$emit('search', query);
             
-            // Также отправляем глобальное событие через eventBus
             eventBus.emit('global-search', query);
         }
     },

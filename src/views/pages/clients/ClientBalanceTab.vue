@@ -4,8 +4,8 @@
         <div v-if="editingItem" class="mb-2 flex items-center gap-2">
             <span>{{ $t('finalBalance') }}:</span>
             <span :class="{
-                'text-[#5CB85C] font-bold': editingItem.balanceNumeric() >= 0,
-                'text-[#EE4F47] font-bold': editingItem.balanceNumeric() < 0
+                'text-[#5CB85C] font-bold': editingItem.balance >= 0,
+                'text-[#EE4F47] font-bold': editingItem.balance < 0
             }">
                 {{ editingItem.balanceFormatted() }} {{ currencyCode }}
             </span>
@@ -42,11 +42,21 @@
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
-import { markRaw } from 'vue';
-import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
-import SaleCreatePage from "@/views/pages/sales/SaleCreatePage.vue";
-import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
-import WarehousesReceiptCreatePage from "@/views/pages/warehouses/WarehousesReceiptCreatePage.vue";
+import { markRaw, defineAsyncComponent } from 'vue';
+
+// Lazy loading для модальных компонентов - загружаются только при открытии модалки
+const TransactionCreatePage = defineAsyncComponent(() => 
+    import("@/views/pages/transactions/TransactionCreatePage.vue")
+);
+const SaleCreatePage = defineAsyncComponent(() => 
+    import("@/views/pages/sales/SaleCreatePage.vue")
+);
+const OrderCreatePage = defineAsyncComponent(() => 
+    import("@/views/pages/orders/OrderCreatePage.vue")
+);
+const WarehousesReceiptCreatePage = defineAsyncComponent(() => 
+    import("@/views/pages/warehouses/WarehousesReceiptCreatePage.vue")
+);
 import TransactionController from "@/api/TransactionController";
 import ClientController from "@/api/ClientController";
 import SaleController from "@/api/SaleController";
@@ -63,10 +73,10 @@ export default {
     components: {
         DraggableTable,
         SideModalDialog,
-        TransactionCreatePage: markRaw(TransactionCreatePage),
-        SaleCreatePage: markRaw(SaleCreatePage),
-        OrderCreatePage: markRaw(OrderCreatePage),
-        WarehousesReceiptCreatePage: markRaw(WarehousesReceiptCreatePage),
+        TransactionCreatePage,
+        SaleCreatePage,
+        OrderCreatePage,
+        WarehousesReceiptCreatePage,
     },
     emits: ['balance-updated'],
     props: {
@@ -87,7 +97,7 @@ export default {
             balanceHistory: [],
             selectedEntity: null,
             entityModalOpen: false,
-            entityLoading: false, // NEW: loading state for modal
+            entityLoading: false,
             columnsConfig: [
                 { name: "date", label: this.$t("date"), size: 100 },
                 { name: "type", label: this.$t("type") },
@@ -101,7 +111,6 @@ export default {
                         if (r.item.client) {
                             client = ClientDto.fromApi(r.item.client);
                         } else if (r.item.client_id && this.editingItem && this.editingItem.id) {
-                            // Если клиент не загружен, но есть client_id, создаем базовый объект клиента
                             client = ClientDto.fromApi({
                                 id: r.item.client_id,
                                 client_type: this.editingItem.clientType || 'individual',
@@ -154,7 +163,7 @@ export default {
                             r.item.updated_at
                         );
                     }),
-                    component: markRaw(TransactionCreatePage),
+                    component: TransactionCreatePage,
                     prop: 'editingItem',
                 },
                 sale: {
@@ -189,7 +198,7 @@ export default {
                             r.item.updated_at
                         );
                     }),
-                    component: markRaw(SaleCreatePage),
+                    component: SaleCreatePage,
                     prop: 'editingItem',
                 },
                 order: {
@@ -228,7 +237,7 @@ export default {
                             r.item.updated_at
                         );
                     }),
-                    component: markRaw(OrderCreatePage),
+                    component: OrderCreatePage,
                     prop: 'editingItem',
                 },
                 receipt: {
@@ -236,32 +245,21 @@ export default {
                         const { data } = await api.get(`/warehouse_receipts/${id}`);
                         return data.item ?? data;
                     },
-                    component: markRaw(WarehousesReceiptCreatePage),
+                    component: WarehousesReceiptCreatePage,
                     prop: 'editingItem',
                 },
             },
         };
     },
     async mounted() {
-        // Получаем дефолтную валюту
         await this.fetchDefaultCurrency();
         
-        // mounted будет вызван только когда editingItem существует благодаря v-if в родительском компоненте
+
         if (this.editingItem && this.editingItem.id) {
             this.fetchBalanceHistory();
         }
     },
-    watch: {
-        // Отслеживаем изменения editingItem и обновляем баланс
-        'editingItem.id': {
-            handler(newId) {
-                if (newId) {
-                    this.fetchBalanceHistory();
-                }
-            },
-            immediate: false
-        }
-    },
+
     methods: {
         async fetchDefaultCurrency() {
             try {
@@ -277,12 +275,10 @@ export default {
             if (!this.editingItem || !this.editingItem.id) return;
             this.balanceLoading = true;
             try {
-                // Загружаем историю баланса
                 this.balanceHistory = await ClientController.getBalanceHistory(
                     this.editingItem.id
                 );
                 
-                // Обновляем текущий баланс клиента
                 await this.updateClientBalance();
             } catch (e) {
                 console.error("Ошибка при загрузке истории баланса:", e);
@@ -291,17 +287,7 @@ export default {
                 this.balanceLoading = false;
             }
         },
-        async updateClientBalance() {
-            if (!this.editingItem || !this.editingItem.id) return;
-            try {
-                const updatedClient = await ClientController.getItem(this.editingItem.id);
-                // Обновляем баланс в editingItem
-                this.editingItem.balance = updatedClient.balance;
-                console.log('Баланс клиента обновлен:', updatedClient.balance);
-            } catch (error) {
-                console.error('Ошибка при обновлении баланса клиента:', error);
-            }
-        },
+
         itemMapper(i, c) {
             switch (c) {
                 case "date":
@@ -346,7 +332,7 @@ export default {
             const config = this.ENTITY_CONFIG[entity.type];
             if (!config) return {};
             
-            // Если это транзакция и у неё нет клиента, но есть client_id, создаем базовый объект клиента
+
             if (entity.type === 'transaction' && entity.data && !entity.data.client && entity.data.clientId && this.editingItem && this.editingItem.id) {
                 const client = ClientDto.fromApi({
                     id: entity.data.clientId,
@@ -374,7 +360,7 @@ export default {
         },
         getModalComponent(type) {
             const component = this.ENTITY_CONFIG[type]?.component;
-            return component ? markRaw(component) : null;
+            return component || null;
         },
         closeEntityModal() {
             this.entityModalOpen = false;
@@ -382,13 +368,10 @@ export default {
             this.entityLoading = false;
         },
         onEntitySaved() {
-            // Обновляем историю баланса после сохранения
             if (this.editingItem && this.editingItem.id) {
                 this.fetchBalanceHistory();
-                // Обновляем баланс клиента
                 this.updateClientBalance();
             }
-            // Уведомляем родительский компонент об обновлении
             this.$emit('balance-updated');
             this.closeEntityModal();
         },
@@ -397,13 +380,10 @@ export default {
             this.closeEntityModal();
         },
         onEntityDeleted() {
-            // Обновляем историю баланса после удаления
             if (this.editingItem && this.editingItem.id) {
                 this.fetchBalanceHistory();
-                // Обновляем баланс клиента
                 this.updateClientBalance();
             }
-            // Уведомляем родительский компонент об обновлении
             this.$emit('balance-updated');
             this.closeEntityModal();
         },
@@ -412,18 +392,13 @@ export default {
             this.closeEntityModal();
         },
         async updateClientBalance() {
-            if (this.editingItem && this.editingItem.id) {
-                try {
-                    // Обновляем данные клиента с сервера для получения актуального баланса
-                    const response = await api.get(`/clients/${this.editingItem.id}`);
-                    const clientData = response.data.item || response.data;
-                    if (clientData && clientData.balance_amount !== undefined) {
-                        // Обновляем баланс клиента
-                        this.editingItem.balance = clientData.balance_amount;
-                    }
-                } catch (error) {
-                    console.error('Ошибка при обновлении баланса клиента:', error);
-                }
+            if (!this.editingItem || !this.editingItem.id) return;
+            try {
+                const updatedClient = await ClientController.getItem(this.editingItem.id);
+                this.editingItem.balance = updatedClient.balance;
+
+            } catch (error) {
+                console.error('Ошибка при обновлении баланса клиента:', error);
             }
         },
     },

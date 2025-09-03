@@ -80,7 +80,6 @@ export default {
             }
         },
         handleModalClose() {
-            // Проверяем, есть ли изменения в форме
             const formRef = this.$refs.adminwarehousecreatepageForm;
             if (formRef && formRef.handleCloseRequest) {
                 formRef.handleCloseRequest();
@@ -88,7 +87,6 @@ export default {
                 this.closeModal();
             }
         },
-        //
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;

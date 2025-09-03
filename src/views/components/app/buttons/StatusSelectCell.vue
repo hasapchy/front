@@ -85,8 +85,6 @@ export default {
     getColorStyle(status) {
       const hex = status.category?.color;
       if (!hex) return 'transparent';
-      // const { r, g, b } = this.hexToRgb(hex);
-      // return `rgba(${r}, ${g}, ${b}, 0.15)`;
       return hex;
     },
     hexToRgb(hex) {

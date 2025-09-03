@@ -70,20 +70,17 @@ export default {
     },
     created() {
         this.fetchUsers();
-        // Инициализируем editingItem из props warehouse
         if (this.warehouse) {
             this.editingItem = this.warehouse;
         }
     },
     mounted() {
-        // Сохраняем начальное состояние после монтирования компонента
         this.$nextTick(() => {
             this.saveInitialState();
         });
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     methods: {
-        // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
                 name: this.name,
@@ -140,7 +137,7 @@ export default {
         clearForm() {
             this.name = '';
             this.selectedUsers = [];
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.resetFormChanges();
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -164,7 +161,6 @@ export default {
                     this.warehouseId = null;
                     this.editingItem = null;
                 }
-                // Сохраняем новое начальное состояние
                 this.$nextTick(() => {
                     this.saveInitialState();
                 });
@@ -173,12 +169,7 @@ export default {
             immediate: true
         }
     }
-    // save() {
-    //     this.$emit('save');
-    // },
-    // delete(id) {
-    //     this.$emit('delete', id);
-    // }
+
 }
 
 </script>

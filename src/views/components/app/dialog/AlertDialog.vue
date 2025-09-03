@@ -107,15 +107,15 @@ export default {
 .fade-dialog-enter-from,
 .fade-dialog-leave-to
 
-/* .fade-dialog-leave-active in <2.1.8 */
+
     {
     opacity: 0;
-    /* transform: translateY(4px) scale(0.95); */
+
 }
 
 .fade-dialog-enter-to,
 .fade-dialog-leave-from {
     opacity: 1;
-    /* transform: translateY(0) scale(1); */
+
 }
 </style>

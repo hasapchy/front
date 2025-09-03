@@ -12,15 +12,12 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    // Увеличиваем счетчик активных API вызовов
     startApiCall();
     
     const token = localStorage.getItem("token");
     const tokenExpiresAt = localStorage.getItem("tokenExpiresAt");
     
-    // Проверяем, не истек ли токен
     if (token && tokenExpiresAt && Date.now() > parseInt(tokenExpiresAt)) {
-      // Токен истек, удаляем его
       localStorage.removeItem("token");
       localStorage.removeItem("tokenExpiresAt");
     }
@@ -31,7 +28,6 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    // Уменьшаем счетчик при ошибке запроса
     endApiCall();
     return Promise.reject(error);
   }
@@ -39,12 +35,10 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => {
-    // Уменьшаем счетчик при успешном ответе
     endApiCall();
     return response;
   },
   async (error) => {
-    // Уменьшаем счетчик при ошибке ответа
     endApiCall();
     
     if (error.response?.status === 401) {
@@ -52,26 +46,21 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem("refreshToken");
         const refreshTokenExpiresAt = localStorage.getItem("refreshTokenExpiresAt");
         
-        // Проверяем, не истек ли refresh token
         if (refreshToken && refreshTokenExpiresAt && Date.now() <= parseInt(refreshTokenExpiresAt)) {
           const { data } = await AuthController.refreshToken();
           if (data && data.access_token) {
-            // Обновляем заголовок и повторяем запрос
             error.config.headers.Authorization = `Bearer ${data.access_token}`;
-            console.log('=== RETRYING REQUEST WITH NEW TOKEN ===');
             return axios(error.config);
           }
         }
       } catch (refreshError) {
         console.error("Ошибка при обновлении токена", refreshError);
-        // Очищаем все данные аутентификации и перенаправляем на логин
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("tokenExpiresAt");
         localStorage.removeItem("refreshTokenExpiresAt");
         localStorage.removeItem("userInfo");
         
-        // Перенаправляем на страницу логина
         if (window.location.pathname !== '/auth/login') {
           window.location.href = '/auth/login';
         }

@@ -8,7 +8,7 @@
                 <i class="fas fa-chevron-down"></i>
             </button>
 
-            <!-- Выпадающий список с чекбоксами -->
+
             <div v-if="showDropdown" class="absolute z-10 mt-1 w-48 bg-white border rounded-md shadow-lg">
                 <div class="p-2 space-y-2">
                     <label
@@ -40,7 +40,7 @@ export default {
         options: {
             type: Array,
             required: true,
-            // Каждый элемент должен иметь { value: string, label: string }
+
         },
         placeholder: {
             type: String,
@@ -62,11 +62,9 @@ export default {
         }
     },
     mounted() {
-        // Добавляем слушатель кликов для закрытия выпадающего списка
         document.addEventListener('click', this.handleClickOutside);
     },
     beforeUnmount() {
-        // Удаляем слушатель кликов
         document.removeEventListener('click', this.handleClickOutside);
     },
     methods: {
@@ -87,7 +85,6 @@ export default {
             this.$emit('change', [...this.localValue]);
         },
         handleClickOutside(event) {
-            // Закрываем выпадающий список при клике вне его области
             const dropdown = event.target.closest('.relative');
             if (!dropdown || !dropdown.contains(event.target)) {
                 this.showDropdown = false;
@@ -98,5 +95,5 @@ export default {
 </script>
 
 <style scoped>
-/* Стили уже определены в app.css для .custom-dropdown-button */
+
 </style>

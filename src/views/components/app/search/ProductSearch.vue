@@ -390,10 +390,8 @@ export default {
             }
         },
         removeSelectedProduct(id) {
-            // Проверяем, был ли это временный товар
             const removedProduct = this.products.find(p => p.productId === id);
             if (removedProduct && removedProduct.isTempProduct) {
-                // Добавляем в список удаленных временных товаров
                 if (!this.removedTempProducts) {
                     this.removedTempProducts = [];
                 }
@@ -403,7 +401,6 @@ export default {
             this.products = this.products.filter(p => p.productId !== id);
             this.updateTotals();
             
-            // Эмитим событие об удалении товара
             this.$emit('product-removed', { id, wasTempProduct: removedProduct?.isTempProduct, name: removedProduct?.name });
         },
         handleBlur() {
@@ -428,13 +425,13 @@ export default {
             this.modalCreateTempProduct = true;
         },
         generateTempProductId() {
-            // Генерируем уникальный ID для временного товара
             return this.tempProductCounter++;
         },
         onProductCreated(newProduct) {
             this.modalCreateProduct = false;
             if (newProduct) {
                 this.selectProduct(newProduct);
+                // Поле поиска уже очищается в методе selectProduct
             }
         },
         onProductCreatedError(error) {
@@ -443,7 +440,6 @@ export default {
         onTempProductCreated(newProduct) {
             this.modalCreateTempProduct = false;
             if (newProduct) {
-                // Создаем временный товар с уникальным ID
                 const tempProduct = {
                     productId: this.generateTempProductId(),
                     productName: newProduct.name,
@@ -452,32 +448,28 @@ export default {
                     price: newProduct.price,
                     description: newProduct.description,
                     unitId: newProduct.unitId,
-                    type: newProduct.type || 1, // По умолчанию товар
+                    type: newProduct.type || 1,
                     isTempProduct: true,
                     icons() { return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>'; }
                 };
                 
-                // Добавляем в список товаров
                 const updatedProducts = [...this.products, tempProduct];
                 this.$emit('update:modelValue', updatedProducts);
                 this.updateTotals();
+                this.productSearch = '';
+                this.productResults = [];
             }
         },
-        // Метод для получения списка удаленных временных товаров
         getRemovedTempProducts() {
             return [...this.removedTempProducts];
         },
-        // Метод для сброса списка удаленных временных товаров
         resetRemovedTempProducts() {
             this.removedTempProducts = [];
         },
-        // Метод для получения иконки по умолчанию
         getDefaultIcon(product) {
-            // Проверяем, является ли товар временным
             if (product.isTempProduct) {
                 return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>';
             }
-            // Проверяем тип товара
             const isProduct = product.type === 1 || product.type === '1' || product.type === true;
             return isProduct
                 ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'

@@ -3,7 +3,7 @@
     <h3 class="text-lg font-semibold text-gray-800 mb-3">Статус токенов</h3>
     
     <div class="space-y-3">
-      <!-- Access Token Status -->
+
       <div class="flex items-center justify-between">
         <span class="text-sm font-medium text-gray-600">Access Token:</span>
         <div class="flex items-center space-x-2">
@@ -23,7 +23,7 @@
         </div>
       </div>
 
-      <!-- Refresh Token Status -->
+
       <div class="flex items-center justify-between">
         <span class="text-sm font-medium text-gray-600">Refresh Token:</span>
         <div class="flex items-center space-x-2">
@@ -43,7 +43,7 @@
         </div>
       </div>
 
-      <!-- Action Buttons -->
+
       <div class="flex space-x-2 pt-2">
         <button
           @click="refreshToken"
@@ -131,7 +131,6 @@ export default {
         const data = await AuthController.refreshToken();
         
         if (data && data.access_token) {
-          // Обновляем store
           this.updateTokenExpiration({
             accessTokenExpiresAt: Date.now() + (data.expires_in * 1000),
             refreshTokenExpiresAt: Date.now() + (data.refresh_expires_in * 1000)
@@ -140,7 +139,6 @@ export default {
           this.statusMessage = 'Токен успешно обновлен!';
           this.statusMessageClass = 'bg-green-100 text-green-700';
           
-          // Обновляем статус
           this.checkTokenStatus();
         }
       } catch (error) {
@@ -148,13 +146,11 @@ export default {
         this.statusMessage = 'Ошибка обновления токена. Попробуйте войти заново.';
         this.statusMessageClass = 'bg-red-100 text-red-700';
         
-        // Очищаем данные при ошибке
         TokenUtils.clearAuthData();
         this.$router.push('/auth/login');
       } finally {
         this.isRefreshing = false;
         
-        // Скрываем сообщение через 5 секунд
         setTimeout(() => {
           this.statusMessage = '';
         }, 5000);
@@ -162,10 +158,8 @@ export default {
     }
   },
   mounted() {
-    // Проверяем статус токенов при монтировании
     this.checkTokenStatus();
     
-    // Проверяем статус каждые 30 секунд
     this.statusInterval = setInterval(() => {
       this.checkTokenStatus();
     }, 30000);

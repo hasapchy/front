@@ -8,18 +8,17 @@
              ]"
              @mouseenter="pauseProgress"
              @mouseleave="resumeProgress">
-            <!-- Индикатор прогресса -->
+
             <div class="absolute bottom-0 left-0 h-0.5 bg-white bg-opacity-30 transition-all duration-100 ease-linear progress-bar"
                  :style="{ width: progressWidth + '%' }"></div>
             
-            <!-- Кнопка закрытия -->
+
             <button @click="$emit('close')" 
                     class="absolute top-2 right-2 text-white hover:opacity-70 text-lg leading-none font-bold w-6 h-6 flex items-center justify-center">
                 &times;
             </button>
             
-            <!-- Контент уведомления -->
-            <div class="pr-8"> <!-- Отступ справа для кнопки закрытия -->
+            <div class="pr-8">
                 <h3 class="font-bold text-sm mb-1 leading-tight">{{ title }}</h3>
                 <ul v-if="Array.isArray(subtitle) && subtitle.length > 0" class="space-y-0.5">
                     <li v-for="(err, i) in subtitle" :key="i" class="text-xs leading-tight">{{ err }}</li>
@@ -59,17 +58,14 @@ export default {
     watch: {
         show(newVal) {
             if (newVal) {
-                // Воспроизводим звук при показе уведомления
                 if (this.isDanger) {
                     soundManager.playError();
                 } else {
                     soundManager.playSuccess();
                 }
                 
-                // Запускаем индикатор прогресса
                 this.startProgress();
             } else {
-                // Останавливаем индикатор при скрытии
                 this.stopProgress();
             }
         }
@@ -91,14 +87,13 @@ export default {
                         this.stopProgress();
                     }
                 }
-            }, 50); // Обновляем каждые 50мс для плавной анимации
+            }, 50);
         },
         
         pauseProgress() {
             if (!this.isPaused) {
                 this.isPaused = true;
                 this.pauseStartTime = Date.now();
-                // Приостанавливаем таймер в store
                 this.$store.dispatch('pauseNotificationTimer');
             }
         },
@@ -106,10 +101,9 @@ export default {
         resumeProgress() {
             if (this.isPaused && this.pauseStartTime) {
                 const pauseDuration = Date.now() - this.pauseStartTime;
-                this.startTime += pauseDuration; // Корректируем время старта
+                this.startTime += pauseDuration;
                 this.isPaused = false;
                 this.pauseStartTime = null;
-                // Возобновляем таймер в store
                 this.$store.dispatch('resumeNotificationTimer');
             }
         },
@@ -143,7 +137,7 @@ export default {
     transform: translateX(100%);
 }
 
- /* Уведомление полностью независимо от layout */
+
  .notification-toast {
      position: fixed !important;
      top: 1rem !important;
@@ -158,13 +152,13 @@ export default {
      transform: none !important;
  }
 
-/* Убеждаемся, что индикатор прогресса не влияет на высоту */
+
 .progress-bar {
     height: 2px;
     line-height: 0;
 }
 
- /* Делаем текст более компактным */
+
  .notification-toast h3 {
      margin-bottom: 0.25rem;
      line-height: 1.2;
@@ -196,7 +190,7 @@ export default {
      overflow-wrap: break-word;
  }
 
- /* Полная изоляция от flexbox */
+
  .notification-toast * {
      flex: none !important;
      flex-grow: 0 !important;
@@ -204,7 +198,7 @@ export default {
      flex-basis: auto !important;
  }
 
- /* Убеждаемся, что кнопка закрытия не накладывается на текст */
+
  .notification-toast button {
      z-index: 10;
      position: absolute;

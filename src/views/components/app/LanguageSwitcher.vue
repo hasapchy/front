@@ -1,6 +1,6 @@
 <template>
   <div class="language-dropdown relative">
-    <!-- Кнопка-триггер -->
+
     <button 
       @click="toggleDropdown"
       class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
@@ -21,7 +21,7 @@
       </svg>
     </button>
 
-    <!-- Выпадающий список -->
+
     <div 
       v-if="isOpen" 
       class="dropdown-menu absolute top-full left-0 mt-1 w-40 bg-white border border-gray-200 rounded shadow-lg z-50"
@@ -75,7 +75,6 @@ export default {
     }
   },
   mounted() {
-    // Закрываем dropdown при клике вне его
     document.addEventListener('click', this.handleClickOutside)
   },
   beforeUnmount() {
@@ -90,16 +89,12 @@ export default {
       this.$i18n.locale = locale
       localStorage.setItem('locale', locale)
       
-      // Закрываем dropdown
       this.isOpen = false
       
-      // Обновляем заголовок страницы
       document.title = this.getPageTitle()
       
-      // Можно добавить событие для обновления других компонентов
       this.$emit('language-changed', locale)
       
-      // Показываем уведомление о смене языка
       this.showLanguageNotification(locale)
     },
     
@@ -110,7 +105,6 @@ export default {
     },
     
     getPageTitle() {
-      // Получаем текущий путь для определения заголовка
       const path = this.$route.path
       let title = ''
       
@@ -141,7 +135,6 @@ export default {
         ? `${this.$t('languageChanged')}: ${languageName}`
         : `${this.$t('languageChanged')}: ${languageName}`
       
-      // Создаем простое уведомление
       const notification = document.createElement('div')
       notification.className = 'language-notification'
       notification.textContent = message
@@ -159,7 +152,6 @@ export default {
         animation: slideIn 0.3s ease-out;
       `
       
-      // Добавляем CSS анимацию
       const style = document.createElement('style')
       style.textContent = `
         @keyframes slideIn {
@@ -171,7 +163,6 @@ export default {
       
       document.body.appendChild(notification)
       
-      // Убираем уведомление через 3 секунды
       setTimeout(() => {
         if (notification.parentNode) {
           notification.parentNode.removeChild(notification)

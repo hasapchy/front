@@ -9,7 +9,7 @@ export default class WarehouseReceiptController {
     try {
       const response = await api.get(`/warehouse_receipts?page=${page}`);
       const data = response.data;
-      // Преобразуем полученные данные в DTO
+
       const items = data.items.map((item) => {
         var client = null;
         if (item.client) {
@@ -86,9 +86,7 @@ export default class WarehouseReceiptController {
 
   static async storeReceipt(formData) {
     try {
-      console.log('=== API STORE RECEIPT CALLED ===', new Date().toISOString(), formData);
       const { data } = await api.post("/warehouse_receipts", formData);
-      console.log('=== API STORE RECEIPT SUCCESS ===', data);
       return data;
     } catch (error) {
       console.error("Ошибка при оприходовании:", error);

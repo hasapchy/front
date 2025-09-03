@@ -1,6 +1,6 @@
 <template>
     <aside class="w-40 bg-[#282E33] text-white flex-shrink-0 transform transition-transform duration-300">
-        <!-- Logo -->
+
         <div class="shrink-0 flex items-center justify-center">
             <a href="/">
                 <img 
@@ -77,13 +77,12 @@ export default {
                 company_name: '',
                 company_logo: ''
             },
-            logoUrl: localStorage.getItem('companyLogoCache') || '', // Use cached logo if available
+            logoUrl: localStorage.getItem('companyLogoCache') || '',
             logoCache: localStorage.getItem('companyLogoCache') || ''
         };
     },
     
     async mounted() {
-        // If we have a cached logo, show it immediately
         if (this.logoUrl) {
             this.logoUrl = this.logoCache;
         }
@@ -108,7 +107,6 @@ export default {
                 const data = await SettingsController.getSettings();
                 this.settings = data;
                 
-                // Update logo URL and cache
                 if (data.company_logo && data.company_logo !== this.logoCache) {
                     this.logoUrl = data.company_logo;
                     this.logoCache = data.company_logo;
@@ -120,7 +118,6 @@ export default {
         },
         
         onLogoLoad() {
-            // Logo loaded successfully, update cache
             if (this.logoUrl && this.logoUrl !== this.logoCache) {
                 this.logoCache = this.logoUrl;
                 localStorage.setItem('companyLogoCache', this.logoUrl);
@@ -129,7 +126,6 @@ export default {
         
         onLogoError(event) {
             console.error('Logo failed to load:', event.target.src);
-            // Remove invalid logo from cache
             localStorage.removeItem('companyLogoCache');
             this.logoUrl = '';
             this.logoCache = '';

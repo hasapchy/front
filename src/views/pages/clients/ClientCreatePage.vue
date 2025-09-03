@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col overflow-auto h-full p-4">
             <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editClient') : $t('createClient') }}</h2>
-    <TabBar :key="`tabs-${$i18n.locale}`" :tabs="tabs" :active-tab="currentTab" :tab-click="(t) => {
+    <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
       changeTab(t);
     }" />
     <div>
@@ -162,10 +162,7 @@ export default {
   },
   computed: {
     translatedTabs() {
-      // Показываем вкладку баланса только при редактировании существующего клиента
-      const availableTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name !== 'balance');
-      
-      return availableTabs.map(tab => ({
+      return this.tabs.map(tab => ({
         ...tab,
         label: this.$t(tab.label)
       }));

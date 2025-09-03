@@ -16,7 +16,7 @@ export default class ClientSearchDto {
   ) {
     this.id = id; // Идентификатор клиента
     this.clientType = clientType; // Тип клиента
-    this.balance = balance === null ? 0 : balance; // Баланс клиента
+    this.balance = balance === null ? 0 : parseFloat(balance) || 0; // Баланс клиента
     this.isSupplier = Boolean(isSupplier); // Является ли поставщиком
     this.isConflict = Boolean(isConflict); // Является ли конфликтным
     this.firstName = firstName; // Имя клиента
@@ -28,15 +28,8 @@ export default class ClientSearchDto {
     ); // Список телефонов
   }
 
-  balanceNumeric() {
-    // Баланс теперь всегда приходит как число из API
-    return typeof this.balance === 'number' ? this.balance : 0;
-  }
-
   balanceFormatted() {
-    // Баланс теперь всегда приходит как число из API
-    const balance = typeof this.balance === 'number' ? this.balance : 0;
-    return balance.toFixed(2);
+    return this.balance.toFixed(2);
   }
 
   fullName() {
@@ -68,13 +61,10 @@ export default class ClientSearchDto {
   static fromApi(data) {
     if (!data) return null;
     
-    // Баланс теперь всегда приходит как число из API
-    const balanceValue = typeof data.balance === 'number' ? data.balance : 0;
-    
     return new ClientSearchDto(
       data.id,
       data.client_type,
-      balanceValue,
+      data.balance_amount || 0,
       data.is_supplier,
       data.is_conflict,
       data.first_name,

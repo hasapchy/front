@@ -1,5 +1,5 @@
 <template>
-  <!-- Настройка колонок -->
+
   <div class="flex flex-row-reverse">
     <TableFilterButton v-if="columns.length">
       <ul>
@@ -23,7 +23,7 @@
     </TableFilterButton>
   </div>
 
-  <!-- Таблица -->
+
   <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
     <thead class="bg-gray-100 rounded-t-sm">
       <draggable v-if="columns.length" tag="tr" class="dragArea list-group w-full" :list="columns" @change="log">
@@ -149,7 +149,7 @@ export default {
             const original = this.columnsConfig.find(c => c.name === savedCol.name) || {};
             return {
               ...savedCol,
-              label: original.label || savedCol.label, // Используем актуальный label из columnsConfig
+              label: original.label || savedCol.label,
               component: original.component,
               props: original.props,
             };
@@ -177,7 +177,6 @@ export default {
       this.saveColumns();
     },
     saveColumns() {
-      // Filter out non-serializable properties before saving
       const serializableColumns = this.columns.map(col => {
         const { component, props, ...serializableCol } = col;
         return serializableCol;
@@ -263,14 +262,12 @@ export default {
   watch: {
     columnsConfig: {
       handler() {
-        // Обновляем заголовки при изменении columnsConfig (например, при смене языка)
         this.loadColumns();
       },
       deep: true
     },
     '$i18n.locale': {
       handler() {
-        // Принудительно обновляем заголовки при смене языка
         this.loadColumns();
       },
       immediate: false

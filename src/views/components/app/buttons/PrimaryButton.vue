@@ -88,29 +88,23 @@ export default {
         handleClick(e) {
             if (this.isDisabled || this.isLoading || this.isClickBlocked) return;
             
-            // Защита от двойного клика - блокируем кнопку
             this.isClickBlocked = true;
             
-            // Выполняем действие
             if (this.onclick) {
                 const result = this.onclick(e);
                 
-                // Если onclick возвращает Promise, ждем его завершения
                 if (result && typeof result.then === 'function') {
                     result.finally(() => {
-                        // Разблокируем кнопку через небольшую задержку
                         setTimeout(() => {
                             this.isClickBlocked = false;
                         }, 500);
                     });
                 } else {
-                    // Если не Promise, разблокируем через задержку
                     setTimeout(() => {
                         this.isClickBlocked = false;
                     }, 500);
                 }
             } else {
-                // Если нет onclick, просто разблокируем через задержку
                 setTimeout(() => {
                     this.isClickBlocked = false;
                 }, 500);

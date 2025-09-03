@@ -6,6 +6,7 @@ export default {
   loading: 'Ýüklenýär...',
   logout: 'Çykyş',
   info: 'Maglumat',
+  balance: 'Balans',
   
   // Навигация
   home: 'Baş sahypa',
@@ -765,6 +766,9 @@ export default {
   pending: 'Garaşylýar',
   sourceOfFunds: 'Pul çeşmesi',
   resetFilters: 'Filtri arassala',
+  showPaidOrders: 'Tölenen sargytlary görkez',
+  hidePaidOrders: 'Tölenen sargytlary gizle',
+  paidOrdersFilter: 'Tölenen sargytlaryň filtr',
   
   // Файлы
   noFilesUploaded: 'Faýllar ýüklenmedi',

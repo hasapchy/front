@@ -26,13 +26,13 @@
                              <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
                              <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
                          </div>
-                         <span
-                             :class="client.balanceNumeric() == 0 ? 'text-[#337AB7]' : client.balanceNumeric() > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
-                             {{ client.balanceFormatted() }}
-                             <span v-if="client.balanceNumeric() > 0">({{ $t('clientOwesUs') }})</span>
-                             <span v-else-if="client.balanceNumeric() < 0">({{ $t('weOweClient') }})</span>
-                             <span v-else>({{ $t('mutualSettlement') }})</span>
-                         </span>
+                                                 <span
+                            :class="client.balance == 0 ? 'text-[#337AB7]' : client.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
+                            {{ client.balanceFormatted() }}
+                            <span v-if="client.balance > 0">({{ $t('clientOwesUs') }})</span>
+                            <span v-else-if="client.balance < 0">({{ $t('weOweClient') }})</span>
+                            <span v-else>({{ $t('mutualSettlement') }})</span>
+                        </span>
                      </li>
                      <li class="p-2 border-t border-gray-300 bg-gray-50 sticky bottom-0">
                          <PrimaryButton 
@@ -55,10 +55,10 @@
                         <p><span class="font-semibold text-sm">{{ $t('phone') }}:</span> {{ selectedClient.phones[0]?.phone || $t('noPhone') }}</p>
                         <p><span class="font-semibold text-sm">{{ $t('balance') }}:</span>
                             <span
-                                :class="selectedClient.balanceNumeric() == 0 ? 'text-[#337AB7]' : selectedClient.balanceNumeric() > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
+                                :class="selectedClient.balance == 0 ? 'text-[#337AB7]' : selectedClient.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
                                 {{ selectedClient.balanceFormatted() }}
-                                <span v-if="selectedClient.balanceNumeric() > 0">({{ $t('clientOwesUs') }})</span>
-                                <span v-else-if="selectedClient.balanceNumeric() < 0">({{ $t('weOweClient') }})</span>
+                                <span v-if="selectedClient.balance > 0">({{ $t('clientOwesUs') }})</span>
+                                <span v-else-if="selectedClient.balance < 0">({{ $t('weOweClient') }})</span>
                                 <span v-else>({{ $t('mutualSettlement') }})</span>
                             </span>
                         </p>
@@ -152,13 +152,11 @@ export default {
             this.clientSearch = '';
             this.clientResults = [];
             
-            // Обновляем данные клиента с актуальным балансом
             try {
                 const updatedClient = await ClientController.getItem(client.id);
                 this.$emit('update:selectedClient', updatedClient);
             } catch (error) {
                 console.warn('Не удалось обновить данные клиента:', error);
-                // Fallback на исходные данные клиента
                 this.$emit('update:selectedClient', client);
             }
         },
@@ -174,7 +172,6 @@ export default {
             if (newClient) {
                 try {
                     const clientDto = ClientDto.fromApi(newClient);
-                    // Обновляем данные клиента с актуальным балансом
                     const updatedClient = await ClientController.getItem(clientDto.id);
                     this.selectClient(updatedClient);
                 } catch (error) {

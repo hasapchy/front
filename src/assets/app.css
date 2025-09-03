@@ -334,3 +334,57 @@ td {
 :root {
     --timeline-width: 400px;
 }
+
+/* Timeline Panel Styles */
+.timeline-slide-enter-active,
+.timeline-slide-leave-active {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.timeline-slide-enter-from {
+    opacity: 0;
+    transform: translateX(20px);
+}
+
+.timeline-slide-leave-to {
+    opacity: 0;
+    transform: translateX(20px);
+}
+
+.timeline-slide-enter-to,
+.timeline-slide-leave-from {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Дополнительные плавные переходы для элементов внутри */
+.timeline-slide-enter-active .flex-1,
+.timeline-slide-leave-active .flex-1 {
+    transition: opacity 0.2s ease-in-out;
+}
+
+.timeline-slide-enter-from .flex-1,
+.timeline-slide-leave-to .flex-1 {
+    opacity: 0;
+}
+
+/* Плавные переходы для всех интерактивных элементов */
+button, textarea {
+    transition: all 0.2s ease-in-out;
+}
+
+/* Анимация для точек на таймлайне */
+.timeline-slide-enter-active .w-3,
+.timeline-slide-leave-active .w-3 {
+    transition: all 0.3s ease-in-out;
+}
+
+.timeline-slide-enter-from .w-3 {
+    transform: scale(0);
+    opacity: 0;
+}
+
+.timeline-slide-leave-to .w-3 {
+    transform: scale(0);
+    opacity: 0;
+}

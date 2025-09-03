@@ -33,6 +33,16 @@
                 />
             </div>
 
+            <!-- Фильтр оплаченных заказов -->
+            <div class="ml-4">
+                <OrderPaymentFilter 
+                    v-model="paidOrdersFilter"
+                    :orders="data ? data.items : []"
+                    :statusId="4"
+                    @change="handlePaidOrdersFilterChange"
+                />
+            </div>
+
             <!-- Кнопка сброса фильтров -->
             <div class="ml-4">
                 <PrimaryButton 
@@ -90,13 +100,19 @@ import notificationMixin from "@/mixins/notificationMixin";
 import batchActionsMixin from "@/mixins/batchActionsMixin";
 import modalMixin from "@/mixins/modalMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
-import TimelinePanel from "@/views/components/app/dialog/TimelinePanel.vue";
+import { defineAsyncComponent } from "vue";
 import { eventBus } from "@/eventBus";
 import CheckboxFilter from "@/views/components/app/forms/CheckboxFilter.vue";
+import OrderPaymentFilter from "@/views/components/app/forms/OrderPaymentFilter.vue";
+
+// Lazy loading для TimelinePanel - загружается только когда нужен
+const TimelinePanel = defineAsyncComponent(() => 
+    import("@/views/components/app/dialog/TimelinePanel.vue")
+);
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, modalMixin, batchActionsMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, CheckboxFilter },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, CheckboxFilter, OrderPaymentFilter },
     data() {
         return {
             data: null,
@@ -128,6 +144,7 @@ export default {
             endDate: null,
             statusFilter: [],
             statusOptions: [],
+            paidOrdersFilter: false,
         };
     },
     created() {
@@ -209,7 +226,15 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                const newData = await OrderController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, this.statusFilter);
+                // Если активен фильтр оплаченных заказов, добавляем статус ID 4 к фильтру
+                let currentStatusFilter = [...this.statusFilter];
+                if (this.paidOrdersFilter) {
+                    if (!currentStatusFilter.includes(4)) {
+                        currentStatusFilter.push(4);
+                    }
+                }
+                
+                const newData = await OrderController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, currentStatusFilter);
                 this.data = newData;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingOrderList'), error.message, true);
@@ -305,6 +330,12 @@ export default {
             this.startDate = '';
             this.endDate = '';
             this.statusFilter = []; // Сбрасываем фильтр по статусам
+            this.paidOrdersFilter = false; // Сбрасываем фильтр оплаченных заказов
+            this.fetchItems();
+        },
+
+        handlePaidOrdersFilterChange(isActive) {
+            this.paidOrdersFilter = isActive;
             this.fetchItems();
         }
     }

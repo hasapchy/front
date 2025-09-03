@@ -87,6 +87,16 @@ export default {
     created() {
         this.fetchAllUnits();
     },
+    watch: {
+        defaultName: {
+            handler(newValue) {
+                if (newValue && !this.name) {
+                    this.name = newValue;
+                }
+            },
+            immediate: true
+        }
+    },
     methods: {
         async fetchAllUnits() {
             try {

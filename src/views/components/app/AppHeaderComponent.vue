@@ -4,7 +4,7 @@
             <div class="flex items-center justify-between">
                 <div class="flex items-end gap-6">
                     <h1 class="text-xl font-semibold">{{ displayTitle }}</h1>
-                    <!-- Табы -->
+
                     <div class="flex">
                         <router-link v-for="tab in binded" :key="tab.path" :to="tab.path"
                             class="text-[#337AB7] hover:text-[#3571A4] hover:underline font-semibold transition-all mr-4">
@@ -68,12 +68,10 @@ export default {
     
     async mounted() {
         await this.loadSettings();
-        // Слушаем события обновления настроек
         eventBus.on('settings-updated', this.loadSettings);
     },
     
     beforeUnmount() {
-        // Удаляем слушатель события
         eventBus.off('settings-updated', this.loadSettings);
     },
     
@@ -94,13 +92,11 @@ export default {
         },
         
         onLanguageChanged(locale) {
-            // Обновляем заголовок страницы при смене языка
             this.$forceUpdate();
         }
     },
     
     computed: {
-        // Переопределяем title для отображения названия компании на главной странице
         displayTitle() {
             if (this.$route.path === '/' && this.settings.company_name) {
                 return this.settings.company_name;

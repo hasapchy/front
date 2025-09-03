@@ -107,13 +107,11 @@ export default {
             type: this.editingItem ? this.editingItem.type : 'cash',
             cashId: this.editingItem ? this.editingItem.cashId : '',
             products: this.editingItem ? this.editingItem.products : [],
-            // 
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
-            ///
             allWarehouses: [],
             currencies: [],
             allCashRegisters: [],
@@ -125,7 +123,7 @@ export default {
         this.fetchAllCashRegisters();
     },
     methods: {
-                // Переопределяем метод getFormState из миксина
+        
         getFormState() {
             return {
                 warehouseId: this.warehouseId,
@@ -149,7 +147,7 @@ export default {
         },
 
         async save() {
-            console.log('=== SAVE METHOD CALLED ===', new Date().toISOString());
+
             this.saveLoading = true;
             try {
                 var formData = {
@@ -158,9 +156,7 @@ export default {
                     note: this.note,
                     type: this.type,
                     cash_id: this.type === 'cash' ? this.cashId : null,
-                    // currency_id: this.type === 'cash'
-                    //     ? (this.allCashRegisters.find(c => c.id === this.cashId)?.currency_id)
-                    //     : null,
+
                     products: this.products.map(product => ({
                         product_id: product.productId,
                         quantity: product.quantity,
@@ -210,7 +206,7 @@ export default {
             this.selectedClient = null;
             this.products = [];
             this.editingItemId = null;
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.resetFormChanges();
         },
         showDeleteDialog() {
             this.deleteDialog = true;
