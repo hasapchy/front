@@ -80,7 +80,7 @@ export default {
         itemMapper(i, c) {
             switch (c) {
                 case 'balance':
-                    return (i.balance || 0) + ' ' + i.currency_symbol;
+                    return (i.balance || 0) + ' ' + (i.currency_symbol || i.currency_code || '');
                 case 'is_rounding':
                     return i.is_rounding ? this.$t('enabled') : this.$t('disabled');
                 case 'users':

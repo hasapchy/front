@@ -46,10 +46,6 @@ export default class SaleProductDto {
     }
 
     icons() {
-        const url = this.imgUrl && this.imgUrl();
-        if (url) {
-            return `<img src="${url}" alt="icon" class="w-5 h-5 object-cover rounded" />`;
-        }
         const isProduct = this.type == 1 || this.type === '1';
         return isProduct
             ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'

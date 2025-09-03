@@ -18,9 +18,9 @@ export default class CashRegisterController {
           item.is_rounding || false,
           item.users || [],
           item.currency_id,
-          item.currency_name,
-          item.currency_code,
-          item.currency_symbol,
+          item.currency?.name,
+          item.currency?.code,
+          item.currency?.symbol,
           item.created_at,
           item.updated_at
         );
@@ -54,9 +54,9 @@ export default class CashRegisterController {
           item.is_rounding || false,
           item.users || [],
           item.currency_id,
-          item.currency_name,
-          item.currency_code,
-          item.currency_symbol,
+          item.currency?.name,
+          item.currency?.code,
+          item.currency?.symbol,
           item.created_at,
           item.updated_at
         );

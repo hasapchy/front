@@ -86,7 +86,9 @@ export default class WarehouseReceiptController {
 
   static async storeReceipt(formData) {
     try {
+      console.log('=== API STORE RECEIPT CALLED ===', new Date().toISOString(), formData);
       const { data } = await api.post("/warehouse_receipts", formData);
+      console.log('=== API STORE RECEIPT SUCCESS ===', data);
       return data;
     } catch (error) {
       console.error("Ошибка при оприходовании:", error);

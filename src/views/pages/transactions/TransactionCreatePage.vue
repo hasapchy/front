@@ -19,7 +19,7 @@
                           <select v-model="cashId" :disabled="!!editingItemId" required>
                   <option value="">{{ $t('no') }}</option>
                 <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
-                    {{ parent.name }} ({{ parent.currency_symbol }})
+                    {{ parent.name }} ({{ parent.currency_symbol || parent.currency_code || '' }})
                 </option>
             </select>
         </div>
@@ -242,6 +242,10 @@ export default {
                     });
                 }
                 if (resp.message) {
+                    // Обновляем баланс клиента после сохранения транзакции
+                    if (this.selectedClient) {
+                        await this.updateClientBalance();
+                    }
                     this.$emit('saved', resp)
                     this.clearForm();
                 }
@@ -260,6 +264,10 @@ export default {
             try {
                 var resp = await TransactionController.deleteItem(this.editingItemId);
                 if (resp.message || resp.success || resp) {
+                    // Обновляем баланс клиента после удаления транзакции
+                    if (this.selectedClient) {
+                        await this.updateClientBalance();
+                    }
                     this.$emit('deleted');
                     this.clearForm();
                 }
@@ -285,6 +293,16 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
+        },
+        async updateClientBalance() {
+            if (this.selectedClient && this.selectedClient.id) {
+                try {
+                    const updatedClient = await ClientController.getItem(this.selectedClient.id);
+                    this.selectedClient = updatedClient;
+                } catch (error) {
+                    console.error('Ошибка при обновлении баланса клиента:', error);
+                }
+            }
         }
     },
     watch: {

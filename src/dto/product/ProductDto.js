@@ -67,11 +67,7 @@ class ProductDto {
     }
   }
 
-  imgUrl() {
-    return this.image.length > 0
-      ? `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.image}`
-      : null;
-  }
+
 
   retailPriceFormatted() {
     let price = this.retail_price;

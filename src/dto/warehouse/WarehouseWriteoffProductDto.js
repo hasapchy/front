@@ -37,6 +37,6 @@ export default class WarehouseWriteoffProductDto {
     }
 
     imgUrl() {
-        return this.productImage.length > 0 ? `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.productImage}` : null
+        return this.productImage && this.productImage.length > 0 ? `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.productImage}` : null
     }
 }

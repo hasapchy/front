@@ -128,7 +128,7 @@ export default {
                 case 'amount':
                     return i.cashAmountData?.() || '-';
                 case 'cashName':
-                    return i.cashName || '-';
+                    return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
                 case 'date':
                     return i.formatDate?.() || '-';
                 default:

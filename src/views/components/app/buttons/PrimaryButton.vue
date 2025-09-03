@@ -1,9 +1,9 @@
 <template>
-    <button :disabled="isLoading || isDisabled" :class="[
+    <button :disabled="isLoading || isDisabled || isClickBlocked" :class="[
         buttonClasses,
         {
-            'cursor-pointer': !isDisabled && !isLoading,
-            'opacity-50 cursor-not-allowed': isDisabled || isLoading
+            'cursor-pointer': !isDisabled && !isLoading && !isClickBlocked,
+            'opacity-50 cursor-not-allowed': isDisabled || isLoading || isClickBlocked
         }
     ]" @click="handleClick">
         <transition name="fade">
@@ -17,6 +17,11 @@
 
 <script>
 export default {
+    data() {
+        return {
+            isClickBlocked: false,
+        };
+    },
     props: {
         icon: {
             type: String,
@@ -81,8 +86,35 @@ export default {
     },
     methods: {
         handleClick(e) {
-            if (this.isDisabled || this.isLoading) return;
-            if (this.onclick) this.onclick(e);
+            if (this.isDisabled || this.isLoading || this.isClickBlocked) return;
+            
+            // Защита от двойного клика - блокируем кнопку
+            this.isClickBlocked = true;
+            
+            // Выполняем действие
+            if (this.onclick) {
+                const result = this.onclick(e);
+                
+                // Если onclick возвращает Promise, ждем его завершения
+                if (result && typeof result.then === 'function') {
+                    result.finally(() => {
+                        // Разблокируем кнопку через небольшую задержку
+                        setTimeout(() => {
+                            this.isClickBlocked = false;
+                        }, 500);
+                    });
+                } else {
+                    // Если не Promise, разблокируем через задержку
+                    setTimeout(() => {
+                        this.isClickBlocked = false;
+                    }, 500);
+                }
+            } else {
+                // Если нет onclick, просто разблокируем через задержку
+                setTimeout(() => {
+                    this.isClickBlocked = false;
+                }, 500);
+            }
         }
     }
 }

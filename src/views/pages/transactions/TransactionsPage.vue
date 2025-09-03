@@ -8,7 +8,7 @@
                     <option value="">{{ $t('allCashRegisters') }}</option>
                     <template v-if="allCashRegisters.length">
                         <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
-                            {{ parent.name }} ({{ parent.currency_symbol }})
+                            {{ parent.name }} ({{ parent.currency_symbol || parent.currency_code || '' }})
                         </option>
                     </template>
                 </select>
@@ -187,6 +187,8 @@ export default {
             switch (c) {
                 case 'type':
                     return i.typeCell();
+                case 'cashName':
+                    return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
                 case 'cashAmount':
                     return i.cashAmountData();
                 case 'origAmount':

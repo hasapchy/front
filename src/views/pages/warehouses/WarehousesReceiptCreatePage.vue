@@ -44,7 +44,7 @@
             <select v-model="cashId" :disabled="!!editingItemId">
                 <option value="">{{ $t('no') }}</option>
                 <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">
-                    {{ c.name }} ({{ c.currency_symbol }})
+                    {{ c.name }} ({{ c.currency_symbol || c.currency_code || '' }})
                 </option>
             </select>
         </div>
@@ -129,10 +129,10 @@ export default {
         getFormState() {
             return {
                 warehouseId: this.warehouseId,
-                supplierId: this.supplierId,
+                clientId: this.selectedClient?.id,
                 date: this.date,
                 note: this.note,
-                products: [...this.products]
+                products: this.products.map(p => ({ ...p }))
             };
         },
         async fetchAllWarehouses() {
@@ -149,6 +149,7 @@ export default {
         },
 
         async save() {
+            console.log('=== SAVE METHOD CALLED ===', new Date().toISOString());
             this.saveLoading = true;
             try {
                 var formData = {

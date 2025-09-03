@@ -147,11 +147,20 @@ export default {
                  this.clientResults = [];
              }
          }, 250),
-        selectClient(client) {
+        async selectClient(client) {
             this.showDropdown = false;
             this.clientSearch = '';
             this.clientResults = [];
-            this.$emit('update:selectedClient', client);
+            
+            // Обновляем данные клиента с актуальным балансом
+            try {
+                const updatedClient = await ClientController.getItem(client.id);
+                this.$emit('update:selectedClient', updatedClient);
+            } catch (error) {
+                console.warn('Не удалось обновить данные клиента:', error);
+                // Fallback на исходные данные клиента
+                this.$emit('update:selectedClient', client);
+            }
         },
         deselectClient() {
             this.$emit('update:selectedClient', null);
@@ -160,12 +169,14 @@ export default {
              this.defaultClientName = this.clientSearch;
              this.modalCreateClient = true;
          },
-        onClientCreated(newClient) {
+        async onClientCreated(newClient) {
             this.modalCreateClient = false;
             if (newClient) {
                 try {
                     const clientDto = ClientDto.fromApi(newClient);
-                    this.selectClient(clientDto);
+                    // Обновляем данные клиента с актуальным балансом
+                    const updatedClient = await ClientController.getItem(clientDto.id);
+                    this.selectClient(updatedClient);
                 } catch (error) {
                     console.error('Ошибка при создании ClientDto:', error);
                 }

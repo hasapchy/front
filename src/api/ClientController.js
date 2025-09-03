@@ -10,28 +10,9 @@ export default class ClientController {
       const response = await api.get(`/clients/${id}`);
       const item = response.data.item || response.data;
       
-      // Парсим JSON данные телефонов и email'ов
-      let phones = [];
-      let emails = [];
-      
-      try {
-        if (item.phones_json) {
-          phones = JSON.parse(item.phones_json);
-        }
-        if (item.emails_json) {
-          emails = JSON.parse(item.emails_json);
-        }
-      } catch (e) {
-        console.warn('Ошибка парсинга JSON для клиента:', item.id, e);
-      }
-      
-      // Если JSON парсинг не сработал, пробуем получить данные напрямую
-      if (!phones || phones.length === 0) {
-        phones = item.phones || [];
-      }
-      if (!emails || emails.length === 0) {
-        emails = item.emails || [];
-      }
+      // Получаем данные телефонов и email'ов из Eloquent relationships
+      let phones = item.phones || [];
+      let emails = item.emails || [];
 
       return new ClientDto(
         item.id,
@@ -69,28 +50,9 @@ export default class ClientController {
       
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {
-        // Парсим JSON данные телефонов и email'ов
-        let phones = [];
-        let emails = [];
-        
-        try {
-          if (item.phones_json) {
-            phones = JSON.parse(item.phones_json);
-          }
-          if (item.emails_json) {
-            emails = JSON.parse(item.emails_json);
-          }
-        } catch (e) {
-          console.warn('Ошибка парсинга JSON для клиента:', item.id, e);
-        }
-        
-        // Если JSON парсинг не сработал, пробуем получить данные напрямую
-        if (!phones || phones.length === 0) {
-          phones = item.phones || [];
-        }
-        if (!emails || emails.length === 0) {
-          emails = item.emails || [];
-        }
+        // Получаем данные телефонов и email'ов из Eloquent relationships
+        let phones = item.phones || [];
+        let emails = item.emails || [];
 
         return new ClientDto(
           item.id,
@@ -135,21 +97,8 @@ export default class ClientController {
       
       // Преобразуем полученные данные в DTO для поиска (только необходимые поля)
       const items = data.map((item) => {
-        // Парсим JSON данные телефонов
-        let phones = [];
-        
-        try {
-          if (item.phones_json) {
-            phones = JSON.parse(item.phones_json);
-          }
-        } catch (e) {
-          console.warn('Ошибка парсинга JSON телефонов для клиента:', item.id, e);
-        }
-        
-        // Если JSON парсинг не сработал, пробуем получить данные напрямую
-        if (!phones || phones.length === 0) {
-          phones = item.phones || [];
-        }
+        // Получаем данные телефонов из Eloquent relationships
+        let phones = item.phones || [];
 
         return new ClientSearchDto(
           item.id,

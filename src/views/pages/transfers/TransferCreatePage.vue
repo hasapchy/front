@@ -8,7 +8,7 @@
                 <template v-if="allCashRegisters.length">
                     <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id"
                         :disabled="parent.id === cashIdTo">
-                        {{ parent.name }} ({{ parent.currency_symbol }})
+                        {{ parent.name }} ({{ parent.currency_symbol || parent.currency_code || '' }})
                     </option>
                 </template>
             </select>
@@ -20,7 +20,7 @@
                 <template v-if="allCashRegisters.length">
                     <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id"
                         :disabled="parent.id === cashIdFrom">
-                        {{ parent.name }} ({{ parent.currency_symbol }})
+                        {{ parent.name }} ({{ parent.currency_symbol || parent.currency_code || '' }})
                     </option>
                 </template>
             </select>

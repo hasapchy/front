@@ -251,6 +251,17 @@ export default {
             this.fetchBalanceHistory();
         }
     },
+    watch: {
+        // Отслеживаем изменения editingItem и обновляем баланс
+        'editingItem.id': {
+            handler(newId) {
+                if (newId) {
+                    this.fetchBalanceHistory();
+                }
+            },
+            immediate: false
+        }
+    },
     methods: {
         async fetchDefaultCurrency() {
             try {
@@ -266,14 +277,29 @@ export default {
             if (!this.editingItem || !this.editingItem.id) return;
             this.balanceLoading = true;
             try {
+                // Загружаем историю баланса
                 this.balanceHistory = await ClientController.getBalanceHistory(
                     this.editingItem.id
                 );
+                
+                // Обновляем текущий баланс клиента
+                await this.updateClientBalance();
             } catch (e) {
                 console.error("Ошибка при загрузке истории баланса:", e);
                 this.balanceHistory = [];
             } finally {
                 this.balanceLoading = false;
+            }
+        },
+        async updateClientBalance() {
+            if (!this.editingItem || !this.editingItem.id) return;
+            try {
+                const updatedClient = await ClientController.getItem(this.editingItem.id);
+                // Обновляем баланс в editingItem
+                this.editingItem.balance = updatedClient.balance;
+                console.log('Баланс клиента обновлен:', updatedClient.balance);
+            } catch (error) {
+                console.error('Ошибка при обновлении баланса клиента:', error);
             }
         },
         itemMapper(i, c) {

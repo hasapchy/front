@@ -58,6 +58,7 @@ api.interceptors.response.use(
           if (data && data.access_token) {
             // Обновляем заголовок и повторяем запрос
             error.config.headers.Authorization = `Bearer ${data.access_token}`;
+            console.log('=== RETRYING REQUEST WITH NEW TOKEN ===');
             return axios(error.config);
           }
         }
