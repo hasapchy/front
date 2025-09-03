@@ -29,14 +29,14 @@ export default class ClientSearchDto {
   }
 
   balanceNumeric() {
-    const balanceStr = this.balance.toString();
-    return parseFloat(balanceStr);
+    // Баланс теперь всегда приходит как число из API
+    return typeof this.balance === 'number' ? this.balance : 0;
   }
 
   balanceFormatted() {
-    const balanceStr = this.balance.toString();
-    const balanceFloat = parseFloat(balanceStr);
-    return balanceFloat.toFixed(2);
+    // Баланс теперь всегда приходит как число из API
+    const balance = typeof this.balance === 'number' ? this.balance : 0;
+    return balance.toFixed(2);
   }
 
   fullName() {
@@ -68,15 +68,8 @@ export default class ClientSearchDto {
   static fromApi(data) {
     if (!data) return null;
     
-    // Извлекаем значение balance из объекта или используем 0
-    let balanceValue = 0;
-    if (data.balance) {
-      if (typeof data.balance === 'object' && data.balance.balance) {
-        balanceValue = data.balance.balance;
-      } else if (typeof data.balance === 'string' || typeof data.balance === 'number') {
-        balanceValue = data.balance;
-      }
-    }
+    // Баланс теперь всегда приходит как число из API
+    const balanceValue = typeof data.balance === 'number' ? data.balance : 0;
     
     return new ClientSearchDto(
       data.id,

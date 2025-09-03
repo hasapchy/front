@@ -213,9 +213,9 @@ export default {
                     category_id: this.category_id,
                     unit_id: this.unit_id,
                     barcode: this.barcode,
-                    retail_price: this.retail_price,
-                    wholesale_price: this.wholesale_price,
-                    purchase_price: this.purchase_price,
+                    retail_price: parseFloat(this.retail_price) || 0,
+                    wholesale_price: parseFloat(this.wholesale_price) || 0,
+                    purchase_price: parseFloat(this.purchase_price) || 0,
                 };
                 if (this.editingItemId != null) {
                     // Если это WarehouseStockDto, используем productId для обновления товара
@@ -386,9 +386,9 @@ export default {
                     this.category_id = newEditingItem.category_id || newEditingItem.categoryId || '';
                     this.unit_id = newEditingItem.unit_id || newEditingItem.unitId || '';
                     this.barcode = newEditingItem.barcode || '';
-                    this.retail_price = newEditingItem.retail_price || 0;
-                    this.wholesale_price = newEditingItem.wholesale_price || 0;
-                    this.purchase_price = newEditingItem.purchase_price || 0;
+                    this.retail_price = newEditingItem.retail_price !== undefined ? newEditingItem.retail_price : 0;
+                    this.wholesale_price = newEditingItem.wholesale_price !== undefined ? newEditingItem.wholesale_price : 0;
+                    this.purchase_price = newEditingItem.purchase_price !== undefined ? newEditingItem.purchase_price : 0;
                     this.editingItemId = newEditingItem.id || newEditingItem.productId || null;
                 } else {
                     this.type = 'product';

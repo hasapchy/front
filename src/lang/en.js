@@ -26,6 +26,7 @@ export default {
   name: 'Name',
   email: 'E-mail',
   phone: 'Phone',
+  noPhone: 'No phone',
   address: 'Address',
   description: 'Description',
   price: 'Price',

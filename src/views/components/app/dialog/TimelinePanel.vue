@@ -43,7 +43,7 @@
                                     <!-- Заголовок с датой -->
                                     <div class="flex items-center justify-between mb-1">
                                         <span class="font-medium text-sm text-gray-900">
-                                            {{ item.user?.name || 'Система' }}
+                                            {{ item.user?.name || 'Система (автоматическая операция)' }}
                                         </span>
                                         <span class="text-xs text-gray-500">{{ formatTime(item.created_at) }}</span>
                                     </div>

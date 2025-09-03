@@ -192,10 +192,14 @@ export default {
     },
     computed: {
         balanceFormatted() {
-            return this.balance ? parseFloat(this.balance).toFixed(2) : "0.00";
+            // Баланс теперь всегда приходит как число из API
+            const balance = typeof this.balance === 'number' ? this.balance : 0;
+            return balance.toFixed(2);
         },
         budgetFormatted() {
-            return this.budget ? parseFloat(this.budget).toFixed(2) : "0.00";
+            // Бюджет теперь всегда приходит как число из API
+            const budget = typeof this.budget === 'number' ? this.budget : 0;
+            return budget.toFixed(2);
         },
     },
     async mounted() {

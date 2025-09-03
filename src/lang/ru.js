@@ -92,6 +92,7 @@ export default {
   name: 'Название',
   email: 'E-mail',
   phone: 'Телефон',
+  noPhone: 'Нет телефона',
   address: 'Адрес',
   description: 'Описание',
   price: 'Цена',

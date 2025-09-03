@@ -84,6 +84,7 @@ export default {
   name: 'Ady',
   email: 'E-mail',
   phone: 'Telefon',
+  noPhone: 'Telefon ýok',
   address: 'Salgy',
   description: 'Düşündiriş',
   price: 'Bahasy',

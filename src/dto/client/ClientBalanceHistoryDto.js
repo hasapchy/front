@@ -4,7 +4,7 @@ export default class ClientBalanceHistoryDto {
     this.source = source; // тип источника: 'sale', 'receipt', 'transaction', 'order'
     this.sourceId = sourceId; // ID записи
     this.date = date; // дата
-    this.amount = parseFloat(amount); // сумма со знаком
+    this.amount = typeof amount === 'number' ? amount : 0; // сумма со знаком
     this.description = description; // описание
   }
 
@@ -32,7 +32,7 @@ export default class ClientBalanceHistoryDto {
     }
   }
   formatAmountWithColor() {
-    const amount = parseFloat(this.amount ?? 0).toFixed(2);
+    const amount = Math.abs(this.amount).toFixed(2);
     const sign = this.amount >= 0 ? "+" : "-";
     const colorClass =
       this.amount >= 0

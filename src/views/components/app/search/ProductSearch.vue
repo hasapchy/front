@@ -52,10 +52,13 @@
                             {{ product.name }}
                         </div>
                         <div class="text-[#337AB7] text-sm">
-                            <template v-if="product.type === true">
+                            <template v-if="product.typeName && product.typeName() === 'product'">
+                                {{ product.stock_quantity }}
+                                {{ product.unit_short_name || product.unit_name || '' }}
+                                {{ $t('price') }} {{ product.retailPriceFormatted() }}m
                             </template>
                             <template v-else>
-                                ∞
+                                ∞{{ product.unit_short_name || product.unit_name || '' }} | {{ product.retailPriceFormatted() }}m
                             </template>
                         </div>
                     </div>
@@ -96,8 +99,17 @@
                 </tr>
             </thead>
             <tbody>
-                                 <tr v-for="(product, index) in products" :key="index" class="border-b border-gray-300">
-                     <td class="py-2 px-4 border-x border-gray-300">{{ product.productName || product.name }}</td>
+                                                 <tr v-for="(product, index) in products" :key="index" class="border-b border-gray-300">
+                    <td class="py-2 px-4 border-x border-gray-300">
+                        <div class="flex items-center">
+                            <div class="w-7 h-7 flex items-center justify-center mr-2">
+                                <img v-if="product.imgUrl && product.imgUrl()" :src="product.imgUrl()" alt="icon"
+                                    class="w-7 h-7 object-cover rounded" loading="lazy" />
+                                <span v-else v-html="product.icons ? product.icons() : getDefaultIcon(product)"></span>
+                            </div>
+                            {{ product.productName || product.name }}
+                        </div>
+                    </td>
                     <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
                         <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right"
                             :disabled="disabled" min="0.01" @input="updateTotals" />
@@ -440,6 +452,7 @@ export default {
                     price: newProduct.price,
                     description: newProduct.description,
                     unitId: newProduct.unitId,
+                    type: newProduct.type || 1, // По умолчанию товар
                     isTempProduct: true,
                     icons() { return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>'; }
                 };
@@ -457,6 +470,18 @@ export default {
         // Метод для сброса списка удаленных временных товаров
         resetRemovedTempProducts() {
             this.removedTempProducts = [];
+        },
+        // Метод для получения иконки по умолчанию
+        getDefaultIcon(product) {
+            // Проверяем, является ли товар временным
+            if (product.isTempProduct) {
+                return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>';
+            }
+            // Проверяем тип товара
+            const isProduct = product.type === 1 || product.type === '1' || product.type === true;
+            return isProduct
+                ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
+                : '<i class="fas fa-concierge-bell text-[#3571A4]" title="Услуга"></i>';
         },
     },
     watch: {

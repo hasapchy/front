@@ -4,10 +4,10 @@
         <div v-if="editingItem" class="mb-2 flex items-center gap-2">
             <span>{{ $t('finalBalance') }}:</span>
             <span :class="{
-                'text-[#5CB85C] font-bold': editingItem.balanceNumeric && editingItem.balanceNumeric() >= 0,
-                'text-[#EE4F47] font-bold': editingItem.balanceNumeric && editingItem.balanceNumeric() < 0
+                'text-[#5CB85C] font-bold': editingItem.balanceNumeric() >= 0,
+                'text-[#EE4F47] font-bold': editingItem.balanceNumeric() < 0
             }">
-                {{ editingItem.balanceFormatted ? editingItem.balanceFormatted() : "0.00" }} {{ currencyCode }}
+                {{ editingItem.balanceFormatted() }} {{ currencyCode }}
             </span>
         </div>
 
