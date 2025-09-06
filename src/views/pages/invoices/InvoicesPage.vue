@@ -1,0 +1,260 @@
+<template>
+    <div class="flex justify-between items-center mb-2">
+        <div class="flex items-center">
+            <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus">
+                {{ $t('addInvoice') }}
+            </PrimaryButton>
+            
+            
+            <!-- Фильтр по дате -->
+            <div class="ml-4">
+                <select v-model="dateFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
+                    <option value="all_time">{{ $t('allTime') }}</option>
+                    <option value="today">{{ $t('today') }}</option>
+                    <option value="yesterday">{{ $t('yesterday') }}</option>
+                    <option value="this_week">{{ $t('thisWeek') }}</option>
+                    <option value="this_month">{{ $t('thisMonth') }}</option>
+                    <option value="last_week">{{ $t('lastWeek') }}</option>
+                    <option value="last_month">{{ $t('lastMonth') }}</option>
+                    <option value="custom">{{ $t('selectDates') }}</option>
+                </select>
+            </div>
+            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-4">
+                <input type="date" v-model="startDate" @change="fetchItems" class="w-full p-2 border rounded" />
+                <input type="date" v-model="endDate" @change="fetchItems" class="w-full p-2 border rounded" />
+            </div>
+
+
+            <!-- Фильтр по статусу -->
+            <div class="ml-4">
+                <select v-model="statusFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
+                    <option value="">{{ $t('allStatuses') }}</option>
+                    <option value="new">{{ $t('new') }}</option>
+                    <option value="in_progress">{{ $t('inProgress') }}</option>
+                    <option value="paid">{{ $t('paid') }}</option>
+                    <option value="cancelled">{{ $t('cancelled') }}</option>
+                </select>
+            </div>
+
+            <!-- Кнопка сброса фильтров -->
+            <div class="ml-4">
+                <PrimaryButton 
+                    :onclick="resetFilters"
+                    icon="fas fa-times"
+                    :isLight="true">
+                    {{ $t('resetFilters') }}
+                </PrimaryButton>
+            </div>
+        </div>
+        <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" @changePage="fetchItems" />
+    </div>
+    
+    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+    
+    <transition name="fade" mode="out-in">
+        <div v-if="data && !loading" :key="`table-${$i18n.locale}`">
+            <DraggableTable table-key="admin.invoices" :columns-config="translatedColumnsConfig" :table-data="data.items"
+                :item-mapper="itemMapper" :onItemClick="(i) => showModal(i)" @selectionChange="selectedIds = $event" />
+        </div>
+        <div v-else key="loader" class="flex justify-center items-center h-64">
+            <i class="fas fa-spinner fa-spin text-2xl"></i>
+        </div>
+    </transition>
+    
+    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
+        <InvoiceCreatePage ref="invoicecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
+            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" 
+            :preselectedOrderIds="preselectedOrderIds" />
+    </SideModalDialog>
+
+    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
+        :is-danger="notificationIsDanger" @close="closeNotification" />
+    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
+          :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+</template>
+
+<script>
+import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
+import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import Pagination from "@/views/components/app/buttons/Pagination.vue";
+import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
+import InvoiceController from "@/api/InvoiceController";
+import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
+import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
+import { markRaw } from "vue";
+import BatchButton from "@/views/components/app/buttons/BatchButton.vue";
+import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import notificationMixin from "@/mixins/notificationMixin";
+import batchActionsMixin from "@/mixins/batchActionsMixin";
+import modalMixin from "@/mixins/modalMixin";
+import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
+import { defineAsyncComponent } from "vue";
+import { eventBus } from "@/eventBus";
+
+
+export default {
+    mixins: [getApiErrorMessage, notificationMixin, modalMixin, batchActionsMixin],
+    components: { 
+        NotificationToast, 
+        SideModalDialog, 
+        PrimaryButton, 
+        Pagination, 
+        DraggableTable, 
+        InvoiceCreatePage, 
+        ClientButtonCell, 
+        BatchButton, 
+        AlertDialog, 
+    },
+    data() {
+        return {
+            data: null,
+            loading: false,
+            selectedIds: [],
+            editingItem: null,
+            loadingDelete: false,
+            controller: InvoiceController,
+            columnsConfig: [
+                { name: 'select', label: '#', size: 15 },
+                { name: "id", label: "№", size: 20 },
+                { name: "invoiceNumber", label: 'invoiceNumber' },
+                { name: "invoiceDate", label: 'invoiceDate' },
+                { name: "client", label: 'client', component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, }), },
+                { name: "status", label: 'status', html: true },
+                { name: "products", label: 'products', html: true },
+                { name: "totalAmount", label: 'amount' },
+                { name: "ordersCount", label: 'ordersCount' },
+                { name: "note", label: 'note' },
+            ],
+            dateFilter: 'all_time',
+            startDate: null,
+            endDate: null,
+            statusFilter: '',
+            preselectedOrderIds: []
+        };
+    },
+    created() {
+        this.fetchItems();
+        this.$store.commit("SET_SETTINGS_OPEN", false);
+        
+        // Слушаем события поиска через eventBus
+        eventBus.on('global-search', this.handleSearch);
+        
+        // Проверяем, нужно ли создать счет из заказов
+        if (this.$route.query.create === 'true' && this.$route.query.order_ids) {
+            this.preselectedOrderIds = this.$route.query.order_ids.split(',').map(id => parseInt(id));
+            this.$nextTick(() => {
+                this.showModal(null);
+            });
+        }
+        
+    },
+
+    beforeUnmount() {
+        // Удаляем слушатель события
+        eventBus.off('global-search', this.handleSearch);
+    },
+
+    computed: {
+        searchQuery() {
+            return this.$store.state.searchQuery;
+        },
+        translatedColumnsConfig() {
+            return this.columnsConfig.map(column => ({
+                ...column,
+                label: column.label === '#' || column.label === '№' ? column.label : this.$t(column.label)
+            }));
+        }
+    },
+    methods: {
+        itemMapper(i, c) {
+            switch (c) {
+                case "products":
+                    return i.productsHtmlList();
+                case "invoiceDate":
+                    return i.formatDate();
+                case "client":
+                    if (!i.client) return '<span class="text-gray-500">' + this.$t('notSpecified') + '</span>';
+                    const name = i.client.fullName();
+                    const phone = i.client.phones?.[0]?.phone;
+                    return phone ? `<div>${name} (<span>${phone}</span>)</div>` : name;
+                case "status":
+                    return `<span class="px-2 py-1 rounded text-xs ${i.getStatusClass()}">${i.getStatusLabel()}</span>`;
+                case "totalAmount":
+                    return i.amountInfo();
+                case "ordersCount":
+                    return i.getOrdersCount();
+                case "note":
+                    return i.note || "";
+
+                default:
+                    return i[c];
+            }
+        },
+        handleModalClose() {
+            // Проверяем, есть ли изменения в форме
+            const formRef = this.$refs.invoicecreatepageForm;
+            if (formRef && formRef.handleCloseRequest) {
+                formRef.handleCloseRequest();
+            } else {
+                this.closeModal();
+            }
+        },
+
+        handleSearch(query) {
+            // Обновляем store напрямую
+            this.$store.dispatch('setSearchQuery', query);
+            this.fetchItems(1, false);
+        },
+        async fetchItems(page = 1, silent = false) {
+            if (!silent) this.loading = true;
+            try {
+                const newData = await InvoiceController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, null, this.statusFilter);
+                this.data = newData;
+            } catch (error) {
+                this.showNotification(this.$t('errorGettingInvoiceList'), error.message, true);
+            }
+            if (!silent) this.loading = false;
+        },
+
+        handleSaved() {
+            this.showNotification(this.$t('invoiceSaved'), "", false);
+            this.fetchItems(this.data.currentPage, true);
+            this.closeModal();
+        },
+
+        handleSavedError(err) {
+            this.showNotification(this.$t('errorSavingInvoice'), err, true);
+        },
+
+        handleDeleted() {
+            this.showNotification(this.$t('invoiceDeleted'), "", false);
+            this.fetchItems(this.data.currentPage, true);
+            this.closeModal();
+        },
+
+        handleDeletedError(err) {
+            this.showNotification(this.$t('errorDeletingInvoice'), err, true);
+        },
+
+
+
+        showModal(item) {
+            this.editingItem = item;
+            this.modalDialog = true;
+        },
+        closeModal() {
+            this.modalDialog = false;
+            this.editingItem = null;
+        },
+        resetFilters() {
+            this.dateFilter = 'all_time';
+            this.startDate = '';
+            this.endDate = '';
+            this.statusFilter = '';
+            this.fetchItems();
+        },
+
+    }
+};
+</script>

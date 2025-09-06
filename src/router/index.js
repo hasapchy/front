@@ -21,6 +21,7 @@ import OrdersPage from "@/views/pages/orders/OrdersPage.vue";
 import OrderStatusesPage from "@/views/pages/orders/OrderStatusesPage.vue";
 import OrderCategoriesPage from "@/views/pages/orders/OrderCategoriesPage.vue";
 import OrderAdditionalFieldsPage from "@/views/pages/orders/OrderAdditionalFieldsPage.vue";
+import InvoicesPage from "@/views/pages/invoices/InvoicesPage.vue";
 import UsersPage from "@/views/pages/users/UsersPage.vue";
 import SystemSettingsPage from "@/views/pages/settings/SystemSettingsPage.vue";
 
@@ -53,6 +54,17 @@ const routes = [
         name: "Orders",
         component: OrdersPage,
         meta: { title: "orders", requiresAuth: true, showSearch: true },
+      },
+      {
+        path: "/invoices",
+        name: "Invoices",
+        component: InvoicesPage,
+        meta: { 
+          title: "invoices", 
+          requiresAuth: true, 
+          showSearch: true,
+          permission: "invoices_view"
+        },
       },
       {
         path: "/transactions",

@@ -77,6 +77,21 @@
         </template>
     </SideModalDialog>
 
+    <!-- Модальное окно для создания счета -->
+    <SideModalDialog :showForm="invoiceModalDialog" :onclose="handleInvoiceModalClose">
+        <InvoiceCreatePage 
+            ref="invoiceCreateForm" 
+            @saved="handleInvoiceSaved" 
+            @saved-error="handleInvoiceSavedError"
+            @close-request="closeInvoiceModal" 
+            :preselectedOrderIds="selectedIds"
+        />
+        <!-- Debug info -->
+        <div v-if="selectedIds.length > 0" class="p-2 bg-yellow-100 text-xs">
+            Debug: Передаем заказы: {{ selectedIds.join(', ') }}
+        </div>
+    </SideModalDialog>
+
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
             <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
@@ -91,6 +106,7 @@ import Pagination from "@/views/components/app/buttons/Pagination.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import OrderController from "@/api/OrderController";
 import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
+import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
 import OrderStatusController from "@/api/OrderStatusController";
 import { markRaw } from "vue";
@@ -112,7 +128,7 @@ const TimelinePanel = defineAsyncComponent(() =>
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, modalMixin, batchActionsMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, CheckboxFilter, OrderPaymentFilter },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, InvoiceCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, CheckboxFilter, OrderPaymentFilter },
     data() {
         return {
             data: null,
@@ -122,6 +138,7 @@ export default {
             showBatchStatusSelect: false,
             timelineCollapsed: true, // По умолчанию таймлайн свернут
             editingItem: null, // Добавлено для SideModalDialog и OrderCreatePage
+            invoiceModalDialog: false, // Модальное окно для создания счета
             loadingDelete: false,
             controller: OrderController,
             columnsConfig: [
@@ -337,6 +354,61 @@ export default {
         handlePaidOrdersFilterChange(isActive) {
             this.paidOrdersFilter = isActive;
             this.fetchItems();
+        },
+
+        createInvoiceFromOrders() {
+            if (this.selectedIds.length === 0) {
+                this.showNotification(this.$t('error'), this.$t('selectOrdersFirst'), true);
+                return;
+            }
+            
+            // Открываем модальное окно создания счета
+            this.invoiceModalDialog = true;
+        },
+
+        getBatchActions() {
+            return [
+                {
+                    label: this.$t('createInvoice'),
+                    icon: "fas fa-file-invoice",
+                    type: "info",
+                    action: this.createInvoiceFromOrders,
+                    disabled: false,
+                },
+                {
+                    label: this.$t('delete'),
+                    icon: "fas fa-trash",
+                    type: "danger",
+                    action: this.deleteItems,
+                    disabled: this.loadingBatch,
+                },
+                {
+                    label: this.$t('changeStatus'), 
+                    icon: "fas fa-edit",
+                    type: "light",
+                    action: null, 
+                    render: true, 
+                },
+            ];
+        },
+
+        // Методы для модального окна счета
+        handleInvoiceModalClose() {
+            this.invoiceModalDialog = false;
+        },
+
+        closeInvoiceModal() {
+            this.invoiceModalDialog = false;
+        },
+
+        handleInvoiceSaved() {
+            this.showNotification(this.$t('success'), this.$t('invoiceCreated'), false);
+            this.invoiceModalDialog = false;
+            this.selectedIds = []; // Очищаем выбранные заказы
+        },
+
+        handleInvoiceSavedError(error) {
+            this.showNotification(this.$t('error'), error, true);
         }
     }
 };

@@ -1,4 +1,5 @@
 import { createStore } from "vuex";
+import api from "@/api/axiosInstance";
 
 export default createStore({
   state: {
@@ -14,6 +15,8 @@ export default createStore({
     notificationTimeoutId: null, // ID таймера для возможности отмены
     isLoading: true, // Состояние загрузки для блокировки навигации
     activeApiCalls: 0, // Счетчик активных API вызовов
+    units: [], // Единицы измерения
+    currencies: [], // Валюты
     tokenInfo: {
       accessTokenExpiresAt: null,
       refreshTokenExpiresAt: null,
@@ -67,6 +70,12 @@ export default createStore({
       state.tokenInfo.accessTokenExpiresAt = accessTokenExpiresAt;
       state.tokenInfo.refreshTokenExpiresAt = refreshTokenExpiresAt;
       state.tokenInfo.needsRefresh = false;
+    },
+    SET_UNITS(state, units) {
+      state.units = units;
+    },
+    SET_CURRENCIES(state, currencies) {
+      state.currencies = currencies;
     },
   },
 
@@ -149,6 +158,22 @@ export default createStore({
         });
       }
     },
+    async loadUnits({ commit }) {
+      try {
+        const response = await api.get('/app/units');
+        commit('SET_UNITS', response.data);
+      } catch (error) {
+        console.error('Ошибка загрузки единиц измерения:', error);
+      }
+    },
+    async loadCurrencies({ commit }) {
+      try {
+        const response = await api.get('/app/currency');
+        commit('SET_CURRENCIES', response.data);
+      } catch (error) {
+        console.error('Ошибка загрузки валют:', error);
+      }
+    },
   },
 
   getters: {
@@ -174,6 +199,22 @@ export default createStore({
       if (!state.tokenInfo.refreshTokenExpiresAt) return 0;
       const timeLeft = state.tokenInfo.refreshTokenExpiresAt - Date.now();
       return Math.max(0, Math.floor(timeLeft / (24 * 60 * 60 * 1000)));
+    },
+    units: (state) => state.units,
+    currencies: (state) => state.currencies,
+    getUnitById: (state) => (id) => state.units.find(unit => unit.id === id),
+    getUnitName: (state) => (id) => {
+      const unit = state.units.find(unit => unit.id === id);
+      return unit ? unit.name : '';
+    },
+    getUnitShortName: (state) => (id) => {
+      const unit = state.units.find(unit => unit.id === id);
+      return unit ? unit.short_name : '';
+    },
+    getCurrencyById: (state) => (id) => state.currencies.find(currency => currency.id === id),
+    getCurrencySymbol: (state) => (id) => {
+      const currency = state.currencies.find(currency => currency.id === id);
+      return currency ? currency.symbol : 'TMT';
     },
   },
 });

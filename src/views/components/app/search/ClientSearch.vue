@@ -51,12 +51,12 @@
                 <div class="flex justify-between items-center">
                     <div>
                         <label class="required">{{ $t('client') }}</label>
-                        <p><span class="font-semibold text-sm">{{ $t('name') }}:</span> {{ selectedClient.fullName() }}</p>
-                        <p><span class="font-semibold text-sm">{{ $t('phone') }}:</span> {{ selectedClient.phones[0]?.phone || $t('noPhone') }}</p>
+                        <p><span class="font-semibold text-sm">{{ $t('name') }}:</span> {{ clientFullName }}</p>
+                        <p><span class="font-semibold text-sm">{{ $t('phone') }}:</span> {{ clientPhones[0]?.phone || $t('noPhone') }}</p>
                         <p><span class="font-semibold text-sm">{{ $t('balance') }}:</span>
                             <span
                                 :class="selectedClient.balance == 0 ? 'text-[#337AB7]' : selectedClient.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
-                                {{ selectedClient.balanceFormatted() }}
+                                {{ clientBalance }}
                                 <span v-if="selectedClient.balance > 0">({{ $t('clientOwesUs') }})</span>
                                 <span v-else-if="selectedClient.balance < 0">({{ $t('weOweClient') }})</span>
                                 <span v-else>({{ $t('mutualSettlement') }})</span>
@@ -118,6 +118,34 @@ export default {
             modalCreateClient: false,
             defaultClientName: '',
         };
+    },
+    computed: {
+        clientFullName() {
+            if (!this.selectedClient) return '';
+            if (typeof this.selectedClient.fullName === 'function') {
+                return this.selectedClient.fullName();
+            }
+            // Fallback для обычных объектов
+            const contactPerson = this.selectedClient.contactPerson || this.selectedClient.contact_person;
+            const firstName = this.selectedClient.firstName || this.selectedClient.first_name || '';
+            const lastName = this.selectedClient.lastName || this.selectedClient.last_name || '';
+            return contactPerson
+                ? `${firstName} ${lastName} (${contactPerson})`
+                : `${firstName} ${lastName}`;
+        },
+        clientBalance() {
+            if (!this.selectedClient) return 0;
+            if (typeof this.selectedClient.balanceFormatted === 'function') {
+                return this.selectedClient.balanceFormatted();
+            }
+            // Fallback для обычных объектов
+            const balance = this.selectedClient.balance || this.selectedClient.balance_amount || 0;
+            return parseFloat(balance).toFixed(2);
+        },
+        clientPhones() {
+            if (!this.selectedClient) return [];
+            return this.selectedClient.phones || [];
+        }
     },
     created() {
         this.fetchLastClients();
