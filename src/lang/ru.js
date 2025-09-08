@@ -466,6 +466,8 @@ export default {
   // Пользователи
   userPermissions: 'Права доступа',
   password: 'Пароль',
+  newPassword: 'Новый пароль',
+  enterNewPassword: 'Введите новый пароль',
   position: 'Должность',
   information: 'Информация',
   permissions: 'Права',

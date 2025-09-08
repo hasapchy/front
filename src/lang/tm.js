@@ -451,6 +451,8 @@ export default {
   // Пользователи
   userPermissions: 'Ulanyjy giriş hukuklary',
   password: 'Açarsöz',
+  newPassword: 'Täze açarsöz',
+  enterNewPassword: 'Täze açarsöz giriziň',
   position: 'Wezipesi',
   information: 'Maglumat',
   permissions: 'Hukuklar',

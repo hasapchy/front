@@ -76,5 +76,11 @@ export default {
   enterCompanyEmail: 'Enter company email',
   enterCompanyPhone: 'Enter company phone',
   settingsSavedSuccessfully: 'Settings saved successfully',
-  noPermissionSettings: 'No permission to modify settings'
+  noPermissionSettings: 'No permission to modify settings',
+  
+  // Users
+  password: 'Password',
+  newPassword: 'New Password',
+  enterNewPassword: 'Enter new password',
+  position: 'Position'
 }

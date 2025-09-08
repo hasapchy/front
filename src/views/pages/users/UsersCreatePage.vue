@@ -23,6 +23,11 @@
                     <input type="password" v-model="form.password" />
                 </div>
 
+                <div class="mb-4" v-if="editingItem">
+                    <label>{{ $t('newPassword') }}</label>
+                    <input type="password" v-model="form.newPassword" :placeholder="$t('enterNewPassword')" />
+                </div>
+
                 <div class="mb-4">
                     <label>{{ $t('position') }}</label>
                     <input type="text" v-model="form.position" />
@@ -114,6 +119,7 @@ export default {
                 name: '',
                 email: '',
                 password: '',
+                newPassword: '',
                 position: '',
                 permissions: [],
             },
@@ -185,6 +191,7 @@ export default {
                 name: this.form.name,
                 email: this.form.email,
                 password: this.form.password,
+                newPassword: this.form.newPassword,
                 position: this.form.position,
                 permissions: [...this.form.permissions]
             };
@@ -196,6 +203,7 @@ export default {
             this.form.name = '';
             this.form.email = '';
             this.form.password = '';
+            this.form.newPassword = '';
             this.form.position = '';
             this.form.permissions = [];
             this.editingItemId = null;
@@ -247,7 +255,20 @@ export default {
                 let savedUser;
 
                 if (this.editingItemId) {
-                    savedUser = await UsersController.updateItem(this.editingItemId, this.form);
+                    // При редактировании отправляем только заполненные поля
+                    const updateData = {
+                        name: this.form.name,
+                        email: this.form.email,
+                        position: this.form.position,
+                        permissions: this.form.permissions
+                    };
+                    
+                    // Добавляем новый пароль только если он заполнен
+                    if (this.form.newPassword) {
+                        updateData.password = this.form.newPassword;
+                    }
+                    
+                    savedUser = await UsersController.updateItem(this.editingItemId, updateData);
                 } else {
                     savedUser = await UsersController.storeItem(this.form);
                 }
