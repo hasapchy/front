@@ -21,6 +21,14 @@
       <div v-if="!Array.isArray(tableSizes) || tableSizes.length === 0" class="mb-4 p-3 bg-yellow-100 rounded text-yellow-700">
         <div class="font-medium">Данные о размерах таблиц недоступны</div>
         <div>Попробуйте обновить данные или проверьте права доступа к базе данных</div>
+        <div class="mt-2">
+          <button 
+            @click="refreshTableSizes"
+            class="text-sm text-yellow-600 hover:text-yellow-800 underline"
+          >
+            Попробовать снова
+          </button>
+        </div>
       </div>
       
       <div v-if="Array.isArray(tableSizes) && tableSizes.length > 0" class="overflow-x-auto">
@@ -72,6 +80,12 @@ export default {
       loading: false,
       error: null
     };
+  },
+  async mounted() {
+    // Автоматически загружаем данные при монтировании, если их нет
+    if (!this.tableSizes || this.tableSizes.length === 0) {
+      await this.refreshTableSizes();
+    }
   },
   methods: {
     async refreshTableSizes() {

@@ -156,8 +156,6 @@
     <CacheComponent />
     
     <ServerLogsComponent />
-    
-    <SlowQueriesComponent :slow-queries="metrics.slow_queries" />
 
 
 
@@ -193,7 +191,6 @@ import PerformanceMetricsComponent from '@/views/components/performance/Performa
 import TableSizesComponent from '@/views/components/performance/TableSizesComponent.vue';
 import CacheComponent from '@/views/components/performance/CacheComponent.vue';
 import ServerLogsComponent from '@/views/components/performance/ServerLogsComponent.vue';
-import SlowQueriesComponent from '@/views/components/performance/SlowQueriesComponent.vue';
 
 export default {
   name: 'PerformanceMonitorPage',
@@ -204,8 +201,7 @@ export default {
     PerformanceMetricsComponent,
     TableSizesComponent,
     CacheComponent,
-    ServerLogsComponent,
-    SlowQueriesComponent
+    ServerLogsComponent
   },
   data() {
     return {
