@@ -130,14 +130,29 @@ export default {
         };
     },
     created() {
-        this.fetchAllWarehouses();
-        this.fetchAllProjects();
         this.fetchCurrencies();
-        this.fetchAllCashRegisters();
     },
     mounted() {
-        // Сохраняем начальное состояние после монтирования компонента
-        this.$nextTick(() => {
+        // Сохраняем начальное состояние после загрузки всех данных
+        this.$nextTick(async () => {
+            // Ждем загрузки всех необходимых данных
+            await Promise.all([
+                this.fetchAllWarehouses(),
+                this.fetchAllProjects(),
+                this.fetchAllCashRegisters()
+            ]);
+            
+            // Устанавливаем значения по умолчанию если это новая продажа
+            if (!this.editingItem) {
+                if (this.allWarehouses.length > 0 && !this.warehouseId) {
+                    this.warehouseId = this.allWarehouses[0].id;
+                }
+                if (this.allCashRegisters.length > 0 && !this.cashId) {
+                    this.cashId = this.allCashRegisters[0].id;
+                }
+            }
+            
+            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },
@@ -207,9 +222,6 @@ export default {
         },
         async fetchAllCashRegisters() {
             this.allCashRegisters = await CashRegisterController.getAllItems();
-            if (this.allCashRegisters.length && !this.cashId && !this.editingItem) {
-                this.cashId = this.allCashRegisters[0].id;
-            }
         },
         async save() {
             this.saveLoading = true;

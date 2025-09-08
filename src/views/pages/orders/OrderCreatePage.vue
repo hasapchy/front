@@ -231,11 +231,8 @@ export default {
         };
     },
     created() {
-        this.fetchAllWarehouses();
         this.fetchAllProjects();
-        this.fetchAllCategories();
         this.fetchCurrencies();
-        this.fetchAllCashRegisters();
         this.fetchOrderStatuses();
     },
     mounted() {
@@ -251,8 +248,34 @@ export default {
             this.handleEditingItemChange(this.editingItem);
         }
         
-        // Сохраняем начальное состояние после монтирования компонента
-        this.$nextTick(() => {
+        // Сохраняем начальное состояние после загрузки всех данных
+        this.$nextTick(async () => {
+            // Ждем загрузки всех необходимых данных
+            await Promise.all([
+                this.fetchAllWarehouses(),
+                this.fetchAllCategories(),
+                this.fetchAllCashRegisters()
+            ]);
+            
+            // Устанавливаем значения по умолчанию если это новый заказ
+            if (!this.editingItem) {
+                if (this.allWarehouses.length > 0 && !this.warehouseId) {
+                    this.warehouseId = this.allWarehouses[0].id;
+                }
+                if (this.allCategories.length > 0 && !this.categoryId) {
+                    this.categoryId = this.allCategories[0].id;
+                }
+                if (this.allCashRegisters.length > 0 && !this.cashId) {
+                    this.cashId = this.allCashRegisters[0].id;
+                }
+                
+                // Загружаем дополнительные поля для выбранной категории
+                if (this.categoryId) {
+                    await this.loadAdditionalFields(this.categoryId, false);
+                }
+            }
+            
+            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },
@@ -357,9 +380,6 @@ export default {
         },
         async fetchAllWarehouses() {
             this.allWarehouses = await WarehouseController.getAllItems();
-            if (!this.editingItem && this.allWarehouses.length) {
-                this.warehouseId = this.allWarehouses[0].id;
-            }
         },
         async fetchAllProjects() {
             try {
@@ -371,15 +391,6 @@ export default {
         async fetchAllCategories() {
             try {
                 this.allCategories = await OrderCategoryController.getAllItems();
-                
-                if (!this.editingItem && this.allCategories.length) {
-                    this.categoryId = this.allCategories[0].id;
-                }
-                
-                // Принудительно вызываем загрузку дополнительных полей для текущей категории
-                if (this.categoryId) {
-                    this.loadAdditionalFields(this.categoryId, false);
-                }
             } catch (error) {
                 console.error('fetchAllCategories: ошибка:', error);
                 this.allCategories = [];
@@ -390,9 +401,6 @@ export default {
         },
         async fetchAllCashRegisters() {
             this.allCashRegisters = await CashRegisterController.getAllItems();
-            if (this.allCashRegisters.length && !this.cashId && !this.defaultCashId) {
-                this.cashId = this.allCashRegisters[0].id;
-            }
         },
         async fetchOrderStatuses() {
             this.statuses = await OrderStatusController.getAllItems();
@@ -682,6 +690,7 @@ export default {
             this.removedTempProducts = []; // Сбрасываем список удаленных временных товаров
             this.additionalFields = []; // Очищаем дополнительные поля
             this.additionalFieldValues = {}; // Очищаем значения дополнительных полей
+            this.resetFormInitialization(); // Сбрасываем флаг инициализации
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {

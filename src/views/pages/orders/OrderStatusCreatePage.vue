@@ -69,8 +69,15 @@ export default {
             modalDialog: false
         }
     },
-    created() {
-        this.fetchAllCategories();
+    mounted() {
+        // Сохраняем начальное состояние после загрузки всех данных
+        this.$nextTick(async () => {
+            // Ждем загрузки всех необходимых данных
+            await this.fetchAllCategories();
+            
+            // Теперь сохраняем начальное состояние
+            this.saveInitialState();
+        });
     },
     methods: {
                 // Переопределяем метод getFormState из миксина

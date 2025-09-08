@@ -118,9 +118,27 @@ export default {
         }
     },
     created() {
-        this.fetchAllWarehouses();
         this.fetchCurrencies();
-        this.fetchAllCashRegisters();
+    },
+    mounted() {
+        // Сохраняем начальное состояние после загрузки всех данных
+        this.$nextTick(async () => {
+            // Ждем загрузки всех необходимых данных
+            await Promise.all([
+                this.fetchAllWarehouses(),
+                this.fetchAllCashRegisters()
+            ]);
+            
+            // Устанавливаем значения по умолчанию если это новая поступление
+            if (!this.editingItem) {
+                if (this.allWarehouses.length > 0 && !this.warehouseId) {
+                    this.warehouseId = this.allWarehouses[0].id;
+                }
+            }
+            
+            // Теперь сохраняем начальное состояние
+            this.saveInitialState();
+        });
     },
     methods: {
         

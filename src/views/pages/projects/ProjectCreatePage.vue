@@ -183,18 +183,20 @@ export default {
 
     },
     created() {
-        this.fetchUsers()
-    },
-    mounted() {
-        // Сохраняем начальное состояние после монтирования компонента
-        this.$nextTick(() => {
-            this.saveInitialState();
-        });
-        
         // Добавляем глобальную функцию для удаления файлов
         window.deleteFile = (filePath) => {
             this.showDeleteFileDialog(filePath);
         };
+    },
+    mounted() {
+        // Сохраняем начальное состояние после загрузки всех данных
+        this.$nextTick(async () => {
+            // Ждем загрузки всех необходимых данных
+            await this.fetchUsers();
+            
+            // Теперь сохраняем начальное состояние
+            this.saveInitialState();
+        });
     },
     methods: {
         changeTab(tabName) {

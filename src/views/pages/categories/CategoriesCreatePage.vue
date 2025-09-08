@@ -77,11 +77,14 @@ export default {
     },
     created() {
         this.fetchUsers();
-        this.fetchAllCategories();
     },
     mounted() {
-        // Сохраняем начальное состояние после монтирования компонента
-        this.$nextTick(() => {
+        // Сохраняем начальное состояние после загрузки всех данных
+        this.$nextTick(async () => {
+            // Ждем загрузки всех необходимых данных
+            await this.fetchAllCategories();
+            
+            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },

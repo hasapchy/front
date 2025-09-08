@@ -174,10 +174,19 @@ export default {
             modalDialog: false,
         }
     },
-    created() {
-        this.fetchUnits();
-        this.fetchCurrencies();
-        this.fetchAllCategories();
+    mounted() {
+        // Сохраняем начальное состояние после загрузки всех данных
+        this.$nextTick(async () => {
+            // Ждем загрузки всех необходимых данных
+            await Promise.all([
+                this.fetchUnits(),
+                this.fetchCurrencies(),
+                this.fetchAllCategories()
+            ]);
+            
+            // Теперь сохраняем начальное состояние
+            this.saveInitialState();
+        });
     },
     computed: {
         selectedUnit() {

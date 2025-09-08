@@ -87,12 +87,18 @@ export default {
         }
     },
     created() {
-        this.fetchUsers();
-        this.fetchCurrencies();
+        // Инициализация без загрузки данных
     },
     mounted() {
-        // Сохраняем начальное состояние после монтирования компонента
-        this.$nextTick(() => {
+        // Сохраняем начальное состояние после загрузки всех данных
+        this.$nextTick(async () => {
+            // Ждем загрузки всех необходимых данных
+            await Promise.all([
+                this.fetchUsers(),
+                this.fetchCurrencies()
+            ]);
+            
+            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },

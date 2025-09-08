@@ -91,11 +91,26 @@ export default {
     },
     created() {
         this.fetchCurrencies();
-        this.fetchAllCashRegisters();
     },
     mounted() {
-        // Сохраняем начальное состояние после монтирования компонента
-        this.$nextTick(() => {
+        // Сохраняем начальное состояние после загрузки всех данных
+        this.$nextTick(async () => {
+            // Ждем загрузки всех необходимых данных
+            await this.fetchAllCashRegisters();
+            
+            // Устанавливаем значения по умолчанию если это новый перевод
+            if (!this.editingItem) {
+                if (this.allCashRegisters.length > 0) {
+                    if (!this.cashIdFrom) {
+                        this.cashIdFrom = this.allCashRegisters[0].id;
+                    }
+                    if (!this.cashIdTo && this.allCashRegisters.length > 1) {
+                        this.cashIdTo = this.allCashRegisters[1].id;
+                    }
+                }
+            }
+            
+            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },

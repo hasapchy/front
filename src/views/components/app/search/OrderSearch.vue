@@ -79,7 +79,7 @@
                         {{ order.formatDate() }}
                     </td>
                     <td class="py-2 px-4 border-x border-gray-300">
-                        {{ order.priceInfo() }} {{ currencySymbol || 'TMT' }}
+                        {{ order.priceInfo() }} {{ currencySymbol || defaultCurrencySymbol }}
                     </td>
                     <td v-if="!readonly" class="px-4 border-x border-gray-300">
                         <button @click="removeSelectedOrder(order.id)"
@@ -124,11 +124,11 @@
                             <div class="flex items-center space-x-2">
                                 <input v-if="!readonly" type="number" v-model.number="product.price" class="w-full p-1 text-right"
                                     :disabled="disabled" min="0.01" @input="updateTotals" />
-                                <span v-else>{{ product.price }} {{ currencySymbol || 'TMT' }}</span>
+                                <span v-else>{{ product.price }} {{ currencySymbol || defaultCurrencySymbol }}</span>
                             </div>
                         </td>
                         <td class="py-2 px-4 border-x border-gray-300">
-                            #{{ product.orderId }}
+                            #{{ product.orderId || 'N/A' }}
                         </td>
                         <td v-if="!readonly" class="px-4 border-x border-gray-300">
                             <button @click="removeProductFromOrder(product.productId, product.orderId)"
@@ -142,7 +142,7 @@
                     <tr class="bg-gray-50 font-medium">
                         <td :colspan="3" class="py-2 px-4 text-right">{{ $t('subtotal') }}</td>
                         <td class="py-2 px-4 text-right">
-                            {{ subtotal.toFixed(2) }} <span class="ml-1">{{ currencySymbol || 'TMT' }}</span>
+                            {{ subtotal.toFixed(2) }} <span class="ml-1">{{ currencySymbol || defaultCurrencySymbol }}</span>
                         </td>
                         <td></td>
                     </tr>
@@ -194,6 +194,12 @@ export default {
     computed: {
         subtotal() {
             return this.allProductsFromOrders.reduce((sum, p) => sum + (Number(p.price) || 0) * (Number(p.quantity) || 0), 0);
+        },
+        defaultCurrencySymbol() {
+            // Получаем дефолтную валюту из store
+            const currencies = this.$store.state.currencies || [];
+            const defaultCurrency = currencies.find(c => c.is_default);
+            return defaultCurrency ? defaultCurrency.symbol : 'TMT';
         }
     },
     watch: {

@@ -59,5 +59,22 @@ export default {
   orderAmount: 'Order Amount',
   dateUser: 'Date/User',
   client: 'Client',
-  notSpecified: 'Not specified'
+  notSpecified: 'Not specified',
+  
+  // Company settings
+  companyName: 'Company Name',
+  companyLogo: 'Company Logo',
+  companyAddress: 'Company Address',
+  companyTaxId: 'Tax ID',
+  companyWarehouseId: 'Warehouse ID',
+  companyEmail: 'Company Email',
+  companyPhone: 'Company Phone',
+  enterCompanyName: 'Enter company name',
+  enterCompanyAddress: 'Enter company address',
+  enterCompanyTaxId: 'Enter tax ID',
+  enterCompanyWarehouseId: 'Enter warehouse ID',
+  enterCompanyEmail: 'Enter company email',
+  enterCompanyPhone: 'Enter company phone',
+  settingsSavedSuccessfully: 'Settings saved successfully',
+  noPermissionSettings: 'No permission to modify settings'
 }

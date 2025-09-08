@@ -166,21 +166,28 @@ export default {
     },
     created() {
         this.fetchCurrencies();
-        this.fetchAllCategories();
-        this.fetchAllProjects();
-        this.fetchAllCashRegisters();
-        if (!this.editingItem) {
-            if (this.initialClient) {
-                this.selectedClient = this.initialClient;
-            }
-            if (this.initialProjectId) {
-                this.projectId = this.initialProjectId;
-            }
-        }
     },
     mounted() {
-        // Сохраняем начальное состояние после монтирования компонента
-        this.$nextTick(() => {
+        // Сохраняем начальное состояние после загрузки всех данных
+        this.$nextTick(async () => {
+            // Ждем загрузки всех необходимых данных
+            await Promise.all([
+                this.fetchAllCategories(),
+                this.fetchAllProjects(),
+                this.fetchAllCashRegisters()
+            ]);
+            
+            // Устанавливаем начальные значения если это новая транзакция
+            if (!this.editingItem) {
+                if (this.initialClient) {
+                    this.selectedClient = this.initialClient;
+                }
+                if (this.initialProjectId) {
+                    this.projectId = this.initialProjectId;
+                }
+            }
+            
+            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },

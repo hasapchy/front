@@ -91,8 +91,27 @@ export default {
             allWarehouses: [],
         }
     },
-    created() {
-        this.fetchAllWarehouses();
+    mounted() {
+        // Сохраняем начальное состояние после загрузки всех данных
+        this.$nextTick(async () => {
+            // Ждем загрузки всех необходимых данных
+            await this.fetchAllWarehouses();
+            
+            // Устанавливаем значения по умолчанию если это новое перемещение
+            if (!this.editingItem) {
+                if (this.allWarehouses.length > 0) {
+                    if (!this.fromWarehouseId) {
+                        this.fromWarehouseId = this.allWarehouses[0].id;
+                    }
+                    if (!this.toWarehouseId && this.allWarehouses.length > 1) {
+                        this.toWarehouseId = this.allWarehouses[1].id;
+                    }
+                }
+            }
+            
+            // Теперь сохраняем начальное состояние
+            this.saveInitialState();
+        });
     },
     methods: {
                 // Переопределяем метод getFormState из миксина

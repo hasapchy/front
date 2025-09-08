@@ -4,6 +4,7 @@ export default {
       // Состояние для отслеживания изменений
       initialFormState: null,
       closeConfirmDialog: false,
+      isFormInitialized: false, // Флаг инициализации формы
     };
   },
   mounted() {
@@ -20,6 +21,7 @@ export default {
     // Сохранение начального состояния формы
     saveInitialState() {
       this.initialFormState = this.getFormState();
+      this.isFormInitialized = true;
     },
     
     // Метод для получения текущего состояния формы (должен быть переопределен в компоненте)
@@ -31,7 +33,7 @@ export default {
     
     // Проверка наличия изменений
     checkForChanges() {
-      if (!this.initialFormState) return false;
+      if (!this.initialFormState || !this.isFormInitialized) return false;
       
       const currentState = this.getFormState();
       return JSON.stringify(currentState) !== JSON.stringify(this.initialFormState);
@@ -85,6 +87,11 @@ export default {
     // Сброс состояния изменений (вызывается после успешного сохранения)
     resetFormChanges() {
       this.saveInitialState();
+    },
+    
+    // Сброс флага инициализации (для случаев когда нужно переинициализировать форму)
+    resetFormInitialization() {
+      this.isFormInitialized = false;
     },
   },
 }; 

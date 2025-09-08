@@ -163,34 +163,20 @@ export default {
         }
     },
     created() {
-        this.fetchPermissions();
         // Делаем i18n доступным глобально для PermissionUtils
         if (typeof window !== 'undefined') {
             window.i18n = this.$i18n;
         }
     },
     mounted() {
-        // Сохраняем начальное состояние после монтирования компонента
-        this.$nextTick(() => {
+        // Сохраняем начальное состояние после загрузки всех данных
+        this.$nextTick(async () => {
+            // Ждем загрузки всех необходимых данных
+            await this.fetchPermissions();
+            
+            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
-    },
-    watch: {
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    this.form.name = newEditingItem.name || '';
-                    this.form.email = newEditingItem.email || '';
-                    this.form.position = newEditingItem.position || '';
-                    this.form.permissions = newEditingItem.permissions || [];
-                    this.editingItemId = newEditingItem.id || null;
-                } else {
-                    this.clearForm();
-                }
-            },
-            immediate: true,
-            deep: true,
-        },
     },
     methods: {
                 // Переопределяем метод getFormState из миксина

@@ -139,11 +139,18 @@ export default {
     created() {
         // Устанавливаем правильную валюту
         this.currencySymbol = this.defaultCurrencySymbol;
-        
-        if (this.preselectedOrderIds.length > 0) {
-            // Загружаем заказы по ID для предварительного выбора
-            this.loadPreselectedOrders();
-        }
+    },
+    mounted() {
+        // Сохраняем начальное состояние после загрузки всех данных
+        this.$nextTick(async () => {
+            if (this.preselectedOrderIds.length > 0) {
+                // Загружаем заказы по ID для предварительного выбора
+                await this.loadPreselectedOrders();
+            }
+            
+            // Теперь сохраняем начальное состояние
+            this.saveInitialState();
+        });
     },
     methods: {
         // Переопределяем метод getFormState из formChangesMixin
@@ -181,7 +188,7 @@ export default {
                     // Преобразуем товары из invoice_products в формат для OrderSearch
                     const productsFromInvoice = this.editingItem.products.map(product => {
                         // Пытаемся найти соответствующий заказ по названию товара
-                        let orderId = 'INV';
+                        let orderId = 'N/A';
                         if (this.editingItem.orders) {
                             const matchingOrder = this.editingItem.orders.find(order => 
                                 order.products && order.products.some(op => 

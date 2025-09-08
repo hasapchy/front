@@ -28,6 +28,9 @@ export default {
                 this.$store.dispatch('setUser', userData.user);
                 this.$store.dispatch('setPermissions', userData.permissions);
                 
+                // Загружаем валюты
+                await this.$store.dispatch('loadCurrencies');
+                
                 // Обновляем информацию о токенах в store
                 const tokenExpiresAt = localStorage.getItem('tokenExpiresAt');
                 const refreshTokenExpiresAt = localStorage.getItem('refreshTokenExpiresAt');

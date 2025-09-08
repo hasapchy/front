@@ -69,13 +69,17 @@ export default {
         }
     },
     created() {
-        this.fetchUsers();
         if (this.warehouse) {
             this.editingItem = this.warehouse;
         }
     },
     mounted() {
-        this.$nextTick(() => {
+        // Сохраняем начальное состояние после загрузки всех данных
+        this.$nextTick(async () => {
+            // Ждем загрузки всех необходимых данных
+            await this.fetchUsers();
+            
+            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },
