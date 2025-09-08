@@ -60,6 +60,7 @@ export default {
                 { name: 'name', label: 'name' },
                 { name: 'email', label: 'email' },
                 { name: 'position', label: 'position' },
+                { name: 'companies', label: 'companies' },
                 { name: 'isActive', label: 'active', size: 80 },
                 { name: 'isAdmin', label: 'admin', size: 80 },
                 { name: 'permissions', label: 'userPermissions' },
@@ -103,6 +104,8 @@ export default {
                     return new Date(item.createdAt).toLocaleDateString();
                 case 'permissions':
                     return item.permissions.join(', ');
+                case 'companies':
+                    return item.companies.map(c => c.name).join(', ');
                 default:
                     return item[column];
             }

@@ -398,7 +398,8 @@ export default {
                         hire_date: this.form.hire_date,
                         is_active: this.form.is_active,
                         is_admin: this.form.is_admin,
-                        permissions: this.form.permissions
+                        permissions: this.form.permissions,
+                        companies: this.form.companies
                     };
                     
                     if (this.form.newPassword) {
