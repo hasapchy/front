@@ -42,12 +42,11 @@ export default {
             loading: false,
         };
     },
-    created() {
+    mounted() {
         this.fetchItems();
     },
     methods: {
         translateBalanceTitle(title) {
-            // Переводим заголовки карточек баланса
             const translations = {
                 'Приход': 'income',
                 'Расход': 'outcome', 
@@ -60,11 +59,9 @@ export default {
                 return this.$t(translationKey);
             }
             
-            // Если перевод не найден, возвращаем оригинальный заголовок
             return title;
         },
         translateCashRegisterName(name) {
-            // Переводим названия касс
             const translations = {
                 'Главная касса': 'mainCashRegister'
             };
@@ -74,7 +71,6 @@ export default {
                 return this.$t(translationKey);
             }
             
-            // Если перевод не найден, возвращаем оригинальное название
             return name;
         },
         async fetchItems() {
@@ -113,7 +109,6 @@ export default {
                 }
                 const cashIds = this.cashRegisterId !== null ? [this.cashRegisterId] : [];
 
-                // Создаем параметры для API
                 const params = {
                     cash_register_ids: cashIds.join(','),
                     start_date: start,
@@ -122,7 +117,6 @@ export default {
                     source: this.sourceFilter.length > 0 ? this.sourceFilter.join(',') : undefined
                 };
 
-                // Убираем undefined параметры
                 Object.keys(params).forEach(key => {
                     if (params[key] === undefined) {
                         delete params[key];

@@ -36,6 +36,7 @@ import CategoryController from '@/api/CategoryController';
 import AdminCategoryCreatePage from './CategoriesCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import crudEventMixin from '@/mixins/crudEventMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
@@ -43,7 +44,7 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
     components: {
         NotificationToast,
         PrimaryButton,
@@ -60,7 +61,10 @@ export default {
             loading: false,
             selectedIds: [],
             controller: CategoryController,
-
+            savedSuccessText: this.$t('categorySuccessfullyAdded'),
+            savedErrorText: this.$t('errorSavingCategory'),
+            deletedSuccessText: this.$t('categorySuccessfullyDeleted'),
+            deletedErrorText: this.$t('errorDeletingCategory'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
@@ -73,8 +77,11 @@ export default {
         }
     },
     created() {
-        this.fetchItems();
         this.$store.commit('SET_SETTINGS_OPEN', true);
+    },
+
+    mounted() {
+        this.fetchItems();
     },
     methods: {
         itemMapper(i, c) {
@@ -88,7 +95,6 @@ export default {
             }
         },
         handleModalClose() {
-            // Проверяем, есть ли изменения в форме
             const formRef = this.$refs.admincategorycreatepageForm;
             if (formRef && formRef.handleCloseRequest) {
                 formRef.handleCloseRequest();
@@ -96,7 +102,6 @@ export default {
                 this.closeModal();
             }
         },
-        //
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
@@ -110,22 +115,6 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
-        },
-        handleSaved() {
-                            this.showNotification(this.$t('categorySuccessfullyAdded'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleSavedError(m) {
-            this.showNotification(this.$t('errorSavingCategory'), m, true);
-        },
-        handleDeleted() {
-                            this.showNotification(this.$t('categorySuccessfullyDeleted'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleDeletedError(m) {
-            this.showNotification(this.$t('errorDeletingCategory'), m, true);
         }
     },
     computed: {

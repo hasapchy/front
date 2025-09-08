@@ -55,9 +55,12 @@ export default {
         }
     },
     created() {
+        this.$store.commit('SET_SETTINGS_OPEN', false);
+    },
+
+    mounted() {
         this.updateTabFromHash();
         window.addEventListener('hashchange', this.updateTabFromHash);
-        this.$store.commit('SET_SETTINGS_OPEN', false);
     },
     beforeUnmount() {
         window.removeEventListener('hashchange', this.updateTabFromHash);

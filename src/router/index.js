@@ -23,6 +23,7 @@ import OrderCategoriesPage from "@/views/pages/orders/OrderCategoriesPage.vue";
 import OrderAdditionalFieldsPage from "@/views/pages/orders/OrderAdditionalFieldsPage.vue";
 import InvoicesPage from "@/views/pages/invoices/InvoicesPage.vue";
 import UsersPage from "@/views/pages/users/UsersPage.vue";
+import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
 import SystemSettingsPage from "@/views/pages/settings/SystemSettingsPage.vue";
 
 const routes = [
@@ -158,6 +159,12 @@ const routes = [
         name: "users",
         component: UsersPage,
         meta: { title: "users", requiresAuth: true },
+      },
+      {
+        path: "/companies",
+        name: "companies",
+        component: CompaniesPage,
+        meta: { title: "companies", requiresAuth: true },
       },
       {
         path: "/products",

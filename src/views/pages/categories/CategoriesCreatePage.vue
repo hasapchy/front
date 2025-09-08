@@ -26,7 +26,6 @@
             </select>
         </div>
     </div>
-    <!-- {{ editingItem.id }} -->
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove"
@@ -75,21 +74,17 @@ export default {
             deleteLoading: false
         }
     },
-    created() {
-        this.fetchUsers();
-    },
     mounted() {
-        // Сохраняем начальное состояние после загрузки всех данных
         this.$nextTick(async () => {
-            // Ждем загрузки всех необходимых данных
-            await this.fetchAllCategories();
+            await Promise.all([
+                this.fetchUsers(),
+                this.fetchAllCategories()
+            ]);
             
-            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },
     methods: {
-                // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
                 name: this.name,
@@ -156,7 +151,7 @@ export default {
             this.editingItemId = null;
             this.fetchAllCategories();
             this.fetchUsers();
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.resetFormChanges();
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -178,7 +173,6 @@ export default {
                     this.selectedUsers = [];
                     this.editingItemId = null;
                 }
-                // Сохраняем новое начальное состояние
                 this.$nextTick(() => {
                     this.saveInitialState();
                 });

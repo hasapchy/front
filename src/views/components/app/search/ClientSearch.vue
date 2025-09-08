@@ -125,7 +125,6 @@ export default {
             if (typeof this.selectedClient.fullName === 'function') {
                 return this.selectedClient.fullName();
             }
-            // Fallback для обычных объектов
             const contactPerson = this.selectedClient.contactPerson || this.selectedClient.contact_person;
             const firstName = this.selectedClient.firstName || this.selectedClient.first_name || '';
             const lastName = this.selectedClient.lastName || this.selectedClient.last_name || '';
@@ -138,7 +137,6 @@ export default {
             if (typeof this.selectedClient.balanceFormatted === 'function') {
                 return this.selectedClient.balanceFormatted();
             }
-            // Fallback для обычных объектов
             const balance = this.selectedClient.balance || this.selectedClient.balance_amount || 0;
             return parseFloat(balance).toFixed(2);
         },
@@ -153,7 +151,7 @@ export default {
     emits: ['update:selectedClient'],
     methods: {
         async fetchLastClients() {
-            const paginated = await ClientController.getItems(1);
+            const paginated = await ClientController.getItems(1, null, false); // includeInactive = false (только активные)
             this.lastClients = paginated.items
                 .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
                 .slice(0, 10);

@@ -103,15 +103,17 @@ import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vu
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import crudEventMixin from '@/mixins/crudEventMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import { eventBus } from '@/eventBus';
 import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
     components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalance, ClientButtonCell, BatchButton, CheckboxFilter },
     data() {
         return {
@@ -126,6 +128,10 @@ export default {
             endDate: null,
             transactionTypeFilter: '',
             sourceFilter: [],
+            savedSuccessText: this.$t('transactionSuccessfullyAdded'),
+            savedErrorText: this.$t('errorSavingTransaction'),
+            deletedSuccessText: this.$t('transactionSuccessfullyDeleted'),
+            deletedErrorText: this.$t('errorDeletingTransaction'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
@@ -156,15 +162,16 @@ export default {
         }
     },
     created() {
-        this.fetchItems();
-        this.fetchAllCashRegisters();
         this.$store.commit('SET_SETTINGS_OPEN', false);
 
-        // Слушаем события поиска через eventBus
         eventBus.on('global-search', this.handleSearch);
     },
+
+    mounted() {
+        this.fetchItems();
+        this.fetchAllCashRegisters();
+    },
     beforeUnmount() {
-        // Удаляем слушатель события
         eventBus.off('global-search', this.handleSearch);
     },
     methods: {
@@ -172,7 +179,6 @@ export default {
             this.$refs.balanceRef.fetchItems();
         },
         handleModalClose() {
-            // Проверяем, есть ли изменения в форме
             const formRef = this.$refs.transactioncreatepageForm;
             if (formRef && formRef.handleCloseRequest) {
                 formRef.handleCloseRequest();
@@ -207,7 +213,6 @@ export default {
             }
         },
         handleSearch(query) {
-            // Обновляем store напрямую
             this.$store.dispatch('setSearchQuery', query);
             this.fetchItems(1, false);
         },
@@ -255,24 +260,6 @@ export default {
             this.modalDialog = true;
             this.editingItem = item;
         },
-        handleSaved() {
-            this.showNotification(this.$t('transactionSuccessfullyAdded'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.updateBalace();
-            this.closeModal();
-        },
-        handleSavedError(m) {
-            this.showNotification(this.$t('errorSavingTransaction'), m, true);
-        },
-        handleDeleted() {
-            this.showNotification(this.$t('transactionSuccessfullyDeleted'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.updateBalace();
-            this.closeModal();
-        },
-        handleDeletedError(m) {
-            this.showNotification(this.$t('errorDeletingTransaction'), m, true);
-        },
         resetFilters() {
             this.cashRegisterId = '';
             this.transactionTypeFilter = '';
@@ -286,12 +273,6 @@ export default {
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
-        },
-        translatedColumnsConfig() {
-            return this.columnsConfig.map(column => ({
-                ...column,
-                label: column.label === '#' ? '#' : this.$t(column.label)
-            }));
         }
     },
 }

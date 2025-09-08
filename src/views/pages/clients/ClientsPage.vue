@@ -36,6 +36,7 @@ import ClientController from '@/api/ClientController';
 import ClientCreatePage from './ClientCreatePage.vue';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin'
+import crudEventMixin from '@/mixins/crudEventMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
@@ -43,7 +44,7 @@ import { eventBus } from '@/eventBus';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 
 export default {
-    mixins: [batchActionsMixin, notificationMixin, modalMixin, tableTranslationMixin],
+    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, tableTranslationMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog },
     data() {
         return {
@@ -51,6 +52,11 @@ export default {
             loading: false,
             controller: ClientController,
             selectedIds: [],
+            // Настройка текстов для crudEventMixin
+            savedSuccessText: this.$t('clientSuccessfullyAdded'),
+            savedErrorText: this.$t('errorSavingClient'),
+            deletedSuccessText: this.$t('clientSuccessfullyDeleted'),
+            deletedErrorText: this.$t('errorDeletingClient'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
@@ -66,14 +72,15 @@ export default {
         }
     },
     created() {
-        this.fetchItems();
         this.$store.commit('SET_SETTINGS_OPEN', false);
         
-        // Слушаем события поиска через eventBus
         eventBus.on('global-search', this.handleSearch);
     },
+
+    mounted() {
+        this.fetchItems();
+    },
     beforeUnmount() {
-        // Удаляем слушатель события
         eventBus.off('global-search', this.handleSearch);
     },
 
@@ -98,7 +105,6 @@ export default {
             }
         },
         handleSearch(query) {
-            // Обновляем store напрямую
             this.$store.dispatch('setSearchQuery', query);
             this.fetchItems(1, false);
         },
@@ -107,7 +113,7 @@ export default {
                 this.loading = true;
             }
             try {
-                const new_data = await ClientController.getItems(page, this.searchQuery);
+                const new_data = await ClientController.getItems(page, this.searchQuery, true); // includeInactive = true
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingClientList'), error.message, true);
@@ -116,24 +122,7 @@ export default {
                 this.loading = false;
             }
         },
-        handleSaved() {
-            this.showNotification(this.$t('clientSuccessfullyAdded'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleSavedError(m) {
-            this.showNotification(this.$t('errorSavingClient'), m, true);
-        },
-        handleDeleted() {
-            this.showNotification(this.$t('clientSuccessfullyDeleted'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleDeletedError(m) {
-            this.showNotification(this.$t('errorDeletingClient'), m, true);
-        },
         handleModalClose() {
-            // Проверяем, есть ли изменения в форме
             if (this.$refs.clientForm && this.$refs.clientForm.handleCloseRequest) {
                 this.$refs.clientForm.handleCloseRequest();
             } else {

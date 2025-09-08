@@ -5,7 +5,8 @@
         <div>
             <label>{{ $t('date') }}</label>
             <input type="datetime-local" v-model="date"
-                :disabled="editingItemId && !$store.getters.hasPermission('edit_any_date')" />
+                :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
+                :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
         </div>
         <div v-if="type === 'cash'" class="mt-2">
             <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
@@ -129,20 +130,15 @@ export default {
             currencies: [],
         };
     },
-    created() {
-        this.fetchCurrencies();
-    },
     mounted() {
-        // Сохраняем начальное состояние после загрузки всех данных
         this.$nextTick(async () => {
-            // Ждем загрузки всех необходимых данных
             await Promise.all([
+                this.fetchCurrencies(),
                 this.fetchAllWarehouses(),
                 this.fetchAllProjects(),
                 this.fetchAllCashRegisters()
             ]);
             
-            // Устанавливаем значения по умолчанию если это новая продажа
             if (!this.editingItem) {
                 if (this.allWarehouses.length > 0 && !this.warehouseId) {
                     this.warehouseId = this.allWarehouses[0].id;
@@ -152,7 +148,6 @@ export default {
                 }
             }
             
-            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },
@@ -192,7 +187,6 @@ export default {
         }
     },
     methods: {
-        // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
                 selectedClient: this.selectedClient?.id || null,
@@ -215,6 +209,7 @@ export default {
             this.allWarehouses = await WarehouseController.getAllItems();
         },
         async fetchAllProjects() {
+            // Получаем только проекты, к которым у пользователя есть доступ
             this.allProjects = await ProjectController.getAllItems();
         },
         async fetchCurrencies() {
@@ -340,7 +335,6 @@ export default {
                 } else {
                     this.clearForm();
                 }
-                // Сохраняем новое начальное состояние
                 this.$nextTick(() => {
                     this.saveInitialState();
                 });

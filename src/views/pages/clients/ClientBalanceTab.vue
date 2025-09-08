@@ -19,7 +19,6 @@
             :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
             :onItemClick="handleBalanceItemClick" />
 
-        <!-- Модалка для entity -->
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
                 <div class="p-8 flex justify-center items-center min-h-[200px]">
@@ -44,7 +43,6 @@ import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import { markRaw, defineAsyncComponent } from 'vue';
 
-// Lazy loading для модальных компонентов - загружаются только при открытии модалки
 const TransactionCreatePage = defineAsyncComponent(() => 
     import("@/views/pages/transactions/TransactionCreatePage.vue")
 );
@@ -90,7 +88,6 @@ export default {
     },
     data() {
         return {
-            // Константы
             currencyCode: '',
 
             balanceLoading: false,
@@ -254,7 +251,6 @@ export default {
     async mounted() {
         await this.fetchDefaultCurrency();
         
-
         if (this.editingItem && this.editingItem.id) {
             this.fetchBalanceHistory();
         }
@@ -267,7 +263,6 @@ export default {
                 const defaultCurrency = currencies.find(c => c.is_default);
                 this.currencyCode = defaultCurrency ? defaultCurrency.code : 'TMT';
             } catch (error) {
-                console.error('Ошибка при получении дефолтной валюты:', error);
                 this.currencyCode = 'TMT';
             }
         },
@@ -281,7 +276,6 @@ export default {
                 
                 await this.updateClientBalance();
             } catch (e) {
-                console.error("Ошибка при загрузке истории баланса:", e);
                 this.balanceHistory = [];
             } finally {
                 this.balanceLoading = false;
@@ -320,7 +314,6 @@ export default {
                     throw new Error('Данные не загружены');
                 }
             } catch (e) {
-                console.error('Ошибка при загрузке данных:', e);
                 this.$notify?.({ type: 'error', text: 'Ошибка при загрузке данных: ' + (e.message || e) });
                 this.entityModalOpen = false;
                 this.selectedEntity = null;
@@ -376,7 +369,6 @@ export default {
             this.closeEntityModal();
         },
         onEntitySavedError(error) {
-            console.error('Ошибка при сохранении:', error);
             this.closeEntityModal();
         },
         onEntityDeleted() {
@@ -388,7 +380,6 @@ export default {
             this.closeEntityModal();
         },
         onEntityDeletedError(error) {
-            console.error('Ошибка при удалении:', error);
             this.closeEntityModal();
         },
         async updateClientBalance() {
@@ -398,7 +389,6 @@ export default {
                 this.editingItem.balance = updatedClient.balance;
 
             } catch (error) {
-                console.error('Ошибка при обновлении баланса клиента:', error);
             }
         },
     },

@@ -10,7 +10,9 @@
             </div>
             <div>
                 <label>{{ $t('projectDate') }}</label>
-                <input type="datetime-local" v-model="date" :disabled="!!editingItemId">
+                <input type="datetime-local" v-model="date" 
+                    :disabled="!!editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
+                    :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
             </div>
             <div>
                 <label>{{ $t('projectBudget') }}</label>
@@ -172,7 +174,6 @@ export default {
     },
     computed: {
         translatedTabs() {
-            // Показываем вкладки files и balance только при редактировании существующего проекта
             const availableTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name === 'info');
             
             return availableTabs.map(tab => ({
@@ -183,30 +184,24 @@ export default {
 
     },
     created() {
-        // Добавляем глобальную функцию для удаления файлов
         window.deleteFile = (filePath) => {
             this.showDeleteFileDialog(filePath);
         };
     },
     mounted() {
-        // Сохраняем начальное состояние после загрузки всех данных
         this.$nextTick(async () => {
-            // Ждем загрузки всех необходимых данных
             await this.fetchUsers();
             
-            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },
     methods: {
         changeTab(tabName) {
-            // Не позволяем переключиться на вкладки files и balance при создании нового проекта
             if ((tabName === 'files' || tabName === 'balance') && !this.editingItem) {
                 return;
             }
             this.currentTab = tabName;
         },
-        // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
                 name: this.name,
@@ -286,7 +281,6 @@ export default {
             this.uploadProgress = 0;
             
             try {
-                // Имитируем прогресс загрузки
                 const progressInterval = setInterval(() => {
                     if (this.uploadProgress < 90) {
                         this.uploadProgress += Math.random() * 10;
@@ -298,13 +292,11 @@ export default {
                 clearInterval(progressInterval);
                 this.uploadProgress = 100;
                 
-                // Обновляем файлы в editingItem для немедленного отображения
                 if (this.editingItem && this.editingItem.files) {
                     this.editingItem.files = uploadedFiles;
                 }
                 event.target.value = '';
                 
-                // Скрываем прогресс через секунду
                 setTimeout(() => {
                     this.uploading = false;
                     this.uploadProgress = 0;
@@ -337,17 +329,14 @@ export default {
                 let updatedFiles;
                 
                 if (this.deleteFileIndex === 'multiple') {
-                    // Массовое удаление выбранных файлов
                     for (const filePath of this.selectedFileIds) {
                         updatedFiles = await ProjectController.deleteFile(this.editingItemId, filePath);
                     }
                     this.selectedFileIds = []; // Очищаем выбранные файлы
                 } else {
-                    // Удаление одного файла
                     updatedFiles = await ProjectController.deleteFile(this.editingItemId, this.deleteFileIndex);
                 }
                 
-                // Обновляем файлы в editingItem для немедленного отображения
                 if (this.editingItem && this.editingItem.files && updatedFiles) {
                     this.editingItem.files = updatedFiles;
                 }
@@ -358,7 +347,6 @@ export default {
             this.closeDeleteFileDialog();
         },
 
-        // Форматирование размера файла
         formatFileSize(bytes) {
             if (!bytes) return '0 B';
             const k = 1024;
@@ -367,7 +355,6 @@ export default {
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         },
 
-        // Определение типа файла по расширению
         getFileType(filename) {
             if (!filename) return '';
             const ext = filename.split('.').pop().toLowerCase();
@@ -393,7 +380,6 @@ export default {
     },
     
     beforeUnmount() {
-        // Удаляем глобальную функцию при размонтировании
         if (window.deleteFile) {
             delete window.deleteFile;
         }
@@ -415,10 +401,8 @@ export default {
                 } else {
                     this.date = new Date().toISOString().substring(0, 16);
                     this.clearForm();
-                    // При создании нового проекта всегда показываем вкладку info
                     this.currentTab = "info";
                 }
-                // Сохраняем новое начальное состояние
                 this.$nextTick(() => {
                     this.saveInitialState();
                 });

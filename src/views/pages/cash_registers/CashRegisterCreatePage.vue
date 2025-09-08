@@ -36,7 +36,6 @@
             </div>
         </div>
     </div>
-    <!-- {{ editingItem.id }} -->
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-remove" :disabled="!$store.getters.hasPermission('cash_registers_delete')">
@@ -86,19 +85,13 @@ export default {
             deleteLoading: false
         }
     },
-    created() {
-        // Инициализация без загрузки данных
-    },
     mounted() {
-        // Сохраняем начальное состояние после загрузки всех данных
         this.$nextTick(async () => {
-            // Ждем загрузки всех необходимых данных
             await Promise.all([
                 this.fetchUsers(),
                 this.fetchCurrencies()
             ]);
             
-            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },
@@ -108,7 +101,6 @@ export default {
         }
     },
     methods: {
-                // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
                 name: this.name,
@@ -133,8 +125,6 @@ export default {
                         {
                             name: this.name,
                             is_rounding: this.is_rounding,
-                            // balance: this.balance,
-                            // currency_id: this.currency_id,
                             users: this.selectedUsers,
                         });
                 } else {
@@ -183,7 +173,7 @@ export default {
             this.editingItemId = null;
             this.fetchCurrencies();
             this.fetchUsers();
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.resetFormChanges();
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -211,7 +201,6 @@ export default {
                     this.currency_id = '';
                     this.editingItemId = null;
                 }
-                // Сохраняем новое начальное состояние
                 this.$nextTick(() => {
                     this.saveInitialState();
                 });

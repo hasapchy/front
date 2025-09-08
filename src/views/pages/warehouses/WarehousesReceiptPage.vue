@@ -39,13 +39,15 @@ import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vu
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import crudEventMixin from '@/mixins/crudEventMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
     components: {
         NotificationToast,
         PrimaryButton,
@@ -64,6 +66,10 @@ export default {
             selectedIds: [],
             controller: WarehouseReceiptController,
             editingItem: null,
+            savedSuccessText: this.$t('receiptSuccessfullyAdded'),
+            savedErrorText: this.$t('errorSavingReceipt'),
+            deletedSuccessText: this.$t('receiptSuccessfullyDeleted'),
+            deletedErrorText: this.$t('errorDeletingReceipt'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
@@ -78,8 +84,11 @@ export default {
         }
     },
     created() {
-        this.fetchItems();
         this.$store.commit('SET_SETTINGS_OPEN', false);
+    },
+
+    mounted() {
+        this.fetchItems();
     },
     methods: {
         itemMapper(i, c) {
@@ -100,7 +109,6 @@ export default {
             }
         },
         handleModalClose() {
-            // Проверяем, есть ли изменения в форме
             const formRef = this.$refs.warehousesreceiptcreatepageForm;
             if (formRef && formRef.handleCloseRequest) {
                 formRef.handleCloseRequest();
@@ -121,31 +129,9 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
-        },
-        handleSaved() {
-            this.showNotification('Товары оприходованы', '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleSavedError(m) {
-            this.showNotification('Ошибка сохранения записи', m, true);
-        },
-        handleDeleted() {
-            this.showNotification('Запись успешно удалена', '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleDeletedError(m) {
-            this.showNotification('Ошибка удаления записи', m, true);
         }
     },
     computed: {
-        translatedColumnsConfig() {
-            return this.columnsConfig.map(column => ({
-                ...column,
-                label: column.label === '#' ? '#' : this.$t(column.label)
-            }));
-        }
     }
 }
 </script>

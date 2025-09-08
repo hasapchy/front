@@ -2,7 +2,6 @@
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editInvoice') : $t('createInvoice') }}</h2>
 
-        <!-- Основная информация -->
         <div class="mb-4">
             <h3 class="text-md font-semibold mb-3">{{ $t('basicInformation') }}</h3>
             <div class="space-y-4">
@@ -11,7 +10,10 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('invoiceDate') }}</label>
-                    <input type="datetime-local" v-model="formData.invoice_date" class="w-full p-2 border rounded h-10" />
+                    <input type="datetime-local" v-model="formData.invoice_date" 
+                        class="w-full p-2 border rounded h-10"
+                        :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
+                        :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('status') }}</label>
@@ -29,7 +31,6 @@
             </div>
         </div>
 
-        <!-- Выбор заказов -->
         <div class="mb-4">
             <OrderSearch 
                 ref="orderSearch"
@@ -45,28 +46,56 @@
 
     </div>
     <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
-        <!-- Кнопки -->
         <div class="flex items-center space-x-2">
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="loading">
             </PrimaryButton>
             <div v-if="editingItem" class="flex items-center space-x-2">
-                <label class="flex items-center text-sm">
-                    <input type="checkbox" v-model="pdfVariant" value="short" class="mr-1" />
-                    Краткий
-                </label>
-                <label class="flex items-center text-sm">
-                    <input type="checkbox" v-model="pdfVariant" value="detailed" class="mr-1" />
-                    Подробный
-                </label>
-                <PrimaryButton :onclick="generatePdf" icon="fas fa-file-pdf" :isLight="true">
-                    {{ $t('generatePdf') }}
-                </PrimaryButton>
+                <div class="relative">
+                    <PrimaryButton 
+                        :onclick="togglePdfDropdown" 
+                        :icon="'fas fa-file-pdf'"
+                        class="px-3 py-2"
+                    >
+                        <i :class="showPdfDropdown ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" class="ml-2"></i>
+                    </PrimaryButton>
+                    
+                    <div v-if="showPdfDropdown" class="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                        <div class="py-1">
+                            <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    v-model="pdfVariant" 
+                                    value="short" 
+                                    class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                {{ $t('shortPdf') }}
+                            </label>
+                            <label class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    v-model="pdfVariant" 
+                                    value="detailed" 
+                                    class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                {{ $t('detailedPdf') }}
+                            </label>
+                            <div class="border-t border-gray-100">
+                                <button 
+                                    @click="generatePdf" 
+                                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                >
+                                    <i class="fas fa-download mr-2"></i>
+                                    {{ $t('downloadSelected') }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
     </div>
     
-    <!-- Диалог подтверждения закрытия -->
     <AlertDialog 
         :dialog="closeConfirmDialog" 
         @confirm="confirmClose" 
@@ -115,45 +144,42 @@ export default {
             loading: false,
             selectedOrders: [],
             selectedClient: null,
-            currencySymbol: 'TMT', // Символ валюты по умолчанию
+            currencySymbol: 'TMT',
             editingItemId: this.editingItem?.id || null,
             formData: {
                 client_id: null,
-                invoice_date: new Date().toISOString().slice(0, 16), // Дата и время
-                status: 'new', // Статус "новый"
+                invoice_date: new Date().toISOString().slice(0, 16),
+                status: 'new',
                 note: '',
                 order_ids: [],
                 subtotal: 0
             },
-            pdfVariant: ['short'] // По умолчанию выбран краткий вариант
+            pdfVariant: ['short'],
+            showPdfDropdown: false
         };
     },
     computed: {
         defaultCurrencySymbol() {
-            // Получаем дефолтную валюту из store или используем TMT
             const currencies = this.$store.state.currencies || [];
             const defaultCurrency = currencies.find(c => c.is_default);
             return defaultCurrency ? defaultCurrency.symbol : 'TMT';
         },
     },
-    created() {
-        // Устанавливаем правильную валюту
-        this.currencySymbol = this.defaultCurrencySymbol;
-    },
     mounted() {
-        // Сохраняем начальное состояние после загрузки всех данных
         this.$nextTick(async () => {
             if (this.preselectedOrderIds.length > 0) {
-                // Загружаем заказы по ID для предварительного выбора
                 await this.loadPreselectedOrders();
             }
             
-            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
+
+        document.addEventListener('click', this.handleClickOutside);
+    },
+    beforeUnmount() {
+        document.removeEventListener('click', this.handleClickOutside);
     },
     methods: {
-        // Переопределяем метод getFormState из formChangesMixin
         getFormState() {
             return {
                 selectedClient: this.selectedClient?.id || null,
@@ -177,17 +203,13 @@ export default {
                 order_ids: this.editingItem.orders ? this.editingItem.orders.map(o => o.id) : []
             };
             
-            // Загружаем заказы для редактирования
             if (this.editingItem.orders) {
                 this.selectedOrders = [...this.editingItem.orders];
             }
             
-            // Загружаем товары из invoice_products и передаем их в OrderSearch
             this.$nextTick(() => {
                 if (this.$refs.orderSearch && this.editingItem.products) {
-                    // Преобразуем товары из invoice_products в формат для OrderSearch
                     const productsFromInvoice = this.editingItem.products.map(product => {
-                        // Пытаемся найти соответствующий заказ по названию товара
                         let orderId = 'N/A';
                         if (this.editingItem.orders) {
                             const matchingOrder = this.editingItem.orders.find(order => 
@@ -211,9 +233,9 @@ export default {
                             totalPrice: product.totalPrice,
                             unitId: product.unitId,
                             unitName: product.unitName || product.unitShortName || '',
-                            productImage: null, // В invoice_products нет изображений
+                            productImage: null,
                             orderId: orderId,
-                            type: 1, // Предполагаем, что это товар
+                            type: 1,
                             imgUrl() {
                                 return null;
                             },
@@ -223,7 +245,6 @@ export default {
                         };
                     });
                     
-                    // Устанавливаем товары в OrderSearch
                     this.$refs.orderSearch.allProductsFromOrders = productsFromInvoice;
                     this.$refs.orderSearch.updateTotals();
                 }
@@ -245,7 +266,6 @@ export default {
                 
                 this.loadOrdersData();
             } catch (error) {
-                console.error('Ошибка загрузки предварительно выбранных заказов:', error);
                 this.showNotification(this.$t('error'), 'Ошибка загрузки заказов: ' + error.message, true);
             }
         },
@@ -260,7 +280,6 @@ export default {
                 const orderIds = this.selectedOrders.map(order => order.id);
                 this.formData.order_ids = orderIds;
                 
-                // Загружаем данные клиента из первого заказа
                 if (this.selectedOrders[0]?.client) {
                     this.selectedClient = this.selectedOrders[0].client;
                 }
@@ -272,14 +291,12 @@ export default {
 
 
         async save() {
-            // Проверяем обязательные поля
             const validationErrors = [];
             
             if (!this.selectedClient) {
                 validationErrors.push('Поле "Клиент" обязательно для заполнения');
             }
 
-            // Проверяем, есть ли товары в выбранных заказах
             const orderSearch = this.$refs.orderSearch;
             if (!orderSearch || !orderSearch.allProductsFromOrders || orderSearch.allProductsFromOrders.length === 0) {
                 validationErrors.push('Необходимо выбрать заказы с товарами');
@@ -292,11 +309,9 @@ export default {
             
             this.loading = true;
             try {
-                // Получаем товары и общую сумму из OrderSearch
                 const products = orderSearch ? orderSearch.allProductsFromOrders : [];
                 const totalAmount = orderSearch ? orderSearch.subtotal : 0;
                 
-                // Преобразуем товары в формат для invoice_products
                 const invoiceProducts = products.map(product => ({
                     product_id: product.productId || null,
                     product_name: product.productName || product.name,
@@ -326,7 +341,6 @@ export default {
 
                 this.$emit('saved');
                 this.clearForm();
-                this.resetFormChanges(); // Сбрасываем состояние изменений
             } catch (error) {
                 const errors = this.getApiErrorMessage(error);
                 this.$emit('saved-error', errors.join('\n'));
@@ -346,12 +360,20 @@ export default {
                 subtotal: 0
             };
             this.selectedOrders = [];
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.resetFormChanges();
         },
 
-
-
-
+        closeModal() {
+            this.closeForm();
+        },
+        togglePdfDropdown() {
+            this.showPdfDropdown = !this.showPdfDropdown;
+        },
+        handleClickOutside(event) {
+            if (this.showPdfDropdown && !event.target.closest('.relative')) {
+                this.showPdfDropdown = false;
+            }
+        },
         generatePdf() {
             if (!this.editingItem) {
                 this.showNotification(this.$t('error'), this.$t('saveInvoiceFirst'), true);
@@ -364,19 +386,17 @@ export default {
             }
 
             try {
-                // Генерируем PDF для каждого выбранного варианта
                 this.pdfVariant.forEach(variant => {
                     generateInvoicePdf(this.editingItem, null, variant);
                 });
                 this.showNotification(this.$t('pdfGenerated'), '', false);
+                this.showPdfDropdown = false;
             } catch (error) {
-                console.error('Ошибка генерации PDF:', error);
                 this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
             }
         },
 
         formatDateTimeForInput(dateString) {
-            // Конвертируем дату в формат для datetime-local input
             if (!dateString) return new Date().toISOString().slice(0, 16);
             const date = new Date(dateString);
             return date.toISOString().slice(0, 16);
@@ -384,13 +404,14 @@ export default {
     },
     watch: {
         editingItem: {
-            handler(newEditingItem) {
+            handler(newEditingItem, oldEditingItem) {
                 if (newEditingItem) {
                     this.loadEditingData();
                 } else {
-                    this.clearForm();
+                    if (oldEditingItem !== undefined) {
+                        this.clearForm();
+                    }
                 }
-                // Сохраняем новое начальное состояние
                 this.$nextTick(() => {
                     this.saveInitialState();
                 });

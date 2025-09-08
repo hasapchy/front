@@ -10,6 +10,12 @@
                 </SidebarLink>
             </ul>
 
+            <ul v-if="hasPermission('companies_view')">
+                <SidebarLink to="/companies" icon="fa-solid fa-building mr-2" :settings="true">
+                    {{ $t('companies') }}
+                </SidebarLink>
+            </ul>
+
             <ul v-if="hasPermission('cash-registers_view')">
                 <SidebarLink to="/cash-registers" icon="fa-solid fa-cash-register mr-2" :settings="true">
                     {{ $t('cashRegisters') }}

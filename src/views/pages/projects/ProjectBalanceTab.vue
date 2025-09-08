@@ -48,7 +48,6 @@ export default {
     },
     data() {
         return {
-            // Константы
             currencyCode: '',
             balanceLoading: false,
             balanceHistory: [],
@@ -192,18 +191,15 @@ export default {
     },
     computed: {
         balanceFormatted() {
-            // Баланс теперь всегда приходит как число из API
             const balance = typeof this.balance === 'number' ? this.balance : 0;
             return balance.toFixed(2);
         },
         budgetFormatted() {
-            // Бюджет теперь всегда приходит как число из API
             const budget = typeof this.budget === 'number' ? this.budget : 0;
             return budget.toFixed(2);
         },
     },
     async mounted() {
-        // Получаем дефолтную валюту
         await this.fetchDefaultCurrency();
         this.fetchBalanceHistory();
     },

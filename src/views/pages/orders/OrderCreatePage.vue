@@ -19,7 +19,9 @@
                 </div>
                 <div>
                     <label>{{ $t('date') }}</label>
-                    <input type="datetime-local" v-model="date">
+                    <input type="datetime-local" v-model="date"
+                        :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
+                        :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
                 </div>
                 <div>
                     <label class="required">{{ $t('cashRegister') }}</label>
@@ -51,7 +53,6 @@
                     <input type="text" v-model="note">
                 </div>
                 
-                <!-- Дополнительные поля -->
                 <div class="space-y-4 mt-6">
                     <label class="block text-sm font-medium text-gray-700">{{ $t('additionalFields') }}</label>
                     <div v-if="additionalFields.length > 0" class="space-y-4">
@@ -61,7 +62,6 @@
                                 {{ field.name }}
                             </label>
                             
-                            <!-- Поле типа select -->
                             <select v-if="field.type === 'select'" v-model="additionalFieldValues[field.id]" 
                                     :required="field.required" 
                                     class="w-full border rounded p-2">
@@ -69,32 +69,31 @@
                                 <option v-for="option in field.options" :key="option" :value="option">{{ option }}</option>
                             </select>
                             
-                            <!-- Поле типа date -->
                             <input v-else-if="field.type === 'date'" type="date" 
                                    v-model="additionalFieldValues[field.id]" 
-                                   :required="field.required" 
+                                   :required="field.required"
+                                   :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
+                                   :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 10) : null" 
                                    class="w-full border rounded p-2">
                             
-                            <!-- Поле типа datetime -->
                             <input v-else-if="field.type === 'datetime'" type="datetime-local" 
                                    v-model="additionalFieldValues[field.id]" 
-                                   :required="field.required" 
+                                   :required="field.required"
+                                   :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
+                                   :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null"
                                    class="w-full border rounded p-2">
                             
-                            <!-- Поле типа int -->
                             <input v-else-if="field.type === 'int'" type="number" 
                                    v-model="additionalFieldValues[field.id]" 
                                    :required="field.required" 
                                    class="w-full border rounded p-2">
                             
-                            <!-- Поле типа boolean -->
                             <div v-else-if="field.type === 'boolean'" class="flex items-center space-x-2">
                                 <input type="checkbox" 
                                        v-model="additionalFieldValues[field.id]" 
                                        :required="field.required">
                             </div>
                             
-                            <!-- Поле типа string (по умолчанию) -->
                             <input v-else type="text" 
                                    v-model="additionalFieldValues[field.id]" 
                                    :required="field.required" 
@@ -130,7 +129,6 @@
         </div>
     </div>
     <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
-        <!-- Кнопки -->
         <div class="flex items-center space-x-2">
             <PrimaryButton v-if="editingItemId" icon="fas fa-check" :onclick="saveWithoutClose" :is-loading="saveLoading">
             </PrimaryButton>
@@ -141,7 +139,6 @@
             </PrimaryButton>
         </div>
 
-        <!-- Информация в одной строке -->
         <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
             <div>{{ $t('toPay') }}: <span class="font-bold">{{ totalPrice.toFixed(2) }}{{ currencySymbol }}</span></div>
             <div>{{ $t('paid') }}: <span class="font-bold">{{ paidTotalAmount.toFixed(2) }}{{ currencySymbol }}</span></div>
@@ -225,9 +222,9 @@ export default {
             paidTotalAmount: 0,
             projectModalDialog: false,
             categoryModalDialog: false,
-            removedTempProducts: [], // Список удаленных временных товаров
-            additionalFields: [], // Дополнительные поля для выбранной категории
-            additionalFieldValues: {}, // Значения дополнительных полей
+            removedTempProducts: [],
+            additionalFields: [],
+            additionalFieldValues: {},
         };
     },
     created() {
@@ -236,28 +233,23 @@ export default {
         this.fetchOrderStatuses();
     },
     mounted() {
-        // Программно создаем watcher для editingItem
         this.$watch('editingItem', async (newItem, oldItem) => {
             if (newItem !== oldItem) {
                 await this.handleEditingItemChange(newItem);
             }
         }, { immediate: true });
         
-        // Обрабатываем editingItem при монтировании если он уже есть
         if (this.editingItem) {
             this.handleEditingItemChange(this.editingItem);
         }
         
-        // Сохраняем начальное состояние после загрузки всех данных
         this.$nextTick(async () => {
-            // Ждем загрузки всех необходимых данных
             await Promise.all([
                 this.fetchAllWarehouses(),
                 this.fetchAllCategories(),
                 this.fetchAllCashRegisters()
             ]);
             
-            // Устанавливаем значения по умолчанию если это новый заказ
             if (!this.editingItem) {
                 if (this.allWarehouses.length > 0 && !this.warehouseId) {
                     this.warehouseId = this.allWarehouses[0].id;
@@ -269,13 +261,11 @@ export default {
                     this.cashId = this.allCashRegisters[0].id;
                 }
                 
-                // Загружаем дополнительные поля для выбранной категории
                 if (this.categoryId) {
                     await this.loadAdditionalFields(this.categoryId, false);
                 }
             }
             
-            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },
@@ -331,7 +321,6 @@ export default {
         allCategories: {
             handler(newCategories) {
                 if (newCategories.length > 0 && this.categoryId) {
-                    // Когда категории загружены и есть выбранная категория, загружаем дополнительные поля
                     this.loadAdditionalFields(this.categoryId, false);
                 }
             },
@@ -339,7 +328,6 @@ export default {
         }
     },
     methods: {
-        // Переопределяем метод getFormState из миксина
         getFormState() {
             const state = {
                 selectedClient: this.selectedClient,
@@ -359,7 +347,6 @@ export default {
                     const rawValue = this.additionalFieldValues[fieldId];
                     let stringValue = '';
                     
-                    // Преобразуем значение в строку с учетом типа
                     if (rawValue === null || rawValue === undefined) {
                         stringValue = '';
                     } else if (typeof rawValue === 'boolean') {
@@ -383,6 +370,7 @@ export default {
         },
         async fetchAllProjects() {
             try {
+                // Получаем только проекты, к которым у пользователя есть доступ
                 this.allProjects = await ProjectController.getAllItems();
             } catch (error) {
                 this.allProjects = [];
@@ -392,7 +380,6 @@ export default {
             try {
                 this.allCategories = await OrderCategoryController.getAllItems();
             } catch (error) {
-                console.error('fetchAllCategories: ошибка:', error);
                 this.allCategories = [];
             }
         },
@@ -411,13 +398,10 @@ export default {
 
         onCategoryChange(event) {
             if (this.categoryId) {
-                // Сохраняем текущие значения дополнительных полей
                 const currentValues = { ...this.additionalFieldValues };
                 
-                // Загружаем новые поля для выбранной категории
                 this.loadAdditionalFields(this.categoryId, false);
                 
-                // Восстанавливаем значения для полей, которые уже существуют
                 this.$nextTick(() => {
                     Object.keys(currentValues).forEach(fieldId => {
                         if (this.additionalFieldValues.hasOwnProperty(fieldId)) {
@@ -454,26 +438,20 @@ export default {
                 
                 this.additionalFields = fields;
                 
-                // Устанавливаем значения по умолчанию только для новых полей
                 this.additionalFields.forEach(field => {
-                    // Пробуем разные варианты названий поля
                     let defaultValue = field.default_value || field.default || field.defaultValue || '';
                     
                     if (!this.additionalFieldValues.hasOwnProperty(field.id)) {
                         if (field.type === 'boolean') {
-                            // Для булевых полей устанавливаем true/false, но при отправке преобразуем в строку
                             this.additionalFieldValues[field.id] = defaultValue === 'true' || defaultValue === true;
                         } else if (field.type === 'int' || field.type === 'number') {
-                            // Для числовых полей устанавливаем число или пустую строку
                             this.additionalFieldValues[field.id] = defaultValue || '';
                         } else {
-                            // Для остальных полей устанавливаем строку
                             this.additionalFieldValues[field.id] = defaultValue || '';
                         }
                     }
                 });
             } catch (error) {
-                console.error('Ошибка при загрузке дополнительных полей:', error);
                 this.additionalFields = [];
                 if (!preserveValues) {
                     this.additionalFieldValues = {};
@@ -482,7 +460,6 @@ export default {
         },
 
         async save() {
-            // Проверяем обязательные поля
             const validationErrors = [];
             
             if (!this.categoryId) {
@@ -498,17 +475,14 @@ export default {
                 validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
             }
             
-            // Проверяем обязательные дополнительные поля
             this.additionalFields.forEach(field => {
                 if (field.required) {
                     const value = this.additionalFieldValues[field.id];
                     let isEmpty = false;
                     
                     if (field.type === 'boolean') {
-                        // Для булевых полей проверяем, что значение не undefined/null
                         isEmpty = value === null || value === undefined;
                     } else {
-                        // Для остальных полей проверяем, что значение не пустое
                         isEmpty = value === null || value === undefined || value === '' || value === false;
                     }
                     
@@ -554,12 +528,8 @@ export default {
                 }
                 if (resp.message) {
                     this.$emit('saved');
-                    // Обновляем начальное состояние формы после успешного сохранения
                     this.resetFormChanges();
-                    // Сбрасываем список удаленных временных товаров
                     this.removedTempProducts = [];
-                    // НЕ очищаем форму здесь, чтобы избежать создания дублирующих заказов
-                    // Форма будет очищена только при закрытии страницы или явном сбросе
                 }
             } catch (error) {
                 this.$emit('saved-error', this.getApiErrorMessage(error));
@@ -568,7 +538,6 @@ export default {
         },
 
         async saveWithoutClose() {
-            // Проверяем обязательные поля
             const validationErrors = [];
             
             if (!this.categoryId) {
@@ -584,17 +553,14 @@ export default {
                 validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
             }
             
-            // Проверяем обязательные дополнительные поля
             this.additionalFields.forEach(field => {
                 if (field.required) {
                     const value = this.additionalFieldValues[field.id];
                     let isEmpty = false;
                     
                     if (field.type === 'boolean') {
-                        // Для булевых полей проверяем, что значение не undefined/null
                         isEmpty = value === null || value === undefined;
                     } else {
-                        // Для остальных полей проверяем, что значение не пустое
                         isEmpty = value === null || value === undefined || value === '' || value === false;
                     }
                     
@@ -642,9 +608,7 @@ export default {
                 
                 if (resp.message) {
                     this.$emit('saved-silent');
-                    // Обновляем начальное состояние формы после успешного сохранения
                     this.resetFormChanges();
-                    // Сбрасываем список удаленных временных товаров
                     this.removedTempProducts = [];
                 }
             } catch (error) {
@@ -668,7 +632,6 @@ export default {
             }
             this.deleteLoading = false;
         },
-        // Обработчик удаления товара
         onProductRemoved(productData) {
             if (productData.wasTempProduct && productData.name) {
                 this.removedTempProducts.push(productData.name);
@@ -687,11 +650,11 @@ export default {
             this.editingItemId = null;
             this.statusId = 1;
             this.paidTotalAmount = 0;
-            this.removedTempProducts = []; // Сбрасываем список удаленных временных товаров
-            this.additionalFields = []; // Очищаем дополнительные поля
-            this.additionalFieldValues = {}; // Очищаем значения дополнительных полей
-            this.resetFormInitialization(); // Сбрасываем флаг инициализации
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.removedTempProducts = [];
+            this.additionalFields = [];
+            this.additionalFieldValues = {};
+            this.resetFormInitialization();
+            this.resetFormChanges();
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -706,7 +669,6 @@ export default {
             this.projectModalDialog = false;
         },
         handleProjectSaved(project) {
-            // Обновляем список проектов и выбираем новый проект
             this.fetchAllProjects();
             if (project && project.id) {
                 this.projectId = project.id;
@@ -714,8 +676,6 @@ export default {
             this.closeProjectModal();
         },
         handleProjectSavedError(error) {
-            console.error('Ошибка создания проекта:', error);
-            // Можно добавить уведомление об ошибке
         },
         showCategoryModal() {
             this.categoryModalDialog = true;
@@ -724,7 +684,6 @@ export default {
             this.categoryModalDialog = false;
         },
         handleCategorySaved(category) {
-            // Обновляем список категорий и выбираем новую категорию
             this.fetchAllCategories();
             if (category && category.id) {
                 this.categoryId = category.id;
@@ -732,43 +691,32 @@ export default {
             this.closeCategoryModal();
         },
         handleCategorySavedError(error) {
-            console.error('Ошибка создания категории заказа:', error);
-            // Можно добавить уведомление об ошибке
         },
         generateTempProductId() {
-            // Генерируем уникальный ID для временного товара
-            // Используем timestamp + случайное число для уникальности
             return Date.now() + Math.floor(Math.random() * 1000);
         },
 
         async handleEditingItemChange(newItem) {
             if (!newItem) {
-                // При создании нового заказа очищаем дополнительные поля
                 this.additionalFieldValues = {};
                 this.additionalFields = [];
                 return;
             }
             
-            // Проверяем разные варианты названия поля
             const additionalFields = newItem?.additionalFields || newItem?.additional_fields;
             
-            // Сначала загружаем поля для категории
             if (newItem.categoryId) {
                 await this.loadAdditionalFields(newItem.categoryId);
             }
             
-            // Затем устанавливаем значения из заказа, если они есть
             if (additionalFields && additionalFields.length > 0) {
                 additionalFields.forEach(field => {
-                    // Преобразуем значение в нужный тип в зависимости от типа поля
                     let value = field.value;
                     
-                    // Если значение пришло как строка, но нужно преобразовать в нужный тип
                     if (typeof value === 'string') {
                         if (value === 'true') value = true;
                         else if (value === 'false') value = false;
                         else if (value === 'null' || value === '') value = '';
-                        // Для числовых полей оставляем как есть, если это число
                         else if (!isNaN(value) && value !== '') value = value;
                     }
                     
@@ -824,21 +772,18 @@ export default {
                     this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
                     this.note = newEditingItem.note || '';
                     this.description = newEditingItem.description || '';
-                    // Нормализуем позиции: разделяем обычные и одноразовые
                     const rawProducts = newEditingItem.products || [];
                     this.products = rawProducts.map(p => {
-                        // Бэкенд/фронт могут прислать разные кейсы (snake_case / camelCase)
-                        // Временный товар определяется по флагу isTempProduct или по отсутствию product_id/productId
                         const isTemp = p.isTempProduct || ((p.product_id == null) && (p.productId == null));
                         if (isTemp) {
                             return {
                                 name: p.product_name || p.productName || p.name,
-                                productName: p.product_name || p.productName || p.name, // Добавляем для совместимости
+                                productName: p.product_name || p.productName || p.name,
                                 description: p.description || '',
                                 quantity: Number(p.quantity) || 0,
                                 price: Number(p.price) || 0,
                                 unitId: (p.unit_id ?? p.unitId) ?? null,
-                                productId: p.productId || p.product_id || this.generateTempProductId(), // Генерируем ID если его нет
+                                productId: p.productId || p.product_id || this.generateTempProductId(),
                                 isTempProduct: true,
                                 icons() { return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>'; },
                             };
@@ -850,7 +795,6 @@ export default {
                             quantity: Number(p.quantity) || 0,
                             price: Number(p.price) || 0,
                             unitId: (p.unit_id ?? p.unitId) ?? null,
-                            // Для товара/услуги, если хотите — можно подменить иконку по типу продукта
                             icons() {
                                 const isProduct = p.product_type == 1 || p.product_type === '1' || p.type == 1 || p.type === '1';
                                 return isProduct
@@ -863,12 +807,10 @@ export default {
                     this.discountType = newEditingItem.discount_type || 'fixed';
                     this.editingItemId = newEditingItem.id || null;
                     
-                    // Загружаем дополнительные поля если есть категория
                     if (newEditingItem.categoryId || newEditingItem.category_id) {
                         this.loadAdditionalFields(newEditingItem.categoryId || newEditingItem.category_id);
                     }
                     
-                    // Загружаем значения дополнительных полей если они есть
                     if (newEditingItem.additional_fields && newEditingItem.additional_fields.length > 0) {
                         newEditingItem.additional_fields.forEach(field => {
                             this.additionalFieldValues[field.field_id] = field.value;
@@ -877,7 +819,6 @@ export default {
                 } else {
                     this.clearForm();
                 }
-                // Сохраняем новое начальное состояние
                 this.$nextTick(() => {
                     this.saveInitialState();
                 });

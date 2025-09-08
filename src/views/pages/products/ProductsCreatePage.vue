@@ -175,16 +175,13 @@ export default {
         }
     },
     mounted() {
-        // Сохраняем начальное состояние после загрузки всех данных
         this.$nextTick(async () => {
-            // Ждем загрузки всех необходимых данных
             await Promise.all([
                 this.fetchUnits(),
                 this.fetchCurrencies(),
                 this.fetchAllCategories()
             ]);
             
-            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },
@@ -227,7 +224,6 @@ export default {
                     purchase_price: parseFloat(this.purchase_price) || 0,
                 };
                 if (this.editingItemId != null) {
-                    // Если это WarehouseStockDto, используем productId для обновления товара
                     const itemId = this.editingItem && this.editingItem.productId ? this.editingItem.productId : this.editingItemId;
                     var resp = await ProductController.updateItem(
                         itemId,
@@ -254,7 +250,6 @@ export default {
             }
             this.deleteLoading = true;
             try {
-                // Если это WarehouseStockDto, используем productId для удаления товара
                 const itemId = this.editingItem && this.editingItem.productId ? this.editingItem.productId : this.editingItemId;
                 const resp = await ProductController.deleteItem(itemId);
                 if (resp.message) {
@@ -324,9 +319,8 @@ export default {
                 this.$refs.imageInput.value = null;
             }
             this.fetchAllCategories();
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.resetFormChanges();
         },
-        // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
                 type: this.type,
@@ -414,7 +408,6 @@ export default {
                     this.editingItemId = null;
                     this.selected_image = null;
                 }
-                // Сохраняем новое начальное состояние
                 this.$nextTick(() => {
                     this.saveInitialState();
                 });

@@ -70,23 +70,17 @@ export default {
         }
     },
     mounted() {
-        // Сохраняем начальное состояние после загрузки всех данных
         this.$nextTick(async () => {
-            // Ждем загрузки всех необходимых данных
             await this.fetchAllCategories();
             
-            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },
     methods: {
-                // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
                 name: this.name,
-                description: this.description,
-                color: this.color,
-                status: this.status
+                categoryId: this.categoryId
             };
         },
         async fetchAllCategories() {
@@ -136,7 +130,7 @@ export default {
             this.categoryId = '';
             this.editingItemId = null;
             this.fetchAllCategories();
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.resetFormChanges();
         },
         showDeleteDialog() { this.deleteDialog = true; },
         closeDeleteDialog() { this.deleteDialog = false; },

@@ -37,13 +37,15 @@ import WarehouseMovementController from '@/api/WarehouseMovementController';
 import WarehousesMovementCreatePage from '@/views/pages/warehouses/WarehousesMovementCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import crudEventMixin from '@/mixins/crudEventMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, WarehousesMovementCreatePage, BatchButton, AlertDialog },
     data() {
         return {
@@ -52,6 +54,10 @@ export default {
             selectedIds: [],
             controller: WarehouseMovementController,
             editingItem: null,
+            savedSuccessText: this.$t('movementSuccessfullyAdded'),
+            savedErrorText: this.$t('errorSavingMovement'),
+            deletedSuccessText: this.$t('movementSuccessfullyDeleted'),
+            deletedErrorText: this.$t('errorDeletingMovement'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
@@ -63,16 +69,13 @@ export default {
         }
     },
     computed: {
-        translatedColumnsConfig() {
-            return this.columnsConfig.map(column => ({
-                ...column,
-                label: column.label === '#' ? '#' : this.$t(column.label)
-            }));
-        }
     },
     created() {
-        this.fetchItems();
         this.$store.commit('SET_SETTINGS_OPEN', false);
+    },
+
+    mounted() {
+        this.fetchItems();
     },
     methods: {
         itemMapper(i, c) {
@@ -88,7 +91,6 @@ export default {
             }
         },
         handleModalClose() {
-            // Проверяем, есть ли изменения в форме
             const formRef = this.$refs.warehousesmovementcreatepageForm;
             if (formRef && formRef.handleCloseRequest) {
                 formRef.handleCloseRequest();
@@ -109,22 +111,6 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
-        },
-        handleSaved() {
-            this.showNotification('Товары перемещены', '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleSavedError(m) {
-            this.showNotification('Ошибка сохранения записи', m, true);
-        },
-        handleDeleted() {
-            this.showNotification('Запись успешно удалена', '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleDeletedError(m) {
-            this.showNotification('Ошибка удаления записи', m, true);
         }
     }
 }

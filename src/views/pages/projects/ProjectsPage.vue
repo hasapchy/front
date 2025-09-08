@@ -35,6 +35,7 @@ import ProjectController from '@/api/ProjectController';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import crudEventMixin from '@/mixins/crudEventMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
@@ -42,7 +43,7 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ProjectCreatePage, BatchButton, AlertDialog },
     data() {
         return {
@@ -50,6 +51,10 @@ export default {
             loading: false,
             selectedIds: [],
             controller: ProjectController,
+            savedSuccessText: this.$t('projectSuccessfullyAdded'),
+            savedErrorText: this.$t('errorSavingProject'),
+            deletedSuccessText: this.$t('projectSuccessfullyDeleted'),
+            deletedErrorText: this.$t('errorDeletingProject'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
@@ -62,8 +67,11 @@ export default {
         }
     },
     created() {
-        this.fetchItems();
         this.$store.commit('SET_SETTINGS_OPEN', false);
+    },
+
+    mounted() {
+        this.fetchItems();
     },
     methods: {
         itemMapper(i, c) {
@@ -83,7 +91,6 @@ export default {
             }
         },
         handleModalClose() {
-            // Проверяем, есть ли изменения в форме
             const formRef = this.$refs.projectcreatepageForm;
             if (formRef && formRef.handleCloseRequest) {
                 formRef.handleCloseRequest();
@@ -104,22 +111,6 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
-        },
-        handleSaved() {
-            this.showNotification(this.$t('projectSuccessfullyAdded'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleSavedError(m) {
-            this.showNotification(this.$t('errorSavingProject'), m, true);
-        },
-        handleDeleted() {
-            this.showNotification(this.$t('projectSuccessfullyDeleted'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleDeletedError(m) {
-            this.showNotification(this.$t('errorDeletingProject'), m, true);
         }
     },
     computed: {

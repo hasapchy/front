@@ -62,15 +62,17 @@ import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vu
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import crudEventMixin from '@/mixins/crudEventMixin';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import { eventBus } from '@/eventBus';
 
 
 export default {
-    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, ClientButtonCell, BatchButton, AlertDialog },
     data() {
         return {
@@ -78,6 +80,10 @@ export default {
             loading: false,
             selectedIds: [],
             controller: SaleController,
+            savedSuccessText: this.$t('saleRecordAdded'),
+            savedErrorText: this.$t('errorSavingRecord'),
+            deletedSuccessText: this.$t('recordSuccessfullyDeleted'),
+            deletedErrorText: this.$t('errorDeletingRecord'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
@@ -95,14 +101,15 @@ export default {
         }
     },
     created() {
-        this.fetchItems();
         this.$store.commit('SET_SETTINGS_OPEN', false);
         
-        // Слушаем события поиска через eventBus
         eventBus.on('global-search', this.handleSearch);
     },
+
+    mounted() {
+        this.fetchItems();
+    },
     beforeUnmount() {
-        // Удаляем слушатель события
         eventBus.off('global-search', this.handleSearch);
     },
     methods: {
@@ -129,7 +136,6 @@ export default {
             }
         },
         handleModalClose() {
-            // Проверяем, есть ли изменения в форме
             const formRef = this.$refs.salecreatepageForm;
             if (formRef && formRef.handleCloseRequest) {
                 formRef.handleCloseRequest();
@@ -138,7 +144,6 @@ export default {
             }
         },
         handleSearch(query) {
-            // Обновляем store напрямую
             this.$store.dispatch('setSearchQuery', query);
             this.fetchItems(1, false);
         },
@@ -155,34 +160,11 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
-        },
-        handleSaved() {
-            this.showNotification(this.$t('saleRecordAdded'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleSavedError(m) {
-            this.showNotification(this.$t('errorSavingRecord'), m, true);
-        },
-        handleDeleted() {
-            this.showNotification(this.$t('recordSuccessfullyDeleted'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleDeletedError(m) {
-            this.showNotification(this.$t('errorDeletingRecord'), m, true);
-        },
-
+        }
     },
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
-        },
-        translatedColumnsConfig() {
-            return this.columnsConfig.map(column => ({
-                ...column,
-                label: column.label === '#' ? '#' : this.$t(column.label)
-            }));
         }
     },
 }

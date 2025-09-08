@@ -7,10 +7,12 @@ export class UserDto {
     this.hireDate = data.hire_date;
     this.position = data.position;
     this.isActive = Boolean(data.is_active);
+    this.isAdmin = Boolean(data.is_admin);
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
 
     this.permissions = data.permissions?.map((p) => p.name) || [];
+    this.companies = data.companies?.map((c) => ({ id: c.id, name: c.name })) || [];
   }
 
   static fromArray(users) {

@@ -6,7 +6,6 @@
             </PrimaryButton>
             
             
-            <!-- Фильтр по дате -->
             <div class="ml-4">
                 <select v-model="dateFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
                     <option value="all_time">{{ $t('allTime') }}</option>
@@ -25,7 +24,6 @@
             </div>
 
 
-            <!-- Фильтр по статусу -->
             <div class="ml-4">
                 <select v-model="statusFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
                     <option value="">{{ $t('allStatuses') }}</option>
@@ -36,7 +34,6 @@
                 </select>
             </div>
 
-            <!-- Кнопка сброса фильтров -->
             <div class="ml-4">
                 <PrimaryButton 
                     :onclick="resetFilters"
@@ -85,16 +82,18 @@ import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vu
 import { markRaw } from "vue";
 import BatchButton from "@/views/components/app/buttons/BatchButton.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import crudEventMixin from "@/mixins/crudEventMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import batchActionsMixin from "@/mixins/batchActionsMixin";
 import modalMixin from "@/mixins/modalMixin";
+import tableTranslationMixin from "@/mixins/tableTranslationMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import { defineAsyncComponent } from "vue";
 import { eventBus } from "@/eventBus";
 
 
 export default {
-    mixins: [getApiErrorMessage, notificationMixin, modalMixin, batchActionsMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin],
     components: { 
         NotificationToast, 
         SideModalDialog, 
@@ -114,6 +113,10 @@ export default {
             editingItem: null,
             loadingDelete: false,
             controller: InvoiceController,
+            savedSuccessText: this.$t('invoiceSaved'),
+            savedErrorText: this.$t('errorSavingInvoice'),
+            deletedSuccessText: this.$t('invoiceDeleted'),
+            deletedErrorText: this.$t('errorDeletingInvoice'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: "id", label: "№", size: 20 },
@@ -134,36 +137,32 @@ export default {
         };
     },
     created() {
-        this.fetchItems();
         this.$store.commit("SET_SETTINGS_OPEN", false);
         
-        // Слушаем события поиска через eventBus
         eventBus.on('global-search', this.handleSearch);
         
-        // Проверяем, нужно ли создать счет из заказов
         if (this.$route.query.create === 'true' && this.$route.query.order_ids) {
             this.preselectedOrderIds = this.$route.query.order_ids.split(',').map(id => parseInt(id));
+        }
+    },
+
+    mounted() {
+        this.fetchItems();
+        
+        if (this.preselectedOrderIds.length > 0) {
             this.$nextTick(() => {
                 this.showModal(null);
             });
         }
-        
     },
 
     beforeUnmount() {
-        // Удаляем слушатель события
         eventBus.off('global-search', this.handleSearch);
     },
 
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
-        },
-        translatedColumnsConfig() {
-            return this.columnsConfig.map(column => ({
-                ...column,
-                label: column.label === '#' || column.label === '№' ? column.label : this.$t(column.label)
-            }));
         }
     },
     methods: {
@@ -192,7 +191,6 @@ export default {
             }
         },
         handleModalClose() {
-            // Проверяем, есть ли изменения в форме
             const formRef = this.$refs.invoicecreatepageForm;
             if (formRef && formRef.handleCloseRequest) {
                 formRef.handleCloseRequest();
@@ -202,7 +200,6 @@ export default {
         },
 
         handleSearch(query) {
-            // Обновляем store напрямую
             this.$store.dispatch('setSearchQuery', query);
             this.fetchItems(1, false);
         },
@@ -216,28 +213,6 @@ export default {
             }
             if (!silent) this.loading = false;
         },
-
-        handleSaved() {
-            this.showNotification(this.$t('invoiceSaved'), "", false);
-            this.fetchItems(this.data.currentPage, true);
-            this.closeModal();
-        },
-
-        handleSavedError(err) {
-            this.showNotification(this.$t('errorSavingInvoice'), err, true);
-        },
-
-        handleDeleted() {
-            this.showNotification(this.$t('invoiceDeleted'), "", false);
-            this.fetchItems(this.data.currentPage, true);
-            this.closeModal();
-        },
-
-        handleDeletedError(err) {
-            this.showNotification(this.$t('errorDeletingInvoice'), err, true);
-        },
-
-
 
         showModal(item) {
             this.editingItem = item;

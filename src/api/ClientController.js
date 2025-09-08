@@ -39,11 +39,14 @@ export default class ClientController {
     }
   }
 
-  static async getItems(page = 1, search = null) {
+  static async getItems(page = 1, search = null, includeInactive = false) {
     try {
       const params = { page: page };
       if (search) {
         params.search = search;
+      }
+      if (includeInactive) {
+        params.include_inactive = true;
       }
       const response = await api.get("/clients", { params });
       const data = response.data;

@@ -67,10 +67,11 @@ import WarehouseController from '@/api/WarehouseController';
 import AdminWarehouseCreatePage from '@/views/pages/admin/warehouses/AdminWarehouseCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import ProductController from '@/api/ProductController';
 
 export default {
-    mixins: [modalMixin, notificationMixin],
+    mixins: [modalMixin, notificationMixin, tableTranslationMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, AdminWarehouseCreatePage },
     data() {
         return {
@@ -98,18 +99,15 @@ export default {
         }
     },
     computed: {
-        translatedColumnsConfig() {
-            return this.columnsConfig.map(column => ({
-                ...column,
-                label: column.label === '#' ? '#' : this.$t(column.label)
-            }));
-        }
     },
     created() {
+        this.$store.commit('SET_SETTINGS_OPEN', false);
+    },
+
+    mounted() {
         this.fetchItems();
         this.fetchAllCategories();
         this.fetchAllWarehouses();
-        this.$store.commit('SET_SETTINGS_OPEN', false);
     },
     methods: {
         async fetchAllCategories() {
@@ -173,8 +171,7 @@ export default {
             this.showNotification('Ошибка сохранения товара', err, true);
         },
         async showModal(item) {
-            // Получаем все товары на текущей странице (или ищем по id)
-            const page = 1; // или текущая страница, если есть
+            const page = 1;
             try {
                 const productsPage = await ProductController.getItems(page);
                 const found = productsPage.items.find(p => p.id === item.productId);

@@ -30,7 +30,7 @@ export default {
         },
         statusId: {
             type: Number,
-            default: 4 // Статус "Оплачено"
+            default: 4
         }
     },
     emits: ['update:modelValue', 'change'],
@@ -43,10 +43,8 @@ export default {
                 return 0;
             }
             
-            // Фильтруем заказы по статусу ID 4 (Оплачено)
             const paidOrders = this.orders.filter(order => order.statusId === this.statusId);
             
-            // Суммируем общую стоимость заказов
             return paidOrders.reduce((total, order) => {
                 return total + (parseFloat(order.totalPrice) || 0);
             }, 0);
@@ -61,7 +59,6 @@ export default {
         formatAmount(amount) {
             if (amount === 0) return '0';
             
-            // Форматируем сумму с разделителями тысяч
             return new Intl.NumberFormat('ru-RU', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 2

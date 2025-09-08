@@ -9,28 +9,126 @@
         <div>
             <div v-show="currentTab === 'info'">
                 <div class="mb-4">
-                    <label class="required">{{ $t('name') }}</label>
-                    <input type="text" v-model="form.name" />
+                    <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('name') }}</label>
+                    <input 
+                        type="text" 
+                        v-model="form.name" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                    />
                 </div>
 
                 <div class="mb-4">
-                    <label class="required">{{ $t('email') }}</label>
-                    <input type="email" v-model="form.email" />
+                    <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('email') }}</label>
+                    <input 
+                        type="email" 
+                        v-model="form.email" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                    />
                 </div>
 
                 <div class="mb-4" v-if="!editingItem">
-                    <label class="required">{{ $t('password') }}</label>
-                    <input type="password" v-model="form.password" />
+                    <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('password') }}</label>
+                    <div class="flex items-center space-x-2">
+                        <input 
+                            :type="showPassword ? 'text' : 'password'" 
+                            v-model="form.password" 
+                            :placeholder="$t('enterPassword')" 
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                        />
+                        <PrimaryButton :onclick="togglePasswordVisibility" :icon="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
+                        <PrimaryButton :onclick="generatePassword" :icon="'fas fa-dice'" class="px-2 py-1" />
+                    </div>
+                </div>
+
+                <div class="mb-4" v-if="!editingItem">
+                    <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('confirmPassword') }}</label>
+                    <div class="flex items-center space-x-2">
+                        <input 
+                            :type="showConfirmPassword ? 'text' : 'password'" 
+                            v-model="form.confirmPassword" 
+                            :placeholder="$t('confirmPassword')" 
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                        />
+                        <PrimaryButton :onclick="toggleConfirmPasswordVisibility" :icon="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
+                    </div>
                 </div>
 
                 <div class="mb-4" v-if="editingItem">
-                    <label>{{ $t('newPassword') }}</label>
-                    <input type="password" v-model="form.newPassword" :placeholder="$t('enterNewPassword')" />
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('newPassword') }}</label>
+                    <div class="flex items-center space-x-2">
+                        <input 
+                            :type="showNewPassword ? 'text' : 'password'" 
+                            v-model="form.newPassword" 
+                            :placeholder="$t('enterNewPassword')" 
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <PrimaryButton :onclick="toggleNewPasswordVisibility" :icon="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
+                        <PrimaryButton :onclick="generateNewPassword" :icon="'fas fa-dice'" class="px-2 py-1" />
+                    </div>
                 </div>
 
                 <div class="mb-4">
-                    <label>{{ $t('position') }}</label>
-                    <input type="text" v-model="form.position" />
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('position') }}</label>
+                    <input 
+                        type="text" 
+                        v-model="form.position" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('hireDate') }}</label>
+                    <input 
+                        type="date" 
+                        v-model="form.hire_date" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('characteristics') }}</label>
+                    <div class="flex items-center space-x-6">
+                        <label class="flex items-center space-x-2">
+                            <input 
+                                type="checkbox" 
+                                v-model="form.is_active" 
+                                :true-value="true" 
+                                :false-value="false"
+                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span class="text-sm text-gray-700">{{ $t('userStatus') }}</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input 
+                                type="checkbox" 
+                                v-model="form.is_admin" 
+                                :true-value="true" 
+                                :false-value="false"
+                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span class="text-sm text-gray-700">{{ $t('isAdmin') }}</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('companies') }}</label>
+                    <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
+                        <div v-for="company in companies" :key="company.id" class="flex items-center space-x-2 mb-2">
+                            <input 
+                                type="checkbox" 
+                                :id="`company-${company.id}`"
+                                :value="company.id" 
+                                v-model="form.companies"
+                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <label :for="`company-${company.id}`" class="text-sm text-gray-700 cursor-pointer">{{ company.name }}</label>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div v-show="currentTab === 'permissions'">
@@ -93,6 +191,7 @@
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UsersController from '@/api/UsersController';
+import CompaniesController from '@/api/CompaniesController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 
@@ -119,16 +218,25 @@ export default {
                 name: '',
                 email: '',
                 password: '',
+                confirmPassword: '',
                 newPassword: '',
                 position: '',
-                permissions: [],
+                hire_date: '',
+            is_active: true,
+            is_admin: false,
+            companies: [],
+            permissions: [],
             },
             editingItemId: null,
             allPermissions: [],
+            companies: [],
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
             currentTab: 'info',
+            showPassword: false,
+            showConfirmPassword: false,
+            showNewPassword: false,
             tabs: [
                 { name: 'info', label: 'information' },
                 { name: 'permissions', label: 'permissions' }
@@ -168,46 +276,69 @@ export default {
             set() { }
         }
     },
-    created() {
-        // Делаем i18n доступным глобально для PermissionUtils
+    mounted() {
         if (typeof window !== 'undefined') {
             window.i18n = this.$i18n;
         }
-    },
-    mounted() {
-        // Сохраняем начальное состояние после загрузки всех данных
+        
         this.$nextTick(async () => {
-            // Ждем загрузки всех необходимых данных
-            await this.fetchPermissions();
+            await Promise.all([
+                this.fetchPermissions(),
+                this.fetchCompanies()
+            ]);
             
-            // Теперь сохраняем начальное состояние
+            if (!this.editingItem) {
+                this.clearForm();
+            }
+            
             this.saveInitialState();
         });
     },
     methods: {
-                // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
                 name: this.form.name,
                 email: this.form.email,
                 password: this.form.password,
+                confirmPassword: this.form.confirmPassword,
                 newPassword: this.form.newPassword,
                 position: this.form.position,
+                hire_date: this.form.hire_date,
+                is_active: this.form.is_active,
+                is_admin: this.form.is_admin,
+                companies: [...this.form.companies],
                 permissions: [...this.form.permissions]
             };
         },
         async fetchPermissions() {
             this.allPermissions = await UsersController.getAllPermissions();
         },
+        async fetchCompanies() {
+            try {
+                const result = await CompaniesController.getItems();
+                this.companies = result.items || result;
+            } catch (error) {
+                console.error('Error fetching companies:', error);
+                this.companies = [];
+            }
+        },
         clearForm() {
             this.form.name = '';
             this.form.email = '';
             this.form.password = '';
+            this.form.confirmPassword = '';
             this.form.newPassword = '';
             this.form.position = '';
+            this.form.hire_date = '';
+            this.form.is_active = true;
+            this.form.is_admin = false;
+            this.form.companies = [];
             this.form.permissions = [];
             this.editingItemId = null;
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.showPassword = false;
+            this.showConfirmPassword = false;
+            this.showNewPassword = false;
+            this.resetFormChanges();
         },
         isGroupChecked(group) {
             const groupPermissions = this.allPermissions
@@ -250,20 +381,26 @@ export default {
         },
         getPermissionPrefix,
         async save() {
+            if (!this.editingItemId && this.form.password !== this.form.confirmPassword) {
+                this.$emit('saved-error', this.$t('passwordsDoNotMatch'));
+                return;
+            }
+            
             this.saveLoading = true;
             try {
                 let savedUser;
 
                 if (this.editingItemId) {
-                    // При редактировании отправляем только заполненные поля
                     const updateData = {
                         name: this.form.name,
                         email: this.form.email,
                         position: this.form.position,
+                        hire_date: this.form.hire_date,
+                        is_active: this.form.is_active,
+                        is_admin: this.form.is_admin,
                         permissions: this.form.permissions
                     };
                     
-                    // Добавляем новый пароль только если он заполнен
                     if (this.form.newPassword) {
                         updateData.password = this.form.newPassword;
                     }
@@ -273,7 +410,6 @@ export default {
                     savedUser = await UsersController.storeItem(this.form);
                 }
 
-                // 🔁 Если обновлённый пользователь — текущий, обновим store
                 const currentUser = this.$store.state.user;
                 if (savedUser.id === currentUser.id) {
                     const updatedUser = await AuthController.getUser();
@@ -286,6 +422,32 @@ export default {
                 this.$emit('saved-error', this.getApiErrorMessage(e));
             }
             this.saveLoading = false;
+        },
+        togglePasswordVisibility() {
+            this.showPassword = !this.showPassword;
+        },
+        toggleConfirmPasswordVisibility() {
+            this.showConfirmPassword = !this.showConfirmPassword;
+        },
+        toggleNewPasswordVisibility() {
+            this.showNewPassword = !this.showNewPassword;
+        },
+        generatePassword() {
+            const password = this.generateRandomPassword();
+            this.form.password = password;
+            this.form.confirmPassword = password;
+        },
+        generateNewPassword() {
+            this.form.newPassword = this.generateRandomPassword();
+        },
+        generateRandomPassword() {
+            const length = 12;
+            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+            let password = "";
+            for (let i = 0; i < length; i++) {
+                password += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            return password;
         },
         changeTab(tab) {
             this.currentTab = tab;
@@ -311,17 +473,22 @@ export default {
     },
     watch: {
         editingItem: {
-            handler(newEditingItem) {
+            handler(newEditingItem, oldEditingItem) {
                 if (newEditingItem) {
                     this.form.name = newEditingItem.name || '';
                     this.form.email = newEditingItem.email || '';
                     this.form.position = newEditingItem.position || '';
+                    this.form.hire_date = newEditingItem.hireDate || '';
+                    this.form.is_active = newEditingItem.isActive !== undefined ? newEditingItem.isActive : true;
+                    this.form.is_admin = newEditingItem.isAdmin !== undefined ? newEditingItem.isAdmin : false;
+                    this.form.companies = newEditingItem.companies?.map(c => c.id) || [];
                     this.form.permissions = newEditingItem.permissions || [];
                     this.editingItemId = newEditingItem.id || null;
                 } else {
-                    this.clearForm();
+                    if (oldEditingItem !== undefined) {
+                        this.clearForm();
+                    }
                 }
-                // Сохраняем новое начальное состояние
                 this.$nextTick(() => {
                     this.saveInitialState();
                 });

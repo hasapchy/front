@@ -80,7 +80,34 @@ export default {
   
   // Users
   password: 'Password',
-  newPassword: 'New Password',
-  enterNewPassword: 'Enter new password',
-  position: 'Position'
+    newPassword: 'New Password',
+    enterNewPassword: 'Enter new password',
+    confirmPassword: 'Confirm Password',
+    generate: 'Generate',
+    passwordsDoNotMatch: 'Passwords do not match',
+  userStatus: 'Active',
+  hireDate: 'Hire Date',
+  isAdmin: 'Administrator',
+  admin: 'Admin',
+  companies: 'Companies',
+  addCompany: 'Add Company',
+  editCompany: 'Edit Company',
+  companyName: 'Company Name',
+  enterCompanyName: 'Enter company name',
+  companySaved: 'Company saved',
+  errorSavingCompany: 'Error saving company',
+  companyDeleted: 'Company deleted',
+  errorDeletingCompany: 'Error deleting company',
+  errorLoadingCompanies: 'Error loading companies',
+  characteristics: 'Characteristics',
+  position: 'Position',
+  
+  // PDF Generation
+  generatePdf: 'Generate PDF',
+  shortPdf: 'Short',
+  detailedPdf: 'Detailed',
+  downloadSelected: 'Download Selected',
+  
+  // Performance monitoring
+  performanceMonitor: 'Monitoring'
 }

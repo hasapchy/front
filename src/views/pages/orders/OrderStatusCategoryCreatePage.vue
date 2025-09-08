@@ -31,9 +31,10 @@ import OrderStatusCategoryDto from '@/dto/order/OrderStatusCategoryDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import formChangesMixin from "@/mixins/formChangesMixin";
 
 export default {
-    mixins: [getApiErrorMessage],
+    mixins: [getApiErrorMessage, formChangesMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error'],
     components: { PrimaryButton, AlertDialog },
     props: {
@@ -48,6 +49,11 @@ export default {
             deleteDialog: false,
             deleteLoading: false
         }
+    },
+    mounted() {
+        this.$nextTick(() => {
+            this.saveInitialState();
+        });
     },
     methods: {
         async save() {
@@ -93,6 +99,13 @@ export default {
             this.name = '';
             this.color = '';
             this.editingItemId = null;
+            this.resetFormChanges();
+        },
+        getFormState() {
+            return {
+                name: this.name,
+                color: this.color
+            };
         },
         showDeleteDialog() { this.deleteDialog = true; },
         closeDeleteDialog() { this.deleteDialog = false; },
@@ -109,6 +122,9 @@ export default {
                     this.color = '';
                     this.editingItemId = null;
                 }
+                this.$nextTick(() => {
+                    this.saveInitialState();
+                });
             },
             deep: true,
             immediate: true

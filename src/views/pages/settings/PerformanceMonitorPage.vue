@@ -1,14 +1,11 @@
 <template>
   <div class="p-6">
 
-    <!-- Статус JWT токенов -->
     <div class="mb-6">
       <TokenStatusComponent />
     </div>
 
-    <!-- Кнопки управления -->
     <div class="mb-6 flex flex-wrap gap-4">
-      <!-- Основные кнопки -->
       <button
         @click="refreshMetrics"
         :disabled="loading"
@@ -27,7 +24,6 @@
         <span>Запустить полный тест</span>
       </button>
 
-      <!-- Выпадающий список для тестов -->
       <div class="relative">
         <button
           @click="toggleTestDropdown"
@@ -38,8 +34,6 @@
           <span>Тесты производительности</span>
           <i class="fas fa-chevron-down ml-2" :class="{ 'fa-chevron-up': showTestDropdown }"></i>
         </button>
-        
-        <!-- Выпадающее меню -->
         <div 
           v-if="showTestDropdown" 
           class="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-10 transition-all duration-200 ease-in-out transform origin-top"
@@ -141,7 +135,6 @@
         </div>
       </div>
 
-      <!-- Кнопки управления кэшем -->
       <button
         @click="getCacheStats"
         :disabled="loading"
@@ -168,8 +161,6 @@
           <i class="fas fa-table"></i>
           <span>Обновить размеры таблиц</span>
         </button>
-
-        <!-- Новые кнопки для расширенного мониторинга -->
         <button
           @click="analyzeIndexes"
           :disabled="loading"
@@ -196,7 +187,6 @@
           </span>
         </button>
 
-        <!-- Кнопка проверки доступности функций -->
         <button
           @click="checkFeatureAvailability"
           :disabled="loading"
@@ -206,8 +196,6 @@
           <span>Проверить доступность функций</span>
         </button>
       </div>
-
-    <!-- Логи сервера -->
     <div class="mb-6">
       <div class="bg-white rounded-lg shadow p-6">
         <div class="flex justify-between items-center mb-4">
@@ -259,7 +247,6 @@
       </div>
     </div>
 
-    <!-- Информация о базе данных -->
     <div v-if="metrics.database_info" class="mb-6">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Информация о базе данных</h2>
@@ -280,7 +267,6 @@
       </div>
     </div>
 
-    <!-- Информация о доступности функций -->
     <div class="mb-6">
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div class="flex">
@@ -302,7 +288,6 @@
       </div>
     </div>
 
-    <!-- Результаты проверки доступности функций -->
     <div v-if="featureAvailability" class="mb-6">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Доступность функций мониторинга</h2>
@@ -322,12 +307,10 @@
       </div>
     </div>
 
-    <!-- Секция с рекомендациями по производительности -->
     <div v-if="performanceRecommendations" class="mb-6">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Рекомендации по производительности</h2>
         
-        <!-- Сообщение о недоступности -->
         <div v-if="performanceRecommendations.error" class="mb-6">
           <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div class="flex">
@@ -346,8 +329,6 @@
             </div>
           </div>
         </div>
-        
-        <!-- Рекомендации (если доступны) -->
         <div v-if="performanceRecommendations.recommendations && performanceRecommendations.recommendations.length > 0" class="space-y-3">
           <div 
             v-for="(rec, index) in performanceRecommendations.recommendations" 
@@ -388,12 +369,10 @@
       </div>
     </div>
 
-    <!-- Метрики в реальном времени -->
     <div v-if="realTimeMetrics" class="mb-6">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Метрики в реальном времени</h2>
         
-        <!-- Сообщение о недоступности -->
         <div v-if="realTimeMetrics.error" class="mb-6">
           <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div class="flex">
@@ -412,8 +391,6 @@
             </div>
           </div>
         </div>
-        
-        <!-- Fallback данные для старых версий -->
         <div v-if="realTimeMetrics.fallback_data" class="mb-6">
           <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <h3 class="text-md font-medium text-gray-800 mb-3">Базовая информация (fallback)</h3>
@@ -433,9 +410,7 @@
           </div>
         </div>
         
-        <!-- Обычные метрики (если доступны) -->
         <div v-if="!realTimeMetrics.error">
-          <!-- Активные соединения -->
           <div v-if="realTimeMetrics.active_connections" class="mb-6">
             <h3 class="text-md font-medium text-gray-800 mb-3">Активные соединения</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -450,7 +425,6 @@
             </div>
           </div>
 
-          <!-- Статистика InnoDB -->
           <div v-if="realTimeMetrics.innodb_stats" class="mb-6">
             <h3 class="text-md font-medium text-gray-800 mb-3">Статистика InnoDB</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -461,7 +435,6 @@
             </div>
           </div>
 
-          <!-- Размер буфера -->
           <div v-if="realTimeMetrics.buffer_stats" class="mb-6">
             <h3 class="text-md font-medium text-gray-800 mb-3">Настройки буфера</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -472,7 +445,6 @@
             </div>
           </div>
 
-          <!-- Время обновления -->
           <div v-if="realTimeMetrics.timestamp" class="text-sm text-gray-500 text-center">
             Последнее обновление: {{ new Date(realTimeMetrics.timestamp).toLocaleString() }}
           </div>
@@ -480,12 +452,10 @@
       </div>
     </div>
 
-    <!-- Метрики производительности продаж -->
     <div v-if="metrics.sales_performance" class="mb-6">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Производительность запросов продаж</h2>
         
-        <!-- Список продаж -->
         <div class="mb-6">
           <h3 class="text-md font-medium text-gray-800 mb-3">Список продаж (без фильтров)</h3>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -508,7 +478,6 @@
           </div>
         </div>
 
-        <!-- Поиск продаж -->
         <div class="mb-6">
           <h3 class="text-md font-medium text-gray-800 mb-3">Поиск продаж</h3>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -531,7 +500,6 @@
           </div>
         </div>
 
-        <!-- Фильтр по дате -->
         <div>
           <h3 class="text-md font-medium text-gray-800 mb-3">Фильтр по дате</h3>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -556,12 +524,10 @@
       </div>
     </div>
 
-    <!-- Метрики производительности клиентов -->
     <div v-if="metrics.clients_performance" class="mb-6">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Производительность запросов клиентов</h2>
         
-        <!-- Список клиентов -->
         <div class="mb-6">
           <h3 class="text-md font-medium text-gray-800 mb-3">Список клиентов (без фильтров)</h3>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -584,7 +550,6 @@
           </div>
         </div>
 
-        <!-- Поиск клиентов -->
         <div>
           <h3 class="text-md font-medium text-gray-800 mb-3">Поиск клиентов</h3>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -609,12 +574,10 @@
       </div>
     </div>
 
-    <!-- Метрики производительности продуктов -->
     <div v-if="metrics.products_performance" class="mb-6">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Производительность запросов продуктов</h2>
         
-        <!-- Список продуктов -->
         <div class="mb-6">
           <h3 class="text-md font-medium text-gray-800 mb-3">Список продуктов (без фильтров)</h3>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -637,7 +600,6 @@
           </div>
         </div>
 
-        <!-- Поиск продуктов -->
         <div>
           <h3 class="text-md font-medium text-gray-800 mb-3">Поиск продуктов</h3>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -662,20 +624,14 @@
       </div>
     </div>
 
-    <!-- Размеры таблиц -->
     <div v-if="metrics.table_sizes && !metrics.table_sizes.error" class="mb-6">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Размеры таблиц</h2>
-        
-
-        
-        <!-- Проверка на ошибки -->
         <div v-if="metrics.table_sizes.error" class="mb-4 p-3 bg-red-100 rounded text-red-700">
           <div class="font-medium">Ошибка получения данных:</div>
           <div>{{ metrics.table_sizes.error }}</div>
         </div>
         
-        <!-- Проверка на пустые данные -->
         <div v-if="!Array.isArray(metrics.table_sizes) || metrics.table_sizes.length === 0" class="mb-4 p-3 bg-yellow-100 rounded text-yellow-700">
           <div class="font-medium">Данные о размерах таблиц недоступны</div>
           <div>Попробуйте обновить данные или проверьте права доступа к базе данных</div>
@@ -711,7 +667,6 @@
       </div>
     </div>
 
-    <!-- Информация о кэше -->
     <div v-if="metrics.cache_stats" class="mb-6">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Информация о кэше</h2>
@@ -750,12 +705,10 @@
       </div>
     </div>
 
-    <!-- Медленные запросы -->
     <div v-if="metrics.slow_queries && !metrics.slow_queries.error" class="mb-6">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Медленные запросы</h2>
         
-        <!-- Сводка -->
         <div v-if="metrics.slow_queries.summary" class="mb-6">
           <h3 class="text-md font-medium text-gray-800 mb-3">Сводка</h3>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -778,7 +731,6 @@
           </div>
         </div>
 
-        <!-- Детали запросов -->
         <div v-if="metrics.slow_queries.slow_queries && metrics.slow_queries.slow_queries.length > 0" class="space-y-4">
           <div v-for="(query, index) in metrics.slow_queries.slow_queries" :key="index" class="bg-red-50 p-4 rounded-lg">
             <div class="text-sm text-red-600 mb-2">SQL запрос:</div>
@@ -810,7 +762,6 @@
       </div>
     </div>
 
-    <!-- Результаты тестов -->
     <div v-if="testResults" class="mb-6">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Результаты тестов производительности</h2>
@@ -818,7 +769,6 @@
                  <div v-for="(result, testName) in testResults" :key="testName" class="mb-6">
            <h3 class="text-md font-medium text-gray-800 mb-3 capitalize">{{ testName.replace('_', ' ') }}</h3>
            
-           <!-- Индикатор производительности -->
            <div class="mb-3">
              <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium" 
                   :class="getPerformanceClass(result)">
@@ -846,7 +796,6 @@
              </div>
            </div>
           
-          <!-- Детали запросов -->
           <div v-if="result.queries && result.queries.length > 0" class="mt-4">
             <details class="bg-gray-50 p-4 rounded-lg">
               <summary class="cursor-pointer text-sm font-medium text-gray-700">Показать детали SQL запросов</summary>
@@ -863,7 +812,6 @@
       </div>
     </div>
 
-    <!-- Загрузка -->
     <div v-if="loading" class="flex justify-center items-center py-12">
       <div class="text-center">
         <i class="fas fa-spinner fa-spin text-3xl text-blue-600 mb-4"></i>
@@ -871,7 +819,6 @@
       </div>
     </div>
 
-    <!-- Ошибка -->
     <div v-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4">
       <div class="flex">
         <div class="flex-shrink-0">
@@ -884,7 +831,6 @@
       </div>
     </div>
 
-    <!-- Предупреждения о недоступных функциях -->
     <div v-if="(performanceRecommendations?.error || realTimeMetrics?.error) && !error" class="mb-6">
       <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <div class="flex">
@@ -909,12 +855,10 @@
       </div>
     </div>
 
-    <!-- Метрики производительности комментариев -->
     <div v-if="metrics.comments_performance" class="mb-6">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Производительность комментариев и таймлайна</h2>
         
-        <!-- Список комментариев -->
         <div class="mb-6">
           <h3 class="text-md font-medium text-gray-800 mb-3">Список комментариев</h3>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -937,7 +881,6 @@
           </div>
         </div>
 
-        <!-- Поиск комментариев -->
         <div class="mb-6">
           <h3 class="text-md font-medium text-gray-800 mb-3">Поиск комментариев</h3>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -960,7 +903,6 @@
           </div>
         </div>
 
-        <!-- Таймлайн -->
         <div>
           <h3 class="text-md font-medium text-gray-800 mb-3">Таймлайн</h3>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -984,12 +926,10 @@
         </div>
       </div>
 
-      <!-- Производительность касс -->
       <div v-if="metrics.cash_registers_performance" class="mb-6">
         <h3 class="text-lg font-semibold text-gray-800 mb-4">Производительность касс</h3>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Список касс -->
           <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
             <h4 class="text-md font-medium text-gray-700 mb-3">Список касс</h4>
             <div class="grid grid-cols-2 gap-4">
@@ -1012,7 +952,6 @@
             </div>
           </div>
 
-          <!-- Поиск касс -->
           <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
             <h4 class="text-md font-medium text-gray-700 mb-3">Поиск касс</h4>
             <div class="grid grid-cols-2 gap-4">
@@ -1056,9 +995,9 @@ export default {
       loading: false,
       error: null,
       showTestDropdown: false,
-      performanceRecommendations: null, // Добавляем для хранения рекомендаций
-      realTimeMetrics: null, // Добавляем для хранения метрик в реальном времени
-      featureAvailability: null, // Добавляем для хранения информации о доступности функций
+      performanceRecommendations: null,
+      realTimeMetrics: null,
+      featureAvailability: null,
       serverLogs: null,
       logsLoading: false,
       logsError: null,
@@ -1068,12 +1007,10 @@ export default {
   async mounted() {
     await this.refreshMetrics();
     await this.loadServerLogs();
-    // Добавляем обработчик клика вне выпадающего списка
     document.addEventListener('click', this.handleClickOutside);
   },
 
   beforeUnmount() {
-    // Убираем обработчик при размонтировании компонента
     document.removeEventListener('click', this.handleClickOutside);
   },
   computed: {
@@ -1124,7 +1061,6 @@ export default {
       
       try {
         const metrics = await PerformanceController.getDatabaseMetrics();
-        // Обновляем только системную информацию
         this.metrics = { ...this.metrics, ...metrics };
         this.showNotification('Системная информация обновлена', '', false);
       } catch (error) {
@@ -1151,7 +1087,6 @@ export default {
         this.metrics = await PerformanceController.getDatabaseMetrics();
         this.showNotification('Метрики обновлены', '', false);
       } catch (error) {
-        // Показываем уведомление об ошибке
         this.showNotification('Ошибка загрузки метрик', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
         
         if (error.response?.data?.message) {
@@ -1184,7 +1119,7 @@ export default {
     async runSalesTest() {
       this.loading = true;
       this.error = null;
-      this.showTestDropdown = false; // Закрываем выпадающий список
+      this.showTestDropdown = false;
       
       try {
         this.testResults = await PerformanceController.runPerformanceTest('sales_list');
@@ -1198,7 +1133,7 @@ export default {
     async runClientsTest() {
       this.loading = true;
       this.error = null;
-      this.showTestDropdown = false; // Закрываем выпадающий список
+      this.showTestDropdown = false;
       
       try {
         this.testResults = await PerformanceController.runPerformanceTest('clients_list');
@@ -1212,7 +1147,7 @@ export default {
     async runProductsTest() {
       this.loading = true;
       this.error = null;
-      this.showTestDropdown = false; // Закрываем выпадающий список
+      this.showTestDropdown = false;
       
       try {
         this.testResults = await PerformanceController.runPerformanceTest('products_list');
@@ -1226,7 +1161,7 @@ export default {
     async runTransactionsTest() {
       this.loading = true;
       this.error = null;
-      this.showTestDropdown = false; // Закрываем выпадающий список
+      this.showTestDropdown = false;
       
       try {
         this.testResults = await PerformanceController.runPerformanceTest('transactions_list');
@@ -1240,7 +1175,7 @@ export default {
     async runWarehousesTest() {
       this.loading = true;
       this.error = null;
-      this.showTestDropdown = false; // Закрываем выпадающий список
+      this.showTestDropdown = false;
       
       try {
         this.testResults = await PerformanceController.runPerformanceTest('warehouses_list');
@@ -1254,7 +1189,7 @@ export default {
          async runOrdersTest() {
        this.loading = true;
        this.error = null;
-       this.showTestDropdown = false; // Закрываем выпадающий список
+       this.showTestDropdown = false;
        
        try {
          this.testResults = await PerformanceController.runPerformanceTest('orders_list');
@@ -1268,7 +1203,7 @@ export default {
            async runProjectsTest() {
         this.loading = true;
         this.error = null;
-        this.showTestDropdown = false; // Закрываем выпадающий список
+        this.showTestDropdown = false;
         
         try {
           this.testResults = await PerformanceController.runPerformanceTest('projects_list');
@@ -1282,7 +1217,7 @@ export default {
       async runUsersTest() {
         this.loading = true;
         this.error = null;
-        this.showTestDropdown = false; // Закрываем выпадающий список
+        this.showTestDropdown = false;
         
         try {
           this.testResults = await PerformanceController.runPerformanceTest('users_list');
@@ -1296,7 +1231,7 @@ export default {
       async runCommentsTest() {
         this.loading = true;
         this.error = null;
-        this.showTestDropdown = false; // Закрываем выпадающий список
+        this.showTestDropdown = false;
         
         try {
           this.testResults = await PerformanceController.runPerformanceTest('comments_list');
@@ -1310,7 +1245,7 @@ export default {
       async runTimelineTest() {
         this.loading = true;
         this.error = null;
-        this.showTestDropdown = false; // Закрываем выпадающий список
+        this.showTestDropdown = false;
         
         try {
           this.testResults = await PerformanceController.runPerformanceTest('timeline');
@@ -1324,7 +1259,7 @@ export default {
       async runCashRegistersTest() {
         this.loading = true;
         this.error = null;
-        this.showTestDropdown = false; // Закрываем выпадающий список
+        this.showTestDropdown = false;
         
         try {
           this.testResults = await PerformanceController.runPerformanceTest('cash_registers_list');
@@ -1340,7 +1275,6 @@ export default {
     },
 
     handleClickOutside(event) {
-      // Закрываем выпадающий список при клике вне его
       const dropdown = event.target.closest('.relative');
       if (!dropdown) {
         this.showTestDropdown = false;
@@ -1353,7 +1287,6 @@ export default {
       
       try {
         const cacheStats = await PerformanceController.getCacheStats();
-        // Обновляем метрики с информацией о кэше
         this.metrics = { ...this.metrics, ...cacheStats };
         this.showNotification('Статистика кэша обновлена', '', false);
       } catch (error) {
@@ -1370,12 +1303,9 @@ export default {
       
       try {
         await PerformanceController.clearCache();
-        // Обновляем метрики после очистки кэша
         await this.refreshMetrics();
-        // Показываем уведомление об успешной очистке кэша
         this.showNotification('Кэш успешно очищен', '', false);
       } catch (error) {
-        // Показываем уведомление об ошибке
         this.showNotification('Ошибка очистки кэша', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
         
         if (error.response?.data?.message) {
@@ -1401,7 +1331,6 @@ export default {
          this.metrics = { ...this.metrics, table_sizes: tableSizes };
          this.showNotification('Размеры таблиц обновлены', '', false);
        } catch (error) {
-         // Проверяем тип ошибки
          if (error.response?.status === 404) {
            this.error = 'API endpoint для размеров таблиц не найден. Возможно, функция еще не реализована на сервере.';
          } else if (error.response?.status === 401) {
@@ -1434,7 +1363,6 @@ export default {
           this.showNotification('Анализ индексов завершен', '', false);
         }
       } catch (error) {
-        // Проверяем тип ошибки и детали
         if (error.response?.status === 404) {
           this.error = 'API endpoint для анализа индексов не найден. Возможно, функция еще не реализована на сервере.';
         } else if (error.response?.status === 401) {
@@ -1442,7 +1370,6 @@ export default {
         } else if (error.response?.status === 403) {
           this.error = 'Недостаточно прав для выполнения этой операции.';
         } else if (error.response?.status === 500) {
-          // Анализируем детали ошибки сервера
           const errorData = error.response?.data;
           if (errorData?.error && errorData.error.includes('Column not found')) {
             this.error = 'Ошибка сервера: Неподдерживаемая версия MySQL или отсутствуют необходимые таблицы performance_schema. Функция анализа индексов недоступна.';
@@ -1472,7 +1399,6 @@ export default {
         this.realTimeMetrics = data;
         this.showNotification('Метрики в реальном времени обновлены', '', false);
       } catch (error) {
-        // Проверяем тип ошибки и детали
         if (error.response?.status === 404) {
           this.error = 'API endpoint для метрик в реальном времени не найден. Возможно, функция еще не реализована на сервере.';
         } else if (error.response?.status === 401) {
@@ -1480,7 +1406,6 @@ export default {
         } else if (error.response?.status === 403) {
           this.error = 'Недостаточно прав для выполнения этой операции.';
         } else if (error.response?.status === 500) {
-          // Анализируем детали ошибки сервера
           const errorData = error.response?.data;
           if (errorData?.error && errorData.error.includes('Column not found')) {
             this.error = 'Ошибка сервера: Неподдерживаемая версия MySQL или отсутствуют необходимые таблицы performance_schema. Функция метрик в реальном времени недоступна.';
@@ -1517,7 +1442,6 @@ export default {
       }
     },
 
-     // Методы для цветового кодирования результатов тестов
      getPerformanceClass(result) {
        const score = this.calculatePerformanceScore(result);
        if (score >= 80) return 'bg-green-100 text-green-800';
@@ -1542,17 +1466,14 @@ export default {
      calculatePerformanceScore(result) {
        let score = 100;
        
-       // Штраф за время выполнения (больше 100мс = плохо)
        if (result.execution_time_ms > 100) score -= 30;
        else if (result.execution_time_ms > 50) score -= 15;
        else if (result.execution_time_ms > 20) score -= 5;
        
-       // Штраф за количество запросов (больше 5 = плохо)
        if (result.total_queries > 5) score -= 25;
        else if (result.total_queries > 3) score -= 15;
        else if (result.total_queries > 1) score -= 5;
        
-       // Штраф за использование памяти (больше 1000КБ = плохо)
        if (result.memory_usage_kb > 1000) score -= 20;
        else if (result.memory_usage_kb > 500) score -= 10;
        
@@ -1607,7 +1528,6 @@ export default {
         }
       },
 
-      // Метод для получения читаемых названий функций
       getFeatureDisplayName(feature) {
         const names = {
           basic_metrics: 'Основные метрики',

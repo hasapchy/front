@@ -38,13 +38,15 @@ import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import OrderAfController from "@/api/OrderAfController";
 import OrderAdditionalFieldCreatePage from "@/views/pages/orders/OrderAdditionalFieldCreatePage.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import crudEventMixin from "@/mixins/crudEventMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import batchActionsMixin from "@/mixins/batchActionsMixin";
 import modalMixin from "@/mixins/modalMixin";
+import tableTranslationMixin from "@/mixins/tableTranslationMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 
 export default {
-    mixins: [getApiErrorMessage, notificationMixin, modalMixin, batchActionsMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin],
     components: { 
         NotificationToast, 
         SideModalDialog, 
@@ -62,6 +64,10 @@ export default {
             editingItem: null,
             loadingDelete: false,
             controller: OrderAfController,
+            savedSuccessText: this.$t('additionalFieldSaved'),
+            savedErrorText: this.$t('errorSavingAdditionalField'),
+            deletedSuccessText: this.$t('additionalFieldDeleted'),
+            deletedErrorText: this.$t('errorDeletingAdditionalField'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: "id", label: "№", size: 20 },
@@ -77,14 +83,6 @@ export default {
     created() {
         this.fetchItems();
         this.$store.commit("SET_SETTINGS_OPEN", true);
-    },
-    computed: {
-        translatedColumnsConfig() {
-            return this.columnsConfig.map(column => ({
-                ...column,
-                label: column.label === '#' || column.label === '№' ? column.label : this.$t(column.label)
-            }));
-        }
     },
     methods: {
         itemMapper(i, c) {
@@ -123,26 +121,6 @@ export default {
             if (!silent) this.loading = false;
         },
 
-        handleSaved() {
-            this.showNotification(this.$t('additionalFieldSaved'), "", false);
-            this.fetchItems(this.data.currentPage, true);
-            this.closeModal();
-        },
-
-        handleSavedError(err) {
-            this.showNotification(this.$t('errorSavingAdditionalField'), err, true);
-        },
-
-        handleDeleted() {
-            this.showNotification(this.$t('additionalFieldDeleted'), "", false);
-            this.fetchItems(this.data.currentPage, true);
-            this.closeModal();
-        },
-
-        handleDeletedError(err) {
-            this.showNotification(this.$t('errorDeletingAdditionalField'), err, true);
-        },
-
         handleSavedSilent() {
             this.showNotification(this.$t('additionalFieldSaved'), "", false);
             this.fetchItems(this.data.currentPage, true);
@@ -150,12 +128,10 @@ export default {
 
         async showModal(item) {
             if (item) {
-                // Загружаем полные данные элемента для редактирования
                 try {
                     this.editingItem = await OrderAfController.getItemById(item.id);
                 } catch (error) {
-                    console.error('Ошибка при загрузке данных для редактирования:', error);
-                    this.editingItem = item; // Fallback на исходные данные
+                    this.editingItem = item;
                 }
             } else {
                 this.editingItem = null;

@@ -102,7 +102,6 @@ export default {
             try {
                 this.allUnits = await AppController.getUnits();
             } catch (error) {
-                console.error('Ошибка загрузки единиц измерения:', error);
             }
         },
         

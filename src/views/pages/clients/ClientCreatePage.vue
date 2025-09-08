@@ -182,13 +182,11 @@ export default {
   },
   methods: {
     changeTab(tabName) {
-      // Не позволяем переключиться на вкладку баланса при создании нового клиента
       if (tabName === 'balance' && !this.editingItem) {
         return;
       }
       this.currentTab = tabName;
     },
-    // Переопределяем метод getFormState из миксина
     getFormState() {
       return {
         firstName: this.firstName,
@@ -209,7 +207,7 @@ export default {
     
     addPhone() {
       if (this.newPhone) {
-        const cleanedPhone = this.newPhone.replace(/\D/g, ""); // только цифры
+        const cleanedPhone = this.newPhone.replace(/\D/g, "");
         if (cleanedPhone.length !== 11) {
           this.phoneError = "Номер должен содержать ровно 11 цифр";
           return;
@@ -303,7 +301,7 @@ export default {
       this.discountType = "fixed";
       this.discount = 0;
       this.currentTab = "info";
-      this.resetFormChanges(); // Сбрасываем состояние изменений
+      this.resetFormChanges();
     },
     showDeleteDialog() {
       this.deleteDialog = true;
@@ -340,10 +338,8 @@ export default {
           this.currentTab = "info";
         } else {
           this.clearForm();
-          // При создании нового клиента всегда показываем вкладку info
           this.currentTab = "info";
         }
-        // Сохраняем новое начальное состояние
         this.$nextTick(() => {
           this.saveInitialState();
         });

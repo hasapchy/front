@@ -166,13 +166,21 @@ export default {
     },
             watch: {
             editingItem: {
-                handler(newVal) {
-                    if (newVal) {
+                handler(newEditingItem, oldEditingItem) {
+                    if (newEditingItem) {
                         this.loadEditingData();
                     } else {
-                        this.resetForm();
+                        // Очищаем форму только если это не первая загрузка компонента
+                        if (oldEditingItem !== undefined) {
+                            this.clearForm();
+                        }
                     }
+                    // Сохраняем новое начальное состояние
+                    this.$nextTick(() => {
+                        this.saveInitialState();
+                    });
                 },
+                deep: true,
                 immediate: true
             }
         },
@@ -233,6 +241,11 @@ export default {
             this.currentTab = 'info';
         },
 
+        clearForm() {
+            this.resetForm();
+            this.resetFormChanges(); // Сбрасываем состояние изменений
+        },
+
         changeTab(tab) {
             this.currentTab = tab;
         },
@@ -275,6 +288,7 @@ export default {
                 }
 
                 this.$emit('saved');
+                this.clearForm();
             } catch (error) {
                 const errors = this.getApiErrorMessage(error);
                 this.$emit('saved-error', errors.join('\n'));
@@ -333,16 +347,17 @@ export default {
         },
 
         async deleteItem() {
+            this.closeDeleteDialog();
             this.deleteLoading = true;
             try {
                 await OrderAfController.deleteItem(this.editingItemId);
                 this.$emit('deleted');
+                this.clearForm();
             } catch (error) {
                 const errors = this.getApiErrorMessage(error);
                 this.$emit('deleted-error', errors.join('\n'));
             } finally {
                 this.deleteLoading = false;
-                this.closeDeleteDialog();
             }
         },
 
@@ -354,21 +369,8 @@ export default {
             this.deleteDialog = false;
         },
 
-        handleCloseRequest() {
-            if (this.checkForChanges()) {
-                this.closeConfirmDialog = true;
-            } else {
-                this.$emit('close-request');
-            }
-        },
-
-        confirmClose() {
-            this.closeConfirmDialog = false;
-            this.$emit('close-request');
-        },
-
-        cancelClose() {
-            this.closeConfirmDialog = false;
+        closeModal() {
+            this.closeForm();
         },
 
         // Переопределяем метод getFormState из миксина

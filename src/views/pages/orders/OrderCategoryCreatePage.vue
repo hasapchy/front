@@ -49,8 +49,12 @@ export default {
             deleteLoading: false
         }
     },
+    mounted() {
+        this.$nextTick(() => {
+            this.saveInitialState();
+        });
+    },
     methods: {
-        // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
                 name: this.name
@@ -92,7 +96,7 @@ export default {
         clearForm() {
             this.name = '';
             this.editingItemId = null;
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.resetFormChanges();
         },
         showDeleteDialog() { this.deleteDialog = true; },
         closeDeleteDialog() { this.deleteDialog = false; }

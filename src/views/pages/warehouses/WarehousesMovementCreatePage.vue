@@ -30,7 +30,9 @@
         </div>
         <div>
             <label>{{ $t('date') }}</label>
-            <input type="datetime-local" v-model="date">
+            <input type="datetime-local" v-model="date"
+                :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
+                :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
         </div>
         <div class="mt-2">
             <label>{{ $t('note') }}</label>
@@ -92,12 +94,9 @@ export default {
         }
     },
     mounted() {
-        // Сохраняем начальное состояние после загрузки всех данных
         this.$nextTick(async () => {
-            // Ждем загрузки всех необходимых данных
             await this.fetchAllWarehouses();
             
-            // Устанавливаем значения по умолчанию если это новое перемещение
             if (!this.editingItem) {
                 if (this.allWarehouses.length > 0) {
                     if (!this.fromWarehouseId) {
@@ -109,12 +108,10 @@ export default {
                 }
             }
             
-            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },
     methods: {
-                // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
                 fromWarehouseId: this.fromWarehouseId,
@@ -182,7 +179,7 @@ export default {
             this.warehouseToId = '';
             this.products = [];
             this.editingItemId = null;
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.resetFormChanges();
         },
         showDeleteDialog() {
             this.deleteDialog = true;

@@ -33,7 +33,7 @@
                             <div class="mb-4">
                                 <div class="flex items-center">
                                     <input class="form-check-input mr-2 leading-tight" type="checkbox" name="remember"
-                                        id="remember">
+                                        id="remember" v-model="remember">
                                     <label class="text-sm" for="remember">
                                         Запомнить меня
                                     </label>
@@ -67,6 +67,7 @@ export default {
             v$: useVuelidate(),
             email: '',
             password: '',
+            remember: false,
             loading: false
         }
     },
@@ -84,7 +85,7 @@ export default {
             }
             this.loading = true;
             try {
-                await AuthController.login(this.email, this.password);
+                await AuthController.login(this.email, this.password, this.remember);
                 const user = await AuthController.getUser();
                 this.$store.dispatch('setUser', user);
                 this.$store.dispatch('setPermissions', user.permissions);

@@ -4,7 +4,9 @@
         <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
         <div>
             <label>{{ $t('date') }}</label>
-            <input type="datetime-local" v-model="date">
+            <input type="datetime-local" v-model="date"
+                :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
+                :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
         </div>
         <div class="mt-2">
             <label class="block mb-1 required">{{ $t('type') }}</label>
@@ -164,20 +166,15 @@ export default {
             return this.allCategories.filter(cat => cat.type === wanted);
         }
     },
-    created() {
-        this.fetchCurrencies();
-    },
     mounted() {
-        // Сохраняем начальное состояние после загрузки всех данных
         this.$nextTick(async () => {
-            // Ждем загрузки всех необходимых данных
             await Promise.all([
+                this.fetchCurrencies(),
                 this.fetchAllCategories(),
                 this.fetchAllProjects(),
                 this.fetchAllCashRegisters()
             ]);
             
-            // Устанавливаем начальные значения если это новая транзакция
             if (!this.editingItem) {
                 if (this.initialClient) {
                     this.selectedClient = this.initialClient;
@@ -187,12 +184,10 @@ export default {
                 }
             }
             
-            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },
     methods: {
-                // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
                 selectedClient: this.selectedClient?.id || null,
@@ -213,6 +208,7 @@ export default {
             this.allCategories = await AppController.getTransactionCategories();
         },
         async fetchAllProjects() {
+            // Получаем только проекты, к которым у пользователя есть доступ
             this.allProjects = await ProjectController.getAllItems();
         },
         async fetchAllCashRegisters() {
@@ -249,7 +245,6 @@ export default {
                     });
                 }
                 if (resp.message) {
-                    // Обновляем баланс клиента после сохранения транзакции
                     if (this.selectedClient) {
                         await this.updateClientBalance();
                     }
@@ -271,7 +266,6 @@ export default {
             try {
                 var resp = await TransactionController.deleteItem(this.editingItemId);
                 if (resp.message || resp.success || resp) {
-                    // Обновляем баланс клиента после удаления транзакции
                     if (this.selectedClient) {
                         await this.updateClientBalance();
                     }
@@ -319,15 +313,6 @@ export default {
             },
             immediate: true
         },
-        // cashId: {
-        //     handler(i) {
-        //         if (!this.editingItemId) {
-        //             const cash = this.allCashRegisters.find(c => c.id === i);
-        //             this.currencyId = cash?.currency_id || '';
-        //         }
-        //     },
-        //     immediate: true
-        // },
         type(newType) {
             if (!this.editingItemId) {
                 if (newType === "income") {
@@ -368,7 +353,6 @@ export default {
                     this.selectedClient = null;
                     this.editingItemId = null;
                 }
-                // Сохраняем новое начальное состояние
                 this.$nextTick(() => {
                     this.saveInitialState();
                 });

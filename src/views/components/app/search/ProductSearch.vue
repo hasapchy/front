@@ -266,8 +266,8 @@ export default {
             modalCreateTempProduct: false,
             defaultProductType: 'product',
             defaultProductName: '',
-            tempProductCounter: 1000000, // Простой счетчик для временных товаров (начинаем с большого числа)
-            removedTempProducts: [], // Список удаленных временных товаров
+            tempProductCounter: 1000000,
+            removedTempProducts: [],
         };
     },
     computed: {
@@ -372,7 +372,6 @@ export default {
                             productDto.priceType = 'purchase';
                         }
                     }
-                    // Убеждаемся, что у обычного товара есть productId
                     if (productDto && product.id) {
                         productDto.productId = product.id;
                     }
@@ -431,7 +430,6 @@ export default {
             this.modalCreateProduct = false;
             if (newProduct) {
                 this.selectProduct(newProduct);
-                // Поле поиска уже очищается в методе selectProduct
             }
         },
         onProductCreatedError(error) {

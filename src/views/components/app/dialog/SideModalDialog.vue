@@ -64,7 +64,7 @@ export default {
     computed: {
         modalWidth() {
             const timelineWidth = this.timelineCollapsed ? 0 : 420;
-            const buttonWidth = this.showTimelineButton ? 48 : 0; // 48px = 12 * 4 (w-12)
+            const buttonWidth = this.showTimelineButton ? 48 : 0;
             return `calc((100vw - ${timelineWidth + buttonWidth}px) / 2.2 - ${40 * this.level}px)`;
         }
     },

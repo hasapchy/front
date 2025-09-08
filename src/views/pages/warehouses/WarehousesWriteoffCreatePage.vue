@@ -73,24 +73,19 @@ export default {
         }
     },
     mounted() {
-        // Сохраняем начальное состояние после загрузки всех данных
         this.$nextTick(async () => {
-            // Ждем загрузки всех необходимых данных
             await this.fetchAllWarehouses();
             
-            // Устанавливаем значения по умолчанию если это новое списание
             if (!this.editingItem) {
                 if (this.allWarehouses.length > 0 && !this.warehouseId) {
                     this.warehouseId = this.allWarehouses[0].id;
                 }
             }
             
-            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },
     methods: {
-                // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
                 warehouseId: this.warehouseId,
@@ -157,7 +152,7 @@ export default {
             this.warehouseId = '';
             this.products = [];
             this.editingItemId = null;
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.resetFormChanges();
         },
         showDeleteDialog() {
             this.deleteDialog = true;

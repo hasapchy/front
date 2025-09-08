@@ -37,12 +37,13 @@ import OrderCategoryController from '@/api/OrderCategoryController';
 import OrderCategoryCreatePage from './OrderCategoryCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import crudEventMixin from '@/mixins/crudEventMixin';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, batchActionsMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, OrderCategoryCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog },
     data() {
         return {
@@ -50,7 +51,10 @@ export default {
             loading: false,
             selectedIds: [],
             controller: OrderCategoryController,
-
+            savedSuccessText: this.$t('orderCategorySuccessfullyAdded'),
+            savedErrorText: this.$t('errorSavingOrderCategory'),
+            deletedSuccessText: this.$t('orderCategorySuccessfullyDeleted'),
+            deletedErrorText: this.$t('errorDeletingOrderCategory'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: '№', size: 60 },
@@ -72,7 +76,6 @@ export default {
             }
         },
         handleModalClose() {
-            // Проверяем, есть ли изменения в форме
             const formRef = this.$refs.ordercategorycreatepageForm;
             if (formRef && formRef.handleCloseRequest) {
                 formRef.handleCloseRequest();
@@ -88,23 +91,6 @@ export default {
                 this.showNotification('Ошибка получения списка категорий заказов', error.message, true);
             }
             if (!silent) this.loading = false;
-        },
-
-        handleSaved() {
-                            this.showNotification(this.$t('orderCategorySuccessfullyAdded'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleSavedError(m) {
-            this.showNotification('Ошибка сохранения категории заказа', m, true);
-        },
-        handleDeleted() {
-                            this.showNotification(this.$t('orderCategorySuccessfullyDeleted'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleDeletedError(m) {
-            this.showNotification('Ошибка удаления категории заказа', m, true);
         }
     }
 }

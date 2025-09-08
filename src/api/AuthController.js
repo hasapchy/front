@@ -1,9 +1,9 @@
 import api from './axiosInstance';
 
 const AuthController = {
-    async login(email, password) {
+    async login(email, password, remember = false) {
         try {
-            const { data } = await api.post('/user/login', { email, password });
+            const { data } = await api.post('/user/login', { email, password, remember });
             
             // Сохраняем токены
             localStorage.setItem('token', data.access_token);

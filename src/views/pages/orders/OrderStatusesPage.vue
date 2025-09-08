@@ -35,11 +35,12 @@ import OrderStatusController from '@/api/OrderStatusController';
 import OrderStatusCreatePage from './OrderStatusCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import crudEventMixin from '@/mixins/crudEventMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, tableTranslationMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, tableTranslationMixin],
     components: {
         NotificationToast, PrimaryButton, SideModalDialog, OrderStatusCreatePage, Pagination, DraggableTable, AlertDialog
     },
@@ -49,7 +50,10 @@ export default {
             loading: false,
             selectedIds: [],
             controller: OrderStatusController,
-
+            savedSuccessText: this.$t('statusSuccessfullyAdded'),
+            savedErrorText: this.$t('errorSavingStatus'),
+            deletedSuccessText: this.$t('statusSuccessfullyDeleted'),
+            deletedErrorText: this.$t('errorDeletingStatus'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: '№', size: 60 },
@@ -72,7 +76,6 @@ export default {
             }
         },
         handleModalClose() {
-            // Проверяем, есть ли изменения в форме
             const formRef = this.$refs.orderstatuscreatepageForm;
             if (formRef && formRef.handleCloseRequest) {
                 formRef.handleCloseRequest();
@@ -88,23 +91,6 @@ export default {
                 this.showNotification(this.$t('errorGettingStatuses'), error.message, true);
             }
             if (!silent) this.loading = false;
-        },
-
-        handleSaved() {
-                            this.showNotification(this.$t('statusSuccessfullyAdded'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleSavedError(m) {
-                            this.showNotification(this.$t('errorSavingStatus'), m, true);
-        },
-        handleDeleted() {
-                            this.showNotification(this.$t('statusSuccessfullyDeleted'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleDeletedError(m) {
-                            this.showNotification(this.$t('errorDeletingStatus'), m, true);
         }
     }
 }

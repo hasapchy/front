@@ -82,14 +82,12 @@ export default {
     async mounted() {
         await this.loadSettings();
         this.updateTabFromRoute();
-        // Слушаем изменения маршрута
         this.$watch('$route', this.updateTabFromRoute);
     },
     
     methods: {
         changeTab(tab) {
             this.currentTab = tab;
-            // Обновляем URL в зависимости от выбранной вкладки
             if (tab === 'performance') {
                 this.$router.push('/settings/performance');
             } else {
@@ -98,7 +96,6 @@ export default {
         },
         
         updateTabFromRoute() {
-            // Определяем активную вкладку на основе текущего маршрута
             if (this.$route.path === '/settings/performance') {
                 this.currentTab = 'performance';
             } else {
@@ -142,10 +139,9 @@ export default {
             try {
                 await SettingsController.updateSettings(this.form);
                 this.$store.dispatch('showSuccess', this.$t('settingsSavedSuccessfully'));
-                await this.loadSettings(); // Перезагрузить настройки
+                await this.loadSettings();
                 this.resetFormChanges();
                 
-                // Отправляем событие об обновлении настроек
                 eventBus.emit('settings-updated');
             } catch (error) {
                 this.$store.dispatch('showError', this.getApiErrorMessage(error));

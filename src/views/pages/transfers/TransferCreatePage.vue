@@ -89,16 +89,13 @@ export default {
             deleteLoading: false
         }
     },
-    created() {
-        this.fetchCurrencies();
-    },
     mounted() {
-        // Сохраняем начальное состояние после загрузки всех данных
         this.$nextTick(async () => {
-            // Ждем загрузки всех необходимых данных
-            await this.fetchAllCashRegisters();
+            await Promise.all([
+                this.fetchCurrencies(),
+                this.fetchAllCashRegisters()
+            ]);
             
-            // Устанавливаем значения по умолчанию если это новый перевод
             if (!this.editingItem) {
                 if (this.allCashRegisters.length > 0) {
                     if (!this.cashIdFrom) {
@@ -110,12 +107,10 @@ export default {
                 }
             }
             
-            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },
     methods: {
-                // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
                 cashIdFrom: this.cashIdFrom,
@@ -176,7 +171,7 @@ export default {
             this.note = '';
             this.currencyId = '';
             this.editingItemId = null;
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.resetFormChanges();
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -200,7 +195,6 @@ export default {
                 } else {
                     this.clearForm();
                 }
-                // Сохраняем новое начальное состояние
                 this.$nextTick(() => {
                     this.saveInitialState();
                 });

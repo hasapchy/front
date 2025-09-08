@@ -196,7 +196,6 @@ export default {
             return this.allProductsFromOrders.reduce((sum, p) => sum + (Number(p.price) || 0) * (Number(p.quantity) || 0), 0);
         },
         defaultCurrencySymbol() {
-            // Получаем дефолтную валюту из store
             const currencies = this.$store.state.currencies || [];
             const defaultCurrency = currencies.find(c => c.is_default);
             return defaultCurrency ? defaultCurrency.symbol : 'TMT';
@@ -262,7 +261,6 @@ export default {
 
                 const existing = this.selectedOrders.find(o => o.id === order.id);
                 if (!existing) {
-                    // Загружаем полную информацию о заказе с продуктами
                     const fullOrder = await OrderController.getItem(order.id);
                     this.selectedOrders = [...this.selectedOrders, fullOrder];
                 }
@@ -295,7 +293,7 @@ export default {
                             unitName: product.unitName || product.unitShortName || '',
                             productImage: product.productImage,
                             orderId: order.id,
-                            type: 1, // Предполагаем, что это товар
+                            type: 1,
                             imgUrl() {
                                 return this.productImage?.length
                                     ? `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.productImage}`
@@ -309,7 +307,6 @@ export default {
                 }
             });
             
-            // Обновляем только если массив действительно изменился
             if (JSON.stringify(newProducts) !== JSON.stringify(this.allProductsFromOrders)) {
                 this.allProductsFromOrders = newProducts;
                 this.updateTotals();
@@ -317,11 +314,9 @@ export default {
         },
 
         removeProductFromOrder(productId, orderId) {
-            // Удаляем продукт из конкретного заказа
             const order = this.selectedOrders.find(o => o.id === orderId);
             if (order && order.products) {
                 order.products = order.products.filter(p => (p.id || p.productId) !== productId);
-                // Обновляем массив selectedOrders, чтобы вызвать watcher
                 this.selectedOrders = [...this.selectedOrders];
             }
         },
@@ -333,7 +328,6 @@ export default {
         },
 
         updateTotals() {
-            // Используем nextTick чтобы избежать циклических обновлений
             this.$nextTick(() => {
                 this.$emit('update:subtotal', this.subtotal);
             });

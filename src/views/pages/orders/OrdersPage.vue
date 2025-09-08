@@ -5,7 +5,6 @@
                 {{ $t('addOrder') }}
             </PrimaryButton>
             
-            <!-- Фильтр по дате -->
             <div class="ml-4">
                 <select v-model="dateFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
                     <option value="all_time">{{ $t('allTime') }}</option>
@@ -23,7 +22,6 @@
                 <input type="date" v-model="endDate" @change="fetchItems" class="w-full p-2 border rounded" />
             </div>
 
-            <!-- Фильтр по статусам -->
             <div class="ml-4">
                 <CheckboxFilter 
                     v-model="statusFilter"
@@ -33,7 +31,6 @@
                 />
             </div>
 
-            <!-- Фильтр оплаченных заказов -->
             <div class="ml-4">
                 <OrderPaymentFilter 
                     v-model="paidOrdersFilter"
@@ -43,7 +40,6 @@
                 />
             </div>
 
-            <!-- Кнопка сброса фильтров -->
             <div class="ml-4">
                 <PrimaryButton 
                     :onclick="resetFilters"
@@ -77,7 +73,6 @@
         </template>
     </SideModalDialog>
 
-    <!-- Модальное окно для создания счета -->
     <SideModalDialog :showForm="invoiceModalDialog" :onclose="handleInvoiceModalClose">
         <InvoiceCreatePage 
             ref="invoiceCreateForm" 
@@ -86,7 +81,6 @@
             @close-request="closeInvoiceModal" 
             :preselectedOrderIds="selectedIds"
         />
-        <!-- Debug info -->
         <div v-if="selectedIds.length > 0" class="p-2 bg-yellow-100 text-xs">
             Debug: Передаем заказы: {{ selectedIds.join(', ') }}
         </div>
@@ -112,22 +106,23 @@ import OrderStatusController from "@/api/OrderStatusController";
 import { markRaw } from "vue";
 import BatchButton from "@/views/components/app/buttons/BatchButton.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import crudEventMixin from "@/mixins/crudEventMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import batchActionsMixin from "@/mixins/batchActionsMixin";
 import modalMixin from "@/mixins/modalMixin";
+import tableTranslationMixin from "@/mixins/tableTranslationMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import { defineAsyncComponent } from "vue";
 import { eventBus } from "@/eventBus";
 import CheckboxFilter from "@/views/components/app/forms/CheckboxFilter.vue";
 import OrderPaymentFilter from "@/views/components/app/forms/OrderPaymentFilter.vue";
 
-// Lazy loading для TimelinePanel - загружается только когда нужен
 const TimelinePanel = defineAsyncComponent(() => 
     import("@/views/components/app/dialog/TimelinePanel.vue")
 );
 
 export default {
-    mixins: [getApiErrorMessage, notificationMixin, modalMixin, batchActionsMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin],
     components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, InvoiceCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, CheckboxFilter, OrderPaymentFilter },
     data() {
         return {
@@ -136,11 +131,15 @@ export default {
             statuses: [],
             selectedIds: [],
             showBatchStatusSelect: false,
-            timelineCollapsed: true, // По умолчанию таймлайн свернут
-            editingItem: null, // Добавлено для SideModalDialog и OrderCreatePage
-            invoiceModalDialog: false, // Модальное окно для создания счета
+            timelineCollapsed: true,
+            editingItem: null,
+            invoiceModalDialog: false,
             loadingDelete: false,
             controller: OrderController,
+            savedSuccessText: this.$t('orderSaved'),
+            savedErrorText: this.$t('errorSavingOrder'),
+            deletedSuccessText: this.$t('orderDeleted'),
+            deletedErrorText: this.$t('errorDeletingOrder'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: "id", label: "№", size: 20 },
@@ -170,24 +169,16 @@ export default {
 
         this.$store.commit("SET_SETTINGS_OPEN", false);
         
-        // Слушаем события поиска через eventBus
         eventBus.on('global-search', this.handleSearch);
     },
 
     beforeUnmount() {
-        // Удаляем слушатель события
         eventBus.off('global-search', this.handleSearch);
     },
 
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
-        },
-        translatedColumnsConfig() {
-            return this.columnsConfig.map(column => ({
-                ...column,
-                label: column.label === '#' || column.label === '№' ? column.label : this.$t(column.label)
-            }));
         }
     },
     methods: {
@@ -226,7 +217,6 @@ export default {
             }
         },
         handleModalClose() {
-            // Проверяем, есть ли изменения в форме
             const formRef = this.$refs.ordercreatepageForm;
             if (formRef && formRef.handleCloseRequest) {
                 formRef.handleCloseRequest();
@@ -236,14 +226,12 @@ export default {
         },
 
         handleSearch(query) {
-            // Обновляем store напрямую
             this.$store.dispatch('setSearchQuery', query);
             this.fetchItems(1, false);
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                // Если активен фильтр оплаченных заказов, добавляем статус ID 4 к фильтру
                 let currentStatusFilter = [...this.statusFilter];
                 if (this.paidOrdersFilter) {
                     if (!currentStatusFilter.includes(4)) {
@@ -259,36 +247,9 @@ export default {
             if (!silent) this.loading = false;
         },
 
-        handleSaved() {
-            this.showNotification(this.$t('orderSaved'), "", false);
-            this.fetchItems(this.data.currentPage, true);
-            // Обновляем таймлайн если он открыт
-            if (this.$refs.timelinePanel && !this.timelineCollapsed) {
-                this.$refs.timelinePanel.refreshTimeline();
-            }
-            this.closeModal();
-        },
-
-        handleSavedError(err) {
-            this.showNotification(this.$t('errorSavingOrder'), err, true);
-        },
-
-        handleDeleted() {
-            this.showNotification(this.$t('orderDeleted'), "", false);
-            this.fetchItems(this.data.currentPage, true);
-            // Закрываем таймлайн при удалении заказа
-            this.timelineCollapsed = true;
-            this.closeModal();
-        },
-
-        handleDeletedError(err) {
-            this.showNotification(this.$t('errorDeletingOrder'), err, true);
-        },
-
         handleSavedSilent() {
             this.showNotification(this.$t('orderSaved'), "", false);
             this.fetchItems(this.data.currentPage, true);
-            // Обновляем таймлайн если он открыт
             if (this.$refs.timelinePanel && !this.timelineCollapsed) {
                 this.$refs.timelinePanel.refreshTimeline();
             }
@@ -312,7 +273,6 @@ export default {
                 await this.fetchItems(this.data.currentPage, true);
                 this.showNotification(this.$t('statusUpdated'), "", false);
                 
-                // Обновляем таймлайн если редактируемый заказ был изменен
                 if (this.editingItem && ids.includes(this.editingItem.id) && this.$refs.timelinePanel && !this.timelineCollapsed) {
                     this.$refs.timelinePanel.refreshTimeline();
                 }
@@ -326,28 +286,25 @@ export default {
         },
 
         toggleTimeline() {
-            // Переключаем состояние таймлайна
             this.timelineCollapsed = !this.timelineCollapsed;
         },
 
         showModal(item) {
             this.editingItem = item;
             this.modalDialog = true;
-            // Сбрасываем состояние таймлайна при открытии нового заказа
             this.timelineCollapsed = true;
         },
         closeModal() {
             this.modalDialog = false;
             this.editingItem = null;
-            // Закрываем таймлайн при закрытии модального окна
             this.timelineCollapsed = true;
         },
         resetFilters() {
             this.dateFilter = 'all_time';
             this.startDate = '';
             this.endDate = '';
-            this.statusFilter = []; // Сбрасываем фильтр по статусам
-            this.paidOrdersFilter = false; // Сбрасываем фильтр оплаченных заказов
+            this.statusFilter = [];
+            this.paidOrdersFilter = false;
             this.fetchItems();
         },
 
@@ -362,7 +319,6 @@ export default {
                 return;
             }
             
-            // Открываем модальное окно создания счета
             this.invoiceModalDialog = true;
         },
 
@@ -392,7 +348,6 @@ export default {
             ];
         },
 
-        // Методы для модального окна счета
         handleInvoiceModalClose() {
             this.invoiceModalDialog = false;
         },
@@ -404,7 +359,7 @@ export default {
         handleInvoiceSaved() {
             this.showNotification(this.$t('success'), this.$t('invoiceCreated'), false);
             this.invoiceModalDialog = false;
-            this.selectedIds = []; // Очищаем выбранные заказы
+            this.selectedIds = [];
         },
 
         handleInvoiceSavedError(error) {

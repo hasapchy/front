@@ -39,11 +39,12 @@ import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
+import crudEventMixin from '@/mixins/crudEventMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, batchActionsMixin, getApiErrorMessageMixin],
+    mixins: [modalMixin, notificationMixin, batchActionsMixin, crudEventMixin, getApiErrorMessageMixin],
     components: {
         NotificationToast,
         PrimaryButton,
@@ -59,7 +60,11 @@ export default {
             data: null,
             loading: false,
             selectedIds: [],
-             controller: CashRegisterController,
+            controller: CashRegisterController,
+            savedSuccessText: this.$t('cashRegisterSuccessfullyAdded'),
+            savedErrorText: this.$t('errorSavingCashRegister'),
+            deletedSuccessText: this.$t('cashRegisterSuccessfullyDeleted'),
+            deletedErrorText: this.$t('errorDeletingCashRegister'),
 
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
@@ -73,8 +78,11 @@ export default {
         }
     },
     created() {
-        this.fetchItems();
         this.$store.commit('SET_SETTINGS_OPEN', true);
+    },
+
+    mounted() {
+        this.fetchItems();
     },
     methods: {
         itemMapper(i, c) {
@@ -94,7 +102,6 @@ export default {
             }
         },
         handleModalClose() {
-            // Проверяем, есть ли изменения в форме
             const formRef = this.$refs.cashregistercreatepageForm;
             if (formRef && formRef.handleCloseRequest) {
                 formRef.handleCloseRequest();
@@ -115,22 +122,6 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
-        },
-        handleSaved() {
-            this.showNotification(this.$t('cashRegisterSuccessfullyAdded'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleSavedError(m) {
-            this.showNotification(this.$t('errorSavingCashRegister'), m, true);
-        },
-        handleDeleted() {
-            this.showNotification(this.$t('cashRegisterSuccessfullyDeleted'), '', false);
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleDeletedError(m) {
-            this.showNotification(this.$t('errorDeletingCashRegister'), m, true);
         }
     },
     computed: {
