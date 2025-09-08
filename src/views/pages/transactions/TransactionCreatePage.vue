@@ -110,6 +110,7 @@ import ClientDto from '@/dto/client/ClientDto';
 import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
 import TransactionController from '@/api/TransactionController';
+import ClientController from '@/api/ClientController';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";

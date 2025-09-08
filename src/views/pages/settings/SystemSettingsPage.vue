@@ -125,7 +125,6 @@ export default {
             const file = event.target.files[0];
             if (file) {
                 this.form.company_logo = file;
-                this.markFormChanged();
             }
         },
         
