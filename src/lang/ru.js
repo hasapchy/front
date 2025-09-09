@@ -103,6 +103,8 @@ export default {
   quantity: 'Количество',
   date: 'Дата',
   amount: 'Сумма',
+  amountBeforeConversion: 'Сумма до конвертации',
+  amountAfterConversion: 'Сумма после конвертации',
   currency: 'Валюта',
   status: 'Статус',
   type: 'Тип',

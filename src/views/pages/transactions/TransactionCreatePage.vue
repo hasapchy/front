@@ -27,12 +27,12 @@
         </div>
         <div class="flex items-center space-x-2">
             <div class="w-full mt-2">
-                <label class="required">{{ $t('amount') }}</label>
+                <label class="required">{{ $t('amountBeforeConversion') }}</label>
                 <input type="number" v-model="origAmount" required min="0.01">
             </div>
             <div class="w-full mt-2">
                 <label class="block mb-1 required">{{ $t('currency') }}</label>
-                <select v-model="currencyIdComputed" required>
+                <select v-model="currencyIdComputed" required :disabled="!!editingItemId">
                     <option value="">{{ $t('no') }}</option>
                     <template v-if="currencies.length">
                         <option v-for="parent in currencies" :key="parent.id" :value="parent.id">
@@ -44,12 +44,12 @@
         </div>
         <div v-if="cashCurrencyId != currencyId && editingItemId" class="flex items-center space-x-2">
             <div class="w-full mt-2">
-                <label>{{ $t('amount') }}</label>
-                <input type="number" v-model="cashAmount">
+                <label>{{ $t('amountAfterConversion') }}</label>
+                <input type="number" v-model="cashAmount" :readonly="true" :disabled="true">
             </div>
             <div class="w-full mt-2">
                 <label class="block mb-1">{{ $t('cashCurrency') }}</label>
-                <select v-model="cashCurrencyId">
+                <select v-model="cashCurrencyId" :disabled="true" readonly>
                     <option value="">{{ $t('no') }}</option>
                     <template v-if="currencies.length">
                         <option v-for="parent in currencies" :key="parent.id" :value="parent.id">
