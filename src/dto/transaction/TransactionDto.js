@@ -6,6 +6,8 @@ export default class TransactionDto {
     id,
     type,
     isTransfer,
+    isSale,
+    isReceipt,
     cashId,
     cashName,
     cashAmount,
@@ -36,6 +38,8 @@ export default class TransactionDto {
     this.id = id;
     this.type = type;
     this.isTransfer = isTransfer;
+    this.isSale = isSale;
+    this.isReceipt = isReceipt;
     this.cashId = cashId;
     this.cashName = cashName;
     this.cashAmount = cashAmount;
@@ -74,11 +78,19 @@ export default class TransactionDto {
   }
 
   typeCell() {
-    return this.isTransfer === 1
-      ? '<i class="fas fa-right-left text-[#337AB7] mr-2"></i> Трансфер'
-      : this.type === 1
-      ? '<i class="fas fa-circle-down text-[#5CB85C] mr-2"></i> Приход'
-      : '<i class="fas fa-circle-up text-[#EE4F47] mr-2"></i> Расход';
+    if (this.isTransfer === 1) {
+      return '<i class="fas fa-right-left text-[#337AB7] mr-2"></i> Трансфер';
+    } else if (this.isSale === 1) {
+      return this.type === 1
+        ? '<i class="fas fa-shopping-cart text-[#5CB85C] mr-2"></i> Продажа'
+        : '<i class="fas fa-shopping-cart text-[#EE4F47] mr-2"></i> Продажа';
+    } else if (this.isReceipt === 1) {
+      return '<i class="fas fa-box text-[#FFA500] mr-2"></i> Оприходование';
+    } else {
+      return this.type === 1
+        ? '<i class="fas fa-circle-down text-[#5CB85C] mr-2"></i> Приход'
+        : '<i class="fas fa-circle-up text-[#EE4F47] mr-2"></i> Расход';
+    }
   }
 
   cashAmountData() {

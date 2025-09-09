@@ -3,6 +3,7 @@ export default {
   save: 'Сохранить',
   cancel: 'Отмена',
   delete: 'Удалить',
+  copy: 'Копировать',
   loading: 'Загрузка...',
   logout: 'Выйти',
   info: 'Информация',
@@ -245,7 +246,9 @@ export default {
   // Финансы
   balance: 'Баланс',
   income: 'Доход',
+  outcome: 'Расход',
   итого: 'Итого',
+  mainCashRegister: 'Главная касса',
   
   // Склад
   stock: 'Склад',
@@ -818,6 +821,14 @@ export default {
   // Дополнительные ключи
   other: 'Другое',
   transfer: 'Перевод',
+  cannotDeleteTransfers: 'Нельзя удалить трансферы',
+  transferTransactionsCannotBeDeleted: 'Транзакции-трансферы нельзя удалять',
+  cannotEditSale: 'Нельзя редактировать продажу',
+  saleTransaction: 'Транзакция продажи',
+  cannotEditReceipt: 'Нельзя редактировать оприходование',
+  receiptTransaction: 'Транзакция оприходования',
+  cannotDeleteRestricted: 'Нельзя удалить ограниченные транзакции',
+  restrictedTransactionsCannotBeDeleted: 'Трансферы, продажи и оприходования нельзя удалять',
   
   // Мониторинг производительности
   performanceMonitor: 'Мониторинг',

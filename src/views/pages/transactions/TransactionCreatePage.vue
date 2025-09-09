@@ -28,11 +28,11 @@
         <div class="flex items-center space-x-2">
             <div class="w-full mt-2">
                 <label class="required">{{ $t('amount') }}</label>
-                <input type="number" v-model="origAmount" :disabled="!!editingItemId" required min="0.01">
+                <input type="number" v-model="origAmount" required min="0.01">
             </div>
             <div class="w-full mt-2">
                 <label class="block mb-1 required">{{ $t('currency') }}</label>
-                <select v-model="currencyIdComputed" :disabled="!!editingItemId" required>
+                <select v-model="currencyIdComputed" required>
                     <option value="">{{ $t('no') }}</option>
                     <template v-if="currencies.length">
                         <option v-for="parent in currencies" :key="parent.id" :value="parent.id">
@@ -45,11 +45,11 @@
         <div v-if="cashCurrencyId != currencyId && editingItemId" class="flex items-center space-x-2">
             <div class="w-full mt-2">
                 <label>{{ $t('amount') }}</label>
-                <input type="number" v-model="cashAmount" :disabled="!!editingItemId">
+                <input type="number" v-model="cashAmount">
             </div>
             <div class="w-full mt-2">
                 <label class="block mb-1">{{ $t('cashCurrency') }}</label>
-                <select v-model="cashCurrencyId" :disabled="!!editingItemId">
+                <select v-model="cashCurrencyId">
                     <option value="">{{ $t('no') }}</option>
                     <template v-if="currencies.length">
                         <option v-for="parent in currencies" :key="parent.id" :value="parent.id">
@@ -89,6 +89,10 @@
             :disabled="!$store.getters.hasPermission('transactions_delete')">
             {{ $t('delete') }}
         </PrimaryButton>
+        <PrimaryButton v-if="editingItem != null" :onclick="copyTransaction" icon="fas fa-copy"
+            :disabled="!$store.getters.hasPermission('transactions_create')">
+            {{ $t('copy') }}
+        </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('transactions_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('transactions_create'))">
             {{ $t('save') }}
@@ -118,7 +122,7 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request", 'copy-transaction'],
     components: { PrimaryButton, AlertDialog, ClientSearch },
     props: {
         editingItem: { type: TransactionDto, required: false, default: null },
@@ -154,9 +158,7 @@ export default {
     computed: {
         currencyIdComputed: {
             get() {
-                if (this.editingItemId) return this.currencyId;
-                const cash = this.allCashRegisters.find(c => c.id === this.cashId);
-                return cash?.currency_id || '';
+                return this.currencyId;
             },
             set(val) {
                 this.currencyId = val;
@@ -229,7 +231,9 @@ export default {
                             category_id: this.categoryId,
                             project_id: this.projectId,
                             date: this.date,
-                            client_id: this.selectedClient?.id
+                            client_id: this.selectedClient?.id,
+                            orig_amount: this.origAmount,
+                            currency_id: this.currencyIdComputed
                         });
                 } else {
                     var resp = await TransactionController.storeItem({
@@ -305,6 +309,45 @@ export default {
                     console.error('Ошибка при обновлении баланса клиента:', error);
                 }
             }
+        },
+        copyTransaction() {
+            // Создаем новый экземпляр TransactionDto из текущей транзакции
+            const copiedTransaction = new TransactionDto(
+                null, // id - убираем ID, чтобы создать новую запись
+                this.editingItem.type,
+                this.editingItem.isTransfer,
+                this.editingItem.isSale,
+                this.editingItem.isReceipt,
+                this.editingItem.cashId,
+                this.editingItem.cashName,
+                this.editingItem.cashAmount,
+                this.editingItem.cashCurrencyId,
+                this.editingItem.cashCurrencyName,
+                this.editingItem.cashCurrencyCode,
+                this.editingItem.cashCurrencySymbol,
+                this.editingItem.origAmount,
+                this.editingItem.origCurrencyId,
+                this.editingItem.origCurrencyName,
+                this.editingItem.origCurrencyCode,
+                this.editingItem.origCurrencySymbol,
+                this.editingItem.userId,
+                this.editingItem.userName,
+                this.editingItem.categoryId,
+                this.editingItem.categoryName,
+                this.editingItem.categoryType,
+                this.editingItem.projectId,
+                this.editingItem.projectName,
+                this.editingItem.clientId,
+                this.editingItem.client,
+                this.editingItem.note,
+                this.editingItem.date,
+                this.editingItem.createdAt,
+                this.editingItem.updatedAt,
+                this.editingItem.orders
+            );
+            
+            // Эмитим событие для открытия нового модального окна с копированными данными
+            this.$emit('copy-transaction', copiedTransaction);
         }
     },
     watch: {
@@ -313,6 +356,15 @@ export default {
                 this.cashId = this.defaultCashId;
             },
             immediate: true
+        },
+        cashId(newCashId) {
+            // При создании новой транзакции автоматически выбираем валюту кассы
+            if (!this.editingItemId && newCashId) {
+                const cash = this.allCashRegisters.find(c => c.id === newCashId);
+                if (cash?.currency_id) {
+                    this.currencyId = cash.currency_id;
+                }
+            }
         },
         type(newType) {
             if (!this.editingItemId) {

@@ -80,6 +80,7 @@
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
         <TransactionCreatePage ref="transactioncreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
+            @copy-transaction="handleCopyTransaction"
             :editingItem="editingItem" :default-cash-id="cashRegisterId || null" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -268,6 +269,107 @@ export default {
             this.startDate = null;
             this.endDate = null;
             this.fetchItems();
+        },
+        // Переопределяем методы из crudEventMixin для обновления баланса
+        handleSaved() {
+            this.showNotification(
+                this.savedSuccessText || "Успешно сохранено",
+                "",
+                false
+            );
+            this.fetchItems(this.data?.currentPage || 1, true);
+            this.updateBalace(); // Обновляем баланс касс
+            this.closeModal();
+        },
+        handleDeleted() {
+            this.showNotification(
+                this.deletedSuccessText || "Успешно удалено",
+                "",
+                false
+            );
+            this.fetchItems(this.data?.currentPage || 1, true);
+            this.updateBalace(); // Обновляем баланс касс
+            this.closeModal();
+        },
+        handleCopyTransaction(copiedTransaction) {
+            // Закрываем текущее модальное окно
+            this.closeModal();
+            
+            // Небольшая задержка для плавного перехода
+            setTimeout(() => {
+                // Открываем новое модальное окно с копированными данными
+                this.showModal(copiedTransaction);
+            }, 100);
+        },
+        // Переопределяем метод пакетного удаления для обновления баланса
+        async confirmDeleteItems() {
+            this.deleteDialog = false;
+            if (!this.idsToDelete.length) return;
+
+            this.loadingBatch = true;
+            const errors = [];
+            let deletedCount = 0;
+
+            for (const id of this.idsToDelete) {
+                try {
+                    await this.controller.deleteItem(id);
+                    deletedCount++;
+                } catch (e) {
+                    const messages = this.getApiErrorMessage?.(e) || [
+                        e.message || "Ошибка",
+                    ];
+                    errors.push(`ID ${id}: ${messages[0]}`);
+                }
+            }
+
+            if (deletedCount > 0) {
+                this.showNotification?.(`Удалено ${deletedCount} элементов`);
+                this.updateBalace(); // Обновляем баланс касс после пакетного удаления
+            }
+
+            if (errors.length > 0) {
+                this.showNotification?.("Ошибки при удалении", errors.join("\n"), true);
+            }
+
+            this.selectedIds = [];
+            await this.fetchItems?.();
+            this.loadingBatch = false;
+            this.idsToDelete = [];
+        },
+        // Переопределяем метод пакетных действий для фильтрации трансферов
+        getBatchActions() {
+            // Фильтруем выбранные элементы, исключая трансферы
+            const nonTransferIds = this.selectedIds.filter(id => {
+                const item = this.data?.items?.find(i => i.id === id);
+                return item && item.isTransfer !== 1;
+            });
+            
+            const hasTransfers = this.selectedIds.length > nonTransferIds.length;
+            
+            if (hasTransfers) {
+                this.showNotification(
+                    this.$t('cannotDeleteTransfers'), 
+                    this.$t('transferTransactionsCannotBeDeleted'), 
+                    true
+                );
+            }
+            
+            return [
+                {
+                    label: "Удалить",
+                    icon: "fas fa-trash",
+                    type: "danger",
+                    action: nonTransferIds.length > 0 ? this.deleteItems : null,
+                    disabled: this.loadingBatch || nonTransferIds.length === 0,
+                },
+                {
+                    label: 'Сменить статус', 
+                    icon: "fas fa-edit",
+                    type: "info",
+                    action: null, 
+                    render: true, 
+                },
+            ];
         }
     },
     computed: {
