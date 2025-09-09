@@ -57,7 +57,7 @@
         </td>
       </tr>
       <tr v-for="(item, idx) in sortedData" :key="idx" class="cursor-pointer hover:bg-gray-100 transition-all"
-        :class="{ 'border-b border-gray-300': idx !== sortedData.length - 1 }" @click="(e) => itemClick(item, e)">
+        :class="{ 'border-b border-gray-300': idx !== sortedData.length - 1 }" @dblclick="(e) => itemClick(item, e)">
         <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`" class="py-2 px-4 border-x border-gray-300"
           :class="{ hidden: !column.visible }" :style="{ width: column.size ? column.size + 'px' : 'auto' }">
           <template v-if="column.name === 'select'">

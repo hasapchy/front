@@ -59,7 +59,6 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'name', label: 'name' },
-                { name: 'budget', label: 'projectBudget' },
                 { name: 'dateUser', label: 'dateUser' },
                 { name: 'clientId', label: 'client' },
                 { name: 'users', label: 'access' },
@@ -77,7 +76,7 @@ export default {
         itemMapper(i, c) {
             switch (c) {
                 case 'clientId':
-                    return i.clientId != null ? i.client.fullName() : this.$t('notSpecified');
+                    return i.clientId != null && i.client ? i.client.fullName() : this.$t('notSpecified');
                 case 'users':
                     return (i.users || '').length + ' ' + this.$t('users');
                 case 'createdAt':

@@ -533,6 +533,10 @@ export default {
   
   // Дополнительные переводы
   cashCurrency: 'Валюта кассы',
+  projectCurrency: 'Валюта проекта',
+  projectExchangeRate: 'Курс валюты проекта',
+  exchangeRateHelp: 'Оставьте пустым для использования курса по умолчанию из валюты',
+  manat: 'TMT',
   
   // Дополнительные переводы для UI
   order: 'Заказ',

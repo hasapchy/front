@@ -1,15 +1,15 @@
 <template>
     <div class="mt-4">
         <h3 class="text-md font-semibold mb-2">{{ $t('balanceHistory') }}</h3>
-        <div class="mb-2 flex items-center gap-2">
-                          <span>{{ $t('finalBalance') }}:</span>
+        <div v-if="$store.getters.hasPermission('settings_project_budget_view')" class="mb-2 flex items-center gap-2">
+            <span>{{ $t('finalBalance') }}:</span>
             <span :class="{
                 'text-[#5CB85C] font-bold': balance >= 0,
                 'text-[#EE4F47] font-bold': balance < 0
             }">
-                {{ balanceFormatted }} {{ currencyCode }}
+                {{ balanceDisplay }}
             </span>
-            <span class="ml-4">{{ $t('budget') }}: <b>{{ budgetFormatted }} {{ currencyCode }}</b></span>
+            <span class="ml-4">{{ $t('budget') }}: <b>{{ budgetDisplay }}</b></span>
         </div>
         <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
         <div v-else-if="balanceHistory.length === 0" class="text-gray-500">
@@ -195,8 +195,27 @@ export default {
             return balance.toFixed(2);
         },
         budgetFormatted() {
-            const budget = typeof this.budget === 'number' ? this.budget : 0;
+            const budget = parseFloat(this.budget) || 0;
             return budget.toFixed(2);
+        },
+        budgetDisplay() {
+            if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
+                return `${this.budgetFormatted} ${this.currencyCode}`;
+            }
+            
+            // Бюджет уже в валюте проекта, показываем его
+            return `${this.budgetFormatted} ${this.editingItem.currency.symbol}`;
+        },
+        balanceDisplay() {
+            if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
+                return `${this.balanceFormatted} ${this.currencyCode}`;
+            }
+            
+            // Конвертируем баланс в валюту проекта
+            const exchangeRate = this.editingItem.exchangeRate || 1;
+            const balanceInProjectCurrency = (this.balance / exchangeRate).toFixed(2);
+            
+            return `${balanceInProjectCurrency} ${this.editingItem.currency.symbol} (${this.balanceFormatted} ${this.currencyCode})`;
         },
     },
     async mounted() {
@@ -219,6 +238,7 @@ export default {
             this.balanceLoading = true;
             try {
                 const data = await ProjectController.getBalanceHistory(this.editingItem.id);
+                const self = this; // Сохраняем ссылку на компонент
                 this.balanceHistory = (data.history || []).map(
                     (item) => ({
                         ...item,
@@ -232,10 +252,10 @@ export default {
                         },
                         label() {
                             switch (item.source) {
-                                case "transaction": return this.$t('transaction');
-                                case "sale": return this.$t('sale');
-                                case "order": return this.$t('order');
-                                case "receipt": return this.$t('receipt');
+                                case "transaction": return self.$t('transaction');
+                                case "sale": return self.$t('sale');
+                                case "order": return self.$t('order');
+                                case "receipt": return self.$t('receipt');
                                 default: return item.source;
                             }
                         }
@@ -243,6 +263,7 @@ export default {
                 );
                 this.balance = data.balance;
                 this.budget = data.budget;
+                console.log('Budget loaded:', data.budget, 'Balance loaded:', data.balance);
             } catch (e) {
                 console.error(this.$t("errorLoadingBalanceHistory"), e);
                 this.balanceHistory = [];

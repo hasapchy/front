@@ -76,6 +76,16 @@ class AppController {
       throw error;
     }
   }
+
+  async getCurrencyExchangeRate(currencyId) {
+    try {
+      const response = await api.get(`/app/currency/${currencyId}/exchange-rate`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching currency exchange rate:", error);
+      throw error;
+    }
+  }
 }
 
 export default new AppController();

@@ -9,14 +9,37 @@
                 <input type="text" v-model="name">
             </div>
             <div>
+                <label>{{ $t('description') }}</label>
+                <textarea v-model="description" rows="3" placeholder="Введите описание проекта"></textarea>
+            </div>
+            <div>
                 <label>{{ $t('projectDate') }}</label>
                 <input type="datetime-local" v-model="date" 
                     :disabled="!!editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
                     :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
             </div>
-            <div>
-                <label>{{ $t('projectBudget') }}</label>
-                <input type="number" v-model="budget">
+            <div v-if="$store.getters.hasPermission('settings_project_budget_view')" class="flex items-center space-x-2">
+                <div class="w-full">
+                    <label class="required">{{ $t('projectBudget') }}</label>
+                    <input type="number" v-model="budget" step="0.01" min="0">
+                </div>
+                <div class="w-full">
+                    <label class="required">{{ $t('projectCurrency') }}</label>
+                    <select v-model="currencyId" @change="onCurrencyChange">
+                        <option value="">{{ $t('no') }}</option>
+                        <template v-if="currencies.length">
+                            <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
+                                {{ currency.symbol }} - {{ currency.name }}
+                            </option>
+                        </template>
+                    </select>
+                </div>
+            </div>
+            <div v-if="currencyId && $store.getters.hasPermission('settings_project_budget_view')" class="mt-2">
+                <label class="required">{{ $t('projectExchangeRate') }}</label>
+                <input type="number" v-model="exchangeRate" step="0.000001" min="0.000001" 
+                       :placeholder="defaultExchangeRate" class="w-full">
+                <small class="text-gray-500">{{ $t('exchangeRateHelp') }}</small>
             </div>
             <div>
                 <label class="required">{{ $t('assignUsers') }}</label>
@@ -133,6 +156,7 @@ import ProjectController from '@/api/ProjectController';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import AppController from '@/api/AppController';
 
 import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
 
@@ -147,13 +171,17 @@ export default {
         return {
             name: this.editingItem ? this.editingItem.name : '',
             budget: this.editingItem ? this.editingItem.budget : 0,
+            currencyId: this.editingItem ? this.editingItem.currencyId : '',
+            exchangeRate: this.editingItem ? this.editingItem.exchangeRate : null,
             date: this.editingItem && this.editingItem.date
                 ? new Date(this.editingItem.date).toISOString().substring(0, 16)
                 : new Date().toISOString().substring(0, 16),
+            description: this.editingItem ? this.editingItem.description : '',
             selectedUsers: [],
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
             users: [],
+            currencies: [],
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
@@ -181,7 +209,11 @@ export default {
                 label: this.$t(tab.label)
             }));
         },
-
+        defaultExchangeRate() {
+            if (!this.currencyId) return '1.000000';
+            const currency = this.currencies.find(c => c.id === this.currencyId);
+            return currency ? currency.exchange_rate?.toFixed(6) || '1.000000' : '1.000000';
+        }
     },
     created() {
         window.deleteFile = (filePath) => {
@@ -190,7 +222,10 @@ export default {
     },
     mounted() {
         this.$nextTick(async () => {
-            await this.fetchUsers();
+            await Promise.all([
+                this.fetchUsers(),
+                this.fetchCurrencies()
+            ]);
             
             this.saveInitialState();
         });
@@ -206,10 +241,29 @@ export default {
             return {
                 name: this.name,
                 budget: this.budget,
+                currencyId: this.currencyId,
+                exchangeRate: this.exchangeRate,
                 date: this.date,
+                description: this.description,
                 selectedClient: this.selectedClient?.id || null,
                 selectedUsers: [...this.selectedUsers]
             };
+        },
+        async fetchCurrencies() {
+            this.currencies = await AppController.getCurrencies();
+        },
+        async onCurrencyChange() {
+            if (this.currencyId) {
+                try {
+                    const rateData = await AppController.getCurrencyExchangeRate(this.currencyId);
+                    this.exchangeRate = rateData.exchange_rate;
+                } catch (error) {
+                    console.error('Error fetching exchange rate:', error);
+                    this.exchangeRate = null;
+                }
+            } else {
+                this.exchangeRate = null;
+            }
         },
         async fetchUsers() {
             this.users = await UsersController.getAllUsers();
@@ -223,16 +277,36 @@ export default {
                 alert(this.$t('waitForFileUpload'));
                 return;
             }
+            
+            // Валидация обязательных полей (только если у пользователя есть права на просмотр бюджета)
+            if (this.$store.getters.hasPermission('settings_project_budget_view')) {
+                if (!this.currencyId) {
+                    alert('Пожалуйста, выберите валюту проекта');
+                    return;
+                }
+                if (!this.exchangeRate || this.exchangeRate <= 0) {
+                    alert('Пожалуйста, введите корректный курс обмена');
+                    return;
+                }
+            }
+            
             this.saveLoading = true;
             try {
                 let resp;
                 const formData = {
                     name: this.name,
-                    budget: this.budget,
                     date: new Date(this.date).toISOString(),
+                    description: this.description || null,
                     client_id: this.selectedClient?.id,
                     users: this.selectedUsers,
                 };
+
+                // Добавляем поля бюджета только если у пользователя есть права
+                if (this.$store.getters.hasPermission('settings_project_budget_view')) {
+                    formData.budget = this.budget;
+                    formData.currency_id = this.currencyId || null;
+                    formData.exchange_rate = this.exchangeRate || null;
+                }
 
                 if (this.editingItemId != null) {
                     resp = await ProjectController.updateItem(this.editingItemId, formData);
@@ -255,10 +329,12 @@ export default {
         clearForm() {
             this.name = '';
             this.budget = 0;
+            this.currencyId = '';
+            this.exchangeRate = null;
             this.date = new Date().toISOString().substring(0, 16);
+            this.description = '';
             this.selectedClient = null;
             this.selectedUsers = [];
-
             this.editingItemId = null;
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
@@ -391,15 +467,17 @@ export default {
                 if (newEditingItem) {
                     this.name = newEditingItem.name || '';
                     this.budget = newEditingItem.budget || 0;
+                    this.currencyId = newEditingItem.currencyId || '';
+                    this.exchangeRate = newEditingItem.exchangeRate || null;
                     this.date = newEditingItem.date
                         ? new Date(newEditingItem.date).toISOString().substring(0, 16)
                         : new Date().toISOString().substring(0, 16);
+                    this.description = newEditingItem.description || '';
                     this.selectedClient = newEditingItem.client || null;
                     this.selectedUsers = newEditingItem.getUserIds() || [];
 
                     this.editingItemId = newEditingItem.id || null;
                 } else {
-                    this.date = new Date().toISOString().substring(0, 16);
                     this.clearForm();
                     this.currentTab = "info";
                 }

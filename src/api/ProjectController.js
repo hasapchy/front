@@ -2,6 +2,7 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import api from "./axiosInstance";
 import ClientDto from "@/dto/client/ClientDto";
 import ProjectDto from "@/dto/project/ProjectDto";
+import CurrencyDto from "@/dto/app/CurrencyDto";
 
 export default class ProjectController {
   static async getItems(page = 1) {
@@ -32,10 +33,26 @@ export default class ProjectController {
             item.client.phones || []
           );
         }
+        
+        var currency = null;
+        if (item.currency) {
+          currency = new CurrencyDto({
+            id: item.currency.id,
+            code: item.currency.code,
+            name: item.currency.name,
+            symbol: item.currency.symbol,
+            is_default: item.currency.is_default,
+            is_report: item.currency.is_report,
+            status: item.currency.status
+          });
+        }
+        
         return new ProjectDto(
           item.id,
           item.name,
           item.budget,
+          item.currency_id,
+          item.exchange_rate,
           item.date,
           item.client_id,
           client,
@@ -44,7 +61,9 @@ export default class ProjectController {
           item.users || [],
           item.created_at,
           item.updated_at,
-          item.files || []
+          item.files || [],
+          currency,
+          item.description
         );
       });
 
@@ -91,10 +110,26 @@ export default class ProjectController {
             item.client.phones || []
           );
         }
+        
+        var currency = null;
+        if (item.currency) {
+          currency = new CurrencyDto({
+            id: item.currency.id,
+            code: item.currency.code,
+            name: item.currency.name,
+            symbol: item.currency.symbol,
+            is_default: item.currency.is_default,
+            is_report: item.currency.is_report,
+            status: item.currency.status
+          });
+        }
+        
         return new ProjectDto(
           item.id,
           item.name,
           item.budget,
+          item.currency_id,
+          item.exchange_rate,
           item.date,
           item.client_id,
           client,
@@ -103,7 +138,9 @@ export default class ProjectController {
           item.users || [],
           item.created_at,
           item.updated_at,
-          item.files || []
+          item.files || [],
+          currency,
+          item.description
         );
       });
       return items;
@@ -138,10 +175,22 @@ export default class ProjectController {
         item.client.phones || []
       ) : null;
 
+      const currency = item.currency ? new CurrencyDto({
+        id: item.currency.id,
+        code: item.currency.code,
+        name: item.currency.name,
+        symbol: item.currency.symbol,
+        is_default: item.currency.is_default,
+        is_report: item.currency.is_report,
+        status: item.currency.status
+      }) : null;
+
       return new ProjectDto(
         item.id,
         item.name,
         item.budget,
+        item.currency_id,
+        item.exchange_rate,
         item.date,
         item.client_id,
         client,
@@ -150,7 +199,9 @@ export default class ProjectController {
         item.users || [],
         item.created_at,
         item.updated_at,
-        item.files || []
+        item.files || [],
+        currency,
+        item.description
       );
     } catch (error) {
       console.error("Ошибка при получении проекта:", error);

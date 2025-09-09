@@ -7,6 +7,8 @@ export default class ProjectDto {
     id,
     name,
     budget,
+    currencyId = null,
+    exchangeRate = null,
     date = null,
     clientId = null,
     client = null,
@@ -15,12 +17,16 @@ export default class ProjectDto {
     users = [],
     createdAt = "",
     updatedAt = "",
-    files = []
+    files = [],
+    currency = null,
+    description = null
   ) {
     this.id = id;
     this.name = name;
     this.date = date;
     this.budget = budget;
+    this.currencyId = currencyId;
+    this.exchangeRate = exchangeRate;
     this.clientId = clientId;
     /** @type {ClientDto | null} */
     this.client = client;
@@ -30,6 +36,8 @@ export default class ProjectDto {
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
     this.files = files;
+    this.currency = currency;
+    this.description = description;
   }
 
   formatDate() {
@@ -103,5 +111,30 @@ export default class ProjectDto {
 
   getFilesCount() {
     return this.files ? this.files.length : 0;
+  }
+
+  getExchangeRateDisplay() {
+    return this.exchangeRate ? this.exchangeRate.toFixed(6) : '1.000000';
+  }
+
+  // Получить бюджет в манатах (дефолтная валюта)
+  getBudgetInManat() {
+    if (!this.currencyId) {
+      return this.budget; // Если валюта не выбрана, возвращаем как есть
+    }
+    
+    // Используем курс из атрибута, который автоматически получает актуальный курс
+    const rate = this.exchangeRate || 1;
+    return (this.budget * rate).toFixed(2);
+  }
+
+  // Получить отображение бюджета с двумя валютами
+  getBudgetDisplay() {
+    if (!this.currencyId || !this.currency) {
+      return this.budget; // Если валюта не выбрана, возвращаем только бюджет
+    }
+    
+    const budgetInManat = this.getBudgetInManat();
+    return `${this.budget} ${this.currency.symbol} (${budgetInManat} TMT)`;
   }
 }
