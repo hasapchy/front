@@ -285,6 +285,10 @@ export default {
   outcome: 'Расход',
   итого: 'Итого',
   mainCashRegister: 'Главная касса',
+  addIncome: 'Добавить приход',
+  editIncome: 'Редактировать приход',
+  deleteIncome: 'Удалить приход',
+  projectIncome: 'Приход',
   
   // Склад
   stock: 'Склад',

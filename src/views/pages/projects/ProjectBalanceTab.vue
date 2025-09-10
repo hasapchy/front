@@ -1,6 +1,15 @@
 <template>
     <div class="mt-4">
-        <h3 class="text-md font-semibold mb-2">{{ $t('balanceHistory') }}</h3>
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
+            <PrimaryButton 
+                v-if="$store.getters.hasPermission('transactions_create')"
+                icon="fas fa-plus" 
+                :onclick="showAddIncomeModal" 
+                :is-small="true">
+                {{ $t('addIncome') }}
+            </PrimaryButton>
+        </div>
         <div v-if="$store.getters.hasPermission('settings_project_budget_view')" class="mb-2 flex items-center gap-2">
             <span>{{ $t('finalBalance') }}:</span>
             <span :class="{
@@ -19,29 +28,68 @@
             :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
             @selectionChange="selectedIds = $event" :onItemClick="handleBalanceItemClick" />
 
+        <!-- Модальное окно для создания/редактирования прихода -->
+        <SideModalDialog 
+            :dialog="incomeModalOpen" 
+            @close="closeIncomeModal"
+            :title="editingIncomeItem ? $t('editIncome') : $t('addIncome')">
+            <ProjectTransactionCreatePage 
+                v-if="incomeModalOpen"
+                :editing-item="editingIncomeItem"
+                :project-id="editingItem?.id"
+                @saved="handleIncomeSaved"
+                @saved-error="handleIncomeSavedError"
+                @deleted="handleIncomeDeleted"
+                @deleted-error="handleIncomeDeletedError"
+                @close-request="closeIncomeModal" />
+        </SideModalDialog>
 
+        <!-- Модальное окно для других сущностей -->
+        <SideModalDialog 
+            :dialog="entityModalOpen" 
+            @close="closeEntityModal"
+            :title="selectedEntity ? $t(selectedEntity.type) : ''">
+            <component 
+                v-if="selectedEntity && !entityLoading"
+                :is="getModalComponent(selectedEntity.type)"
+                v-bind="getModalProps(selectedEntity)"
+                @saved="handleEntitySaved"
+                @saved-error="handleEntitySavedError"
+                @deleted="handleEntityDeleted"
+                @deleted-error="handleEntityDeletedError"
+                @close-request="closeEntityModal" />
+            <div v-else-if="entityLoading" class="p-4 text-center">
+                {{ $t('loading') }}...
+            </div>
+        </SideModalDialog>
     </div>
 </template>
 
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import ProjectTransactionCreatePage from "@/views/pages/project_transactions/ProjectTransactionCreatePage.vue";
 import TransactionController from "@/api/TransactionController";
 import SaleController from "@/api/SaleController";
 import OrderController from "@/api/OrderController";
 import ProjectController from "@/api/ProjectController";
 import AppController from "@/api/AppController";
+import ProjectTransactionController from "@/api/ProjectTransactionController";
 
 import api from "@/api/axiosInstance";
 import SaleDto from "@/dto/sale/SaleDto";
 import OrderDto from "@/dto/order/OrderDto";
 import ClientDto from "@/dto/client/ClientDto";
 import TransactionDto from "@/dto/transaction/TransactionDto";
+import ProjectTransactionDto from "@/dto/project/ProjectTransactionDto";
 
 export default {
     components: {
         DraggableTable,
         SideModalDialog,
+        PrimaryButton,
+        ProjectTransactionCreatePage,
     },
     props: {
         editingItem: { required: true },
@@ -56,6 +104,8 @@ export default {
             selectedEntity: null,
             entityModalOpen: false,
             entityLoading: false,
+            incomeModalOpen: false,
+            editingIncomeItem: null,
             columnsConfig: [
                 { name: "date", label: this.$t("date"), size: 100 },
                 { name: "source", label: this.$t("type") },
@@ -186,6 +236,13 @@ export default {
                     componentName: 'WarehousesReceiptCreatePage',
                     prop: 'editingItem',
                 },
+                project_income: {
+                    fetch: id => ProjectTransactionController.getItem(id).then(r => {
+                        return ProjectTransactionDto.fromApi(r.item);
+                    }),
+                    componentName: 'ProjectTransactionCreatePage',
+                    prop: 'editingItem',
+                },
             },
         };
     },
@@ -256,6 +313,7 @@ export default {
                                 case "sale": return self.$t('sale');
                                 case "order": return self.$t('order');
                                 case "receipt": return self.$t('receipt');
+                                case "project_income": return self.$t('projectIncome');
                                 default: return item.source;
                             }
                         }
@@ -289,6 +347,15 @@ export default {
             }
         },
         async handleBalanceItemClick(item) {
+            // Если это приход, открываем модальное окно прихода
+            if (item.source === 'project_income') {
+                this.editingIncomeItem = await ProjectTransactionController.getItem(item.sourceId).then(r => {
+                    return ProjectTransactionDto.fromApi(r.item);
+                });
+                this.incomeModalOpen = true;
+                return;
+            }
+
             const config = this.ENTITY_CONFIG[item.source];
             if (!config) return;
             this.entityModalOpen = true;
@@ -325,6 +392,8 @@ export default {
                         return (await import('@/views/pages/orders/OrderCreatePage.vue')).default;
                     case 'WarehousesReceiptCreatePage':
                         return (await import('@/views/pages/warehouses/WarehousesReceiptCreatePage.vue')).default;
+                    case 'ProjectTransactionCreatePage':
+                        return (await import('@/views/pages/project_transactions/ProjectTransactionCreatePage.vue')).default;
                     default:
                         return null;
                 }
@@ -336,6 +405,42 @@ export default {
         closeEntityModal() {
             this.entityModalOpen = false;
             this.selectedEntity = null;
+        },
+        showAddIncomeModal() {
+            this.editingIncomeItem = null;
+            this.incomeModalOpen = true;
+        },
+        closeIncomeModal() {
+            this.incomeModalOpen = false;
+            this.editingIncomeItem = null;
+        },
+        handleIncomeSaved() {
+            this.closeIncomeModal();
+            this.fetchBalanceHistory();
+        },
+        handleIncomeSavedError(error) {
+            console.error('Ошибка сохранения прихода:', error);
+        },
+        handleIncomeDeleted() {
+            this.closeIncomeModal();
+            this.fetchBalanceHistory();
+        },
+        handleIncomeDeletedError(error) {
+            console.error('Ошибка удаления прихода:', error);
+        },
+        handleEntitySaved() {
+            this.closeEntityModal();
+            this.fetchBalanceHistory();
+        },
+        handleEntitySavedError(error) {
+            console.error('Ошибка сохранения сущности:', error);
+        },
+        handleEntityDeleted() {
+            this.closeEntityModal();
+            this.fetchBalanceHistory();
+        },
+        handleEntityDeletedError(error) {
+            console.error('Ошибка удаления сущности:', error);
         },
     },
     watch: {

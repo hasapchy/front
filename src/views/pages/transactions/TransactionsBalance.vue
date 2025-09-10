@@ -4,13 +4,14 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
                 <div v-for="item in data" :key="item.id" class="bg-white p-2 rounded-lg shadow-md">
                     <span class="text-md font-semibold mb-4">{{ translateCashRegisterName(item.name) }}</span>
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="grid grid-cols-4 gap-4">
                         <div v-for="balance in item.balance" :key="balance.title" class="flex flex-col justify-between">
                             <span class="text-sm font-medium">{{ translateBalanceTitle(balance.title) }}</span>
                             <span :class="{
                                 'text-[#5CB85C]': balance.type === 'income',
                                 'text-[#EE4F47]': balance.type === 'outcome',
                                 'text-[#337AB7]': balance.type === 'default',
+                                'text-[#FFA500]': balance.type === 'project_income',
                                 'font-semibold text-lg': true
                             }">{{ Number(balance.value).toFixed(2) }} </span>
                         </div>
