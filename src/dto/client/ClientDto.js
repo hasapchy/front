@@ -21,7 +21,9 @@ export default class ClientDto {
     createdAt,
     updatedAt,
     emails = [],
-    phones = []
+    phones = [],
+    userId = null,
+    userName = null
   ) {
     this.id = id; // Идентификатор клиента
     this.clientType = clientType; // Тип клиента
@@ -38,6 +40,8 @@ export default class ClientDto {
     this.discount = discount; // Скидка
     this.createdAt = createdAt; // Дата создания клиента
     this.updatedAt = updatedAt; // Дата обновления клиента
+    this.userId = userId; // ID пользователя, создавшего клиента
+    this.userName = userName; // Имя пользователя, создавшего клиента
     this.emails = (emails || []).map(
       (email) => new ClientEmailDto(email.id, email.client_id, email.email)
     ); // Список email-ов
@@ -117,7 +121,9 @@ export default class ClientDto {
   }
 
   formatCreatedAt() {
-    return dayjsDateTime(this.createdAt);
+    const date = dayjsDateTime(this.createdAt);
+    const user = this.userName ? ` (${this.userName})` : '';
+    return date + user;
   }
 
   formatUpdatedAt() {
@@ -143,7 +149,9 @@ export default class ClientDto {
       data.created_at,
       data.updated_at,
       data.emails || [],
-      data.phones || []
+      data.phones || [],
+      data.user_id,
+      data.user?.name || data.user_name
     );
   }
 }

@@ -31,7 +31,9 @@ export default class ClientController {
         item.created_at,
         item.updated_at,
         emails,
-        phones
+        phones,
+        item.user_id,
+        item.user?.name
       );
     } catch (error) {
       console.error("Ошибка при получении клиента:", error);
@@ -74,7 +76,9 @@ export default class ClientController {
           item.created_at,
           item.updated_at,
           emails,
-          phones
+          phones,
+          item.user_id,
+          item.user?.name
         );
       });
 
