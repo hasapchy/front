@@ -17,7 +17,7 @@ export default {
   transactions: 'Transactions',
   projects: 'Projects',
   users: 'Users',
-  settings: 'Settings',
+  settings: 'Custom Permissions',
   
   // Actions
   add: 'Add',

@@ -25,6 +25,7 @@ import InvoicesPage from "@/views/pages/invoices/InvoicesPage.vue";
 import UsersPage from "@/views/pages/users/UsersPage.vue";
 import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
 import SystemSettingsPage from "@/views/pages/settings/SystemSettingsPage.vue";
+import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
 
 const routes = [
   {
@@ -233,6 +234,16 @@ const routes = [
           title: "performanceMonitor", 
           requiresAuth: true,
           permission: "system_settings_view"
+        },
+      },
+      {
+        path: "/settings/currency-history",
+        name: "CurrencyHistory",
+        component: CurrencyHistoryPage,
+        meta: { 
+          title: "currencyHistory", 
+          requiresAuth: true,
+          permission: "currency_history_view"
         },
       },
     ],

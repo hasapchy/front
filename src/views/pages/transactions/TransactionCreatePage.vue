@@ -233,7 +233,8 @@ export default {
                             date: this.date,
                             client_id: this.selectedClient?.id,
                             orig_amount: this.origAmount,
-                            currency_id: this.currencyIdComputed
+                            currency_id: this.currencyIdComputed,
+                            note: this.note
                         });
                 } else {
                     var resp = await TransactionController.storeItem({

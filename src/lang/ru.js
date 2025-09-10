@@ -21,7 +21,7 @@ export default {
   transactions: 'Операции',
   projects: 'Проекты',
   users: 'Пользователи',
-  settings: 'Настройки',
+  settings: 'Кастомные права',
   
   // Дополнительные навигационные элементы
   finance: 'Финансы',
@@ -99,6 +99,40 @@ export default {
   noPhone: 'Нет телефона',
   address: 'Адрес',
   description: 'Описание',
+  
+  // История курсов валют
+  currencyHistory: 'История курсов валют',
+  exchangeRateHistory: 'История курсов',
+  addExchangeRate: 'Добавить курс',
+  editExchangeRate: 'Редактировать курс',
+  selectCurrency: 'Выберите валюту',
+  exchangeRate: 'Курс обмена',
+  startDate: 'Дата начала',
+  endDate: 'Дата окончания',
+  duration: 'Продолжительность',
+  status: 'Статус',
+  active: 'Активный',
+  inactive: 'Неактивный',
+  currentRate: 'Текущий курс',
+  currency: 'Валюта',
+  enterExchangeRate: 'Введите курс обмена',
+  exchangeRateHelp: 'Введите курс обмена (например: 3.5 для 1 доллар = 3.5 маната)',
+  endDateHelp: 'Оставьте пустым, если курс действует до сих пор',
+  setAsCurrentRate: 'Установить как текущий курс',
+  endDateWarning: 'Внимание: Установка даты окончания сделает этот курс неактивным',
+  confirmDeleteExchangeRate: 'Удалить этот курс обмена',
+  exchangeRateDeleted: 'Курс обмена удален',
+  errorDeletingExchangeRate: 'Ошибка при удалении курса обмена',
+  exchangeRateSaved: 'Курс обмена сохранен',
+  errorSavingExchangeRate: 'Ошибка при сохранении курса обмена',
+  errorLoadingCurrencies: 'Ошибка загрузки валют',
+  errorLoadingHistory: 'Ошибка загрузки истории курсов',
+  noHistoryFound: 'История курсов не найдена',
+  deleteSelected: 'Удалить выбранные',
+  customPermissions: 'Кастомные настройки',
+  settings_edit_any_date: 'Изменение даты',
+  settings_project: 'Настройки проекта',
+  settings_project_budget_view: 'Просмотр бюджета проекта',
   price: 'Цена',
   quantity: 'Количество',
   date: 'Дата',
@@ -916,5 +950,24 @@ export default {
   
   // Заказы в счетах
   selectedOrders: 'Выбранные заказы',
-  noOrdersSelected: 'Заказы не выбраны'
+  noOrdersSelected: 'Заказы не выбраны',
+  
+  // Missing translations
+  enterPassword: 'Введите пароль',
+  cash: 'Касса',
+  system: 'Система',
+  
+  // Permission group translations
+  orderCategories: 'Категории заказов',
+  orderStatusCategories: 'Категории статусов',
+  warehouseStocks: 'Склад — Остатки',
+  warehouseReceipts: 'Склад — Оприходования',
+  warehouseWriteoffs: 'Склад — Списания',
+  warehouseMovements: 'Склад — Перемещения',
+  cashRegisters: 'Кассы',
+  systemSettings: 'Настройки системы',
+  companies: 'Компании',
+  categories: 'Категории',
+  invoices: 'Счета',
+  transfers: 'Трансферы по кассам'
 }

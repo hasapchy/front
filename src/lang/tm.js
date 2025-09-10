@@ -19,7 +19,7 @@ export default {
   transactions: 'Tranzaksiyalar',
   projects: 'Proýektler',
   users: 'Ulanyjylar',
-  settings: 'Sazlamalar',
+  settings: 'Ýörite hukuklar',
   finance: 'Maliýe',
   cashRegisters: 'Kassalar',
   productCategories: 'Önüm/hyzmat kategoriýalary',
