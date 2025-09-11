@@ -268,11 +268,8 @@ export default {
                 return `${this.balanceFormatted} ${this.currencyCode}`;
             }
             
-            // Конвертируем баланс в валюту проекта
-            const exchangeRate = this.editingItem.exchangeRate || 1;
-            const balanceInProjectCurrency = (this.balance / exchangeRate).toFixed(2);
-            
-            return `${balanceInProjectCurrency} ${this.editingItem.currency.symbol} (${this.balanceFormatted} ${this.currencyCode})`;
+            // Баланс уже в валюте проекта, показываем его без конвертации
+            return `${this.balanceFormatted} ${this.editingItem.currency.symbol}`;
         },
         projectIncomeFormatted() {
             const income = typeof this.projectIncome === 'number' ? this.projectIncome : 0;
@@ -283,11 +280,8 @@ export default {
                 return `${this.projectIncomeFormatted} ${this.currencyCode}`;
             }
             
-            // Конвертируем приход в валюту проекта
-            const exchangeRate = this.editingItem.exchangeRate || 1;
-            const incomeInProjectCurrency = (this.projectIncome / exchangeRate).toFixed(2);
-            
-            return `${incomeInProjectCurrency} ${this.editingItem.currency.symbol} (${this.projectIncomeFormatted} ${this.currencyCode})`;
+            // Приход уже в валюте проекта, показываем его без конвертации
+            return `${this.projectIncomeFormatted} ${this.editingItem.currency.symbol}`;
         },
     },
     async mounted() {
@@ -309,8 +303,17 @@ export default {
             if (!this.editingItem) return;
             this.balanceLoading = true;
             try {
-                const data = await ProjectController.getBalanceHistory(this.editingItem.id);
+                // Добавляем timestamp для принудительного обновления кэша
+                const data = await ProjectController.getBalanceHistory(this.editingItem.id, Date.now());
                 const self = this; // Сохраняем ссылку на компонент
+                
+                // Получаем информацию о валютах
+                const currencies = await AppController.getCurrencies();
+                const currencyMap = {};
+                currencies.forEach(currency => {
+                    currencyMap[currency.id] = currency;
+                });
+                
                 this.balanceHistory = (data.history || []).map(
                     (item) => ({
                         ...item,
@@ -320,7 +323,13 @@ export default {
                         formatAmountWithColor() {
                             const val = parseFloat(item.amount);
                             const color = val >= 0 ? "#5CB85C" : "#EE4F47";
-                            const currency = self.currencyCode || 'TMT';
+                            
+                            // Для project_income используем валюту прихода, для остальных - дефолтную
+                            let currency = self.currencyCode || 'TMT';
+                            if (item.source === 'project_income' && item.currency_id && currencyMap[item.currency_id]) {
+                                currency = currencyMap[item.currency_id].symbol || currencyMap[item.currency_id].code;
+                            }
+                            
                             return `<span style="color:${color};font-weight:bold">${val.toFixed(2)} ${currency}</span>`;
                         },
                         label() {
@@ -432,15 +441,19 @@ export default {
             this.incomeModalOpen = false;
             this.editingIncomeItem = null;
         },
-        handleIncomeSaved() {
+        async handleIncomeSaved() {
             this.closeIncomeModal();
+            // Небольшая задержка для обновления кэша на backend
+            await new Promise(resolve => setTimeout(resolve, 100));
             this.fetchBalanceHistory();
         },
         handleIncomeSavedError(error) {
             console.error('Ошибка сохранения прихода:', error);
         },
-        handleIncomeDeleted() {
+        async handleIncomeDeleted() {
             this.closeIncomeModal();
+            // Небольшая задержка для обновления кэша на backend
+            await new Promise(resolve => setTimeout(resolve, 100));
             this.fetchBalanceHistory();
         },
         handleIncomeDeletedError(error) {

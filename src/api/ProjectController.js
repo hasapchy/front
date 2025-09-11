@@ -63,7 +63,8 @@ export default class ProjectController {
           item.updated_at,
           item.files || [],
           currency,
-          item.description
+          item.description,
+          item.creator
         );
       });
 
@@ -140,7 +141,8 @@ export default class ProjectController {
           item.updated_at,
           item.files || [],
           currency,
-          item.description
+          item.description,
+          item.creator
         );
       });
       return items;
@@ -262,9 +264,12 @@ export default class ProjectController {
     return response.data.files;
   }
 
-  static async getBalanceHistory(projectId) {
+  static async getBalanceHistory(projectId, timestamp = null) {
     try {
-      const { data } = await api.get(`/projects/${projectId}/balance-history`);
+      const url = timestamp 
+        ? `/projects/${projectId}/balance-history?t=${timestamp}`
+        : `/projects/${projectId}/balance-history`;
+      const { data } = await api.get(url);
       return data; // { history, balance, budget }
     } catch (error) {
       console.error("Ошибка при получении истории баланса проекта:", error);

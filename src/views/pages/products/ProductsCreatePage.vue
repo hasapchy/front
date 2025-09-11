@@ -66,7 +66,7 @@
         </div>
         <div class="mt-2">
             <label class="required">{{ $t('sku') }}</label>
-            <input type="text" v-model="sku" placeholder="AB00001" :disabled="editingItemId !== null">
+            <input type="text" v-model="sku" placeholder="AB00001">
         </div>
         <div class="mt-2 flex space-x-2">
             <div class="w-1/3">
@@ -91,8 +91,8 @@
         <div class="mt-2">
             <label>{{ $t('barcode') }}</label>
             <div class="flex items-center space-x-2">
-                <input type="text" v-model="barcode" :disabled="editingItemId !== null">
-                <PrimaryButton v-if="editingItemId == null" icon="fas fa-barcode" :is-info="true"
+                <input type="text" v-model="barcode">
+                <PrimaryButton v-if="!barcode" icon="fas fa-barcode" :is-info="true"
                     :onclick="generateBarcode" :is-full="false">
                     {{ $t('generateBarcode') }}
                 </PrimaryButton>

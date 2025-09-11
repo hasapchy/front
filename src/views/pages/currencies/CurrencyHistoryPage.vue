@@ -27,7 +27,7 @@
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable 
-                table-key="settings.currencyHistory" 
+                table-key="settings.currency_history" 
                 :columns-config="translatedColumnsConfig" 
                 :table-data="data.items"
                 :item-mapper="itemMapper" 
@@ -129,6 +129,11 @@ export default {
     },
     async mounted() {
         await this.fetchCurrencies();
+        // Автоматически выбираем первую валюту по умолчанию
+        if (this.currencies.length > 0) {
+            this.selectedCurrencyId = this.currencies[0].id;
+            await this.onCurrencyChange();
+        }
     },
     methods: {
         async fetchCurrencies() {

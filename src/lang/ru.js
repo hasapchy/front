@@ -102,6 +102,7 @@ export default {
   
   // История курсов валют
   currencyHistory: 'История курсов валют',
+  currency_history: 'История курсов валют',
   exchangeRateHistory: 'История курсов',
   addExchangeRate: 'Добавить курс',
   editExchangeRate: 'Редактировать курс',
@@ -129,6 +130,8 @@ export default {
   errorLoadingHistory: 'Ошибка загрузки истории курсов',
   noHistoryFound: 'История курсов не найдена',
   deleteSelected: 'Удалить выбранные',
+  selectCurrencyFirst: 'Сначала выберите валюту',
+  newRateWillClosePrevious: 'При создании нового курса все предыдущие активные курсы будут автоматически закрыты',
   customPermissions: 'Кастомные настройки',
   settings_edit_any_date: 'Изменение даты',
   settings_project: 'Настройки проекта',

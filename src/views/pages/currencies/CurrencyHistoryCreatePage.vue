@@ -12,8 +12,20 @@
                 <strong>{{ $t('currentRate') }}:</strong> {{ currency.current_rate }}
             </p>
         </div>
+        <div v-else class="mb-4 p-3 bg-yellow-50 rounded-lg">
+            <p class="text-sm text-yellow-700">
+                {{ $t('selectCurrencyFirst') }}
+            </p>
+        </div>
 
-        <div>
+        <div v-if="currency">
+            <div v-if="!editingItem" class="mb-4 p-3 bg-blue-50 rounded-lg">
+                <p class="text-sm text-blue-700">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    {{ $t('newRateWillClosePrevious') }}
+                </p>
+            </div>
+            
             <div>
                 <label class="required">{{ $t('exchangeRate') }}</label>
                 <input 
@@ -128,7 +140,7 @@ export default {
     components: { PrimaryButton, AlertDialog, NotificationToast },
     props: {
         editingItem: { type: Object, default: null },
-        currency: { type: Object, required: true }
+        currency: { type: Object, default: null }
     },
     data() {
         return {
@@ -144,7 +156,7 @@ export default {
     },
     computed: {
         isFormValid() {
-            return this.exchangeRate && this.startDate && this.exchangeRate > 0;
+            return this.currency && this.exchangeRate && this.startDate && this.exchangeRate > 0;
         }
     },
     mounted() {

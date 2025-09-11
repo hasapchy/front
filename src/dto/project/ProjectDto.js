@@ -19,7 +19,8 @@ export default class ProjectDto {
     updatedAt = "",
     files = [],
     currency = null,
-    description = null
+    description = null,
+    creator = null
   ) {
     this.id = id;
     this.name = name;
@@ -38,6 +39,7 @@ export default class ProjectDto {
     this.files = files;
     this.currency = currency;
     this.description = description;
+    this.creator = creator;
   }
 
   formatDate() {
