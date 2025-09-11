@@ -120,6 +120,21 @@ export default {
             });
         },
     methods: {
+        formatDateForInput(dateString) {
+            if (!dateString) return null;
+            
+            // Если дата уже в правильном формате, возвращаем как есть
+            if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
+                return dateString;
+            }
+            
+            // Конвертируем ISO дату в формат для datetime-local
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return null;
+            
+            // Возвращаем дату в формате YYYY-MM-DDTHH:MM
+            return date.toISOString().substring(0, 16);
+        },
         changeTab(tabName) {
             this.currentTab = tabName;
         },
@@ -211,7 +226,7 @@ export default {
                     this.amount = newEditingItem.amount || 0;
                     this.note = newEditingItem.note || '';
                     this.currencyId = newEditingItem.currencyId || '';
-                    this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
+                    this.date = this.formatDateForInput(newEditingItem.date) || new Date().toISOString().substring(0, 16);
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     this.selectedProjectId = this.projectId || '';

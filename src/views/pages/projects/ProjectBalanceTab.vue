@@ -376,10 +376,15 @@ export default {
         async handleBalanceItemClick(item) {
             // Если это приход, открываем модальное окно прихода
             if (item.source === 'project_income') {
-                this.editingIncomeItem = await ProjectTransactionController.getItem(item.sourceId).then(r => {
-                    return ProjectTransactionDto.fromApi(r.item);
-                });
-                this.incomeModalOpen = true;
+                try {
+                    this.editingIncomeItem = await ProjectTransactionController.getItem(item.source_id).then(r => {
+                        return ProjectTransactionDto.fromApi(r.item);
+                    });
+                    this.incomeModalOpen = true;
+                } catch (error) {
+                    console.error('Error loading project transaction:', error);
+                    this.$notify?.({ type: 'error', text: 'Ошибка при загрузке прихода: ' + (error.message || error) });
+                }
                 return;
             }
 
@@ -388,7 +393,7 @@ export default {
             this.entityModalOpen = true;
             this.entityLoading = true;
             try {
-                const data = await config.fetch(item.sourceId);
+                const data = await config.fetch(item.source_id);
                 this.selectedEntity = {
                     type: item.source,
                     data,
