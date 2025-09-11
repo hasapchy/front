@@ -142,7 +142,14 @@ export default {
         },
         clientPhones() {
             if (!this.selectedClient) return [];
-            return this.selectedClient.phones || [];
+            const phones = this.selectedClient.phones || [];
+            console.log('ClientSearch clientPhones:', {
+                selectedClient: this.selectedClient,
+                phones: phones,
+                phonesType: typeof phones,
+                isArray: Array.isArray(phones)
+            });
+            return Array.isArray(phones) ? phones : [];
         }
     },
     created() {

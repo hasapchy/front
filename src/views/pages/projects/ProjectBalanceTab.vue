@@ -11,13 +11,14 @@
             </PrimaryButton>
         </div>
         <div v-if="$store.getters.hasPermission('settings_project_budget_view')" class="mb-2 flex items-center gap-2">
-            <span>{{ $t('finalBalance') }}:</span>
+            <span>{{ $t('finalExpense') }}:</span>
             <span :class="{
                 'text-[#5CB85C] font-bold': balance >= 0,
                 'text-[#EE4F47] font-bold': balance < 0
             }">
                 {{ balanceDisplay }}
             </span>
+            <span class="ml-4">{{ $t('projectIncome') }}: <b class="text-[#5CB85C]">{{ projectIncomeDisplay }}</b></span>
             <span class="ml-4">{{ $t('budget') }}: <b>{{ budgetDisplay }}</b></span>
         </div>
         <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
@@ -30,9 +31,8 @@
 
         <!-- Модальное окно для создания/редактирования прихода -->
         <SideModalDialog 
-            :dialog="incomeModalOpen" 
-            @close="closeIncomeModal"
-            :title="editingIncomeItem ? $t('editIncome') : $t('addIncome')">
+            :showForm="incomeModalOpen" 
+            :onclose="closeIncomeModal">
             <ProjectTransactionCreatePage 
                 v-if="incomeModalOpen"
                 :editing-item="editingIncomeItem"
@@ -46,9 +46,8 @@
 
         <!-- Модальное окно для других сущностей -->
         <SideModalDialog 
-            :dialog="entityModalOpen" 
-            @close="closeEntityModal"
-            :title="selectedEntity ? $t(selectedEntity.type) : ''">
+            :showForm="entityModalOpen" 
+            :onclose="closeEntityModal">
             <component 
                 v-if="selectedEntity && !entityLoading"
                 :is="getModalComponent(selectedEntity.type)"
@@ -101,6 +100,7 @@ export default {
             balanceHistory: [],
             balance: 0,
             budget: 0,
+            projectIncome: 0,
             selectedEntity: null,
             entityModalOpen: false,
             entityLoading: false,
@@ -274,6 +274,21 @@ export default {
             
             return `${balanceInProjectCurrency} ${this.editingItem.currency.symbol} (${this.balanceFormatted} ${this.currencyCode})`;
         },
+        projectIncomeFormatted() {
+            const income = typeof this.projectIncome === 'number' ? this.projectIncome : 0;
+            return income.toFixed(2);
+        },
+        projectIncomeDisplay() {
+            if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
+                return `${this.projectIncomeFormatted} ${this.currencyCode}`;
+            }
+            
+            // Конвертируем приход в валюту проекта
+            const exchangeRate = this.editingItem.exchangeRate || 1;
+            const incomeInProjectCurrency = (this.projectIncome / exchangeRate).toFixed(2);
+            
+            return `${incomeInProjectCurrency} ${this.editingItem.currency.symbol} (${this.projectIncomeFormatted} ${this.currencyCode})`;
+        },
     },
     async mounted() {
         await this.fetchDefaultCurrency();
@@ -305,7 +320,8 @@ export default {
                         formatAmountWithColor() {
                             const val = parseFloat(item.amount);
                             const color = val >= 0 ? "#5CB85C" : "#EE4F47";
-                            return `<span style="color:${color};font-weight:bold">${val.toFixed(2)}</span>`;
+                            const currency = self.currencyCode || 'TMT';
+                            return `<span style="color:${color};font-weight:bold">${val.toFixed(2)} ${currency}</span>`;
                         },
                         label() {
                             switch (item.source) {
@@ -321,12 +337,14 @@ export default {
                 );
                 this.balance = data.balance;
                 this.budget = data.budget;
-                console.log('Budget loaded:', data.budget, 'Balance loaded:', data.balance);
+                this.projectIncome = data.projectIncome || 0;
+                console.log('Budget loaded:', data.budget, 'Balance loaded:', data.balance, 'Project income loaded:', this.projectIncome);
             } catch (e) {
                 console.error(this.$t("errorLoadingBalanceHistory"), e);
                 this.balanceHistory = [];
                 this.balance = 0;
                 this.budget = 0;
+                this.projectIncome = 0;
             }
             this.balanceLoading = false;
         },

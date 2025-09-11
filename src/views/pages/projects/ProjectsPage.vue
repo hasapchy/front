@@ -82,7 +82,7 @@ export default {
                 case 'createdAt':
                     return i.formatCreatedAt();
                 case 'dateUser':
-                    return `${i.formatDate()} / ${i.userName || i.userId}`;
+                    return `${i.formatDate()} / ${i.creator?.name || this.$t('notSpecified')}`;
                 case 'description':
                     return i.description || 'Не указано';
                 default:

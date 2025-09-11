@@ -75,6 +75,12 @@
                     {{ $t('performanceMonitor') }}
                 </SidebarLink>
             </ul>
+
+            <ul v-if="hasPermission('currency_history_view')">
+                <SidebarLink to="/settings/currency-history" icon="fa-solid fa-chart-line mr-2" :settings="true">
+                    {{ $t('currencyHistory') }}
+                </SidebarLink>
+            </ul>
         </div>
     </div>
 </template>

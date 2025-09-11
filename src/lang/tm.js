@@ -373,6 +373,7 @@ export default {
   // Баланс
   balanceHistory: 'Balans taryhy',
   finalBalance: 'Jemi balans',
+  finalExpense: 'Jemi çykdajy',
   balanceSource: 'Balans çeşmesi',
   balanceAmount: 'Balans mukdary',
   errorLoadingBalanceHistory: 'Balans taryhyny ýüklemekde ýalňyşlyk',

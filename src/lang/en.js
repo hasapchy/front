@@ -109,5 +109,16 @@ export default {
   downloadSelected: 'Download Selected',
   
   // Performance monitoring
-  performanceMonitor: 'Monitoring'
+  performanceMonitor: 'Monitoring',
+  
+  // Balance
+  balanceHistory: 'Balance History',
+  finalBalance: 'Final Balance',
+  finalExpense: 'Final Expense',
+  balanceSource: 'Balance Source',
+  balanceAmount: 'Balance Amount',
+  errorLoadingBalanceHistory: 'Error loading balance history',
+  noHistory: 'No history',
+  projectIncome: 'Project Income',
+  budget: 'Budget'
 }

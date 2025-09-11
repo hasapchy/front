@@ -433,6 +433,7 @@ export default {
   // Баланс
   balanceHistory: 'История баланса',
   finalBalance: 'Итоговый баланс',
+  finalExpense: 'Итоговый расход',
   balanceSource: 'Источник баланса',
   balanceAmount: 'Сумма баланса',
   errorLoadingBalanceHistory: 'Ошибка при загрузке истории баланса',
