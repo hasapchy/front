@@ -268,8 +268,12 @@ export default {
                 return `${this.balanceFormatted} ${this.currencyCode}`;
             }
             
-            // Баланс уже в валюте проекта, показываем его без конвертации
-            return `${this.balanceFormatted} ${this.editingItem.currency.symbol}`;
+            // Конвертируем баланс в валюту проекта
+            const exchangeRate = this.editingItem.exchangeRate || 1;
+            const balanceInProjectCurrency = (this.balance / exchangeRate).toFixed(2);
+            const originalBalance = this.balance.toFixed(2);
+            
+            return `${balanceInProjectCurrency} ${this.editingItem.currency.symbol} (${originalBalance} ${this.currencyCode})`;
         },
         projectIncomeFormatted() {
             const income = typeof this.projectIncome === 'number' ? this.projectIncome : 0;
@@ -324,11 +328,13 @@ export default {
                             const val = parseFloat(item.amount);
                             const color = val >= 0 ? "#5CB85C" : "#EE4F47";
                             
-                            // Для project_income используем валюту прихода, для остальных - дефолтную
                             let currency = self.currencyCode || 'TMT';
+                            
+                            // Для project_income используем валюту прихода
                             if (item.source === 'project_income' && item.currency_id && currencyMap[item.currency_id]) {
                                 currency = currencyMap[item.currency_id].symbol || currencyMap[item.currency_id].code;
                             }
+                            // Для остальных записей оставляем в манатах (как есть)
                             
                             return `<span style="color:${color};font-weight:bold">${val.toFixed(2)} ${currency}</span>`;
                         },
