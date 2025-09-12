@@ -146,6 +146,12 @@ export default {
   status: 'Статус',
   type: 'Тип',
   category: 'Категория',
+  selectedCategories: 'Выбранные категории',
+  selectMainCategory: 'Выберите основную категорию',
+  selectSubCategory: 'Выберите подкатегорию',
+  selectSubCategories: 'Выберите подкатегории',
+  selectAll: 'Выбрать все',
+  deselectAll: 'Снять все',
   
   // Продукты и услуги
   selectType: 'Выберите тип',

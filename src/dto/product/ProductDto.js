@@ -9,6 +9,7 @@ class ProductDto {
     image,
     category_id,
     category_name,
+    categories = [],
     stock_quantity,
     unit_id,
     unit_name,
@@ -32,8 +33,9 @@ class ProductDto {
     this.description = description;
     this.sku = sku;
     this.image = image;
-    this.category_id = category_id;
-    this.category_name = category_name;
+    this.category_id = category_id; // Для обратной совместимости
+    this.category_name = category_name; // Для обратной совместимости
+    this.categories = categories; // Массив категорий
     this.stock_quantity = stock_quantity;
     this.unit_id = unit_id;
     this.unit_name = unit_name;
@@ -94,6 +96,31 @@ class ProductDto {
     return null;
   }
 
+  // Методы для работы с множественными категориями
+  getPrimaryCategory() {
+    // Первая категория считается основной
+    return this.categories[0] || null;
+  }
+
+  getSecondaryCategories() {
+    // Все категории кроме первой считаются дополнительными
+    return this.categories.slice(1);
+  }
+
+  getCategoryNames() {
+    return this.categories.map(cat => cat.name).join(', ');
+  }
+
+  hasCategory(categoryId) {
+    return this.categories.some(cat => cat.id == categoryId);
+  }
+
+  getCategoryDisplayName() {
+    // Для обратной совместимости возвращаем основную категорию или первую
+    const primary = this.getPrimaryCategory();
+    return primary ? primary.name : (this.category_name || '');
+  }
+
   static fromApi(data) {
     if (!data) return null;
     
@@ -106,6 +133,7 @@ class ProductDto {
       image: data.image,
       category_id: data.category_id,
       category_name: data.category_name,
+      categories: data.categories || [],
       stock_quantity: data.stock_quantity,
       unit_id: data.unit_id,
       unit_name: data.unit_name,

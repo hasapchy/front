@@ -37,6 +37,12 @@ export default {
   status: 'Status',
   type: 'Type',
   category: 'Category',
+  selectedCategories: 'Selected Categories',
+  selectMainCategory: 'Select main category',
+  selectSubCategory: 'Select subcategory',
+  selectSubCategories: 'Select subcategories',
+  selectAll: 'Select all',
+  deselectAll: 'Deselect all',
   
   // Order related
   addOrder: 'Add Order',

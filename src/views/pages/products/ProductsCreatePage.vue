@@ -35,17 +35,64 @@
         </div>
         <div class="mt-2">
             <label class="block mb-1 required">{{ $t('category') }}</label>
-            <div class="flex items-center space-x-2">
-                <select v-model="category_id" v-if="allCategories.length">
-                    <option value="">{{ $t('noCategory') }}</option>
-                    <option v-for="parent in allCategories" :key="parent.id" :value="parent.id">{{
-                        parent.name }}
-                    </option>
-                </select>
-                <select v-model="category_id" v-else>
-                    <option value="">{{ $t('noCategory') }}</option>
-                </select>
-                <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showModal" />
+            
+            <!-- Каскадный селектор -->
+            <div class="space-y-2">
+                <!-- Селектор для выбора основной категории -->
+                <div class="flex items-center space-x-2">
+                     <select v-model="selectedParentCategory" @change="onParentCategoryChange" class="flex-1">
+                         <option value="">{{ $t('selectMainCategory') }}</option>
+                         <option v-for="parent in parentCategories" :key="parent.id" :value="parent.id">
+                             {{ parent.name }}
+                         </option>
+                     </select>
+                    <PrimaryButton icon="fas fa-plus" :is-info="true" :onclick="showModal" />
+                </div>
+                
+                <!-- Чекбоксы для подкатегорий (показываются после выбора основной) -->
+                <div v-if="selectedParentCategory && childCategories.length > 0" 
+                     class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ $t('selectSubCategories') }} ({{ getParentCategoryName(selectedParentCategory) }})
+                    </label>
+                    <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                        <label v-for="child in childCategories" :key="child.id" 
+                               class="flex items-center space-x-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded">
+                            <input type="checkbox" 
+                                   :value="child.id" 
+                                   v-model="selectedSubCategories"
+                                   @change="onSubCategoryChange"
+                                   class="text-blue-600">
+                            <span>└─ {{ child.name }}</span>
+                        </label>
+                    </div>
+                    <div class="mt-2 flex space-x-2">
+                        <button @click="selectAllSubCategories" 
+                                class="text-xs text-blue-600 hover:text-blue-800">
+                            {{ $t('selectAll') }}
+                        </button>
+                        <button @click="deselectAllSubCategories" 
+                                class="text-xs text-gray-600 hover:text-gray-800">
+                            {{ $t('deselectAll') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Множественные категории -->
+            <div v-if="selectedCategories.length > 0" class="mt-2">
+                <label class="block mb-1 text-sm text-gray-600">{{ $t('selectedCategories') }}</label>
+                <div class="flex flex-wrap gap-2">
+                    <div v-for="(category, index) in selectedCategories" :key="category.id" 
+                         class="flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                        <span v-if="category.is_primary" class="text-xs bg-blue-600 text-white px-1 rounded mr-1">Основная</span>
+                        <span>{{ category.name }}</span>
+                        <button @click="removeCategory(index)" 
+                                class="ml-2 text-red-600 hover:text-red-800">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="mt-2">
@@ -159,6 +206,9 @@ export default {
             image: '',
             selected_image: null,
             category_id: '',
+            selectedParentCategory: '', // Выбранная родительская категория
+            selectedSubCategories: [], // Выбранные подкатегории (массив ID)
+            selectedCategories: [], // Массив выбранных категорий
             unit_id: '',
             barcode: '',
             retail_price: 0,
@@ -190,6 +240,30 @@ export default {
             return this.units.find(unit => unit.id == this.unit_id);
         },
 
+        // Разделяем категории на родительские и дочерние
+        parentCategories() {
+            const parents = this.allCategories.filter(cat => {
+                // Используем правильное поле parentId из CategoryDto
+                const parentId = cat.parentId;
+                return parentId === null || 
+                       parentId === undefined || 
+                       parentId === 0 || 
+                       parentId === '0' ||
+                       parentId === 'null' || 
+                       parentId === '' ||
+                       parentId === false;
+            });
+            // console.log('Все категории:', this.allCategories.map(c => ({id: c.id, name: c.name, parentId: c.parentId, type: typeof c.parentId})));
+            // console.log('Родительские категории:', parents);
+            return parents;
+        },
+        
+        childCategories() {
+            if (!this.selectedParentCategory) return [];
+            const children = this.allCategories.filter(cat => cat.parentId == this.selectedParentCategory);
+            // console.log('Дочерние категории для', this.selectedParentCategory, ':', children);
+            return children;
+        },
     },
     methods: {
         async fetchUnits() {
@@ -200,6 +274,134 @@ export default {
         },
         async fetchAllCategories() {
             this.allCategories = await CategoryController.getAllItems();
+        },
+
+        // Методы для работы с каскадным выбором категорий
+        onParentCategoryChange() {
+            if (this.selectedParentCategory) {
+                // Автоматически добавляем основную категорию
+                this.addParentCategory();
+                // Автоматически выбираем все подкатегории
+                this.selectAllSubCategories();
+            } else {
+                // Сбрасываем выбор подкатегорий при смене родительской
+                this.selectedSubCategories = [];
+            }
+        },
+
+        addParentCategory() {
+            if (this.selectedParentCategory && !this.selectedCategories.find(cat => cat.id == this.selectedParentCategory)) {
+                const category = this.allCategories.find(cat => cat.id == this.selectedParentCategory);
+                if (category) {
+                    // Родительская категория всегда основная
+                    this.selectedCategories.push({
+                        id: parseInt(category.id),
+                        name: category.name,
+                        is_primary: true // Родительская категория всегда основная
+                    });
+                }
+            }
+        },
+
+        onSubCategoryChange() {
+            // Если выбрана хотя бы одна подкатегория, добавляем основную категорию
+            if (this.selectedSubCategories.length > 0) {
+                this.addParentCategory();
+            }
+            // Обновляем выбранные подкатегории
+            this.updateSelectedCategories();
+        },
+
+        selectAllSubCategories() {
+            this.selectedSubCategories = this.childCategories.map(cat => cat.id);
+            this.updateSelectedCategories();
+        },
+
+        deselectAllSubCategories() {
+            this.selectedSubCategories = [];
+            this.updateSelectedCategories();
+        },
+
+        updateSelectedCategories() {
+            // Удаляем все подкатегории выбранной родительской категории
+            this.selectedCategories = this.selectedCategories.filter(cat => {
+                const category = this.allCategories.find(c => c.id == cat.id);
+                return !category || category.parentId != this.selectedParentCategory;
+            });
+
+            // Добавляем выбранные подкатегории (всегда не основные)
+            this.selectedSubCategories.forEach(subCategoryId => {
+                const category = this.allCategories.find(cat => cat.id == subCategoryId);
+                if (category && !this.selectedCategories.find(cat => cat.id == category.id)) {
+                    this.selectedCategories.push({
+                        id: parseInt(category.id),
+                        name: category.name,
+                        is_primary: false // Подкатегории никогда не основные
+                    });
+                }
+            });
+        },
+
+        updateSelectedSubCategoriesFromSelected() {
+            // Обновляем selectedSubCategories на основе selectedCategories
+            const subCategories = this.selectedCategories.filter(cat => {
+                const category = this.allCategories.find(c => c.id == cat.id);
+                return category && category.parentId;
+            });
+            
+            this.selectedSubCategories = subCategories.map(cat => cat.id);
+            
+            // Обновляем selectedParentCategory если есть подкатегории
+            if (subCategories.length > 0) {
+                const firstSubCategory = this.allCategories.find(cat => cat.id == subCategories[0].id);
+                if (firstSubCategory) {
+                    this.selectedParentCategory = firstSubCategory.parentId;
+                }
+            }
+        },
+
+        getParentCategoryName(parentId) {
+            const parent = this.allCategories.find(cat => cat.id == parentId);
+            return parent ? parent.name : '';
+        },
+
+        removeCategory(index) {
+            const removedCategory = this.selectedCategories[index];
+            
+            // Если удалили основную категорию (родительскую), удаляем ВСЕ её подкатегории
+            if (removedCategory.is_primary) {
+                // Находим ID родительской категории
+                const parentId = removedCategory.id;
+                
+                // Удаляем основную категорию
+                this.selectedCategories.splice(index, 1);
+                
+                // Удаляем все её подкатегории
+                this.selectedCategories = this.selectedCategories.filter(cat => {
+                    const category = this.allCategories.find(c => c.id == cat.id);
+                    return !category || category.parentId != parentId;
+                });
+                
+                // Сбрасываем выбор подкатегорий в интерфейсе
+                this.selectedSubCategories = [];
+                this.selectedParentCategory = '';
+                
+                // Обновляем selectedSubCategories на основе оставшихся selectedCategories
+                this.updateSelectedSubCategoriesFromSelected();
+            } else {
+                // Если удалили подкатегорию, просто удаляем её
+                this.selectedCategories.splice(index, 1);
+                
+                // Обновляем selectedSubCategories
+                this.updateSelectedSubCategoriesFromSelected();
+            }
+        },
+
+        setPrimaryCategory(index) {
+            // Убираем флаг основной со всех категорий
+            this.selectedCategories.forEach(cat => cat.is_primary = false);
+            // Устанавливаем новую основную
+            this.selectedCategories[index].is_primary = true;
         },
 
         onFileChange(event) {
@@ -216,7 +418,10 @@ export default {
                     name: this.name,
                     description: this.description,
                     sku: this.sku,
-                    category_id: this.category_id,
+                    // Для обратной совместимости отправляем основную категорию
+                    category_id: this.selectedCategories.find(cat => cat.is_primary)?.id || this.category_id,
+                    // Отправляем массив категорий
+                    categories: this.selectedCategories.length > 0 ? this.selectedCategories.map(cat => cat.id) : [],
                     unit_id: this.unit_id,
                     barcode: this.barcode,
                     retail_price: parseFloat(this.retail_price) || 0,
@@ -309,6 +514,9 @@ export default {
             this.image = null;
             this.selected_image = null;
             this.category_id = '';
+            this.selectedParentCategory = '';
+            this.selectedSubCategories = [];
+            this.selectedCategories = [];
             this.unit_id = '';
             this.barcode = '';
             this.retail_price = 0;
@@ -330,6 +538,8 @@ export default {
                 image: this.image,
                 selected_image: this.selected_image,
                 category_id: this.category_id,
+                selectedParentCategory: this.selectedParentCategory,
+                selectedCategories: this.selectedCategories,
                 unit_id: this.unit_id,
                 barcode: this.barcode,
                 retail_price: this.retail_price,
@@ -387,6 +597,82 @@ export default {
                     this.sku = newEditingItem.sku || '';
                     this.image = newEditingItem.image || newEditingItem.productImage || '';
                     this.category_id = newEditingItem.category_id || newEditingItem.categoryId || '';
+                    
+                    // Загружаем множественные категории
+                    if (newEditingItem.categories && newEditingItem.categories.length > 0) {
+                        // Определяем родительские категории и подкатегории
+                        let parentCategories = [];
+                        let subCategories = [];
+                        
+                        newEditingItem.categories.forEach(cat => {
+                            const category = this.allCategories.find(c => c.id == cat.id);
+                            if (category) {
+                                if (!category.parentId) {
+                                    // Это родительская категория
+                                    parentCategories.push({
+                                        id: parseInt(cat.id),
+                                        name: cat.name,
+                                        is_primary: true
+                                    });
+                                } else {
+                                    // Это подкатегория
+                                    subCategories.push({
+                                        id: parseInt(cat.id),
+                                        name: cat.name,
+                                        is_primary: false
+                                    });
+                                }
+                            }
+                        });
+                        
+                        // Собираем все категории: сначала родительские, потом подкатегории
+                        this.selectedCategories = parentCategories.concat(subCategories);
+                        
+                        // Устанавливаем первую родительскую категорию для селектора
+                        if (parentCategories.length > 0) {
+                            this.selectedParentCategory = parentCategories[0].id;
+                        }
+                        
+                        // Устанавливаем выбранные подкатегории
+                        this.selectedSubCategories = subCategories.map(cat => cat.id);
+                    } else {
+                        // Для обратной совместимости
+                        this.selectedCategories = [];
+                        if (this.category_id) {
+                            const category = this.allCategories.find(cat => cat.id == this.category_id);
+                            if (category) {
+                                if (!category.parentId) {
+                                    // Это родительская категория
+                                    this.selectedCategories = [{
+                                        id: parseInt(category.id),
+                                        name: category.name,
+                                        is_primary: true
+                                    }];
+                                    this.selectedParentCategory = category.id;
+                                } else {
+                                    // Это подкатегория, нужно найти родительскую
+                                    const parentCategory = this.allCategories.find(cat => cat.id == category.parentId);
+                                    if (parentCategory) {
+                                        this.selectedCategories = [
+                                            {
+                                                id: parseInt(parentCategory.id),
+                                                name: parentCategory.name,
+                                                is_primary: true
+                                            },
+                                            {
+                                                id: parseInt(category.id),
+                                                name: category.name,
+                                                is_primary: false
+                                            }
+                                        ];
+                                        this.selectedParentCategory = parentCategory.id;
+                                        this.selectedSubCategories = [category.id];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
                     this.unit_id = newEditingItem.unit_id || newEditingItem.unitId || '';
                     this.barcode = newEditingItem.barcode || '';
                     this.retail_price = newEditingItem.retail_price !== undefined ? newEditingItem.retail_price : 0;
@@ -400,6 +686,8 @@ export default {
                     this.sku = '';
                     this.image = '';
                     this.category_id = '';
+                    this.selectedParentCategory = '';
+                    this.selectedCategories = [];
                     this.unit_id = '';
                     this.barcode = '';
                     this.retail_price = 0;

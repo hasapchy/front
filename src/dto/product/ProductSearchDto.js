@@ -9,6 +9,7 @@ export default class ProductSearchDto {
     image,
     category_id,
     category_name,
+    categories = [],
     stock_quantity,
     unit_id,
     unit_name,
@@ -25,6 +26,7 @@ export default class ProductSearchDto {
     this.image = image;
     this.category_id = category_id;
     this.category_name = category_name;
+    this.categories = categories;
     this.stock_quantity = stock_quantity;
     this.unit_id = unit_id;
     this.unit_name = unit_name;
@@ -82,6 +84,7 @@ export default class ProductSearchDto {
       image: data.image,
       category_id: data.category_id,
       category_name: data.category_name,
+      categories: data.categories || [],
       stock_quantity: data.stock_quantity,
       unit_id: data.unit_id,
       unit_name: data.unit_name,

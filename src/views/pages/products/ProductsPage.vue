@@ -87,6 +87,9 @@ export default {
                     return i.wholesalePriceFormatted();
                 case 'image':
                     return i.image ? i.imgUrl() : null;
+                case 'category_name':
+                    // Показываем основную категорию или все категории
+                    return i.getCategoryDisplayName();
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
                 default:

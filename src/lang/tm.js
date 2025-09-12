@@ -747,6 +747,20 @@ export default {
   direction: 'Ugur',
   purchasePrice: 'Satyn alnan bahasy',
   
+  // Система множественных категорий
+  selectMainCategory: 'Esasy kategoriýany saýlaň',
+  selectSubCategories: 'Goşmaça kategoriýalary saýlaň',
+  selectedCategories: 'Saýlanan kategoriýalar',
+  selectAll: 'Ählisini saýla',
+  deselectAll: 'Ählisini aýyr',
+  primary: 'Esasy',
+  subcategory: 'Goşmaça kategoriýa',
+  mainCategory: 'Esasy kategoriýa',
+  addMainCategory: 'Esasy kategoriýany goşuň',
+  removeCategory: 'Kategoriýany aýyryň',
+  categoryRequired: 'Azyndan bir kategoriýa saýlanmaly',
+  selectCategoryFirst: 'Ilki kategoriýany saýlaň',
+  
   // Фразы для транзакций
   addTransaction: 'Tranzaksiyany goşuň',
   createTransaction: 'Tranzaksiya',
