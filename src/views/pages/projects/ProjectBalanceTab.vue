@@ -2,23 +2,24 @@
     <div class="mt-4">
         <div class="flex justify-between items-center mb-2">
             <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
-            <PrimaryButton 
+            <!-- <PrimaryButton 
                 v-if="$store.getters.hasPermission('transactions_create')"
                 icon="fas fa-plus" 
                 :onclick="showAddIncomeModal" 
                 :is-small="true">
                 {{ $t('addIncome') }}
-            </PrimaryButton>
+            </PrimaryButton> -->
         </div>
         <div v-if="$store.getters.hasPermission('settings_project_budget_view')" class="mb-2 flex items-center gap-2">
-            <span>{{ $t('finalExpense') }}:</span>
+            <span>{{ $t('finalBalance') }}:</span>
             <span :class="{
                 'text-[#5CB85C] font-bold': balance >= 0,
                 'text-[#EE4F47] font-bold': balance < 0
             }">
                 {{ balanceDisplay }}
             </span>
-            <span class="ml-4">{{ $t('projectIncome') }}: <b class="text-[#5CB85C]">{{ projectIncomeDisplay }}</b></span>
+            <span class="ml-4">{{ $t('totalIncome') }}: <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b></span>
+            <span class="ml-4">{{ $t('totalExpense') }}: <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b></span>
             <span class="ml-4">{{ $t('budget') }}: <b>{{ budgetDisplay }}</b></span>
         </div>
         <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
@@ -30,19 +31,11 @@
             @selectionChange="selectedIds = $event" :onItemClick="handleBalanceItemClick" />
 
         <!-- Модальное окно для создания/редактирования прихода -->
-        <SideModalDialog 
-            :showForm="incomeModalOpen" 
-            :onclose="closeIncomeModal">
-            <ProjectTransactionCreatePage 
-                v-if="incomeModalOpen"
-                :editing-item="editingIncomeItem"
-                :project-id="editingItem?.id"
-                @saved="handleIncomeSaved"
-                @saved-error="handleIncomeSavedError"
-                @deleted="handleIncomeDeleted"
-                @deleted-error="handleIncomeDeletedError"
-                @close-request="closeIncomeModal" />
-        </SideModalDialog>
+        <!-- <SideModalDialog 
+            :showForm="false" 
+            :onclose="() => {}">
+            <div>ProjectTransactionCreatePage</div>
+        </SideModalDialog> -->
 
         <!-- Модальное окно для других сущностей -->
         <SideModalDialog 
@@ -68,27 +61,42 @@
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
-import ProjectTransactionCreatePage from "@/views/pages/project_transactions/ProjectTransactionCreatePage.vue";
+import { defineAsyncComponent, markRaw } from 'vue';
+
+const TransactionCreatePage = defineAsyncComponent(() => 
+    import("@/views/pages/transactions/TransactionCreatePage.vue")
+);
+const SaleCreatePage = defineAsyncComponent(() => 
+    import("@/views/pages/sales/SaleCreatePage.vue")
+);
+const OrderCreatePage = defineAsyncComponent(() => 
+    import("@/views/pages/orders/OrderCreatePage.vue")
+);
+const WarehousesReceiptCreatePage = defineAsyncComponent(() => 
+    import("@/views/pages/warehouses/WarehousesReceiptCreatePage.vue")
+);
+
 import TransactionController from "@/api/TransactionController";
 import SaleController from "@/api/SaleController";
 import OrderController from "@/api/OrderController";
 import ProjectController from "@/api/ProjectController";
 import AppController from "@/api/AppController";
-import ProjectTransactionController from "@/api/ProjectTransactionController";
 
 import api from "@/api/axiosInstance";
 import SaleDto from "@/dto/sale/SaleDto";
 import OrderDto from "@/dto/order/OrderDto";
 import ClientDto from "@/dto/client/ClientDto";
 import TransactionDto from "@/dto/transaction/TransactionDto";
-import ProjectTransactionDto from "@/dto/project/ProjectTransactionDto";
 
 export default {
     components: {
         DraggableTable,
         SideModalDialog,
         PrimaryButton,
-        ProjectTransactionCreatePage,
+        TransactionCreatePage,
+        SaleCreatePage,
+        OrderCreatePage,
+        WarehousesReceiptCreatePage,
     },
     props: {
         editingItem: { required: true },
@@ -100,12 +108,12 @@ export default {
             balanceHistory: [],
             balance: 0,
             budget: 0,
-            projectIncome: 0,
+            // projectIncome: 0,
             selectedEntity: null,
             entityModalOpen: false,
             entityLoading: false,
-            incomeModalOpen: false,
-            editingIncomeItem: null,
+            // incomeModalOpen: false,
+            // editingIncomeItem: null,
             columnsConfig: [
                 { name: "date", label: this.$t("date"), size: 100 },
                 { name: "source", label: this.$t("type") },
@@ -123,6 +131,8 @@ export default {
                             r.item.id,
                             r.item.type,
                             r.item.is_transfer,
+                            r.item.is_sale || 0,
+                            r.item.is_receipt || 0,
                             r.item.cash_id,
                             r.item.cash_name,
                             r.item.cash_amount,
@@ -135,7 +145,6 @@ export default {
                             r.item.orig_currency_name,
                             r.item.orig_currency_code,
                             r.item.orig_currency_symbol,
-                            r.item.order_id,
                             r.item.user_id,
                             r.item.user_name,
                             r.item.category_id,
@@ -148,10 +157,11 @@ export default {
                             r.item.note,
                             r.item.date,
                             r.item.created_at,
-                            r.item.updated_at
+                            r.item.updated_at,
+                            r.item.orders || []
                         );
                     }),
-                    componentName: 'TransactionCreatePage',
+                    component: markRaw(TransactionCreatePage),
                     prop: 'editingItem',
                 },
                 sale: {
@@ -186,7 +196,7 @@ export default {
                             r.item.updated_at
                         );
                     }),
-                    componentName: 'SaleCreatePage',
+                    component: markRaw(SaleCreatePage),
                     prop: 'editingItem',
                 },
                 order: {
@@ -225,7 +235,7 @@ export default {
                             r.item.updated_at
                         );
                     }),
-                    componentName: 'OrderCreatePage',
+                    component: markRaw(OrderCreatePage),
                     prop: 'editingItem',
                 },
                 receipt: {
@@ -233,16 +243,16 @@ export default {
                         const { data } = await api.get(`/warehouse_receipts/${id}`);
                         return data.item ?? data;
                     },
-                    componentName: 'WarehousesReceiptCreatePage',
+                    component: markRaw(WarehousesReceiptCreatePage),
                     prop: 'editingItem',
                 },
-                project_income: {
-                    fetch: id => ProjectTransactionController.getItem(id).then(r => {
-                        return ProjectTransactionDto.fromApi(r.item);
-                    }),
-                    componentName: 'ProjectTransactionCreatePage',
-                    prop: 'editingItem',
-                },
+                // project_income: {
+                //     fetch: id => ProjectTransactionController.getItem(id).then(r => {
+                //         return ProjectTransactionDto.fromApi(r.item);
+                //     }),
+                //     component: ProjectTransactionCreatePage,
+                //     prop: 'editingItem',
+                // },
             },
         };
     },
@@ -275,17 +285,47 @@ export default {
             
             return `${balanceInProjectCurrency} ${this.editingItem.currency.symbol} (${originalBalance} ${this.currencyCode})`;
         },
-        projectIncomeFormatted() {
-            const income = typeof this.projectIncome === 'number' ? this.projectIncome : 0;
-            return income.toFixed(2);
+        totalIncome() {
+            if (!this.balanceHistory || this.balanceHistory.length === 0) return 0;
+            return this.balanceHistory
+                .filter(item => parseFloat(item.amount) > 0)
+                .reduce((sum, item) => sum + parseFloat(item.amount), 0);
         },
-        projectIncomeDisplay() {
+        totalExpense() {
+            if (!this.balanceHistory || this.balanceHistory.length === 0) return 0;
+            return Math.abs(this.balanceHistory
+                .filter(item => parseFloat(item.amount) < 0)
+                .reduce((sum, item) => sum + parseFloat(item.amount), 0));
+        },
+        totalIncomeFormatted() {
+            return this.totalIncome.toFixed(2);
+        },
+        totalExpenseFormatted() {
+            return this.totalExpense.toFixed(2);
+        },
+        totalIncomeDisplay() {
             if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
-                return `${this.projectIncomeFormatted} ${this.currencyCode}`;
+                return `${this.totalIncomeFormatted} ${this.currencyCode}`;
             }
             
-            // Приход уже в валюте проекта, показываем его без конвертации
-            return `${this.projectIncomeFormatted} ${this.editingItem.currency.symbol}`;
+            // Конвертируем приход в валюту проекта
+            const exchangeRate = this.editingItem.exchangeRate || 1;
+            const incomeInProjectCurrency = (this.totalIncome / exchangeRate).toFixed(2);
+            const originalIncome = this.totalIncome.toFixed(2);
+            
+            return `${incomeInProjectCurrency} ${this.editingItem.currency.symbol} (${originalIncome} ${this.currencyCode})`;
+        },
+        totalExpenseDisplay() {
+            if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
+                return `${this.totalExpenseFormatted} ${this.currencyCode}`;
+            }
+            
+            // Конвертируем расход в валюту проекта
+            const exchangeRate = this.editingItem.exchangeRate || 1;
+            const expenseInProjectCurrency = (this.totalExpense / exchangeRate).toFixed(2);
+            const originalExpense = this.totalExpense.toFixed(2);
+            
+            return `${expenseInProjectCurrency} ${this.editingItem.currency.symbol} (${originalExpense} ${this.currencyCode})`;
         },
     },
     async mounted() {
@@ -297,10 +337,10 @@ export default {
             try {
                 const currencies = await AppController.getCurrencies();
                 const defaultCurrency = currencies.find(c => c.is_default);
-                this.currencyCode = defaultCurrency ? defaultCurrency.code : 'TMT';
+                this.currencyCode = defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
             } catch (error) {
                 console.error('Ошибка при получении дефолтной валюты:', error);
-                this.currencyCode = 'TMT';
+                this.currencyCode = 'Нет валюты';
             }
         },
         async fetchBalanceHistory() {
@@ -328,12 +368,12 @@ export default {
                             const val = parseFloat(item.amount);
                             const color = val >= 0 ? "#5CB85C" : "#EE4F47";
                             
-                            let currency = self.currencyCode || 'TMT';
+                            let currency = self.currencyCode || 'Нет валюты';
                             
                             // Для project_income используем валюту прихода
-                            if (item.source === 'project_income' && item.currency_id && currencyMap[item.currency_id]) {
-                                currency = currencyMap[item.currency_id].symbol || currencyMap[item.currency_id].code;
-                            }
+                            // if (item.source === 'project_income' && item.currency_id && currencyMap[item.currency_id]) {
+                            //     currency = currencyMap[item.currency_id].symbol || currencyMap[item.currency_id].code;
+                            // }
                             // Для остальных записей оставляем в манатах (как есть)
                             
                             return `<span style="color:${color};font-weight:bold">${val.toFixed(2)} ${currency}</span>`;
@@ -344,7 +384,7 @@ export default {
                                 case "sale": return self.$t('sale');
                                 case "order": return self.$t('order');
                                 case "receipt": return self.$t('receipt');
-                                case "project_income": return self.$t('projectIncome');
+                                // case "project_income": return self.$t('projectIncome');
                                 default: return item.source;
                             }
                         }
@@ -352,14 +392,14 @@ export default {
                 );
                 this.balance = data.balance;
                 this.budget = data.budget;
-                this.projectIncome = data.projectIncome || 0;
-                console.log('Budget loaded:', data.budget, 'Balance loaded:', data.balance, 'Project income loaded:', this.projectIncome);
+                // this.projectIncome = data.projectIncome || 0;
+                console.log('Budget loaded:', data.budget, 'Balance loaded:', data.balance);
             } catch (e) {
                 console.error(this.$t("errorLoadingBalanceHistory"), e);
                 this.balanceHistory = [];
                 this.balance = 0;
                 this.budget = 0;
-                this.projectIncome = 0;
+                // this.projectIncome = 0;
             }
             this.balanceLoading = false;
         },
@@ -381,18 +421,18 @@ export default {
         },
         async handleBalanceItemClick(item) {
             // Если это приход, открываем модальное окно прихода
-            if (item.source === 'project_income') {
-                try {
-                    this.editingIncomeItem = await ProjectTransactionController.getItem(item.source_id).then(r => {
-                        return ProjectTransactionDto.fromApi(r.item);
-                    });
-                    this.incomeModalOpen = true;
-                } catch (error) {
-                    console.error('Error loading project transaction:', error);
-                    this.$notify?.({ type: 'error', text: 'Ошибка при загрузке прихода: ' + (error.message || error) });
-                }
-                return;
-            }
+            // if (item.source === 'project_income') {
+            //     try {
+            //         this.editingIncomeItem = await ProjectTransactionController.getItem(item.source_id).then(r => {
+            //             return ProjectTransactionDto.fromApi(r.item);
+            //         });
+            //         this.incomeModalOpen = true;
+            //     } catch (error) {
+            //         console.error('Error loading project transaction:', error);
+            //         this.$notify?.({ type: 'error', text: 'Ошибка при загрузке прихода: ' + (error.message || error) });
+            //     }
+            //     return;
+            // }
 
             const config = this.ENTITY_CONFIG[item.source];
             if (!config) return;
@@ -416,60 +456,40 @@ export default {
             const config = this.ENTITY_CONFIG[entity.type];
             return config ? { [config.prop]: entity.data } : {};
         },
-        async getModalComponent(type) {
-            const config = this.ENTITY_CONFIG[type];
-            if (!config || !config.componentName) return null;
-            
-            try {
-                switch (config.componentName) {
-                    case 'TransactionCreatePage':
-                        return (await import('@/views/pages/transactions/TransactionCreatePage.vue')).default;
-                    case 'SaleCreatePage':
-                        return (await import('@/views/pages/sales/SaleCreatePage.vue')).default;
-                    case 'OrderCreatePage':
-                        return (await import('@/views/pages/orders/OrderCreatePage.vue')).default;
-                    case 'WarehousesReceiptCreatePage':
-                        return (await import('@/views/pages/warehouses/WarehousesReceiptCreatePage.vue')).default;
-                    case 'ProjectTransactionCreatePage':
-                        return (await import('@/views/pages/project_transactions/ProjectTransactionCreatePage.vue')).default;
-                    default:
-                        return null;
-                }
-            } catch (error) {
-                console.error('Ошибка загрузки компонента:', error);
-                return null;
-            }
+        getModalComponent(type) {
+            const component = this.ENTITY_CONFIG[type]?.component;
+            return component || null;
         },
         closeEntityModal() {
             this.entityModalOpen = false;
             this.selectedEntity = null;
         },
-        showAddIncomeModal() {
-            this.editingIncomeItem = null;
-            this.incomeModalOpen = true;
-        },
-        closeIncomeModal() {
-            this.incomeModalOpen = false;
-            this.editingIncomeItem = null;
-        },
-        async handleIncomeSaved() {
-            this.closeIncomeModal();
-            // Небольшая задержка для обновления кэша на backend
-            await new Promise(resolve => setTimeout(resolve, 100));
-            this.fetchBalanceHistory();
-        },
-        handleIncomeSavedError(error) {
-            console.error('Ошибка сохранения прихода:', error);
-        },
-        async handleIncomeDeleted() {
-            this.closeIncomeModal();
-            // Небольшая задержка для обновления кэша на backend
-            await new Promise(resolve => setTimeout(resolve, 100));
-            this.fetchBalanceHistory();
-        },
-        handleIncomeDeletedError(error) {
-            console.error('Ошибка удаления прихода:', error);
-        },
+        // showAddIncomeModal() {
+        //     this.editingIncomeItem = null;
+        //     this.incomeModalOpen = true;
+        // },
+        // closeIncomeModal() {
+        //     this.incomeModalOpen = false;
+        //     this.editingIncomeItem = null;
+        // },
+        // async handleIncomeSaved() {
+        //     this.closeIncomeModal();
+        //     // Небольшая задержка для обновления кэша на backend
+        //     await new Promise(resolve => setTimeout(resolve, 100));
+        //     this.fetchBalanceHistory();
+        // },
+        // handleIncomeSavedError(error) {
+        //     console.error('Ошибка сохранения прихода:', error);
+        // },
+        // async handleIncomeDeleted() {
+        //     this.closeIncomeModal();
+        //     // Небольшая задержка для обновления кэша на backend
+        //     await new Promise(resolve => setTimeout(resolve, 100));
+        //     this.fetchBalanceHistory();
+        // },
+        // handleIncomeDeletedError(error) {
+        //     console.error('Ошибка удаления прихода:', error);
+        // },
         handleEntitySaved() {
             this.closeEntityModal();
             this.fetchBalanceHistory();

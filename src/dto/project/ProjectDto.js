@@ -137,6 +137,6 @@ export default class ProjectDto {
     }
     
     const budgetInManat = this.getBudgetInManat();
-    return `${this.budget} ${this.currency.symbol} (${budgetInManat} TMT)`;
+    return `${this.budget} ${this.currency.symbol} (${budgetInManat} ${this.currency.symbol})`;
   }
 }

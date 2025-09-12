@@ -198,7 +198,7 @@ export default {
         defaultCurrencySymbol() {
             const currencies = this.$store.state.currencies || [];
             const defaultCurrency = currencies.find(c => c.is_default);
-            return defaultCurrency ? defaultCurrency.symbol : 'TMT';
+            return defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
         }
     },
     watch: {

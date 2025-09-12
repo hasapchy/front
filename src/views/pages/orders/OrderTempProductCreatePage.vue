@@ -40,7 +40,6 @@
     <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4">
         <div class="flex items-center space-x-2">
             <PrimaryButton icon="fas fa-check" :onclick="save" :is-loading="saveLoading">
-                Создать
             </PrimaryButton>
         </div>
         

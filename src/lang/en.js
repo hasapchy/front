@@ -121,6 +121,8 @@ export default {
   balanceHistory: 'Balance History',
   finalBalance: 'Final Balance',
   finalExpense: 'Final Expense',
+  totalIncome: 'Total Income',
+  totalExpense: 'Total Expense',
   balanceSource: 'Balance Source',
   balanceAmount: 'Balance Amount',
   errorLoadingBalanceHistory: 'Error loading balance history',

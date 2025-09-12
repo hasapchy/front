@@ -35,10 +35,10 @@ export default class InvoiceDto {
 
 
   amountInfo() {
-    // Получаем символ валюты из первого заказа или используем TMT
+    // Получаем символ валюты из первого заказа или используем fallback
     const currencySymbol = this.orders && this.orders.length > 0 
-      ? this.orders[0].currencySymbol || 'TMT'
-      : 'TMT';
+      ? this.orders[0].currencySymbol || 'Нет валюты'
+      : 'Нет валюты';
     return `${this.totalAmount} ${currencySymbol}`;
   }
 

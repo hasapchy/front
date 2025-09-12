@@ -25,12 +25,12 @@
                                         {{ product.stock_quantity }}
                                         {{ product.unit_short_name ||
                                             product.unit_name || '' }}
-                                        {{ $t('price') }} {{ product.retailPriceFormatted() }}m
+                                        {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
                                     </div>
                                 </template>
                                 <template v-else>
                                     <div>∞{{ product.unit_short_name ||
-                                        product.unit_name || '' }} | {{ product.retailPriceFormatted() }}m</div>
+                                        product.unit_name || '' }} | {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}</div>
                                 </template>
                             </div>
 
@@ -55,10 +55,10 @@
                             <template v-if="product.typeName && product.typeName() === 'product'">
                                 {{ product.stock_quantity }}
                                 {{ product.unit_short_name || product.unit_name || '' }}
-                                {{ $t('price') }} {{ product.retailPriceFormatted() }}m
+                                {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
                             </template>
                             <template v-else>
-                                ∞{{ product.unit_short_name || product.unit_name || '' }} | {{ product.retailPriceFormatted() }}m
+                                ∞{{ product.unit_short_name || product.unit_name || '' }} | {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
                             </template>
                         </div>
                     </div>
@@ -292,6 +292,11 @@ export default {
         },
         totalPrice() {
             return this.subtotal - this.discountAmount;
+        },
+        defaultCurrencySymbol() {
+            const currencies = this.$store.state.currencies || [];
+            const defaultCurrency = currencies.find(c => c.is_default);
+            return defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
         },
         discountLocal: {
             get() {

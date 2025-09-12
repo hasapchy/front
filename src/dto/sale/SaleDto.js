@@ -56,7 +56,7 @@ export default class SaleDto {
   }
 
   priceInfo() {
-    const symbol = this.currencySymbol || "m";
+    const symbol = this.currencySymbol || "Нет валюты";
     const isDiscount = this.price !== this.totalPrice;
 
     if (!isDiscount) {

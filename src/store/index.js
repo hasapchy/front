@@ -214,7 +214,7 @@ export default createStore({
     getCurrencyById: (state) => (id) => state.currencies.find(currency => currency.id === id),
     getCurrencySymbol: (state) => (id) => {
       const currency = state.currencies.find(currency => currency.id === id);
-      return currency ? currency.symbol : 'TMT';
+      return currency ? currency.symbol : 'Нет валюты';
     },
   },
 });

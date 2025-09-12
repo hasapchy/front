@@ -4,7 +4,7 @@
             <ul class="flex items-center -space-x-px h-8 text-sm">
                 <li>
                     <button type="button" :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
-                        :disabled="currentPage === 1" @click="$emit('change-page', currentPage - 1)"
+                        :disabled="currentPage === 1" @click="$emit('changePage', currentPage - 1)"
                         class="flex items-center justify-center px-3 h-8 ms-0 leading-tight text-black bg-gray-50 hover:bg-gray-300">
                         <span class="sr-only">Previous</span>
                         <svg class="w-2.5 h-2.5 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
@@ -16,12 +16,12 @@
                 </li>
 
                 <li v-for="page in pages" :key="page">
-                    <button type="button" :disabled="currentPage === page" @click="$emit('change-page', page)"
+                    <button type="button" :disabled="currentPage === page" @click="$emit('changePage', page)"
                         class="flex items-center justify-center px-3 h-8 leading-tight transition-all bg-gray-50 hover:bg-[#4EA84E]" :class="{'bg-green text-white': page === currentPage}"> {{ page }}</button>
                 </li>
                 <li>
                     <button type="button" href="#" :class="{ 'opacity-50 cursor-not-allowed': currentPage === lastPage }"
-                        :disabled="currentPage === lastPage" @click="$emit('change-page', currentPage + 1)"
+                        :disabled="currentPage === lastPage" @click="$emit('changePage', currentPage + 1)"
                         class="flex items-center justify-center px-3 h-8 leading-tight text-black bg-gray-50 hover:bg-gray-300">
                         <span class="sr-only">Next</span>
                         <svg class="w-2.5 h-2.5 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
@@ -42,7 +42,7 @@ export default {
         currentPage: Number,
         lastPage: Number
     },
-    emits: ['change-page'],
+    emits: ['changePage'],
     computed: {
         pages() {
             let start = Math.max(1, this.currentPage - 2);

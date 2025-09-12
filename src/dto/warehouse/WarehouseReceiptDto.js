@@ -59,7 +59,7 @@ export default class WarehouseReceiptDto {
     const symbol =
       this.cash && this.cash.currency && this.cash.currency.symbol
         ? this.cash.currency.symbol
-        : "m";
+        : "Нет валюты";
 
     const total = this.totalPrice ?? this.amount ?? this.price ?? 0;
     return `${total} ${symbol}`;

@@ -190,7 +190,7 @@ export class InvoicePdfGenerator {
         
         // Итого
         {
-          text: `Итого: ${parseFloat(this.invoice.totalAmount || 0).toFixed(2)} TMT`,
+          text: `Итого: ${parseFloat(this.invoice.totalAmount || 0).toFixed(2)} ${this.invoice.currencySymbol || 'Нет валюты'}`,
           style: 'total'
         }
       ]

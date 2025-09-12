@@ -16,11 +16,9 @@
 
         <div class="mt-auto p-4 flex space-x-2 bg-[#edf4fb]">
             <PrimaryButton v-if="editingItem != null" :onclick="deleteItem" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-remove">
-                {{ $t('delete') }}
+                :is-loading="deleteLoading" icon="fas fa-times">
             </PrimaryButton>
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
-                {{ $t('save') }}
             </PrimaryButton>
         </div>
 

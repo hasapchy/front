@@ -25,13 +25,11 @@
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-remove"
+            :is-loading="deleteLoading" icon="fas fa-times"
             :disabled="!$store.getters.hasPermission('warehouse_writeoffs_delete')">
-            {{ $t('delete') }}
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_writeoffs_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('warehouse_writeoffs_create'))">
-            {{ $t('save') }}
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"

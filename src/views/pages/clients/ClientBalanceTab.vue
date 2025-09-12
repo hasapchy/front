@@ -41,7 +41,7 @@
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
-import { markRaw, defineAsyncComponent } from 'vue';
+import { defineAsyncComponent, markRaw } from 'vue';
 
 const TransactionCreatePage = defineAsyncComponent(() => 
     import("@/views/pages/transactions/TransactionCreatePage.vue")
@@ -132,6 +132,8 @@ export default {
                             r.item.id,
                             r.item.type,
                             r.item.is_transfer,
+                            r.item.is_sale || 0,
+                            r.item.is_receipt || 0,
                             r.item.cash_id,
                             r.item.cash_name,
                             r.item.cash_amount,
@@ -144,7 +146,6 @@ export default {
                             r.item.orig_currency_name,
                             r.item.orig_currency_code,
                             r.item.orig_currency_symbol,
-                            r.item.order_id,
                             r.item.user_id,
                             r.item.user_name,
                             r.item.category_id,
@@ -157,10 +158,11 @@ export default {
                             r.item.note,
                             r.item.date,
                             r.item.created_at,
-                            r.item.updated_at
+                            r.item.updated_at,
+                            r.item.orders || []
                         );
                     }),
-                    component: TransactionCreatePage,
+                    component: markRaw(TransactionCreatePage),
                     prop: 'editingItem',
                 },
                 sale: {
@@ -195,7 +197,7 @@ export default {
                             r.item.updated_at
                         );
                     }),
-                    component: SaleCreatePage,
+                    component: markRaw(SaleCreatePage),
                     prop: 'editingItem',
                 },
                 order: {
@@ -234,7 +236,7 @@ export default {
                             r.item.updated_at
                         );
                     }),
-                    component: OrderCreatePage,
+                    component: markRaw(OrderCreatePage),
                     prop: 'editingItem',
                 },
                 receipt: {
@@ -242,7 +244,7 @@ export default {
                         const { data } = await api.get(`/warehouse_receipts/${id}`);
                         return data.item ?? data;
                     },
-                    component: WarehousesReceiptCreatePage,
+                    component: markRaw(WarehousesReceiptCreatePage),
                     prop: 'editingItem',
                 },
             },
@@ -261,9 +263,9 @@ export default {
             try {
                 const currencies = await AppController.getCurrencies();
                 const defaultCurrency = currencies.find(c => c.is_default);
-                this.currencyCode = defaultCurrency ? defaultCurrency.code : 'TMT';
+                this.currencyCode = defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
             } catch (error) {
-                this.currencyCode = 'TMT';
+                this.currencyCode = 'Нет валюты';
             }
         },
         async fetchBalanceHistory() {
