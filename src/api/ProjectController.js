@@ -5,9 +5,10 @@ import ProjectDto from "@/dto/project/ProjectDto";
 import CurrencyDto from "@/dto/app/CurrencyDto";
 
 export default class ProjectController {
-  static async getItems(page = 1) {
+  static async getItems(page = 1, params = {}) {
     try {
-      const response = await api.get(`/projects?page=${page}`);
+      const queryParams = new URLSearchParams({ page: page, ...params });
+      const response = await api.get(`/projects?${queryParams}`);
       const data = response.data;
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {
@@ -64,7 +65,9 @@ export default class ProjectController {
           item.files || [],
           currency,
           item.description,
-          item.creator
+          item.creator,
+          item.status_id,
+          item.status
         );
       });
 
@@ -142,7 +145,9 @@ export default class ProjectController {
           item.files || [],
           currency,
           item.description,
-          item.creator
+          item.creator,
+          item.status_id,
+          item.status
         );
       });
       return items;
@@ -203,7 +208,10 @@ export default class ProjectController {
         item.updated_at,
         item.files || [],
         currency,
-        item.description
+        item.description,
+        item.creator,
+        item.status_id,
+        item.status
       );
     } catch (error) {
       console.error("Ошибка при получении проекта:", error);
@@ -273,6 +281,16 @@ export default class ProjectController {
       return data; // { history, balance, budget }
     } catch (error) {
       console.error("Ошибка при получении истории баланса проекта:", error);
+      throw error;
+    }
+  }
+
+  static async batchUpdateStatus(data) {
+    try {
+      const { data: response } = await api.post("/projects/batch-status", data);
+      return response;
+    } catch (error) {
+      console.error("Ошибка при обновлении статуса проектов:", error);
       throw error;
     }
   }

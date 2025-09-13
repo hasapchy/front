@@ -985,5 +985,20 @@ export default {
   companies: 'Компании',
   categories: 'Категории',
   invoices: 'Счета',
-  transfers: 'Трансферы по кассам'
+  transfers: 'Трансферы по кассам',
+  projectStatuses: 'Статусы проектов',
+
+  projectStatusSuccessfullyAdded: 'Статус проекта успешно добавлен',
+  projectStatusSuccessfullyDeleted: 'Статус проекта успешно удален',
+  errorSavingProjectStatus: 'Ошибка сохранения статуса проекта',
+  errorDeletingProjectStatus: 'Ошибка удаления статуса проекта',
+  errorGettingProjectStatuses: 'Ошибка получения списка статусов проектов',
+  createProjectStatus: 'Создать статус проекта',
+  editProjectStatus: 'Редактировать статус проекта',
+  deleteProjectStatus: 'Удалить статус проекта',
+  statusColor: 'Цвет статуса',
+  projectStatuses: 'Статусы проектов',
+  color: 'Цвет',
+  projectStatus: 'Статус проекта',
+  projectStatuses: 'Статусы проектов',
 }

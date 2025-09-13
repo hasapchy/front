@@ -21,6 +21,7 @@ import OrdersPage from "@/views/pages/orders/OrdersPage.vue";
 import OrderStatusesPage from "@/views/pages/orders/OrderStatusesPage.vue";
 import OrderCategoriesPage from "@/views/pages/orders/OrderCategoriesPage.vue";
 import OrderAdditionalFieldsPage from "@/views/pages/orders/OrderAdditionalFieldsPage.vue";
+import ProjectStatusesPage from "@/views/pages/projects/ProjectStatusesPage.vue";
 import InvoicesPage from "@/views/pages/invoices/InvoicesPage.vue";
 import UsersPage from "@/views/pages/users/UsersPage.vue";
 import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
@@ -124,6 +125,12 @@ const routes = [
         name: "Projects",
         component: ProjectsPage,
         meta: { title: "projects", requiresAuth: true },
+      },
+      {
+        path: "/project_statuses",
+        name: "project_statuses",
+        component: ProjectStatusesPage,
+        meta: { title: "projectStatuses", requiresAuth: true },
       },
       {
         path: "/admin/warehouses",

@@ -40,6 +40,12 @@
                 </SidebarLink>
             </ul>
 
+            <ul v-if="hasPermission('projects_view')">
+                <SidebarLink to="/project_statuses" icon="fa-solid fa-list-alt mr-2" :settings="true">
+                    {{ $t('projectStatuses') }}
+                </SidebarLink>
+            </ul>
+
             <ul v-if="hasPermission('order_categories_view')">
                 <SidebarLink to="/order_categories" icon="fa-solid fa-list-alt mr-2" :settings="true">
                     {{ $t('orderTypes') }}
