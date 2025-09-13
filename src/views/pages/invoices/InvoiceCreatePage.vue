@@ -144,7 +144,7 @@ export default {
             loading: false,
             selectedOrders: [],
             selectedClient: null,
-            currencySymbol: 'TMT',
+            currencySymbol: 'Нет валюты',
             editingItemId: this.editingItem?.id || null,
             formData: {
                 client_id: null,
@@ -162,7 +162,7 @@ export default {
         defaultCurrencySymbol() {
             const currencies = this.$store.state.currencies || [];
             const defaultCurrency = currencies.find(c => c.is_default);
-            return defaultCurrency ? defaultCurrency.symbol : 'TMT';
+            return defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
         },
     },
     mounted() {

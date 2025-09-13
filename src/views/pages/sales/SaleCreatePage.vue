@@ -70,12 +70,10 @@
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-remove" :disabled="!$store.getters.hasPermission('sales_delete')">
-            {{ $t('delete') }}
+            :is-loading="deleteLoading" icon="fas fa-times" :disabled="!$store.getters.hasPermission('sales_delete')">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('sales_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('sales_create'))">
-            {{ $t('save') }}
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"

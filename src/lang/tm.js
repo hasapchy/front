@@ -374,6 +374,8 @@ export default {
   balanceHistory: 'Balans taryhy',
   finalBalance: 'Jemi balans',
   finalExpense: 'Jemi çykdajy',
+  totalIncome: 'Jemi girdejik',
+  totalExpense: 'Jemi çykdajy',
   balanceSource: 'Balans çeşmesi',
   balanceAmount: 'Balans mukdary',
   errorLoadingBalanceHistory: 'Balans taryhyny ýüklemekde ýalňyşlyk',

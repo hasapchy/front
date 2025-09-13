@@ -93,11 +93,10 @@
                             <td class="border border-gray-300 px-3 py-2">{{ file.mimeType || getFileType(file.name) }}</td>
                             <td class="border border-gray-300 px-3 py-2">
                                 <PrimaryButton 
-                                    icon="fas fa-trash" 
+                                    icon="fas fa-times" 
                                     :onclick="() => showDeleteFileDialog(file.path)" 
                                     :is-danger="true"
                                     :is-small="true">
-                                    {{ $t('delete') }}
                                 </PrimaryButton>
                             </td>
                         </tr>
@@ -107,10 +106,9 @@
                 <!-- Кнопка массового удаления -->
                 <div v-if="selectedFileIds.length > 0" class="mt-4 flex justify-end">
                     <PrimaryButton 
-                        icon="fas fa-trash" 
+                        icon="fas fa-times" 
                         :onclick="showDeleteMultipleFilesDialog" 
                         :is-danger="true">
-                        {{ $t('deleteSelected') }} ({{ selectedFileIds.length }})
                     </PrimaryButton>
                 </div>
             </div>
@@ -126,13 +124,11 @@
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-remove"
+            :is-loading="deleteLoading" icon="fas fa-times"
             :disabled="!$store.getters.hasPermission('projects_delete')">
-            {{ $t('delete') }}
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('projects_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('projects_create'))">
-            {{ $t('save') }}
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"

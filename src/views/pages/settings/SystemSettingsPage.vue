@@ -35,7 +35,6 @@
                     :onclick="saveSettings" 
                     :is-loading="saveLoading"
                     :disabled="!$store.getters.hasPermission('system_settings_update')">
-                    {{ $t('save') }}
                 </PrimaryButton>
             </div>
         </div>

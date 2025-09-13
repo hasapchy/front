@@ -84,9 +84,8 @@
             :onclick="showDeleteDialog" 
             :is-danger="true" 
             :is-loading="deleteLoading"
-            icon="fas fa-remove" 
+            icon="fas fa-times" 
             :disabled="!$store.getters.hasPermission('currency_history_delete')">
-            {{ $t('delete') }}
         </PrimaryButton>
         <PrimaryButton 
             icon="fas fa-save" 
@@ -94,7 +93,6 @@
             :is-loading="saveLoading"
             :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('currency_history_update')) ||
                 (editingItemId == null && !$store.getters.hasPermission('currency_history_create'))">
-            {{ $t('save') }}
         </PrimaryButton>
     </div>
     
