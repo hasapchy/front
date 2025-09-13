@@ -93,7 +93,7 @@
                             <td class="border border-gray-300 px-3 py-2">{{ file.mimeType || getFileType(file.name) }}</td>
                             <td class="border border-gray-300 px-3 py-2">
                                 <PrimaryButton 
-                                    icon="fas fa-times" 
+                                    icon="fas fa-trash" 
                                     :onclick="() => showDeleteFileDialog(file.path)" 
                                     :is-danger="true"
                                     :is-small="true">
@@ -106,7 +106,7 @@
                 <!-- Кнопка массового удаления -->
                 <div v-if="selectedFileIds.length > 0" class="mt-4 flex justify-end">
                     <PrimaryButton 
-                        icon="fas fa-times" 
+                        icon="fas fa-trash" 
                         :onclick="showDeleteMultipleFilesDialog" 
                         :is-danger="true">
                     </PrimaryButton>
@@ -123,9 +123,8 @@
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-times"
-            :disabled="!$store.getters.hasPermission('projects_delete')">
+        <PrimaryButton v-if="editingItem != null && $store.getters.hasPermission('projects_delete')" :onclick="showDeleteDialog" :is-danger="true"
+            :is-loading="deleteLoading" icon="fas fa-trash">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('projects_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('projects_create'))">
@@ -321,6 +320,18 @@ export default {
             this.saveLoading = false;
         },
         async deleteItem() {
+            if (!this.editingItemId) return;
+            
+            this.deleteLoading = true;
+            try {
+                await ProjectController.deleteItem(this.editingItemId);
+                this.$emit('deleted');
+                this.clearForm();
+                this.closeDeleteDialog(); // Закрываем диалог после успешного удаления
+            } catch (error) {
+                this.$emit('deleted-error', this.getApiErrorMessage(error));
+            }
+            this.deleteLoading = false;
         },
         clearForm() {
             this.name = '';

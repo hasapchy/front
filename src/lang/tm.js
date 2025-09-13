@@ -841,6 +841,13 @@ export default {
   editProjectStatus: 'Proýekt ýagdaýyny redaktir et',
   deleteProjectStatus: 'Proýekt ýagdaýyny poz',
   statusColor: 'Ýagdaý reňki',
-  projectStatuses: 'Proýekt ýagdaýlary',
   color: 'Reňk',
+  
+  // Виртуализация и ленивая загрузка
+  loadingMore: 'Goşmaça elementler ýüklenýär...',
+  errorLoadingMore: 'Goşmaça elementleri ýüklemekde ýalňyşlyk',
+  virtualScroll: 'Wirtual skroll',
+  noMoreItems: 'Ähli elementler ýüklenildi',
+  lazyLoading: 'Lazy ýükleme',
+  infiniteScroll: 'Çäksiz skroll'
 }

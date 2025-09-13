@@ -17,7 +17,7 @@
                         </option>
                     </select>
                 </div>
-                <div>
+                <!-- <div>
                     <label class="required">{{ $t('categories') }}</label>
                     <div v-if="allCategories.length > 0" class="flex flex-wrap gap-2">
                         <label v-for="category in allCategories" :key="category.id" class="flex items-center space-x-2">
@@ -28,13 +28,13 @@
                     <div v-else class="text-gray-500 italic">
                         {{ $t('noOrderCategories') }}
                     </div>
-                </div>
+                </div> -->
                 <div v-if="type === 'select'">
                     <label class="required">{{ $t('options') }}</label>
                     <div class="space-y-2">
                         <div v-for="(option, index) in options" :key="index" class="flex items-center space-x-2">
                             <input type="text" v-model="options[index]" :placeholder="$t('optionPlaceholder')" class="flex-1 border rounded p-2">
-                            <PrimaryButton icon="fas fa-times" :onclick="() => removeOption(index)" :is-danger="true" :is-small="true" />
+                            <PrimaryButton icon="fas fa-trash" :onclick="() => removeOption(index)" :is-danger="true" :is-small="true" />
                         </div>
                         <PrimaryButton icon="fas fa-plus" :onclick="addOption" :is-info="true" :is-small="true">
                         </PrimaryButton>
@@ -93,7 +93,7 @@
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
             </PrimaryButton>
             <PrimaryButton v-if="editingItemId" :onclick="showDeleteDialog" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-times">
+                :is-loading="deleteLoading" icon="fas fa-trash">
             </PrimaryButton>
         </div>
     </div>
@@ -129,12 +129,12 @@ export default {
             ],
             name: '',
             type: '',
-            categoryIds: [],
+            // categoryIds: [],
             options: [],
             required: false,
             defaultValue: '',
             editingItemId: null,
-            allCategories: [],
+            // allCategories: [],
             fieldTypes: [
                 { value: 'string', label: 'fieldTypeText' },
                 { value: 'int', label: 'fieldTypeNumber' },
@@ -155,7 +155,7 @@ export default {
         // Сохраняем начальное состояние после загрузки всех данных
         this.$nextTick(async () => {
             // Ждем загрузки всех необходимых данных
-            await this.fetchAllCategories();
+            // await this.fetchAllCategories();
             
             // Теперь сохраняем начальное состояние
             this.saveInitialState();
@@ -208,17 +208,17 @@ export default {
                 this.name = this.editingItem.name || '';
                 this.type = this.editingItem.type || '';
                 
-                // Правильно обрабатываем категории - проверяем все возможные варианты
-                if (this.editingItem.category_ids && Array.isArray(this.editingItem.category_ids)) {
-                    this.categoryIds = this.editingItem.category_ids;
-                } else if (this.editingItem.categoryIds && Array.isArray(this.editingItem.categoryIds)) {
-                    this.categoryIds = this.editingItem.categoryIds;
-                } else if (this.editingItem.categories && Array.isArray(this.editingItem.categories)) {
-                    // Если категории приходят как объекты с id, извлекаем только id
-                    this.categoryIds = this.editingItem.categories.map(cat => cat.id || cat);
-                } else {
-                    this.categoryIds = [];
-                }
+                // // Правильно обрабатываем категории - проверяем все возможные варианты
+                // if (this.editingItem.category_ids && Array.isArray(this.editingItem.category_ids)) {
+                //     this.categoryIds = this.editingItem.category_ids;
+                // } else if (this.editingItem.categoryIds && Array.isArray(this.editingItem.categoryIds)) {
+                //     this.categoryIds = this.editingItem.categoryIds;
+                // } else if (this.editingItem.categories && Array.isArray(this.editingItem.categories)) {
+                //     // Если категории приходят как объекты с id, извлекаем только id
+                //     this.categoryIds = this.editingItem.categories.map(cat => cat.id || cat);
+                // } else {
+                //     this.categoryIds = [];
+                // }
                 
                 this.options = this.editingItem.options || [];
                 this.required = this.editingItem.required || false;
@@ -230,7 +230,7 @@ export default {
         resetForm() {
             this.name = '';
             this.type = '';
-            this.categoryIds = [];
+            // this.categoryIds = [];
             this.options = [];
             this.required = false;
             this.defaultValue = '';
@@ -255,14 +255,14 @@ export default {
             this.options.splice(index, 1);
         },
 
-        async fetchAllCategories() {
-            try {
-                this.allCategories = await OrderCategoryController.getAllItems();
-            } catch (error) {
-                console.error('Ошибка при получении категорий:', error);
-                this.allCategories = [];
-            }
-        },
+        // async fetchAllCategories() {
+        //     try {
+        //         this.allCategories = await OrderCategoryController.getAllItems();
+        //     } catch (error) {
+        //         console.error('Ошибка при получении категорий:', error);
+        //         this.allCategories = [];
+        //     }
+        // },
 
         async save() {
             if (!this.validateForm()) return;
@@ -272,7 +272,7 @@ export default {
                 const data = OrderAfController.prepareFieldData({
                     name: this.name,
                     type: this.type,
-                    category_ids: this.categoryIds,
+                    // category_ids: this.categoryIds,
                     options: this.type === 'select' ? this.options.filter(opt => opt.trim()) : null,
                     required: this.required,
                     default: this.defaultValue
@@ -302,7 +302,7 @@ export default {
                 const data = OrderAfController.prepareFieldData({
                     name: this.name,
                     type: this.type,
-                    category_ids: this.categoryIds,
+                    // category_ids: this.categoryIds,
                     options: this.type === 'select' ? this.options.filter(opt => opt.trim()) : null,
                     required: this.required,
                     default: this.defaultValue
@@ -332,10 +332,10 @@ export default {
                 this.$emit('saved-error', this.$t('fieldTypeRequired'));
                 return false;
             }
-            if (this.categoryIds.length === 0) {
-                this.$emit('saved-error', this.$t('categoriesRequired'));
-                return false;
-            }
+            // if (this.categoryIds.length === 0) {
+            //     this.$emit('saved-error', this.$t('categoriesRequired'));
+            //     return false;
+            // }
             if (this.type === 'select' && this.options.filter(opt => opt.trim()).length === 0) {
                 this.$emit('saved-error', this.$t('selectOptionsRequired'));
                 return false;
@@ -375,7 +375,7 @@ export default {
             return {
                 name: this.name,
                 type: this.type,
-                categoryIds: this.categoryIds,
+                // categoryIds: this.categoryIds,
                 options: this.options,
                 required: this.required,
                 defaultValue: this.defaultValue

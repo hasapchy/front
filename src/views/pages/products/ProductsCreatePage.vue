@@ -89,7 +89,7 @@
                         <span>{{ category.name }}</span>
                         <button @click="removeCategory(index)" 
                                 class="ml-2 text-red-600 hover:text-red-800">
-                            <i class="fas fa-times text-xs"></i>
+                            <i class="fas fa-trash text-xs"></i>
                         </button>
                     </div>
                 </div>
@@ -155,7 +155,7 @@
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-times"
+            :is-loading="deleteLoading" icon="fas fa-trash"
             :disabled="!$store.getters.hasPermission('products_delete')">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('products_update')) ||

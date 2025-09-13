@@ -8,8 +8,8 @@ export default class OrderDto {
     description = "",
     statusId,
     statusName,
-    categoryId,
-    categoryName,
+    // categoryId,
+    // categoryName,
     clientId,
     userId,
     userName,
@@ -38,8 +38,8 @@ export default class OrderDto {
     this.description = description;
     this.statusId = statusId;
     this.statusName = statusName;
-    this.categoryId = categoryId;
-    this.categoryName = categoryName;
+    // this.categoryId = categoryId;
+    // this.categoryName = categoryName;
     this.clientId = clientId;
     this.userId = userId;
     this.userName = userName;

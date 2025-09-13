@@ -147,8 +147,8 @@ export default {
                             r.item.orig_currency_symbol,
                             r.item.user_id,
                             r.item.user_name,
-                            r.item.category_id,
-                            r.item.category_name,
+                            // r.item.category_id,
+                            // r.item.category_name,
                             r.item.category_type,
                             r.item.project_id,
                             r.item.project_name,
@@ -224,8 +224,8 @@ export default {
                             r.item.project_name,
                             r.item.status_id,
                             r.item.status_name,
-                            r.item.category_id,
-                            r.item.category_name,
+                            // r.item.category_id,
+                            // r.item.category_name,
                             client,
                             r.item.products,
                             r.item.note ?? "",
@@ -358,7 +358,9 @@ export default {
                     currencyMap[currency.id] = currency;
                 });
                 
-                this.balanceHistory = (data.history || []).map(
+                this.balanceHistory = (data.history || [])
+                    .filter(item => item.source !== 'project_income') // Исключаем project_income записи
+                    .map(
                     (item) => ({
                         ...item,
                         formatDate() {

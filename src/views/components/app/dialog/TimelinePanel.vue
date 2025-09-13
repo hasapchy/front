@@ -249,7 +249,7 @@ export default {
         smartTranslateField(key, type) {
             const specificTranslations = {
                 'order': {
-                    'category_id': 'Категория заказа',
+                    // 'category_id': 'Категория заказа',
                     'status_id': 'Статус заказа',
                 },
                 'transaction': {

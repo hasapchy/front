@@ -14,7 +14,7 @@ export const fieldTranslations = {
     'price': 'Цена',
     'quantity': 'Количество',
     'product_id': 'Товар',
-    'order_category_id': 'Категория заказа',
+    // 'order_category_id': 'Категория заказа',
     'order_status_id': 'Статус заказа',
     'project_id': 'Проект',
     'cash_register_id': 'Касса',

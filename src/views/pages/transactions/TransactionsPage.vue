@@ -55,7 +55,7 @@
             <div class="ml-4">
                 <PrimaryButton 
                     :onclick="resetFilters"
-                    icon="fas fa-times"
+                    icon="fas fa-trash"
                     :isLight="true">
                     {{ $t('resetFilters') }}
                 </PrimaryButton>
@@ -77,6 +77,7 @@
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
         </div>
     </transition>
+    
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
         <TransactionCreatePage ref="transactioncreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
@@ -244,6 +245,8 @@ export default {
                         this.sourceFilter
                     );
                 }
+                
+                // Обычная пагинация
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingTransactionList'), error.message, true);
@@ -332,7 +335,7 @@ export default {
             }
 
             this.selectedIds = [];
-            await this.fetchItems?.();
+            await this.fetchItems?.(1, false);
             this.loadingBatch = false;
             this.idsToDelete = [];
         },
