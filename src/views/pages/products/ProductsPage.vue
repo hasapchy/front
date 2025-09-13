@@ -65,8 +65,7 @@ export default {
                 { name: 'category_name', label: 'category' },
                 { name: 'retail_price', label: 'retailPrice' },
                 { name: 'wholesale_price', label: 'wholesalePrice' },
-                { name: 'dateuser', label: 'dateUser', html: true },
-                { name: 'createdAt', label: 'creationDate' },
+                { name: 'dateUser', label: 'dateUser' },
             ],
         }
     },
@@ -91,7 +90,7 @@ export default {
                     // Показываем основную категорию или все категории
                     return i.getCategoryDisplayName();
                 case 'dateUser':
-                    return `${i.formatDate()} / ${i.userName}`;
+                    return `${i.formatDate()} / ${i.creator?.name || this.$t('notSpecified')}`;
                 default:
                     return i[c];
             }

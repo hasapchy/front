@@ -28,6 +28,8 @@ export default class ProductController {
           unit_calc_area: item.unit_calc_area,
           barcode: item.barcode,
           is_serialized: item.is_serialized,
+          date: item.date,
+          creator: item.creator,
           created_at: item.created_at,
           updated_at: item.updated_at,
           retail_price: item.retail_price,
