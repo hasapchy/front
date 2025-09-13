@@ -172,7 +172,6 @@ export default {
                     };
                 }
                 
-                console.log(`Очищено ${this.allItems.length - itemsToKeep} старых элементов для оптимизации памяти`);
             }
         },
         

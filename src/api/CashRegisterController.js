@@ -104,7 +104,9 @@ export default class CashRegisterController {
             item.name,
             item.balance.map(
               (b) => new CashRegisterBalanceItemDto(b.value, b.title, b.type)
-            )
+            ),
+            item.currency_symbol,
+            item.currency_code
           )
       );
     } catch (error) {

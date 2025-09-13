@@ -13,7 +13,7 @@
                                 'text-[#337AB7]': balance.type === 'default',
                                 'text-[#FFA500]': balance.type === 'project_income',
                                 'font-semibold text-lg': true
-                            }">{{ Number(balance.value).toFixed(2) }} </span>
+                            }">{{ Number(balance.value).toFixed(2) }} {{ item.currency_symbol || item.currency_code || '' }}</span>
                         </div>
                     </div>
                 </div>

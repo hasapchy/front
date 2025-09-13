@@ -143,12 +143,6 @@ export default {
         clientPhones() {
             if (!this.selectedClient) return [];
             const phones = this.selectedClient.phones || [];
-            console.log('ClientSearch clientPhones:', {
-                selectedClient: this.selectedClient,
-                phones: phones,
-                phonesType: typeof phones,
-                isArray: Array.isArray(phones)
-            });
             return Array.isArray(phones) ? phones : [];
         }
     },
@@ -189,7 +183,6 @@ export default {
                 const updatedClient = await ClientController.getItem(client.id);
                 this.$emit('update:selectedClient', updatedClient);
             } catch (error) {
-                console.warn('Не удалось обновить данные клиента:', error);
                 this.$emit('update:selectedClient', client);
             }
         },
@@ -208,12 +201,11 @@ export default {
                     const updatedClient = await ClientController.getItem(clientDto.id);
                     this.selectClient(updatedClient);
                 } catch (error) {
-                    console.error('Ошибка при создании ClientDto:', error);
+                    // Ошибка при создании ClientDto
                 }
             }
         },
         onClientCreatedError(error) {
-            console.error('Ошибка при создании клиента:', error);
             this.showNotification(this.$t('errorCreatingClient'), error, true);
         },
         handleBlur() {

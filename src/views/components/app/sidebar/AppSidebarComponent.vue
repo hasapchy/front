@@ -7,7 +7,7 @@
                     v-if="logoUrl" 
                     :src="logoUrl" 
                     alt="Company Logo" 
-                    class="h-16 w-auto object-contain"
+                    class="mb-1 w-auto"
                     @load="onLogoLoad"
                     @error="onLogoError"
                 />
