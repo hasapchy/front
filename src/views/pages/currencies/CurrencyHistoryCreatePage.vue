@@ -84,7 +84,7 @@
             :onclick="showDeleteDialog" 
             :is-danger="true" 
             :is-loading="deleteLoading"
-            icon="fas fa-times" 
+            icon="fas fa-trash" 
             :disabled="!$store.getters.hasPermission('currency_history_delete')">
         </PrimaryButton>
         <PrimaryButton 

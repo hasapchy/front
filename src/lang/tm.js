@@ -836,5 +836,6 @@ export default {
   errorLoadingMore: 'Goşmaça elementleri ýüklemekde ýalňyşlyk',
   virtualScroll: 'Wirtual skroll',
   noMoreItems: 'Ähli elementler ýüklenildi',
-  lazyLoading: 'Lazy ýükleme'
+  lazyLoading: 'Lazy ýükleme',
+  infiniteScroll: 'Çäksiz skroll'
 }

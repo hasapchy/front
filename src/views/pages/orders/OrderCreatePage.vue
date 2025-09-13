@@ -135,7 +135,7 @@
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
             </PrimaryButton>
             <PrimaryButton v-if="editingItemId" :onclick="showDeleteDialog" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-times">
+                :is-loading="deleteLoading" icon="fas fa-trash">
             </PrimaryButton>
         </div>
 

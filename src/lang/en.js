@@ -135,5 +135,6 @@ export default {
   errorLoadingMore: 'Error loading more items',
   virtualScroll: 'Virtual scroll',
   noMoreItems: 'All items loaded',
-  lazyLoading: 'Lazy loading'
+  lazyLoading: 'Lazy loading',
+  infiniteScroll: 'Infinite scroll'
 }

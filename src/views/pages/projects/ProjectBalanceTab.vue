@@ -358,7 +358,9 @@ export default {
                     currencyMap[currency.id] = currency;
                 });
                 
-                this.balanceHistory = (data.history || []).map(
+                this.balanceHistory = (data.history || [])
+                    .filter(item => item.source !== 'project_income') // Исключаем project_income записи
+                    .map(
                     (item) => ({
                         ...item,
                         formatDate() {

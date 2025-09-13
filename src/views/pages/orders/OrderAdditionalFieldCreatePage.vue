@@ -34,7 +34,7 @@
                     <div class="space-y-2">
                         <div v-for="(option, index) in options" :key="index" class="flex items-center space-x-2">
                             <input type="text" v-model="options[index]" :placeholder="$t('optionPlaceholder')" class="flex-1 border rounded p-2">
-                            <PrimaryButton icon="fas fa-times" :onclick="() => removeOption(index)" :is-danger="true" :is-small="true" />
+                            <PrimaryButton icon="fas fa-trash" :onclick="() => removeOption(index)" :is-danger="true" :is-small="true" />
                         </div>
                         <PrimaryButton icon="fas fa-plus" :onclick="addOption" :is-info="true" :is-small="true">
                         </PrimaryButton>
@@ -93,7 +93,7 @@
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
             </PrimaryButton>
             <PrimaryButton v-if="editingItemId" :onclick="showDeleteDialog" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-times">
+                :is-loading="deleteLoading" icon="fas fa-trash">
             </PrimaryButton>
         </div>
     </div>

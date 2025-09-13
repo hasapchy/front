@@ -908,6 +908,7 @@ export default {
   virtualScroll: 'Виртуальная прокрутка',
   noMoreItems: 'Все элементы загружены',
   lazyLoading: 'Ленивая загрузка',
+  infiniteScroll: 'Бесконечная прокрутка',
 
   // Счета
   invoices: 'Счета',

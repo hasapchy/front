@@ -55,15 +55,14 @@
             <div class="ml-4">
                 <PrimaryButton 
                     :onclick="resetFilters"
-                    icon="fas fa-times"
+                    icon="fas fa-trash"
                     :isLight="true">
                     {{ $t('resetFilters') }}
                 </PrimaryButton>
             </div>
         </div>
-        <!-- Скрываем обычную пагинацию, так как используем бесконечную прокрутку -->
-        <!-- <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            @changePage="fetchItems" /> -->
+        <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
+            @changePage="fetchItems" />
     </div>
     <TransactionsBalance ref="balanceRef" :cash-register-id="cashRegisterId || null" :start-date="startDate"
         :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter" :source-filter="sourceFilter" />
@@ -79,16 +78,6 @@
         </div>
     </transition>
     
-    <!-- Индикатор загрузки дополнительных элементов -->
-    <div v-if="showLoadingMore" class="flex justify-center items-center py-4">
-        <i class="fas fa-spinner fa-spin text-xl text-gray-500"></i>
-        <span class="ml-2 text-gray-500">{{ $t('loadingMore') || 'Загрузка...' }}</span>
-    </div>
-    
-    <!-- Индикатор окончания списка -->
-    <div v-if="showEndMessage" class="flex justify-center items-center py-4">
-        <span class="text-gray-400 text-sm">{{ $t('noMoreItems') || 'Все элементы загружены' }}</span>
-    </div>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
         <TransactionCreatePage ref="transactioncreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
@@ -124,10 +113,9 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import { eventBus } from '@/eventBus';
 import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
-import infiniteScrollMixin from '@/mixins/infiniteScrollMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, infiniteScrollMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
     components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalance, ClientButtonCell, BatchButton, CheckboxFilter },
     data() {
         return {
@@ -228,18 +216,11 @@ export default {
         },
         handleSearch(query) {
             this.$store.dispatch('setSearchQuery', query);
-            // Используем debounced поиск из миксина
-            this.debouncedSearch(() => {
-                this.fetchItems(1, false);
-            }, query);
+            this.fetchItems(1, false);
         },
-        async fetchItems(page = 1, silent = false, append = false) {
+        async fetchItems(page = 1, silent = false) {
             if (!silent) {
-                if (append) {
-                    this.loadingMore = true;
-                } else {
-                    this.loading = true;
-                }
+                this.loading = true;
             }
             try {
                 let new_data;
@@ -265,17 +246,13 @@ export default {
                     );
                 }
                 
-                // Используем метод из миксина для обработки данных
-                this.processInfiniteScrollData(new_data, append);
+                // Обычная пагинация
+                this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingTransactionList'), error.message, true);
             }
             if (!silent) {
-                if (append) {
-                    this.loadingMore = false;
-                } else {
-                    this.loading = false;
-                }
+                this.loading = false;
             }
         },
         showModal(item = null) {
@@ -294,7 +271,6 @@ export default {
             this.dateFilter = 'all_time';
             this.startDate = null;
             this.endDate = null;
-            this.resetInfiniteScroll();
             this.fetchItems();
         },
         // Переопределяем методы из crudEventMixin для обновления баланса
@@ -304,9 +280,7 @@ export default {
                 "",
                 false
             );
-            // Сбрасываем состояние бесконечной прокрутки и загружаем заново
-            this.resetInfiniteScroll();
-            this.fetchItems(1, true);
+            this.fetchItems(this.data?.currentPage || 1, true);
             this.updateBalace(); // Обновляем баланс касс
             this.closeModal();
         },
@@ -316,9 +290,7 @@ export default {
                 "",
                 false
             );
-            // Сбрасываем состояние бесконечной прокрутки и загружаем заново
-            this.resetInfiniteScroll();
-            this.fetchItems(1, true);
+            this.fetchItems(this.data?.currentPage || 1, true);
             this.updateBalace(); // Обновляем баланс касс
             this.closeModal();
         },
@@ -363,8 +335,6 @@ export default {
             }
 
             this.selectedIds = [];
-            // Сбрасываем состояние бесконечной прокрутки и загружаем заново
-            this.resetInfiniteScroll();
             await this.fetchItems?.(1, false);
             this.loadingBatch = false;
             this.idsToDelete = [];

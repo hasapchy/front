@@ -37,7 +37,7 @@
             <div class="ml-4">
                 <PrimaryButton 
                     :onclick="resetFilters"
-                    icon="fas fa-times"
+                    icon="fas fa-trash"
                     :isLight="true">
                     {{ $t('resetFilters') }}
                 </PrimaryButton>
