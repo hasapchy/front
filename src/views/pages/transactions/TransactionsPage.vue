@@ -55,7 +55,7 @@
             <div class="ml-4">
                 <PrimaryButton 
                     :onclick="resetFilters"
-                    icon="fas fa-trash"
+                    icon="fas fa-filter-circle-xmark"
                     :isLight="true">
                     {{ $t('resetFilters') }}
                 </PrimaryButton>

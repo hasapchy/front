@@ -1,7 +1,10 @@
 <template>
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
+            <div v-if="data.length === 0" class="text-center text-gray-500 py-8">
+                {{ $t('noDataFound') }}
+            </div>
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
                 <div v-for="item in data" :key="item.id" class="bg-white p-2 rounded-lg shadow-md">
                     <span class="text-md font-semibold mb-4">{{ translateCashRegisterName(item.name) }}</span>
                     <div class="grid grid-cols-4 gap-4">
