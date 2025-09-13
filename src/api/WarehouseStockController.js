@@ -7,8 +7,8 @@ export default class WarehouseStockController {
         try {
             const response = await api.get(`/warehouse_stocks?page=${page}`, {
                 params: {
-                    warehouse_id: warehouse_id,
-                    category_id: category_id
+                    warehouse_id: warehouse_id
+                    // category_id больше не поддерживается
                 }
             });
             const data = response.data;
@@ -24,8 +24,8 @@ export default class WarehouseStockController {
                     item.unit_id,
                     item.unit_name,
                     item.unit_short_name,
-                    item.category_id,
-                    item.category_name,
+                    null, // category_id больше не доступен
+                    null, // category_name больше не доступен
                     item.quantity,
                     item.created_at
                 );
