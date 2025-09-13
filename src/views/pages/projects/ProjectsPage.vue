@@ -1,16 +1,38 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <div class="flex items-center">
+        <div class="flex items-center flex-wrap gap-2">
             <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('addProject') }}</PrimaryButton>
             
-            <div class="ml-4">
-                <select v-model="statusFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
+            <!-- Фильтр по статусу -->
+            <div class="ml-2">
+                <select v-model="statusFilter" @change="() => fetchItems()" class="w-full p-2 pl-10 border rounded">
                     <option value="">{{ $t('allStatuses') }}</option>
                     <option v-for="status in statuses" :key="status.id" :value="status.id">
                         {{ status.name }}
                     </option>
                 </select>
             </div>
+
+            <!-- Фильтр по дате -->
+            <div class="ml-2">
+                <select v-model="dateFilter" @change="handleDateFilterChange" class="w-full p-2 pl-10 border rounded">
+                    <option value="all_time">{{ $t('allTime') }}</option>
+                    <option value="today">{{ $t('today') }}</option>
+                    <option value="yesterday">{{ $t('yesterday') }}</option>
+                    <option value="this_week">{{ $t('thisWeek') }}</option>
+                    <option value="this_month">{{ $t('thisMonth') }}</option>
+                    <option value="last_week">{{ $t('lastWeek') }}</option>
+                    <option value="last_month">{{ $t('lastMonth') }}</option>
+                    <option value="custom">{{ $t('customDate') }}</option>
+                </select>
+            </div>
+
+            <!-- Кастомные даты -->
+            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-2">
+                <input type="date" v-model="startDate" @change="() => fetchItems()" class="w-full p-2 border rounded">
+                <input type="date" v-model="endDate" @change="() => fetchItems()" class="w-full p-2 border rounded">
+            </div>
+
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
@@ -66,6 +88,9 @@ export default {
             selectedIds: [],
             statusFilter: '',
             statuses: [],
+            dateFilter: 'all_time',
+            startDate: null,
+            endDate: null,
             controller: ProjectController,
             savedSuccessText: this.$t('projectSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProject'),
@@ -118,7 +143,22 @@ export default {
                 this.loading = true;
             }
             try {
-                const new_data = await ProjectController.getItems(page, this.statusFilter ? { status_id: this.statusFilter } : {});
+                const filters = {};
+                
+                if (this.statusFilter) {
+                    filters.status_id = this.statusFilter;
+                }
+                
+                if (this.dateFilter && this.dateFilter !== 'all_time') {
+                    filters.date_filter = this.dateFilter;
+                    if (this.dateFilter === 'custom' && this.startDate && this.endDate) {
+                        filters.start_date = this.startDate;
+                        filters.end_date = this.endDate;
+                    }
+                }
+                
+                
+                const new_data = await ProjectController.getItems(page, filters);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProjectList'), error.message, true);
@@ -138,6 +178,13 @@ export default {
                 this.showNotification(this.$t('errorUpdatingStatus'), this.getApiErrorMessage(error), true);
             }
             this.loading = false;
+        },
+        handleDateFilterChange() {
+            if (this.dateFilter !== 'custom') {
+                this.startDate = null;
+                this.endDate = null;
+            }
+            this.fetchItems();
         }
     },
     computed: {
