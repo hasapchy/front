@@ -128,5 +128,12 @@ export default {
   errorLoadingBalanceHistory: 'Error loading balance history',
   noHistory: 'No history',
   projectIncome: 'Project Income',
-  budget: 'Budget'
+  budget: 'Budget',
+  
+  // Virtualization and lazy loading
+  loadingMore: 'Loading more items...',
+  errorLoadingMore: 'Error loading more items',
+  virtualScroll: 'Virtual scroll',
+  noMoreItems: 'All items loaded',
+  lazyLoading: 'Lazy loading'
 }

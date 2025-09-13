@@ -906,6 +906,7 @@ export default {
   loadingMore: 'Загрузка дополнительных элементов...',
   errorLoadingMore: 'Ошибка загрузки дополнительных элементов',
   virtualScroll: 'Виртуальная прокрутка',
+  noMoreItems: 'Все элементы загружены',
   lazyLoading: 'Ленивая загрузка',
 
   // Счета

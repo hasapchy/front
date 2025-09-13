@@ -829,5 +829,12 @@ export default {
   
   // Дополнительные ключи
   other: 'Başga',
-  transfer: 'Geçirim'
+  transfer: 'Geçirim',
+  
+  // Виртуализация и ленивая загрузка
+  loadingMore: 'Goşmaça elementler ýüklenýär...',
+  errorLoadingMore: 'Goşmaça elementleri ýüklemekde ýalňyşlyk',
+  virtualScroll: 'Wirtual skroll',
+  noMoreItems: 'Ähli elementler ýüklenildi',
+  lazyLoading: 'Lazy ýükleme'
 }
