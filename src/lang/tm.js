@@ -849,5 +849,10 @@ export default {
   virtualScroll: 'Wirtual skroll',
   noMoreItems: 'Ähli elementler ýüklenildi',
   lazyLoading: 'Lazy ýükleme',
-  infiniteScroll: 'Çäksiz skroll'
+  infiniteScroll: 'Çäksiz skroll',
+
+  // Missing translations
+  customDate: 'Senäni saýla',
+  invoices: 'Hasablar',
+  projectCurrency: 'Proýekt walýutasy'
 }
