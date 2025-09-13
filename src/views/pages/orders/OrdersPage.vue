@@ -146,7 +146,6 @@ export default {
                 { name: "dateUser", label: 'dateUser' },
                 { name: "client", label: 'client', component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, }), },
                 { name: "statusName", label: 'status', component: "StatusSelectCell", props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId), }), },
-                { name: "categoryName", label: 'type' },
                 { name: "cashName", label: 'cashRegister' },
                 { name: "warehouseName", label: 'warehouse' },
                 { name: "products", label: 'products', html: true },
@@ -195,8 +194,6 @@ export default {
                     return phone ? `<div>${name} (<span>${phone}</span>)</div>` : name;
                 case "statusName":
                     return i.statusName || "-";
-                case "categoryName":
-                    return i.categoryName || "-";
                 case "cashName":
                     return i.cashName || "-";
                 case "warehouseName":

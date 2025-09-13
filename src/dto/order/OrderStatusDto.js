@@ -3,15 +3,15 @@ export default class OrderStatusDto {
   constructor(
     id,
     name,
-    categoryId,
-    category = null,
+    // categoryId,
+    // category = null,
     createdAt = "",
     updatedAt = ""
   ) {
     this.id = id;
     this.name = name;
-    this.categoryId = categoryId;
-    this.category = category;
+    // this.categoryId = categoryId;
+    // this.category = category;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }

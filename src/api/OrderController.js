@@ -70,8 +70,8 @@ export default class OrderController {
           item.description ?? "",
           item.status_id,
           item.status_name,
-          item.category_id,
-          item.category_name,
+          // item.category_id,
+          // item.category_name,
           item.client_id,
           item.user_id,
           item.user_name,
@@ -210,8 +210,8 @@ export default class OrderController {
       item.description ?? "",
       item.status_id,
       item.status_name,
-      item.category_id,
-      item.category_name,
+      // item.category_id,
+      // item.category_name,
       item.client_id,
       item.user_id,
       item.user_name,
@@ -271,33 +271,33 @@ export default class OrderController {
     }
   }
 
-  static async getAdditionalFieldsForCategory(categoryId) {
-    try {
-      return await OrderAfController.getFieldsByCategory(categoryId);
-    } catch (error) {
-      console.error("Ошибка при получении дополнительных полей для категории:", error);
-      throw error;
-    }
-  }
+  // static async getAdditionalFieldsForCategory(categoryId) {
+  //   try {
+  //     return await OrderAfController.getFieldsByCategory(categoryId);
+  //   } catch (error) {
+  //     console.error("Ошибка при получении дополнительных полей для категории:", error);
+  //     throw error;
+  //   }
+  // }
 
-  static async getAdditionalFields(categoryId) {
-    try {
-      const response = await api.get(`/orders/category/${categoryId}/additional-fields`);
-      return response.data;
-    } catch (error) {
-      console.error("Ошибка при получении дополнительных полей для категории:", error);
-      throw error;
-    }
-  }
+  // static async getAdditionalFields(categoryId) {
+  //   try {
+  //     const response = await api.get(`/orders/category/${categoryId}/additional-fields`);
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error("Ошибка при получении дополнительных полей для категории:", error);
+  //     throw error;
+  //   }
+  // }
 
-  static async getAdditionalFieldsForCategories(categoryIds) {
-    try {
-      return await OrderAfController.getFieldsByCategories(categoryIds);
-    } catch (error) {
-      console.error("Ошибка при получении дополнительных полей для категорий:", error);
-      throw error;
-    }
-  }
+  // static async getAdditionalFieldsForCategories(categoryIds) {
+  //   try {
+  //     return await OrderAfController.getFieldsByCategories(categoryIds);
+  //   } catch (error) {
+  //     console.error("Ошибка при получении дополнительных полей для категорий:", error);
+  //     throw error;
+  //   }
+  // }
 
   static async getAdditionalFieldsForOrder(orderId) {
     try {

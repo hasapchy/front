@@ -5,7 +5,7 @@
                           <label class="required">{{ $t('statusName') }}</label>
             <input type="text" v-model="name">
         </div>
-        <div class="mt-4">
+        <!-- <div class="mt-4">
                           <label class="required">{{ $t('statusCategory') }}</label>
             <div class="flex items-center space-x-2">
                 <select v-model="categoryId">
@@ -16,7 +16,7 @@
                 </select>
                 <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showModal" />
             </div>
-        </div>
+        </div> -->
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
@@ -58,9 +58,9 @@ export default {
     data() {
         return {
             name: this.editingItem ? this.editingItem.name : '',
-            categoryId: this.editingItem ? this.editingItem.categoryId : '',
+            // categoryId: this.editingItem ? this.editingItem.categoryId : '',
             editingItemId: this.editingItem ? this.editingItem.id : null,
-            allCategories: [],
+            // allCategories: [],
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
@@ -69,7 +69,7 @@ export default {
     },
     mounted() {
         this.$nextTick(async () => {
-            await this.fetchAllCategories();
+            // await this.fetchAllCategories();
             
             this.saveInitialState();
         });
@@ -78,12 +78,12 @@ export default {
         getFormState() {
             return {
                 name: this.name,
-                categoryId: this.categoryId
+                // categoryId: this.categoryId
             };
         },
-        async fetchAllCategories() {
-            this.allCategories = await OrderStatusCategoryController.getAllItems();
-        },
+        // async fetchAllCategories() {
+        //     this.allCategories = await OrderStatusCategoryController.getAllItems();
+        // },
         async save() {
             this.saveLoading = true;
             try {
@@ -91,12 +91,12 @@ export default {
                 if (this.editingItemId != null) {
                     resp = await OrderStatusController.updateItem(this.editingItemId, {
                         name: this.name,
-                        category_id: this.categoryId
+                        // category_id: this.categoryId
                     });
                 } else {
                     resp = await OrderStatusController.storeItem({
                         name: this.name,
-                        category_id: this.categoryId
+                        // category_id: this.categoryId
                     });
                 }
                 if (resp.message) {
@@ -125,9 +125,9 @@ export default {
         },
         clearForm() {
             this.name = '';
-            this.categoryId = '';
+            // this.categoryId = '';
             this.editingItemId = null;
-            this.fetchAllCategories();
+            // this.fetchAllCategories();
             this.resetFormChanges();
         },
         showDeleteDialog() { this.deleteDialog = true; },
@@ -140,11 +140,11 @@ export default {
             handler(newEditingItem) {
                 if (newEditingItem) {
                     this.name = newEditingItem.name || '';
-                    this.categoryId = newEditingItem.categoryId || '';
+                    // this.categoryId = newEditingItem.categoryId || '';
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     this.name = '';
-                    this.categoryId = '';
+                    // this.categoryId = '';
                     this.editingItemId = null;
                 }
             },

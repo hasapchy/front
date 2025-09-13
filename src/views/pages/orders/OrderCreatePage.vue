@@ -5,7 +5,7 @@
         <div>
             <div v-show="currentTab === 'info'">
                 <ClientSearch v-model:selectedClient="selectedClient" />
-                <div>
+                <!-- <div>
                     <label class="required">{{ $t('category') }}</label>
                     <div class="flex items-center space-x-2">
                         <select v-model="categoryId" required @change="onCategoryChange">
@@ -16,7 +16,7 @@
                         </select>
                         <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showCategoryModal" />
                     </div>
-                </div>
+                </div> -->
                 <div>
                     <label>{{ $t('date') }}</label>
                     <input type="datetime-local" v-model="date"
@@ -53,7 +53,7 @@
                     <input type="text" v-model="note">
                 </div>
                 
-                <div class="space-y-4 mt-6">
+                <!-- <div class="space-y-4 mt-6">
                     <label class="block text-sm font-medium text-gray-700">{{ $t('additionalFields') }}</label>
                     <div v-if="additionalFields.length > 0" class="space-y-4">
 
@@ -103,7 +103,10 @@
                     <div v-else-if="categoryId" class="text-sm text-gray-500">
                         Для выбранной категории нет дополнительных полей
                     </div>
-                </div>
+                    <div v-else class="text-sm text-gray-500">
+                        Выберите категорию заказа для отображения дополнительных полей
+                    </div>
+                </div> -->
             </div>
             <div v-show="currentTab === 'products'">
                 <div>
@@ -154,9 +157,9 @@
     <SideModalDialog :showForm="projectModalDialog" :onclose="closeProjectModal" :level="1">
         <ProjectCreatePage @saved="handleProjectSaved" @saved-error="handleProjectSavedError" />
     </SideModalDialog>
-    <SideModalDialog :showForm="categoryModalDialog" :onclose="closeCategoryModal" :level="1">
+    <!-- <SideModalDialog :showForm="categoryModalDialog" :onclose="closeCategoryModal" :level="1">
         <OrderCategoryCreatePage @saved="handleCategorySaved" @saved-error="handleCategorySavedError" />
-    </SideModalDialog>
+    </SideModalDialog> -->
 </template>
 
 <script>
@@ -171,20 +174,20 @@ import ProjectController from '@/api/ProjectController';
 import AppController from '@/api/AppController';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import OrderStatusController from '@/api/OrderStatusController';
-import OrderCategoryController from '@/api/OrderCategoryController';
-import OrderAfController from '@/api/OrderAfController';
+// import OrderCategoryController from '@/api/OrderCategoryController';
+// import OrderAfController from '@/api/OrderAfController';
 import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
-import OrderCategoryCreatePage from '@/views/pages/orders/OrderCategoryCreatePage.vue';
+// import OrderCategoryCreatePage from '@/views/pages/orders/OrderCategoryCreatePage.vue';
 
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
     emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { ClientSearch, ProductSearch, PrimaryButton, AlertDialog, TabBar, OrderTransactionsTab, SideModalDialog, ProjectCreatePage, OrderCategoryCreatePage },
+    components: { ClientSearch, ProductSearch, PrimaryButton, AlertDialog, TabBar, OrderTransactionsTab, SideModalDialog, ProjectCreatePage },
     props: {
         editingItem: { type: Object, default: null }
     },
@@ -202,7 +205,7 @@ export default {
             currencyId: this.editingItem?.currency_id || null,
             warehouseId: this.editingItem?.warehouseId || '',
             statusId: this.editingItem?.statusId || 1,
-            categoryId: this.editingItem?.categoryId || '',
+            // categoryId: this.editingItem?.categoryId || '',
             date: this.editingItem?.date || new Date().toISOString().substring(0, 16),
             note: this.editingItem?.note || '',
             description: this.editingItem?.description || '',
@@ -212,7 +215,7 @@ export default {
             editingItemId: this.editingItem?.id || null,
             allWarehouses: [],
             allProjects: [],
-            allCategories: [],
+            // allCategories: [],
             allCashRegisters: [],
             currencies: [],
             statuses: [],
@@ -221,10 +224,10 @@ export default {
             deleteDialog: false,
             paidTotalAmount: 0,
             projectModalDialog: false,
-            categoryModalDialog: false,
+            // categoryModalDialog: false,
             removedTempProducts: [],
-            additionalFields: [],
-            additionalFieldValues: {},
+            // additionalFields: [],
+            // additionalFieldValues: {},
         };
     },
     created() {
@@ -246,7 +249,7 @@ export default {
         this.$nextTick(async () => {
             await Promise.all([
                 this.fetchAllWarehouses(),
-                this.fetchAllCategories(),
+                // this.fetchAllCategories(),
                 this.fetchAllCashRegisters()
             ]);
             
@@ -254,16 +257,15 @@ export default {
                 if (this.allWarehouses.length > 0 && !this.warehouseId) {
                     this.warehouseId = this.allWarehouses[0].id;
                 }
-                if (this.allCategories.length > 0 && !this.categoryId) {
-                    this.categoryId = this.allCategories[0].id;
-                }
                 if (this.allCashRegisters.length > 0 && !this.cashId) {
                     this.cashId = this.allCashRegisters[0].id;
                 }
-                
-                if (this.categoryId) {
-                    await this.loadAdditionalFields(this.categoryId, false);
-                }
+                // if (this.allCategories.length > 0 && !this.categoryId) {
+                //     this.categoryId = this.allCategories[0].id;
+                // }
+                // if (this.categoryId) {
+                //     await this.loadAdditionalFields(this.categoryId, false);
+                // }
             }
             
             this.saveInitialState();
@@ -305,33 +307,10 @@ export default {
             }));
         }
     },
-    watch: {
-        categoryId: {
-            handler(newCategoryId, oldCategoryId) {
-                if (newCategoryId && this.allCategories.length > 0) {
-                    this.loadAdditionalFields(newCategoryId);
-                } else if (!newCategoryId) {
-                    this.additionalFields = [];
-                    this.additionalFieldValues = {};
-                }
-            },
-            immediate: false
-        },
-
-        allCategories: {
-            handler(newCategories) {
-                if (newCategories.length > 0 && this.categoryId) {
-                    this.loadAdditionalFields(this.categoryId, false);
-                }
-            },
-            immediate: false
-        }
-    },
     methods: {
         getFormState() {
             const state = {
                 selectedClient: this.selectedClient,
-                category_id: this.categoryId,
                 date: this.date,
                 cash_id: this.cashId,
                 description: this.description,
@@ -343,25 +322,25 @@ export default {
                 discount_type: this.discountType,
                 status_id: this.statusId,
                 currency_id: this.currencyId,
-                additional_fields: Object.keys(this.additionalFieldValues).map(fieldId => {
-                    const rawValue = this.additionalFieldValues[fieldId];
-                    let stringValue = '';
-                    
-                    if (rawValue === null || rawValue === undefined) {
-                        stringValue = '';
-                    } else if (typeof rawValue === 'boolean') {
-                        stringValue = rawValue ? 'true' : 'false';
-                    } else if (typeof rawValue === 'number') {
-                        stringValue = rawValue.toString();
-                    } else {
-                        stringValue = String(rawValue);
-                    }
-                    
-                    return {
-                        field_id: parseInt(fieldId),
-                        value: stringValue
-                    };
-                }).filter(field => field.value !== '' && field.value !== 'null' && field.value !== 'false')
+                // additional_fields: Object.keys(this.additionalFieldValues).map(fieldId => {
+                //     const rawValue = this.additionalFieldValues[fieldId];
+                //     let stringValue = '';
+                //     
+                //     if (rawValue === null || rawValue === undefined) {
+                //         stringValue = '';
+                //     } else if (typeof rawValue === 'boolean') {
+                //         stringValue = rawValue ? 'true' : 'false';
+                //     } else if (typeof rawValue === 'number') {
+                //         stringValue = rawValue.toString();
+                //     } else {
+                //         stringValue = String(rawValue);
+                //     }
+                //     
+                //     return {
+                //         field_id: parseInt(fieldId),
+                //         value: stringValue
+                //     };
+                // }).filter(field => field.value !== '' && field.value !== 'null' && field.value !== 'false')
             };
             return state;
         },
@@ -376,13 +355,13 @@ export default {
                 this.allProjects = [];
             }
         },
-        async fetchAllCategories() {
-            try {
-                this.allCategories = await OrderCategoryController.getAllItems();
-            } catch (error) {
-                this.allCategories = [];
-            }
-        },
+        // async fetchAllCategories() {
+        //     try {
+        //         this.allCategories = await OrderCategoryController.getAllItems();
+        //     } catch (error) {
+        //         this.allCategories = [];
+        //     }
+        // },
         async fetchCurrencies() {
             this.currencies = await AppController.getCurrencies();
         },
@@ -395,76 +374,52 @@ export default {
         changeTab(tabName) {
             this.currentTab = tabName;
         },
-
-        onCategoryChange(event) {
-            if (this.categoryId) {
-                const currentValues = { ...this.additionalFieldValues };
-                
-                this.loadAdditionalFields(this.categoryId, false);
-                
-                this.$nextTick(() => {
-                    Object.keys(currentValues).forEach(fieldId => {
-                        if (this.additionalFieldValues.hasOwnProperty(fieldId)) {
-                            this.additionalFieldValues[fieldId] = currentValues[fieldId];
-                        }
-                    });
-                });
-            } else {
-                this.additionalFields = [];
-                this.additionalFieldValues = {};
-            }
-        },
-
-        async loadAdditionalFields(categoryId, preserveValues = true) {
-            try {
-                if (!categoryId) {
-                    this.additionalFields = [];
-                    if (!preserveValues) {
-                        this.additionalFieldValues = {};
-                    }
-                    return;
-                }
-                
-                const response = await OrderController.getAdditionalFields(categoryId);
-                
-                let fields = [];
-                if (response.fields && Array.isArray(response.fields)) {
-                    fields = response.fields;
-                } else if (Array.isArray(response)) {
-                    fields = response;
-                } else if (response.data && Array.isArray(response.data)) {
-                    fields = response.data;
-                }
-                
-                this.additionalFields = fields;
-                
-                this.additionalFields.forEach(field => {
-                    let defaultValue = field.default_value || field.default || field.defaultValue || '';
-                    
-                    if (!this.additionalFieldValues.hasOwnProperty(field.id)) {
-                        if (field.type === 'boolean') {
-                            this.additionalFieldValues[field.id] = defaultValue === 'true' || defaultValue === true;
-                        } else if (field.type === 'int' || field.type === 'number') {
-                            this.additionalFieldValues[field.id] = defaultValue || '';
-                        } else {
-                            this.additionalFieldValues[field.id] = defaultValue || '';
-                        }
-                    }
-                });
-            } catch (error) {
-                this.additionalFields = [];
-                if (!preserveValues) {
-                    this.additionalFieldValues = {};
-                }
-            }
-        },
+        // async loadAdditionalFields(categoryId, preserveValues = true) {
+        //     try {
+        //         if (!categoryId) {
+        //             this.additionalFields = [];
+        //             if (!preserveValues) {
+        //                 this.additionalFieldValues = {};
+        //             }
+        //             return;
+        //         }
+        //         
+        //         const response = await OrderController.getAdditionalFields(categoryId);
+        //         
+        //         let fields = [];
+        //         if (response.fields && Array.isArray(response.fields)) {
+        //             fields = response.fields;
+        //         } else if (Array.isArray(response)) {
+        //             fields = response;
+        //         } else if (response.data && Array.isArray(response.data)) {
+        //             fields = response.data;
+        //         }
+        //         
+        //         this.additionalFields = fields;
+        //         
+        //         this.additionalFields.forEach(field => {
+        //             let defaultValue = field.default_value || field.default || field.defaultValue || '';
+        //             
+        //             if (!this.additionalFieldValues.hasOwnProperty(field.id)) {
+        //                 if (field.type === 'boolean') {
+        //                     this.additionalFieldValues[field.id] = defaultValue === 'true' || defaultValue === true;
+        //                 } else if (field.type === 'int' || field.type === 'number') {
+        //                     this.additionalFieldValues[field.id] = defaultValue || '';
+        //                 } else {
+        //                     this.additionalFieldValues[field.id] = defaultValue || '';
+        //                 }
+        //             }
+        //         });
+        //     } catch (error) {
+        //         this.additionalFields = [];
+        //         if (!preserveValues) {
+        //             this.additionalFieldValues = {};
+        //         }
+        //     }
+        // },
 
         async save() {
             const validationErrors = [];
-            
-            if (!this.categoryId) {
-                validationErrors.push('Поле "Категория" обязательно для заполнения');
-            }
             if (!this.cashId) {
                 validationErrors.push('Поле "Касса" обязательно для заполнения');
             }
@@ -475,22 +430,6 @@ export default {
                 validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
             }
             
-            this.additionalFields.forEach(field => {
-                if (field.required) {
-                    const value = this.additionalFieldValues[field.id];
-                    let isEmpty = false;
-                    
-                    if (field.type === 'boolean') {
-                        isEmpty = value === null || value === undefined;
-                    } else {
-                        isEmpty = value === null || value === undefined || value === '' || value === false;
-                    }
-                    
-                    if (isEmpty) {
-                        validationErrors.push(`Поле "${field.name}" обязательно для заполнения`);
-                    }
-                }
-            });
             
             if (validationErrors.length > 0) {
                 this.$emit('saved-error', validationErrors.join('\n'));
@@ -540,9 +479,6 @@ export default {
         async saveWithoutClose() {
             const validationErrors = [];
             
-            if (!this.categoryId) {
-                validationErrors.push('Поле "Категория" обязательно для заполнения');
-            }
             if (!this.cashId) {
                 validationErrors.push('Поле "Касса" обязательно для заполнения');
             }
@@ -553,22 +489,6 @@ export default {
                 validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
             }
             
-            this.additionalFields.forEach(field => {
-                if (field.required) {
-                    const value = this.additionalFieldValues[field.id];
-                    let isEmpty = false;
-                    
-                    if (field.type === 'boolean') {
-                        isEmpty = value === null || value === undefined;
-                    } else {
-                        isEmpty = value === null || value === undefined || value === '' || value === false;
-                    }
-                    
-                    if (isEmpty) {
-                        validationErrors.push(`Поле "${field.name}" обязательно для заполнения`);
-                    }
-                }
-            });
             
             if (validationErrors.length > 0) {
                 this.$emit('saved-error', validationErrors.join('\n'));
@@ -642,7 +562,7 @@ export default {
             this.projectId = '';
             this.warehouseId = this.allWarehouses[0]?.id || '';
             this.statusId = '';
-            this.categoryId = this.allCategories[0]?.id || '';
+            // this.categoryId = this.allCategories[0]?.id || '';
             this.date = new Date().toISOString().substring(0, 16);
             this.note = '';
             this.description = ''
@@ -651,8 +571,8 @@ export default {
             this.statusId = 1;
             this.paidTotalAmount = 0;
             this.removedTempProducts = [];
-            this.additionalFields = [];
-            this.additionalFieldValues = {};
+            // this.additionalFields = [];
+            // this.additionalFieldValues = {};
             this.resetFormInitialization();
             this.resetFormChanges();
         },
@@ -677,52 +597,66 @@ export default {
         },
         handleProjectSavedError(error) {
         },
-        showCategoryModal() {
-            this.categoryModalDialog = true;
-        },
-        closeCategoryModal() {
-            this.categoryModalDialog = false;
-        },
-        handleCategorySaved(category) {
-            this.fetchAllCategories();
-            if (category && category.id) {
-                this.categoryId = category.id;
-            }
-            this.closeCategoryModal();
-        },
-        handleCategorySavedError(error) {
-        },
+        // showCategoryModal() {
+        //     this.categoryModalDialog = true;
+        // },
+        // closeCategoryModal() {
+        //     this.categoryModalDialog = false;
+        // },
+        // handleCategorySaved(category) {
+        //     this.fetchAllCategories();
+        //     if (category && category.id) {
+        //         this.categoryId = category.id;
+        //     }
+        //     this.closeCategoryModal();
+        // },
+        // handleCategorySavedError(error) {
+        // },
+        // onCategoryChange(event) {
+        //     if (this.categoryId) {
+        //         const currentValues = { ...this.additionalFieldValues };
+        //         
+        //         this.loadAdditionalFields(this.categoryId, false);
+        //         
+        //         this.$nextTick(() => {
+        //             Object.keys(currentValues).forEach(fieldId => {
+        //                 if (this.additionalFieldValues.hasOwnProperty(fieldId)) {
+        //                     this.additionalFieldValues[fieldId] = currentValues[fieldId];
+        //                 }
+        //             });
+        //         });
+        //     } else {
+        //         this.additionalFields = [];
+        //         this.additionalFieldValues = {};
+        //     }
+        // },
         generateTempProductId() {
             return Date.now() + Math.floor(Math.random() * 1000);
         },
 
         async handleEditingItemChange(newItem) {
             if (!newItem) {
-                this.additionalFieldValues = {};
-                this.additionalFields = [];
+                // this.additionalFieldValues = {};
+                // this.additionalFields = [];
                 return;
             }
             
-            const additionalFields = newItem?.additionalFields || newItem?.additional_fields;
+            // const additionalFields = newItem?.additionalFields || newItem?.additional_fields;
             
-            if (newItem.categoryId) {
-                await this.loadAdditionalFields(newItem.categoryId);
-            }
-            
-            if (additionalFields && additionalFields.length > 0) {
-                additionalFields.forEach(field => {
-                    let value = field.value;
-                    
-                    if (typeof value === 'string') {
-                        if (value === 'true') value = true;
-                        else if (value === 'false') value = false;
-                        else if (value === 'null' || value === '') value = '';
-                        else if (!isNaN(value) && value !== '') value = value;
-                    }
-                    
-                    this.additionalFieldValues[field.field_id] = value;
-                });
-            }
+            // if (additionalFields && additionalFields.length > 0) {
+            //     additionalFields.forEach(field => {
+            //         let value = field.value;
+            //         
+            //         if (typeof value === 'string') {
+            //             if (value === 'true') value = true;
+            //             else if (value === 'false') value = false;
+            //             else if (value === 'null' || value === '') value = '';
+            //             else if (!isNaN(value) && value !== '') value = value;
+            //         }
+            //         
+            //         this.additionalFieldValues[field.field_id] = value;
+            //     });
+            // }
         },
     },
     watch: {
@@ -768,7 +702,7 @@ export default {
                     this.warehouseId = newEditingItem.warehouseId || (this.allWarehouses.length ? this.allWarehouses[0].id : '');
                     this.cashId = newEditingItem.cashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
                     this.statusId = newEditingItem.statusId || '';
-                    this.categoryId = newEditingItem.categoryId || '';
+                    // this.categoryId = newEditingItem.categoryId || '';
                     this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
                     this.note = newEditingItem.note || '';
                     this.description = newEditingItem.description || '';
@@ -807,15 +741,14 @@ export default {
                     this.discountType = newEditingItem.discount_type || 'fixed';
                     this.editingItemId = newEditingItem.id || null;
                     
-                    if (newEditingItem.categoryId || newEditingItem.category_id) {
-                        this.loadAdditionalFields(newEditingItem.categoryId || newEditingItem.category_id);
-                    }
-                    
-                    if (newEditingItem.additional_fields && newEditingItem.additional_fields.length > 0) {
-                        newEditingItem.additional_fields.forEach(field => {
-                            this.additionalFieldValues[field.field_id] = field.value;
-                        });
-                    }
+                    // if (newEditingItem.categoryId || newEditingItem.category_id) {
+                    //     this.loadAdditionalFields(newEditingItem.categoryId || newEditingItem.category_id);
+                    // }
+                    // if (newEditingItem.additional_fields && newEditingItem.additional_fields.length > 0) {
+                    //     newEditingItem.additional_fields.forEach(field => {
+                    //         this.additionalFieldValues[field.field_id] = field.value;
+                    //     });
+                    // }
                 } else {
                     this.clearForm();
                 }
