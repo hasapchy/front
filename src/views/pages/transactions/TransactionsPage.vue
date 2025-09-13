@@ -4,7 +4,7 @@
             <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('addTransaction') }}
             </PrimaryButton>
             <div class="mx-4">
-                <select v-model="cashRegisterId" @change="fetchItems">
+                <select v-model="cashRegisterId" @change="() => fetchItems(1)">
                     <option value="">{{ $t('allCashRegisters') }}</option>
                     <template v-if="allCashRegisters.length">
                         <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
@@ -16,7 +16,7 @@
 
             <!-- Фильтр по типу транзакции -->
             <div class="mx-2">
-                <select v-model="transactionTypeFilter" @change="fetchItems" class="w-full p-2 border rounded">
+                <select v-model="transactionTypeFilter" @change="() => fetchItems(1)" class="w-full p-2 border rounded">
                     <option value="">{{ $t('allTransactionTypes') }}</option>
                     <option value="income">{{ $t('income') }}</option>
                     <option value="outcome">{{ $t('outcome') }}</option>
@@ -30,12 +30,12 @@
                     v-model="sourceFilter"
                     :options="sourceOptions"
                     placeholder="allSources"
-                    @change="fetchItems"
+                    @change="() => fetchItems(1)"
                 />
             </div>
 
             <div class="">
-                <select v-model="dateFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
+                <select v-model="dateFilter" @change="() => fetchItems(1)" class="w-full p-2 pl-10 border rounded">
                     <option value="all_time">{{ $t('allTime') }}</option>
                     <option value="today">{{ $t('today') }}</option>
                     <option value="yesterday">{{ $t('yesterday') }}</option>
@@ -47,15 +47,15 @@
                 </select>
             </div>
             <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-4">
-                <input type="date" v-model="startDate" @change="fetchItems" class="w-full p-2 border rounded" />
-                <input type="date" v-model="endDate" @change="fetchItems" class="w-full p-2 border rounded" />
+                <input type="date" v-model="startDate" @change="() => fetchItems(1)" class="w-full p-2 border rounded" />
+                <input type="date" v-model="endDate" @change="() => fetchItems(1)" class="w-full p-2 border rounded" />
             </div>
 
             <!-- Кнопка сброса фильтров -->
             <div class="ml-4">
                 <PrimaryButton 
                     :onclick="resetFilters"
-                    icon="fas fa-trash"
+                    icon="fas fa-filter-circle-xmark"
                     :isLight="true">
                     {{ $t('resetFilters') }}
                 </PrimaryButton>
@@ -257,7 +257,7 @@ export default {
         },
         showModal(item = null) {
             this.editingItem = null;
-            if (item?.isTransfer === 1) {
+            if (item?.isTransfer === 1 || item?.isTransfer === true) {
                 this.showNotification(this.$t('cannotEditTransfer'), this.$t('transferTransaction'), true);
                 return;
             }
@@ -344,7 +344,7 @@ export default {
             // Фильтруем выбранные элементы, исключая трансферы
             const nonTransferIds = this.selectedIds.filter(id => {
                 const item = this.data?.items?.find(i => i.id === id);
-                return item && item.isTransfer !== 1;
+                return item && item.isTransfer !== 1 && item.isTransfer !== true;
             });
             
             const hasTransfers = this.selectedIds.length > nonTransferIds.length;

@@ -339,7 +339,6 @@ export default {
                 const defaultCurrency = currencies.find(c => c.is_default);
                 this.currencyCode = defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
             } catch (error) {
-                console.error('Ошибка при получении дефолтной валюты:', error);
                 this.currencyCode = 'Нет валюты';
             }
         },
@@ -395,9 +394,7 @@ export default {
                 this.balance = data.balance;
                 this.budget = data.budget;
                 // this.projectIncome = data.projectIncome || 0;
-                console.log('Budget loaded:', data.budget, 'Balance loaded:', data.balance);
             } catch (e) {
-                console.error(this.$t("errorLoadingBalanceHistory"), e);
                 this.balanceHistory = [];
                 this.balance = 0;
                 this.budget = 0;
@@ -497,14 +494,14 @@ export default {
             this.fetchBalanceHistory();
         },
         handleEntitySavedError(error) {
-            console.error('Ошибка сохранения сущности:', error);
+            // Ошибка сохранения сущности
         },
         handleEntityDeleted() {
             this.closeEntityModal();
             this.fetchBalanceHistory();
         },
         handleEntityDeletedError(error) {
-            console.error('Ошибка удаления сущности:', error);
+            // Ошибка удаления сущности
         },
     },
     watch: {

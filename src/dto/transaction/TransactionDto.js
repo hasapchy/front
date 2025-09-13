@@ -78,13 +78,13 @@ export default class TransactionDto {
   }
 
   typeCell() {
-    if (this.isTransfer === 1) {
+    if (this.isTransfer === 1 || this.isTransfer === true) {
       return '<i class="fas fa-right-left text-[#337AB7] mr-2"></i> Трансфер';
-    } else if (this.isSale === 1) {
+    } else if (this.isSale === 1 || this.isSale === true) {
       return this.type === 1
         ? '<i class="fas fa-shopping-cart text-[#5CB85C] mr-2"></i> Продажа'
         : '<i class="fas fa-shopping-cart text-[#EE4F47] mr-2"></i> Продажа';
-    } else if (this.isReceipt === 1) {
+    } else if (this.isReceipt === 1 || this.isReceipt === true) {
       return '<i class="fas fa-box text-[#FFA500] mr-2"></i> Оприходование';
     } else {
       return this.type === 1
