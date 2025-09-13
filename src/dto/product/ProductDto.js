@@ -17,6 +17,8 @@ class ProductDto {
     unit_calc_area,
     barcode,
     is_serialized,
+    date,
+    creator,
     created_at,
     updated_at,
     retail_price,
@@ -43,6 +45,8 @@ class ProductDto {
     this.unit_calc_area = unit_calc_area;
     this.barcode = barcode;
     this.is_serialized = is_serialized;
+    this.date = date;
+    this.creator = creator;
     this.created_at = created_at;
     this.updated_at = updated_at;
     this.retail_price = retail_price;
@@ -141,6 +145,8 @@ class ProductDto {
       unit_calc_area: data.unit_calc_area,
       barcode: data.barcode,
       is_serialized: data.is_serialized,
+      date: data.date,
+      creator: data.creator,
       created_at: data.created_at,
       updated_at: data.updated_at,
       retail_price: data.retail_price,

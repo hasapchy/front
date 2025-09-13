@@ -830,6 +830,18 @@ export default {
   // Дополнительные ключи
   other: 'Başga',
   transfer: 'Geçirim',
+  projectStatus: 'Proýekt ýagdaýy',
+  projectStatuses: 'Proýekt ýagdaýlary',
+  projectStatusSuccessfullyAdded: 'Proýekt ýagdaýy üstünlikli goşuldy',
+  projectStatusSuccessfullyDeleted: 'Proýekt ýagdaýy üstünlikli pozuldy',
+  errorSavingProjectStatus: 'Proýekt ýagdaýyny saklamakda ýalňyşlyk',
+  errorDeletingProjectStatus: 'Proýekt ýagdaýyny pozmakda ýalňyşlyk',
+  errorGettingProjectStatuses: 'Proýekt ýagdaýlaryny almakda ýalňyşlyk',
+  createProjectStatus: 'Proýekt ýagdaýyny döret',
+  editProjectStatus: 'Proýekt ýagdaýyny redaktir et',
+  deleteProjectStatus: 'Proýekt ýagdaýyny poz',
+  statusColor: 'Ýagdaý reňki',
+  color: 'Reňk',
   
   // Виртуализация и ленивая загрузка
   loadingMore: 'Goşmaça elementler ýüklenýär...',

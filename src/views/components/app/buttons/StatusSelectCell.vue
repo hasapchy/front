@@ -40,7 +40,8 @@ export default {
       return this.statuses.find(s => s.id === this.value);
     },
     selectedStyle() {
-      const hex = this.selectedStatus?.category?.color;
+      // Поддержка как категорий (для заказов), так и прямого цвета (для проектов)
+      const hex = this.selectedStatus?.category?.color || this.selectedStatus?.color;
 
       if (!hex) {
         return {
@@ -56,22 +57,31 @@ export default {
     }
     ,
     sortedStatuses() {
-      const grouped = {};
-      for (const status of this.statuses) {
-        const catId = status.category?.id ?? 0;
-        if (!grouped[catId]) {
-          grouped[catId] = {
-            category: status.category,
-            items: [],
-          };
+      // Если у статусов есть категории (заказы), группируем по категориям
+      if (this.statuses.length > 0 && this.statuses[0].category) {
+        const grouped = {};
+        for (const status of this.statuses) {
+          const catId = status.category?.id ?? 0;
+          if (!grouped[catId]) {
+            grouped[catId] = {
+              category: status.category,
+              items: [],
+            };
+          }
+          grouped[catId].items.push(status);
         }
-        grouped[catId].items.push(status);
+        return Object.values(grouped).sort((a, b) => {
+          const aId = a.category?.id ?? 0;
+          const bId = b.category?.id ?? 0;
+          return aId - bId;
+        });
+      } else {
+        // Если у статусов нет категорий (проекты), возвращаем простой список
+        return [{
+          category: null,
+          items: this.statuses
+        }];
       }
-      return Object.values(grouped).sort((a, b) => {
-        const aId = a.category?.id ?? 0;
-        const bId = b.category?.id ?? 0;
-        return aId - bId;
-      });
     }
   },
   methods: {
@@ -83,7 +93,8 @@ export default {
       this.onChange?.(newId);
     },
     getColorStyle(status) {
-      const hex = status.category?.color;
+      // Поддержка как категорий (для заказов), так и прямого цвета (для проектов)
+      const hex = status.category?.color || status.color;
       if (!hex) return 'transparent';
       return hex;
     },

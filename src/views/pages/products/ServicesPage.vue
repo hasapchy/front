@@ -64,7 +64,8 @@ export default {
                 { name: 'barcode', label: 'barcode' },
                 { name: 'category_name', label: 'category' },
                 { name: 'retail_price', label: 'retailPrice' },
-                { name: 'wholesale_price', label: 'wholesalePrice' }
+                { name: 'wholesale_price', label: 'wholesalePrice' },
+                { name: 'dateUser', label: 'dateUser' }
             ],
         }
     },
@@ -84,6 +85,10 @@ export default {
                     return i.wholesalePriceFormatted();
                 case 'image':
                     return i.image ? i.imgUrl() : null;
+                case 'category_name':
+                    return i.getCategoryDisplayName();
+                case 'dateUser':
+                    return `${i.formatDate()} / ${i.creator?.name || this.$t('notSpecified')}`;
                 default:
                     return i[c];
             }
