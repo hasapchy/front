@@ -931,6 +931,9 @@ export default {
   lazyLoading: 'Ленивая загрузка',
   infiniteScroll: 'Бесконечная прокрутка',
 
+  // Missing translations
+  customDate: 'Выбрать дату',
+
   // Счета
   invoices: 'Счета',
   addInvoice: 'Добавить счет',

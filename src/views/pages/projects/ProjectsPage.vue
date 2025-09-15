@@ -1,31 +1,15 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <div class="flex items-center">
+        <div class="flex items-center flex-wrap gap-2">
             <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('addProject') }}</PrimaryButton>
             
-            <div class="ml-4">
-                <select v-model="statusFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
+            <!-- Фильтр по статусу -->
+            <div class="ml-2">
+                <select v-model="statusFilter" @change="() => fetchItems()" class="w-full p-2 pl-10 border rounded">
                     <option value="">{{ $t('allStatuses') }}</option>
                     <option v-for="status in statuses" :key="status.id" :value="status.id">
                         {{ status.name }}
                     </option>
-                </select>
-            </div>
-            
-            <div class="ml-4">
-                <select v-model="clientFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
-                    <option value="">{{ $t('allClients') }}</option>
-                    <option v-for="client in clients" :key="client.id" :value="client.id">
-                        {{ client.fullName() }}
-                    </option>
-                </select>
-            </div>
-            
-            <div class="ml-4">
-                <select v-model="paymentTypeFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
-                    <option value="">{{ $t('allPaymentTypes') }}</option>
-                    <option value="0">{{ $t('cashless') }}</option>
-                    <option value="1">{{ $t('cash') }}</option>
                 </select>
             </div>
         </div>
@@ -84,9 +68,6 @@ export default {
             selectedIds: [],
             statusFilter: '',
             statuses: [],
-            clientFilter: '',
-            clients: [],
-            paymentTypeFilter: '',
             controller: ProjectController,
             savedSuccessText: this.$t('projectSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProject'),
@@ -147,18 +128,7 @@ export default {
                 this.loading = true;
             }
             try {
-                const params = {};
-                if (this.statusFilter) {
-                    params.status_id = this.statusFilter;
-                }
-                if (this.clientFilter) {
-                    params.client_id = this.clientFilter;
-                }
-                if (this.paymentTypeFilter !== '') {
-                    params.payment_type = this.paymentTypeFilter;
-                }
-                
-                const new_data = await ProjectController.getItems(page, params);
+                const new_data = await ProjectController.getItems(page, this.statusFilter ? { status_id: this.statusFilter } : {});
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProjectList'), error.message, true);
@@ -178,6 +148,13 @@ export default {
                 this.showNotification(this.$t('errorUpdatingStatus'), this.getApiErrorMessage(error), true);
             }
             this.loading = false;
+        },
+        handleDateFilterChange() {
+            if (this.dateFilter !== 'custom') {
+                this.startDate = null;
+                this.endDate = null;
+            }
+            this.fetchItems();
         }
     },
     computed: {
