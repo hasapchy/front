@@ -67,10 +67,7 @@ export default class ProjectController {
           item.description,
           item.creator,
           item.status_id,
-          item.status,
-          item.contract_type || false,
-          item.contract_number || null,
-          item.contract_returned || false
+          item.status
         );
       });
 
@@ -150,10 +147,7 @@ export default class ProjectController {
           item.description,
           item.creator,
           item.status_id,
-          item.status,
-          item.contract_type || false,
-          item.contract_number || null,
-          item.contract_returned || false
+          item.status
         );
       });
       return items;
@@ -217,10 +211,7 @@ export default class ProjectController {
         item.description,
         item.creator,
         item.status_id,
-        item.status,
-        item.payment_type || false,
-        item.contract_number || null,
-        item.contract_returned || false
+        item.status
       );
     } catch (error) {
       console.error("Ошибка при получении проекта:", error);

@@ -42,34 +42,6 @@
                 <small class="text-gray-500">{{ $t('exchangeRateHelp') }}</small>
             </div>
             
-            <!-- Поля для типа контракта -->
-            <div class="mt-4">
-                <label class="required">{{ $t('contractType') }}</label>
-                <div class="flex space-x-4 mt-2">
-                    <label class="flex items-center space-x-2">
-                        <input type="radio" v-model="contractType" :value="false" />
-                        <span>{{ $t('contract') }}</span>
-                    </label>
-                    <label class="flex items-center space-x-2">
-                        <input type="radio" v-model="contractType" :value="true" />
-                        <span>{{ $t('agreement') }}</span>
-                    </label>
-                </div>
-            </div>
-            
-            <!-- Поля для контрактного типа -->
-            <div v-if="!contractType" class="mt-4">
-                <div>
-                    <label>{{ $t('contractNumber') }}</label>
-                    <input type="text" v-model="contractNumber" :placeholder="$t('enterContractNumber')" />
-                </div>
-                <div class="mt-2">
-                    <label class="flex items-center space-x-2">
-                        <input type="checkbox" v-model="contractReturned" />
-                        <span>{{ $t('contractReturned') }}</span>
-                    </label>
-                </div>
-            </div>
             <div>
                 <label class="required">{{ $t('assignUsers') }}</label>
                 <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
@@ -83,72 +55,21 @@
             </div>
         </div>
         <div v-show="currentTab === 'files' && editingItem">
-            <label>{{ $t('files') }}</label>
-            <input type="file" multiple @change="handleFileChange" :disabled="uploading" />
-            
-            <!-- Прогресс загрузки -->
-            <div v-if="uploading" class="mt-4 p-4 bg-blue-50 rounded-lg">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-blue-700 font-medium">{{ $t('uploadingFiles') }}...</span>
-                    <span class="text-blue-600">{{ uploadProgress }}%</span>
-                </div>
-                <div class="w-full bg-blue-200 rounded-full h-2">
-                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" :style="{width: uploadProgress + '%'}"></div>
-                </div>
-            </div>
-            
-            <!-- Таблица файлов -->
-            <div v-if="editingItem && editingItem.getFormattedFiles().length > 0" class="mt-4">
-                <table class="w-full border-collapse border border-gray-300">
-                    <thead>
-                        <tr class="bg-gray-50">
-                            <th class="border border-gray-300 px-3 py-2 text-left font-medium">{{ $t('fileName') }}</th>
-                            <th class="border border-gray-300 px-3 py-2 text-left font-medium">{{ $t('fileSize') }}</th>
-                            <th class="border border-gray-300 px-3 py-2 text-left font-medium">{{ $t('fileType') }}</th>
-                            <th class="border border-gray-300 px-3 py-2 text-left font-medium">{{ $t('actions') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="file in editingItem.getFormattedFiles()" :key="file.path" class="hover:bg-gray-50">
-                            <td class="border border-gray-300 px-3 py-2">
-                                <div class="flex items-center gap-3">
-                                    <i :class="file.icon" class="text-gray-600 text-xl"></i>
-                                    <a :href="file.url" target="_blank" download class="text-blue-600 hover:underline font-medium">
-                                        {{ file.name }}
-                                    </a>
-                                </div>
-                            </td>
-                            <td class="border border-gray-300 px-3 py-2">{{ formatFileSize(file.size) }}</td>
-                            <td class="border border-gray-300 px-3 py-2">{{ file.mimeType || getFileType(file.name) }}</td>
-                            <td class="border border-gray-300 px-3 py-2">
-                                <PrimaryButton 
-                                    icon="fas fa-trash" 
-                                    :onclick="() => showDeleteFileDialog(file.path)" 
-                                    :is-danger="true"
-                                    :is-small="true">
-                                </PrimaryButton>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <!-- Кнопка массового удаления -->
-                <div v-if="selectedFileIds.length > 0" class="mt-4 flex justify-end">
-                    <PrimaryButton 
-                        icon="fas fa-trash" 
-                        :onclick="showDeleteMultipleFilesDialog" 
-                        :is-danger="true">
-                    </PrimaryButton>
-                </div>
-            </div>
-            
-            <!-- Сообщение об отсутствии файлов -->
-            <div v-else-if="editingItem && !uploading" class="mt-4 p-4 text-center text-gray-500 bg-gray-50 rounded-lg">
-                {{ $t('noFilesUploaded') }}
-            </div>
+            <FileUploader
+                :files="editingItem ? editingItem.getFormattedFiles() : []"
+                :uploading="uploading"
+                :upload-progress="uploadProgress"
+                :disabled="!editingItemId"
+                @file-change="handleFileChange"
+                @delete-file="showDeleteFileDialog"
+                @delete-multiple-files="showDeleteMultipleFilesDialog"
+            />
         </div>
         <div v-show="currentTab === 'balance' && editingItem">
             <ProjectBalanceTab :editing-item="editingItem" />
+        </div>
+        <div v-show="currentTab === 'contracts' && editingItem">
+            <ProjectContractsTab :editing-item="editingItem" />
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -183,11 +104,13 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 import AppController from '@/api/AppController';
 
 import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
+import ProjectContractsTab from '@/views/pages/projects/ProjectContractsTab.vue';
+import FileUploader from '@/views/components/app/forms/FileUploader.vue';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab },
+    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, FileUploader },
     props: {
         editingItem: { type: ProjectDto, required: false, default: null }
     },
@@ -220,12 +143,9 @@ export default {
                 { name: 'info', label: 'info' },
                 { name: 'files', label: 'files' },
                 { name: "balance", label: "balance" },
+                { name: "contracts", label: "contracts" },
             ],
             
-            // Новые поля для типа контракта
-            contractType: this.editingItem ? this.editingItem.contractType : false,
-            contractNumber: this.editingItem ? this.editingItem.contractNumber : '',
-            contractReturned: this.editingItem ? this.editingItem.contractReturned : false,
 
         }
     },
@@ -261,7 +181,7 @@ export default {
     },
     methods: {
         changeTab(tabName) {
-            if ((tabName === 'files' || tabName === 'balance') && !this.editingItem) {
+            if ((tabName === 'files' || tabName === 'balance' || tabName === 'contracts') && !this.editingItem) {
                 return;
             }
             this.currentTab = tabName;
@@ -275,10 +195,7 @@ export default {
                 date: this.date,
                 description: this.description,
                 selectedClient: this.selectedClient?.id || null,
-                selectedUsers: [...this.selectedUsers],
-                contractType: this.contractType,
-                contractNumber: this.contractNumber,
-                contractReturned: this.contractReturned
+                selectedUsers: [...this.selectedUsers]
             };
         },
         async fetchCurrencies() {
@@ -330,10 +247,7 @@ export default {
                     date: new Date(this.date).toISOString(),
                     description: this.description || null,
                     client_id: this.selectedClient?.id,
-                    users: this.selectedUsers,
-                    contract_type: this.contractType,
-                    contract_number: this.contractNumber || null,
-                    contract_returned: this.contractReturned
+                    users: this.selectedUsers
                 };
 
                 // Добавляем поля бюджета только если у пользователя есть права
@@ -383,9 +297,6 @@ export default {
             this.selectedClient = null;
             this.selectedUsers = [];
             this.editingItemId = null;
-            this.contractType = false;
-            this.contractNumber = '';
-            this.contractReturned = false;
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
@@ -394,14 +305,12 @@ export default {
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
-        async handleFileChange(event) {
+        async handleFileChange(files) {
             if (!this.editingItemId) {
                 alert(this.$t('saveProjectFirstThenAttachFiles'));
-                event.target.value = '';
                 return;
             }
-            const files = event.target.files;
-            if (!files.length) return;
+            if (!files || !files.length) return;
 
             this.uploading = true;
             this.uploadProgress = 0;
@@ -421,7 +330,6 @@ export default {
                 if (this.editingItem && this.editingItem.files) {
                     this.editingItem.files = uploadedFiles;
                 }
-                event.target.value = '';
                 
                 setTimeout(() => {
                     this.uploading = false;
@@ -473,33 +381,6 @@ export default {
             this.closeDeleteFileDialog();
         },
 
-        formatFileSize(bytes) {
-            if (!bytes) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        },
-
-        getFileType(filename) {
-            if (!filename) return '';
-            const ext = filename.split('.').pop().toLowerCase();
-            const typeMap = {
-                'pdf': 'PDF Document',
-                'doc': 'Word Document',
-                'docx': 'Word Document',
-                'xls': 'Excel Spreadsheet',
-                'xlsx': 'Excel Spreadsheet',
-                'txt': 'Text Document',
-                'png': 'PNG Image',
-                'jpg': 'JPEG Image',
-                'jpeg': 'JPEG Image',
-                'gif': 'GIF Image',
-                'zip': 'ZIP Archive',
-                'rar': 'RAR Archive'
-            };
-            return typeMap[ext] || 'Unknown File Type';
-        },
 
 
 
@@ -525,9 +406,6 @@ export default {
                     this.description = newEditingItem.description || '';
                     this.selectedClient = newEditingItem.client || null;
                     this.selectedUsers = newEditingItem.getUserIds() || [];
-                    this.contractType = newEditingItem.contractType || false;
-                    this.contractNumber = newEditingItem.contractNumber || '';
-                    this.contractReturned = newEditingItem.contractReturned || false;
 
                     this.editingItemId = newEditingItem.id || null;
                 } else {

@@ -52,6 +52,12 @@
                 </SidebarLink>
             </ul>
 
+            <ul v-if="hasPermission('transaction_categories_view')">
+                <SidebarLink to="/transaction_categories" icon="fa-solid fa-list-alt mr-2" :settings="true">
+                    {{ $t('transactionCategories') }}
+                </SidebarLink>
+            </ul>
+
             <ul v-if="hasPermission('orders_view')">
                 <SidebarLink to="/order_additional_fields" icon="fa-solid fa-list-alt mr-2" :settings="true">
                     {{ $t('orderAdditionalFields') }}

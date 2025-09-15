@@ -21,6 +21,7 @@ import OrdersPage from "@/views/pages/orders/OrdersPage.vue";
 import OrderStatusesPage from "@/views/pages/orders/OrderStatusesPage.vue";
 import OrderCategoriesPage from "@/views/pages/orders/OrderCategoriesPage.vue";
 import OrderAdditionalFieldsPage from "@/views/pages/orders/OrderAdditionalFieldsPage.vue";
+import TransactionCategoriesPage from "@/views/pages/transactions/TransactionCategoriesPage.vue";
 import ProjectStatusesPage from "@/views/pages/projects/ProjectStatusesPage.vue";
 import InvoicesPage from "@/views/pages/invoices/InvoicesPage.vue";
 import UsersPage from "@/views/pages/users/UsersPage.vue";
@@ -161,6 +162,12 @@ const routes = [
         name: "order_additional_fields",
         component: OrderAdditionalFieldsPage,
         meta: { title: "orderAdditionalFields", requiresAuth: true },
+      },
+      {
+        path: "/transaction_categories",
+        name: "transaction_categories",
+        component: TransactionCategoriesPage,
+        meta: { title: "transactionCategories", requiresAuth: true },
       },
       {
         path: "/users",

@@ -39,7 +39,7 @@ export default {
   cashRegisters: 'Kassalar',
   productCategories: 'Önüm/hyzmat kategoriýalary',
   orderStatuses: 'Sargyt ýagdaýlary',
-  orderAdditionalFields: 'Sargyt goşmaça meýdanlary',
+  orderAdditionalFields: 'Sargyt goş. meýdanlary',
   addAdditionalField: 'Meýdan goş',
   additionalFields: 'Goşmaça meýdanlar',
   errorGettingAdditionalFieldsList: 'Goşmaça meýdanlaryň sanawyny almakda ýalňyşlyk',
@@ -78,7 +78,7 @@ export default {
   orderTypes: 'Sargyt görnüşleri',
   services: 'Hyzmatlar',
   systemSettings: 'Sistem sazlamalary',
-  generalSettings: 'Umumy sazlamalar',
+  generalSettings: 'Sazlamalar',
   
   // Действия
   add: 'Goş',
@@ -521,7 +521,7 @@ export default {
   order_statuscategories: 'Ýagdaý kategoriýalary',
   order_categories: 'Sargyt kategoriýalary',
   cash_registers: 'Kassalar',
-  settings: 'Umumy sazlamalar',
+  settings: 'Sazlamalar',
   system_settings: 'Sistem sazlamalary',
   
   // Общие
@@ -866,13 +866,38 @@ export default {
   lazyLoading: 'Lazy ýükleme',
   infiniteScroll: 'Çäksiz skroll',
   
-  // Projects payment fields
-  paymentType: 'Töleg görnüşi',
-  contract: 'Şertnama',
-  agreement: 'Ylalaşyk',
-  contractNumber: 'Şertnama belgisi',
-  enterContractNumber: 'Şertnama belgisini giriziň',
-  contractReturned: 'Şertnama gaýtaryldy',
   allClients: 'Ähli müşderiler',
-  allContractTypes: 'Ähli şertnama görnüşleri'
+  
+  // Контракты
+  contracts: 'Şertnamalar',
+  addContract: 'Şertnama goş',
+  editContract: 'Şertnamany redaktir et',
+  noContracts: 'Şertnama ýok',
+  contractSaved: 'Şertnama saklandy',
+  contractDeleted: 'Şertnama pozuldy',
+  errorSavingContract: 'Şertnamany saklamakda ýalňyşlyk',
+  errorDeletingContract: 'Şertnamany pozmakda ýalňyşlyk',
+  errorLoadingContract: 'Şertnamany ýüklemekde ýalňyşlyk',
+  clickToUploadFiles: 'Faýllary ýüklemek üçin basyň ýa-da faýllary şu ýere sürüň',
+  dropFilesToUpload: 'Faýllary ýüklemek üçin goýuň',
+  amount: 'Mukdar',
+  enterAmount: 'Mukdary giriziň',
+  selectCurrency: 'Walýuta saýlaň',
+  update: 'Täzele',
+  
+  // Transaction Categories
+  addTransactionCategory: 'Amal kategoriýasyny goş',
+  createTransactionCategory: 'Amal kategoriýasy',
+  editTransactionCategory: 'Amal kategoriýasy',
+  deleteTransactionCategory: 'Amal kategoriýasyny poz',
+  transactionCategorySuccessfullyAdded: 'Amal kategoriýasy üstünlikli goşuldy',
+  transactionCategorySuccessfullyDeleted: 'Amal kategoriýasy üstünlikli pozuldy',
+  errorGettingTransactionCategories: 'Amal kategoriýalarynyň sanawyny almakda ýalňyşlyk',
+  errorSavingTransactionCategory: 'Amal kategoriýasyny saklamakda ýalňyşlyk',
+  errorDeletingTransactionCategory: 'Amal kategoriýasyny pozmakda ýalňyşlyk',
+  income: 'Girdeji',
+  expense: 'Çykdajy',
+  transactionCategories: 'Amal kategoriýalary',
+  systemCategoryProtected: 'Bu kategoriýa sistem goragyna eýe we üýtgedilip bilinmez',
+  createdBy: 'Dörediji',
 }

@@ -22,9 +22,6 @@ export default class ProjectDto {
     creator = null,
     statusId = null,
     status = null,
-    contractType = false,
-    contractNumber = null,
-    contractReturned = false
   ) {
     this.id = id;
     this.name = name;
@@ -46,9 +43,6 @@ export default class ProjectDto {
     this.creator = creator;
     this.statusId = statusId;
     this.status = status;
-    this.contractType = contractType;
-    this.contractNumber = contractNumber;
-    this.contractReturned = contractReturned;
   }
 
   formatDate() {

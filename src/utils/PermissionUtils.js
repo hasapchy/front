@@ -49,6 +49,7 @@ export function permissionGroupLabel(name) {
     order_statuses: "Order Statuses",
     order_statuscategories: "Status Categories",
     order_categories: "Order Categories",
+    transaction_categories: "Transaction Categories",
     cash_registers: "Cash Registers",
 
     settings: "General Settings",

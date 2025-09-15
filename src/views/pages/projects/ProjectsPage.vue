@@ -14,23 +14,42 @@
             </div>
             
             <!-- Фильтр по клиенту -->
-            <div class="ml-2">
-                <select v-model="clientFilter" @change="() => fetchItems()" class="w-full p-2 pl-10 border rounded">
-                    <option value="">{{ $t('allClients') }}</option>
-                    <option v-for="client in clients" :key="client.id" :value="client.id">
-                        {{ client.fullName() }}
-                    </option>
-                </select>
+            <div class="ml-2 relative">
+                <div v-if="selectedClient == null" class="relative">
+                    <input type="text" v-model="clientSearch" :placeholder="$t('enterClientNameOrNumber')"
+                        class="w-full p-2 border rounded" @focus="showClientDropdown = true" @blur="handleClientBlur" />
+                    <transition name="appear">
+                        <ul v-show="showClientDropdown"
+                            class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
+                            <li v-if="clientSearchLoading" class="p-2 text-gray-500">{{ $t('loading') }}</li>
+                            <template v-else-if="clientSearch.length === 0">
+                                <li v-for="client in lastClients" :key="client.id" @mousedown.prevent="selectClient(client)"
+                                    class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
+                                    <div class="flex justify-between">
+                                        <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
+                                        <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
+                                    </div>
+                                </li>
+                            </template>
+                            <li v-else-if="clientSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}</li>
+                            <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">{{ $t('notFound') }}</li>
+                            <li v-for="client in clientResults" :key="client.id" @mousedown.prevent="() => selectClient(client)"
+                                class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
+                                <div class="flex justify-between">
+                                    <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
+                                    <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </transition>
+                </div>
+                <div v-else class="relative">
+                    <input type="text" :value="selectedClient.fullName()" readonly
+                        class="w-full p-2 border rounded bg-gray-50" />
+                    <button @click="deselectClient" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-red-500 text-lg cursor-pointer">×</button>
+                </div>
             </div>
             
-            <!-- Фильтр по типу контракта -->
-            <div class="ml-2">
-                <select v-model="contractTypeFilter" @change="() => fetchItems()" class="w-full p-2 pl-10 border rounded">
-                    <option value="">{{ $t('allContractTypes') }}</option>
-                    <option value="0">{{ $t('contract') }}</option>
-                    <option value="1">{{ $t('agreement') }}</option>
-                </select>
-            </div>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
@@ -76,6 +95,7 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import { markRaw } from 'vue';
+import debounce from 'lodash.debounce';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
@@ -89,7 +109,13 @@ export default {
             statuses: [],
             clientFilter: '',
             clients: [],
-            contractTypeFilter: '',
+            // Новые данные для поиска клиентов
+            selectedClient: null,
+            clientSearch: '',
+            clientSearchLoading: false,
+            clientResults: [],
+            lastClients: [],
+            showClientDropdown: false,
             controller: ProjectController,
             savedSuccessText: this.$t('projectSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProject'),
@@ -104,6 +130,7 @@ export default {
     mounted() {
         this.fetchProjectStatuses();
         this.fetchClients();
+        this.fetchLastClients();
         this.fetchItems();
     },
     methods: {
@@ -145,6 +172,48 @@ export default {
                 console.error('Error fetching clients:', error);
             }
         },
+        async fetchLastClients() {
+            try {
+                const paginated = await ClientController.getItems(1, null, false);
+                this.lastClients = paginated.items.slice(0, 10);
+            } catch (error) {
+                console.error('Error fetching last clients:', error);
+            }
+        },
+        searchClients: debounce(async function () {
+            if (this.clientSearch.length >= 3) {
+                this.clientSearchLoading = true;
+                try {
+                    const results = await ClientController.search(this.clientSearch);
+                    this.clientResults = results;
+                } catch (error) {
+                    console.error('Search error:', error);
+                    this.clientResults = [];
+                } finally {
+                    this.clientSearchLoading = false;
+                }
+            } else {
+                this.clientResults = [];
+            }
+        }, 250),
+        async selectClient(client) {
+            this.showClientDropdown = false;
+            this.clientSearch = '';
+            this.clientResults = [];
+            this.selectedClient = client;
+            this.clientFilter = client.id;
+            this.fetchItems();
+        },
+        deselectClient() {
+            this.selectedClient = null;
+            this.clientFilter = '';
+            this.fetchItems();
+        },
+        handleClientBlur() {
+            requestAnimationFrame(() => {
+                this.showClientDropdown = false;
+            });
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
@@ -153,7 +222,6 @@ export default {
                 const filters = {};
                 if (this.statusFilter) filters.status_id = this.statusFilter;
                 if (this.clientFilter) filters.client_id = this.clientFilter;
-                if (this.contractTypeFilter !== '') filters.contract_type = this.contractTypeFilter;
                 
                 const new_data = await ProjectController.getItems(page, filters);
                 this.data = new_data;
@@ -184,6 +252,12 @@ export default {
             this.fetchItems();
         }
     },
+    watch: {
+        clientSearch: {
+            handler: 'searchClients',
+            immediate: true,
+        },
+    },
     computed: {
         columnsConfig() {
             return [
@@ -199,3 +273,24 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+.appear-enter-active,
+.appear-leave-active {
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.appear-enter-from,
+.appear-leave-to {
+    transform: scaleY(0);
+    opacity: 0;
+    transform-origin: top;
+}
+
+.appear-enter-to,
+.appear-leave-from {
+    transform: scaleY(1);
+    opacity: 1;
+    transform-origin: top;
+}
+</style>

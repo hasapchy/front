@@ -32,7 +32,9 @@ export default {
   transactions: 'Transactions',
   projects: 'Projects',
   users: 'Users',
-  settings: 'Custom Permissions',
+  settings: 'Settings',
+  orderAdditionalFields: 'Order Add. Fields',
+  generalSettings: 'Settings',
   
   // Actions
   add: 'Add',
@@ -153,13 +155,38 @@ export default {
   lazyLoading: 'Lazy loading',
   infiniteScroll: 'Infinite scroll',
   
-  // Projects payment fields
-  contractType: 'Contract Type',
-  contract: 'Contract',
-  agreement: 'Agreement',
-  contractNumber: 'Contract Number',
-  enterContractNumber: 'Enter contract number',
-  contractReturned: 'Contract Returned',
   allClients: 'All Clients',
-  allContractTypes: 'All Contract Types'
+  
+  // Contracts
+  contracts: 'Contracts',
+  addContract: 'Add Contract',
+  editContract: 'Edit Contract',
+  noContracts: 'No contracts',
+  contractSaved: 'Contract saved',
+  contractDeleted: 'Contract deleted',
+  errorSavingContract: 'Error saving contract',
+  errorDeletingContract: 'Error deleting contract',
+  errorLoadingContract: 'Error loading contract',
+  clickToUploadFiles: 'Click to upload files or drag files here',
+  dropFilesToUpload: 'Drop files to upload',
+  amount: 'Amount',
+  enterAmount: 'Enter amount',
+  selectCurrency: 'Select currency',
+  update: 'Update',
+  
+  // Transaction Categories
+  addTransactionCategory: 'Add Transaction Category',
+  createTransactionCategory: 'Transaction Category',
+  editTransactionCategory: 'Transaction Category',
+  deleteTransactionCategory: 'Delete Transaction Category',
+  transactionCategorySuccessfullyAdded: 'Transaction category successfully added',
+  transactionCategorySuccessfullyDeleted: 'Transaction category successfully deleted',
+  errorGettingTransactionCategories: 'Error getting transaction categories list',
+  errorSavingTransactionCategory: 'Error saving transaction category',
+  errorDeletingTransactionCategory: 'Error deleting transaction category',
+  income: 'Income',
+  expense: 'Expense',
+  transactionCategories: 'Transaction Categories',
+  systemCategoryProtected: 'This category is system-protected and cannot be modified',
+  createdBy: 'Created by',
 }

@@ -10,6 +10,7 @@ export default {
   success: 'Успешно',
   error: 'Ошибка',
   balance: 'Баланс',
+  contracts: 'Контракты',
   enableSound: 'Включить звук',
   disableSound: 'Выключить звук',
   
@@ -43,7 +44,7 @@ export default {
   cashRegisters: 'Кассы',
   productCategories: 'Категории товаров/услуг',
   orderStatuses: 'Статусы заказов',
-  orderAdditionalFields: 'Дополнительные поля заказов',
+  orderAdditionalFields: 'Доп. поля заказов',
   addAdditionalField: 'Добавить поле',
   additionalFields: 'Дополнительные поля',
   errorGettingAdditionalFieldsList: 'Ошибка получения списка дополнительных полей',
@@ -83,7 +84,7 @@ export default {
   orderTypes: 'Типы заказов',
   services: 'Услуги',
   systemSettings: 'Настройки системы',
-  generalSettings: 'Общие настройки',
+  generalSettings: 'Настройки',
   
   // Переключение языка
   languageChanged: 'Язык изменен',
@@ -267,7 +268,6 @@ export default {
   enterProductNameOrCode: 'Введите название товара или код',
   specifiedProductsAndServices: 'Указанные товары и услуги',
   amountWithoutDiscount: 'Сумма без скидки',
-  contractType: 'Тип контракта',
   toCash: 'В кассу',
   individual: 'Индивидуальный',
   company: 'Компания',
@@ -306,6 +306,7 @@ export default {
   // Финансы
   balance: 'Баланс',
   income: 'Доход',
+  expense: 'Расход',
   outcome: 'Расход',
   итого: 'Итого',
   mainCashRegister: 'Главная касса',
@@ -447,6 +448,9 @@ export default {
   errorGettingOrderCategories: 'Ошибка получения списка категорий заказов',
   errorSavingOrderCategory: 'Ошибка сохранения категории заказа',
   errorDeletingOrderCategory: 'Ошибка удаления категории заказа',
+  errorGettingTransactionCategories: 'Ошибка получения списка категорий транзакций',
+  errorSavingTransactionCategory: 'Ошибка сохранения категории транзакции',
+  errorDeletingTransactionCategory: 'Ошибка удаления категории транзакции',
   
   // Валидация
   productNameRequired: 'Название товара обязательно',
@@ -499,7 +503,6 @@ export default {
   errorGettingProjects: 'Ошибка получения списка проектов',
   projectSuccessfullyAdded: 'Проект успешно добавлен',
   projectSuccessfullyDeleted: 'Проект успешно удален',
-  contractType: 'Тип контракта',
   contract: 'Контракт',
   agreement: 'Соглашение',
   contractNumber: 'Номер контракта',
@@ -596,7 +599,7 @@ export default {
   order_statuscategories: 'Категории статусов',
   order_categories: 'Категории заказов',
   cash_registers: 'Кассы',
-  settings: 'Общие настройки',
+  settings: 'Настройки',
   system_settings: 'Настройки системы',
   
   // Общие
@@ -768,6 +771,15 @@ export default {
   addOrderCategory: 'Добавить категорию заказа',
   createOrderCategory: 'Категория заказа',
   editOrderCategory: 'Категория заказа',
+  addTransactionCategory: 'Добавить категорию транзакции',
+  createTransactionCategory: 'Категория транзакции',
+  editTransactionCategory: 'Категория транзакции',
+  deleteTransactionCategory: 'Удалить категорию транзакции',
+  transactionCategorySuccessfullyAdded: 'Категория транзакции успешно добавлена',
+  transactionCategorySuccessfullyDeleted: 'Категория транзакции успешно удалена',
+  transactionCategories: 'Категории транзакций',
+  systemCategoryProtected: 'Эта категория является системной и не может быть изменена',
+  createdBy: 'Создал',
   
   // Фразы для товаров
   addProduct: 'Добавить товар',
@@ -1029,4 +1041,23 @@ export default {
   color: 'Цвет',
   projectStatus: 'Статус проекта',
   projectStatuses: 'Статусы проектов',
+  
+  // Контракты
+  addContract: 'Добавить контракт',
+  editContract: 'Редактировать контракт',
+  contractNumber: 'Номер контракта',
+  enterContractNumber: 'Введите номер контракта',
+  contractReturned: 'Контракт возвращен',
+  noContracts: 'Нет контрактов',
+  contractSaved: 'Контракт сохранен',
+  contractDeleted: 'Контракт удален',
+  errorSavingContract: 'Ошибка сохранения контракта',
+  errorDeletingContract: 'Ошибка удаления контракта',
+  errorLoadingContract: 'Ошибка загрузки контракта',
+  clickToUploadFiles: 'Нажмите для загрузки файлов или перетащите файлы сюда',
+  dropFilesToUpload: 'Отпустите файлы для загрузки',
+  amount: 'Сумма',
+  enterAmount: 'Введите сумму',
+  selectCurrency: 'Выберите валюту',
+  update: 'Обновить',
 }
