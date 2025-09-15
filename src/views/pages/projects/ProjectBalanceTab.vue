@@ -381,7 +381,7 @@ export default {
                                 
                                 // Если валюта кассы отличается от валюты проекта, показываем исходную сумму в скобках
                                 if (originalSymbol !== projectCurrency) {
-                                    return `<span style="color:${color};font-weight:bold">${val.toFixed(2)} ${projectCurrency} (${originalAmount} ${originalSymbol})</span>`;
+                                    return `<span style="color:${color};font-weight:bold">${val.toFixed(2)} ${projectCurrency} (${originalAmount.toFixed(2)} ${originalSymbol})</span>`;
                                 }
                             }
                             

@@ -42,23 +42,23 @@
                 <small class="text-gray-500">{{ $t('exchangeRateHelp') }}</small>
             </div>
             
-            <!-- Поля для типа оплаты -->
+            <!-- Поля для типа контракта -->
             <div class="mt-4">
-                <label class="required">{{ $t('paymentType') }}</label>
+                <label class="required">{{ $t('contractType') }}</label>
                 <div class="flex space-x-4 mt-2">
                     <label class="flex items-center space-x-2">
-                        <input type="radio" v-model="paymentType" :value="false" />
-                        <span>{{ $t('cashless') }}</span>
+                        <input type="radio" v-model="contractType" :value="false" />
+                        <span>{{ $t('contract') }}</span>
                     </label>
                     <label class="flex items-center space-x-2">
-                        <input type="radio" v-model="paymentType" :value="true" />
-                        <span>{{ $t('cash') }}</span>
+                        <input type="radio" v-model="contractType" :value="true" />
+                        <span>{{ $t('agreement') }}</span>
                     </label>
                 </div>
             </div>
             
-            <!-- Поля для безналичного типа оплаты -->
-            <div v-if="!paymentType" class="mt-4">
+            <!-- Поля для контрактного типа -->
+            <div v-if="!contractType" class="mt-4">
                 <div>
                     <label>{{ $t('contractNumber') }}</label>
                     <input type="text" v-model="contractNumber" :placeholder="$t('enterContractNumber')" />
@@ -222,8 +222,8 @@ export default {
                 { name: "balance", label: "balance" },
             ],
             
-            // Новые поля для типа оплаты
-            paymentType: this.editingItem ? this.editingItem.paymentType : false,
+            // Новые поля для типа контракта
+            contractType: this.editingItem ? this.editingItem.contractType : false,
             contractNumber: this.editingItem ? this.editingItem.contractNumber : '',
             contractReturned: this.editingItem ? this.editingItem.contractReturned : false,
 
@@ -276,7 +276,7 @@ export default {
                 description: this.description,
                 selectedClient: this.selectedClient?.id || null,
                 selectedUsers: [...this.selectedUsers],
-                paymentType: this.paymentType,
+                contractType: this.contractType,
                 contractNumber: this.contractNumber,
                 contractReturned: this.contractReturned
             };
@@ -331,7 +331,7 @@ export default {
                     description: this.description || null,
                     client_id: this.selectedClient?.id,
                     users: this.selectedUsers,
-                    payment_type: this.paymentType,
+                    contract_type: this.contractType,
                     contract_number: this.contractNumber || null,
                     contract_returned: this.contractReturned
                 };
@@ -383,7 +383,7 @@ export default {
             this.selectedClient = null;
             this.selectedUsers = [];
             this.editingItemId = null;
-            this.paymentType = false;
+            this.contractType = false;
             this.contractNumber = '';
             this.contractReturned = false;
             this.resetFormChanges(); // Сбрасываем состояние изменений
@@ -525,7 +525,7 @@ export default {
                     this.description = newEditingItem.description || '';
                     this.selectedClient = newEditingItem.client || null;
                     this.selectedUsers = newEditingItem.getUserIds() || [];
-                    this.paymentType = newEditingItem.paymentType || false;
+                    this.contractType = newEditingItem.contractType || false;
                     this.contractNumber = newEditingItem.contractNumber || '';
                     this.contractReturned = newEditingItem.contractReturned || false;
 

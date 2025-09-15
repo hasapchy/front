@@ -194,7 +194,7 @@ export default {
   enterProductNameOrCode: 'Önüm adyny ýa-da kodyny ýazyň',
   specifiedProductsAndServices: 'Bellenen önümler we hyzmatlar',
   amountWithoutDiscount: 'Arzanladyşsyz mukdar',
-  paymentType: 'Töleme görnüşi',
+  contractType: 'Şertnama görnüşi',
   toCash: 'Kassa',
   individual: 'Şahsy',
   company: 'Kompaniýa',
@@ -868,11 +868,11 @@ export default {
   
   // Projects payment fields
   paymentType: 'Töleg görnüşi',
-  cashless: 'Nagt däl',
-  cash: 'Nagt',
+  contract: 'Şertnama',
+  agreement: 'Ylalaşyk',
   contractNumber: 'Şertnama belgisi',
   enterContractNumber: 'Şertnama belgisini giriziň',
   contractReturned: 'Şertnama gaýtaryldy',
   allClients: 'Ähli müşderiler',
-  allPaymentTypes: 'Ähli töleg görnüşleri'
+  allContractTypes: 'Ähli şertnama görnüşleri'
 }

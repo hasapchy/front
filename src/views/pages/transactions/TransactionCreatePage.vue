@@ -138,7 +138,7 @@ export default {
             currencyId: this.editingItem ? this.editingItem.origCurrencyId : '',
             categoryId: this.editingItem ? this.editingItem.categoryId : 4, // По умолчанию id = 4 для типа income
             projectId: this.editingItem ? this.editingItem.projectId : '',
-            date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
+            date: this.editingItem ? this.editingItem.date.substring(0, 16) : new Date().toISOString().substring(0, 16),
             note: this.editingItem ? this.editingItem.note : '',
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,

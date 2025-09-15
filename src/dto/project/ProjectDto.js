@@ -22,7 +22,7 @@ export default class ProjectDto {
     creator = null,
     statusId = null,
     status = null,
-    paymentType = false,
+    contractType = false,
     contractNumber = null,
     contractReturned = false
   ) {
@@ -46,7 +46,7 @@ export default class ProjectDto {
     this.creator = creator;
     this.statusId = statusId;
     this.status = status;
-    this.paymentType = paymentType;
+    this.contractType = contractType;
     this.contractNumber = contractNumber;
     this.contractReturned = contractReturned;
   }

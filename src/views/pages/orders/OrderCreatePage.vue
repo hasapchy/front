@@ -206,7 +206,7 @@ export default {
             warehouseId: this.editingItem?.warehouseId || '',
             statusId: this.editingItem?.statusId || 1,
             // categoryId: this.editingItem?.categoryId || '',
-            date: this.editingItem?.date || new Date().toISOString().substring(0, 16),
+            date: this.editingItem?.date ? this.editingItem.date.substring(0, 16) : new Date().toISOString().substring(0, 16),
             note: this.editingItem?.note || '',
             description: this.editingItem?.description || '',
             products: this.editingItem?.products || [],

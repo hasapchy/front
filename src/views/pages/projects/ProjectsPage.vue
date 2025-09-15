@@ -23,12 +23,12 @@
                 </select>
             </div>
             
-            <!-- Фильтр по типу оплаты -->
+            <!-- Фильтр по типу контракта -->
             <div class="ml-2">
-                <select v-model="paymentTypeFilter" @change="() => fetchItems()" class="w-full p-2 pl-10 border rounded">
-                    <option value="">{{ $t('allPaymentTypes') }}</option>
-                    <option value="0">{{ $t('cashless') }}</option>
-                    <option value="1">{{ $t('cash') }}</option>
+                <select v-model="contractTypeFilter" @change="() => fetchItems()" class="w-full p-2 pl-10 border rounded">
+                    <option value="">{{ $t('allContractTypes') }}</option>
+                    <option value="0">{{ $t('contract') }}</option>
+                    <option value="1">{{ $t('agreement') }}</option>
                 </select>
             </div>
         </div>
@@ -89,7 +89,7 @@ export default {
             statuses: [],
             clientFilter: '',
             clients: [],
-            paymentTypeFilter: '',
+            contractTypeFilter: '',
             controller: ProjectController,
             savedSuccessText: this.$t('projectSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProject'),
@@ -153,7 +153,7 @@ export default {
                 const filters = {};
                 if (this.statusFilter) filters.status_id = this.statusFilter;
                 if (this.clientFilter) filters.client_id = this.clientFilter;
-                if (this.paymentTypeFilter !== '') filters.payment_type = this.paymentTypeFilter;
+                if (this.contractTypeFilter !== '') filters.contract_type = this.contractTypeFilter;
                 
                 const new_data = await ProjectController.getItems(page, filters);
                 this.data = new_data;

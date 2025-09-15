@@ -154,12 +154,12 @@ export default {
   infiniteScroll: 'Infinite scroll',
   
   // Projects payment fields
-  paymentType: 'Payment Type',
-  cashless: 'Cashless',
-  cash: 'Cash',
+  contractType: 'Contract Type',
+  contract: 'Contract',
+  agreement: 'Agreement',
   contractNumber: 'Contract Number',
   enterContractNumber: 'Enter contract number',
   contractReturned: 'Contract Returned',
   allClients: 'All Clients',
-  allPaymentTypes: 'All Payment Types'
+  allContractTypes: 'All Contract Types'
 }
