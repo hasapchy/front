@@ -127,30 +127,44 @@ export default class ClientController {
     }
   }
 
-  // static async getAllItems() {
-  //     try {
-  //         const response = await api.get(`/categories/all`);
-  //         const data = response.data;
-  //         // Преобразуем полученные данные в DTO
-  //         const items = data.map(item => {
-  //             return new CategoryDto(
-  //                 item.id,
-  //                 item.name,
-  //                 item.parent_id,
-  //                 item.parent_name,
-  //                 item.user_id,
-  //                 item.user_name,
-  //                 item.users,
-  //                 item.created_at,
-  //                 item.updated_at,
-  //             );
-  //         });
-  //         return items;
-  //     } catch (error) {
-  //         console.error('Ошибка при получении категорий:', error);
-  //         throw error;
-  //         }
-  //     }
+  static async getAllItems() {
+    try {
+      const response = await api.get(`/clients/all`);
+      const data = response.data;
+      // Преобразуем полученные данные в DTO
+      const items = data.map((item) => {
+        // Получаем данные телефонов и email'ов из Eloquent relationships
+        let phones = item.phones || [];
+        let emails = item.emails || [];
+
+        return new ClientDto(
+          item.id,
+          item.client_type,
+          item.balance_amount || 0,
+          item.is_supplier,
+          item.is_conflict,
+          item.first_name,
+          item.last_name,
+          item.contact_person,
+          item.address,
+          item.note,
+          item.status,
+          item.discount_type,
+          item.discount,
+          item.created_at,
+          item.updated_at,
+          emails,
+          phones,
+          item.user_id,
+          item.user?.name
+        );
+      });
+      return items;
+    } catch (error) {
+      console.error('Ошибка при получении всех клиентов:', error);
+      throw error;
+    }
+  }
 
   static async storeItem(item) {
     try {

@@ -111,11 +111,12 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { eventBus } from '@/eventBus';
 import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin],
     components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalance, ClientButtonCell, BatchButton, CheckboxFilter },
     data() {
         return {

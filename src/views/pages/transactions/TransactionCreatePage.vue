@@ -286,9 +286,9 @@ export default {
             this.origAmount = 0;
             this.note = '';
             this.categoryId = 4; // Устанавливаем id = 4 для типа income по умолчанию
-            this.projectId = '';
+            this.projectId = this.initialProjectId || '';
             this.date = new Date().toISOString().substring(0, 16);
-            this.selectedClient = null;
+            this.selectedClient = this.initialClient || null;
             this.editingItemId = null;
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
@@ -355,6 +355,22 @@ export default {
             },
             immediate: true
         },
+        initialProjectId: {
+            handler(newProjectId) {
+                if (!this.editingItemId && newProjectId) {
+                    this.projectId = newProjectId;
+                }
+            },
+            immediate: true
+        },
+        initialClient: {
+            handler(newClient) {
+                if (!this.editingItemId && newClient) {
+                    this.selectedClient = newClient;
+                }
+            },
+            immediate: true
+        },
         cashId(newCashId) {
             // При создании новой транзакции автоматически выбираем валюту кассы
             if (!this.editingItemId && newCashId) {
@@ -391,6 +407,7 @@ export default {
                     this.selectedClient = newEditingItem.client || null;
                     this.editingItemId = newEditingItem.id || null;
                 } else {
+                    // При создании новой транзакции устанавливаем значения по умолчанию
                     this.type = "income";
                     this.cashId = this.defaultCashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
                     const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
@@ -399,9 +416,9 @@ export default {
                     this.origAmount = 0;
                     this.currencyId = selectedCash?.currency_id || '';
                     this.categoryId = 4; // Устанавливаем id = 4 для типа income по умолчанию
-                    this.projectId = '';
+                    this.projectId = this.initialProjectId || '';
                     this.date = new Date().toISOString().substring(0, 16);
-                    this.selectedClient = null;
+                    this.selectedClient = this.initialClient || null;
                     this.editingItemId = null;
                 }
                 this.$nextTick(() => {

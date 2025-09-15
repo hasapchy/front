@@ -8,6 +8,19 @@ export default {
   info: 'Maglumat',
   balance: 'Balans',
   
+  // Компании
+  selectCompany: 'Kompaniýa saýla',
+  errorLoadingCompanies: 'Kompaniýalary ýükleme ýalňyşlygy',
+  errorChangingCompany: 'Kompaniýa üýtgetmekde ýalňyşlyk',
+  addCompany: 'Kompaniýa goş',
+  editCompany: 'Kompaniýa redaktirle',
+  companySaved: 'Kompaniýa saklandy',
+  errorSavingCompany: 'Kompaniýa saklamakda ýalňyşlyk',
+  companyDeleted: 'Kompaniýa pozuldy',
+  errorDeletingCompany: 'Kompaniýa pozmakda ýalňyşlyk',
+  logo: 'Logo',
+  created: 'Döredildi',
+  
   // Навигация
   home: 'Baş sahypa',
   myCompany: 'Meniň kompaniýam',
@@ -849,5 +862,15 @@ export default {
   virtualScroll: 'Wirtual skroll',
   noMoreItems: 'Ähli elementler ýüklenildi',
   lazyLoading: 'Lazy ýükleme',
-  infiniteScroll: 'Çäksiz skroll'
+  infiniteScroll: 'Çäksiz skroll',
+  
+  // Projects payment fields
+  paymentType: 'Töleg görnüşi',
+  cashless: 'Nagt däl',
+  cash: 'Nagt',
+  contractNumber: 'Şertnama belgisi',
+  enterContractNumber: 'Şertnama belgisini giriziň',
+  contractReturned: 'Şertnama gaýtaryldy',
+  allClients: 'Ähli müşderiler',
+  allPaymentTypes: 'Ähli töleg görnüşleri'
 }

@@ -11,6 +11,23 @@
                     </option>
                 </select>
             </div>
+            
+            <div class="ml-4">
+                <select v-model="clientFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
+                    <option value="">{{ $t('allClients') }}</option>
+                    <option v-for="client in clients" :key="client.id" :value="client.id">
+                        {{ client.fullName() }}
+                    </option>
+                </select>
+            </div>
+            
+            <div class="ml-4">
+                <select v-model="paymentTypeFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
+                    <option value="">{{ $t('allPaymentTypes') }}</option>
+                    <option value="0">{{ $t('cashless') }}</option>
+                    <option value="1">{{ $t('cash') }}</option>
+                </select>
+            </div>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
@@ -44,6 +61,7 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import ProjectController from '@/api/ProjectController';
 import ProjectStatusController from '@/api/ProjectStatusController';
+import ClientController from '@/api/ClientController';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -66,6 +84,9 @@ export default {
             selectedIds: [],
             statusFilter: '',
             statuses: [],
+            clientFilter: '',
+            clients: [],
+            paymentTypeFilter: '',
             controller: ProjectController,
             savedSuccessText: this.$t('projectSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProject'),
@@ -79,6 +100,7 @@ export default {
 
     mounted() {
         this.fetchProjectStatuses();
+        this.fetchClients();
         this.fetchItems();
     },
     methods: {
@@ -113,12 +135,30 @@ export default {
                 console.error('Error fetching project statuses:', error);
             }
         },
+        async fetchClients() {
+            try {
+                this.clients = await ClientController.getAllItems();
+            } catch (error) {
+                console.error('Error fetching clients:', error);
+            }
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
             }
             try {
-                const new_data = await ProjectController.getItems(page, this.statusFilter ? { status_id: this.statusFilter } : {});
+                const params = {};
+                if (this.statusFilter) {
+                    params.status_id = this.statusFilter;
+                }
+                if (this.clientFilter) {
+                    params.client_id = this.clientFilter;
+                }
+                if (this.paymentTypeFilter !== '') {
+                    params.payment_type = this.paymentTypeFilter;
+                }
+                
+                const new_data = await ProjectController.getItems(page, params);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProjectList'), error.message, true);

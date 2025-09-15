@@ -11,6 +11,19 @@ export default {
   error: 'Ошибка',
   balance: 'Баланс',
   
+  // Компании
+  selectCompany: 'Выберите компанию',
+  errorLoadingCompanies: 'Ошибка загрузки компаний',
+  errorChangingCompany: 'Ошибка смены компании',
+  addCompany: 'Добавить компанию',
+  editCompany: 'Редактировать компанию',
+  companySaved: 'Компания сохранена',
+  errorSavingCompany: 'Ошибка сохранения компании',
+  companyDeleted: 'Компания удалена',
+  errorDeletingCompany: 'Ошибка удаления компании',
+  logo: 'Логотип',
+  created: 'Создано',
+  
   // Навигация
   home: 'Главная',
   clients: 'Клиенты',
@@ -484,6 +497,14 @@ export default {
   errorGettingProjects: 'Ошибка получения списка проектов',
   projectSuccessfullyAdded: 'Проект успешно добавлен',
   projectSuccessfullyDeleted: 'Проект успешно удален',
+  paymentType: 'Тип оплаты',
+  cashless: 'Безналичный',
+  cash: 'Наличный',
+  contractNumber: 'Номер контракта',
+  enterContractNumber: 'Введите номер контракта',
+  contractReturned: 'Контракт возвращен',
+  allClients: 'Все клиенты',
+  allPaymentTypes: 'Все типы оплаты',
   errorSavingProject: 'Ошибка сохранения проекта',
   errorDeletingProject: 'Ошибка удаления проекта',
   

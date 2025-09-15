@@ -7,6 +7,19 @@ export default {
   logout: 'Logout',
   info: 'Information',
   
+  // Companies
+  selectCompany: 'Select Company',
+  errorLoadingCompanies: 'Error loading companies',
+  errorChangingCompany: 'Error changing company',
+  addCompany: 'Add Company',
+  editCompany: 'Edit Company',
+  companySaved: 'Company saved',
+  errorSavingCompany: 'Error saving company',
+  companyDeleted: 'Company deleted',
+  errorDeletingCompany: 'Error deleting company',
+  logo: 'Logo',
+  created: 'Created',
+  
   // Navigation
   home: 'Home',
   clients: 'Clients',
@@ -136,5 +149,15 @@ export default {
   virtualScroll: 'Virtual scroll',
   noMoreItems: 'All items loaded',
   lazyLoading: 'Lazy loading',
-  infiniteScroll: 'Infinite scroll'
+  infiniteScroll: 'Infinite scroll',
+  
+  // Projects payment fields
+  paymentType: 'Payment Type',
+  cashless: 'Cashless',
+  cash: 'Cash',
+  contractNumber: 'Contract Number',
+  enterContractNumber: 'Enter contract number',
+  contractReturned: 'Contract Returned',
+  allClients: 'All Clients',
+  allPaymentTypes: 'All Payment Types'
 }

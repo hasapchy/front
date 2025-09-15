@@ -1,5 +1,4 @@
 import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
-import ClientDto from "../client/ClientDto";
 import "dayjs/locale/ru";
 
 export default class ProjectDto {
@@ -22,7 +21,10 @@ export default class ProjectDto {
     description = null,
     creator = null,
     statusId = null,
-    status = null
+    status = null,
+    paymentType = false,
+    contractNumber = null,
+    contractReturned = false
   ) {
     this.id = id;
     this.name = name;
@@ -44,6 +46,9 @@ export default class ProjectDto {
     this.creator = creator;
     this.statusId = statusId;
     this.status = status;
+    this.paymentType = paymentType;
+    this.contractNumber = contractNumber;
+    this.contractReturned = contractReturned;
   }
 
   formatDate() {

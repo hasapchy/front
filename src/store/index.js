@@ -17,6 +17,8 @@ export default createStore({
     activeApiCalls: 0, // Счетчик активных API вызовов
     units: [], // Единицы измерения
     currencies: [], // Валюты
+    currentCompany: null, // Текущая выбранная компания
+    userCompanies: [], // Список компаний пользователя
     tokenInfo: {
       accessTokenExpiresAt: null,
       refreshTokenExpiresAt: null,
@@ -76,6 +78,12 @@ export default createStore({
     },
     SET_CURRENCIES(state, currencies) {
       state.currencies = currencies;
+    },
+    SET_CURRENT_COMPANY(state, company) {
+      state.currentCompany = company;
+    },
+    SET_USER_COMPANIES(state, companies) {
+      state.userCompanies = companies;
     },
   },
 
@@ -174,6 +182,36 @@ export default createStore({
         console.error('Ошибка загрузки валют:', error);
       }
     },
+    async loadUserCompanies({ commit }) {
+      try {
+        const response = await api.get('/user/companies');
+        commit('SET_USER_COMPANIES', response.data);
+        return response.data;
+      } catch (error) {
+        console.error('Ошибка загрузки компаний пользователя:', error);
+        return [];
+      }
+    },
+    async loadCurrentCompany({ commit }) {
+      try {
+        const response = await api.get('/user/current-company');
+        commit('SET_CURRENT_COMPANY', response.data.company);
+        return response.data.company;
+      } catch (error) {
+        console.error('Ошибка загрузки текущей компании:', error);
+        return null;
+      }
+    },
+    async setCurrentCompany({ commit, dispatch }, companyId) {
+      try {
+        const response = await api.post('/user/set-company', { company_id: companyId });
+        commit('SET_CURRENT_COMPANY', response.data.company);
+        return response.data.company;
+      } catch (error) {
+        console.error('Ошибка установки текущей компании:', error);
+        throw error;
+      }
+    },
   },
 
   getters: {
@@ -216,5 +254,8 @@ export default createStore({
       const currency = state.currencies.find(currency => currency.id === id);
       return currency ? currency.symbol : 'Нет валюты';
     },
+    currentCompany: (state) => state.currentCompany,
+    userCompanies: (state) => state.userCompanies,
+    currentCompanyId: (state) => state.currentCompany?.id || null,
   },
 });

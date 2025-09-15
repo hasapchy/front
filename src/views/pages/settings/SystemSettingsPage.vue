@@ -82,6 +82,13 @@ export default {
         await this.loadSettings();
         this.updateTabFromRoute();
         this.$watch('$route', this.updateTabFromRoute);
+        
+        // Слушаем события смены компании
+        eventBus.on('company-changed', this.onCompanyChanged);
+    },
+    
+    beforeUnmount() {
+        eventBus.off('company-changed', this.onCompanyChanged);
     },
     
     methods: {
@@ -105,13 +112,20 @@ export default {
         getFormState() {
             return {
                 company_name: this.form.company_name,
-                company_logo: this.form.company_logo
+                company_logo: this.form.company_logo,
+                company_id: this.form.company_id
             };
         },
         
         async loadSettings() {
             try {
-                const data = await SettingsController.getSettings();
+                // Получаем company_id из URL параметров или из localStorage
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlCompanyId = urlParams.get('company_id');
+                const selectedCompanyId = urlCompanyId || localStorage.getItem('selectedCompanyId');
+                const companyId = selectedCompanyId ? parseInt(selectedCompanyId) : null;
+                
+                const data = await SettingsController.getSettings(companyId);
                 this.form = new SettingsDto(data);
                 this.currentLogo = data.company_logo;
                 this.resetFormChanges();
@@ -146,6 +160,11 @@ export default {
             } finally {
                 this.saveLoading = false;
             }
+        },
+        
+        async onCompanyChanged(companyId) {
+            // Перезагружаем настройки при смене компании
+            await this.loadSettings();
         }
     }
 };

@@ -12,6 +12,23 @@
                     required
                 />
             </div>
+
+            <div class="mb-4">
+                <label class="">{{ $t('companyLogo') }}</label>
+                <div class="flex items-center space-x-4">
+                    <div class="flex-1">
+                        <input 
+                            type="file" 
+                            @change="handleLogoChange"
+                            accept="image/*"
+                            ref="logoInput"
+                        />
+                        <div class="text-xs text-gray-500 mt-1">
+                            {{ $t('recommendedSize') }}. {{ $t('supportedFormats') }}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="mt-auto p-4 flex space-x-2 bg-[#edf4fb]">
@@ -54,11 +71,13 @@ export default {
         return {
             form: {
                 name: '',
+                logo: null,
             },
             editingItemId: null,
             saveLoading: false,
             deleteLoading: false,
             deleteDialog: false,
+            currentLogo: '',
         };
     },
     mounted() {
@@ -74,11 +93,14 @@ export default {
         getFormState() {
             return {
                 name: this.form.name,
+                logo: this.form.logo,
             };
         },
         clearForm() {
             this.form.name = '';
+            this.form.logo = null;
             this.editingItemId = null;
+            this.currentLogo = '';
             this.resetFormChanges();
             this.$nextTick(() => {
                 this.saveInitialState();
@@ -87,14 +109,16 @@ export default {
         async save() {
             this.saveLoading = true;
             try {
-                const updateData = {
-                    name: this.form.name,
-                };
+                const formData = new FormData();
+                formData.append('name', this.form.name);
+                if (this.form.logo) {
+                    formData.append('logo', this.form.logo);
+                }
 
                 if (this.editingItem) {
-                    await CompaniesController.updateItem(this.editingItemId, updateData);
+                    await CompaniesController.updateItem(this.editingItemId, formData);
                 } else {
-                    await CompaniesController.storeItem(updateData);
+                    await CompaniesController.storeItem(formData);
                 }
 
                 this.$emit('saved');
@@ -129,14 +153,26 @@ export default {
         },
         closeModal() {
             this.closeForm();
+        },
+        
+        handleLogoChange(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.form.logo = file;
+            }
+        },
+        
+        loadCompanyData(company) {
+            this.form.name = company.name || '';
+            this.currentLogo = company.logo || '';
         }
     },
     watch: {
         editingItem: {
             handler(newEditingItem, oldEditingItem) {
                 if (newEditingItem) {
-                    this.form.name = newEditingItem.name || '';
                     this.editingItemId = newEditingItem.id || null;
+                    this.loadCompanyData(newEditingItem);
                 } else {
                     if (oldEditingItem !== undefined) {
                         this.clearForm();

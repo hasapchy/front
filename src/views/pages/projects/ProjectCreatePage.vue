@@ -41,6 +41,35 @@
                        :placeholder="defaultExchangeRate" class="w-full">
                 <small class="text-gray-500">{{ $t('exchangeRateHelp') }}</small>
             </div>
+            
+            <!-- Поля для типа оплаты -->
+            <div class="mt-4">
+                <label class="required">{{ $t('paymentType') }}</label>
+                <div class="flex space-x-4 mt-2">
+                    <label class="flex items-center space-x-2">
+                        <input type="radio" v-model="paymentType" :value="false" />
+                        <span>{{ $t('cashless') }}</span>
+                    </label>
+                    <label class="flex items-center space-x-2">
+                        <input type="radio" v-model="paymentType" :value="true" />
+                        <span>{{ $t('cash') }}</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Поля для безналичного типа оплаты -->
+            <div v-if="!paymentType" class="mt-4">
+                <div>
+                    <label>{{ $t('contractNumber') }}</label>
+                    <input type="text" v-model="contractNumber" :placeholder="$t('enterContractNumber')" />
+                </div>
+                <div class="mt-2">
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" v-model="contractReturned" />
+                        <span>{{ $t('contractReturned') }}</span>
+                    </label>
+                </div>
+            </div>
             <div>
                 <label class="required">{{ $t('assignUsers') }}</label>
                 <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
@@ -192,6 +221,11 @@ export default {
                 { name: 'files', label: 'files' },
                 { name: "balance", label: "balance" },
             ],
+            
+            // Новые поля для типа оплаты
+            paymentType: this.editingItem ? this.editingItem.paymentType : false,
+            contractNumber: this.editingItem ? this.editingItem.contractNumber : '',
+            contractReturned: this.editingItem ? this.editingItem.contractReturned : false,
 
         }
     },
@@ -241,7 +275,10 @@ export default {
                 date: this.date,
                 description: this.description,
                 selectedClient: this.selectedClient?.id || null,
-                selectedUsers: [...this.selectedUsers]
+                selectedUsers: [...this.selectedUsers],
+                paymentType: this.paymentType,
+                contractNumber: this.contractNumber,
+                contractReturned: this.contractReturned
             };
         },
         async fetchCurrencies() {
@@ -294,6 +331,9 @@ export default {
                     description: this.description || null,
                     client_id: this.selectedClient?.id,
                     users: this.selectedUsers,
+                    payment_type: this.paymentType,
+                    contract_number: this.contractNumber || null,
+                    contract_returned: this.contractReturned
                 };
 
                 // Добавляем поля бюджета только если у пользователя есть права
@@ -343,6 +383,9 @@ export default {
             this.selectedClient = null;
             this.selectedUsers = [];
             this.editingItemId = null;
+            this.paymentType = false;
+            this.contractNumber = '';
+            this.contractReturned = false;
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
@@ -482,6 +525,9 @@ export default {
                     this.description = newEditingItem.description || '';
                     this.selectedClient = newEditingItem.client || null;
                     this.selectedUsers = newEditingItem.getUserIds() || [];
+                    this.paymentType = newEditingItem.paymentType || false;
+                    this.contractNumber = newEditingItem.contractNumber || '';
+                    this.contractReturned = newEditingItem.contractReturned || false;
 
                     this.editingItemId = newEditingItem.id || null;
                 } else {

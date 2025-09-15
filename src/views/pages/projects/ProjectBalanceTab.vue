@@ -2,25 +2,25 @@
     <div class="mt-4">
         <div class="flex justify-between items-center mb-2">
             <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
-            <!-- <PrimaryButton 
+            <PrimaryButton 
                 v-if="$store.getters.hasPermission('transactions_create')"
                 icon="fas fa-plus" 
-                :onclick="showAddIncomeModal" 
+                :onclick="showAddTransactionModal" 
                 :is-small="true">
-                {{ $t('addIncome') }}
-            </PrimaryButton> -->
+                {{ $t('addTransaction') }}
+            </PrimaryButton>
         </div>
         <div v-if="$store.getters.hasPermission('settings_project_budget_view')" class="mb-2 flex items-center gap-2">
-            <span>{{ $t('finalBalance') }}:</span>
+            <span><i class="fas fa-wallet text-blue-500"></i></span>
             <span :class="{
                 'text-[#5CB85C] font-bold': balance >= 0,
                 'text-[#EE4F47] font-bold': balance < 0
             }">
                 {{ balanceDisplay }}
             </span>
-            <span class="ml-4">{{ $t('totalIncome') }}: <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b></span>
-            <span class="ml-4">{{ $t('totalExpense') }}: <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b></span>
-            <span class="ml-4">{{ $t('budget') }}: <b>{{ budgetDisplay }}</b></span>
+            <span class="ml-4"><i class="fas fa-arrow-up text-[#5CB85C]"></i> <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b></span>
+            <span class="ml-4"><i class="fas fa-arrow-down text-[#EE4F47]"></i> <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b></span>
+            <span class="ml-4"><i class="fas fa-chart-line text-purple-500"></i> <b>{{ budgetDisplay }}</b></span>
         </div>
         <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
         <div v-else-if="balanceHistory.length === 0" class="text-gray-500">
@@ -30,12 +30,22 @@
             :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
             @selectionChange="selectedIds = $event" :onItemClick="handleBalanceItemClick" />
 
-        <!-- Модальное окно для создания/редактирования прихода -->
-        <!-- <SideModalDialog 
-            :showForm="false" 
-            :onclose="() => {}">
-            <div>ProjectTransactionCreatePage</div>
-        </SideModalDialog> -->
+        <!-- Модальное окно для создания/редактирования транзакции -->
+        <SideModalDialog 
+            :showForm="transactionModalOpen" 
+            :onclose="closeTransactionModal">
+            <TransactionCreatePage 
+                v-if="!transactionLoading"
+                :editingItem="editingTransactionItem"
+                :initialProjectId="editingItem?.id"
+                :initialClient="editingItem?.client"
+                @saved="handleTransactionSaved"
+                @saved-error="handleTransactionSavedError"
+                @close-request="closeTransactionModal" />
+            <div v-else-if="transactionLoading" class="p-4 text-center">
+                {{ $t('loading') }}...
+            </div>
+        </SideModalDialog>
 
         <!-- Модальное окно для других сущностей -->
         <SideModalDialog 
@@ -108,12 +118,12 @@ export default {
             balanceHistory: [],
             balance: 0,
             budget: 0,
-            // projectIncome: 0,
             selectedEntity: null,
             entityModalOpen: false,
             entityLoading: false,
-            // incomeModalOpen: false,
-            // editingIncomeItem: null,
+            transactionModalOpen: false,
+            editingTransactionItem: null,
+            transactionLoading: false,
             columnsConfig: [
                 { name: "date", label: this.$t("date"), size: 100 },
                 { name: "source", label: this.$t("type") },
@@ -271,19 +281,15 @@ export default {
             }
             
             // Бюджет уже в валюте проекта, показываем его
-            return `${this.budgetFormatted} ${this.editingItem.currency.symbol}`;
+            return `${this.budgetFormatted} ${this.editingItem?.currency?.symbol}`;
         },
         balanceDisplay() {
             if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
                 return `${this.balanceFormatted} ${this.currencyCode}`;
             }
             
-            // Конвертируем баланс в валюту проекта
-            const exchangeRate = this.editingItem.exchangeRate || 1;
-            const balanceInProjectCurrency = (this.balance / exchangeRate).toFixed(2);
-            const originalBalance = this.balance.toFixed(2);
-            
-            return `${balanceInProjectCurrency} ${this.editingItem.currency.symbol} (${originalBalance} ${this.currencyCode})`;
+            // Баланс уже в валюте проекта (конвертация происходит на бэкенде)
+            return `${this.balanceFormatted} ${this.editingItem?.currency?.symbol}`;
         },
         totalIncome() {
             if (!this.balanceHistory || this.balanceHistory.length === 0) return 0;
@@ -308,24 +314,16 @@ export default {
                 return `${this.totalIncomeFormatted} ${this.currencyCode}`;
             }
             
-            // Конвертируем приход в валюту проекта
-            const exchangeRate = this.editingItem.exchangeRate || 1;
-            const incomeInProjectCurrency = (this.totalIncome / exchangeRate).toFixed(2);
-            const originalIncome = this.totalIncome.toFixed(2);
-            
-            return `${incomeInProjectCurrency} ${this.editingItem.currency.symbol} (${originalIncome} ${this.currencyCode})`;
+            // Приход уже в валюте проекта (конвертация происходит на бэкенде)
+            return `${this.totalIncomeFormatted} ${this.editingItem?.currency?.symbol}`;
         },
         totalExpenseDisplay() {
             if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
                 return `${this.totalExpenseFormatted} ${this.currencyCode}`;
             }
             
-            // Конвертируем расход в валюту проекта
-            const exchangeRate = this.editingItem.exchangeRate || 1;
-            const expenseInProjectCurrency = (this.totalExpense / exchangeRate).toFixed(2);
-            const originalExpense = this.totalExpense.toFixed(2);
-            
-            return `${expenseInProjectCurrency} ${this.editingItem.currency.symbol} (${originalExpense} ${this.currencyCode})`;
+            // Расход уже в валюте проекта (конвертация происходит на бэкенде)
+            return `${this.totalExpenseFormatted} ${this.editingItem?.currency?.symbol}`;
         },
     },
     async mounted() {
@@ -369,15 +367,26 @@ export default {
                             const val = parseFloat(item.amount);
                             const color = val >= 0 ? "#5CB85C" : "#EE4F47";
                             
-                            let currency = self.currencyCode || 'Нет валюты';
+                            // Определяем валюту проекта
+                            let projectCurrency = self.currencyCode || 'Нет валюты';
+                            if (self.editingItem && self.editingItem.currency && self.editingItem.currency.symbol) {
+                                projectCurrency = self.editingItem.currency.symbol;
+                            }
                             
-                            // Для project_income используем валюту прихода
-                            // if (item.source === 'project_income' && item.currency_id && currencyMap[item.currency_id]) {
-                            //     currency = currencyMap[item.currency_id].symbol || currencyMap[item.currency_id].code;
-                            // }
-                            // Для остальных записей оставляем в манатах (как есть)
+                            // Сумма уже конвертирована в валюту проекта на бэкенде
+                            // Если есть информация о валюте кассы и исходной сумме, показываем исходную сумму в скобках
+                            if (item.cash_currency_symbol && item.orig_amount) {
+                                const originalAmount = parseFloat(item.orig_amount);
+                                const originalSymbol = item.cash_currency_symbol;
+                                
+                                // Если валюта кассы отличается от валюты проекта, показываем исходную сумму в скобках
+                                if (originalSymbol !== projectCurrency) {
+                                    return `<span style="color:${color};font-weight:bold">${val.toFixed(2)} ${projectCurrency} (${originalAmount} ${originalSymbol})</span>`;
+                                }
+                            }
                             
-                            return `<span style="color:${color};font-weight:bold">${val.toFixed(2)} ${currency}</span>`;
+                            // Для всех случаев показываем сумму в валюте проекта
+                            return `<span style="color:${color};font-weight:bold">${val.toFixed(2)} ${projectCurrency}</span>`;
                         },
                         label() {
                             switch (item.source) {
@@ -385,7 +394,6 @@ export default {
                                 case "sale": return self.$t('sale');
                                 case "order": return self.$t('order');
                                 case "receipt": return self.$t('receipt');
-                                // case "project_income": return self.$t('projectIncome');
                                 default: return item.source;
                             }
                         }
@@ -393,12 +401,10 @@ export default {
                 );
                 this.balance = data.balance;
                 this.budget = data.budget;
-                // this.projectIncome = data.projectIncome || 0;
             } catch (e) {
                 this.balanceHistory = [];
                 this.balance = 0;
                 this.budget = 0;
-                // this.projectIncome = 0;
             }
             this.balanceLoading = false;
         },
@@ -419,19 +425,21 @@ export default {
             }
         },
         async handleBalanceItemClick(item) {
-            // Если это приход, открываем модальное окно прихода
-            // if (item.source === 'project_income') {
-            //     try {
-            //         this.editingIncomeItem = await ProjectTransactionController.getItem(item.source_id).then(r => {
-            //             return ProjectTransactionDto.fromApi(r.item);
-            //         });
-            //         this.incomeModalOpen = true;
-            //     } catch (error) {
-            //         console.error('Error loading project transaction:', error);
-            //         this.$notify?.({ type: 'error', text: 'Ошибка при загрузке прихода: ' + (error.message || error) });
-            //     }
-            //     return;
-            // }
+            // Если это транзакция, открываем модальное окно транзакции
+            if (item.source === 'transaction') {
+                try {
+                    this.transactionLoading = true;
+                    const data = await this.ENTITY_CONFIG.transaction.fetch(item.source_id);
+                    this.editingTransactionItem = data;
+                    this.transactionModalOpen = true;
+                } catch (error) {
+                    console.error('Error loading transaction:', error);
+                    this.$notify?.({ type: 'error', text: 'Ошибка при загрузке транзакции: ' + (error.message || error) });
+                } finally {
+                    this.transactionLoading = false;
+                }
+                return;
+            }
 
             const config = this.ENTITY_CONFIG[item.source];
             if (!config) return;
@@ -463,32 +471,24 @@ export default {
             this.entityModalOpen = false;
             this.selectedEntity = null;
         },
-        // showAddIncomeModal() {
-        //     this.editingIncomeItem = null;
-        //     this.incomeModalOpen = true;
-        // },
-        // closeIncomeModal() {
-        //     this.incomeModalOpen = false;
-        //     this.editingIncomeItem = null;
-        // },
-        // async handleIncomeSaved() {
-        //     this.closeIncomeModal();
-        //     // Небольшая задержка для обновления кэша на backend
-        //     await new Promise(resolve => setTimeout(resolve, 100));
-        //     this.fetchBalanceHistory();
-        // },
-        // handleIncomeSavedError(error) {
-        //     console.error('Ошибка сохранения прихода:', error);
-        // },
-        // async handleIncomeDeleted() {
-        //     this.closeIncomeModal();
-        //     // Небольшая задержка для обновления кэша на backend
-        //     await new Promise(resolve => setTimeout(resolve, 100));
-        //     this.fetchBalanceHistory();
-        // },
-        // handleIncomeDeletedError(error) {
-        //     console.error('Ошибка удаления прихода:', error);
-        // },
+        showAddTransactionModal() {
+            this.editingTransactionItem = null;
+            this.transactionModalOpen = true;
+        },
+        closeTransactionModal() {
+            this.transactionModalOpen = false;
+            this.editingTransactionItem = null;
+        },
+        handleTransactionSaved() {
+            this.closeTransactionModal();
+            // Небольшая задержка для обновления кэша на backend
+            setTimeout(() => {
+                this.fetchBalanceHistory();
+            }, 100);
+        },
+        handleTransactionSavedError(error) {
+            console.error('Ошибка сохранения транзакции:', error);
+        },
         handleEntitySaved() {
             this.closeEntityModal();
             this.fetchBalanceHistory();

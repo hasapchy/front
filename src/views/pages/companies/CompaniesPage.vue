@@ -54,10 +54,12 @@ export default {
             savedErrorText: this.$t('errorSavingCompany'),
             deletedSuccessText: this.$t('companyDeleted'),
             deletedErrorText: this.$t('errorDeletingCompany'),
+            selectedCompanyId: null,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'ID', size: 60 },
                 { name: 'name', label: 'name' },
+                { name: 'logo', label: 'logo', html: true },
                 { name: 'createdAt', label: 'created' },
             ],
         };
@@ -90,6 +92,9 @@ export default {
         },
         itemMapper(item, column) {
             switch (column) {
+                case 'logo':
+                    const logoUrl = item.logo || 'logo.jpg';
+                    return `<img src="${logoUrl}" alt="${item.name}" class="w-8 h-8 object-contain rounded">`;
                 case 'createdAt':
                     return new Date(item.createdAt).toLocaleDateString();
                 default:
