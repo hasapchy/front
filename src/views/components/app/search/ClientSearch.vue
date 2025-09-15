@@ -158,14 +158,26 @@ export default {
                 .slice(0, 10);
         },
                  searchClients: debounce(async function () {
+             console.log('=== CLIENT SEARCH FRONTEND ===');
+             console.log('Search term:', this.clientSearch);
+             console.log('Search length:', this.clientSearch.length);
+             console.log('Only suppliers:', this.onlySuppliers);
+             
              if (this.clientSearch.length >= 3) {
                  this.clientSearchLoading = true;
                  try {
                      const results = await ClientController.search(this.clientSearch);
+                     console.log('Raw results from API:', results);
+                     console.log('Results count:', results.length);
+                     
                      this.clientResults = this.onlySuppliers
                          ? results.filter((client) => client.isSupplier)
                          : results;
+                     
+                     console.log('Filtered results:', this.clientResults);
+                     console.log('Filtered count:', this.clientResults.length);
                  } catch (error) {
+                     console.error('Search error:', error);
                      this.clientResults = [];
                  } finally {
                      this.clientSearchLoading = false;
@@ -173,6 +185,7 @@ export default {
              } else {
                  this.clientResults = [];
              }
+             console.log('=============================');
          }, 250),
         async selectClient(client) {
             this.showDropdown = false;
