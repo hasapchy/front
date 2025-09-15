@@ -26,6 +26,7 @@ import store from "./store";
 import i18n from "./i18n";
 import AuthController from "./api/AuthController";
 import { setStore } from "./store/storeManager";
+import soundManager from "./utils/soundUtils";
 
 async function bootstrapApp() {
   const token = localStorage.getItem("token");
@@ -43,6 +44,9 @@ async function bootstrapApp() {
 
   // Инициализируем storeManager
   setStore(store);
+  
+  // Инициализируем soundManager с store
+  soundManager.setStore(store);
 
   createApp(App).use(router).use(store).use(i18n).mount("#app");
 }

@@ -7,6 +7,7 @@ class SoundManager {
     this.successSound = null;
     this.errorSound = null;
     this.isEnabled = true;
+    this.store = null; // Будет установлен позже
     this.initSounds();
   }
 
@@ -29,7 +30,8 @@ class SoundManager {
   }
 
   playSuccess() {
-    if (this.isEnabled && this.successSound) {
+    const isEnabled = this.store ? this.store.getters.soundEnabled : this.isEnabled;
+    if (isEnabled && this.successSound) {
       try {
         this.successSound.currentTime = 0; // Сбрасываем время воспроизведения
         this.successSound.play().catch(error => {
@@ -42,7 +44,8 @@ class SoundManager {
   }
 
   playError() {
-    if (this.isEnabled && this.errorSound) {
+    const isEnabled = this.store ? this.store.getters.soundEnabled : this.isEnabled;
+    if (isEnabled && this.errorSound) {
       try {
         this.errorSound.currentTime = 0; // Сбрасываем время воспроизведения
         this.errorSound.play().catch(error => {
@@ -62,6 +65,10 @@ class SoundManager {
   setVolume(volume) {
     if (this.successSound) this.successSound.volume = volume;
     if (this.errorSound) this.errorSound.volume = volume;
+  }
+
+  setStore(store) {
+    this.store = store;
   }
 }
 

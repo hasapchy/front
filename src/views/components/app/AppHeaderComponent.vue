@@ -15,6 +15,7 @@
 
                 <div class="flex items-center gap-4">
                     <Search v-if="showSearch" />
+                    <SoundToggle />
                     <CompanySwitcher @company-changed="onCompanyChanged" />
                     <LanguageSwitcher @language-changed="onLanguageChanged" />
                     <span v-if="$store.state.user" class="font-semibold mr-5">{{ $store.state.user.name }}</span>
@@ -36,6 +37,7 @@ import PrimaryButton from './buttons/PrimaryButton.vue';
 import Search from '@/views/components/app/search/Search.vue';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import CompanySwitcher from './CompanySwitcher.vue';
+import SoundToggle from './SoundToggle.vue';
 import { eventBus } from '@/eventBus';
 
 export default {
@@ -44,6 +46,7 @@ export default {
         Search,
         LanguageSwitcher,
         CompanySwitcher,
+        SoundToggle,
     },
     data() {
         const route = useRoute();
@@ -71,9 +74,6 @@ export default {
     
     async mounted() {
         await this.loadSettings();
-        // Инициализируем компании при загрузке приложения
-        await this.$store.dispatch('loadUserCompanies');
-        await this.$store.dispatch('loadCurrentCompany');
         eventBus.on('settings-updated', this.loadSettings);
     },
     

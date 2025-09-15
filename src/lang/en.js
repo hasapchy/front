@@ -6,6 +6,8 @@ export default {
   loading: 'Loading...',
   logout: 'Logout',
   info: 'Information',
+  enableSound: 'Enable Sound',
+  disableSound: 'Disable Sound',
   
   // Companies
   selectCompany: 'Select Company',

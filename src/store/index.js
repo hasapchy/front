@@ -19,6 +19,11 @@ export default createStore({
     currencies: [], // Валюты
     currentCompany: null, // Текущая выбранная компания
     userCompanies: [], // Список компаний пользователя
+    soundEnabled: (() => {
+      // Синхронно загружаем настройку звука из localStorage при инициализации store
+      const soundEnabled = localStorage.getItem('soundEnabled');
+      return soundEnabled !== null ? soundEnabled === 'true' : true;
+    })(), // Включен ли звук
     tokenInfo: {
       accessTokenExpiresAt: null,
       refreshTokenExpiresAt: null,
@@ -85,6 +90,9 @@ export default createStore({
     SET_USER_COMPANIES(state, companies) {
       state.userCompanies = companies;
     },
+    SET_SOUND_ENABLED(state, enabled) {
+      state.soundEnabled = enabled;
+    },
   },
 
   actions: {
@@ -136,7 +144,7 @@ export default createStore({
         commit('SET_NOTIFICATION_TIMEOUT_ID', null);
       }
     },
-    resumeNotificationTimer({ commit, state, dispatch }) {
+    resumeNotificationTimer({ commit, state }) {
       // Возобновляем таймер при убирании мыши
       if (state.notification && !state.notificationTimeoutId) {
         const timeoutId = setTimeout(() => {
@@ -150,7 +158,7 @@ export default createStore({
     updateTokenExpiration({ commit }, { accessTokenExpiresAt, refreshTokenExpiresAt }) {
       commit('UPDATE_TOKEN_EXPIRATION', { accessTokenExpiresAt, refreshTokenExpiresAt });
     },
-    checkTokenStatus({ commit, state }) {
+    checkTokenStatus({ commit }) {
       const accessTokenExpiresAt = localStorage.getItem('tokenExpiresAt');
       const refreshTokenExpiresAt = localStorage.getItem('refreshTokenExpiresAt');
       
@@ -202,7 +210,7 @@ export default createStore({
         return null;
       }
     },
-    async setCurrentCompany({ commit, dispatch }, companyId) {
+    async setCurrentCompany({ commit }, companyId) {
       try {
         const response = await api.post('/user/set-company', { company_id: companyId });
         commit('SET_CURRENT_COMPANY', response.data.company);
@@ -257,5 +265,6 @@ export default createStore({
     currentCompany: (state) => state.currentCompany,
     userCompanies: (state) => state.userCompanies,
     currentCompanyId: (state) => state.currentCompany?.id || null,
+    soundEnabled: (state) => state.soundEnabled,
   },
 });

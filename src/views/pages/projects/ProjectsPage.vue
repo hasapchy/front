@@ -12,6 +12,25 @@
                     </option>
                 </select>
             </div>
+            
+            <!-- Фильтр по клиенту -->
+            <div class="ml-2">
+                <select v-model="clientFilter" @change="() => fetchItems()" class="w-full p-2 pl-10 border rounded">
+                    <option value="">{{ $t('allClients') }}</option>
+                    <option v-for="client in clients" :key="client.id" :value="client.id">
+                        {{ client.fullName() }}
+                    </option>
+                </select>
+            </div>
+            
+            <!-- Фильтр по типу оплаты -->
+            <div class="ml-2">
+                <select v-model="paymentTypeFilter" @change="() => fetchItems()" class="w-full p-2 pl-10 border rounded">
+                    <option value="">{{ $t('allPaymentTypes') }}</option>
+                    <option value="0">{{ $t('cashless') }}</option>
+                    <option value="1">{{ $t('cash') }}</option>
+                </select>
+            </div>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
@@ -68,6 +87,9 @@ export default {
             selectedIds: [],
             statusFilter: '',
             statuses: [],
+            clientFilter: '',
+            clients: [],
+            paymentTypeFilter: '',
             controller: ProjectController,
             savedSuccessText: this.$t('projectSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProject'),
@@ -128,7 +150,12 @@ export default {
                 this.loading = true;
             }
             try {
-                const new_data = await ProjectController.getItems(page, this.statusFilter ? { status_id: this.statusFilter } : {});
+                const filters = {};
+                if (this.statusFilter) filters.status_id = this.statusFilter;
+                if (this.clientFilter) filters.client_id = this.clientFilter;
+                if (this.paymentTypeFilter !== '') filters.payment_type = this.paymentTypeFilter;
+                
+                const new_data = await ProjectController.getItems(page, filters);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProjectList'), error.message, true);

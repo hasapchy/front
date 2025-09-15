@@ -7,6 +7,8 @@ export default {
   logout: 'Çykyş',
   info: 'Maglumat',
   balance: 'Balans',
+  enableSound: 'Ses aç',
+  disableSound: 'Ses ýap',
   
   // Компании
   selectCompany: 'Kompaniýa saýla',

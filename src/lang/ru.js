@@ -10,6 +10,8 @@ export default {
   success: 'Успешно',
   error: 'Ошибка',
   balance: 'Баланс',
+  enableSound: 'Включить звук',
+  disableSound: 'Выключить звук',
   
   // Компании
   selectCompany: 'Выберите компанию',

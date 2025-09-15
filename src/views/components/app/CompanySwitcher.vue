@@ -9,7 +9,13 @@
              :alt="currentCompany?.name" 
              class="w-6 h-6 object-contain rounded">
       </div>
-      <span class="company-name">{{ currentCompanyName }}</span>
+      <span class="company-name">
+        <span v-if="isLoading" class="flex items-center gap-1">
+          <i class="fas fa-spinner fa-spin text-xs"></i>
+          {{ currentCompanyName }}
+        </span>
+        <span v-else>{{ currentCompanyName }}</span>
+      </span>
       <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': isOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
       </svg>
@@ -50,7 +56,8 @@ export default {
   name: 'CompanySwitcher',
   data() {
     return {
-      isOpen: false
+      isOpen: false,
+      isLoading: true
     }
   },
   
@@ -65,17 +72,43 @@ export default {
       return this.$store.getters.currentCompanyId;
     },
     currentCompanyName() {
+      if (this.isLoading && !this.currentCompany) {
+        return this.$t('loading');
+      }
       return this.currentCompany ? this.currentCompany.name : this.$t('selectCompany');
     }
   },
   
+  watch: {
+    currentCompany: {
+      handler(newCompany) {
+        // Если компания загрузилась, убираем индикатор загрузки
+        if (newCompany && this.isLoading) {
+          this.isLoading = false;
+        }
+      },
+      immediate: true
+    }
+  },
+  
   async mounted() {
-    await this.$store.dispatch('loadUserCompanies');
-    await this.$store.dispatch('loadCurrentCompany');
+    // Если компания уже загружена, не показываем индикатор загрузки
+    if (this.currentCompany) {
+      this.isLoading = false;
+    }
     
-    // Если нет выбранной компании, выбираем первую
-    if (!this.selectedCompanyId && this.companies.length > 0) {
-      await this.selectCompany(this.companies[0].id);
+    try {
+      await this.$store.dispatch('loadUserCompanies');
+      await this.$store.dispatch('loadCurrentCompany');
+      
+      // Если нет выбранной компании, выбираем первую
+      if (!this.selectedCompanyId && this.companies.length > 0) {
+        await this.selectCompany(this.companies[0].id);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки компаний:', error);
+    } finally {
+      this.isLoading = false;
     }
     
     document.addEventListener('click', this.handleClickOutside);
