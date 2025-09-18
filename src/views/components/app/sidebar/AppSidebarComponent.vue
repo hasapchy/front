@@ -1,5 +1,5 @@
 <template>
-    <aside class="w-40 bg-[#282E33] text-white flex-shrink-0 transform transition-transform duration-300">
+    <aside class="w-40 bg-[#282E33] text-white flex-shrink-0 transform transition-transform duration-300 relative">
 
         <div class="shrink-0 flex items-center justify-center">
             <a href="/">
@@ -14,7 +14,7 @@
             </a>
         </div>
 
-        <div class="">
+        <div class="pb-32">
             <ul>
                 <SidebarLink to="/" icon="fas fa-building mr-2">
                     {{ settings.company_name }}
@@ -61,6 +61,34 @@
                     </a>
                 </li>
             </ul>
+        </div>
+        
+        <!-- Логотип и контактная информация внизу -->
+        <div class="absolute bottom-0 left-0 right-0 p-4 bg-[#1f2529] border-t border-[#53585c]">
+            <div class="text-center">
+                <!-- Логотип LTM -->
+                <div class="mb-3">
+                    <img src="/logo.jpg" alt="LTM Studio" class="h-8 w-auto mx-auto opacity-80">
+                </div>
+                
+                <!-- Название и ссылка -->
+                <div class="text-sm text-gray-300 mb-2">
+                    <div class="font-medium">Bir Hasap</div>
+                    <div class="text-gray-400">
+                        powered by
+                        <a href="https://ltm.studio" target="_blank" class="text-blue-400 hover:text-blue-300 transition-colors">
+                            LTM
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Контактная информация -->
+                <div class="text-xs text-gray-400">
+                    <a href="mailto:info@ltm.studio" class="hover:text-gray-300 transition-colors">
+                        info@ltm.studio
+                    </a>
+                </div>
+            </div>
         </div>
     </aside>
 </template>
