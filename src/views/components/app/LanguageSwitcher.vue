@@ -3,7 +3,7 @@
 
     <button 
       @click="toggleDropdown"
-      class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+      class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border-0 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
     >
       <div class="flag-icon">
         <img v-if="currentLocale === 'tm'" 

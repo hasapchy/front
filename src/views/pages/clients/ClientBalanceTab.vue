@@ -261,7 +261,9 @@ export default {
     methods: {
         async fetchDefaultCurrency() {
             try {
-                const currencies = await AppController.getCurrencies();
+                // Используем данные из store
+                await this.$store.dispatch('loadCurrencies');
+                const currencies = this.$store.getters.currencies;
                 const defaultCurrency = currencies.find(c => c.is_default);
                 this.currencyCode = defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
             } catch (error) {

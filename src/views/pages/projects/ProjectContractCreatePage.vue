@@ -32,6 +32,10 @@
                     <span>{{ $t('contractReturned') }}</span>
                 </label>
             </div>
+            <div>
+                <label>{{ $t('note') }}</label>
+                <textarea v-model="note" :placeholder="$t('enterNote')" rows="3"></textarea>
+            </div>
             
             <!-- Файлы -->
             <!-- <div class="mt-4">
@@ -89,6 +93,7 @@ export default {
                 ? new Date(this.editingItem.date).toISOString().substring(0, 16)
                 : new Date().toISOString().substring(0, 16),
             returned: this.editingItem ? this.editingItem.returned : false,
+            note: this.editingItem ? this.editingItem.note : '',
             editingItemId: this.editingItem ? this.editingItem.id : null,
             currencies: [],
             saveLoading: false,
@@ -126,22 +131,36 @@ export default {
         await this.fetchCurrencies();
         if (this.editingItem) {
             this.populateForm();
+        } else {
+            this.clearForm();
         }
         this.saveInitialState();
     },
     methods: {
+        clearForm() {
+            this.number = '';
+            this.amount = '';
+            this.currencyId = '';
+            this.date = new Date().toISOString().substring(0, 16);
+            this.returned = false;
+            this.note = '';
+            this.editingItemId = null;
+        },
         getFormState() {
             return {
                 number: this.number,
                 amount: this.amount,
                 currencyId: this.currencyId,
                 date: this.date,
-                returned: this.returned
+                returned: this.returned,
+                note: this.note
             };
         },
         async fetchCurrencies() {
             try {
-                const response = await AppController.getCurrencies();
+                // Используем данные из store
+                await this.$store.dispatch('loadCurrencies');
+                const response = this.$store.getters.currencies;
                 this.currencies = response;
             } catch (error) {
                 console.error('Error fetching currencies:', error);
@@ -162,6 +181,7 @@ export default {
             this.currencyId = this.editingItem.currencyId || '';
             this.date = formattedDate;
             this.returned = this.editingItem.returned || false;
+            this.note = this.editingItem.note || '';
             this.editingItemId = this.editingItem.id || null;
             // this.files = this.editingItem.files || [];
         },
@@ -178,7 +198,8 @@ export default {
                     amount: this.amount,
                     currencyId: this.currencyId,
                     date: this.date,
-                    returned: this.returned
+                    returned: this.returned,
+                    note: this.note
                 };
                 
                 // Получаем информацию о валюте
@@ -271,6 +292,18 @@ export default {
         // },
         handleCloseRequest() {
             this.$emit('close-request');
+        }
+    },
+    watch: {
+        editingItem: {
+            handler(newValue) {
+                if (newValue) {
+                    this.populateForm();
+                } else {
+                    this.clearForm();
+                }
+            },
+            immediate: false
         }
     }
 };

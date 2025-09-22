@@ -112,7 +112,9 @@ export default {
             this.users = await UsersController.getAllUsers();
         },
         async fetchCurrencies() {
-            this.currencies = await AppController.getCurrencies();
+            // Используем данные из store
+            await this.$store.dispatch('loadCurrencies');
+            this.currencies = this.$store.getters.currencies;
         },
         async save() {
             this.saveLoading = true;

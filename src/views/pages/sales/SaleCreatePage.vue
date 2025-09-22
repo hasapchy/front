@@ -65,8 +65,8 @@
             </div>
         </div>
         <ProductSearch v-model="products" :disabled="!!editingItemId" :show-quantity="true" :show-price="true"
-            :show-price-type="true" :is-sale="true" :currency-symbol="currencySymbol" v-model:discount="discount"
-            v-model:discountType="discountType" required />
+            :show-price-type="true" :is-sale="true" :currency-symbol="currencySymbol" :warehouse-id="warehouseId"
+            v-model:discount="discount" v-model:discountType="discountType" required />
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
@@ -204,17 +204,43 @@ export default {
             };
         },
         async fetchAllWarehouses() {
-            this.allWarehouses = await WarehouseController.getAllItems();
+            // Всегда загружаем данные заново и ждем их появления в store
+            await this.$store.dispatch('loadWarehouses');
+            
+            // Ждем пока данные появятся в store (максимум 3 секунды)
+            let attempts = 0;
+            while (this.$store.getters.warehouses.length === 0 && attempts < 30) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            this.allWarehouses = this.$store.getters.warehouses;
         },
         async fetchAllProjects() {
-            // Получаем только проекты, к которым у пользователя есть доступ
-            this.allProjects = await ProjectController.getAllItems();
+            // Получаем только активные проекты (исключая завершенные и отмененные)
+            this.allProjects = await ProjectController.getActiveItems();
         },
         async fetchCurrencies() {
-            this.currencies = await AppController.getCurrencies();
+            // Используем данные из store
+            if (this.$store.getters.currencies.length > 0) {
+                this.currencies = this.$store.getters.currencies;
+            } else {
+                await this.$store.dispatch('loadCurrencies');
+                this.currencies = this.$store.getters.currencies;
+            }
         },
         async fetchAllCashRegisters() {
-            this.allCashRegisters = await CashRegisterController.getAllItems();
+            // Всегда загружаем данные заново и ждем их появления в store
+            await this.$store.dispatch('loadCashRegisters');
+            
+            // Ждем пока данные появятся в store (максимум 3 секунды)
+            let attempts = 0;
+            while (this.$store.getters.cashRegisters.length === 0 && attempts < 30) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            this.allCashRegisters = this.$store.getters.cashRegisters;
         },
         async save() {
             this.saveLoading = true;

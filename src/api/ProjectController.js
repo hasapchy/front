@@ -157,6 +157,77 @@ export default class ProjectController {
     }
   }
 
+  static async getActiveItems() {
+    try {
+      const response = await api.get(`/projects/active`);
+      const data = response.data;
+      // Преобразуем полученные данные в DTO
+      const items = data.map((item) => {
+        var client = null;
+        if (item.client) {
+          client = new ClientDto(
+            item.client.id,
+            item.client.client_type,
+            item.client.balance || 0,
+            item.client.is_supplier,
+            item.client.is_conflict,
+            item.client.first_name,
+            item.client.last_name,
+            item.client.contact_person,
+            item.client.address,
+            item.client.note,
+            item.client.status,
+            item.client.discount_type,
+            item.client.discount,
+            item.client.created_at,
+            item.client.updated_at,
+            item.client.emails || [],
+            item.client.phones || []
+          );
+        }
+        
+        var currency = null;
+        if (item.currency) {
+          currency = new CurrencyDto({
+            id: item.currency.id,
+            code: item.currency.code,
+            name: item.currency.name,
+            symbol: item.currency.symbol,
+            is_default: item.currency.is_default,
+            is_report: item.currency.is_report,
+            status: item.currency.status
+          });
+        }
+        
+        return new ProjectDto(
+          item.id,
+          item.name,
+          item.budget,
+          item.currency_id,
+          item.exchange_rate,
+          item.date,
+          item.client_id,
+          client,
+          item.user_id,
+          item.user_name,
+          item.users || [],
+          item.created_at,
+          item.updated_at,
+          item.files || [],
+          currency,
+          item.description,
+          item.creator,
+          item.status_id,
+          item.status
+        );
+      });
+      return items;
+    } catch (error) {
+      console.error("Ошибка при получении активных проектов:", error);
+      throw error;
+    }
+  }
+
   static async getItem(id) {
     try {
       const response = await api.get(`/projects/${id}`);

@@ -21,7 +21,7 @@
             <input type="text" v-model="note">
         </div>
         <ProductSearch v-model="products" :disabled="!!editingItemId" :show-quantity="true" :only-products="true"
-            required />
+            :warehouse-id="warehouseId" required />
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
@@ -93,7 +93,9 @@ export default {
             };
         },
         async fetchAllWarehouses() {
-            this.allWarehouses = await WarehouseController.getAllItems();
+            // Используем данные из store
+            await this.$store.dispatch('loadWarehouses');
+            this.allWarehouses = this.$store.getters.warehouses;
             if (!this.warehouseId && !this.editingItem && this.allWarehouses.length > 0) {
                 this.warehouseId = this.allWarehouses[0].id;
             }

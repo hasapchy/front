@@ -118,8 +118,8 @@
                     </select>
                 </div>
                 <ProductSearch ref="productSearch" v-model="products" :show-quantity="true" :show-price="true" :show-price-type="true"
-                    :is-sale="true" :isOrder="true" :currency-symbol="currencySymbol" v-model:discount="discount"
-                    v-model:discountType="discountType" required @product-removed="onProductRemoved" />
+                    :is-sale="true" :isOrder="true" :currency-symbol="currencySymbol" :warehouse-id="warehouseId"
+                    v-model:discount="discount" v-model:discountType="discountType" required @product-removed="onProductRemoved" />
             </div>
             <div v-show="currentTab === 'transactions'">
                 <OrderTransactionsTab v-if="editingItemId" :order-id="editingItemId" :client="selectedClient"
@@ -231,6 +231,8 @@ export default {
         };
     },
     created() {
+        this.fetchAllWarehouses();
+        this.fetchAllCashRegisters();
         this.fetchAllProjects();
         this.fetchCurrencies();
         this.fetchOrderStatuses();
@@ -345,15 +347,22 @@ export default {
             return state;
         },
         async fetchAllWarehouses() {
-            this.allWarehouses = await WarehouseController.getAllItems();
+            // Всегда загружаем данные заново и ждем их появления в store
+            await this.$store.dispatch('loadWarehouses');
+            
+            // Ждем пока данные появятся в store (максимум 3 секунды)
+            let attempts = 0;
+            while (this.$store.getters.warehouses.length === 0 && attempts < 30) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            this.allWarehouses = this.$store.getters.warehouses;
         },
         async fetchAllProjects() {
-            try {
-                // Получаем только проекты, к которым у пользователя есть доступ
-                this.allProjects = await ProjectController.getAllItems();
-            } catch (error) {
-                this.allProjects = [];
-            }
+            // Всегда загружаем данные заново
+            await this.$store.dispatch('loadProjects');
+            this.allProjects = this.$store.getters.projects;
         },
         // async fetchAllCategories() {
         //     try {
@@ -363,10 +372,22 @@ export default {
         //     }
         // },
         async fetchCurrencies() {
-            this.currencies = await AppController.getCurrencies();
+            // Всегда загружаем данные заново
+            await this.$store.dispatch('loadCurrencies');
+            this.currencies = this.$store.getters.currencies;
         },
         async fetchAllCashRegisters() {
-            this.allCashRegisters = await CashRegisterController.getAllItems();
+            // Всегда загружаем данные заново и ждем их появления в store
+            await this.$store.dispatch('loadCashRegisters');
+            
+            // Ждем пока данные появятся в store (максимум 3 секунды)
+            let attempts = 0;
+            while (this.$store.getters.cashRegisters.length === 0 && attempts < 30) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            this.allCashRegisters = this.$store.getters.cashRegisters;
         },
         async fetchOrderStatuses() {
             this.statuses = await OrderStatusController.getAllItems();

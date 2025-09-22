@@ -26,7 +26,6 @@ import ProjectStatusesPage from "@/views/pages/projects/ProjectStatusesPage.vue"
 import InvoicesPage from "@/views/pages/invoices/InvoicesPage.vue";
 import UsersPage from "@/views/pages/users/UsersPage.vue";
 import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
-import SystemSettingsPage from "@/views/pages/settings/SystemSettingsPage.vue";
 import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
 
 const routes = [
@@ -231,19 +230,9 @@ const routes = [
         },
       },
       {
-        path: "/settings",
-        name: "Settings",
-        component: SystemSettingsPage,
-        meta: { 
-          title: "systemSettings", 
-          requiresAuth: true,
-          permission: "system_settings_view"
-        },
-      },
-      {
         path: "/settings/performance",
         name: "PerformanceSettings",
-        component: SystemSettingsPage,
+        component: () => import("@/views/pages/settings/PerformanceMonitorPage.vue"),
         meta: { 
           title: "performanceMonitor", 
           requiresAuth: true,

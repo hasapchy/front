@@ -168,7 +168,9 @@ export default {
         },
         async fetchClients() {
             try {
-                this.clients = await ClientController.getAllItems();
+                // Используем данные из store
+                await this.$store.dispatch('loadClients');
+                this.clients = this.$store.getters.clients;
             } catch (error) {
                 console.error('Error fetching clients:', error);
             }
@@ -251,6 +253,11 @@ export default {
                 this.endDate = null;
             }
             this.fetchItems();
+        },
+        showModal(item = null) {
+            this.modalDialog = true;
+            this.showTimeline = true;
+            this.editingItem = item;
         }
     },
     watch: {

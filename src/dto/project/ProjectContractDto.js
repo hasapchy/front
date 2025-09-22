@@ -11,6 +11,7 @@ class ProjectContractDto {
         date,
         returned,
         files,
+        note,
         createdAt,
         updatedAt
     ) {
@@ -25,6 +26,7 @@ class ProjectContractDto {
         this.date = date;
         this.returned = returned;
         this.files = files || [];
+        this.note = note;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -42,6 +44,7 @@ class ProjectContractDto {
             data.date,
             data.returned,
             data.files,
+            data.note,
             data.created_at,
             data.updated_at
         );
@@ -69,7 +72,8 @@ class ProjectContractDto {
             currency_id: this.currencyId,
             date: this.date,
             returned: this.returned,
-            files: this.files
+            files: this.files,
+            note: this.note
         };
     }
 }

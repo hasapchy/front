@@ -57,7 +57,7 @@
         </div>
 
         <ProductSearch v-model="products" :disabled="!!editingItemId" :show-quantity="true" :show-price="true"
-            :is-receipt="true" :only-products="true" required />
+            :is-receipt="true" :only-products="true" :warehouse-id="warehouseId" required />
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
@@ -145,13 +145,19 @@ export default {
             };
         },
         async fetchAllWarehouses() {
-            this.allWarehouses = await WarehouseController.getAllItems();
+            // Используем данные из store
+            await this.$store.dispatch('loadWarehouses');
+            this.allWarehouses = this.$store.getters.warehouses;
         },
         async fetchCurrencies() {
-            this.currencies = await AppController.getCurrencies();
+            // Используем данные из store
+            await this.$store.dispatch('loadCurrencies');
+            this.currencies = this.$store.getters.currencies;
         },
         async fetchAllCashRegisters() {
-            this.allCashRegisters = await CashRegisterController.getAllItems();
+            // Используем данные из store
+            await this.$store.dispatch('loadCashRegisters');
+            this.allCashRegisters = this.$store.getters.cashRegisters;
             if (!this.cashId && this.allCashRegisters.length) {
                 this.cashId = this.allCashRegisters[0].id;
             }

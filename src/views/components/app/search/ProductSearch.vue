@@ -253,6 +253,10 @@ export default {
         isOrder: {
             type: Boolean,
             default: false
+        },
+        warehouseId: {
+            type: [String, Number],
+            default: null
         }
     },
     data() {
@@ -321,19 +325,40 @@ export default {
     methods: {
         async fetchLastProducts() {
             try {
+                // Используем данные из store вместо API вызовов
+                let allItems = [];
+                
                 if (this.onlyProducts) {
-                    const prodPage = await ProductController.getItems(1, true);
-                    this.lastProducts = prodPage.items
-                        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                        .slice(0, 10);
+                    // Только товары из store
+                    if (this.$store.getters.products.length > 0) {
+                        allItems = this.$store.getters.products;
+                    } else {
+                        await this.$store.dispatch('loadProducts');
+                        allItems = this.$store.getters.products;
+                    }
                 } else {
-                    const prodPage = await ProductController.getItems(1, true);
-                    const servPage = await ProductController.getItems(1, false);
-                    this.lastProducts = [...prodPage.items, ...servPage.items]
-                        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                        .slice(0, 10);
+                    // Товары и услуги из store
+                    const products = this.$store.getters.products.length > 0 
+                        ? this.$store.getters.products 
+                        : (await this.$store.dispatch('loadProducts'), this.$store.getters.products);
+                    
+                    const services = this.$store.getters.services.length > 0 
+                        ? this.$store.getters.services 
+                        : (await this.$store.dispatch('loadServices'), this.$store.getters.services);
+                    
+                    // Защита от неправильных данных
+                    const safeProducts = Array.isArray(products) ? products : [];
+                    const safeServices = Array.isArray(services) ? services : [];
+                    
+                    allItems = [...safeProducts, ...safeServices];
                 }
+                
+                this.lastProducts = allItems
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    .slice(0, 10);
+                    
             } catch (error) {
+                console.error('Ошибка загрузки последних товаров:', error);
                 this.lastProducts = [];
             }
         },
@@ -341,10 +366,11 @@ export default {
             if (this.productSearch.length >= 4) {
                 this.productSearchLoading = true;
                 try {
-                    const results = await ProductController.searchItems(this.productSearch, this.onlyProducts ? true : null);
+                    const results = await ProductController.searchItems(this.productSearch, this.onlyProducts ? true : null, this.warehouseId);
                     this.productResults = results;
                     this.productSearchLoading = false;
                 } catch (error) {
+                    console.error('Ошибка поиска товаров:', error);
                     this.productResults = [];
                     this.productSearchLoading = false;
                 }
@@ -483,6 +509,15 @@ export default {
         productSearch: {
             handler: 'searchProducts',
             immediate: true,
+        },
+        warehouseId: {
+            handler() {
+                // При изменении склада перезагружаем результаты поиска и последние товары
+                this.fetchLastProducts();
+                if (this.productSearch.length >= 4) {
+                    this.searchProducts();
+                }
+            },
         },
     },
 };

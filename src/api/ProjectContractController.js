@@ -69,7 +69,8 @@ class ProjectContractController {
                 data.currencySymbol,
                 data.date,
                 data.returned,
-                data.files
+                data.files,
+                data.note
             );
 
             const response = await api.post(`/projects/${projectId}/contracts`, contractDto.toApi());
@@ -100,7 +101,8 @@ class ProjectContractController {
                 data.currencySymbol,
                 data.date,
                 data.returned,
-                data.files
+                data.files,
+                data.note
             );
 
             const response = await api.put(`/contracts/${id}`, contractDto.toApi());

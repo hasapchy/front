@@ -146,10 +146,12 @@ export default {
             };
         },
         async fetchCurrencies() {
-            this.currencies = await AppController.getCurrencies();
+            // Используем данные из store
+            await this.$store.dispatch('loadCurrencies');
+            this.currencies = this.$store.getters.currencies;
         },
         async fetchAllProjects() {
-            this.allProjects = await ProjectController.getAllItems();
+            this.allProjects = await ProjectController.getActiveItems();
         },
         async save() {
             this.saveLoading = true;

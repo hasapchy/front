@@ -2,7 +2,7 @@
   <div class="company-dropdown relative">
     <button 
       @click="toggleDropdown"
-      class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+      class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border-0 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
     >
       <div class="company-logo">
         <img :src="currentCompany?.logo || 'logo.jpg'" 
@@ -98,8 +98,15 @@ export default {
     }
     
     try {
-      await this.$store.dispatch('loadUserCompanies');
-      await this.$store.dispatch('loadCurrentCompany');
+      // Загружаем компании только если они еще не загружены
+      if (this.companies.length === 0) {
+        await this.$store.dispatch('loadUserCompanies');
+      }
+      
+      // Загружаем текущую компанию только если она еще не установлена
+      if (!this.currentCompany) {
+        await this.$store.dispatch('loadCurrentCompany');
+      }
       
       // Если нет выбранной компании, выбираем первую
       if (!this.selectedCompanyId && this.companies.length > 0) {

@@ -4,12 +4,17 @@
         <div class="shrink-0 flex items-center justify-center">
             <a href="/">
                 <img 
-                    v-if="logoUrl" 
-                    :src="logoUrl" 
+                    v-if="currentCompany?.logo" 
+                    :src="currentCompany.logo" 
                     alt="Company Logo" 
-                    class="mb-1 w-auto"
-                    @load="onLogoLoad"
+                    class="mb-1 w-auto max-h-12"
                     @error="onLogoError"
+                />
+                <img 
+                    v-else
+                    src="/logo.jpg" 
+                    alt="Default Logo" 
+                    class="mb-1 w-auto max-h-12"
                 />
             </a>
         </div>
@@ -17,7 +22,7 @@
         <div class="pb-32">
             <ul>
                 <SidebarLink to="/" icon="fas fa-building mr-2">
-                    {{ settings.company_name }}
+                    {{ $t('myCompany') }}
                 </SidebarLink>
 
                 <SidebarLink v-if="hasPermission('orders_view')" to="/orders" icon="fas fa-cart-arrow-down mr-2">
@@ -73,7 +78,7 @@
                 
                 <!-- Название и ссылка -->
                 <div class="text-sm text-gray-300 mb-2">
-                    <div class="font-medium">Bir Hasap</div>
+       
                     <div class="text-gray-400">
                         powered by
                         <a href="https://ltm.studio" target="_blank" class="text-blue-400 hover:text-blue-300 transition-colors">
@@ -95,7 +100,6 @@
 
 <script>
 import SidebarLink from './SidebarLink.vue';
-import SettingsController from '@/api/SettingsController';
 import { eventBus } from '@/eventBus';
 
 export default {
@@ -103,64 +107,18 @@ export default {
         SidebarLink
     },
     
-    data() {
-        return {
-            settings: {
-                company_name: '',
-                company_logo: ''
-            },
-            logoUrl: localStorage.getItem('companyLogoCache') || '',
-            logoCache: localStorage.getItem('companyLogoCache') || ''
-        };
-    },
-    
-    async mounted() {
-        if (this.logoUrl) {
-            this.logoUrl = this.logoCache;
-        }
-        
-        await this.loadSettings();
-        eventBus.on('settings-updated', this.loadSettings);
-    },
-    
-    beforeUnmount() {
-        eventBus.off('settings-updated', this.loadSettings);
-    },
-    
     computed: {
         hasPermission() {
             return (perm) => this.$store.getters.hasPermission(perm);
+        },
+        currentCompany() {
+            return this.$store.getters.currentCompany;
         }
     },
     
     methods: {
-        async loadSettings() {
-            try {
-                const data = await SettingsController.getSettings();
-                this.settings = data;
-                
-                if (data.company_logo && data.company_logo !== this.logoCache) {
-                    this.logoUrl = data.company_logo;
-                    this.logoCache = data.company_logo;
-                    localStorage.setItem('companyLogoCache', data.company_logo);
-                }
-            } catch (error) {
-                console.error('Error loading settings:', error);
-            }
-        },
-        
-        onLogoLoad() {
-            if (this.logoUrl && this.logoUrl !== this.logoCache) {
-                this.logoCache = this.logoUrl;
-                localStorage.setItem('companyLogoCache', this.logoUrl);
-            }
-        },
-        
         onLogoError(event) {
-            console.error('Logo failed to load:', event.target.src);
-            localStorage.removeItem('companyLogoCache');
-            this.logoUrl = '';
-            this.logoCache = '';
+            console.error('Company logo failed to load:', event.target.src);
         }
     }
 }

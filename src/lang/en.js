@@ -10,6 +10,7 @@ export default {
   disableSound: 'Disable Sound',
   
   // Companies
+  myCompany: 'My Company',
   selectCompany: 'Select Company',
   errorLoadingCompanies: 'Error loading companies',
   errorChangingCompany: 'Error changing company',
@@ -162,6 +163,8 @@ export default {
   addContract: 'Add Contract',
   editContract: 'Edit Contract',
   noContracts: 'No contracts',
+  note: 'Note',
+  enterNote: 'Enter note',
   contractSaved: 'Contract saved',
   contractDeleted: 'Contract deleted',
   errorSavingContract: 'Error saving contract',
@@ -189,4 +192,13 @@ export default {
   transactionCategories: 'Transaction Categories',
   systemCategoryProtected: 'This category is system-protected and cannot be modified',
   createdBy: 'Created by',
+  
+  // Payment types
+  paymentType: 'Payment Type',
+  
+  // Warehouse receipts
+  receiptSuccessfullyAdded: 'Receipt successfully added',
+  errorSavingReceipt: 'Error saving receipt',
+  receiptSuccessfullyDeleted: 'Receipt successfully deleted',
+  errorDeletingReceipt: 'Error deleting receipt',
 }

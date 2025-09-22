@@ -11,6 +11,7 @@ export default {
   disableSound: 'Ses ýap',
   
   // Компании
+  myCompany: 'Meniň kompaniýam',
   selectCompany: 'Kompaniýa saýla',
   errorLoadingCompanies: 'Kompaniýalary ýükleme ýalňyşlygy',
   errorChangingCompany: 'Kompaniýa üýtgetmekde ýalňyşlyk',
@@ -25,7 +26,6 @@ export default {
   
   // Навигация
   home: 'Baş sahypa',
-  myCompany: 'Meniň kompaniýam',
   clients: 'Müşderiler',
   products: 'Önümler',
   orders: 'Sargytlar',
@@ -873,6 +873,8 @@ export default {
   addContract: 'Şertnama goş',
   editContract: 'Şertnamany redaktir et',
   noContracts: 'Şertnama ýok',
+  note: 'Bellik',
+  enterNote: 'Bellik giriziň',
   contractSaved: 'Şertnama saklandy',
   contractDeleted: 'Şertnama pozuldy',
   errorSavingContract: 'Şertnamany saklamakda ýalňyşlyk',
@@ -900,4 +902,13 @@ export default {
   transactionCategories: 'Amal kategoriýalary',
   systemCategoryProtected: 'Bu kategoriýa sistem goragyna eýe we üýtgedilip bilinmez',
   createdBy: 'Dörediji',
+  
+  // Payment types
+  paymentType: 'Töleg görnüşi',
+  
+  // Warehouse receipts
+  receiptSuccessfullyAdded: 'Giriş ýazgysy üstünlikli goşuldy',
+  errorSavingReceipt: 'Giriş ýazgysyny saklamakda ýalňyşlyk',
+  receiptSuccessfullyDeleted: 'Giriş ýazgysy üstünlikli pozuldy',
+  errorDeletingReceipt: 'Giriş ýazgysyny pozmakda ýalňyşlyk',
 }
