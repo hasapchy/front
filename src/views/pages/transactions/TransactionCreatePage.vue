@@ -224,6 +224,8 @@ export default {
         async fetchAllCategories() {
             try {
                 this.allCategories = await TransactionCategoryController.getAllItems();
+                console.log('DEBUG: Transaction categories loaded:', this.allCategories.length, this.allCategories);
+                console.log('DEBUG: First category structure:', this.allCategories[0]);
             } catch (error) {
                 console.error('ERROR: Failed to load transaction categories:', error);
                 this.allCategories = [];
