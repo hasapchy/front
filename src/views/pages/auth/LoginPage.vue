@@ -92,7 +92,8 @@ export default {
 
                 this.$router.push('/');
             } catch (error) {
-                alert(`Ошибка авторизации ${error}`);
+                const errorMessage = error.response?.data?.error || error.message || 'Ошибка авторизации';
+                alert(errorMessage);
             }
             this.loading = false;
 

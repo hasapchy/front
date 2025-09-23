@@ -3,6 +3,7 @@ import store from "@/store";
 
 import SidebarLayout from "@/views/layouts/SidebarLayout.vue";
 import BlankLayout from "@/views/layouts/BlankLayout.vue";
+import BasementLayout from "@/views/layouts/BasementLayout.vue";
 
 import LoginPage from "@/views/pages/auth/LoginPage.vue";
 import HomePage from "@/views/pages/home/HomePage.vue";
@@ -29,6 +30,10 @@ import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
 import SystemSettingsPage from "@/views/pages/settings/SystemSettingsPage.vue";
 import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
 
+// Basement pages
+import BasementLoginPage from "@/views/pages/basement/BasementLoginPage.vue";
+import BasementOrdersPage from "@/views/pages/basement/BasementOrdersPage.vue";
+import BasementOrderCreatePage from "@/views/pages/basement/BasementOrderCreatePage.vue";
 const routes = [
   {
     path: "/",
@@ -275,6 +280,39 @@ const routes = [
       },
     ],
   },
+
+  // Basement worker routes
+  {
+    path: "/basement/login",
+    name: "BasementLogin",
+    component: BasementLoginPage,
+    meta: { title: "Вход в подвал" }
+  },
+  {
+    path: "/basement",
+    component: BasementLayout,
+    meta: { requiresBasementAuth: true },
+    children: [
+      {
+        path: "orders",
+        name: "BasementOrders",
+        component: BasementOrdersPage,
+        meta: { title: "Заказы" }
+      },
+      {
+        path: "orders/create",
+        name: "BasementOrderCreate",
+        component: BasementOrderCreatePage,
+        meta: { title: "Создать заказ" }
+      },
+      {
+        path: "orders/:id/edit",
+        name: "BasementOrderEdit",
+        component: BasementOrderCreatePage,
+        meta: { title: "Редактировать заказ" }
+      }
+    ]
+  }
 ];
 
 const router = createRouter({
@@ -284,9 +322,40 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem("token");
+  const user = localStorage.getItem("user");
 
+  // Проверка для обычных пользователей
   if (to.meta.requiresAuth && !token) {
     return next("/auth/login");
+  }
+
+  // Проверка для подвальных работников
+  if (to.meta.requiresBasementAuth) {
+    if (!token) {
+      return next("/basement/login");
+    }
+    
+    // Проверяем роль пользователя
+    try {
+      const userData = JSON.parse(user || '{}');
+      if (!userData.roles || !userData.roles.includes('basement_worker')) {
+        return next("/auth/login");
+      }
+    } catch {
+      return next("/basement/login");
+    }
+  }
+
+  // Если пользователь без basement_worker роли пытается зайти в basement
+  if (to.meta.requiresBasementAuth && token) {
+    try {
+      const userData = JSON.parse(user || '{}');
+      if (!userData.roles || !userData.roles.includes('basement_worker')) {
+        return next("/auth/login"); // Редирект на основной логин
+      }
+    } catch {
+      return next("/basement/login");
+    }
   }
 
   const userPermissions = store.getters["permissions"];

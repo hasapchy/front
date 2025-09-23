@@ -15,11 +15,11 @@ api.interceptors.request.use(
     startApiCall();
     
     const token = localStorage.getItem("token");
-    const tokenExpiresAt = localStorage.getItem("tokenExpiresAt");
+    const tokenExpiresAt = localStorage.getItem("token_expires_at");
     
     if (token && tokenExpiresAt && Date.now() > parseInt(tokenExpiresAt)) {
       localStorage.removeItem("token");
-      localStorage.removeItem("tokenExpiresAt");
+      localStorage.removeItem("token_expires_at");
     }
     
     if (token) {
@@ -43,8 +43,8 @@ api.interceptors.response.use(
     
     if (error.response?.status === 401) {
       try {
-        const refreshToken = localStorage.getItem("refreshToken");
-        const refreshTokenExpiresAt = localStorage.getItem("refreshTokenExpiresAt");
+        const refreshToken = localStorage.getItem("refresh_token");
+        const refreshTokenExpiresAt = localStorage.getItem("refresh_token_expires_at");
         
         if (refreshToken && refreshTokenExpiresAt && Date.now() <= parseInt(refreshTokenExpiresAt)) {
           const { data } = await AuthController.refreshToken();
@@ -56,10 +56,10 @@ api.interceptors.response.use(
       } catch (refreshError) {
         console.error("Ошибка при обновлении токена", refreshError);
         localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("tokenExpiresAt");
-        localStorage.removeItem("refreshTokenExpiresAt");
-        localStorage.removeItem("userInfo");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("token_expires_at");
+        localStorage.removeItem("refresh_token_expires_at");
+        localStorage.removeItem("user");
         
         if (window.location.pathname !== '/auth/login') {
           window.location.href = '/auth/login';

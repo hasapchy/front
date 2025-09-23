@@ -9,6 +9,22 @@ export default {
   balance: 'Balans',
   enableSound: 'Ses aç',
   disableSound: 'Ses ýap',
+  profileSettings: 'Profil sazlamalary',
+  profilePhoto: 'Profil suraty',
+  name: 'Ady',
+  email: 'Email',
+  password: 'Açarsöz',
+  optional: 'majbur däl',
+  manageYourProfile: 'Profil maglumatlaryňy dolandyryň',
+  position: 'Wezipesi',
+  hireDate: 'Işe alnan senesi',
+  roleInformation: 'Rol maglumatlary',
+  enterNewPassword: 'Täze açarsöz giriziň',
+  enterCurrentPassword: 'Häzirki açarsöz giriziň',
+  enterName: 'Adyňyzy giriziň',
+  currentPassword: 'Häzirki açarsöz',
+  newPassword: 'Täze açarsöz',
+  editProfile: 'Profil redaktirle',
   
   // Компании
   selectCompany: 'Kompaniýa saýla',
@@ -473,7 +489,14 @@ export default {
   enterNewPassword: 'Täze açarsöz giriziň',
   confirmPassword: 'Açarsözi tassyklamak',
   generate: 'Döretmek',
-  passwordsDoNotMatch: 'Açarsözler gabat gelmeýär',
+    passwordsDoNotMatch: 'Açarsözler gabat gelmeýär',
+    currentPasswordRequired: 'Açarsöz üýtgetmek üçin häzirki açarsöz hökmany',
+    newPasswordRequired: 'Häzirki açarsöz görkezilende täze açarsöz hökmany',
+    wrongCurrentPassword: 'Nädogry häzirki açarsöz',
+    success: 'Üstünlik',
+    error: 'Ýalňyşlyk',
+    profileUpdatedSuccessfully: 'Profil üstünlikli täzelendi',
+    failedToUpdateProfile: 'Profili täzelemek mümkin bolmady',
   userStatus: 'Işjeň',
   hireDate: 'Işe giriş senesi',
   isAdmin: 'Administrator',
@@ -542,6 +565,22 @@ export default {
   toClientBalance: 'Müşderi balansyna',
   
   // Новые ключи для интернационализации
+  // Basement worker interface
+  basement: 'Yer asty',
+  worker: 'Işçi',
+  enterProjectName: 'Proýekt adyny giriziň',
+  noClient: 'Müşderi ýok',
+  startWithCreatingOrder: 'Täze sargyt döretmekden başlaň',
+  noStatus: 'Ýagdaý ýok',
+  startWithAddingClient: 'Täze müşderi goşmakdan başlaň',
+  backToOrders: 'Sargytlara dolan',
+  orderNotePlaceholder: 'Sargyt hakynda goşmaça maglumat',
+  creating: 'Döredilýär...',
+  create: 'Döret',
+  errorCreatingOrder: 'Sargyt döretmekde ýalňyşlyk',
+  productType: 'Önüm görnüşi',
+  allSubcategories: 'Ähli goşmaça kategoriýalar',
+  
   // Склады
   assignUsers: 'Ulanyjylary belle',
   errorGettingWarehouseList: 'Ammar sanawyny almakda ýalňyşlyk',
@@ -819,7 +858,7 @@ export default {
   languageChanged: 'Dil üýtgedildi',
   turkmen: 'Türkmençe',
   russian: 'Rusça',
-  accountingSystem: 'Hasap tutma sistemi',
+  accountingSystem: 'Birhasap',
   
   // Новые переводы для фильтров транзакций
   allTransactionTypes: 'Ähli tranzaksiya görnüşleri',
@@ -884,6 +923,12 @@ export default {
   enterAmount: 'Mukdary giriziň',
   selectCurrency: 'Walýuta saýlaň',
   update: 'Täzele',
+  
+  // Login form
+  enterEmail: 'Email giriziň',
+  rememberMe: 'Meni ýatda sakla',
+  login: 'Giriş',
+  enterPassword: 'Açarsöz giriziň',
   
   // Transaction Categories
   addTransactionCategory: 'Amal kategoriýasyny goş',

@@ -8,11 +8,20 @@ export class UserDto {
     this.position = data.position;
     this.isActive = Boolean(data.is_active);
     this.isAdmin = Boolean(data.is_admin);
+    this.photo = data.photo;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
 
     this.permissions = data.permissions?.map((p) => p.name) || [];
     this.companies = data.companies?.map((c) => ({ id: c.id, name: c.name })) || [];
+  }
+
+  // Метод для получения URL фото (как в ProductDto)
+  photoUrl() {
+    if (this.photo && this.photo.length > 0) {
+      return `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.photo}`;
+    }
+    return null;
   }
 
   static fromArray(users) {

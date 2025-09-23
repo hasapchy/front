@@ -18,10 +18,7 @@
                     <SoundToggle />
                     <CompanySwitcher @company-changed="onCompanyChanged" />
                     <LanguageSwitcher @language-changed="onLanguageChanged" />
-                    <span v-if="$store.state.user" class="font-semibold mr-5">{{ $store.state.user.name }}</span>
-                    <PrimaryButton :icon="'fas fa-sign-out-alt'" :onclick="logout" isLight>
-                        {{ $t('logout') }}
-                    </PrimaryButton>
+                    <UserProfileDropdown v-if="$store.state.user" />
                 </div>
             </div>
         </div>
@@ -33,20 +30,20 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import AuthController from '@/api/AuthController';
 import SettingsController from '@/api/SettingsController';
-import PrimaryButton from './buttons/PrimaryButton.vue';
 import Search from '@/views/components/app/search/Search.vue';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import CompanySwitcher from './CompanySwitcher.vue';
 import SoundToggle from './SoundToggle.vue';
+import UserProfileDropdown from './UserProfileDropdown.vue';
 import { eventBus } from '@/eventBus';
 
 export default {
     components: {
-        PrimaryButton,
         Search,
         LanguageSwitcher,
         CompanySwitcher,
         SoundToggle,
+        UserProfileDropdown,
     },
     data() {
         const route = useRoute();
@@ -82,12 +79,6 @@ export default {
     },
     
     methods: {
-        async logout() {
-            await AuthController.logout();
-            this.$store.state.user = null;
-            this.$router.push('/auth/login');
-        },
-        
         async loadSettings() {
             try {
                 const data = await SettingsController.getSettings();

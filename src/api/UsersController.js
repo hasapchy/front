@@ -16,14 +16,54 @@ const UsersController = {
     return UserDto.fromArray(data);
   },
 
-  async storeItem(payload) {
-    const { data } = await api.post("/users", payload);
-    return data;
+  async storeItem(payload, file = null) {
+    try {
+      const formData = new FormData();
+      
+      Object.keys(payload).forEach((key) => {
+        formData.append(key, payload[key]);
+      });
+      
+      if (file) {
+        formData.append("photo", file);
+      }
+
+      const { data } = await api.post("/users", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      
+      return data;
+    } catch (error) {
+      console.error("Ошибка при создании пользователя:", error);
+      throw error;
+    }
   },
 
-  async updateItem(id, payload) {
-    const { data } = await api.put(`/users/${id}`, payload);
-    return data;
+  async updateItem(id, payload, file = null) {
+    try {
+      const formData = new FormData();
+      
+      Object.keys(payload).forEach((key) => {
+        formData.append(key, payload[key]);
+      });
+      
+      if (file) {
+        formData.append("photo", file);
+      }
+
+      const { data } = await api.post(`/users/${id}`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      
+      return data;
+    } catch (error) {
+      console.error("Ошибка при обновлении пользователя:", error);
+      throw error;
+    }
   },
 
   async deleteItem(id) {
@@ -34,6 +74,36 @@ const UsersController = {
   async getAllPermissions() {
     const { data } = await api.get(`/permissions`);
     return data;
+  },
+
+  async getCurrentUser() {
+    const { data } = await api.get(`/user/current`);
+    return data;
+  },
+
+  async updateProfile(payload, file = null) {
+    try {
+      const formData = new FormData();
+      
+      Object.keys(payload).forEach((key) => {
+        formData.append(key, payload[key]);
+      });
+      
+      if (file) {
+        formData.append("photo", file);
+      }
+
+      const { data } = await api.post(`/user/profile`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      
+      return data;
+    } catch (error) {
+      console.error("Ошибка при обновлении профиля:", error);
+      throw error;
+    }
   },
 };
 

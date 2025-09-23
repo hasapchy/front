@@ -7,7 +7,7 @@ export const TokenUtils = {
    * Проверяет, истек ли access token
    */
   isAccessTokenExpired() {
-    const tokenExpiresAt = localStorage.getItem('tokenExpiresAt');
+    const tokenExpiresAt = localStorage.getItem('token_expires_at');
     if (!tokenExpiresAt) return true;
     
     // Добавляем буфер в 30 секунд для предварительного обновления
@@ -18,7 +18,7 @@ export const TokenUtils = {
    * Проверяет, истек ли refresh token
    */
   isRefreshTokenExpired() {
-    const refreshTokenExpiresAt = localStorage.getItem('refreshTokenExpiresAt');
+    const refreshTokenExpiresAt = localStorage.getItem('refresh_token_expires_at');
     if (!refreshTokenExpiresAt) return true;
     
     return Date.now() > parseInt(refreshTokenExpiresAt);
@@ -35,7 +35,7 @@ export const TokenUtils = {
    * Получает время до истечения access token в минутах
    */
   getAccessTokenTimeLeft() {
-    const tokenExpiresAt = localStorage.getItem('tokenExpiresAt');
+    const tokenExpiresAt = localStorage.getItem('token_expires_at');
     if (!tokenExpiresAt) return 0;
     
     const timeLeft = parseInt(tokenExpiresAt) - Date.now();
@@ -46,7 +46,7 @@ export const TokenUtils = {
    * Получает время до истечения refresh token в днях
    */
   getRefreshTokenTimeLeft() {
-    const refreshTokenExpiresAt = localStorage.getItem('refreshTokenExpiresAt');
+    const refreshTokenExpiresAt = localStorage.getItem('refresh_token_expires_at');
     if (!refreshTokenExpiresAt) return 0;
     
     const timeLeft = parseInt(refreshTokenExpiresAt) - Date.now();
@@ -58,10 +58,10 @@ export const TokenUtils = {
    */
   clearAuthData() {
     localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('tokenExpiresAt');
-    localStorage.removeItem('refreshTokenExpiresAt');
-    localStorage.removeItem('userInfo');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('token_expires_at');
+    localStorage.removeItem('refresh_token_expires_at');
+    localStorage.removeItem('user');
   },
 
   /**
@@ -69,7 +69,7 @@ export const TokenUtils = {
    */
   isAuthenticated() {
     const token = localStorage.getItem('token');
-    const tokenExpiresAt = localStorage.getItem('tokenExpiresAt');
+    const tokenExpiresAt = localStorage.getItem('token_expires_at');
     
     return token && tokenExpiresAt && Date.now() <= parseInt(tokenExpiresAt);
   },
@@ -78,8 +78,8 @@ export const TokenUtils = {
    * Получает информацию о пользователе
    */
   getUserInfo() {
-    const userInfo = localStorage.getItem('userInfo');
-    return userInfo ? JSON.parse(userInfo) : null;
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
   },
 
   /**

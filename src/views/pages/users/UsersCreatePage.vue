@@ -8,6 +8,28 @@
             " :key="`tabs-${$i18n.locale}`" />
         <div>
             <div v-show="currentTab === 'info'">
+                <!-- Photo Upload -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('profilePhoto') }}</label>
+                    <div>
+                        <input 
+                            type="file" 
+                            @change="onFileChange" 
+                            ref="imageInput"
+                        >
+                    </div>
+                    <div v-if="selected_image" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
+                        <img :src="selected_image" alt="Selected Image" class="w-32 h-32 object-cover rounded">
+                        <button @click="() => { this.selected_image = null; this.image = null }"
+                            class="mt-2 text-red-500 text-sm">{{ $t('removeImage') }}</button>
+                    </div>
+                    <div v-else-if="editingItem?.photo && editingItem.photo !== ''" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
+                        <img :src="getUserPhotoSrc(editingItem)" alt="Current Photo" class="w-32 h-32 object-cover rounded">
+                        <button @click="() => { this.editingItem.photo = '' }"
+                            class="mt-2 text-red-500 text-sm">{{ $t('removeImage') }}</button>
+                    </div>
+                </div>
+
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('name') }}</label>
                     <input 
@@ -192,6 +214,7 @@ import UsersController from '@/api/UsersController';
 import CompaniesController from '@/api/CompaniesController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import userPhotoMixin from '@/mixins/userPhotoMixin';
 
 import {
     permissionIcon,
@@ -204,7 +227,7 @@ import TabBar from '@/views/components/app/forms/TabBar.vue';
 import AuthController from '@/api/AuthController';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, userPhotoMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, TabBar },
     props: {
@@ -235,6 +258,9 @@ export default {
             showPassword: false,
             showConfirmPassword: false,
             showNewPassword: false,
+            selected_image: null,
+            image: '',
+            hasNewFile: false,
             tabs: [
                 { name: 'info', label: 'information' },
                 { name: 'permissions', label: 'permissions' }
@@ -305,8 +331,19 @@ export default {
                 is_active: this.form.is_active,
                 is_admin: this.form.is_admin,
                 companies: [...this.form.companies],
-                permissions: [...this.form.permissions]
+                permissions: [...this.form.permissions],
+                selected_image: this.selected_image,
+                image: this.image
             };
+        },
+        onFileChange(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.selected_image = URL.createObjectURL(file);
+                this.hasNewFile = true;
+            } else {
+                this.hasNewFile = false;
+            }
         },
         async fetchPermissions() {
             this.allPermissions = await UsersController.getAllPermissions();
@@ -332,10 +369,16 @@ export default {
             this.form.is_admin = false;
             this.form.companies = [];
             this.form.permissions = [];
+            this.selected_image = null;
+            this.image = null;
+            this.hasNewFile = false;
             this.editingItemId = null;
             this.showPassword = false;
             this.showConfirmPassword = false;
             this.showNewPassword = false;
+            if (this.$refs.imageInput) {
+                this.$refs.imageInput.value = null;
+            }
             this.resetFormChanges();
         },
         isGroupChecked(group) {
@@ -396,25 +439,51 @@ export default {
                         hire_date: this.form.hire_date,
                         is_active: this.form.is_active,
                         is_admin: this.form.is_admin,
-                        permissions: this.form.permissions,
-                        companies: this.form.companies
+                        permissions: Array.isArray(this.form.permissions) ? this.form.permissions : this.form.permissions.split(','),
+                        companies: Array.isArray(this.form.companies) ? this.form.companies : this.form.companies.split(',').filter(c => c.trim() !== '')
                     };
                     
                     if (this.form.newPassword) {
                         updateData.password = this.form.newPassword;
                     }
                     
-                    savedUser = await UsersController.updateItem(this.editingItemId, updateData);
+                    if (this.editingItem && this.editingItem.photo === '') {
+                        updateData.photo = '';
+                    }
+                    
+                    const fileToUpload = this.hasNewFile ? this.$refs.imageInput?.files[0] : null;
+                    savedUser = await UsersController.updateItem(this.editingItemId, updateData, fileToUpload);
                 } else {
-                    savedUser = await UsersController.storeItem(this.form);
+                    const createData = {
+                        name: this.form.name,
+                        email: this.form.email,
+                        password: this.form.password,
+                        position: this.form.position,
+                        hire_date: this.form.hire_date,
+                        is_active: this.form.is_active,
+                        is_admin: this.form.is_admin,
+                        permissions: Array.isArray(this.form.permissions) ? this.form.permissions : this.form.permissions.split(','),
+                        companies: Array.isArray(this.form.companies) ? this.form.companies : this.form.companies.split(',').filter(c => c.trim() !== '')
+                    };
+                    
+                    const fileToUpload = this.hasNewFile ? this.$refs.imageInput?.files[0] : null;
+                    savedUser = await UsersController.storeItem(createData, fileToUpload);
                 }
 
                 const currentUser = this.$store.state.user;
-                if (savedUser.id === currentUser.id) {
-                    const updatedUser = await AuthController.getUser();
-                    this.$store.dispatch('setUser', updatedUser);
-                    this.$store.dispatch('setPermissions', updatedUser.permissions);
+                if (savedUser.user && savedUser.user.id === currentUser.id) {
+                    this.$store.commit('SET_USER', savedUser.user);
                 }
+
+                if (savedUser.user && savedUser.user.photo) {
+                    this.selected_image = this.getUserPhotoSrc(savedUser.user);
+                    this.image = savedUser.user.photo;
+                } else {
+                    this.selected_image = null;
+                    this.image = '';
+                }
+                
+                this.hasNewFile = false;
 
                 this.$emit('saved');
             } catch (e) {
@@ -451,6 +520,7 @@ export default {
         changeTab(tab) {
             this.currentTab = tab;
         },
+        
         async deleteItem() {
             this.closeDeleteDialog();
             if (!this.editingItemId) return;
@@ -483,6 +553,14 @@ export default {
                     this.form.companies = newEditingItem.companies?.map(c => c.id) || [];
                     this.form.permissions = newEditingItem.permissions || [];
                     this.editingItemId = newEditingItem.id || null;
+                    
+                    if (newEditingItem.photo) {
+                        this.selected_image = this.getUserPhotoSrc(newEditingItem);
+                    } else {
+                        this.selected_image = null;
+                        this.image = '';
+                    }
+                    this.hasNewFile = false;
                 } else {
                     if (oldEditingItem !== undefined) {
                         this.clearForm();

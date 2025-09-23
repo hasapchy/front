@@ -159,8 +159,8 @@ export default createStore({
       commit('UPDATE_TOKEN_EXPIRATION', { accessTokenExpiresAt, refreshTokenExpiresAt });
     },
     checkTokenStatus({ commit }) {
-      const accessTokenExpiresAt = localStorage.getItem('tokenExpiresAt');
-      const refreshTokenExpiresAt = localStorage.getItem('refreshTokenExpiresAt');
+      const accessTokenExpiresAt = localStorage.getItem('token_expires_at');
+      const refreshTokenExpiresAt = localStorage.getItem('refresh_token_expires_at');
       
       if (accessTokenExpiresAt && refreshTokenExpiresAt) {
         const now = Date.now();

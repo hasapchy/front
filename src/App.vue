@@ -32,8 +32,8 @@ export default {
                 await this.$store.dispatch('loadCurrencies');
                 
                 // Обновляем информацию о токенах в store
-                const tokenExpiresAt = localStorage.getItem('tokenExpiresAt');
-                const refreshTokenExpiresAt = localStorage.getItem('refreshTokenExpiresAt');
+                const tokenExpiresAt = localStorage.getItem('token_expires_at');
+                const refreshTokenExpiresAt = localStorage.getItem('refresh_token_expires_at');
                 
                 if (tokenExpiresAt && refreshTokenExpiresAt) {
                     this.$store.dispatch('updateTokenExpiration', {

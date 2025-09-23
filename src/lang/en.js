@@ -8,6 +8,22 @@ export default {
   info: 'Information',
   enableSound: 'Enable Sound',
   disableSound: 'Disable Sound',
+  profileSettings: 'Profile Settings',
+  profilePhoto: 'Profile Photo',
+  name: 'Name',
+  email: 'Email',
+  password: 'Password',
+  optional: 'optional',
+  manageYourProfile: 'Manage your profile data',
+  position: 'Position',
+  hireDate: 'Hire Date',
+  roleInformation: 'Role Information',
+  enterNewPassword: 'Enter new password',
+  enterCurrentPassword: 'Enter current password',
+  enterName: 'Enter your name',
+  currentPassword: 'Current password',
+  newPassword: 'New password',
+  editProfile: 'Edit Profile',
   
   // Companies
   selectCompany: 'Select Company',
@@ -80,9 +96,13 @@ export default {
   note: 'Note',
   products: 'Products',
   orderAmount: 'Order Amount',
+  orderNumber: 'Order Number',
   dateUser: 'Date/User',
   client: 'Client',
   notSpecified: 'Not specified',
+  
+  // System
+  accountingSystem: 'Birhasap',
   
   // Company settings
   companyName: 'Company Name',
@@ -108,6 +128,13 @@ export default {
     confirmPassword: 'Confirm Password',
     generate: 'Generate',
     passwordsDoNotMatch: 'Passwords do not match',
+    currentPasswordRequired: 'Current password is required to change password',
+    newPasswordRequired: 'New password is required when current password is provided',
+    wrongCurrentPassword: 'Wrong current password',
+    success: 'Success',
+    error: 'Error',
+    profileUpdatedSuccessfully: 'Profile updated successfully',
+    failedToUpdateProfile: 'Failed to update profile',
   userStatus: 'Active',
   hireDate: 'Hire Date',
   isAdmin: 'Administrator',
@@ -173,6 +200,27 @@ export default {
   enterAmount: 'Enter amount',
   selectCurrency: 'Select currency',
   update: 'Update',
+  
+  // Basement worker interface
+  basement: 'Basement',
+  worker: 'Worker',
+  enterProjectName: 'Enter project name',
+  noClient: 'No client',
+  startWithCreatingOrder: 'Start by creating a new order',
+  noStatus: 'No status',
+  startWithAddingClient: 'Start by adding a new client',
+  backToOrders: 'Back to Orders',
+  orderNotePlaceholder: 'Additional information about the order',
+  creating: 'Creating...',
+  create: 'Create',
+  errorCreatingOrder: 'Error creating order',
+  productType: 'Product Type',
+  allSubcategories: 'All Subcategories',
+  
+  // Login form
+  enterEmail: 'Enter email',
+  rememberMe: 'Remember me',
+  login: 'Login',
   
   // Transaction Categories
   addTransactionCategory: 'Add Transaction Category',

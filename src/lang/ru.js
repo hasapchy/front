@@ -13,6 +13,22 @@ export default {
   contracts: 'Контракты',
   enableSound: 'Включить звук',
   disableSound: 'Выключить звук',
+  profileSettings: 'Настройки профиля',
+  profilePhoto: 'Фото профиля',
+  name: 'Имя',
+  email: 'Email',
+  password: 'Пароль',
+  optional: 'необязательно',
+  manageYourProfile: 'Управляйте своими данными профиля',
+  position: 'Должность',
+  hireDate: 'Дата найма',
+  roleInformation: 'Информация о роли',
+  enterNewPassword: 'Введите новый пароль',
+  enterCurrentPassword: 'Введите текущий пароль',
+  enterName: 'Введите ваше имя',
+  currentPassword: 'Текущий пароль',
+  newPassword: 'Новый пароль',
+  editProfile: 'Редактировать профиль',
   
   // Компании
   selectCompany: 'Выберите компанию',
@@ -90,7 +106,7 @@ export default {
   languageChanged: 'Язык изменен',
   turkmen: 'Туркменский',
   russian: 'Русский',
-  accountingSystem: 'Система учета',
+  accountingSystem: 'Birhasap',
   
   // Действия
   add: 'Добавить',
@@ -552,6 +568,13 @@ export default {
     confirmPassword: 'Подтвердите пароль',
     generate: 'Сгенерировать',
     passwordsDoNotMatch: 'Пароли не совпадают',
+    currentPasswordRequired: 'Текущий пароль обязателен для смены пароля',
+    newPasswordRequired: 'Новый пароль обязателен при указании текущего пароля',
+    wrongCurrentPassword: 'Неверный текущий пароль',
+    success: 'Успех',
+    error: 'Ошибка',
+    profileUpdatedSuccessfully: 'Профиль успешно обновлен',
+    failedToUpdateProfile: 'Не удалось обновить профиль',
   userStatus: 'Активен',
   hireDate: 'Дата приема на работу',
   isAdmin: 'Администратор',
@@ -618,12 +641,29 @@ export default {
   order: 'Заказ',
   addOrder: 'Добавить заказ',
   client: 'Клиент',
+  date: 'Дата',
   clientType: 'Тип клиента',
   active: 'Активен',
   problemClient: 'Проблемный клиент',
   toClientBalance: 'В баланс клиента',
   
   // Новые ключи для интернационализации
+  // Basement worker interface
+  basement: 'Подвал',
+  worker: 'Работник',
+  enterProjectName: 'Введите название проекта',
+  noClient: 'Без клиента',
+  startWithCreatingOrder: 'Начните с создания нового заказа',
+  noStatus: 'Без статуса',
+  startWithAddingClient: 'Начните с добавления нового клиента',
+  backToOrders: 'Назад к заказам',
+  orderNotePlaceholder: 'Дополнительная информация о заказе',
+  creating: 'Создание...',
+  create: 'Создать',
+  errorCreatingOrder: 'Ошибка создания заказа',
+  productType: 'Тип продукта',
+  allSubcategories: 'Все подкатегории',
+  
   // Склады
   assignUsers: 'Назначить пользователей',
   errorGettingWarehouseList: 'Ошибка получения списка складов',
@@ -758,8 +798,9 @@ export default {
   errorUpdatingCategory: 'Ошибка обновления категории',
   
   // Фразы для заказов
-  createOrder: 'Заказ',
-  editOrder: 'Заказ',
+  createOrder: 'Создать заказ',
+  editOrder: 'Редактировать заказ',
+  updateOrder: 'Обновить заказ',
   orderCreated: 'Заказ создан',
   orderAdded: 'Заказ добавлен',
   orderUpdated: 'Заказ обновлен',
@@ -1009,6 +1050,9 @@ export default {
   noOrdersSelected: 'Заказы не выбраны',
   
   // Missing translations
+  enterEmail: 'Введите email',
+  rememberMe: 'Запомнить меня',
+  login: 'Войти',
   enterPassword: 'Введите пароль',
   cash: 'Касса',
   system: 'Система',
@@ -1060,4 +1104,6 @@ export default {
   enterAmount: 'Введите сумму',
   selectCurrency: 'Выберите валюту',
   update: 'Обновить',
+  notSpecified: 'Не указано',
+  noProducts: 'Нет товаров',
 }
