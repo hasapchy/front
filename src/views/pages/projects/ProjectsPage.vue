@@ -261,41 +261,24 @@ export default {
             this.editingItem = item;
         },
         async handleSaved() {
-            // После создания/обновления проекта обновляем список
-            this.fetchItems();
             this.showNotification(this.savedSuccessText, "", false);
             this.closeModal();
             
-            // Если это было создание нового проекта (editingItem был null), 
-            // устанавливаем фильтр на статус "Новый"
+            // Очищаем фильтр клиента при создании нового проекта
             if (!this.editingItem) {
-                console.log('Новый проект создан, ищем статус "Новый"', this.statuses);
-                
-                // Убеждаемся, что статусы загружены
-                if (this.statuses.length === 0) {
-                    console.log('Статусы не загружены, загружаем их...');
-                    await this.fetchProjectStatuses();
-                }
-                
-                // Сначала ищем по ID = 1
-                let newStatus = this.statuses.find(status => status.id === 1);
-                // Если не найден по ID, ищем по имени
-                if (!newStatus) {
-                    newStatus = this.statuses.find(status => status.name === 'Новый');
-                }
-                
-                if (newStatus) {
-                    console.log('Устанавливаем фильтр на статус:', newStatus);
-                    this.statusFilter = newStatus.id;
-                    // Очищаем фильтр клиента, чтобы показать все проекты со статусом "Новый"
-                    this.selectedClient = null;
-                    this.clientFilter = '';
-                    this.fetchItems(); // Обновляем список с новым фильтром
-                } else {
-                    console.warn('Статус "Новый" не найден в списке статусов');
-                }
+                this.selectedClient = null;
+                this.clientFilter = '';
             }
-        }
+            
+            // Обновляем список
+            this.fetchItems();
+        },
+        async handleDeleted() {
+            // После удаления проекта обновляем список
+            this.fetchItems();
+            this.showNotification(this.deletedSuccessText, "", false);
+            this.closeModal();
+        },
     },
     watch: {
         clientSearch: {

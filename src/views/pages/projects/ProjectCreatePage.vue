@@ -46,14 +46,12 @@
                 <div class="flex justify-between items-center mb-2">
                     <label class="required">{{ $t('assignUsers') }}</label>
                     <div v-if="users != null && users.length > 0" class="flex gap-2">
-                        <button type="button" @click="selectAllUsers" 
-                                class="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        <PrimaryButton :onclick="selectAllUsers" :is-info="true" class="text-xs py-1 px-2">
                             Выбрать всех
-                        </button>
-                        <button type="button" @click="deselectAllUsers" 
-                                class="text-xs px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600">
+                        </PrimaryButton>
+                        <PrimaryButton :onclick="deselectAllUsers" :is-light="true" class="text-xs py-1 px-2">
                             Снять всех
-                        </button>
+                        </PrimaryButton>
                     </div>
                 </div>
                 <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
@@ -64,12 +62,7 @@
                         <span class="text-black">{{ user.name }}</span>
                     </label>
                 </div>
-                <!-- Показываем информацию о том, что все пользователи выбраны по умолчанию -->
-                <div v-if="!editingItem && selectedUsers.length === users.length && users.length > 0" 
-                     class="mt-2 text-sm text-blue-600 bg-blue-50 p-2 rounded">
-                    <i class="fas fa-info-circle mr-1"></i>
-                    Все пользователи выбраны по умолчанию для нового проекта
-                </div>
+                
             </div>
         </div>
         <div v-show="currentTab === 'files' && editingItem">
