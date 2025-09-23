@@ -53,7 +53,7 @@ const UsersController = {
         formData.append("photo", file);
       }
 
-      const { data } = await api.post(`/users/${id}`, formData, {
+      const { data } = await api.put(`/users/${id}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

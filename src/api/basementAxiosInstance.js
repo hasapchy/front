@@ -1,5 +1,6 @@
 import axios from "axios";
 import { BasementAuthController } from "./BasementAuthController";
+import store from "@/store";
 
 // Создаем инстанс axios для basement
 const basementApi = axios.create({
@@ -14,6 +15,7 @@ basementApi.interceptors.request.use(
     const token = localStorage.getItem("token");
     const tokenExpiresAt = localStorage.getItem("token_expires_at");
     
+    
     // Проверяем, не истек ли токен
     if (token && tokenExpiresAt && Date.now() > parseInt(tokenExpiresAt)) {
       localStorage.removeItem("token");
@@ -26,6 +28,12 @@ basementApi.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Добавляем company_id в заголовок, если он есть в store
+    if (store && store.getters.currentCompanyId) {
+      config.headers['X-Company-ID'] = store.getters.currentCompanyId;
+    }
+    
     return config;
   },
   (error) => {
