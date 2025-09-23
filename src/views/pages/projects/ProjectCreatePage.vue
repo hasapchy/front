@@ -176,10 +176,25 @@ export default {
                 this.fetchCurrencies()
             ]);
             
+            
             this.saveInitialState();
         });
     },
     methods: {
+        clearForm() {
+            // Сбрасываем форму и таб на первый (info)
+            this.name = '';
+            this.budget = 0;
+            this.currencyId = '';
+            this.exchangeRate = null;
+            this.date = new Date().toISOString().substring(0, 16);
+            this.description = '';
+            this.selectedClient = null;
+            this.selectedUsers = [];
+            this.editingItemId = null;
+            this.currentTab = 'info';
+            this.resetFormChanges(); // Сбрасываем состояние изменений
+        },
         changeTab(tabName) {
             if ((tabName === 'files' || tabName === 'balance' || tabName === 'contracts') && !this.editingItem) {
                 return;
@@ -199,7 +214,9 @@ export default {
             };
         },
         async fetchCurrencies() {
-            this.currencies = await AppController.getCurrencies();
+            // Используем данные из store
+            await this.$store.dispatch('loadCurrencies');
+            this.currencies = this.$store.getters.currencies;
         },
         async onCurrencyChange() {
             if (this.currencyId) {
@@ -286,18 +303,6 @@ export default {
                 this.$emit('deleted-error', this.getApiErrorMessage(error));
             }
             this.deleteLoading = false;
-        },
-        clearForm() {
-            this.name = '';
-            this.budget = 0;
-            this.currencyId = '';
-            this.exchangeRate = null;
-            this.date = new Date().toISOString().substring(0, 16);
-            this.description = '';
-            this.selectedClient = null;
-            this.selectedUsers = [];
-            this.editingItemId = null;
-            this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
             this.deleteDialog = true;
@@ -396,6 +401,7 @@ export default {
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
+                    // Заполняем форму данными проекта
                     this.name = newEditingItem.name || '';
                     this.budget = newEditingItem.budget || 0;
                     this.currencyId = newEditingItem.currencyId || '';
@@ -406,11 +412,13 @@ export default {
                     this.description = newEditingItem.description || '';
                     this.selectedClient = newEditingItem.client || null;
                     this.selectedUsers = newEditingItem.getUserIds() || [];
-
                     this.editingItemId = newEditingItem.id || null;
+                    
+                    // Всегда сбрасываем таб на info при открытии проекта
+                    this.currentTab = 'info';
                 } else {
+                    // Очищаем форму для создания нового проекта
                     this.clearForm();
-                    this.currentTab = "info";
                 }
                 this.$nextTick(() => {
                     this.saveInitialState();

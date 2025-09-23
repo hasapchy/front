@@ -111,6 +111,7 @@ import ClientDto from '@/dto/client/ClientDto';
 import AppController from '@/api/AppController';
 import CashRegisterController from '@/api/CashRegisterController';
 import TransactionController from '@/api/TransactionController';
+import TransactionCategoryController from '@/api/TransactionCategoryController';
 import ClientController from '@/api/ClientController';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
@@ -140,9 +141,7 @@ export default {
             projectId: this.editingItem ? this.editingItem.projectId : '',
             date: (() => {
                 if (this.editingItem && this.editingItem.date) {
-                    console.log('Original date:', this.editingItem.date);
                     const formatted = this.editingItem.date.substring(0, 16);
-                    console.log('Formatted date:', formatted);
                     return formatted;
                 }
                 return new Date().toISOString().substring(0, 16);
@@ -170,8 +169,13 @@ export default {
             }
         },
         filteredCategories() {
-            const wanted = this.type === 'income' ? 1 : 0;
-            return this.allCategories.filter(cat => cat.type === wanted);
+            const wanted = this.type === 'income' ? 1 : 0; // 1 для income, 0 для outcome
+            const filtered = this.allCategories.filter(cat => cat.type === wanted);
+            console.log('DEBUG: filteredCategories - type:', this.type, 'wanted:', wanted, 'total:', this.allCategories.length, 'filtered:', filtered.length);
+            console.log('DEBUG: Sample categories types:', this.allCategories.slice(0, 3).map(cat => ({id: cat.id, name: cat.name, type: cat.type})));
+            const category16 = this.allCategories.find(cat => cat.id === 16);
+            console.log('DEBUG: Category ID=16 structure:', category16);
+            return filtered;
         }
     },
     mounted() {
@@ -182,6 +186,9 @@ export default {
                 this.fetchAllProjects(),
                 this.fetchAllCashRegisters()
             ]);
+            
+            console.log('DEBUG: TransactionCreatePage mounted - editingItemId:', this.editingItemId, 'disabled:', !!this.editingItemId);
+            console.log('DEBUG: Clients in store:', this.$store.getters.clients.length);
             
             if (!this.editingItem) {
                 if (this.initialClient) {
@@ -210,17 +217,29 @@ export default {
             };
         },
         async fetchCurrencies() {
-            this.currencies = await AppController.getCurrencies();
+            // Используем данные из store
+            await this.$store.dispatch('loadCurrencies');
+            this.currencies = this.$store.getters.currencies;
         },
         async fetchAllCategories() {
-            this.allCategories = await AppController.getTransactionCategories();
+            try {
+                this.allCategories = await TransactionCategoryController.getAllItems();
+                console.log('DEBUG: Transaction categories loaded:', this.allCategories.length, this.allCategories);
+                console.log('DEBUG: First category structure:', this.allCategories[0]);
+            } catch (error) {
+                console.error('ERROR: Failed to load transaction categories:', error);
+                this.allCategories = [];
+            }
         },
         async fetchAllProjects() {
-            // Получаем только проекты, к которым у пользователя есть доступ
-            this.allProjects = await ProjectController.getAllItems();
+            // Используем данные из store
+            await this.$store.dispatch('loadProjects');
+            this.allProjects = this.$store.getters.projects;
         },
         async fetchAllCashRegisters() {
-            this.allCashRegisters = await CashRegisterController.getAllItems();
+            // Используем данные из store
+            await this.$store.dispatch('loadCashRegisters');
+            this.allCashRegisters = this.$store.getters.cashRegisters;
             if (this.allCashRegisters.length && !this.cashId && !this.defaultCashId) {
                 this.cashId = this.allCashRegisters[0].id;
             }
@@ -312,7 +331,7 @@ export default {
                     const updatedClient = await ClientController.getItem(this.selectedClient.id);
                     this.selectedClient = updatedClient;
                 } catch (error) {
-                    console.error('Ошибка при обновлении баланса клиента:', error);
+                    // Ошибка при обновлении баланса клиента
                 }
             }
         },
@@ -393,7 +412,7 @@ export default {
                 if (newType === "income") {
                     this.categoryId = 4; // Устанавливаем id = 4 для типа income
                 } else if (newType === "outcome") {
-                    this.categoryId = 16;
+                    this.categoryId = 14;
                 } else {
                     this.categoryId = "";
                 }

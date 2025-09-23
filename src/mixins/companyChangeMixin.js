@@ -23,8 +23,6 @@ export default {
   
   methods: {
     async onCompanyChanged(companyId) {
-      console.log('Company changed to:', companyId);
-      
       // Перезагружаем данные страницы
       if (this.fetchItems) {
         await this.fetchItems();

@@ -31,6 +31,7 @@ export default {
   editProfile: 'Редактировать профиль',
   
   // Компании
+  myCompany: 'Моя компания',
   selectCompany: 'Выберите компанию',
   errorLoadingCompanies: 'Ошибка загрузки компаний',
   errorChangingCompany: 'Ошибка смены компании',
@@ -1091,6 +1092,8 @@ export default {
   editContract: 'Редактировать контракт',
   contractNumber: 'Номер контракта',
   enterContractNumber: 'Введите номер контракта',
+  note: 'Примечание',
+  enterNote: 'Введите примечание',
   contractReturned: 'Контракт возвращен',
   noContracts: 'Нет контрактов',
   contractSaved: 'Контракт сохранен',
@@ -1106,4 +1109,13 @@ export default {
   update: 'Обновить',
   notSpecified: 'Не указано',
   noProducts: 'Нет товаров',
+  
+  // Payment types
+  paymentType: 'Тип оплаты',
+  
+  // Warehouse receipts
+  receiptSuccessfullyAdded: 'Оприходование успешно добавлено',
+  errorSavingReceipt: 'Ошибка сохранения оприходования',
+  receiptSuccessfullyDeleted: 'Оприходование успешно удалено',
+  errorDeletingReceipt: 'Ошибка удаления оприходования',
 }

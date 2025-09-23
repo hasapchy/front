@@ -11,17 +11,17 @@ export default class OrderStatusController {
         new OrderStatusDto(
           item.id,
           item.name,
-          // item.category_id,
-          // item.category
-          //   ? new OrderStatusCategoryDto(
-          //       item.category.id,
-          //       item.category.name,
-          //       item.category.color,
-          //       item.category.user_id,
-          //       item.category.created_at,
-          //       item.category.updated_at
-          //     )
-          //   : null,
+          item.category_id,
+          item.category
+            ? new OrderStatusCategoryDto(
+                item.category.id,
+                item.category.name,
+                item.category.color,
+                item.category.user_id,
+                item.category.created_at,
+                item.category.updated_at
+              )
+            : null,
           item.created_at,
           item.updated_at
         )
@@ -36,17 +36,17 @@ export default class OrderStatusController {
         new OrderStatusDto(
           item.id,
           item.name,
-          // item.category_id,
-          // item.category
-          //   ? new OrderStatusCategoryDto(
-          //       item.category.id,
-          //       item.category.name,
-          //       item.category.color,
-          //       item.category.user_id,
-          //       item.category.created_at,
-          //       item.category.updated_at
-          //     )
-          //   : null,
+          item.category_id,
+          item.category
+            ? new OrderStatusCategoryDto(
+                item.category.id,
+                item.category.name,
+                item.category.color,
+                item.category.user_id,
+                item.category.created_at,
+                item.category.updated_at
+              )
+            : null,
           item.created_at,
           item.updated_at
         )

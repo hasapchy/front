@@ -93,12 +93,13 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import { markRaw } from 'vue';
 import debounce from 'lodash.debounce';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, tableTranslationMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell },
     data() {
         return {
@@ -167,7 +168,9 @@ export default {
         },
         async fetchClients() {
             try {
-                this.clients = await ClientController.getAllItems();
+                // Используем данные из store
+                await this.$store.dispatch('loadClients');
+                this.clients = this.$store.getters.clients;
             } catch (error) {
                 console.error('Error fetching clients:', error);
             }
@@ -250,6 +253,11 @@ export default {
                 this.endDate = null;
             }
             this.fetchItems();
+        },
+        showModal(item = null) {
+            this.modalDialog = true;
+            this.showTimeline = true;
+            this.editingItem = item;
         }
     },
     watch: {

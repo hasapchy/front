@@ -190,7 +190,9 @@ export default {
             }
         },
         async fetchAllCashRegisters() {
-            this.allCashRegisters = await CashRegisterController.getAllItems();
+            // Используем данные из store
+            await this.$store.dispatch('loadCashRegisters');
+            this.allCashRegisters = this.$store.getters.cashRegisters;
         },
         itemMapper(i, c) {
             switch (c) {

@@ -22,6 +22,19 @@ export default class ProductController {
       );
       const data = response.data;
       const items = data.items.map((item) => {
+        // Проверяем различные возможные поля для остатков из таблицы warehouse_stocks
+        let stock_quantity = item.stock_quantity;
+        if (stock_quantity === undefined || stock_quantity === null) {
+          // Проверяем альтернативные названия полей для остатков по складам
+          stock_quantity = item.warehouse_quantity || 
+                          item.quantity_on_warehouse || 
+                          item.warehouse_stock || 
+                          item.warehouse_stock_quantity ||
+                          item.current_stock || 
+                          item.stock_on_warehouse ||
+                          item.quantity || 0;
+        }
+        
         return new ProductDto({
           id: item.id,
           type: item.type,
@@ -32,7 +45,7 @@ export default class ProductController {
           category_id: item.category_id,
           category_name: item.category_name,
           categories: item.categories || [],
-          stock_quantity: item.stock_quantity,
+          stock_quantity: stock_quantity,
           unit_id: item.unit_id,
           unit_name: item.unit_name,
           unit_short_name: item.unit_short_name,
@@ -80,6 +93,19 @@ export default class ProductController {
       const data = response.data;
       // Преобразуем полученные данные в DTO для поиска (только необходимые поля)
       const items = data.map((item) => {
+        // Проверяем различные возможные поля для остатков из таблицы warehouse_stocks
+        let stock_quantity = item.stock_quantity;
+        if (stock_quantity === undefined || stock_quantity === null) {
+          // Проверяем альтернативные названия полей для остатков по складам
+          stock_quantity = item.warehouse_quantity || 
+                          item.quantity_on_warehouse || 
+                          item.warehouse_stock || 
+                          item.warehouse_stock_quantity ||
+                          item.current_stock || 
+                          item.stock_on_warehouse ||
+                          item.quantity || 0;
+        }
+        
         return new ProductSearchDto({
           id: item.id,
           type: item.type,
@@ -90,7 +116,7 @@ export default class ProductController {
           category_id: item.category_id,
           category_name: item.category_name,
           categories: item.categories || [],
-          stock_quantity: item.stock_quantity,
+          stock_quantity: stock_quantity,
           unit_id: item.unit_id,
           unit_name: item.unit_name,
           unit_short_name: item.unit_short_name,

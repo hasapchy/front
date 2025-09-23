@@ -27,21 +27,21 @@ export default class TransactionCategoryController {
     );
   }
 
-  static async getAllItems() {
-    const response = await api.get(`/transaction_categories/all`);
-    return response.data.map(
-      (item) =>
-        new TransactionCategoryDto({
-          id: item.id,
-          name: item.name,
-          type: item.type,
-          user_id: item.user_id,
-          user_name: item.user_name,
-          created_at: item.created_at,
-          updated_at: item.updated_at
-        })
-    );
-  }
+    static async getAllItems() {
+        const response = await api.get(`/transaction_categories/all`);
+        return response.data.map(
+            (item) =>
+                new TransactionCategoryDto({
+                    id: item.id,
+                    name: item.name,
+                    type: item.type,
+                    user_id: item.user_id,
+                    user_name: item.user_name,
+                    created_at: item.created_at,
+                    updated_at: item.updated_at
+                })
+        );
+    }
 
   static async storeItem(item) {
     const { data } = await api.post("/transaction_categories", item);

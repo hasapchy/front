@@ -114,7 +114,9 @@ export default {
             this.allCategories = await CategoryController.getAllItems();
         },
         async fetchAllWarehouses() {
-            this.allWarehouses = await WarehouseController.getAllItems();
+            // Используем данные из store
+            await this.$store.dispatch('loadWarehouses');
+            this.allWarehouses = this.$store.getters.warehouses;
         },
         itemMapper(i, c) {
             switch (c) {

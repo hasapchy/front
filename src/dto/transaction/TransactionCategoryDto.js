@@ -10,11 +10,11 @@ export default class TransactionCategoryDto {
     }
 
     typeClass() {
-        return this.type === 1 ? '✅' : '🔺';
+        return this.type ? '✅' : '🔺';
     }
 
     typeText() {
-        return this.type === 1 ? 'Приход' : 'Расход';
+        return this.type ? 'Приход' : 'Расход';
     }
 
     formatCreatedAt() {

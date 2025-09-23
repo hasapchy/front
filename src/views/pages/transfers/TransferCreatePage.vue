@@ -120,10 +120,14 @@ export default {
             };
         },
         async fetchCurrencies() {
-            this.currencies = await AppController.getCurrencies();
+            // Используем данные из store
+            await this.$store.dispatch('loadCurrencies');
+            this.currencies = this.$store.getters.currencies;
         },
         async fetchAllCashRegisters() {
-            this.allCashRegisters = await CashRegisterController.getAllItems();
+            // Используем данные из store
+            await this.$store.dispatch('loadCashRegisters');
+            this.allCashRegisters = this.$store.getters.cashRegisters;
         },
         async save() {
             this.saveLoading = true;

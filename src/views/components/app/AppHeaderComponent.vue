@@ -1,7 +1,6 @@
 <template>
     <div class="shadow-sm px-4 py-1.5 mb-5 bg-white rounded">
-        <div class="container">
-            <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between">
                 <div class="flex items-end gap-6">
                     <h1 class="text-xl font-semibold">{{ displayTitle }}</h1>
 
@@ -21,7 +20,6 @@
                     <UserProfileDropdown v-if="$store.state.user" />
                 </div>
             </div>
-        </div>
     </div>
 </template>
 
@@ -29,7 +27,7 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import AuthController from '@/api/AuthController';
-import SettingsController from '@/api/SettingsController';
+import PrimaryButton from './buttons/PrimaryButton.vue';
 import Search from '@/views/components/app/search/Search.vue';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import CompanySwitcher from './CompanySwitcher.vue';
@@ -61,31 +59,16 @@ export default {
         return {
             title,
             binded,
-            showSearch,
-            settings: {
-                company_name: '',
-                company_logo: ''
-            }
+            showSearch
         };
     },
     
-    async mounted() {
-        await this.loadSettings();
-        eventBus.on('settings-updated', this.loadSettings);
-    },
-    
-    beforeUnmount() {
-        eventBus.off('settings-updated', this.loadSettings);
-    },
     
     methods: {
-        async loadSettings() {
-            try {
-                const data = await SettingsController.getSettings();
-                this.settings = data;
-            } catch (error) {
-                console.error('Error loading settings:', error);
-            }
+        async logout() {
+            await AuthController.logout();
+            this.$store.state.user = null;
+            this.$router.push('/auth/login');
         },
         
         onLanguageChanged(locale) {
@@ -99,10 +82,14 @@ export default {
     
     computed: {
         displayTitle() {
-            if (this.$route.path === '/' && this.settings.company_name) {
-                return this.settings.company_name;
+            // Если мы на главной странице, показываем "Моя компания"
+            if (this.$route.path === '/') {
+                return this.$t('myCompany');
             }
             return this.title;
+        },
+        currentCompany() {
+            return this.$store.getters.currentCompany;
         }
     }
 };

@@ -39,12 +39,13 @@ import batchActionsMixin from '@/mixins/batchActionsMixin'
 import crudEventMixin from '@/mixins/crudEventMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { eventBus } from '@/eventBus';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 
 export default {
-    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, tableTranslationMixin],
+    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, tableTranslationMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog },
     data() {
         return {

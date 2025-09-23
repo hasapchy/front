@@ -68,6 +68,7 @@ export default {
                 { name: "currency", label: this.$t("currency"), size: 100 },
                 { name: "date", label: this.$t("date"), size: 100 },
                 { name: "returned", label: this.$t("status"), size: 100, html: true },
+                { name: "note", label: this.$t("note"), size: 200 },
                 { name: "files", label: this.$t("files"), size: 80, html: true },
             ],
         };
@@ -122,6 +123,8 @@ export default {
                     return item.formatDate();
                 case "returned":
                     return item.formatReturnedStatus();
+                case "note":
+                    return item.note || '-';
                 case "files":
                     return item.formatFiles();
                 default:

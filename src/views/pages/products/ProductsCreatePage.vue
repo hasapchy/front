@@ -251,27 +251,42 @@ export default {
                        parentId === '' ||
                        parentId === false;
             });
-            // console.log('Все категории:', this.allCategories.map(c => ({id: c.id, name: c.name, parentId: c.parentId, type: typeof c.parentId})));
-            // console.log('Родительские категории:', parents);
             return parents;
         },
         
         childCategories() {
             if (!this.selectedParentCategory) return [];
             const children = this.allCategories.filter(cat => cat.parentId == this.selectedParentCategory);
-            // console.log('Дочерние категории для', this.selectedParentCategory, ':', children);
             return children;
         },
     },
     methods: {
         async fetchUnits() {
-            this.units = await AppController.getUnits();
+            // Используем данные из store
+            if (this.$store.getters.units.length > 0) {
+                this.units = this.$store.getters.units;
+            } else {
+                await this.$store.dispatch('loadUnits');
+                this.units = this.$store.getters.units;
+            }
         },
         async fetchCurrencies() {
-            this.currencies = await AppController.getCurrencies();
+            // Используем данные из store
+            if (this.$store.getters.currencies.length > 0) {
+                this.currencies = this.$store.getters.currencies;
+            } else {
+                await this.$store.dispatch('loadCurrencies');
+                this.currencies = this.$store.getters.currencies;
+            }
         },
         async fetchAllCategories() {
-            this.allCategories = await CategoryController.getAllItems();
+            // Используем данные из store
+            if (this.$store.getters.categories.length > 0) {
+                this.allCategories = this.$store.getters.categories;
+            } else {
+                await this.$store.dispatch('loadCategories');
+                this.allCategories = this.$store.getters.categories;
+            }
         },
 
         // Методы для работы с каскадным выбором категорий

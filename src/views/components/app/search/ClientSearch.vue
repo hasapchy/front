@@ -147,35 +147,58 @@ export default {
         }
     },
     created() {
+        console.log('DEBUG: ClientSearch created - disabled:', this.disabled);
         this.fetchLastClients();
     },
     emits: ['update:selectedClient'],
     methods: {
         async fetchLastClients() {
-            const paginated = await ClientController.getItems(1, null, false); // includeInactive = false (только активные)
-            this.lastClients = paginated.items
+            console.log('DEBUG: fetchLastClients started - disabled:', this.disabled);
+            
+            // Всегда загружаем данные заново, не полагаемся на проверку длины
+            await this.$store.dispatch('loadClients');
+            
+            // Ждем пока данные появятся в store (максимум 3 секунды)
+            let attempts = 0;
+            while (this.$store.getters.clients.length === 0 && attempts < 30) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            const allClients = this.$store.getters.clients;
+            
+            console.log('DEBUG: allClients from store after wait:', allClients.length, 'first client:', allClients[0]);
+            
+            this.lastClients = allClients
+                .filter((client) => client.status === true) // только активные
                 .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .slice(0, 10);
+                
+            console.log('DEBUG: lastClients after filter:', this.lastClients.length, 'first:', this.lastClients[0]);
         },
                  searchClients: debounce(async function () {
-             console.log('=== CLIENT SEARCH FRONTEND ===');
-             console.log('Search term:', this.clientSearch);
-             console.log('Search length:', this.clientSearch.length);
-             console.log('Only suppliers:', this.onlySuppliers);
-             
              if (this.clientSearch.length >= 3) {
                  this.clientSearchLoading = true;
                  try {
-                     const results = await ClientController.search(this.clientSearch);
-                     console.log('Raw results from API:', results);
-                     console.log('Results count:', results.length);
+                     // Используем данные из store вместо API запроса
+                     await this.$store.dispatch('loadClients');
+                     const allClients = this.$store.getters.clients;
+                     
+                     // Фильтруем клиентов по поисковому запросу
+                     const searchTerm = this.clientSearch.toLowerCase();
+                     const results = allClients.filter(client => {
+                         return client.firstName?.toLowerCase().includes(searchTerm) ||
+                                client.lastName?.toLowerCase().includes(searchTerm) ||
+                                client.contactPerson?.toLowerCase().includes(searchTerm) ||
+                                client.phones?.some(phone => phone.phone?.includes(searchTerm)) ||
+                                client.emails?.some(email => email.email?.toLowerCase().includes(searchTerm));
+                     });
                      
                      this.clientResults = this.onlySuppliers
                          ? results.filter((client) => client.isSupplier)
                          : results;
                      
-                     console.log('Filtered results:', this.clientResults);
-                     console.log('Filtered count:', this.clientResults.length);
                  } catch (error) {
                      console.error('Search error:', error);
                      this.clientResults = [];
@@ -185,7 +208,6 @@ export default {
              } else {
                  this.clientResults = [];
              }
-             console.log('=============================');
          }, 250),
         async selectClient(client) {
             this.showDropdown = false;

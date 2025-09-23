@@ -1,6 +1,6 @@
 import axios from "axios";
 import AuthController from "./AuthController";
-import { startApiCall, endApiCall } from "@/store/storeManager";
+import { startApiCall, endApiCall, getStore } from "@/store/storeManager";
 
 // Создаем инстанс axios
 const api = axios.create({
@@ -25,6 +25,13 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Добавляем company_id в заголовок, если он есть в store
+    const store = getStore();
+    if (store && store.getters.currentCompanyId) {
+      config.headers['X-Company-ID'] = store.getters.currentCompanyId;
+    }
+    
     return config;
   },
   (error) => {
