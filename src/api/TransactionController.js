@@ -11,7 +11,8 @@ export default class TransactionController {
     order_id = null,
     search = null,
     transaction_type = null,
-    source = null
+    source = null,
+    project_id = null
   ) {
     try {
       const response = await api.get("/transactions", {
@@ -23,6 +24,7 @@ export default class TransactionController {
           search: search,
           transaction_type: transaction_type,
           source: source,
+          project_id: project_id,
         },
       });
       const data = response.data;

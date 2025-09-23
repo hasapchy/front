@@ -363,7 +363,7 @@ export default {
             }
         },
         searchProducts: debounce(async function () {
-            if (this.productSearch.length >= 4) {
+            if (this.productSearch.length >= 3) {
                 this.productSearchLoading = true;
                 try {
                     const results = await ProductController.searchItems(this.productSearch, this.onlyProducts ? true : null, this.warehouseId);
@@ -514,7 +514,7 @@ export default {
             handler() {
                 // При изменении склада перезагружаем результаты поиска и последние товары
                 this.fetchLastProducts();
-                if (this.productSearch.length >= 4) {
+                if (this.productSearch.length >= 3) {
                     this.searchProducts();
                 }
             },

@@ -53,7 +53,7 @@ export default {
         endDate: { type: String, default: null },
         dateFilter: { type: String, default: 'all_time' },
         transactionTypeFilter: { type: String, default: '' },
-        sourceFilter: { type: Array, default: () => [] }
+        sourceFilter: { type: String, default: '' }
     },
     data() {
         return {
@@ -133,7 +133,7 @@ export default {
                     start_date: start,
                     end_date: end,
                     transaction_type: this.transactionTypeFilter || undefined,
-                    source: this.sourceFilter.length > 0 ? this.sourceFilter.join(',') : undefined
+                    source: this.sourceFilter || undefined
                 };
 
                 Object.keys(params).forEach(key => {
