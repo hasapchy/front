@@ -128,7 +128,12 @@ export default class ProjectDto {
       return this.budget; // Если валюта не выбрана, возвращаем как есть
     }
     
-    // Используем курс из атрибута, который автоматически получает актуальный курс
+    // Если валюта дефолтная (манат), возвращаем бюджет как есть
+    if (this.currency && this.currency.is_default) {
+      return this.budget;
+    }
+    
+    // Для не-дефолтной валюты используем курс для конвертации в манаты
     const rate = this.exchangeRate || 1;
     return (this.budget * rate).toFixed(2);
   }
@@ -139,7 +144,13 @@ export default class ProjectDto {
       return this.budget; // Если валюта не выбрана, возвращаем только бюджет
     }
     
+    // Если валюта дефолтная (манат), показываем только бюджет
+    if (this.currency.is_default) {
+      return `${this.budget} ${this.currency.symbol}`;
+    }
+    
+    // Для не-дефолтной валюты показываем бюджет в валюте и эквивалент в манатах
     const budgetInManat = this.getBudgetInManat();
-    return `${this.budget} ${this.currency.symbol} (${budgetInManat} ${this.currency.symbol})`;
+    return `${this.budget} ${this.currency.symbol} (${budgetInManat} TMT)`;
   }
 }

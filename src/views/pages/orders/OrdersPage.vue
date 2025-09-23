@@ -116,6 +116,7 @@ import { defineAsyncComponent } from "vue";
 import { eventBus } from "@/eventBus";
 import CheckboxFilter from "@/views/components/app/forms/CheckboxFilter.vue";
 import OrderPaymentFilter from "@/views/components/app/forms/OrderPaymentFilter.vue";
+import StatusSelectCell from "@/views/components/app/buttons/StatusSelectCell.vue";
 
 const TimelinePanel = defineAsyncComponent(() => 
     import("@/views/components/app/dialog/TimelinePanel.vue")
@@ -123,7 +124,7 @@ const TimelinePanel = defineAsyncComponent(() =>
 
 export default {
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, InvoiceCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, CheckboxFilter, OrderPaymentFilter },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, InvoiceCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, CheckboxFilter, OrderPaymentFilter, StatusSelectCell },
     data() {
         return {
             data: null,
@@ -145,7 +146,7 @@ export default {
                 { name: "id", label: "№", size: 20 },
                 { name: "dateUser", label: 'dateUser' },
                 { name: "client", label: 'client', component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, }), },
-                { name: "statusName", label: 'status', component: "StatusSelectCell", props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId), }), },
+                { name: "statusName", label: 'status', component: markRaw(StatusSelectCell), props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId), }), },
                 { name: "cashName", label: 'cashRegister' },
                 { name: "warehouseName", label: 'warehouse' },
                 { name: "products", label: 'products', html: true },

@@ -10,13 +10,16 @@
                     <div class="grid grid-cols-4 gap-4">
                         <div v-for="balance in item.balance" :key="balance.title" class="flex flex-col justify-between">
                             <span class="text-sm font-medium">{{ translateBalanceTitle(balance.title) }}</span>
-                            <span :class="{
+                            <div :class="{
                                 'text-[#5CB85C]': balance.type === 'income',
                                 'text-[#EE4F47]': balance.type === 'outcome',
                                 'text-[#337AB7]': balance.type === 'default',
                                 'text-[#FFA500]': balance.type === 'project_income',
                                 'font-semibold text-lg': true
-                            }">{{ Number(balance.value).toFixed(2) }} {{ item.currency_symbol || item.currency_code || '' }}</span>
+                            }" class="balance-value">
+                                <span class="balance-amount">{{ Number(balance.value).toFixed(2) }}</span>
+                                <span class="balance-currency">{{ item.currency_symbol || item.currency_code || '' }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -157,5 +160,50 @@ export default {
 .fade-enter,
 .fade-leave-to {
     opacity: 0;
+}
+
+.balance-value {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+}
+
+.balance-amount {
+    white-space: nowrap;
+}
+
+.balance-currency {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    white-space: nowrap;
+}
+
+/* На больших экранах отображаем в одну строку */
+@media (min-width: 1024px) {
+    .balance-value {
+        flex-direction: row;
+        align-items: center;
+        gap: 3px;
+    }
+    
+    .balance-currency {
+        font-size: 0.875rem;
+        opacity: 1;
+    }
+}
+
+/* На средних экранах (планшеты) тоже в одну строку */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .balance-value {
+        flex-direction: row;
+        align-items: center;
+        gap: 2px;
+    }
+    
+    .balance-currency {
+        font-size: 0.8rem;
+        opacity: 0.9;
+    }
 }
 </style>

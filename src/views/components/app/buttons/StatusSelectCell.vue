@@ -7,9 +7,9 @@
     </div>
 
     <ul v-if="isOpen" class="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-60 overflow-auto">
-      <template v-for="group in sortedStatuses" :key="group.category?.id">
-        <li v-for="s in group.items" :key="s.id"
-          class="px-2 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+      <template v-for="(group, groupIndex) in sortedStatuses" :key="group.category?.id">
+        <li v-for="(s, index) in group.items" :key="s.id"
+          :class="['px-2 py-3 hover:bg-gray-100 cursor-pointer flex items-center justify-between', { 'mb-2': !(groupIndex === sortedStatuses.length - 1 && index === group.items.length - 1) }]"
           @click="selectStatus(s.id)" :style="{ backgroundColor: getColorStyle(s), color: '#fff' }">
           <span>{{ s.name }}</span>
         </li>
@@ -54,8 +54,7 @@ export default {
         backgroundColor: hex,
         color: '#000',
       };
-    }
-    ,
+    },
     sortedStatuses() {
       // Если у статусов есть категории (заказы), группируем по категориям
       if (this.statuses.length > 0 && this.statuses[0].category) {
@@ -121,3 +120,4 @@ export default {
   }
 };
 </script>
+
