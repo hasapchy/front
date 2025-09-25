@@ -65,7 +65,7 @@ export default {
             columnsConfig: [
                 { name: "number", label: this.$t("contractNumber"), size: 150 },
                 { name: "amount", label: this.$t("amount"), size: 120, html: true },
-                { name: "currency", label: this.$t("currency"), size: 100 },
+                { name: "description", label: this.$t("description"), size: 200 },
                 { name: "date", label: this.$t("date"), size: 100 },
                 { name: "returned", label: this.$t("status"), size: 100, html: true },
                 { name: "note", label: this.$t("note"), size: 200 },
@@ -117,8 +117,8 @@ export default {
                     return item.number;
                 case "amount":
                     return item.formatAmount();
-                case "currency":
-                    return item.currencySymbol || item.currencyName || item.currencyCode || '-';
+                case "description":
+                    return item.note || '-';
                 case "date":
                     return item.formatDate();
                 case "returned":

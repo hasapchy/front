@@ -128,10 +128,11 @@ export default {
         this.$store.commit('SET_SETTINGS_OPEN', false);
     },
 
-    mounted() {
-        this.fetchProjectStatuses();
-        this.fetchClients();
-        this.fetchLastClients();
+    async mounted() {
+        // Загружаем статусы первыми, чтобы они были доступны при создании проекта
+        await this.fetchProjectStatuses();
+        await this.fetchClients();
+        await this.fetchLastClients();
         this.fetchItems();
     },
     methods: {
@@ -258,7 +259,26 @@ export default {
             this.modalDialog = true;
             this.showTimeline = true;
             this.editingItem = item;
-        }
+        },
+        async handleSaved() {
+            this.showNotification(this.savedSuccessText, "", false);
+            this.closeModal();
+            
+            // Очищаем фильтр клиента при создании нового проекта
+            if (!this.editingItem) {
+                this.selectedClient = null;
+                this.clientFilter = '';
+            }
+            
+            // Обновляем список
+            this.fetchItems();
+        },
+        async handleDeleted() {
+            // После удаления проекта обновляем список
+            this.fetchItems();
+            this.showNotification(this.deletedSuccessText, "", false);
+            this.closeModal();
+        },
     },
     watch: {
         clientSearch: {

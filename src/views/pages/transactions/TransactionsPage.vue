@@ -26,12 +26,24 @@
 
             <!-- Фильтр по источнику средств -->
             <div class="mx-2">
-                <CheckboxFilter 
-                    v-model="sourceFilter"
-                    :options="sourceOptions"
-                    placeholder="allSources"
-                    @change="() => fetchItems(1)"
-                />
+                <select v-model="sourceFilter" @change="() => fetchItems(1)" class="w-full p-2 border rounded">
+                    <option value="">{{ $t('allSources') }}</option>
+                    <option v-for="option in sourceOptions" :key="option.value" :value="option.value">
+                        {{ option.label }}
+                    </option>
+                </select>
+            </div>
+
+            <!-- Фильтр по проектам -->
+            <div class="mx-2">
+                <select v-model="projectId" @change="() => fetchItems(1)" class="w-full p-2 border rounded">
+                    <option value="">{{ $t('allProjects') }}</option>
+                    <template v-if="allProjects.length">
+                        <option v-for="project in allProjects" :key="project.id" :value="project.id">
+                            {{ project.name }}
+                        </option>
+                    </template>
+                </select>
             </div>
 
             <div class="">
@@ -100,6 +112,7 @@ import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TransactionController from '@/api/TransactionController';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import CashRegisterController from '@/api/CashRegisterController';
+import ProjectController from '@/api/ProjectController';
 import TransactionsBalance from '@/views/pages/transactions/TransactionsBalance.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import { markRaw } from 'vue';
@@ -113,11 +126,10 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { eventBus } from '@/eventBus';
-import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin],
-    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalance, ClientButtonCell, BatchButton, CheckboxFilter },
+    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalance, ClientButtonCell, BatchButton },
     data() {
         return {
             data: null,
@@ -130,7 +142,9 @@ export default {
             startDate: null,
             endDate: null,
             transactionTypeFilter: '',
-            sourceFilter: [],
+            sourceFilter: '',
+            projectId: '',
+            allProjects: [],
             savedSuccessText: this.$t('transactionSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingTransaction'),
             deletedSuccessText: this.$t('transactionSuccessfullyDeleted'),
@@ -173,6 +187,7 @@ export default {
     mounted() {
         this.fetchItems();
         this.fetchAllCashRegisters();
+        this.fetchAllProjects();
     },
     beforeUnmount() {
         eventBus.off('global-search', this.handleSearch);
@@ -193,6 +208,13 @@ export default {
             // Используем данные из store
             await this.$store.dispatch('loadCashRegisters');
             this.allCashRegisters = this.$store.getters.cashRegisters;
+        },
+        async fetchAllProjects() {
+            try {
+                this.allProjects = await ProjectController.getAllItems();
+            } catch (error) {
+                console.error('Ошибка при загрузке проектов:', error);
+            }
         },
         itemMapper(i, c) {
             switch (c) {
@@ -235,7 +257,8 @@ export default {
                         null, // order_id
                         this.searchQuery,
                         this.transactionTypeFilter,
-                        this.sourceFilter
+                        this.sourceFilter,
+                        this.projectId
                     );
                 } else {
                     new_data = await TransactionController.getItems(
@@ -245,7 +268,8 @@ export default {
                         null, // order_id
                         this.searchQuery,
                         this.transactionTypeFilter,
-                        this.sourceFilter
+                        this.sourceFilter,
+                        this.projectId
                     );
                 }
                 
@@ -270,7 +294,8 @@ export default {
         resetFilters() {
             this.cashRegisterId = '';
             this.transactionTypeFilter = '';
-            this.sourceFilter = [];
+            this.sourceFilter = '';
+            this.projectId = '';
             this.dateFilter = 'all_time';
             this.startDate = null;
             this.endDate = null;

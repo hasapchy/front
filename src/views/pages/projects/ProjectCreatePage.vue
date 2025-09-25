@@ -43,7 +43,17 @@
             </div>
             
             <div>
-                <label class="required">{{ $t('assignUsers') }}</label>
+                <div class="flex justify-between items-center mb-2">
+                    <label class="required">{{ $t('assignUsers') }}</label>
+                    <div v-if="users != null && users.length > 0" class="flex gap-2">
+                        <PrimaryButton :onclick="selectAllUsers" :is-info="true" class="text-xs py-1 px-2">
+                            Выбрать всех
+                        </PrimaryButton>
+                        <PrimaryButton :onclick="deselectAllUsers" :is-light="true" class="text-xs py-1 px-2">
+                            Снять всех
+                        </PrimaryButton>
+                    </div>
+                </div>
                 <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
                     <label v-for="user in users" :key="user.id"
                         class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
@@ -52,6 +62,7 @@
                         <span class="text-black">{{ user.name }}</span>
                     </label>
                 </div>
+                
             </div>
         </div>
         <div v-show="currentTab === 'files' && editingItem">
@@ -161,7 +172,14 @@ export default {
         defaultExchangeRate() {
             if (!this.currencyId) return '1.000000';
             const currency = this.currencies.find(c => c.id === this.currencyId);
-            return currency ? currency.exchange_rate?.toFixed(6) || '1.000000' : '1.000000';
+            if (!currency) return '1.000000';
+            
+            // Если валюта не дефолтная (не манат), показываем 1/курс
+            if (!currency.is_default && currency.exchange_rate) {
+                return (1 / currency.exchange_rate).toFixed(6);
+            }
+            
+            return currency.exchange_rate?.toFixed(6) || '1.000000';
         }
     },
     created() {
@@ -194,6 +212,14 @@ export default {
             this.editingItemId = null;
             this.currentTab = 'info';
             this.resetFormChanges(); // Сбрасываем состояние изменений
+            
+            // После очистки формы выбираем всех пользователей по умолчанию
+            this.$nextTick(() => {
+                if (this.users && this.users.length > 0) {
+                    this.selectedUsers = this.users.map(user => user.id.toString());
+                    console.log('После очистки формы выбраны все пользователи:', this.selectedUsers);
+                }
+            });
         },
         changeTab(tabName) {
             if ((tabName === 'files' || tabName === 'balance' || tabName === 'contracts') && !this.editingItem) {
@@ -222,7 +248,16 @@ export default {
             if (this.currencyId) {
                 try {
                     const rateData = await AppController.getCurrencyExchangeRate(this.currencyId);
-                    this.exchangeRate = rateData.exchange_rate;
+                    // Если выбранная валюта не является дефолтной (манат), 
+                    // то курс должен быть 1/курс_валюты для конвертации в манаты
+                    const selectedCurrency = this.currencies.find(c => c.id === this.currencyId);
+                    if (selectedCurrency && !selectedCurrency.is_default) {
+                        // Для не-дефолтной валюты курс = 1/курс_валюты (сколько манат за 1 единицу валюты)
+                        this.exchangeRate = 1 / rateData.exchange_rate;
+                    } else {
+                        // Для дефолтной валюты (манат) курс = 1
+                        this.exchangeRate = 1;
+                    }
                 } catch (error) {
                     console.error('Error fetching exchange rate:', error);
                     this.exchangeRate = null;
@@ -235,8 +270,23 @@ export default {
             this.users = await UsersController.getAllUsers();
 
             if (this.editingItem && Array.isArray(this.editingItem.users)) {
+                // При редактировании существующего проекта - загружаем выбранных пользователей
                 this.selectedUsers = this.editingItem.getUserIds();
+            } else if (!this.editingItem) {
+                // При создании нового проекта - выбираем всех пользователей по умолчанию
+                this.selectedUsers = this.users.map(user => user.id.toString());
+                console.log('Автоматически выбраны все пользователи:', this.selectedUsers);
             }
+        },
+        selectAllUsers() {
+            if (this.users && this.users.length > 0) {
+                this.selectedUsers = this.users.map(user => user.id.toString());
+                console.log('Выбраны все пользователи:', this.selectedUsers);
+            }
+        },
+        deselectAllUsers() {
+            this.selectedUsers = [];
+            console.log('Снят выбор со всех пользователей');
         },
         async save() {
             if (this.uploading) {
@@ -422,6 +472,11 @@ export default {
                 }
                 this.$nextTick(() => {
                     this.saveInitialState();
+                    // Дополнительная проверка: если это создание нового проекта и пользователи загружены, выбираем всех
+                    if (!newEditingItem && this.users && this.users.length > 0 && this.selectedUsers.length === 0) {
+                        this.selectedUsers = this.users.map(user => user.id.toString());
+                        console.log('Watcher: выбраны все пользователи для нового проекта:', this.selectedUsers);
+                    }
                 });
             },
             deep: true,

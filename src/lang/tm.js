@@ -869,6 +869,7 @@ export default {
   pending: 'Garaşylýar',
   sourceOfFunds: 'Pul çeşmesi',
   resetFilters: 'Filtri arassala',
+  allProjects: 'Hemme taslamalar',
   showPaidOrders: 'Tölenen sargytlary görkez',
   hidePaidOrders: 'Tölenen sargytlary gizle',
   paidOrdersFilter: 'Tölenen sargytlaryň filtr',

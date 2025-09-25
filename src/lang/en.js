@@ -249,4 +249,8 @@ export default {
   errorSavingReceipt: 'Error saving receipt',
   receiptSuccessfullyDeleted: 'Receipt successfully deleted',
   errorDeletingReceipt: 'Error deleting receipt',
+  
+  // Filters
+  resetFilters: 'Reset Filters',
+  allProjects: 'All Projects',
 }

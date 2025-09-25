@@ -121,12 +121,17 @@ export default {
     },
     emits: ['update:selectedClient'],
     methods: {
-        async fetchLastClients() {
+    async fetchLastClients() {
+        try {
             const paginated = await BasementClientController.getItems(1);
             this.lastClients = paginated.items
                 .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
                 .slice(0, 10);
-        },
+        } catch (error) {
+            console.error('BasementClientSearch: Ошибка загрузки клиентов:', error);
+            this.lastClients = [];
+        }
+    },
         searchClients: debounce(async function () {
             if (this.clientSearch.length >= 3) {
                 this.clientSearchLoading = true;
@@ -136,6 +141,7 @@ export default {
                         ? results.filter((client) => client.isSupplier)
                         : results;
                 } catch (error) {
+                    console.error('BasementClientSearch: Ошибка поиска клиентов:', error);
                     this.clientResults = [];
                 } finally {
                     this.clientSearchLoading = false;

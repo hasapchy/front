@@ -138,11 +138,20 @@ export default {
                 });
                 
                 this.$emit('saved', tempProduct);
+                this.clearForm();
             } catch (error) {
                 this.$emit('saved-error', error.message || this.$t('errorCreatingProduct'));
             } finally {
                 this.saveLoading = false;
             }
+        },
+        
+        clearForm() {
+            this.name = this.defaultName || '';
+            this.description = '';
+            this.quantity = 1;
+            this.price = 0;
+            this.unitId = '';
         }
     }
 };

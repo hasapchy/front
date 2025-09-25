@@ -69,9 +69,11 @@
 import { BasementAuthController } from '@/api/BasementAuthController'
 import LanguageSwitcher from '@/views/components/app/LanguageSwitcher.vue'
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue'
+import companyChangeMixin from '@/mixins/companyChangeMixin'
 
 export default {
   name: 'BasementLayout',
+  mixins: [companyChangeMixin],
   components: {
     LanguageSwitcher,
     NotificationToast
@@ -107,6 +109,11 @@ export default {
       
       this.$store.dispatch('setUser', userData.user)
       this.$store.dispatch('setPermissions', userData.user.permissions || [])
+      
+      // Загружаем текущую компанию, если её нет в store
+      if (!this.$store.getters.currentCompanyId) {
+        await this.$store.dispatch('loadCurrentCompany')
+      }
     } catch (error) {
       console.error('Ошибка получения пользователя:', error)
       this.$store.dispatch('setUser', null)

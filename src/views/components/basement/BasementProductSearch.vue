@@ -229,7 +229,7 @@ export default {
             }
         },
         searchProducts: debounce(async function () {
-            if (this.productSearch.length >= 4) {
+            if (this.productSearch.length >= 3) {
                 this.productSearchLoading = true;
                 try {
                     const results = await BasementProductController.searchItems(this.productSearch);

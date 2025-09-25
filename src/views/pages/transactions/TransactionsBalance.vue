@@ -5,18 +5,33 @@
                 {{ $t('noDataFound') }}
             </div>
             <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
-                <div v-for="item in data" :key="item.id" class="bg-white p-2 rounded-lg shadow-md">
-                    <span class="text-md font-semibold mb-4">{{ translateCashRegisterName(item.name) }}</span>
-                    <div class="grid grid-cols-4 gap-4">
-                        <div v-for="balance in item.balance" :key="balance.title" class="flex flex-col justify-between">
-                            <span class="text-sm font-medium">{{ translateBalanceTitle(balance.title) }}</span>
-                            <span :class="{
-                                'text-[#5CB85C]': balance.type === 'income',
-                                'text-[#EE4F47]': balance.type === 'outcome',
-                                'text-[#337AB7]': balance.type === 'default',
-                                'text-[#FFA500]': balance.type === 'project_income',
-                                'font-semibold text-lg': true
-                            }">{{ Number(balance.value).toFixed(2) }} {{ item.currency_symbol || item.currency_code || '' }}</span>
+                <div v-for="item in data" :key="item.id" class="bg-white p-3 rounded-lg shadow-md">
+                    <div class="text-center mb-3">
+                        <span class="text-sm font-semibold">
+                            {{ translateCashRegisterName(item.name) }}
+                            <span class="text-sm font-bold text-black ml-1">({{ item.currency_symbol || item.currency_code || '' }})</span>
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div v-for="balance in item.balance" :key="balance.title" class="text-center">
+                            <div class="mb-1 flex items-center justify-center space-x-1">
+                                <span class="text-xs font-medium text-gray-700">{{ translateBalanceTitle(balance.title) }}</span>
+                                <i :class="{
+                                    'fas fa-arrow-up text-green-500': balance.type === 'income',
+                                    'fas fa-arrow-down text-red-500': balance.type === 'outcome',
+                                    'fas fa-calculator text-blue-500': balance.type === 'default',
+                                    'fas fa-chart-line text-orange-500': balance.type === 'project_income'
+                                }" class="text-xs"></i>
+                            </div>
+                            <div :class="{
+                                'text-green-600': balance.type === 'income',
+                                'text-red-600': balance.type === 'outcome',
+                                'text-blue-600': balance.type === 'default',
+                                'text-orange-600': balance.type === 'project_income',
+                                'font-bold text-sm': true
+                            }" class="leading-tight">
+                                <div class="balance-amount text-base">{{ Number(balance.value).toFixed(0) }}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -38,7 +53,7 @@ export default {
         endDate: { type: String, default: null },
         dateFilter: { type: String, default: 'all_time' },
         transactionTypeFilter: { type: String, default: '' },
-        sourceFilter: { type: Array, default: () => [] }
+        sourceFilter: { type: String, default: '' }
     },
     data() {
         return {
@@ -118,7 +133,7 @@ export default {
                     start_date: start,
                     end_date: end,
                     transaction_type: this.transactionTypeFilter || undefined,
-                    source: this.sourceFilter.length > 0 ? this.sourceFilter.join(',') : undefined
+                    source: this.sourceFilter || undefined
                 };
 
                 Object.keys(params).forEach(key => {
@@ -157,5 +172,31 @@ export default {
 .fade-enter,
 .fade-leave-to {
     opacity: 0;
+}
+
+.balance-amount {
+    white-space: nowrap;
+    font-weight: 700;
+    font-size: 1.1rem;
+    line-height: 1.2;
+}
+
+/* Авторесайз для больших чисел */
+@media (max-width: 768px) {
+    .balance-amount {
+        font-size: 0.9rem;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .balance-amount {
+        font-size: 1rem;
+    }
+}
+
+@media (min-width: 1025px) {
+    .balance-amount {
+        font-size: 1.2rem;
+    }
 }
 </style>
