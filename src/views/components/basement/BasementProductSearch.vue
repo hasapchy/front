@@ -3,7 +3,7 @@
 
         <!-- Товары - Поиск -->
         <div class="relative">
-            <label class="block mb-1" :class="{ 'required': required }">{{ $t('products') }}</label>
+            <label class="block mb-1">{{ $t('products') }}</label>
             <input type="text" ref="productInput" v-model="productSearch" :placeholder="$t('enterProductNameOrCode')"
                 class="w-full p-2 border rounded" @focus="showProductDropdown = true" @blur="handleProductBlur" :disabled="disabled" />
 
@@ -181,6 +181,15 @@ export default {
                 return this.modelValue;
             },
             set(value) {
+                // Инициализируем размеры для новых товаров
+                value.forEach(product => {
+                    if (product.productId && !this.productDimensions[product.productId]) {
+                        this.productDimensions[product.productId] = { 
+                            width: product.width || 0, 
+                            length: product.height || 0 
+                        };
+                    }
+                });
                 this.$emit('update:modelValue', value);
             },
         },
@@ -242,21 +251,23 @@ export default {
                 this.productSearch = '';
                 this.productResults = [];
 
-                const existing = this.products.find(p => p.productId === product.id);
-                if (existing) {
-                    // Если продукт уже существует, увеличиваем количество на 1
-                    existing.quantity = (Number(existing.quantity) || 0) + 1;
-                } else {
-                    const productDto = WarehouseWriteoffProductDto.fromProductDto(product, true);
-                    if (productDto && product.id) {
-                        productDto.productId = product.id;
-                        // Устанавливаем количество по умолчанию (минимум 0 для API)
-                        productDto.quantity = 0;
-                        // Инициализируем размеры для товара
-                        this.productDimensions[product.id] = { width: 0, length: 0 };
-                    }
-                    this.products = [...this.products, productDto];
+                // Всегда создаем новую строку для товара
+                const productDto = WarehouseWriteoffProductDto.fromProductDto(product, true);
+                if (productDto && product.id) {
+                    productDto.productId = product.id;
+                    // Устанавливаем количество по умолчанию (минимум 0 для API)
+                    productDto.quantity = 0;
+                    // Автоматически устанавливаем цену товара
+                    productDto.price = product.retail_price || product.wholesale_price || product.purchase_price || 0;
+                    // Инициализируем размеры для товара
+                    this.productDimensions[product.id] = { width: 0, length: 0 };
+                    // Инициализируем поля width и height в самом продукте
+                    productDto.width = 0;
+                    productDto.height = 0;
+                    // Сохраняем тип товара
+                    productDto.type = product.type || 1;
                 }
+                this.products = [...this.products, productDto];
                 this.updateTotals();
                 this.$refs.productInput.blur();
             } catch (error) {
@@ -265,20 +276,21 @@ export default {
         },
         selectService(service) {
             try {
-                const existing = this.products.find(p => p.productId === service.id);
-                if (existing) {
-                    existing.quantity = (Number(existing.quantity) || 0) + 1;
-                } else {
-                    const productDto = WarehouseWriteoffProductDto.fromProductDto(service, false);
-                    if (productDto && service.id) {
-                        productDto.productId = service.id;
-                        // Устанавливаем количество по умолчанию (минимум 0 для API)
-                        productDto.quantity = 0;
-                        // Инициализируем размеры для услуги
-                        this.productDimensions[service.id] = { width: 0, length: 0 };
-                    }
-                    this.products = [...this.products, productDto];
+                // Всегда создаем новую строку для услуги
+                const productDto = WarehouseWriteoffProductDto.fromProductDto(service, false);
+                if (productDto && service.id) {
+                    productDto.productId = service.id; // Услуги тоже имеют productId
+                    // Устанавливаем количество по умолчанию (минимум 0 для API)
+                    productDto.quantity = 0;
+                    // Автоматически устанавливаем цену услуги
+                    productDto.price = service.retail_price || service.wholesale_price || service.purchase_price || 0;
+                    // Инициализируем размеры для услуги
+                    this.productDimensions[service.id] = { width: 0, length: 0 };
+                    // Инициализируем поля width и height в самом продукте
+                    productDto.width = 0;
+                    productDto.height = 0;
                 }
+                this.products = [...this.products, productDto];
                 this.updateTotals();
             } catch (error) {
                 console.error('Error selecting service:', error);
@@ -306,6 +318,11 @@ export default {
         },
         
         getProductWidth(product) {
+            // Сначала проверяем значение в самом продукте
+            if (product.width !== undefined && product.width !== null) {
+                return product.width;
+            }
+            
             if (!this.productDimensions[product.productId]) {
                 this.productDimensions[product.productId] = { width: 0, length: 0 };
             }
@@ -317,9 +334,16 @@ export default {
                 this.productDimensions[product.productId] = { width: 0, length: 0 };
             }
             this.productDimensions[product.productId].width = value;
+            // Сохраняем width в самом продукте
+            product.width = value;
         },
         
         getProductLength(product) {
+            // Сначала проверяем значение в самом продукте
+            if (product.height !== undefined && product.height !== null) {
+                return product.height;
+            }
+            
             if (!this.productDimensions[product.productId]) {
                 this.productDimensions[product.productId] = { width: 0, length: 0 };
             }
@@ -331,7 +355,10 @@ export default {
                 this.productDimensions[product.productId] = { width: 0, length: 0 };
             }
             this.productDimensions[product.productId].length = value;
+            // Сохраняем height в самом продукте
+            product.height = value;
         },
+        
         
         calculateQuantity(product) {
             // Инициализируем размеры для товара, если их нет
@@ -339,9 +366,9 @@ export default {
                 this.productDimensions[product.productId] = { width: 0, length: 0 };
             }
             
-            const dimensions = this.productDimensions[product.productId];
-            const width = Number(dimensions.width) || 0;
-            const length = Number(dimensions.length) || 0;
+            // Используем значения из самого продукта или из локального хранилища
+            const width = Number(product.width || this.productDimensions[product.productId].width) || 0;
+            const length = Number(product.height || this.productDimensions[product.productId].length) || 0;
             
             // Проверяем, что оба поля заполнены и больше 0
             if (!width || !length || width <= 0 || length <= 0) {
@@ -380,23 +407,23 @@ export default {
                 calculatedQuantity = width * length;
             }
             else if (unitShortName === 'шт' || unitName === 'Штука') {
-                // Штука: округление(ширина × длина)
-                calculatedQuantity = Math.round(width * length);
+                // Штука: ширина × длина
+                calculatedQuantity = width * length;
             }
             else if (unitShortName === 'уп' || unitName === 'Упаковка' ||
                      unitShortName === 'кор' || unitName === 'Коробка' ||
                      unitShortName === 'пал' || unitName === 'Паллета' ||
                      unitShortName === 'комп' || unitName === 'Комплект' ||
                      unitShortName === 'рул' || unitName === 'Рулон') {
-                // Упаковочные единицы: округление(ширина × длина)
-                calculatedQuantity = Math.round(width * length);
+                // Упаковочные единицы: ширина × длина
+                calculatedQuantity = width * length;
             }
             else {
                 // Для остальных единиц: ширина × длина
                 calculatedQuantity = width * length;
             }
             
-            product.quantity = Math.round(calculatedQuantity * 100) / 100; // Округляем до 2 знаков
+            product.quantity = calculatedQuantity; // Без округления
             
             this.updateTotals();
         },
@@ -407,10 +434,11 @@ export default {
                 this.productDimensions[product.productId] = { width: 0, length: 0 };
             }
             
-            const dimensions = this.productDimensions[product.productId];
-            const value = dimensions[field];
+            // Проверяем значение в самом продукте
+            const value = product[field];
             if (value < 0) {
-                dimensions[field] = 0;
+                product[field] = 0;
+                this.productDimensions[product.productId][field] = 0;
             }
             this.calculateQuantity(product);
         },
@@ -420,6 +448,23 @@ export default {
         productSearch: {
             handler: 'searchProducts',
             immediate: true,
+        },
+        products: {
+            handler(newProducts) {
+                // Инициализируем размеры для товаров при загрузке
+                if (newProducts && newProducts.length > 0) {
+                    newProducts.forEach(product => {
+                        if (product.productId && !this.productDimensions[product.productId]) {
+                            this.productDimensions[product.productId] = { 
+                                width: product.width || 0, 
+                                length: product.height || 0 
+                            };
+                        }
+                    });
+                }
+            },
+            immediate: true,
+            deep: true
         }
     },
 };

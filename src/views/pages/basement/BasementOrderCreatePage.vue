@@ -35,21 +35,24 @@
       <form @submit.prevent="createOrder" class="space-y-6">
         <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
           <div class="grid grid-cols-1 gap-6">
-            <!-- Клиент -->
-            <div>
-              <BasementClientSearch
-                :selected-client="selectedClient"
-                @update:selectedClient="onClientSelected"
-                :required="true"
-              />
-            </div>
+            <!-- Клиент и Проект в одной строке -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Клиент -->
+              <div>
+                <BasementClientSearch
+                  :selected-client="selectedClient"
+                  @update:selectedClient="onClientSelected"
+                  :required="true"
+                />
+              </div>
 
-            <!-- Проект -->
-            <div>
-              <BasementProjectSearch
-                :selected-project="selectedProject"
-                @update:selectedProject="onProjectSelected"
-              />
+              <!-- Проект -->
+              <div>
+                <BasementProjectSearch
+                  :selected-project="selectedProject"
+                  @update:selectedProject="onProjectSelected"
+                />
+              </div>
             </div>
 
             <!-- Товары -->
@@ -313,11 +316,13 @@ export default {
       try {
         const token = BasementAuthController.getToken()
         
-        // Преобразуем товары для API
+        // Все товары и услуги сохраняются в order_products
         const validProducts = this.form.products.map(p => ({
           product_id: p.productId,
           quantity: Math.max(p.quantity || 0, 0), // Минимум 0 для API
-          price: p.price || 0
+          price: p.price || 0,
+          width: p.width || null,
+          height: p.height || null
         }))
         
         const orderData = {
@@ -384,11 +389,13 @@ export default {
       try {
         const token = BasementAuthController.getToken()
         
-        // Преобразуем товары для API
+        // Все товары и услуги сохраняются в order_products
         const validProducts = this.form.products.map(p => ({
           product_id: p.productId,
           quantity: Math.max(p.quantity || 0, 0),
-          price: p.price || 0
+          price: p.price || 0,
+          width: p.width || null,
+          height: p.height || null
         }))
         
         const orderData = {
@@ -496,10 +503,14 @@ export default {
       if (orderData.products && orderData.products.length > 0) {
         this.form.products = orderData.products.map(product => ({
           productId: product.product_id,
+          productName: product.product_name,
           name: product.product_name,
           quantity: product.quantity,
           price: product.price,
-          unit: product.unit_short_name || product.unit_name
+          unit: product.unit_short_name || product.unit_name,
+          unitId: product.unit_id,
+          width: product.width || null,
+          height: product.height || null
         }))
       }
     }
