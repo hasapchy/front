@@ -6,6 +6,16 @@ export default {
       if (error?.response?.data) {
         const data = error.response.data;
 
+        // Проверяем специальные ошибки времени
+        if (data.error_code === 'ORDER_EDIT_TIME_LIMIT_ACTIVE' || 
+            data.error_code === 'ORDER_DELETE_TIME_LIMIT_ACTIVE') {
+          const hoursRemaining = data.hours_remaining || 0;
+          const createdAt = data.created_at ? new Date(data.created_at).toLocaleString('ru-RU') : '';
+          
+          messages.push(`${data.message}${createdAt ? ` (создан: ${createdAt})` : ''}`);
+          return messages;
+        }
+
         // Сначала проверяем наличие детальных ошибок валидации
         if (typeof data.errors === "object") {
           for (const field in data.errors) {

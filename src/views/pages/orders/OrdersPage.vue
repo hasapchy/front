@@ -1,11 +1,11 @@
 <template>
     <div class="flex justify-between items-center mb-2">
-        <div class="flex items-center">
+        <div class="flex items-center space-x-3">
             <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus">
                 {{ $t('addOrder') }}
             </PrimaryButton>
             
-            <div class="ml-4">
+            <div>
                 <select v-model="dateFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
                     <option value="all_time">{{ $t('allTime') }}</option>
                     <option value="today">{{ $t('today') }}</option>
@@ -17,12 +17,12 @@
                     <option value="custom">{{ $t('selectDates') }}</option>
                 </select>
             </div>
-            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-4">
+            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center">
                 <input type="date" v-model="startDate" @change="fetchItems" class="w-full p-2 border rounded" />
                 <input type="date" v-model="endDate" @change="fetchItems" class="w-full p-2 border rounded" />
             </div>
 
-            <div class="ml-4">
+            <div>
                 <CheckboxFilter 
                     v-model="statusFilter"
                     :options="statusOptions"
@@ -31,16 +31,17 @@
                 />
             </div>
 
-            <div class="ml-4">
+            <div>
                 <OrderPaymentFilter 
                     v-model="paidOrdersFilter"
                     :orders="data ? data.items : []"
                     :statusId="4"
+                    :currencySymbol="currencySymbol"
                     @change="handlePaidOrdersFilterChange"
                 />
             </div>
 
-            <div class="ml-4">
+            <div>
                 <PrimaryButton 
                     :onclick="resetFilters"
                     icon="fas fa-trash"
@@ -179,6 +180,13 @@ export default {
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
+        },
+        currencySymbol() {
+            // Получаем символ валюты из первого заказа (если есть)
+            if (this.data && this.data.items && this.data.items.length > 0) {
+                return this.data.items[0].currencySymbol || '';
+            }
+            return '';
         }
     },
     methods: {

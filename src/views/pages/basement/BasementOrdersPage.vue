@@ -37,6 +37,7 @@
       <div v-else class="space-y-4">
         <div v-for="order in orders" :key="order.id" 
              class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-200 overflow-hidden cursor-pointer"
+             :class="isOrderTooOld(order.created_at) ? 'opacity-75' : ''"
              @dblclick="editOrder(order)">
           <div class="px-6 py-4">
             <!-- Заголовок заказа -->
@@ -52,7 +53,12 @@
                 </span>
               </div>
               <div class="text-sm text-gray-500">
-                {{ formatDate(order.created_at) }}
+                {{ formatOrderDate(order.created_at) }}
+                <span v-if="isOrderTooOld(order.created_at)" 
+                      class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                  <i class="fas fa-clock mr-1"></i>
+                  Редактирование заблокировано
+                </span>
               </div>
             </div>
 
@@ -98,12 +104,14 @@
 import { BasementAuthController } from '@/api/BasementAuthController'
 import api from '@/api/axiosInstance'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
+import timeLimitMixin from '@/mixins/timeLimitMixin'
 
 export default {
   name: 'BasementOrdersPage',
   components: {
     PrimaryButton
   },
+  mixins: [timeLimitMixin],
   data() {
     return {
       orders: [],
@@ -140,17 +148,6 @@ export default {
       
       return statusClasses[status.name] || 'bg-gray-100 text-gray-800'
     },
-    formatDate(dateString) {
-      if (!dateString) return ''
-      const date = new Date(dateString)
-      return date.toLocaleDateString('ru-RU', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    },
     getClientName(order) {
       if (!order.client) return this.$t('notSpecified')
       
@@ -172,8 +169,19 @@ export default {
       return order.project.name || this.$t('notSpecified')
     },
     editOrder(order) {
+      // Проверяем, можно ли редактировать заказ
+      if (this.isOrderLocked(order.created_at)) {
+        this.showOrderLockedNotification(order, 'edit')
+        return
+      }
+      
       // Переходим на страницу редактирования
       this.$router.push(`/basement/orders/${order.id}/edit`)
+    },
+    // Метод isOrderTooOld заменен на isOrderLocked из миксина
+    // Оставляем для обратной совместимости с template
+    isOrderTooOld(createdAt) {
+      return this.isOrderLocked(createdAt)
     }
   }
 }

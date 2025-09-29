@@ -29,9 +29,12 @@ basementApi.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Добавляем company_id в заголовок, если он есть в store
+    // Добавляем company_id в заголовок, если он есть в store, иначе используем компанию по умолчанию
     if (store && store.getters.currentCompanyId) {
       config.headers['X-Company-ID'] = store.getters.currentCompanyId;
+    } else {
+      // Для basement системы используем компанию по умолчанию (ID = 1)
+      config.headers['X-Company-ID'] = '1';
     }
     
     return config;
