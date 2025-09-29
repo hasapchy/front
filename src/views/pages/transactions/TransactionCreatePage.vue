@@ -113,6 +113,8 @@ import CashRegisterController from '@/api/CashRegisterController';
 import TransactionController from '@/api/TransactionController';
 import TransactionCategoryController from '@/api/TransactionCategoryController';
 import ClientController from '@/api/ClientController';
+import OrderController from '@/api/OrderController';
+import OrderStatusController from '@/api/OrderStatusController';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
@@ -127,7 +129,9 @@ export default {
         initialClient: { type: ClientDto, default: null },
         initialProjectId: { type: [String, Number, null], default: null },
         orderId: { type: [String, Number], required: false },
-        defaultCashId: { type: Number, default: null, required: false }
+        defaultCashId: { type: Number, default: null, required: false },
+        prefillAmount: { type: Number, default: null },
+        isPaymentModal: { type: Boolean, default: false }
     },
     data() {
         return {
@@ -135,7 +139,7 @@ export default {
             cashId: this.editingItem ? (this.editingItem.cashId || this.defaultCashId || '') : '',
             cashAmount: this.editingItem ? this.editingItem.cashAmount : null,
             cashCurrencyId: this.editingItem ? this.editingItem.cashCurrencyId : null,
-            origAmount: this.editingItem ? this.editingItem.origAmount : 0,
+            origAmount: this.editingItem ? this.editingItem.origAmount : (this.prefillAmount || 0),
             currencyId: this.editingItem ? this.editingItem.origCurrencyId : '',
             categoryId: this.editingItem ? this.editingItem.categoryId : 4, // По умолчанию id = 4 для типа income
             projectId: this.editingItem ? this.editingItem.projectId : '',
@@ -156,6 +160,7 @@ export default {
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
+            orderInfo: null,
 
         }
     },
@@ -184,7 +189,8 @@ export default {
                 this.fetchCurrencies(),
                 this.fetchAllCategories(),
                 this.fetchAllProjects(),
-                this.fetchAllCashRegisters()
+                this.fetchAllCashRegisters(),
+                this.loadOrderInfo()
             ]);
             
             console.log('DEBUG: TransactionCreatePage mounted - editingItemId:', this.editingItemId, 'disabled:', !!this.editingItemId);
@@ -196,6 +202,11 @@ export default {
                 }
                 if (this.initialProjectId) {
                     this.projectId = this.initialProjectId;
+                }
+                
+                // Устанавливаем предзаполненную сумму если она есть
+                if (this.prefillAmount && this.prefillAmount > 0) {
+                    this.origAmount = this.prefillAmount;
                 }
             }
             
@@ -278,6 +289,12 @@ export default {
                     if (this.selectedClient) {
                         await this.updateClientBalance();
                     }
+                    
+                    // Проверяем, нужно ли закрыть заказ (только для модалки доплаты)
+                    if (this.isPaymentModal) {
+                        await this.checkAndCloseOrder();
+                    }
+                    
                     this.$emit('saved', resp)
                     this.clearForm();
                 }
@@ -373,6 +390,71 @@ export default {
             
             // Эмитим событие для открытия нового модального окна с копированными данными
             this.$emit('copy-transaction', copiedTransaction);
+        },
+        
+        // Загружаем информацию о заказе если это модалка доплаты
+        async loadOrderInfo() {
+            if (this.isPaymentModal && this.orderId) {
+                try {
+                    this.orderInfo = await OrderController.getItem(this.orderId);
+                } catch (error) {
+                    console.error('Ошибка загрузки информации о заказе:', error);
+                }
+            }
+        },
+        
+        // Проверяем, нужно ли закрыть заказ после создания транзакции
+        async checkAndCloseOrder() {
+            if (!this.isPaymentModal || !this.orderId || !this.orderInfo) {
+                console.log('checkAndCloseOrder: пропускаем - не модалка доплаты или нет данных о заказе');
+                return;
+            }
+            
+            try {
+                console.log('checkAndCloseOrder: начинаем проверку заказа', this.orderId);
+                
+                // Получаем общую сумму оплат по заказу через существующий API
+                const paidTotalData = await TransactionController.getTotalByOrderId(this.orderId);
+                const totalPaid = parseFloat(paidTotalData.total) || 0;
+                const orderTotal = parseFloat(this.orderInfo.totalPrice) || 0;
+                
+                console.log('checkAndCloseOrder: суммы', { totalPaid, orderTotal, isEnough: totalPaid >= orderTotal });
+                
+                // Если оплачено достаточно, закрываем заказ
+                if (totalPaid >= orderTotal) {
+                    console.log('checkAndCloseOrder: сумма достаточна, ищем статус "закрытый"');
+                    
+                    // Находим статус "закрытый" (обычно это статус с category_id = 4)
+                    const statuses = await OrderStatusController.getAllItems();
+                    console.log('checkAndCloseOrder: все статусы', statuses);
+                    
+                    const closedStatus = statuses.find(status => status.categoryId === 4);
+                    console.log('checkAndCloseOrder: найденный статус "закрытый"', closedStatus);
+                    
+                    if (closedStatus) {
+                        console.log('checkAndCloseOrder: обновляем статус заказа на', closedStatus.id);
+                        
+                        const result = await OrderController.batchUpdateStatus({
+                            ids: [this.orderId],
+                            status_id: closedStatus.id
+                        });
+                        
+                        console.log('checkAndCloseOrder: результат обновления статуса', result);
+                        
+                        this.showNotification(
+                            this.$t('success'), 
+                            this.$t('orderClosedAutomatically'), 
+                            false
+                        );
+                    } else {
+                        console.log('checkAndCloseOrder: статус "закрытый" не найден');
+                    }
+                } else {
+                    console.log('checkAndCloseOrder: сумма недостаточна для закрытия заказа');
+                }
+            } catch (error) {
+                console.error('Ошибка при проверке закрытия заказа:', error);
+            }
         }
     },
     watch: {
@@ -455,6 +537,15 @@ export default {
             deep: true,
             immediate: true
         },
+        prefillAmount: {
+            handler(newAmount) {
+                // Обновляем сумму только если это новая транзакция (не редактирование)
+                if (!this.editingItemId && newAmount && newAmount > 0) {
+                    this.origAmount = newAmount;
+                }
+            },
+            immediate: true
+        }
     }
 }
 </script>

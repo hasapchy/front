@@ -797,6 +797,7 @@ export default {
   errorCreatingCategory: 'Ошибка создания категории',
   errorAddingCategory: 'Ошибка добавления категории',
   errorUpdatingCategory: 'Ошибка обновления категории',
+  productCategory: 'Категория товаров',
   
   // Фразы для заказов
   createOrder: 'Создать заказ',
@@ -808,6 +809,10 @@ export default {
   errorCreatingOrder: 'Ошибка создания заказа',
   errorAddingOrder: 'Ошибка добавления заказа',
   errorUpdatingOrder: 'Ошибка обновления заказа',
+    orderNeedsPayment: 'Заказ требует доплаты',
+    remainingAmount: 'Осталось доплатить',
+    orderClosedAutomatically: 'Заказ автоматически закрыт',
+    transactionSaved: 'Транзакция сохранена',
   
   // Фразы для категорий заказов
   addOrderCategory: 'Добавить категорию заказа',
@@ -1033,6 +1038,7 @@ export default {
   shortPdf: 'Краткий',
   detailedPdf: 'Подробный',
   downloadSelected: 'Скачать выбранные',
+  print: 'Печать',
   pdfGenerated: 'PDF сгенерирован',
   errorGeneratingPdf: 'Ошибка генерации PDF',
   selectInvoiceFirst: 'Сначала выберите счет',
@@ -1073,6 +1079,7 @@ export default {
   invoices: 'Счета',
   transfers: 'Трансферы по кассам',
   projectStatuses: 'Статусы проектов',
+  transaction_categories: 'Категории транзакций',
 
   projectStatusSuccessfullyAdded: 'Статус проекта успешно добавлен',
   projectStatusSuccessfullyDeleted: 'Статус проекта успешно удален',

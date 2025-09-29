@@ -27,6 +27,35 @@ export class InvoicePdfGenerator {
     }
   }
 
+  // Получаем сумму с валютой
+  getCurrencyAmount() {
+    const amount = parseFloat(this.invoice.totalAmount || 0).toFixed(2);
+    
+    // Пытаемся получить символ валюты из заказов
+    let currencySymbol = 'Нет валюты';
+    
+    if (this.invoice.orders && this.invoice.orders.length > 0) {
+      // Берем валюту из первого заказа
+      const firstOrder = this.invoice.orders[0];
+      if (firstOrder.currencySymbol) {
+        currencySymbol = firstOrder.currencySymbol;
+      } else if (firstOrder.currencyCode) {
+        currencySymbol = firstOrder.currencyCode;
+      } else if (firstOrder.currencyName) {
+        currencySymbol = firstOrder.currencyName;
+      }
+    } else if (this.invoice.amountInfo) {
+      // Если нет заказов, но есть метод amountInfo, используем его
+      const amountInfo = this.invoice.amountInfo();
+      const match = amountInfo.match(/\d+(?:\.\d+)?\s+(.+)$/);
+      if (match && match[1] && match[1] !== 'Нет валюты') {
+        currencySymbol = match[1];
+      }
+    }
+    
+    return `${amount} ${currencySymbol}`;
+  }
+
   // Краткий вариант документа
   generateShortDocument() {
     const invoiceDate = new Date(this.invoice.invoiceDate).toLocaleDateString('ru-RU', {
@@ -190,7 +219,7 @@ export class InvoicePdfGenerator {
         
         // Итого
         {
-          text: `Итого: ${parseFloat(this.invoice.totalAmount || 0).toFixed(2)} ${this.invoice.currencySymbol || 'Нет валюты'}`,
+          text: `Итого: ${this.getCurrencyAmount()}`,
           style: 'total'
         }
       ]
@@ -292,7 +321,7 @@ export class InvoicePdfGenerator {
         
         // Итого
         {
-          text: `Итого к оплате: ${parseFloat(this.invoice.totalAmount || 0).toFixed(2)}`,
+          text: `Итого к оплате: ${this.getCurrencyAmount()}`,
           style: 'total'
         }
       ]
@@ -318,7 +347,7 @@ export class InvoicePdfGenerator {
     }
     
     // Группируем товары по заказам
-    this.invoice.products.forEach((product, index) => {
+    this.invoice.products.forEach((product, _index) => {
       const orderId = product.orderId || (this.invoice.orders && this.invoice.orders.length > 0 ? this.invoice.orders[0].id : 'INV');
       
       if (!ordersMap.has(orderId)) {
@@ -336,7 +365,9 @@ export class InvoicePdfGenerator {
       const orderProducts = ordersMap.get(orderId).products;
       ordersMap.get(orderId).products.push({
         ...product,
-        index: orderProducts.length + 1
+        index: orderProducts.length + 1,
+        // Сохраняем методы объекта
+        getUnitName: product.getUnitName ? product.getUnitName.bind(product) : null
       });
     });
     

@@ -158,6 +158,7 @@ export default {
   shortPdf: 'Short',
   detailedPdf: 'Detailed',
   downloadSelected: 'Download Selected',
+  print: 'Print',
   
   // Performance monitoring
   performanceMonitor: 'Monitoring',
@@ -253,4 +254,13 @@ export default {
   // Filters
   resetFilters: 'Reset Filters',
   allProjects: 'All Projects',
+  
+  // Product Categories
+  productCategory: 'Product Category',
+  
+  // Order payment
+    orderNeedsPayment: 'Order requires additional payment',
+    remainingAmount: 'Remaining amount to pay',
+    orderClosedAutomatically: 'Order automatically closed',
+    transactionSaved: 'Transaction saved',
 }

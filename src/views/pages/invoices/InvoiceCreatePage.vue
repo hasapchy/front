@@ -87,6 +87,13 @@
                                     <i class="fas fa-download mr-2"></i>
                                     {{ $t('downloadSelected') }}
                                 </button>
+                                <button 
+                                    @click="printPdf" 
+                                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                >
+                                    <i class="fas fa-print mr-2"></i>
+                                    {{ $t('print') }}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -118,7 +125,9 @@ import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import formChangesMixin from "@/mixins/formChangesMixin";
 import { eventBus } from "@/eventBus";
-import { generateInvoicePdf } from "@/utils/pdfUtils";
+import { generateInvoicePdf, InvoicePdfGenerator } from "@/utils/pdfUtils";
+import pdfMake from 'pdfmake/build/pdfmake';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
@@ -394,6 +403,95 @@ export default {
             } catch (error) {
                 this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
             }
+        },
+
+        printPdf() {
+            if (!this.editingItem) {
+                this.showNotification(this.$t('error'), this.$t('saveInvoiceFirst'), true);
+                return;
+            }
+
+            if (this.pdfVariant.length === 0) {
+                this.showNotification(this.$t('error'), 'Выберите вариант PDF', true);
+                return;
+            }
+
+            try {
+                this.pdfVariant.forEach(variant => {
+                    this.generateInvoicePdfForPrint(this.editingItem, null, variant);
+                });
+                // Не показываем уведомление сразу, оно будет показано после печати
+                this.showPdfDropdown = false;
+            } catch (error) {
+                this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
+            }
+        },
+
+        generateInvoicePdfForPrint(invoice, companyData = null, variant = 'short') {
+            const defaultCompanyData = {
+                name: 'LEBIZLI TURKMEN',
+                address: 'Aşgabat şäheri, Berkararlyk etraby, 2127 (G. Gulyýew) köçesi, 26A H/H',
+                tax_id: '23202934173861407785000',
+                warehouse_id: '23202000173861807785000',
+                email: 'lebizliturkmen@mail.ru',
+                phone: '+993 12 45-26-17'
+            };
+
+            // Устанавливаем шрифты
+            if (pdfFonts && pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
+                pdfMake.vfs = pdfFonts.pdfMake.vfs;
+            } else if (pdfFonts && pdfFonts.vfs) {
+                pdfMake.vfs = pdfFonts.vfs;
+            } else {
+                pdfMake.vfs = {};
+            }
+
+            // Создаем генератор PDF
+            const generator = new InvoicePdfGenerator(invoice, companyData || defaultCompanyData, variant);
+            const documentDefinition = generator.generateDocument();
+            
+            // Создаем PDF и открываем для печати
+            const pdfDoc = pdfMake.createPdf(documentDefinition);
+            pdfDoc.getBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = url;
+                document.body.appendChild(iframe);
+                
+                // Ждем загрузки и печатаем
+                iframe.onload = () => {
+                    // Добавляем обработчики событий печати
+                    const printWindow = iframe.contentWindow;
+                    
+                    // Обработчик для завершения печати
+                    const handleAfterPrint = () => {
+                        document.body.removeChild(iframe);
+                        URL.revokeObjectURL(url);
+                        this.showNotification(this.$t('pdfGenerated'), '', false);
+                        printWindow.removeEventListener('afterprint', handleAfterPrint);
+                    };
+                    
+                    // Обработчик для отмены печати
+                    const handleBeforePrint = () => {
+                        printWindow.removeEventListener('beforeprint', handleBeforePrint);
+                    };
+                    
+                    printWindow.addEventListener('afterprint', handleAfterPrint);
+                    printWindow.addEventListener('beforeprint', handleBeforePrint);
+                    
+                    // Запускаем печать
+                    printWindow.print();
+                    
+                    // Fallback - если события не сработают, очищаем через 5 секунд
+                    setTimeout(() => {
+                        if (document.body.contains(iframe)) {
+                            document.body.removeChild(iframe);
+                            URL.revokeObjectURL(url);
+                        }
+                    }, 5000);
+                };
+            });
         },
 
         formatDateTimeForInput(dateString) {

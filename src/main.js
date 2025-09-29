@@ -33,9 +33,9 @@ async function bootstrapApp() {
 
   if (token) {
     try {
-      const user = await AuthController.getUser();
-      store.dispatch("setUser", user);
-      store.dispatch("setPermissions", user.permissions);
+      const userData = await AuthController.getUser();
+      store.dispatch("setUser", userData.user);
+      store.dispatch("setPermissions", userData.permissions);
     } catch (e) {
       console.error("Ошибка при загрузке пользователя:", e);
       localStorage.removeItem("token");

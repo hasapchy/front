@@ -160,4 +160,16 @@ export default class TransactionController {
       throw error;
     }
   }
+
+  // Получить общую сумму оплат по заказу
+  static async getTotalByOrderId(orderId) {
+    try {
+      const { data } = await api.get(`/transactions/total?order_id=${orderId}`);
+      return data;
+    } catch (error) {
+      console.error('Ошибка при получении суммы оплат по заказу:', error);
+      throw error;
+    }
+  }
+
 }

@@ -86,9 +86,9 @@ export default {
             this.loading = true;
             try {
                 await AuthController.login(this.email, this.password, this.remember);
-                const user = await AuthController.getUser();
-                this.$store.dispatch('setUser', user);
-                this.$store.dispatch('setPermissions', user.permissions);
+                const userData = await AuthController.getUser();
+                this.$store.dispatch('setUser', userData.user);
+                this.$store.dispatch('setPermissions', userData.permissions);
 
                 this.$router.push('/');
             } catch (error) {

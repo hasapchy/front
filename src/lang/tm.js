@@ -254,6 +254,13 @@ export default {
   // Склад
   stock: 'Stok',
   
+  // Категории товаров
+  productCategory: 'Önüm kategoriýasy',
+  
+  // Заказ оплаты
+  orderNeedsPayment: 'Sargyt goşmaça töleg talap edýär',
+  remainingAmount: 'Galan töleg mukdary',
+  
   // Заказы
   orderNumber: 'Sargyt nomeri',
   orderDate: 'Sargyt senesi',
@@ -957,4 +964,14 @@ export default {
   errorSavingReceipt: 'Giriş ýazgysyny saklamakda ýalňyşlyk',
   receiptSuccessfullyDeleted: 'Giriş ýazgysy üstünlikli pozuldy',
   errorDeletingReceipt: 'Giriş ýazgysyny pozmakda ýalňyşlyk',
+  
+  // PDF Generation
+  generatePdf: 'PDF döret',
+  shortPdf: 'Gysga',
+  detailedPdf: 'Jikme-jik',
+  downloadSelected: 'Saýlananlary göçür',
+  print: 'Çap et',
+  pdfGenerated: 'PDF döredildi',
+  errorGeneratingPdf: 'PDF döretmekde ýalňyşlyk',
+  saveInvoiceFirst: 'Ilki hasaby saklaň',
 }

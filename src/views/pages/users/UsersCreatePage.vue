@@ -443,6 +443,7 @@ export default {
                         companies: Array.isArray(this.form.companies) ? this.form.companies : this.form.companies.split(',').filter(c => c.trim() !== '')
                     };
                     
+                    
                     if (this.form.newPassword) {
                         updateData.password = this.form.newPassword;
                     }
@@ -473,6 +474,10 @@ export default {
                 const currentUser = this.$store.state.user;
                 if (savedUser.user && savedUser.user.id === currentUser.id) {
                     this.$store.commit('SET_USER', savedUser.user);
+                    // Обновляем права текущего пользователя, если он редактирует себя
+                    if (savedUser.permissions) {
+                        this.$store.commit('SET_PERMISSIONS', savedUser.permissions);
+                    }
                 }
 
                 if (savedUser.user && savedUser.user.photo) {

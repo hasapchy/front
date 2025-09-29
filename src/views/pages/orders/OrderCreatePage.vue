@@ -5,18 +5,18 @@
         <div>
             <div v-show="currentTab === 'info'">
                 <ClientSearch v-model:selectedClient="selectedClient" />
-                <!-- <div>
-                    <label class="required">{{ $t('category') }}</label>
+                <div>
+                    <label>{{ $t('productCategory') }}</label>
                     <div class="flex items-center space-x-2">
-                        <select v-model="categoryId" required @change="onCategoryChange">
+                        <select v-model="categoryId">
                             <option value="">{{ $t('no') }}</option>
-                            <option v-for="category in allCategories" :key="category.id" :value="category.id">
+                            <option v-for="category in allProductCategories" :key="category.id" :value="category.id">
                                 {{ category.name }}
                             </option>
                         </select>
-                        <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showCategoryModal" />
+                        <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showProductCategoryModal" />
                     </div>
-                </div> -->
+                </div>
                 <div>
                     <label>{{ $t('date') }}</label>
                     <input type="datetime-local" v-model="date"
@@ -157,9 +157,9 @@
     <SideModalDialog :showForm="projectModalDialog" :onclose="closeProjectModal" :level="1">
         <ProjectCreatePage @saved="handleProjectSaved" @saved-error="handleProjectSavedError" />
     </SideModalDialog>
-    <!-- <SideModalDialog :showForm="categoryModalDialog" :onclose="closeCategoryModal" :level="1">
-        <OrderCategoryCreatePage @saved="handleCategorySaved" @saved-error="handleCategorySavedError" />
-    </SideModalDialog> -->
+    <SideModalDialog :showForm="productCategoryModalDialog" :onclose="closeProductCategoryModal" :level="1">
+        <CategoryCreatePage @saved="handleProductCategorySaved" @saved-error="handleProductCategorySavedError" />
+    </SideModalDialog>
 </template>
 
 <script>
@@ -174,20 +174,20 @@ import ProjectController from '@/api/ProjectController';
 import AppController from '@/api/AppController';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import OrderStatusController from '@/api/OrderStatusController';
-// import OrderCategoryController from '@/api/OrderCategoryController';
+import CategoriesController from '@/api/CategoriesController';
 // import OrderAfController from '@/api/OrderAfController';
 import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
-// import OrderCategoryCreatePage from '@/views/pages/orders/OrderCategoryCreatePage.vue';
+import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
     emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { ClientSearch, ProductSearch, PrimaryButton, AlertDialog, TabBar, OrderTransactionsTab, SideModalDialog, ProjectCreatePage },
+    components: { ClientSearch, ProductSearch, PrimaryButton, AlertDialog, TabBar, OrderTransactionsTab, SideModalDialog, ProjectCreatePage, CategoriesCreatePage },
     props: {
         editingItem: { type: Object, default: null }
     },
@@ -205,7 +205,7 @@ export default {
             currencyId: this.editingItem?.currency_id || null,
             warehouseId: this.editingItem?.warehouseId || '',
             statusId: this.editingItem?.statusId || 1,
-            // categoryId: this.editingItem?.categoryId || '',
+            categoryId: this.editingItem?.categoryId || this.editingItem?.category_id || '',
             date: this.editingItem?.date ? this.editingItem.date.substring(0, 16) : new Date().toISOString().substring(0, 16),
             note: this.editingItem?.note || '',
             description: this.editingItem?.description || '',
@@ -215,7 +215,7 @@ export default {
             editingItemId: this.editingItem?.id || null,
             allWarehouses: [],
             allProjects: [],
-            // allCategories: [],
+            allProductCategories: [],
             allCashRegisters: [],
             currencies: [],
             statuses: [],
@@ -224,7 +224,7 @@ export default {
             deleteDialog: false,
             paidTotalAmount: 0,
             projectModalDialog: false,
-            // categoryModalDialog: false,
+            productCategoryModalDialog: false,
             removedTempProducts: [],
             // additionalFields: [],
             // additionalFieldValues: {},
@@ -234,6 +234,7 @@ export default {
         this.fetchAllWarehouses();
         this.fetchAllCashRegisters();
         this.fetchAllProjects();
+        this.fetchAllProductCategories();
         this.fetchCurrencies();
         this.fetchOrderStatuses();
     },
@@ -251,7 +252,7 @@ export default {
         this.$nextTick(async () => {
             await Promise.all([
                 this.fetchAllWarehouses(),
-                // this.fetchAllCategories(),
+                this.fetchAllProductCategories(),
                 this.fetchAllCashRegisters()
             ]);
             
@@ -319,6 +320,7 @@ export default {
                 project_id: this.projectId,
                 note: this.note,
                 warehouse_id: this.warehouseId,
+                category_id: this.categoryId,
                 products: [...this.products],
                 discount: this.discount,
                 discount_type: this.discountType,
@@ -363,6 +365,13 @@ export default {
             // Всегда загружаем данные заново
             await this.$store.dispatch('loadProjects');
             this.allProjects = this.$store.getters.projects;
+        },
+        async fetchAllProductCategories() {
+            try {
+                this.allProductCategories = await CategoriesController.getParentCategories();
+            } catch (error) {
+                this.allProductCategories = [];
+            }
         },
         // async fetchAllCategories() {
         //     try {
@@ -583,7 +592,7 @@ export default {
             this.projectId = '';
             this.warehouseId = this.allWarehouses[0]?.id || '';
             this.statusId = '';
-            // this.categoryId = this.allCategories[0]?.id || '';
+            this.categoryId = '';
             this.date = new Date().toISOString().substring(0, 16);
             this.note = '';
             this.description = ''
@@ -617,6 +626,21 @@ export default {
             this.closeProjectModal();
         },
         handleProjectSavedError(error) {
+        },
+        showProductCategoryModal() {
+            this.productCategoryModalDialog = true;
+        },
+        closeProductCategoryModal() {
+            this.productCategoryModalDialog = false;
+        },
+        handleProductCategorySaved(category) {
+            this.fetchAllProductCategories();
+            if (category && category.id) {
+                this.categoryId = category.id;
+            }
+            this.closeProductCategoryModal();
+        },
+        handleProductCategorySavedError(error) {
         },
         // showCategoryModal() {
         //     this.categoryModalDialog = true;
@@ -723,7 +747,7 @@ export default {
                     this.warehouseId = newEditingItem.warehouseId || (this.allWarehouses.length ? this.allWarehouses[0].id : '');
                     this.cashId = newEditingItem.cashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
                     this.statusId = newEditingItem.statusId || '';
-                    // this.categoryId = newEditingItem.categoryId || '';
+                    this.categoryId = newEditingItem.categoryId || newEditingItem.category_id || '';
                     this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
                     this.note = newEditingItem.note || '';
                     this.description = newEditingItem.description || '';

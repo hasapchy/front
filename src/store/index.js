@@ -757,6 +757,18 @@ export default createStore({
         throw error;
       }
     },
+    // Принудительное обновление прав пользователя
+    async refreshUserPermissions({ commit, state }) {
+      try {
+        const response = await api.get('/user/me');
+        commit('SET_USER', response.data.user);
+        commit('SET_PERMISSIONS', response.data.permissions);
+        return response.data;
+      } catch (error) {
+        console.error('Ошибка обновления прав пользователя:', error);
+        throw error;
+      }
+    },
   },
 
   getters: {

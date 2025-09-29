@@ -70,8 +70,8 @@ export default class OrderController {
           item.description ?? "",
           item.status_id,
           item.status_name,
-          // item.category_id,
-          // item.category_name,
+          item.category_id,
+          item.category_name,
           item.client_id,
           item.user_id,
           item.user_name,
@@ -210,8 +210,8 @@ export default class OrderController {
       item.description ?? "",
       item.status_id,
       item.status_name,
-      // item.category_id,
-      // item.category_name,
+      item.product_category_id,
+      item.product_category_name,
       item.client_id,
       item.user_id,
       item.user_name,
@@ -345,4 +345,6 @@ export default class OrderController {
       throw error;
     }
   }
+
+
 }

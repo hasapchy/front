@@ -86,6 +86,22 @@
         </div>
     </SideModalDialog>
 
+    <SideModalDialog :showForm="transactionModal" :onclose="() => transactionModal = false">
+        <TransactionCreatePage 
+            v-if="editingTransaction"
+            :editingItem="null"
+            :initial-client="editingTransaction.client"
+            :initial-project-id="editingTransaction.projectId"
+            :order-id="editingTransaction.orderId"
+            :default-cash-id="editingTransaction.cashId"
+            :prefill-amount="editingTransaction.prefillAmount"
+            :is-payment-modal="true"
+            @saved="handleTransactionSaved"
+            @saved-error="handleTransactionSavedError"
+            @close-request="() => transactionModal = false"
+        />
+    </SideModalDialog>
+
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
             <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
@@ -101,6 +117,7 @@ import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import OrderController from "@/api/OrderController";
 import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
 import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
+import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
 import OrderStatusController from "@/api/OrderStatusController";
 import { markRaw } from "vue";
@@ -124,7 +141,7 @@ const TimelinePanel = defineAsyncComponent(() =>
 
 export default {
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, InvoiceCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, CheckboxFilter, OrderPaymentFilter, StatusSelectCell },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, CheckboxFilter, OrderPaymentFilter, StatusSelectCell },
     data() {
         return {
             data: null,
@@ -161,6 +178,8 @@ export default {
             statusFilter: [],
             statusOptions: [],
             paidOrdersFilter: false,
+            transactionModal: false,
+            editingTransaction: null,
         };
     },
     created() {
@@ -267,7 +286,15 @@ export default {
             if (!ids.length) return;
             this.loading = true;
             try {
-                await OrderController.batchUpdateStatus({ ids, status_id: statusId });
+                const result = await OrderController.batchUpdateStatus({ ids, status_id: statusId });
+                
+                // Проверяем, если это ответ о недостающей оплате
+                if (result && result.needs_payment) {
+                    this.showPaymentModal(result);
+                    this.loading = false;
+                    return;
+                }
+                
                 await this.fetchItems(this.data.currentPage, true);
                 this.showNotification(this.$t('statusUpdated'), "", false);
                 
@@ -275,12 +302,40 @@ export default {
                     this.$refs.timelinePanel.refreshTimeline();
                 }
             } catch (e) {
-                const errors = this.getApiErrorMessage(e);
-                this.showNotification(this.$t('errorChangingStatus'), errors.join("\n"), true);
+                // Проверяем, если это ошибка 422 с информацией о недостающей оплате
+                if (e.response && e.response.status === 422 && e.response.data && e.response.data.needs_payment) {
+                    this.showPaymentModal(e.response.data);
+                } else {
+                    const errors = this.getApiErrorMessage(e);
+                    this.showNotification(this.$t('errorChangingStatus'), errors.join("\n"), true);
+                }
             }
             this.loading = false;
             this.selectedIds = [];
             this.showBatchStatusSelect = false;
+        },
+
+        showPaymentModal(paymentData) {
+            // Находим заказ, который нужно оплатить
+            const order = this.data.items.find(item => item.id === paymentData.order_id);
+            if (order) {
+                // Показываем уведомление с информацией о недостающей сумме
+                this.showNotification(
+                    this.$t('orderNeedsPayment'), 
+                    `${this.$t('remainingAmount')}: ${paymentData.remaining_amount} ${order.currencySymbol || ''}`, 
+                    true
+                );
+                
+                // Открываем модалку создания транзакции напрямую
+                this.editingTransaction = {
+                    orderId: order.id,
+                    client: order.client,
+                    projectId: order.projectId,
+                    cashId: order.cashId,
+                    prefillAmount: paymentData.remaining_amount
+                };
+                this.transactionModal = true;
+            }
         },
 
         toggleTimeline() {
@@ -361,6 +416,18 @@ export default {
         },
 
         handleInvoiceSavedError(error) {
+            this.showNotification(this.$t('error'), error, true);
+        },
+
+        handleTransactionSaved() {
+            this.showNotification(this.$t('success'), this.$t('transactionSaved'), false);
+            this.transactionModal = false;
+            this.editingTransaction = null;
+            // Обновляем список заказов
+            this.fetchItems(this.data.currentPage, true);
+        },
+
+        handleTransactionSavedError(error) {
             this.showNotification(this.$t('error'), error, true);
         }
     }

@@ -43,20 +43,36 @@ const UsersController = {
 
   async updateItem(id, payload, file = null) {
     try {
-      const formData = new FormData();
       
-      Object.keys(payload).forEach((key) => {
-        formData.append(key, payload[key]);
-      });
+      let requestData;
+      let headers = {};
       
       if (file) {
+        // Если есть файл, используем FormData
+        const formData = new FormData();
+        
+        Object.keys(payload).forEach((key) => {
+          if (Array.isArray(payload[key])) {
+            // Для массивов добавляем каждый элемент отдельно
+            payload[key].forEach((item, index) => {
+              formData.append(`${key}[${index}]`, item);
+            });
+          } else {
+            formData.append(key, payload[key]);
+          }
+        });
+        
         formData.append("photo", file);
+        requestData = formData;
+        headers["Content-Type"] = "multipart/form-data";
+      } else {
+        // Если нет файла, отправляем JSON
+        requestData = payload;
+        headers["Content-Type"] = "application/json";
       }
 
-      const { data } = await api.put(`/users/${id}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      const { data } = await api.put(`/users/${id}`, requestData, {
+        headers: headers,
       });
       
       return data;
