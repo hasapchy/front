@@ -51,7 +51,7 @@ export function permissionGroupLabel(name) {
     order_categories: "Order Categories",
     transaction_categories: "Transaction Categories",
     cash_registers: "Cash Registers",
-
+    currencies_access: "Currency Access",
     settings: "General Settings",
     system_settings: "System Settings",
   };

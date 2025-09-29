@@ -530,6 +530,7 @@ export default {
   create: 'Döretmek',
   update: 'Redaktir etmek',
   delete: 'Pozmak',
+  all: 'Ähli',
   
   // Группы прав
   warehouse_movements: 'Ambar — Göçürmeler',
@@ -553,6 +554,9 @@ export default {
   cash_registers: 'Kassalar',
   settings: 'Sazlamalar',
   system_settings: 'Sistem sazlamalary',
+  currencies: 'Pul birlikleri',
+  currencies_access: 'Pul birliklerine giriş',
+  transaction_categories: 'Tranzaksiya kategoriýalary',
   
   // Общие
   no: 'Ýok',

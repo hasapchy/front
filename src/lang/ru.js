@@ -602,6 +602,7 @@ export default {
   create: 'Создание',
   update: 'Редактирование',
   delete: 'Удаление',
+  all: 'Все',
   
   // Группы прав
   warehouse_movements: 'Склад — Перемещения',
@@ -625,6 +626,9 @@ export default {
   cash_registers: 'Кассы',
   settings: 'Настройки',
   system_settings: 'Настройки системы',
+  currencies: 'Валюты',
+  currencies_access: 'Доступ к валютам',
+  transaction_categories: 'Категории транзакций',
   
   // Общие
   no: 'Нет',
