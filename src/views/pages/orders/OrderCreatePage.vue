@@ -158,7 +158,7 @@
         <ProjectCreatePage @saved="handleProjectSaved" @saved-error="handleProjectSavedError" />
     </SideModalDialog>
     <SideModalDialog :showForm="productCategoryModalDialog" :onclose="closeProductCategoryModal" :level="1">
-        <CategoryCreatePage @saved="handleProductCategorySaved" @saved-error="handleProductCategorySavedError" />
+        <CategoriesCreatePage @saved="handleProductCategorySaved" @saved-error="handleProductCategorySavedError" />
     </SideModalDialog>
 </template>
 
