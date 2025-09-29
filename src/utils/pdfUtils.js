@@ -194,13 +194,11 @@ export class InvoicePdfGenerator {
         },
         ...(this.invoice.client ? [
           {
-            text: this.invoice.client.fullName(),
+            text: this.invoice.client.phones && this.invoice.client.phones.length > 0 
+              ? `${this.invoice.client.fullName()} (${this.invoice.client.phones[0].phone})`
+              : this.invoice.client.fullName(),
             margin: [0, 0, 0, 5]
           },
-          ...(this.invoice.client.phones && this.invoice.client.phones.length > 0 ? [{
-            text: `Телефон: ${this.invoice.client.phones[0].phone}`,
-            margin: [0, 0, 0, 5]
-          }] : []),
           ...(this.invoice.client.address ? [{
             text: `Адрес: ${this.invoice.client.address}`,
             margin: [0, 0, 0, 5]
@@ -311,10 +309,17 @@ export class InvoicePdfGenerator {
           text: 'Покупатель: (заказчик)',
           style: 'sectionTitle'
         },
-        {
-          text: this.invoice.client ? this.invoice.client.fullName() : 'Клиент не указан',
+        ...(this.invoice.client ? [
+          {
+            text: this.invoice.client.phones && this.invoice.client.phones.length > 0 
+              ? `${this.invoice.client.fullName()} (${this.invoice.client.phones[0].phone})`
+              : this.invoice.client.fullName(),
+            margin: [0, 0, 0, 15]
+          }
+        ] : [{
+          text: 'Клиент не указан',
           margin: [0, 0, 0, 15]
-        },
+        }]),
         
         // Таблица товаров с группировкой по заказам
         ...this.generateDetailedProductsTable(ordersData),
