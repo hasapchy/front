@@ -263,4 +263,9 @@ export default {
     remainingAmount: 'Remaining amount to pay',
     orderClosedAutomatically: 'Order automatically closed',
     transactionSaved: 'Transaction saved',
+    balance: 'Balance',
+    paymentByBalance: 'Payment by balance',
+    paymentType: 'Payment type',
+    cashPayment: 'Cash payment',
+    selectCashRegister: 'Select cash register',
 }

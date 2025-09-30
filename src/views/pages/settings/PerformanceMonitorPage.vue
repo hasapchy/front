@@ -1,173 +1,106 @@
 <template>
-  <div class="p-6">
+  <div class="min-h-screen bg-gray-50">
+    <div class="p-6 max-w-7xl mx-auto">
     <div class="mb-6">
       <TokenStatusComponent />
     </div>
 
-    <!-- Кнопки управления -->
-    <div class="mb-6 flex flex-wrap gap-4">
+    <!-- Кнопка обновления -->
+    <div class="mb-6 flex justify-end">
       <button
         @click="refreshMetrics"
         :disabled="loading"
         class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
       >
         <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }"></i>
-        <span>Обновить метрики</span>
+        <span>Обновить данные</span>
       </button>
-      
-      <button
-        @click="runFullTest"
-        :disabled="loading"
-        class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
-      >
-        <i class="fas fa-play"></i>
-        <span>Запустить полный тест</span>
-      </button>
+    </div>
 
-      <div class="relative">
+    <!-- Табы -->
+    <div class="bg-white rounded-lg shadow">
+      <!-- Навигация по табам -->
+      <div class="border-b border-gray-200">
+        <nav class="flex flex-wrap space-x-2 sm:space-x-8 px-4 sm:px-6" aria-label="Tabs">
         <button
-          @click="toggleTestDropdown"
-          :disabled="loading"
-          class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
-        >
-          <i class="fas fa-vial"></i>
-          <span>Тесты производительности</span>
-          <i class="fas fa-chevron-down ml-2" :class="{ 'fa-chevron-up': showTestDropdown }"></i>
+            v-for="tab in tabs"
+            :key="tab.id"
+            @click="setActiveTab(tab.id)"
+            :class="[
+              'tab-button py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 whitespace-nowrap',
+              activeTab === tab.id
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            ]"
+          >
+            <i :class="tab.icon" class="mr-1 sm:mr-2"></i>
+            <span class="hidden sm:inline">{{ tab.name }}</span>
+            <span class="sm:hidden">{{ tab.name.split(' ')[0] }}</span>
+            <span v-if="tab.count !== null" class="ml-2 bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
+              {{ tab.count }}
+            </span>
         </button>
-        <div 
-          v-if="showTestDropdown" 
-          class="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-10 transition-all duration-200 ease-in-out transform origin-top"
-          :class="{ 'scale-95 opacity-0': !showTestDropdown, 'scale-100 opacity-100': showTestDropdown }"
-        >
-          <div class="py-2">
-            <button
-              @click="runSalesTest"
-              :disabled="loading"
-              class="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors duration-150 flex items-center space-x-2"
-            >
-              <i class="fas fa-chart-line text-purple-600"></i>
-              <span>Тест продаж</span>
-            </button>
-            
-            <button
-              @click="runClientsTest"
-              :disabled="loading"
-              class="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors duration-150 flex items-center space-x-2"
-            >
-              <i class="fas fa-users text-blue-600"></i>
-              <span>Тест клиентов</span>
-            </button>
-            
-            <button
-              @click="runProductsTest"
-              :disabled="loading"
-              class="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors duration-150 flex items-center space-x-2"
-            >
-              <i class="fas fa-box text-green-600"></i>
-              <span>Тест продуктов</span>
-            </button>
-            
-            <button
-              @click="runTransactionsTest"
-              :disabled="loading"
-              class="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors duration-150 flex items-center space-x-2"
-            >
-              <i class="fas fa-money-bill-wave text-yellow-600"></i>
-              <span>Тест транзакций</span>
-            </button>
-            
-            <button
-              @click="runWarehousesTest"
-              :disabled="loading"
-              class="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors duration-150 flex items-center space-x-2"
-            >
-              <i class="fas fa-warehouse text-indigo-600"></i>
-              <span>Тест складов</span>
-            </button>
-            
-            <button
-              @click="runOrdersTest"
-              :disabled="loading"
-              class="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors duration-150 flex items-center space-x-2"
-            >
-              <i class="fas fa-shopping-cart text-pink-600"></i>
-              <span>Тест заказов</span>
-            </button>
-            
-            <button
-              @click="runProjectsTest"
-              :disabled="loading"
-              class="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors duration-150 flex items-center space-x-2"
-            >
-              <i class="fas fa-project-diagram text-orange-600"></i>
-              <span>Тест проектов</span>
-            </button>
-            
-            <button
-              @click="runUsersTest"
-              :disabled="loading"
-              class="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors duration-150 flex items-center space-x-2"
-            >
-              <i class="fas fa-user-friends text-teal-600"></i>
-              <span>Тест пользователей</span>
-            </button>
-            
-            <button
-              @click="runCommentsTest"
-              :disabled="loading"
-              class="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors duration-150 flex items-center space-x-2"
-            >
-              <i class="fas fa-comments text-cyan-600"></i>
-              <span>Тест комментариев</span>
-            </button>
-            
-            <button
-              @click="runTimelineTest"
-              :disabled="loading"
-              class="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors duration-150 flex items-center space-x-2"
-            >
-              <i class="fas fa-clock text-violet-600"></i>
-              <span>Тест таймлайна</span>
-            </button>
-
-      <button
-              @click="runCashRegistersTest"
-        :disabled="loading"
-              class="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors duration-150 flex items-center space-x-2"
-            >
-              <i class="fas fa-cash-register text-emerald-600"></i>
-              <span>Тест касс</span>
-        </button>
+        </nav>
       </div>
+
+      <!-- Содержимое табов -->
+      <div class="p-4 sm:p-6">
+        <!-- Индикатор загрузки -->
+        <div v-if="loading" class="flex justify-center items-center py-12">
+          <div class="text-center">
+            <i class="fas fa-spinner fa-spin text-3xl text-blue-600 mb-4"></i>
+            <div class="text-gray-600">Загрузка данных...</div>
+      </div>
+        </div>
+
+        <!-- Общая информация -->
+        <transition name="tab-fade" mode="out-in">
+          <div v-if="activeTab === 'overview'" key="overview" class="space-y-6">
+          <DatabaseInfoComponent :database-info="metrics.database_info" />
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div class="card-hover bg-blue-50 p-4 rounded-lg">
+              <div class="text-sm text-blue-600">Статус системы</div>
+              <div class="text-lg font-medium text-blue-800">Активна</div>
+            </div>
+            <div class="card-hover bg-green-50 p-4 rounded-lg">
+              <div class="text-sm text-green-600">Время работы</div>
+              <div class="text-lg font-medium text-green-800">{{ getUptime() }}</div>
+            </div>
+            <div class="card-hover bg-purple-50 p-4 rounded-lg">
+              <div class="text-sm text-purple-600">Последнее обновление</div>
+              <div class="text-lg font-medium text-purple-800">{{ getLastUpdate() }}</div>
         </div>
             </div>
             </div>
 
-    <!-- Компоненты -->
-    <DatabaseInfoComponent :database-info="metrics.database_info" />
-    
+          <!-- Производительность -->
+          <div v-else-if="activeTab === 'performance'" key="performance">
     <PerformanceMetricsComponent :metrics="metrics" />
+          </div>
     
+          <!-- База данных -->
+          <div v-else-if="activeTab === 'database'" key="database">
     <TableSizesComponent 
       :table-sizes="metrics.table_sizes" 
       @update-table-sizes="updateTableSizes" 
     />
+          </div>
     
+          <!-- Кэш -->
+          <div v-else-if="activeTab === 'cache'" key="cache">
     <CacheComponent />
+          </div>
     
+          <!-- Логи -->
+          <div v-else-if="activeTab === 'logs'" key="logs">
     <ServerLogsComponent />
-
-
-
-
-    <div v-if="loading" class="flex justify-center items-center py-12">
-      <div class="text-center">
-        <i class="fas fa-spinner fa-spin text-3xl text-blue-600 mb-4"></i>
-        <div class="text-gray-600">Загрузка метрик...</div>
+          </div>
+        </transition>
       </div>
     </div>
 
-    <div v-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4">
+    <!-- Общие ошибки -->
+    <div v-if="error && !loading" class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
       <div class="flex">
         <div class="flex-shrink-0">
           <i class="fas fa-exclamation-triangle text-red-400"></i>
@@ -179,6 +112,7 @@
       </div>
     </div>
 
+    </div>
   </div>
 </template>
 
@@ -208,16 +142,49 @@ export default {
       metrics: {},
       loading: false,
       error: null,
-      showTestDropdown: false
+      activeTab: 'overview',
+      tabs: [
+        {
+          id: 'overview',
+          name: 'Обзор',
+          icon: 'fas fa-chart-pie',
+          count: null
+        },
+        {
+          id: 'performance',
+          name: 'Производительность',
+          icon: 'fas fa-tachometer-alt',
+          count: null
+        },
+        {
+          id: 'database',
+          name: 'База данных',
+          icon: 'fas fa-database',
+          count: null
+        },
+        {
+          id: 'cache',
+          name: 'Кэш',
+          icon: 'fas fa-memory',
+          count: null
+        },
+        {
+          id: 'logs',
+          name: 'Логи',
+          icon: 'fas fa-file-alt',
+          count: null
+        }
+      ]
     };
   },
   async mounted() {
+    // Восстанавливаем выбранный таб из localStorage
+    const savedTab = localStorage.getItem('performance-monitor-active-tab');
+    if (savedTab && this.tabs.find(tab => tab.id === savedTab)) {
+      this.activeTab = savedTab;
+    }
+    
     await this.refreshMetrics();
-    document.addEventListener('click', this.handleClickOutside);
-  },
-
-  beforeUnmount() {
-    document.removeEventListener('click', this.handleClickOutside);
   },
   methods: {
     updateTableSizes(tableSizes) {
@@ -230,6 +197,7 @@ export default {
       
       try {
         this.metrics = await PerformanceController.getDatabaseMetrics();
+        this.updateTabCounts();
         this.showNotification('Метрики обновлены', '', false);
       } catch (error) {
         this.showNotification('Ошибка загрузки метрик', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
@@ -248,220 +216,107 @@ export default {
       }
     },
 
-    async runFullTest() {
-      this.loading = true;
-      this.error = null;
-      
-      try {
-        await PerformanceController.runPerformanceTest('all');
-        this.showNotification('Тест производительности завершен', '', false);
-        // Обновляем метрики после теста
-        await this.refreshMetrics();
-      } catch (error) {
-        this.error = error.response?.data?.message || error.message || 'Неизвестная ошибка';
-        this.showNotification('Ошибка выполнения теста', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
-      } finally {
-        this.loading = false;
+
+    getUptime() {
+      if (this.metrics.uptime) {
+        const hours = Math.floor(this.metrics.uptime / 3600);
+        const minutes = Math.floor((this.metrics.uptime % 3600) / 60);
+        return `${hours}ч ${minutes}м`;
       }
+      return 'N/A';
     },
 
-    async runSalesTest() {
-      this.loading = true;
-      this.error = null;
-      this.showTestDropdown = false;
-      
-      try {
-        await PerformanceController.runPerformanceTest('sales_list');
-        this.showNotification('Тест продаж завершен', '', false);
-        await this.refreshMetrics();
-      } catch (error) {
-        this.error = error.response?.data?.message || error.message || 'Неизвестная ошибка';
-        this.showNotification('Ошибка выполнения теста', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
-      } finally {
-        this.loading = false;
+    getLastUpdate() {
+      if (this.metrics.last_updated) {
+        return new Date(this.metrics.last_updated).toLocaleString('ru-RU');
       }
+      return new Date().toLocaleString('ru-RU');
     },
 
-    async runClientsTest() {
-      this.loading = true;
-      this.error = null;
-      this.showTestDropdown = false;
-      
-      try {
-        await PerformanceController.runPerformanceTest('clients_list');
-        this.showNotification('Тест клиентов завершен', '', false);
-        await this.refreshMetrics();
-      } catch (error) {
-        this.error = error.response?.data?.message || error.message || 'Неизвестная ошибка';
-        this.showNotification('Ошибка выполнения теста', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
-      } finally {
-        this.loading = false;
-      }
+    setActiveTab(tabId) {
+      this.activeTab = tabId;
+      localStorage.setItem('performance-monitor-active-tab', tabId);
     },
 
-    async runProductsTest() {
-      this.loading = true;
-      this.error = null;
-      this.showTestDropdown = false;
-      
-      try {
-        await PerformanceController.runPerformanceTest('products_list');
-        this.showNotification('Тест продуктов завершен', '', false);
-        await this.refreshMetrics();
-      } catch (error) {
-        this.error = error.response?.data?.message || error.message || 'Неизвестная ошибка';
-        this.showNotification('Ошибка выполнения теста', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async runTransactionsTest() {
-      this.loading = true;
-      this.error = null;
-      this.showTestDropdown = false;
-      
-      try {
-        await PerformanceController.runPerformanceTest('transactions_list');
-        this.showNotification('Тест транзакций завершен', '', false);
-        await this.refreshMetrics();
-      } catch (error) {
-        this.error = error.response?.data?.message || error.message || 'Неизвестная ошибка';
-        this.showNotification('Ошибка выполнения теста', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async runWarehousesTest() {
-      this.loading = true;
-      this.error = null;
-      this.showTestDropdown = false;
-      
-      try {
-        await PerformanceController.runPerformanceTest('warehouses_list');
-        this.showNotification('Тест складов завершен', '', false);
-        await this.refreshMetrics();
-      } catch (error) {
-        this.error = error.response?.data?.message || error.message || 'Неизвестная ошибка';
-        this.showNotification('Ошибка выполнения теста', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
-      } finally {
-        this.loading = false;
-      }
-    },
-
-         async runOrdersTest() {
-       this.loading = true;
-       this.error = null;
-       this.showTestDropdown = false;
-       
-       try {
-         await PerformanceController.runPerformanceTest('orders_list');
-         this.showNotification('Тест заказов завершен', '', false);
-         await this.refreshMetrics();
-       } catch (error) {
-         this.error = error.response?.data?.message || error.message || 'Неизвестная ошибка';
-         this.showNotification('Ошибка выполнения теста', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
-       } finally {
-         this.loading = false;
-       }
-     },
-
-           async runProjectsTest() {
-        this.loading = true;
-        this.error = null;
-        this.showTestDropdown = false;
-        
-        try {
-          await PerformanceController.runPerformanceTest('projects_list');
-          this.showNotification('Тест проектов завершен', '', false);
-          await this.refreshMetrics();
-        } catch (error) {
-          this.error = error.response?.data?.message || error.message || 'Неизвестная ошибка';
-          this.showNotification('Ошибка выполнения теста', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
-        } finally {
-          this.loading = false;
+    updateTabCounts() {
+      // Обновляем счетчики для каждого таба
+      this.tabs.forEach(tab => {
+        switch (tab.id) {
+          case 'overview':
+            tab.count = null; // Обзор не имеет счетчика
+            break;
+          case 'performance':
+            tab.count = this.getPerformanceMetricsCount();
+            break;
+          case 'database':
+            tab.count = this.metrics.table_sizes ? this.metrics.table_sizes.length : 0;
+            break;
+          case 'cache':
+            tab.count = this.getCacheItemsCount();
+            break;
+          case 'logs':
+            tab.count = this.getLogsCount();
+            break;
         }
-      },
-
-      async runUsersTest() {
-        this.loading = true;
-        this.error = null;
-        this.showTestDropdown = false;
-        
-        try {
-          await PerformanceController.runPerformanceTest('users_list');
-          this.showNotification('Тест пользователей завершен', '', false);
-          await this.refreshMetrics();
-        } catch (error) {
-          this.error = error.response?.data?.message || error.message || 'Неизвестная ошибка';
-          this.showNotification('Ошибка выполнения теста', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
-        } finally {
-          this.loading = false;
-        }
-      },
-
-      async runCommentsTest() {
-        this.loading = true;
-        this.error = null;
-        this.showTestDropdown = false;
-        
-        try {
-          await PerformanceController.runPerformanceTest('comments_list');
-          this.showNotification('Тест комментариев завершен', '', false);
-          await this.refreshMetrics();
-        } catch (error) {
-          this.error = error.response?.data?.message || error.message || 'Неизвестная ошибка';
-          this.showNotification('Ошибка выполнения теста', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
-        } finally {
-          this.loading = false;
-        }
-      },
-
-      async runTimelineTest() {
-        this.loading = true;
-        this.error = null;
-        this.showTestDropdown = false;
-        
-        try {
-          await PerformanceController.runPerformanceTest('timeline');
-          this.showNotification('Тест таймлайна завершен', '', false);
-          await this.refreshMetrics();
-        } catch (error) {
-          this.error = error.response?.data?.message || error.message || 'Неизвестная ошибка';
-          this.showNotification('Ошибка выполнения теста', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
-        } finally {
-          this.loading = false;
-        }
-      },
-
-      async runCashRegistersTest() {
-        this.loading = true;
-        this.error = null;
-        this.showTestDropdown = false;
-        
-        try {
-          await PerformanceController.runPerformanceTest('cash_registers_list');
-          this.showNotification('Тест касс завершен', '', false);
-          await this.refreshMetrics();
-        } catch (error) {
-          this.error = error.response?.data?.message || error.message || 'Неизвестная ошибка';
-          this.showNotification('Ошибка выполнения теста', error.response?.data?.message || error.message || 'Неизвестная ошибка', true);
-        } finally {
-          this.loading = false;
-        }
-      },
-
-    toggleTestDropdown() {
-      this.showTestDropdown = !this.showTestDropdown;
+      });
     },
 
-    handleClickOutside(event) {
-      const dropdown = event.target.closest('.relative');
-      if (!dropdown) {
-        this.showTestDropdown = false;
-      }
+    getPerformanceMetricsCount() {
+      let count = 0;
+      if (this.metrics.sales_performance) count++;
+      if (this.metrics.clients_performance) count++;
+      if (this.metrics.products_performance) count++;
+      if (this.metrics.comments_performance) count++;
+      if (this.metrics.cash_registers_performance) count++;
+      if (this.metrics.invoices_performance) count++;
+      if (this.metrics.warehouses_performance) count++;
+      if (this.metrics.warehouse_receipts_performance) count++;
+      if (this.metrics.warehouse_writeoffs_performance) count++;
+      if (this.metrics.warehouse_transfers_performance) count++;
+      if (this.metrics.orders_performance) count++;
+      return count;
+    },
+
+    getCacheItemsCount() {
+      // Возвращаем примерное количество элементов кэша
+      return this.metrics.cache_stats ? this.metrics.cache_stats.items_count || 0 : 0;
+    },
+
+    getLogsCount() {
+      // Возвращаем количество строк в логах
+      return this.metrics.server_logs ? this.metrics.server_logs.lines?.length || 0 : 0;
     }
   }
 };
 </script>
+
+<style scoped>
+.tab-fade-enter-active,
+.tab-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.tab-fade-enter-from,
+.tab-fade-leave-to {
+  opacity: 0;
+}
+
+/* Анимация для кнопок табов */
+.tab-button {
+  transition: all 0.2s ease;
+}
+
+.tab-button:hover {
+  transform: translateY(-1px);
+}
+
+/* Анимация для карточек */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+</style>

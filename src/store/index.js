@@ -1,6 +1,8 @@
 import { createStore } from "vuex";
 import api from "@/api/axiosInstance";
 import CacheUtils from "@/utils/cacheUtils";
+import CacheMonitor from "@/utils/cacheMonitor";
+import CacheInvalidator from "@/utils/cacheInvalidator";
 
 export default createStore({
   state: {
@@ -28,7 +30,11 @@ export default createStore({
       products: false,
       services: false,
       categories: false,
-      projects: false
+      projects: false,
+      orderStatuses: false,
+      projectStatuses: false,
+      transactionCategories: false,
+      productStatuses: false
     },
     warehouses: [], // Склады
     cashRegisters: [], // Кассы
@@ -37,10 +43,14 @@ export default createStore({
     services: [], // Услуги
     categories: [], // Категории
     projects: [], // Проекты
+    orderStatuses: [], // Статусы заказов
+    projectStatuses: [], // Статусы проектов
+    transactionCategories: [], // Категории транзакций
+    productStatuses: [], // Статусы товаров
     currentCompany: null, // Текущая выбранная компания
     userCompanies: [], // Список компаний пользователя
-    // Кэш данных по компаниям
-    companyDataCache: {}, // { companyId: { warehouses: [], clients: [], ... } }
+    // Кэш данных по компаниям (удаляем, используем только localStorage)
+    // companyDataCache: {}, // { companyId: { warehouses: [], clients: [], ... } }
     soundEnabled: (() => {
       // Синхронно загружаем настройку звука из localStorage при инициализации store
       const soundEnabled = localStorage.getItem('soundEnabled');
@@ -50,6 +60,12 @@ export default createStore({
       accessTokenExpiresAt: null,
       refreshTokenExpiresAt: null,
       needsRefresh: false
+    },
+    // Мониторинг кэша
+    cacheMonitor: {
+      enabled: true,
+      intervalId: null,
+      lastCheck: null
     }
   },
 
@@ -127,12 +143,25 @@ export default createStore({
     SET_PROJECTS(state, projects) {
       state.projects = projects;
     },
-    SET_COMPANY_DATA_CACHE(state, { companyId, dataType, data }) {
-      if (!state.companyDataCache[companyId]) {
-        state.companyDataCache[companyId] = {};
-      }
-      state.companyDataCache[companyId][dataType] = data;
+    SET_ORDER_STATUSES(state, orderStatuses) {
+      state.orderStatuses = orderStatuses;
     },
+    SET_PROJECT_STATUSES(state, projectStatuses) {
+      state.projectStatuses = projectStatuses;
+    },
+    SET_TRANSACTION_CATEGORIES(state, transactionCategories) {
+      state.transactionCategories = transactionCategories;
+    },
+    SET_PRODUCT_STATUSES(state, productStatuses) {
+      state.productStatuses = productStatuses;
+    },
+    // Удаляем неиспользуемую мутацию
+    // SET_COMPANY_DATA_CACHE(state, { companyId, dataType, data }) {
+    //   if (!state.companyDataCache[companyId]) {
+    //     state.companyDataCache[companyId] = {};
+    //   }
+    //   state.companyDataCache[companyId][dataType] = data;
+    // },
     CLEAR_COMPANY_DATA(state) {
       state.warehouses = [];
       state.cashRegisters = [];
@@ -141,6 +170,11 @@ export default createStore({
       state.services = [];
       state.categories = [];
       state.projects = [];
+      // НЕ очищаем глобальные данные (статусы, валюты, единицы)
+      // state.orderStatuses = [];
+      // state.projectStatuses = [];
+      // state.transactionCategories = [];
+      // state.productStatuses = [];
     },
     SET_CURRENT_COMPANY(state, company) {
       state.currentCompany = company;
@@ -154,9 +188,34 @@ export default createStore({
     SET_LOADING_FLAG(state, { type, loading }) {
       state.loadingFlags[type] = loading;
     },
+    SET_CACHE_MONITOR_INTERVAL(state, intervalId) {
+      state.cacheMonitor.intervalId = intervalId;
+    },
+    SET_CACHE_MONITOR_LAST_CHECK(state, timestamp) {
+      state.cacheMonitor.lastCheck = timestamp;
+    },
   },
 
   actions: {
+    // Универсальная функция ожидания загрузки
+    async waitForLoading({ state }, type, maxAttempts = 50) {
+      return new Promise((resolve, reject) => {
+        let attempts = 0;
+        
+        const checkLoaded = () => {
+          if (!state.loadingFlags[type]) {
+            resolve();
+          } else if (attempts >= maxAttempts) {
+            console.warn(`Таймаут ожидания загрузки: ${type}`);
+            reject(new Error('Таймаут загрузки'));
+          } else {
+            attempts++;
+            setTimeout(checkLoaded, 100);
+          }
+        };
+        checkLoaded();
+      });
+    },
     setSearchQuery({ commit }, query) {
       commit("SET_SEARCH_QUERY", query);
     },
@@ -236,18 +295,9 @@ export default createStore({
       }
     },
     async loadUnits({ commit, state }) {
-      // Если уже загружаются, ждем завершения
+      // Если уже загружаются, ждем завершения (с таймаутом)
       if (state.loadingFlags.units) {
-        return new Promise((resolve) => {
-          const checkLoaded = () => {
-            if (!state.loadingFlags.units) {
-              resolve();
-            } else {
-              setTimeout(checkLoaded, 100);
-            }
-          };
-          checkLoaded();
-        });
+        return this.waitForLoading({ state }, 'units');
       }
 
       // Если уже загружены, не загружаем повторно
@@ -340,16 +390,7 @@ export default createStore({
     async loadWarehouses({ commit, state }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.warehouses) {
-        return new Promise((resolve) => {
-          const checkLoaded = () => {
-            if (!state.loadingFlags.warehouses) {
-              resolve();
-            } else {
-              setTimeout(checkLoaded, 100);
-            }
-          };
-          checkLoaded();
-        });
+        return this.waitForLoading({ state }, 'warehouses');
       }
 
 
@@ -393,16 +434,7 @@ export default createStore({
     async loadCashRegisters({ commit, state }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.cashRegisters) {
-        return new Promise((resolve) => {
-          const checkLoaded = () => {
-            if (!state.loadingFlags.cashRegisters) {
-              resolve();
-            } else {
-              setTimeout(checkLoaded, 100);
-            }
-          };
-          checkLoaded();
-        });
+        return this.waitForLoading({ state }, 'cashRegisters');
       }
 
 
@@ -454,16 +486,7 @@ export default createStore({
     async loadClients({ commit, state }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.clients) {
-        return new Promise((resolve) => {
-          const checkLoaded = () => {
-            if (!state.loadingFlags.clients) {
-              resolve();
-            } else {
-              setTimeout(checkLoaded, 100);
-            }
-          };
-          checkLoaded();
-        });
+        return this.waitForLoading({ state }, 'clients');
       }
 
 
@@ -676,6 +699,174 @@ export default createStore({
         commit('SET_PROJECTS', []);
       }
     },
+    async loadOrderStatuses({ commit, state }) {
+      // Если уже загружаются, ждем завершения
+      if (state.loadingFlags.orderStatuses) {
+        return this.waitForLoading({ state }, 'orderStatuses');
+      }
+
+      // Если уже загружены, не загружаем повторно
+      if (state.orderStatuses.length > 0) {
+        return;
+      }
+
+      commit('SET_LOADING_FLAG', { type: 'orderStatuses', loading: true });
+      
+      try {
+        // Проверяем кэш (24 часа)
+        const cachedOrderStatuses = CacheUtils.get('orderStatuses_cache', 24 * 60 * 60 * 1000);
+        if (cachedOrderStatuses) {
+          commit('SET_ORDER_STATUSES', cachedOrderStatuses);
+          console.log('Статусы заказов загружены из кэша');
+          return;
+        }
+        
+        // Загружаем с сервера
+        const OrderStatusController = (await import('@/api/OrderStatusController')).default;
+        const data = await OrderStatusController.getAllItems();
+        commit('SET_ORDER_STATUSES', data);
+        
+        // Сохраняем в кэш
+        CacheUtils.set('orderStatuses_cache', data);
+        console.log('Статусы заказов загружены с сервера и закэшированы');
+      } catch (error) {
+        console.error('Ошибка загрузки статусов заказов:', error);
+        // При ошибке пытаемся использовать устаревший кэш
+        const cachedOrderStatuses = CacheUtils.get('orderStatuses_cache', Infinity);
+        if (cachedOrderStatuses) {
+          commit('SET_ORDER_STATUSES', cachedOrderStatuses);
+          console.log('Используем устаревший кэш статусов заказов из-за ошибки сети');
+        }
+      } finally {
+        commit('SET_LOADING_FLAG', { type: 'orderStatuses', loading: false });
+      }
+    },
+    async loadProjectStatuses({ commit, state }) {
+      // Если уже загружаются, ждем завершения
+      if (state.loadingFlags.projectStatuses) {
+        return this.waitForLoading({ state }, 'projectStatuses');
+      }
+
+      // Если уже загружены, не загружаем повторно
+      if (state.projectStatuses.length > 0) {
+        return;
+      }
+
+      commit('SET_LOADING_FLAG', { type: 'projectStatuses', loading: true });
+      
+      try {
+        // Проверяем кэш (24 часа)
+        const cachedProjectStatuses = CacheUtils.get('projectStatuses_cache', 24 * 60 * 60 * 1000);
+        if (cachedProjectStatuses) {
+          commit('SET_PROJECT_STATUSES', cachedProjectStatuses);
+          console.log('Статусы проектов загружены из кэша');
+          return;
+        }
+        
+        // Загружаем с сервера
+        const ProjectStatusController = (await import('@/api/ProjectStatusController')).default;
+        const data = await ProjectStatusController.getAllItems();
+        commit('SET_PROJECT_STATUSES', data);
+        
+        // Сохраняем в кэш
+        CacheUtils.set('projectStatuses_cache', data);
+        console.log('Статусы проектов загружены с сервера и закэшированы');
+      } catch (error) {
+        console.error('Ошибка загрузки статусов проектов:', error);
+        // При ошибке пытаемся использовать устаревший кэш
+        const cachedProjectStatuses = CacheUtils.get('projectStatuses_cache', Infinity);
+        if (cachedProjectStatuses) {
+          commit('SET_PROJECT_STATUSES', cachedProjectStatuses);
+          console.log('Используем устаревший кэш статусов проектов из-за ошибки сети');
+        }
+      } finally {
+        commit('SET_LOADING_FLAG', { type: 'projectStatuses', loading: false });
+      }
+    },
+    async loadTransactionCategories({ commit, state }) {
+      // Если уже загружаются, ждем завершения
+      if (state.loadingFlags.transactionCategories) {
+        return this.waitForLoading({ state }, 'transactionCategories');
+      }
+
+      // Если уже загружены, не загружаем повторно
+      if (state.transactionCategories.length > 0) {
+        return;
+      }
+
+      commit('SET_LOADING_FLAG', { type: 'transactionCategories', loading: true });
+      
+      try {
+        // Проверяем кэш (24 часа)
+        const cachedTransactionCategories = CacheUtils.get('transactionCategories_cache', 24 * 60 * 60 * 1000);
+        if (cachedTransactionCategories) {
+          commit('SET_TRANSACTION_CATEGORIES', cachedTransactionCategories);
+          console.log('Категории транзакций загружены из кэша');
+          return;
+        }
+        
+        // Загружаем с сервера
+        const AppController = (await import('@/api/AppController')).default;
+        const data = await AppController.getTransactionCategories();
+        commit('SET_TRANSACTION_CATEGORIES', data);
+        
+        // Сохраняем в кэш
+        CacheUtils.set('transactionCategories_cache', data);
+        console.log('Категории транзакций загружены с сервера и закэшированы');
+      } catch (error) {
+        console.error('Ошибка загрузки категорий транзакций:', error);
+        // При ошибке пытаемся использовать устаревший кэш
+        const cachedTransactionCategories = CacheUtils.get('transactionCategories_cache', Infinity);
+        if (cachedTransactionCategories) {
+          commit('SET_TRANSACTION_CATEGORIES', cachedTransactionCategories);
+          console.log('Используем устаревший кэш категорий транзакций из-за ошибки сети');
+        }
+      } finally {
+        commit('SET_LOADING_FLAG', { type: 'transactionCategories', loading: false });
+      }
+    },
+    async loadProductStatuses({ commit, state }) {
+      // Если уже загружаются, ждем завершения
+      if (state.loadingFlags.productStatuses) {
+        return this.waitForLoading({ state }, 'productStatuses');
+      }
+
+      // Если уже загружены, не загружаем повторно
+      if (state.productStatuses.length > 0) {
+        return;
+      }
+
+      commit('SET_LOADING_FLAG', { type: 'productStatuses', loading: true });
+      
+      try {
+        // Проверяем кэш (24 часа)
+        const cachedProductStatuses = CacheUtils.get('productStatuses_cache', 24 * 60 * 60 * 1000);
+        if (cachedProductStatuses) {
+          commit('SET_PRODUCT_STATUSES', cachedProductStatuses);
+          console.log('Статусы товаров загружены из кэша');
+          return;
+        }
+        
+        // Загружаем с сервера
+        const AppController = (await import('@/api/AppController')).default;
+        const data = await AppController.getProductStatuses();
+        commit('SET_PRODUCT_STATUSES', data);
+        
+        // Сохраняем в кэш
+        CacheUtils.set('productStatuses_cache', data);
+        console.log('Статусы товаров загружены с сервера и закэшированы');
+      } catch (error) {
+        console.error('Ошибка загрузки статусов товаров:', error);
+        // При ошибке пытаемся использовать устаревший кэш
+        const cachedProductStatuses = CacheUtils.get('productStatuses_cache', Infinity);
+        if (cachedProductStatuses) {
+          commit('SET_PRODUCT_STATUSES', cachedProductStatuses);
+          console.log('Используем устаревший кэш статусов товаров из-за ошибки сети');
+        }
+      } finally {
+        commit('SET_LOADING_FLAG', { type: 'productStatuses', loading: false });
+      }
+    },
     // Загрузка всех данных компании
     async loadCompanyData({ dispatch, commit, state }) {
       if (!state.currentCompany?.id) return;
@@ -695,11 +886,19 @@ export default createStore({
     },
     // Очистка кэша
     async clearCache({ commit }) {
-      // Очищаем глобальный кэш (валюты, единицы)
+      // Очищаем глобальный кэш (валюты, единицы, статусы)
       localStorage.removeItem('currencies_cache');
       localStorage.removeItem('currencies_cache_timestamp');
       localStorage.removeItem('units_cache');
       localStorage.removeItem('units_cache_timestamp');
+      localStorage.removeItem('orderStatuses_cache');
+      localStorage.removeItem('orderStatuses_cache_timestamp');
+      localStorage.removeItem('projectStatuses_cache');
+      localStorage.removeItem('projectStatuses_cache_timestamp');
+      localStorage.removeItem('transactionCategories_cache');
+      localStorage.removeItem('transactionCategories_cache_timestamp');
+      localStorage.removeItem('productStatuses_cache');
+      localStorage.removeItem('productStatuses_cache_timestamp');
       
       // Очищаем кэш данных компаний
       const keys = Object.keys(localStorage);
@@ -720,6 +919,10 @@ export default createStore({
       commit('CLEAR_COMPANY_DATA');
       commit('SET_CURRENCIES', []);
       commit('SET_UNITS', []);
+      commit('SET_ORDER_STATUSES', []);
+      commit('SET_PROJECT_STATUSES', []);
+      commit('SET_TRANSACTION_CATEGORIES', []);
+      commit('SET_PRODUCT_STATUSES', []);
       
       console.log('Кэш очищен');
     },
@@ -758,7 +961,7 @@ export default createStore({
       }
     },
     // Принудительное обновление прав пользователя
-    async refreshUserPermissions({ commit, state }) {
+    async refreshUserPermissions({ commit }) {
       try {
         const response = await api.get('/user/me');
         commit('SET_USER', response.data.user);
@@ -768,6 +971,106 @@ export default createStore({
         console.error('Ошибка обновления прав пользователя:', error);
         throw error;
       }
+    },
+    // Мониторинг кэша
+    startCacheMonitoring({ commit, state }) {
+      if (state.cacheMonitor.enabled && !state.cacheMonitor.intervalId) {
+        const intervalId = CacheMonitor.startMonitoring(60000); // каждую минуту
+        commit('SET_CACHE_MONITOR_INTERVAL', intervalId);
+        console.log('📊 Мониторинг кэша запущен');
+      }
+    },
+    stopCacheMonitoring({ commit, state }) {
+      if (state.cacheMonitor.intervalId) {
+        clearInterval(state.cacheMonitor.intervalId);
+        commit('SET_CACHE_MONITOR_INTERVAL', null);
+        console.log('📊 Мониторинг кэша остановлен');
+      }
+    },
+    checkCacheStatus({ commit }) {
+      const info = CacheMonitor.getCacheInfo();
+      commit('SET_CACHE_MONITOR_LAST_CHECK', Date.now());
+      
+      if (info.status.level === 'error') {
+        console.error('🚨 Критический размер кэша:', info.status.message);
+        // Автоматическая очистка
+        CacheMonitor.autoCleanup();
+      } else if (info.status.level === 'warning') {
+        console.warn('⚠️ Предупреждение о размере кэша:', info.status.message);
+      }
+      
+      return info;
+    },
+    // Инвалидация кэша
+    invalidateCache({ commit }, { type, companyId = null }) {
+      const removedCount = CacheInvalidator.invalidateByType(type);
+      if (companyId) {
+        CacheInvalidator.invalidateByCompany(companyId);
+      }
+      
+      // Очищаем соответствующие данные из store
+      const clearMutations = {
+        currencies: 'SET_CURRENCIES',
+        units: 'SET_UNITS',
+        orderStatuses: 'SET_ORDER_STATUSES',
+        projectStatuses: 'SET_PROJECT_STATUSES',
+        transactionCategories: 'SET_TRANSACTION_CATEGORIES',
+        productStatuses: 'SET_PRODUCT_STATUSES',
+        warehouses: 'SET_WAREHOUSES',
+        cashRegisters: 'SET_CASH_REGISTERS',
+        clients: 'SET_CLIENTS',
+        products: 'SET_PRODUCTS',
+        services: 'SET_SERVICES',
+        categories: 'SET_CATEGORIES',
+        projects: 'SET_PROJECTS'
+      };
+      
+      if (clearMutations[type]) {
+        commit(clearMutations[type], []);
+      }
+      
+      return removedCount;
+    },
+    // Инвалидация при CRUD операциях
+    onDataCreate({ dispatch }, { type, companyId = null }) {
+      CacheInvalidator.onCreate(type, companyId);
+      dispatch('invalidateCache', { type, companyId });
+    },
+    onDataUpdate({ dispatch }, { type, companyId = null }) {
+      CacheInvalidator.onUpdate(type, companyId);
+      dispatch('invalidateCache', { type, companyId });
+    },
+    onDataDelete({ dispatch }, { type, companyId = null }) {
+      CacheInvalidator.onDelete(type, companyId);
+      dispatch('invalidateCache', { type, companyId });
+    },
+    // Инвалидация при смене компании
+    onCompanyChange({ commit }, { oldCompanyId, newCompanyId }) {
+      CacheInvalidator.onCompanyChange(oldCompanyId, newCompanyId);
+      // Очищаем данные компании из store
+      commit('CLEAR_COMPANY_DATA');
+    },
+    // Инвалидация при смене пользователя
+    onUserChange({ commit }) {
+      CacheInvalidator.onUserChange();
+      // Очищаем все данные
+      commit('CLEAR_COMPANY_DATA');
+      commit('SET_CURRENCIES', []);
+      commit('SET_UNITS', []);
+      commit('SET_ORDER_STATUSES', []);
+      commit('SET_PROJECT_STATUSES', []);
+      commit('SET_TRANSACTION_CATEGORIES', []);
+      commit('SET_PRODUCT_STATUSES', []);
+    },
+    // Инициализация всех систем кэширования
+    initCacheSystems({ dispatch }) {
+      dispatch('startCacheMonitoring');
+      console.log('🚀 Системы кэширования инициализированы');
+    },
+    // Остановка всех систем кэширования
+    stopCacheSystems({ dispatch }) {
+      dispatch('stopCacheMonitoring');
+      console.log('🛑 Системы кэширования остановлены');
     },
   },
 
@@ -804,6 +1107,10 @@ export default createStore({
     services: (state) => state.services,
     categories: (state) => state.categories,
     projects: (state) => state.projects,
+    orderStatuses: (state) => state.orderStatuses,
+    projectStatuses: (state) => state.projectStatuses,
+    transactionCategories: (state) => state.transactionCategories,
+    productStatuses: (state) => state.productStatuses,
     getUnitById: (state) => (id) => state.units.find(unit => unit.id === id),
     getUnitName: (state) => (id) => {
       const unit = state.units.find(unit => unit.id === id);
@@ -822,5 +1129,9 @@ export default createStore({
     userCompanies: (state) => state.userCompanies,
     currentCompanyId: (state) => state.currentCompany?.id || null,
     soundEnabled: (state) => state.soundEnabled,
+    // Мониторинг кэша
+    cacheMonitor: (state) => state.cacheMonitor,
+    cacheInfo: () => CacheMonitor.getCacheInfo(),
+    cacheStatus: () => CacheMonitor.getCacheStatus(),
   },
 });

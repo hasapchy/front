@@ -23,22 +23,12 @@
             </div>
 
             <div>
-                <CheckboxFilter 
-                    v-model="statusFilter"
-                    :options="statusOptions"
-                    placeholder="allStatuses"
-                    @change="fetchItems"
-                />
-            </div>
-
-            <div>
-                <OrderPaymentFilter 
-                    v-model="paidOrdersFilter"
-                    :orders="data ? data.items : []"
-                    :statusId="4"
-                    :currencySymbol="currencySymbol"
-                    @change="handlePaidOrdersFilterChange"
-                />
+                <select v-model="statusFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
+                    <option value="">{{ $t('allStatuses') }}</option>
+                    <option v-for="status in statuses" :key="status.id" :value="status.id">
+                        {{ status.name }}
+                    </option>
+                </select>
             </div>
 
             <div>
@@ -50,7 +40,19 @@
                 </PrimaryButton>
             </div>
         </div>
-        <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" @changePage="fetchItems" />
+        
+        <div class="flex items-center space-x-3">
+            <div>
+                <OrderPaymentFilter 
+                    v-model="paidOrdersFilter"
+                    :orders="data ? data.items : []"
+                    :statusId="4"
+                    :currencySymbol="currencySymbol"
+                    @change="handlePaidOrdersFilterChange"
+                />
+            </div>
+            <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" @changePage="fetchItems" />
+        </div>
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
         :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
@@ -132,7 +134,6 @@ import tableTranslationMixin from "@/mixins/tableTranslationMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import { defineAsyncComponent } from "vue";
 import { eventBus } from "@/eventBus";
-import CheckboxFilter from "@/views/components/app/forms/CheckboxFilter.vue";
 import OrderPaymentFilter from "@/views/components/app/forms/OrderPaymentFilter.vue";
 import StatusSelectCell from "@/views/components/app/buttons/StatusSelectCell.vue";
 
@@ -142,7 +143,7 @@ const TimelinePanel = defineAsyncComponent(() =>
 
 export default {
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, CheckboxFilter, OrderPaymentFilter, StatusSelectCell },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell },
     data() {
         return {
             data: null,
@@ -176,11 +177,11 @@ export default {
             dateFilter: 'all_time',
             startDate: null,
             endDate: null,
-            statusFilter: [],
-            statusOptions: [],
+            statusFilter: '',
             paidOrdersFilter: false,
             transactionModal: false,
             editingTransaction: null,
+            savedCurrencySymbol: '',
         };
     },
     created() {
@@ -205,7 +206,8 @@ export default {
             if (this.data && this.data.items && this.data.items.length > 0) {
                 return this.data.items[0].currencySymbol || '';
             }
-            return '';
+            // Если нет заказов в текущем результате, используем сохраненный символ
+            return this.savedCurrencySymbol || '';
         }
     },
     methods: {
@@ -257,15 +259,18 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                let currentStatusFilter = [...this.statusFilter];
+                let currentStatusFilter = this.statusFilter;
                 if (this.paidOrdersFilter) {
-                    if (!currentStatusFilter.includes(4)) {
-                        currentStatusFilter.push(4);
-                    }
+                    currentStatusFilter = '4'; // Статус "Оплачен"
                 }
                 
                 const newData = await OrderController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, currentStatusFilter);
                 this.data = newData;
+                
+                // Сохраняем символ валюты из первого заказа, если он есть
+                if (newData && newData.items && newData.items.length > 0 && newData.items[0].currencySymbol) {
+                    this.savedCurrencySymbol = newData.items[0].currencySymbol;
+                }
             } catch (error) {
                 this.showNotification(this.$t('errorGettingOrderList'), error.message, true);
             }
@@ -283,11 +288,9 @@ export default {
 
         
         async fetchStatuses() {
-            this.statuses = await OrderStatusController.getAllItems();
-            this.statusOptions = this.statuses.map(status => ({
-                value: status.id,
-                label: status.name
-            }));
+            // Используем данные из store
+            await this.$store.dispatch('loadOrderStatuses');
+            this.statuses = this.$store.getters.orderStatuses;
         },
 
         async handleChangeStatus(ids, statusId) {
@@ -364,7 +367,7 @@ export default {
             this.dateFilter = 'all_time';
             this.startDate = '';
             this.endDate = '';
-            this.statusFilter = [];
+            this.statusFilter = '';
             this.paidOrdersFilter = false;
             this.fetchItems();
         },

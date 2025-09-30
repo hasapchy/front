@@ -248,6 +248,10 @@ export default {
   
   // Финансы
   balance: 'Balans',
+  paymentByBalance: 'Balans arkaly töleg',
+  paymentType: 'Töleg görnüşi',
+  cashPayment: 'Nagt töleg',
+  selectCashRegister: 'Kassa saýlaň',
   income: 'Girdeji',
   итого: 'Jemi',
   

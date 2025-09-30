@@ -47,6 +47,9 @@ async function bootstrapApp() {
   
   // Инициализируем soundManager с store
   soundManager.setStore(store);
+  
+  // Запускаем системы кэширования
+  store.dispatch('initCacheSystems');
 
   createApp(App).use(router).use(store).use(i18n).mount("#app");
 }

@@ -23,7 +23,7 @@
             <span v-if="selectedLog.last_modified" class="ml-4">Изменён: {{ selectedLog.last_modified }}</span>
           </div>
 
-          <div class="bg-gray-900 text-gray-100 rounded-lg p-4 max-h-96 overflow-auto font-mono text-xs">
+          <div class="bg-gray-900 text-gray-100 rounded-lg p-4 max-h-64 overflow-auto font-mono text-xs">
             <div v-if="selectedLog.lines && selectedLog.lines.length > 0">
               <div v-for="(line, idx) in selectedLog.lines" :key="idx" class="whitespace-pre">{{ line }}</div>
             </div>

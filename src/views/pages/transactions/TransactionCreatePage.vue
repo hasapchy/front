@@ -65,7 +65,7 @@
             <select v-model="categoryId">
                 <option value="">{{ $t('no') }}</option>
                 <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">
-                    {{ cat.typeClass() }} {{ cat.name }}
+                    {{ cat.type ? '✅' : '🔺' }} {{ cat.name }}
                 </option>
             </select>
         </div>
@@ -234,7 +234,9 @@ export default {
         },
         async fetchAllCategories() {
             try {
-                this.allCategories = await TransactionCategoryController.getAllItems();
+                // Используем данные из store
+                await this.$store.dispatch('loadTransactionCategories');
+                this.allCategories = this.$store.getters.transactionCategories;
                 console.log('DEBUG: Transaction categories loaded:', this.allCategories.length, this.allCategories);
                 console.log('DEBUG: First category structure:', this.allCategories[0]);
             } catch (error) {
