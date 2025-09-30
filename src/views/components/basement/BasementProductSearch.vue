@@ -1,19 +1,22 @@
 <template>
     <div class="space-y-6">
 
+        <!-- Услуги вынесены в отдельный компонент -->
+
         <!-- Товары - Поиск -->
         <div class="relative">
-            <label class="block mb-1">{{ $t('products') }}</label>
+            <label class="block mb-1 font-medium text-gray-700">{{ $t('products') }}</label>
             <input type="text" ref="productInput" v-model="productSearch" :placeholder="$t('enterProductNameOrCode')"
-                class="w-full p-2 border rounded" @focus="showProductDropdown = true" @blur="handleProductBlur" :disabled="disabled" />
+                class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" @focus="onFocus" @blur="handleProductBlur" :disabled="disabled" />
 
             <!-- Результаты поиска товаров -->
             <transition name="appear">
                 <ul v-show="showProductDropdown"
-                    class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-10">
+                    class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-50">
                     <li v-if="productSearchLoading" class="p-2 text-gray-500">{{ $t('loading') }}</li>
                     <template v-else-if="productSearch.length === 0">
-                        <li v-for="product in lastProducts" :key="product.id" @mousedown.prevent="selectProduct(product)"
+                        <li v-if="!lastProducts || lastProducts.length === 0" class="p-2 text-gray-500">{{ $t('noData') }}</li>
+                        <li v-else v-for="product in lastProducts" :key="product.id" @mousedown.prevent="selectProduct(product)"
                             class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
                             <div class="flex justify-between items-center">
                                 <div class="flex items-center">
@@ -57,24 +60,8 @@
             </transition>
         </div>
 
-        <!-- Услуги - Горизонтальный скролл -->
-        <div>
-            <label class="block mb-2 font-medium text-gray-700">{{ $t('services') }}</label>
-            <div v-if="servicesLoading" class="text-center py-4 text-gray-500">{{ $t('loading') }}</div>
-            <div v-else-if="services.length === 0" class="text-center py-4 text-gray-500">{{ $t('noData') }}</div>
-            <div v-else class="overflow-x-auto">
-                <div class="flex space-x-2 pb-1" style="min-width: max-content;">
-                    <ServiceCard 
-                        v-for="service in filteredServices" 
-                        :key="service.id" 
-                        :service="service"
-                        @select="selectService" />
-                </div>
-            </div>
-        </div>
-
         <label class="block mt-4 mb-1">{{ $t('specifiedProductsAndServices') }}</label>
-        <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
+        <table class="min-w-full bg-white shadow-md rounded mb-6 w-full">
             <thead class="bg-gray-100 rounded-t-sm">
                 <tr>
                     <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">{{ $t('name') }}</th>
@@ -203,6 +190,12 @@ export default {
         await this.loadServices();
     },
     methods: {
+        async onFocus() {
+            this.showProductDropdown = true;
+            if (!this.lastProducts || this.lastProducts.length === 0) {
+                await this.fetchLastProducts();
+            }
+        },
         async loadServices() {
             this.servicesLoading = true;
             try {

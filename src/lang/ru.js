@@ -338,6 +338,9 @@ export default {
   
   // Склад
   stock: 'Склад',
+  leftovers: 'Остатки',
+  unlimited: 'Бесконечно',
+  selectedStock: 'Выбранные остатки',
   
   // Заказы
   orderNumber: 'Номер заказа',

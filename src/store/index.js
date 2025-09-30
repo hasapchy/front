@@ -294,10 +294,10 @@ export default createStore({
         });
       }
     },
-    async loadUnits({ commit, state }) {
+    async loadUnits({ commit, state, dispatch }) {
       // Если уже загружаются, ждем завершения (с таймаутом)
       if (state.loadingFlags.units) {
-        return this.waitForLoading({ state }, 'units');
+        return dispatch('waitForLoading', 'units');
       }
 
       // Если уже загружены, не загружаем повторно
@@ -387,10 +387,10 @@ export default createStore({
         commit('SET_LOADING_FLAG', { type: 'currencies', loading: false });
       }
     },
-    async loadWarehouses({ commit, state }) {
+    async loadWarehouses({ commit, state, dispatch }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.warehouses) {
-        return this.waitForLoading({ state }, 'warehouses');
+        return dispatch('waitForLoading', 'warehouses');
       }
 
 
@@ -431,10 +431,10 @@ export default createStore({
         commit('SET_LOADING_FLAG', { type: 'warehouses', loading: false });
       }
     },
-    async loadCashRegisters({ commit, state }) {
+    async loadCashRegisters({ commit, state, dispatch }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.cashRegisters) {
-        return this.waitForLoading({ state }, 'cashRegisters');
+        return dispatch('waitForLoading', 'cashRegisters');
       }
 
 
@@ -483,10 +483,10 @@ export default createStore({
         commit('SET_LOADING_FLAG', { type: 'cashRegisters', loading: false });
       }
     },
-    async loadClients({ commit, state }) {
+    async loadClients({ commit, state, dispatch }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.clients) {
-        return this.waitForLoading({ state }, 'clients');
+        return dispatch('waitForLoading', 'clients');
       }
 
 
@@ -699,10 +699,10 @@ export default createStore({
         commit('SET_PROJECTS', []);
       }
     },
-    async loadOrderStatuses({ commit, state }) {
+    async loadOrderStatuses({ commit, state, dispatch }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.orderStatuses) {
-        return this.waitForLoading({ state }, 'orderStatuses');
+        return dispatch('waitForLoading', 'orderStatuses');
       }
 
       // Если уже загружены, не загружаем повторно
@@ -741,10 +741,10 @@ export default createStore({
         commit('SET_LOADING_FLAG', { type: 'orderStatuses', loading: false });
       }
     },
-    async loadProjectStatuses({ commit, state }) {
+    async loadProjectStatuses({ commit, state, dispatch }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.projectStatuses) {
-        return this.waitForLoading({ state }, 'projectStatuses');
+        return dispatch('waitForLoading', 'projectStatuses');
       }
 
       // Если уже загружены, не загружаем повторно
@@ -783,10 +783,10 @@ export default createStore({
         commit('SET_LOADING_FLAG', { type: 'projectStatuses', loading: false });
       }
     },
-    async loadTransactionCategories({ commit, state }) {
+    async loadTransactionCategories({ commit, state, dispatch }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.transactionCategories) {
-        return this.waitForLoading({ state }, 'transactionCategories');
+        return dispatch('waitForLoading', 'transactionCategories');
       }
 
       // Если уже загружены, не загружаем повторно
@@ -825,10 +825,10 @@ export default createStore({
         commit('SET_LOADING_FLAG', { type: 'transactionCategories', loading: false });
       }
     },
-    async loadProductStatuses({ commit, state }) {
+    async loadProductStatuses({ commit, state, dispatch }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.productStatuses) {
-        return this.waitForLoading({ state }, 'productStatuses');
+        return dispatch('waitForLoading', 'productStatuses');
       }
 
       // Если уже загружены, не загружаем повторно

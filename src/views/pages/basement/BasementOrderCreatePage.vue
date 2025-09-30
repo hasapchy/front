@@ -48,20 +48,39 @@
 
               <!-- Проект -->
               <div>
-                <BasementProjectSearch
-                  :selected-project="selectedProject"
-                  @update:selectedProject="onProjectSelected"
-                />
+                <label class="block text-sm font-medium text-gray-700">{{ $t('project') }}</label>
+                <select v-model="form.project_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                  <option value="">{{ $t('no') }}</option>
+                  <option v-for="project in allProjects" :key="project.id" :value="project.id">
+                    {{ project.name }}
+                  </option>
+                </select>
               </div>
             </div>
 
-            <!-- Товары -->
+            <!-- Услуги на всю ширину -->
             <div>
-              <BasementProductSearch
-                v-model="form.products"
-                :show-quantity="true"
-                :required="true"
-              />
+              <BasementServicesRow v-model="form.products" />
+            </div>
+
+            <!-- Товары и Остатки: 50/50 -->
+            <div class="grid grid-cols-2 gap-6">
+              <!-- Товары -->
+              <div>
+                <BasementProductSearch
+                  v-model="form.products"
+                  :show-quantity="true"
+                  :required="true"
+                />
+              </div>
+
+              <!-- Остатки (товары с бесконечным остатком) -->
+              <div>
+                <BasementStockSearch
+                  v-model="form.stockItems"
+                  :show-quantity="true"
+                />
+              </div>
             </div>
 
             <!-- Примечание -->
@@ -165,7 +184,9 @@ import api from '@/api/axiosInstance'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
 import BasementClientSearch from '@/views/components/basement/BasementClientSearch.vue'
 import BasementProductSearch from '@/views/components/basement/BasementProductSearch.vue'
-import BasementProjectSearch from '@/views/components/basement/BasementProjectSearch.vue'
+import BasementStockSearch from '@/views/components/basement/BasementStockSearch.vue'
+import BasementServicesRow from '@/views/components/basement/BasementServicesRow.vue'
+import BasementProjectController from '@/api/BasementProjectController'
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin'
 import crudEventMixin from '@/mixins/crudEventMixin'
 
@@ -176,7 +197,8 @@ export default {
     PrimaryButton,
     BasementClientSearch,
     BasementProductSearch,
-    BasementProjectSearch
+    BasementStockSearch,
+    BasementServicesRow
   },
   props: {
     editingItem: {
@@ -190,12 +212,13 @@ export default {
         client_id: '',
         project_id: '',
         products: [],
+        stockItems: [], // Товары с бесконечным остатком (temp_products)
         note: '',
         cash_id: 1, // Значение по умолчанию
         warehouse_id: 1 // Значение по умолчанию
       },
       selectedClient: null,
-      selectedProject: null,
+      allProjects: [],
       loading: false,
       showClientForm: false,
       clientForm: {
@@ -219,9 +242,10 @@ export default {
     }
   },
   async mounted() {
-    // Загружаем кассы и склады в фоне, не блокируя загрузку страницы
+    // Загружаем кассы, склады и проекты в фоне, не блокируя загрузку страницы
     this.loadCashRegisters();
     this.loadWarehouses();
+    this.loadProjects();
   },
   methods: {
     async loadCashRegisters() {
@@ -258,13 +282,18 @@ export default {
         this.form.warehouse_id = 1;
       }
     },
+    async loadProjects() {
+      try {
+        const paginated = await BasementProjectController.getItems(1);
+        this.allProjects = paginated.items || [];
+      } catch (error) {
+        console.error('Ошибка загрузки проектов:', error);
+        this.allProjects = [];
+      }
+    },
     onClientSelected(client) {
       this.selectedClient = client
       this.form.client_id = client ? client.id : ''
-    },
-    onProjectSelected(project) {
-      this.selectedProject = project
-      this.form.project_id = project ? project.id : ''
     },
     async createClient() {
       this.clientLoading = true
@@ -299,8 +328,11 @@ export default {
         validationErrors.push('• Выберите склад')
       }
       
-      if (!this.form.products || this.form.products.length === 0) {
-        validationErrors.push('• Добавьте товары в заказ')
+      const hasProducts = this.form.products && this.form.products.length > 0
+      const hasStockItems = this.form.stockItems && this.form.stockItems.length > 0
+      
+      if (!hasProducts && !hasStockItems) {
+        validationErrors.push('• Добавьте товары или остатки в заказ')
       }
       
       if (validationErrors.length > 0) {
@@ -325,6 +357,15 @@ export default {
           height: p.height || null
         }))
         
+        // Остатки (товары с бесконечным остатком) сохраняются как temp_products
+        const tempProducts = this.form.stockItems.map(item => ({
+          name: item.name,
+          description: item.description || '',
+          quantity: item.quantity || 0,
+          price: item.price || 0,
+          unit_id: item.unit_id || null,
+        }))
+        
         const orderData = {
           client_id: this.form.client_id,
           project_id: this.form.project_id || null,
@@ -332,7 +373,8 @@ export default {
           warehouse_id: this.form.warehouse_id,
           currency_id: 1, // Используем валюту по умолчанию
           note: this.form.note || '',
-          products: validProducts
+          products: validProducts,
+          temp_products: tempProducts
         }
 
         const { data } = await api.post('/orders', orderData, {
@@ -372,8 +414,11 @@ export default {
         validationErrors.push('• Выберите склад')
       }
       
-      if (!this.form.products || this.form.products.length === 0) {
-        validationErrors.push('• Добавьте товары в заказ')
+      const hasProducts = this.form.products && this.form.products.length > 0
+      const hasStockItems = this.form.stockItems && this.form.stockItems.length > 0
+      
+      if (!hasProducts && !hasStockItems) {
+        validationErrors.push('• Добавьте товары или остатки в заказ')
       }
       
       if (validationErrors.length > 0) {
@@ -398,6 +443,15 @@ export default {
           height: p.height || null
         }))
         
+        // Остатки (товары с бесконечным остатком) сохраняются как temp_products
+        const tempProducts = this.form.stockItems.map(item => ({
+          name: item.name,
+          description: item.description || '',
+          quantity: item.quantity || 0,
+          price: item.price || 0,
+          unit_id: item.unit_id || null,
+        }))
+        
         const orderData = {
           client_id: this.form.client_id,
           project_id: this.form.project_id || null,
@@ -405,7 +459,8 @@ export default {
           warehouse_id: this.form.warehouse_id,
           currency_id: 1,
           note: this.form.note || '',
-          products: validProducts
+          products: validProducts,
+          temp_products: tempProducts
         }
 
         const orderId = this.editingItem?.id || (this.orderId ? parseInt(this.orderId) : null)
@@ -494,14 +549,15 @@ export default {
         this.selectedClient = orderData.client
       }
       
-      // Устанавливаем выбранный проект
-      if (orderData.project) {
-        this.selectedProject = orderData.project
-      }
+      // Проект уже установлен через v-model="form.project_id"
       
       // Преобразуем товары для формы
       if (orderData.products && orderData.products.length > 0) {
-        this.form.products = orderData.products.map(product => ({
+        // Разделяем обычные товары и temp_products
+        const regularProducts = orderData.products.filter(p => p.product_type !== 'temp')
+        const tempProducts = orderData.products.filter(p => p.product_type === 'temp')
+        
+        this.form.products = regularProducts.map(product => ({
           productId: product.product_id,
           productName: product.product_name,
           name: product.product_name,
@@ -511,6 +567,20 @@ export default {
           unitId: product.unit_id,
           width: product.width || null,
           height: product.height || null
+        }))
+        
+        // Загружаем temp_products в stockItems
+        this.form.stockItems = tempProducts.map(product => ({
+          name: product.product_name,
+          description: '',
+          quantity: product.quantity,
+          price: product.price,
+          unit_id: product.unit_id,
+          unit_short_name: product.unit_short_name || product.unit_name || '',
+          unit_name: product.unit_name || '',
+          width: 0,
+          height: 0,
+          isTempProduct: true
         }))
       }
     }
