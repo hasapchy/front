@@ -98,26 +98,26 @@ export default {
                 let start = null, end = null;
                 switch (this.dateFilter) {
                     case 'today':
-                        start = end = dayjs().format('DD.MM.YYYY');
+                        start = end = dayjs().utc().add(5, 'hour').format('DD.MM.YYYY'); // UTC+5 для Asia/Ashgabat
                         break;
                     case 'yesterday':
-                        start = end = dayjs().subtract(1, 'day').format('DD.MM.YYYY');
+                        start = end = dayjs().utc().add(5, 'hour').subtract(1, 'day').format('DD.MM.YYYY');
                         break;
                     case 'this_week':
-                        start = dayjs().startOf('isoWeek').format('DD.MM.YYYY');
-                        end = dayjs().endOf('isoWeek').format('DD.MM.YYYY');
+                        start = dayjs().utc().add(5, 'hour').startOf('isoWeek').format('DD.MM.YYYY');
+                        end = dayjs().utc().add(5, 'hour').endOf('isoWeek').format('DD.MM.YYYY');
                         break;
                     case 'last_week':
-                        start = dayjs().subtract(1, 'week').startOf('isoWeek').format('DD.MM.YYYY');
-                        end = dayjs().subtract(1, 'week').endOf('isoWeek').format('DD.MM.YYYY');
+                        start = dayjs().utc().add(5, 'hour').subtract(1, 'week').startOf('isoWeek').format('DD.MM.YYYY');
+                        end = dayjs().utc().add(5, 'hour').subtract(1, 'week').endOf('isoWeek').format('DD.MM.YYYY');
                         break;
                     case 'this_month':
-                        start = dayjs().startOf('month').format('DD.MM.YYYY');
-                        end = dayjs().endOf('month').format('DD.MM.YYYY');
+                        start = dayjs().utc().add(5, 'hour').startOf('month').format('DD.MM.YYYY');
+                        end = dayjs().utc().add(5, 'hour').endOf('month').format('DD.MM.YYYY');
                         break;
                     case 'last_month':
-                        start = dayjs().subtract(1, 'month').startOf('month').format('DD.MM.YYYY');
-                        end = dayjs().subtract(1, 'month').endOf('month').format('DD.MM.YYYY');
+                        start = dayjs().utc().add(5, 'hour').subtract(1, 'month').startOf('month').format('DD.MM.YYYY');
+                        end = dayjs().utc().add(5, 'hour').subtract(1, 'month').endOf('month').format('DD.MM.YYYY');
                         break;
                     case 'custom':
                         start = this.startDate ? dayjs(this.startDate).format('DD.MM.YYYY') : null;
