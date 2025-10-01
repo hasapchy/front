@@ -553,7 +553,6 @@ export default {
   order_categories: 'Sargyt kategoriýalary',
   cash_registers: 'Kassalar',
   settings: 'Sazlamalar',
-  system_settings: 'Sistem sazlamalary',
   currencies: 'Pul birlikleri',
   currencies_access: 'Pul birliklerine giriş',
   transaction_categories: 'Tranzaksiya kategoriýalary',

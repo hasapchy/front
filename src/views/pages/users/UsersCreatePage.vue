@@ -346,7 +346,11 @@ export default {
             }
         },
         async fetchPermissions() {
-            this.allPermissions = await UsersController.getAllPermissions();
+            const allPermissions = await UsersController.getAllPermissions();
+            // Filter out system_settings permissions
+            this.allPermissions = allPermissions.filter(permission => 
+                !permission.name.startsWith('system_settings_')
+            );
         },
         async fetchCompanies() {
             try {

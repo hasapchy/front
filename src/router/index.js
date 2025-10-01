@@ -240,8 +240,7 @@ const routes = [
         component: () => import("@/views/pages/settings/PerformanceMonitorPage.vue"),
         meta: { 
           title: "performanceMonitor", 
-          requiresAuth: true,
-          permission: "system_settings_view"
+          requiresAuth: true
         },
       },
       {

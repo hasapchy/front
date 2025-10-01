@@ -625,7 +625,6 @@ export default {
   order_categories: 'Категории заказов',
   cash_registers: 'Кассы',
   settings: 'Настройки',
-  system_settings: 'Настройки системы',
   currencies: 'Валюты',
   currencies_access: 'Доступ к валютам',
   transaction_categories: 'Категории транзакций',

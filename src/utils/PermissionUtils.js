@@ -53,7 +53,6 @@ export function permissionGroupLabel(name) {
     cash_registers: "Cash Registers",
     currencies_access: "Currency Access",
     settings: "General Settings",
-    system_settings: "System Settings",
   };
 
   return map[prefix] || prefix;
