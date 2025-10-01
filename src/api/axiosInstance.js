@@ -28,6 +28,7 @@ api.interceptors.request.use(
 
     // Добавляем company_id в заголовок, если он есть в store
     const store = getStore();
+    
     if (store && store.getters.currentCompanyId) {
       config.headers['X-Company-ID'] = store.getters.currentCompanyId;
     }

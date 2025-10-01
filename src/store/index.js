@@ -436,24 +436,28 @@ export default createStore({
         return dispatch('waitForLoading', 'cashRegisters');
       }
 
-
       commit('SET_LOADING_FLAG', { type: 'cashRegisters', loading: true });
       
       try {
         // Проверяем кэш для текущей компании
         const companyId = state.currentCompany?.id;
-        if (companyId) {
-          const cachedData = localStorage.getItem(`cashRegisters_${companyId}`);
-          const cacheTimestamp = localStorage.getItem(`cashRegisters_${companyId}_timestamp`);
-          const now = Date.now();
-          const cacheAge = 10 * 60 * 1000; // 10 минут для данных компании
-          
-          if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
-            const cashRegisters = JSON.parse(cachedData);
-            commit('SET_CASH_REGISTERS', cashRegisters);
-            console.log(`Кассы компании ${companyId} загружены из кэша`);
-            return;
-          }
+        
+        // Если компания не установлена, НЕ загружаем данные
+        if (!companyId) {
+          commit('SET_CASH_REGISTERS', []);
+          return;
+        }
+        
+        const cachedData = localStorage.getItem(`cashRegisters_${companyId}`);
+        const cacheTimestamp = localStorage.getItem(`cashRegisters_${companyId}_timestamp`);
+        const now = Date.now();
+        const cacheAge = 10 * 60 * 1000; // 10 минут для данных компании
+        
+        if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
+          const cashRegisters = JSON.parse(cachedData);
+          commit('SET_CASH_REGISTERS', cashRegisters);
+          console.log(`Кассы компании ${companyId} загружены из кэша`);
+          return;
         }
         
         // Используем контроллер для правильного преобразования в DTO
@@ -462,11 +466,9 @@ export default createStore({
         commit('SET_CASH_REGISTERS', data);
         
         // Кэшируем для текущей компании
-        if (companyId) {
-          localStorage.setItem(`cashRegisters_${companyId}`, JSON.stringify(data));
-          localStorage.setItem(`cashRegisters_${companyId}_timestamp`, Date.now().toString());
-          console.log(`Кассы компании ${companyId} загружены с сервера и закэшированы`);
-        }
+        localStorage.setItem(`cashRegisters_${companyId}`, JSON.stringify(data));
+        localStorage.setItem(`cashRegisters_${companyId}_timestamp`, Date.now().toString());
+        console.log(`Кассы компании ${companyId} загружены с сервера и закэшированы`);
       } catch (error) {
         console.error('Ошибка загрузки касс:', error);
         // При ошибке пытаемся использовать кэш
@@ -933,11 +935,18 @@ export default createStore({
         return [];
       }
     },
-    async loadCurrentCompany({ commit }) {
+    async loadCurrentCompany({ commit, dispatch }) {
       try {
         const response = await api.get('/user/current-company');
-        commit('SET_CURRENT_COMPANY', response.data.company);
-        return response.data.company;
+        const company = response.data.company;
+        commit('SET_CURRENT_COMPANY', company);
+        
+        // Если компания установлена, загружаем все данные компании
+        if (company?.id) {
+          await dispatch('loadCompanyData');
+        }
+        
+        return company;
       } catch (error) {
         console.error('Ошибка загрузки текущей компании:', error);
         return null;

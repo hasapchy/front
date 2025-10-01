@@ -217,8 +217,10 @@ export default {
             this.allWarehouses = this.$store.getters.warehouses;
         },
         async fetchAllProjects() {
-            // Получаем только активные проекты (исключая завершенные и отмененные)
-            this.allProjects = await ProjectController.getActiveItems();
+            // Используем данные из store
+            await this.$store.dispatch('loadProjects');
+            // Фильтруем только активные проекты
+            this.allProjects = this.$store.getters.projects.filter(p => p.statusId !== 3 && p.statusId !== 4);
         },
         async fetchCurrencies() {
             // Используем данные из store
@@ -366,7 +368,20 @@ export default {
             deep: true,
             immediate: true,
         },
-
+        // Отслеживаем изменения в store
+        '$store.state.warehouses'(newVal) {
+            this.allWarehouses = newVal;
+        },
+        '$store.state.cashRegisters'(newVal) {
+            this.allCashRegisters = newVal;
+        },
+        '$store.state.projects'(newVal) {
+            // Фильтруем только активные проекты
+            this.allProjects = newVal.filter(p => p.statusId !== 3 && p.statusId !== 4);
+        },
+        '$store.state.currencies'(newVal) {
+            this.currencies = newVal;
+        },
     },
 };
 </script>

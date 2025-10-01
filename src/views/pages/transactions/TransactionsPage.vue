@@ -1,8 +1,7 @@
 <template>
     <div class="flex justify-between items-center mb-4">
         <div class="flex justify-start items-center">
-            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('addTransaction') }}
-            </PrimaryButton>
+            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"></PrimaryButton>
             <div class="mx-4">
                 <select v-model="cashRegisterId" @change="() => fetchItems(1)">
                     <option value="">{{ $t('allCashRegisters') }}</option>
@@ -186,8 +185,9 @@ export default {
 
     mounted() {
         this.fetchItems();
-        this.fetchAllCashRegisters();
-        this.fetchAllProjects();
+        // Кассы и проекты загружаются автоматически через store при установке компании
+        this.allCashRegisters = this.$store.getters.cashRegisters;
+        this.allProjects = this.$store.getters.projects;
     },
     beforeUnmount() {
         eventBus.off('global-search', this.handleSearch);
@@ -202,18 +202,6 @@ export default {
                 formRef.handleCloseRequest();
             } else {
                 this.closeModal();
-            }
-        },
-        async fetchAllCashRegisters() {
-            // Используем данные из store
-            await this.$store.dispatch('loadCashRegisters');
-            this.allCashRegisters = this.$store.getters.cashRegisters;
-        },
-        async fetchAllProjects() {
-            try {
-                this.allProjects = await ProjectController.getAllItems();
-            } catch (error) {
-                console.error('Ошибка при загрузке проектов:', error);
             }
         },
         itemMapper(i, c) {
@@ -406,6 +394,16 @@ export default {
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
+        }
+    },
+    watch: {
+        // Отслеживаем изменения касс в store
+        '$store.state.cashRegisters'(newVal) {
+            this.allCashRegisters = newVal;
+        },
+        // Отслеживаем изменения проектов в store
+        '$store.state.projects'(newVal) {
+            this.allProjects = newVal;
         }
     },
 }

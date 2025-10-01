@@ -204,7 +204,13 @@ export default {
             deep: true,
             immediate: true
         },
-
+        // Отслеживаем изменения в store
+        '$store.state.cashRegisters'(newVal) {
+            this.allCashRegisters = newVal;
+        },
+        '$store.state.currencies'(newVal) {
+            this.currencies = newVal;
+        }
     }
 }
 </script>

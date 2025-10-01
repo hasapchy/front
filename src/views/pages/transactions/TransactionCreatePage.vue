@@ -176,10 +176,6 @@ export default {
         filteredCategories() {
             const wanted = this.type === 'income' ? 1 : 0; // 1 для income, 0 для outcome
             const filtered = this.allCategories.filter(cat => cat.type === wanted);
-            console.log('DEBUG: filteredCategories - type:', this.type, 'wanted:', wanted, 'total:', this.allCategories.length, 'filtered:', filtered.length);
-            console.log('DEBUG: Sample categories types:', this.allCategories.slice(0, 3).map(cat => ({id: cat.id, name: cat.name, type: cat.type})));
-            const category16 = this.allCategories.find(cat => cat.id === 16);
-            console.log('DEBUG: Category ID=16 structure:', category16);
             return filtered;
         }
     },
@@ -193,15 +189,18 @@ export default {
                 this.loadOrderInfo()
             ]);
             
-            console.log('DEBUG: TransactionCreatePage mounted - editingItemId:', this.editingItemId, 'disabled:', !!this.editingItemId);
-            console.log('DEBUG: Clients in store:', this.$store.getters.clients.length);
-            
             if (!this.editingItem) {
                 if (this.initialClient) {
                     this.selectedClient = this.initialClient;
                 }
                 if (this.initialProjectId) {
                     this.projectId = this.initialProjectId;
+                }
+                
+                // Устанавливаем первую доступную кассу и её валюту
+                if (this.allCashRegisters.length > 0 && !this.cashId) {
+                    this.cashId = this.allCashRegisters[0].id;
+                    this.currencyId = this.allCashRegisters[0].currency_id;
                 }
                 
                 // Устанавливаем предзаполненную сумму если она есть
@@ -237,10 +236,7 @@ export default {
                 // Используем данные из store
                 await this.$store.dispatch('loadTransactionCategories');
                 this.allCategories = this.$store.getters.transactionCategories;
-                console.log('DEBUG: Transaction categories loaded:', this.allCategories.length, this.allCategories);
-                console.log('DEBUG: First category structure:', this.allCategories[0]);
             } catch (error) {
-                console.error('ERROR: Failed to load transaction categories:', error);
                 this.allCategories = [];
             }
         },
@@ -400,7 +396,7 @@ export default {
                 try {
                     this.orderInfo = await OrderController.getItem(this.orderId);
                 } catch (error) {
-                    console.error('Ошибка загрузки информации о заказе:', error);
+                    // Ошибка загрузки информации о заказе
                 }
             }
         },
@@ -408,54 +404,37 @@ export default {
         // Проверяем, нужно ли закрыть заказ после создания транзакции
         async checkAndCloseOrder() {
             if (!this.isPaymentModal || !this.orderId || !this.orderInfo) {
-                console.log('checkAndCloseOrder: пропускаем - не модалка доплаты или нет данных о заказе');
                 return;
             }
             
             try {
-                console.log('checkAndCloseOrder: начинаем проверку заказа', this.orderId);
-                
                 // Получаем общую сумму оплат по заказу через существующий API
                 const paidTotalData = await TransactionController.getTotalByOrderId(this.orderId);
                 const totalPaid = parseFloat(paidTotalData.total) || 0;
                 const orderTotal = parseFloat(this.orderInfo.totalPrice) || 0;
                 
-                console.log('checkAndCloseOrder: суммы', { totalPaid, orderTotal, isEnough: totalPaid >= orderTotal });
-                
                 // Если оплачено достаточно, закрываем заказ
                 if (totalPaid >= orderTotal) {
-                    console.log('checkAndCloseOrder: сумма достаточна, ищем статус "закрытый"');
-                    
                     // Находим статус "закрытый" (обычно это статус с category_id = 4)
                     const statuses = await OrderStatusController.getAllItems();
-                    console.log('checkAndCloseOrder: все статусы', statuses);
                     
                     const closedStatus = statuses.find(status => status.categoryId === 4);
-                    console.log('checkAndCloseOrder: найденный статус "закрытый"', closedStatus);
                     
                     if (closedStatus) {
-                        console.log('checkAndCloseOrder: обновляем статус заказа на', closedStatus.id);
-                        
                         const result = await OrderController.batchUpdateStatus({
                             ids: [this.orderId],
                             status_id: closedStatus.id
                         });
-                        
-                        console.log('checkAndCloseOrder: результат обновления статуса', result);
                         
                         this.showNotification(
                             this.$t('success'), 
                             this.$t('orderClosedAutomatically'), 
                             false
                         );
-                    } else {
-                        console.log('checkAndCloseOrder: статус "закрытый" не найден');
                     }
-                } else {
-                    console.log('checkAndCloseOrder: сумма недостаточна для закрытия заказа');
                 }
             } catch (error) {
-                console.error('Ошибка при проверке закрытия заказа:', error);
+                // Ошибка при проверке закрытия заказа
             }
         }
     },
@@ -547,6 +526,19 @@ export default {
                 }
             },
             immediate: true
+        },
+        // Отслеживаем изменения в store
+        '$store.state.cashRegisters'(newVal) {
+            this.allCashRegisters = newVal;
+        },
+        '$store.state.projects'(newVal) {
+            this.allProjects = newVal;
+        },
+        '$store.state.currencies'(newVal) {
+            this.currencies = newVal;
+        },
+        '$store.state.transactionCategories'(newVal) {
+            this.allCategories = newVal;
         }
     }
 }

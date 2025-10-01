@@ -147,7 +147,6 @@ export default {
         }
     },
     created() {
-        console.log('DEBUG: ClientSearch created - disabled:', this.disabled);
         // Проверяем, не загружаются ли уже клиенты
         if (this.$store.getters.clients.length === 0) {
             this.fetchLastClients();
@@ -163,8 +162,6 @@ export default {
     emits: ['update:selectedClient'],
     methods: {
         async fetchLastClients() {
-            console.log('DEBUG: fetchLastClients started - disabled:', this.disabled);
-            
             // Всегда загружаем данные заново, не полагаемся на проверку длины
             await this.$store.dispatch('loadClients');
             
@@ -177,15 +174,11 @@ export default {
             
             const allClients = this.$store.getters.clients;
             
-            console.log('DEBUG: allClients from store after wait:', allClients.length, 'first client:', allClients[0]);
-            
             this.lastClients = allClients
                 .filter((client) => client.status === true) // только активные
                 .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .slice(0, 10);
-                
-            console.log('DEBUG: lastClients after filter:', this.lastClients.length, 'first:', this.lastClients[0]);
         },
                  searchClients: debounce(async function () {
              if (this.clientSearch.length >= 3) {
@@ -209,9 +202,8 @@ export default {
                          ? results.filter((client) => client.isSupplier)
                          : results;
                      
-                 } catch (error) {
-                     console.error('Search error:', error);
-                     this.clientResults = [];
+                } catch (error) {
+                    this.clientResults = [];
                  } finally {
                      this.clientSearchLoading = false;
                  }

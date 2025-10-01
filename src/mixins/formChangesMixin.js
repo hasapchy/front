@@ -8,35 +8,52 @@ export default {
     };
   },
   mounted() {
-    // Сохраняем начальное состояние формы
-    this.saveInitialState();
+    // Убрали обработчик beforeunload - не показываем браузерное предупреждение
+    // window.addEventListener('beforeunload', this.handleBeforeUnload);
     
-    // Добавляем обработчик для предотвращения закрытия браузера с несохраненными изменениями
-    window.addEventListener('beforeunload', this.handleBeforeUnload);
+    // Сохраняем начальное состояние формы после полной инициализации компонента
+    this.$nextTick(() => {
+      this.saveInitialState();
+    });
   },
   beforeUnmount() {
-    window.removeEventListener('beforeunload', this.handleBeforeUnload);
+    // window.removeEventListener('beforeunload', this.handleBeforeUnload);
   },
   methods: {
     // Сохранение начального состояния формы
     saveInitialState() {
-      this.initialFormState = this.getFormState();
-      this.isFormInitialized = true;
+      const state = this.getFormState();
+      this.initialFormState = state;
+      // Устанавливаем флаг инициализации только если состояние валидно
+      this.isFormInitialized = state !== null && typeof state === 'object';
     },
     
     // Метод для получения текущего состояния формы (должен быть переопределен в компоненте)
     getFormState() {
       // Этот метод должен быть переопределен в компоненте
-      console.warn('getFormState method should be overridden in component');
-      return {};
+      // Возвращаем null, чтобы отличить от переопределенного метода
+      return null;
     },
     
     // Проверка наличия изменений
     checkForChanges() {
-      if (!this.initialFormState || !this.isFormInitialized) return false;
+      if (!this.isFormInitialized) return false;
       
-      const currentState = this.getFormState();
-      return JSON.stringify(currentState) !== JSON.stringify(this.initialFormState);
+      try {
+        const currentState = this.getFormState();
+        
+        // Если getFormState() не переопределен (возвращает null) - не проверяем изменения
+        if (currentState === null || this.initialFormState === null) return false;
+        
+        // Если состояние пустое - нет смысла проверять
+        if (!currentState || Object.keys(currentState).length === 0) return false;
+        if (!this.initialFormState || Object.keys(this.initialFormState).length === 0) return false;
+        
+        return JSON.stringify(currentState) !== JSON.stringify(this.initialFormState);
+      } catch (error) {
+        console.error('Error checking form changes:', error);
+        return false;
+      }
     },
     
     // Обработка попытки закрытия формы
@@ -78,7 +95,8 @@ export default {
         return;
       }
       
-      if (this.checkForChanges()) {
+      // Проверяем только если форма была инициализирована
+      if (this.isFormInitialized && this.checkForChanges()) {
         event.preventDefault();
         event.returnValue = '';
       }

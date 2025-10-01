@@ -842,6 +842,22 @@ export default {
             },
             deep: true,
             immediate: true
+        },
+        // Отслеживаем изменения в store
+        '$store.state.warehouses'(newVal) {
+            this.allWarehouses = newVal;
+        },
+        '$store.state.cashRegisters'(newVal) {
+            this.allCashRegisters = newVal;
+        },
+        '$store.state.projects'(newVal) {
+            this.allProjects = newVal;
+        },
+        '$store.state.currencies'(newVal) {
+            this.currencies = newVal;
+        },
+        '$store.state.orderStatuses'(newVal) {
+            this.statuses = newVal;
         }
     }
 }

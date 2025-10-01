@@ -9,25 +9,21 @@
             <i class="fas fa-chevron-down text-xs"></i>
         </button>
 
-        <div v-if="isOpen" class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50">
-            <div class="p-4 space-y-3">
+        <div v-if="isOpen" class="absolute right-0 mt-2 w-auto bg-white rounded-xl shadow-xl border border-gray-200 z-50">
+            <div class="p-4 flex gap-2">
                 <!-- Edit Profile Button -->
                 <PrimaryButton 
                     :onclick="openProfileModal"
-                    :is-full="true"
-                    :icon="'fas fa-user-edit'"
+                    :icon="'fas fa-pen'"
                 >
-                    {{ $t('editProfile') }}
                 </PrimaryButton>
 
                 <!-- Logout Button -->
                 <PrimaryButton 
                     :onclick="logout"
                     :is-danger="true"
-                    :is-full="true"
                     :icon="'fas fa-sign-out-alt'"
                 >
-                    {{ $t('logout') }}
                 </PrimaryButton>
             </div>
         </div>
