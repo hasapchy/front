@@ -11,6 +11,7 @@ export class UserDto {
     this.photo = data.photo;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
+    this.lastLoginAt = data.last_login_at;
 
     this.permissions = data.permissions?.map((p) => p.name) || [];
     this.companies = data.companies?.map((c) => ({ id: c.id, name: c.name })) || [];

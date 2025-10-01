@@ -499,6 +499,7 @@ export default {
   
   // Пользователи
   userPermissions: 'Ulanyjy giriş hukuklary',
+  lastLogin: 'Soňky giriş',
   password: 'Açarsöz',
   newPassword: 'Täze açarsöz',
   enterNewPassword: 'Täze açarsöz giriziň',

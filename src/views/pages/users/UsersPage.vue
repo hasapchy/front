@@ -63,7 +63,7 @@ export default {
                 { name: 'companies', label: 'companies' },
                 { name: 'isActive', label: 'active', size: 80 },
                 { name: 'isAdmin', label: 'admin', size: 80 },
-                { name: 'permissions', label: 'userPermissions' },
+                { name: 'lastLoginAt', label: 'lastLogin' },
                 { name: 'createdAt', label: 'created' },
             ],
         };
@@ -102,8 +102,8 @@ export default {
                     return item.isAdmin ? '✅' : '❌';
                 case 'createdAt':
                     return new Date(item.createdAt).toLocaleDateString();
-                case 'permissions':
-                    return item.permissions.join(', ');
+                case 'lastLoginAt':
+                    return item.lastLoginAt ? new Date(item.lastLoginAt).toLocaleDateString() + ' ' + new Date(item.lastLoginAt).toLocaleTimeString() : '—';
                 case 'companies':
                     return item.companies.map(c => c.name).join(', ');
                 default:

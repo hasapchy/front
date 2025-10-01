@@ -570,6 +570,7 @@ export default {
   
   // Пользователи
   userPermissions: 'Права доступа',
+  lastLogin: 'Последний вход',
   password: 'Пароль',
     newPassword: 'Новый пароль',
     enterNewPassword: 'Введите новый пароль',
