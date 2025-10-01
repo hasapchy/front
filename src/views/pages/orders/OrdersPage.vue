@@ -36,7 +36,6 @@
                     :onclick="resetFilters"
                     icon="fas fa-trash"
                     :isLight="true">
-                    {{ $t('resetFilters') }}
                 </PrimaryButton>
             </div>
         </div>

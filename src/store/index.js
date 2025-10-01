@@ -805,8 +805,8 @@ export default createStore({
         }
         
         // Загружаем с сервера
-        const AppController = (await import('@/api/AppController')).default;
-        const data = await AppController.getTransactionCategories();
+        const TransactionCategoryController = (await import('@/api/TransactionCategoryController')).default;
+        const data = await TransactionCategoryController.getAllItems();
         commit('SET_TRANSACTION_CATEGORIES', data);
         
         // Сохраняем в кэш

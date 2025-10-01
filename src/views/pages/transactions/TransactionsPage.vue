@@ -68,7 +68,6 @@
                     :onclick="resetFilters"
                     icon="fas fa-filter-circle-xmark"
                     :isLight="true">
-                    {{ $t('resetFilters') }}
                 </PrimaryButton>
             </div>
         </div>
