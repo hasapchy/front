@@ -16,7 +16,7 @@ export default createStore({
     notificationIsDanger: false,
     notificationDuration: 10000, // Длительность уведомления в миллисекундах
     notificationTimeoutId: null, // ID таймера для возможности отмены
-    isLoading: true, // Состояние загрузки для блокировки навигации
+    isLoading: false, // Состояние загрузки для блокировки навигации (отключено)
     activeApiCalls: 0, // Счетчик активных API вызовов
     units: [], // Единицы измерения
     currencies: [], // Валюты
@@ -86,7 +86,7 @@ export default createStore({
       state.isLoading = isLoading;
     },
     INCREMENT_API_CALLS(state) {
-      // Отключаем глобальную блокировку навигации во время загрузок
+      // Отключаем блокировку навигации: только считаем активные вызовы
       state.activeApiCalls++;
       state.isLoading = false;
     },
@@ -562,13 +562,33 @@ export default createStore({
         commit('SET_LOADING_FLAG', { type: 'clients', loading: false });
       }
     },
-    async loadProducts({ commit /*, state */ }) {
+    async loadProducts({ commit, state }) {
       try {
-        // Временное отключение локального кэша товаров: всегда грузим с сервера
+        // Включаем локальный кэш товаров по компании (10 минут)
+        const companyId = state.currentCompany?.id;
+        if (companyId) {
+          const cachedData = localStorage.getItem(`products_${companyId}`);
+          const cacheTimestamp = localStorage.getItem(`products_${companyId}_timestamp`);
+          const now = Date.now();
+          const cacheAge = 10 * 60 * 1000;
+          if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
+            const products = JSON.parse(cachedData);
+            commit('SET_PRODUCTS', products);
+            console.log(`Товары компании ${companyId} загружены из кэша`);
+            return;
+          }
+        }
+
         const ProductController = (await import('@/api/ProductController')).default;
         const data = await ProductController.getItems(1, true);
         commit('SET_PRODUCTS', data.items);
-        console.log('Товары загружены с сервера (кэш временно отключен)');
+        if (companyId) {
+          localStorage.setItem(`products_${companyId}`, JSON.stringify(data.items));
+          localStorage.setItem(`products_${companyId}_timestamp`, Date.now().toString());
+          console.log(`Товары компании ${companyId} загружены с сервера и закэшированы`);
+        } else {
+          console.log('Товары загружены с сервера');
+        }
       } catch (error) {
         console.error('Ошибка загрузки товаров:', error);
         commit('SET_PRODUCTS', []);
