@@ -5,8 +5,8 @@
       :class="[
         'flex items-center space-x-2 px-3 py-2 rounded transition duration-300 focus:outline-none focus:shadow-outline',
         isActive 
-          ? 'bg-gray-500 text-white hover:bg-gray-600' 
-          : 'bg-white border border-gray-300 text-black hover:bg-gray-300/50'
+          ? 'bg-black text-white hover:bg-gray-800' 
+          : 'bg-black text-white hover:bg-gray-800'
       ]"
     >
       <i class="fas fa-shopping-cart"></i>

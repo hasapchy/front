@@ -1,7 +1,7 @@
 <template>
-  <div>
+  <div class="space-y-6">
     <!-- Производительность продаж -->
-    <div v-if="metrics.sales_performance" class="mb-6">
+    <div v-if="metrics.sales_performance">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Производительность запросов продаж</h2>
         
@@ -74,7 +74,7 @@
     </div>
 
     <!-- Производительность клиентов -->
-    <div v-if="metrics.clients_performance" class="mb-6">
+    <div v-if="metrics.clients_performance">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Производительность запросов клиентов</h2>
         
@@ -125,7 +125,7 @@
     </div>
 
     <!-- Производительность продуктов -->
-    <div v-if="metrics.products_performance" class="mb-6">
+    <div v-if="metrics.products_performance">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Производительность запросов продуктов</h2>
         
@@ -176,7 +176,7 @@
     </div>
 
     <!-- Производительность комментариев и таймлайна -->
-    <div v-if="metrics.comments_performance" class="mb-6">
+    <div v-if="metrics.comments_performance">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Производительность комментариев и таймлайна</h2>
         
@@ -249,7 +249,7 @@
     </div>
 
     <!-- Производительность касс -->
-    <div v-if="metrics.cash_registers_performance" class="mb-6">
+    <div v-if="metrics.cash_registers_performance">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Производительность касс</h2>
         
@@ -302,7 +302,7 @@
     </div>
 
     <!-- Производительность инвойсов -->
-    <div v-if="metrics.invoices_performance" class="mb-6">
+    <div v-if="metrics.invoices_performance">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Производительность инвойсов</h2>
         
@@ -355,7 +355,7 @@
     </div>
 
     <!-- Производительность складов -->
-    <div v-if="metrics.warehouses_performance" class="mb-6">
+    <div v-if="metrics.warehouses_performance">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Производительность складов</h2>
         
@@ -408,7 +408,7 @@
     </div>
 
     <!-- Производительность оприходований -->
-    <div v-if="metrics.warehouse_receipts_performance" class="mb-6">
+    <div v-if="metrics.warehouse_receipts_performance">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Производительность оприходований</h2>
         
@@ -461,7 +461,7 @@
     </div>
 
     <!-- Производительность списаний -->
-    <div v-if="metrics.warehouse_writeoffs_performance" class="mb-6">
+    <div v-if="metrics.warehouse_writeoffs_performance">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Производительность списаний</h2>
         
@@ -514,7 +514,7 @@
     </div>
 
     <!-- Производительность трансферов -->
-    <div v-if="metrics.warehouse_transfers_performance" class="mb-6">
+    <div v-if="metrics.warehouse_transfers_performance">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Производительность трансферов</h2>
         
@@ -567,7 +567,7 @@
     </div>
 
     <!-- Производительность заказов -->
-    <div v-if="metrics.orders_performance" class="mb-6">
+    <div v-if="metrics.orders_performance">
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Производительность заказов</h2>
         
@@ -632,6 +632,7 @@ export default {
     }
   },
   methods: {
+    
     getPerformanceClass(result) {
       const score = this.calculatePerformanceScore(result);
       if (score >= 80) return 'bg-green-100 text-green-800';

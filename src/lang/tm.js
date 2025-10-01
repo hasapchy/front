@@ -248,6 +248,10 @@ export default {
   
   // Финансы
   balance: 'Balans',
+  paymentByBalance: 'Balans arkaly töleg',
+  paymentType: 'Töleg görnüşi',
+  cashPayment: 'Nagt töleg',
+  selectCashRegister: 'Kassa saýlaň',
   income: 'Girdeji',
   итого: 'Jemi',
   
@@ -303,6 +307,10 @@ export default {
   sale: 'Satuw',
   orderCategory: 'Sargyt kategoriýasy',
   warehouse: 'Ammar',
+  stock: 'Ammar',
+  leftovers: 'Galdyk',
+  unlimited: 'Çäksiz',
+  selectedStock: 'Saýlanan galdyklar',
   user: 'Ulanyjy',
   cashRegister: 'Kassa',
   saveOrderFirst: 'Ilki sargyty saklaň, soňra tranzaksiyalary goşup/görüp bilersiňiz',

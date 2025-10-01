@@ -148,7 +148,17 @@ export default {
     },
     created() {
         console.log('DEBUG: ClientSearch created - disabled:', this.disabled);
-        this.fetchLastClients();
+        // Проверяем, не загружаются ли уже клиенты
+        if (this.$store.getters.clients.length === 0) {
+            this.fetchLastClients();
+        } else {
+            // Если клиенты уже загружены, просто используем их
+            this.lastClients = this.$store.getters.clients
+                .filter((client) => client.status === true)
+                .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .slice(0, 10);
+        }
     },
     emits: ['update:selectedClient'],
     methods: {

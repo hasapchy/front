@@ -10,6 +10,10 @@ export default {
   success: 'Успешно',
   error: 'Ошибка',
   balance: 'Баланс',
+  paymentByBalance: 'Оплата через баланс',
+  paymentType: 'Тип оплаты',
+  cashPayment: 'Оплата наличными',
+  selectCashRegister: 'Выберите кассу',
   contracts: 'Контракты',
   enableSound: 'Включить звук',
   disableSound: 'Выключить звук',
@@ -334,6 +338,9 @@ export default {
   
   // Склад
   stock: 'Склад',
+  leftovers: 'Остатки',
+  unlimited: 'Бесконечно',
+  selectedStock: 'Выбранные остатки',
   
   // Заказы
   orderNumber: 'Номер заказа',

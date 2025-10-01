@@ -100,7 +100,9 @@ export default {
                 this.loading = true;
             }
             try {
+                console.log('[ProductsPage] fetchItems start', { page, companyId: this.$store.getters.currentCompanyId });
                 const new_data = await ProductController.getItems(page);
+                console.log('[ProductsPage] fetchItems result', { page, items: new_data?.items?.length, total: new_data?.total });
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProductList'), error.message, true);

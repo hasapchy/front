@@ -162,7 +162,9 @@ export default {
         },
         async fetchProjectStatuses() {
             try {
-                this.statuses = await ProjectStatusController.getAllItems();
+                // Используем данные из store
+                await this.$store.dispatch('loadProjectStatuses');
+                this.statuses = this.$store.getters.projectStatuses;
             } catch (error) {
                 console.error('Error fetching project statuses:', error);
             }
