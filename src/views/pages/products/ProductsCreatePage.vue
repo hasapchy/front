@@ -46,50 +46,74 @@
                              {{ parent.name }}
                          </option>
                      </select>
-                    <PrimaryButton icon="fas fa-plus" :is-info="true" :onclick="showModal" />
+                    <PrimaryButton 
+                        icon="fas fa-plus" 
+                        :is-info="true" 
+                        :onclick="showModal"
+                        :disabled="!$store.getters.hasPermission('categories_create')" />
                 </div>
                 
-                <!-- Чекбоксы для подкатегорий (показываются после выбора основной) -->
+                <!-- Компактное отображение подкатегорий -->
                 <div v-if="selectedParentCategory && childCategories.length > 0" 
-                     class="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        {{ $t('selectSubCategories') }} ({{ getParentCategoryName(selectedParentCategory) }})
-                    </label>
-                    <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                     class="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-sm font-medium text-blue-800">
+                            <i class="fas fa-folder-tree mr-1"></i>
+                            {{ $t('subCategories') }}: {{ getParentCategoryName(selectedParentCategory) }}
+                        </label>
+                        <div class="flex space-x-1">
+                            <button @click="selectAllSubCategories" 
+                                    class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors">
+                                <i class="fas fa-check-double mr-1"></i>{{ $t('selectAll') }}
+                            </button>
+                            <button @click="deselectAllSubCategories" 
+                                    class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors">
+                                <i class="fas fa-times mr-1"></i>{{ $t('deselectAll') }}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Компактная сетка подкатегорий -->
+                    <div class="grid grid-cols-3 gap-1 max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                         <label v-for="child in childCategories" :key="child.id" 
-                               class="flex items-center space-x-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded">
+                               class="flex items-center space-x-1 text-xs cursor-pointer hover:bg-blue-100 p-1 rounded transition-colors"
+                               :class="{ 'bg-blue-200': selectedSubCategories.includes(child.id) }">
                             <input type="checkbox" 
                                    :value="child.id" 
                                    v-model="selectedSubCategories"
                                    @change="onSubCategoryChange"
-                                   class="text-blue-600">
-                            <span>└─ {{ child.name }}</span>
+                                   class="text-blue-600 w-3 h-3">
+                            <span class="truncate" :title="child.name">{{ child.name }}</span>
                         </label>
                     </div>
-                    <div class="mt-2 flex space-x-2">
-                        <button @click="selectAllSubCategories" 
-                                class="text-xs text-blue-600 hover:text-blue-800">
-                            {{ $t('selectAll') }}
-                        </button>
-                        <button @click="deselectAllSubCategories" 
-                                class="text-xs text-gray-600 hover:text-gray-800">
-                            {{ $t('deselectAll') }}
-                        </button>
+                    
+                    <!-- Счетчик выбранных -->
+                    <div v-if="selectedSubCategories.length > 0" class="mt-2 text-xs text-blue-600">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Выбрано: {{ selectedSubCategories.length }} из {{ childCategories.length }}
                     </div>
                 </div>
             </div>
             
-            <!-- Множественные категории -->
-            <div v-if="selectedCategories.length > 0" class="mt-2">
-                <label class="block mb-1 text-sm text-gray-600">{{ $t('selectedCategories') }}</label>
-                <div class="flex flex-wrap gap-2">
+            <!-- Компактное отображение выбранных категорий -->
+            <div v-if="selectedCategories.length > 0" class="mt-3">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="text-sm font-medium text-gray-700">
+                        <i class="fas fa-tags mr-1"></i>{{ $t('selectedCategories') }}
+                    </label>
+                    <span class="text-xs text-gray-500">{{ selectedCategories.length }} {{ $t('categoriesCount') }}</span>
+                </div>
+                <div class="flex flex-wrap gap-1">
                     <div v-for="(category, index) in selectedCategories" :key="category.id" 
-                         class="flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                        <span v-if="category.is_primary" class="text-xs bg-blue-600 text-white px-1 rounded mr-1">Основная</span>
-                        <span>{{ category.name }}</span>
+                         class="flex items-center bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 px-2 py-1 rounded-full text-xs border border-blue-200">
+                        <span v-if="category.is_primary" 
+                              class="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded-full mr-1 font-medium">
+                            <i class="fas fa-star mr-0.5"></i>Основная
+                        </span>
+                        <span class="truncate max-w-32" :title="category.name">{{ category.name }}</span>
                         <button @click="removeCategory(index)" 
-                                class="ml-2 text-red-600 hover:text-red-800">
-                            <i class="fas fa-trash text-xs"></i>
+                                class="ml-1 text-red-500 hover:text-red-700 transition-colors">
+                            <i class="fas fa-times text-xs"></i>
                         </button>
                     </div>
                 </div>
@@ -141,13 +165,11 @@
                 <input type="text" v-model="barcode">
                 <PrimaryButton v-if="!barcode" icon="fas fa-barcode" :is-info="true"
                     :onclick="generateBarcode" :is-full="false">
-                    {{ $t('generateBarcode') }}
                 </PrimaryButton>
                 <template v-if="barcode">
                     <svg id="barcode-svg" class="w-32 h-12" />
                     <canvas id="barcode-canvas" style="display:none;"></canvas>
                     <PrimaryButton @click="downloadBarcodePng" icon="fas fa-download" :is-info="true">
-                        {{ $t('downloadBarcode') }}
                     </PrimaryButton>
                 </template>
             </div>

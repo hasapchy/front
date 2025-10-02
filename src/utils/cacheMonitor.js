@@ -186,7 +186,7 @@ export default class CacheMonitor {
       // Предупреждение - очищаем устаревшие
       const result = this.clearExpiredCaches();
       if (result.clearedCount > 0) {
-        console.log(`⚠️ Очищено ${result.clearedCount} устаревших кэшей`);
+        // Очищено устаревших кэшей
       }
       return result;
     }
@@ -201,24 +201,10 @@ export default class CacheMonitor {
     const info = this.getCacheInfo();
     const expired = this.getExpiredCaches();
 
-    console.log('📊 ОТЧЕТ ПО КЭШУ');
-    console.log('='.repeat(40));
-    console.log(`📦 Общий размер: ${info.totalSizeMB}MB (${info.totalSizeKB}KB)`);
-    console.log(`🔑 Количество ключей: ${info.keyCount}`);
-    console.log(`📈 Статус: ${info.status.message}`);
-    
-    if (expired.length > 0) {
-      console.log(`⏰ Устаревших кэшей: ${expired.length}`);
-      expired.forEach(cache => {
-        console.log(`  - ${cache.key}: ${cache.ageMinutes}мин (TTL: ${cache.ttlMinutes}мин)`);
-      });
-    }
-
-    console.log('\n📋 Детали по ключам:');
-    Object.entries(info.details).forEach(([key, detail]) => {
-      const age = detail.timestamp ? Math.round((Date.now() - detail.timestamp) / (1000 * 60)) : 'N/A';
-      console.log(`  ${key}: ${detail.sizeKB}KB (возраст: ${age}мин)`);
-    });
+    return {
+      info: info,
+      expired: expired
+    };
   }
 
   /**

@@ -216,12 +216,12 @@ export default {
             
             this.allWarehouses = this.$store.getters.warehouses;
         },
-        async fetchAllProjects() {
-            // Используем данные из store
-            await this.$store.dispatch('loadProjects');
-            // Фильтруем только активные проекты
-            this.allProjects = this.$store.getters.projects.filter(p => p.statusId !== 3 && p.statusId !== 4);
-        },
+    async fetchAllProjects() {
+      // Используем данные из store
+      await this.$store.dispatch('loadProjects');
+      // Фильтруем только активные проекты
+      this.allProjects = this.$store.getters.activeProjects;
+    },
         async fetchCurrencies() {
             // Используем данные из store
             if (this.$store.getters.currencies.length > 0) {

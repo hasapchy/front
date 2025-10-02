@@ -34,7 +34,6 @@ export default {
         const cachedData = CacheUtils.get(key, ttl);
         if (cachedData) {
           commit(`SET_${type.toUpperCase()}`, cachedData);
-          console.log(`${type} загружены из кэша`);
           return;
         }
         
@@ -44,7 +43,6 @@ export default {
         
         // Сохраняем в кэш
         CacheUtils.set(key, data);
-        console.log(`${type} загружены с сервера и закэшированы`);
       } catch (error) {
         console.error(`Ошибка загрузки ${type}:`, error);
         
@@ -52,7 +50,6 @@ export default {
         const cachedData = CacheUtils.get(key, Infinity);
         if (cachedData) {
           commit(`SET_${type.toUpperCase()}`, cachedData);
-          console.log(`Используем устаревший кэш ${type} из-за ошибки сети`);
         } else {
           commit(`SET_${type.toUpperCase()}`, []);
         }
@@ -107,7 +104,6 @@ export default {
         if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < ttl) {
           const data = JSON.parse(cachedData);
           commit(`SET_${type.toUpperCase()}`, data);
-          console.log(`${type} компании ${companyId} загружены из кэша`);
           return;
         }
         
@@ -118,7 +114,6 @@ export default {
         // Кэшируем для текущей компании
         localStorage.setItem(key, JSON.stringify(data));
         localStorage.setItem(`${key}_timestamp`, Date.now().toString());
-        console.log(`${type} компании ${companyId} загружены с сервера и закэшированы`);
       } catch (error) {
         console.error(`Ошибка загрузки ${type}:`, error);
         
@@ -126,7 +121,6 @@ export default {
         const cachedData = localStorage.getItem(key);
         if (cachedData) {
           commit(`SET_${type.toUpperCase()}`, JSON.parse(cachedData));
-          console.log(`Используем кэшированные ${type} из-за ошибки сети`);
         } else {
           commit(`SET_${type.toUpperCase()}`, []);
         }

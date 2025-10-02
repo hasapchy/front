@@ -1,7 +1,36 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <PrimaryButton :onclick="() => { showModal(null) }" :disabled="!$store.getters.hasPermission('clients_create')"
-            icon="fas fa-plus">{{ $t('addClient') }}</PrimaryButton>
+        <div class="flex justify-start items-center">
+            <PrimaryButton :onclick="() => { showModal(null) }" :disabled="!$store.getters.hasPermission('clients_create')"
+                icon="fas fa-plus"></PrimaryButton>
+            
+            <!-- Фильтр по статусу -->
+            <div class="mx-4">
+                <select v-model="statusFilter" @change="() => fetchItems(1)">
+                    <option value="">{{ $t('allStatuses') }}</option>
+                    <option value="active">{{ $t('active') }}</option>
+                    <option value="inactive">{{ $t('inactive') }}</option>
+                </select>
+            </div>
+
+            <!-- Фильтр по типу клиента -->
+            <div class="mx-2">
+                <select v-model="typeFilter" @change="() => fetchItems(1)">
+                    <option value="">{{ $t('allTypes') }}</option>
+                    <option value="company">{{ $t('company') }}</option>
+                    <option value="individual">{{ $t('individual') }}</option>
+                </select>
+            </div>
+
+            <!-- Кнопка сброса фильтров -->
+            <div v-if="hasActiveFilters" class="ml-4">
+                <PrimaryButton 
+                    :onclick="resetFilters"
+                    icon="fas fa-filter-circle-xmark"
+                    :isLight="true">
+                </PrimaryButton>
+            </div>
+        </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
@@ -53,6 +82,8 @@ export default {
             loading: false,
             controller: ClientController,
             selectedIds: [],
+            statusFilter: '',
+            typeFilter: '',
             // Настройка текстов для crudEventMixin
             savedSuccessText: this.$t('clientSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingClient'),
@@ -114,7 +145,7 @@ export default {
                 this.loading = true;
             }
             try {
-                const new_data = await ClientController.getItems(page, this.searchQuery, true); // includeInactive = true
+                const new_data = await ClientController.getItems(page, this.searchQuery, true, this.statusFilter, this.typeFilter); // includeInactive = true
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingClientList'), error.message, true);
@@ -122,6 +153,11 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
+        },
+        resetFilters() {
+            this.statusFilter = '';
+            this.typeFilter = '';
+            this.fetchItems(1);
         },
         handleModalClose() {
             if (this.$refs.clientForm && this.$refs.clientForm.handleCloseRequest) {
@@ -134,6 +170,9 @@ export default {
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
+        },
+        hasActiveFilters() {
+            return this.statusFilter !== '' || this.typeFilter !== '';
         },
     },
 }

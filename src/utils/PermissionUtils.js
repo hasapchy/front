@@ -1,4 +1,15 @@
 export function permissionIcon(name) {
+  // Специальные иконки для settings permissions
+  if (name.startsWith('settings_')) {
+    const settingsIconMap = {
+      'settings_edit_any_date': 'fas fa-pen',
+      'settings_project_budget_view': 'fas fa-eye', 
+      'settings_currencies_view': 'fas fa-eye'
+    };
+    
+    return settingsIconMap[name] || 'fas fa-cog';
+  }
+
   const action = name.split("_").at(-1);
 
   switch (action) {
@@ -18,6 +29,11 @@ export function permissionIcon(name) {
 export function permissionGroupLabel(name) {
   const parts = name.split("_");
   const prefix = parts.length > 2 ? `${parts[0]}_${parts[1]}` : parts[0];
+
+  // Специальная обработка для настроек
+  if (name.startsWith('settings_') || prefix.startsWith('settings_') || name === 'settings') {
+    return "Settings";
+  }
 
   // Используем i18n для перевода, если доступен
   if (typeof window !== 'undefined' && window.i18n) {
@@ -59,28 +75,47 @@ export function permissionGroupLabel(name) {
 }
 
 export function permissionLabel(name) {
+  console.log(`permissionLabel called with: ${name}`);
+  
+  // Специальные названия для settings permissions
+  if (name.startsWith('settings_')) {
+    // Fallback названия (приоритет над i18n)
+    const settingsMap = {
+      'settings_edit_any_date': 'Изменение любой даты',
+      'settings_project_budget_view': 'Просмотр бюджета проекта', 
+      'settings_currencies_view': 'Просмотр других валют'
+    };
+    
+    console.log(`Using fallback for ${name}: ${settingsMap[name]}`);
+    return settingsMap[name] || name;
+  }
+
   const action = name.split("_").at(-1);
 
   // Используем i18n для перевода, если доступен
-  if (typeof window !== 'undefined' && window.i18n) {
-    const translation = window.i18n.global.t(action);
-    if (translation !== action) {
-      return translation;
+  if (typeof window !== 'undefined' && window.i18n && window.i18n.global && window.i18n.global.t) {
+    try {
+      const translation = window.i18n.global.t(action);
+      if (translation !== action) {
+        return translation;
+      }
+    } catch (error) {
+      console.warn('i18n translation failed:', error);
     }
   }
 
-  // Fallback на английские названия
+  // Fallback на русские названия
   switch (action) {
     case "view":
-      return "View";
+      return "Просмотр";
     case "create":
-      return "Create";
+      return "Создание";
     case "update":
-      return "Update";
+      return "Редактирование";
     case "delete":
-      return "Delete";
+      return "Удаление";
     case "date":
-      return "Date";
+      return "Дата";
 
     default:
       return action || name;

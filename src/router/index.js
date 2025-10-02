@@ -192,6 +192,7 @@ const routes = [
         meta: {
           title: "products",
           requiresAuth: true,
+          showSearch: true,
           binded: [
             {
               name: "services",
@@ -207,6 +208,7 @@ const routes = [
         meta: {
           title: "services",
           requiresAuth: true,
+          showSearch: true,
           binded: [
             {
               name: "products",

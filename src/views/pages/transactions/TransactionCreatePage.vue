@@ -240,11 +240,11 @@ export default {
                 this.allCategories = [];
             }
         },
-        async fetchAllProjects() {
-            // Используем данные из store
-            await this.$store.dispatch('loadProjects');
-            this.allProjects = this.$store.getters.projects;
-        },
+    async fetchAllProjects() {
+      // Используем данные из store
+      await this.$store.dispatch('loadProjects');
+      this.allProjects = this.$store.getters.activeProjects;
+    },
         async fetchAllCashRegisters() {
             // Используем данные из store
             await this.$store.dispatch('loadCashRegisters');

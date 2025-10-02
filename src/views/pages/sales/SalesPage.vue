@@ -2,13 +2,11 @@
     <div class="flex justify-between items-center mb-2">
         <div class="flex justify-start items-center">
             <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
-                :disabled="!$store.getters.hasPermission('sales_create')">
-                {{ $t('addSale') }}
-            </PrimaryButton>
+                :disabled="!$store.getters.hasPermission('sales_create')"></PrimaryButton>
             
             <!-- Фильтр по дате -->
             <div class="ml-4">
-                <select v-model="dateFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
+                <select v-model="dateFilter" @change="fetchItems" class="pl-10">
                     <option value="all_time">{{ $t('allTime') }}</option>
                     <option value="today">{{ $t('today') }}</option>
                     <option value="yesterday">{{ $t('yesterday') }}</option>
@@ -20,8 +18,8 @@
                 </select>
             </div>
             <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-4">
-                <input type="date" v-model="startDate" @change="fetchItems" class="w-full p-2 border rounded" />
-                <input type="date" v-model="endDate" @change="fetchItems" class="w-full p-2 border rounded" />
+                <input type="date" v-model="startDate" @change="fetchItems" />
+                <input type="date" v-model="endDate" @change="fetchItems" />
             </div>
 
 

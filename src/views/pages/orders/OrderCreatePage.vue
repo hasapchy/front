@@ -14,7 +14,11 @@
                                 {{ category.name }}
                             </option>
                         </select>
-                        <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showProductCategoryModal" />
+                        <PrimaryButton 
+                            icon="fas fa-add" 
+                            :is-info="true" 
+                            :onclick="showProductCategoryModal"
+                            :disabled="!$store.getters.hasPermission('categories_create')" />
                     </div>
                 </div>
                 <div>
@@ -58,7 +62,11 @@
                             <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">{{ parent.name }}
                             </option>
                         </select>
-                        <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showProjectModal" />
+                        <PrimaryButton 
+                            icon="fas fa-add" 
+                            :is-info="true" 
+                            :onclick="showProjectModal"
+                            :disabled="!$store.getters.hasPermission('projects_create')" />
                     </div>
                 </div>
                 <div>
@@ -378,11 +386,11 @@ export default {
             
             this.allWarehouses = this.$store.getters.warehouses;
         },
-        async fetchAllProjects() {
-            // Всегда загружаем данные заново
-            await this.$store.dispatch('loadProjects');
-            this.allProjects = this.$store.getters.projects;
-        },
+    async fetchAllProjects() {
+      // Всегда загружаем данные заново
+      await this.$store.dispatch('loadProjects');
+      this.allProjects = this.$store.getters.activeProjects;
+    },
         async fetchAllProductCategories() {
             try {
                 this.allProductCategories = await CategoriesController.getParentCategories();

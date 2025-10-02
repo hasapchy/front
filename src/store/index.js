@@ -311,7 +311,6 @@ export default createStore({
         const cachedUnits = CacheUtils.get('units_cache', 24 * 60 * 60 * 1000);
         if (cachedUnits) {
           commit('SET_UNITS', cachedUnits);
-          console.log('Единицы измерения загружены из кэша');
           return;
         }
         
@@ -322,14 +321,12 @@ export default createStore({
         
         // Сохраняем в кэш
         CacheUtils.set('units_cache', data);
-        console.log('Единицы измерения загружены с сервера и закэшированы');
       } catch (error) {
         console.error('Ошибка загрузки единиц измерения:', error);
         // При ошибке пытаемся использовать устаревший кэш
         const cachedUnits = CacheUtils.get('units_cache', Infinity);
         if (cachedUnits) {
           commit('SET_UNITS', cachedUnits);
-          console.log('Используем устаревший кэш единиц измерения из-за ошибки сети');
         }
       } finally {
         commit('SET_LOADING_FLAG', { type: 'units', loading: false });
@@ -362,7 +359,6 @@ export default createStore({
         const cachedCurrencies = CacheUtils.get('currencies_cache', 24 * 60 * 60 * 1000);
         if (cachedCurrencies) {
           commit('SET_CURRENCIES', cachedCurrencies);
-          console.log('Валюты загружены из кэша');
           return;
         }
         
@@ -373,14 +369,12 @@ export default createStore({
         
         // Сохраняем в кэш
         CacheUtils.set('currencies_cache', data);
-        console.log('Валюты загружены с сервера и закэшированы');
       } catch (error) {
         console.error('Ошибка загрузки валют:', error);
         // При ошибке пытаемся использовать устаревший кэш
         const cachedCurrencies = CacheUtils.get('currencies_cache', Infinity);
         if (cachedCurrencies) {
           commit('SET_CURRENCIES', cachedCurrencies);
-          console.log('Используем устаревший кэш валют из-за ошибки сети');
         }
       } finally {
         commit('SET_LOADING_FLAG', { type: 'currencies', loading: false });
@@ -407,7 +401,6 @@ export default createStore({
           if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
             const warehouses = JSON.parse(cachedData);
             commit('SET_WAREHOUSES', warehouses);
-            console.log(`Склады компании ${companyId} загружены из кэша`);
             return;
           }
         }
@@ -421,7 +414,6 @@ export default createStore({
         if (companyId) {
           localStorage.setItem(`warehouses_${companyId}`, JSON.stringify(data));
           localStorage.setItem(`warehouses_${companyId}_timestamp`, Date.now().toString());
-          console.log(`Склады компании ${companyId} загружены с сервера и закэшированы`);
         }
       } catch (error) {
         console.error('Ошибка загрузки складов:', error);
@@ -456,7 +448,6 @@ export default createStore({
         if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
           const cashRegisters = JSON.parse(cachedData);
           commit('SET_CASH_REGISTERS', cashRegisters);
-          console.log(`Кассы компании ${companyId} загружены из кэша`);
           return;
         }
         
@@ -468,7 +459,6 @@ export default createStore({
         // Кэшируем для текущей компании
         localStorage.setItem(`cashRegisters_${companyId}`, JSON.stringify(data));
         localStorage.setItem(`cashRegisters_${companyId}_timestamp`, Date.now().toString());
-        console.log(`Кассы компании ${companyId} загружены с сервера и закэшированы`);
       } catch (error) {
         console.error('Ошибка загрузки касс:', error);
         // При ошибке пытаемся использовать кэш
@@ -477,7 +467,6 @@ export default createStore({
           const cachedData = localStorage.getItem(`cashRegisters_${companyId}`);
           if (cachedData) {
             commit('SET_CASH_REGISTERS', JSON.parse(cachedData));
-            console.log('Используем кэшированные кассы из-за ошибки сети');
           }
         }
       } finally {
@@ -505,7 +494,6 @@ export default createStore({
           if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
             const ClientDto = (await import('@/dto/client/ClientDto')).default;
             const rawClients = JSON.parse(cachedData);
-            console.log('DEBUG: Raw client data from cache:', rawClients[0]);
             
             // Проверяем формат данных - если уже ClientDto (camelCase), используем как есть
             const clients = rawClients.map(clientData => {
@@ -538,9 +526,7 @@ export default createStore({
               }
             });
             
-            console.log('DEBUG: Created ClientDto from cache:', clients[0]);
             commit('SET_CLIENTS', clients);
-            console.log(`Клиенты компании ${companyId} загружены из кэша`);
             return;
           }
         }
@@ -555,7 +541,6 @@ export default createStore({
           const rawData = data.map(client => client.toJson ? client.toJson() : client);
           localStorage.setItem(`clients_${companyId}`, JSON.stringify(rawData));
           localStorage.setItem(`clients_${companyId}_timestamp`, Date.now().toString());
-          console.log(`Клиенты компании ${companyId} загружены с сервера и закэшированы`);
         }
       } catch (error) {
         console.error('Ошибка загрузки клиентов:', error);
@@ -576,7 +561,6 @@ export default createStore({
           if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
             const products = JSON.parse(cachedData);
             commit('SET_PRODUCTS', products);
-            console.log(`Товары компании ${companyId} загружены из кэша`);
             return;
           }
         }
@@ -587,9 +571,6 @@ export default createStore({
         if (companyId) {
           localStorage.setItem(`products_${companyId}`, JSON.stringify(data.items));
           localStorage.setItem(`products_${companyId}_timestamp`, Date.now().toString());
-          console.log(`Товары компании ${companyId} загружены с сервера и закэшированы`);
-        } else {
-          console.log('Товары загружены с сервера');
         }
       } catch (error) {
         console.error('Ошибка загрузки товаров:', error);
@@ -609,7 +590,6 @@ export default createStore({
           if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
             const services = JSON.parse(cachedData);
             commit('SET_SERVICES', services);
-            console.log(`Услуги компании ${companyId} загружены из кэша`);
             return;
           }
         }
@@ -623,7 +603,6 @@ export default createStore({
         if (companyId) {
           localStorage.setItem(`services_${companyId}`, JSON.stringify(data.items));
           localStorage.setItem(`services_${companyId}_timestamp`, Date.now().toString());
-          console.log(`Услуги компании ${companyId} загружены с сервера и закэшированы`);
         }
       } catch (error) {
         console.error('Ошибка загрузки услуг:', error);
@@ -643,7 +622,6 @@ export default createStore({
           if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
             const categories = JSON.parse(cachedData);
             commit('SET_CATEGORIES', categories);
-            console.log(`Категории компании ${companyId} загружены из кэша`);
             return;
           }
         }
@@ -657,7 +635,6 @@ export default createStore({
         if (companyId) {
           localStorage.setItem(`categories_${companyId}`, JSON.stringify(data));
           localStorage.setItem(`categories_${companyId}_timestamp`, Date.now().toString());
-          console.log(`Категории компании ${companyId} загружены с сервера и закэшированы`);
         }
       } catch (error) {
         console.error('Ошибка загрузки категорий:', error);
@@ -677,21 +654,19 @@ export default createStore({
           if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
             const projects = JSON.parse(cachedData);
             commit('SET_PROJECTS', projects);
-            console.log(`Проекты компании ${companyId} загружены из кэша`);
             return;
           }
         }
         
         // Используем контроллер для правильного преобразования в DTO
         const ProjectController = (await import('@/api/ProjectController')).default;
-        const data = await ProjectController.getActiveItems();
+        const data = await ProjectController.getAllItems();
         commit('SET_PROJECTS', data);
         
         // Кэшируем для текущей компании
         if (companyId) {
           localStorage.setItem(`projects_${companyId}`, JSON.stringify(data));
           localStorage.setItem(`projects_${companyId}_timestamp`, Date.now().toString());
-          console.log(`Проекты компании ${companyId} загружены с сервера и закэшированы`);
         }
       } catch (error) {
         console.error('Ошибка загрузки проектов:', error);
@@ -716,7 +691,6 @@ export default createStore({
         const cachedOrderStatuses = CacheUtils.get('orderStatuses_cache', 24 * 60 * 60 * 1000);
         if (cachedOrderStatuses) {
           commit('SET_ORDER_STATUSES', cachedOrderStatuses);
-          console.log('Статусы заказов загружены из кэша');
           return;
         }
         
@@ -727,14 +701,12 @@ export default createStore({
         
         // Сохраняем в кэш
         CacheUtils.set('orderStatuses_cache', data);
-        console.log('Статусы заказов загружены с сервера и закэшированы');
       } catch (error) {
         console.error('Ошибка загрузки статусов заказов:', error);
         // При ошибке пытаемся использовать устаревший кэш
         const cachedOrderStatuses = CacheUtils.get('orderStatuses_cache', Infinity);
         if (cachedOrderStatuses) {
           commit('SET_ORDER_STATUSES', cachedOrderStatuses);
-          console.log('Используем устаревший кэш статусов заказов из-за ошибки сети');
         }
       } finally {
         commit('SET_LOADING_FLAG', { type: 'orderStatuses', loading: false });
@@ -758,7 +730,6 @@ export default createStore({
         const cachedProjectStatuses = CacheUtils.get('projectStatuses_cache', 24 * 60 * 60 * 1000);
         if (cachedProjectStatuses) {
           commit('SET_PROJECT_STATUSES', cachedProjectStatuses);
-          console.log('Статусы проектов загружены из кэша');
           return;
         }
         
@@ -769,14 +740,12 @@ export default createStore({
         
         // Сохраняем в кэш
         CacheUtils.set('projectStatuses_cache', data);
-        console.log('Статусы проектов загружены с сервера и закэшированы');
       } catch (error) {
         console.error('Ошибка загрузки статусов проектов:', error);
         // При ошибке пытаемся использовать устаревший кэш
         const cachedProjectStatuses = CacheUtils.get('projectStatuses_cache', Infinity);
         if (cachedProjectStatuses) {
           commit('SET_PROJECT_STATUSES', cachedProjectStatuses);
-          console.log('Используем устаревший кэш статусов проектов из-за ошибки сети');
         }
       } finally {
         commit('SET_LOADING_FLAG', { type: 'projectStatuses', loading: false });
@@ -800,7 +769,6 @@ export default createStore({
         const cachedTransactionCategories = CacheUtils.get('transactionCategories_cache', 24 * 60 * 60 * 1000);
         if (cachedTransactionCategories) {
           commit('SET_TRANSACTION_CATEGORIES', cachedTransactionCategories);
-          console.log('Категории транзакций загружены из кэша');
           return;
         }
         
@@ -811,14 +779,12 @@ export default createStore({
         
         // Сохраняем в кэш
         CacheUtils.set('transactionCategories_cache', data);
-        console.log('Категории транзакций загружены с сервера и закэшированы');
       } catch (error) {
         console.error('Ошибка загрузки категорий транзакций:', error);
         // При ошибке пытаемся использовать устаревший кэш
         const cachedTransactionCategories = CacheUtils.get('transactionCategories_cache', Infinity);
         if (cachedTransactionCategories) {
           commit('SET_TRANSACTION_CATEGORIES', cachedTransactionCategories);
-          console.log('Используем устаревший кэш категорий транзакций из-за ошибки сети');
         }
       } finally {
         commit('SET_LOADING_FLAG', { type: 'transactionCategories', loading: false });
@@ -842,7 +808,6 @@ export default createStore({
         const cachedProductStatuses = CacheUtils.get('productStatuses_cache', 24 * 60 * 60 * 1000);
         if (cachedProductStatuses) {
           commit('SET_PRODUCT_STATUSES', cachedProductStatuses);
-          console.log('Статусы товаров загружены из кэша');
           return;
         }
         
@@ -853,14 +818,12 @@ export default createStore({
         
         // Сохраняем в кэш
         CacheUtils.set('productStatuses_cache', data);
-        console.log('Статусы товаров загружены с сервера и закэшированы');
       } catch (error) {
         console.error('Ошибка загрузки статусов товаров:', error);
         // При ошибке пытаемся использовать устаревший кэш
         const cachedProductStatuses = CacheUtils.get('productStatuses_cache', Infinity);
         if (cachedProductStatuses) {
           commit('SET_PRODUCT_STATUSES', cachedProductStatuses);
-          console.log('Используем устаревший кэш статусов товаров из-за ошибки сети');
         }
       } finally {
         commit('SET_LOADING_FLAG', { type: 'productStatuses', loading: false });
@@ -922,8 +885,6 @@ export default createStore({
       commit('SET_PROJECT_STATUSES', []);
       commit('SET_TRANSACTION_CATEGORIES', []);
       commit('SET_PRODUCT_STATUSES', []);
-      
-      console.log('Кэш очищен');
     },
     async loadUserCompanies({ commit }) {
       try {
@@ -983,14 +944,12 @@ export default createStore({
       if (state.cacheMonitor.enabled && !state.cacheMonitor.intervalId) {
         const intervalId = CacheMonitor.startMonitoring(60000); // каждую минуту
         commit('SET_CACHE_MONITOR_INTERVAL', intervalId);
-        console.log('📊 Мониторинг кэша запущен');
       }
     },
     stopCacheMonitoring({ commit, state }) {
       if (state.cacheMonitor.intervalId) {
         clearInterval(state.cacheMonitor.intervalId);
         commit('SET_CACHE_MONITOR_INTERVAL', null);
-        console.log('📊 Мониторинг кэша остановлен');
       }
     },
     checkCacheStatus({ commit }) {
@@ -1071,12 +1030,10 @@ export default createStore({
     // Инициализация всех систем кэширования
     initCacheSystems({ dispatch }) {
       dispatch('startCacheMonitoring');
-      console.log('🚀 Системы кэширования инициализированы');
     },
     // Остановка всех систем кэширования
     stopCacheSystems({ dispatch }) {
       dispatch('stopCacheMonitoring');
-      console.log('🛑 Системы кэширования остановлены');
     },
   },
 
@@ -1112,7 +1069,8 @@ export default createStore({
     products: (state) => state.products,
     services: (state) => state.services,
     categories: (state) => state.categories,
-    projects: (state) => state.projects,
+    projects: (state) => state.projects, // Все проекты для страницы проектов
+    activeProjects: (state) => state.projects.filter(p => p.statusId !== 3 && p.statusId !== 4), // Только активные для форм
     orderStatuses: (state) => state.orderStatuses,
     projectStatuses: (state) => state.projectStatuses,
     transactionCategories: (state) => state.transactionCategories,

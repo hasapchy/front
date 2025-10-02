@@ -1,7 +1,11 @@
 <template>
     <div class="flex justify-between items-center mb-4">
         <div class="flex justify-start items-center">
-            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"></PrimaryButton>
+            <PrimaryButton 
+                :onclick="() => { showModal(null) }" 
+                icon="fas fa-plus"
+                :disabled="!$store.getters.hasPermission('transactions_create')">
+            </PrimaryButton>
             <div class="mx-4">
                 <select v-model="cashRegisterId" @change="() => fetchItems(1)">
                     <option value="">{{ $t('allCashRegisters') }}</option>
@@ -15,7 +19,7 @@
 
             <!-- Фильтр по типу транзакции -->
             <div class="mx-2">
-                <select v-model="transactionTypeFilter" @change="() => fetchItems(1)" class="w-full p-2 border rounded">
+                <select v-model="transactionTypeFilter" @change="() => fetchItems(1)">
                     <option value="">{{ $t('allTransactionTypes') }}</option>
                     <option value="income">{{ $t('income') }}</option>
                     <option value="outcome">{{ $t('outcome') }}</option>
@@ -25,7 +29,7 @@
 
             <!-- Фильтр по источнику средств -->
             <div class="mx-2">
-                <select v-model="sourceFilter" @change="() => fetchItems(1)" class="w-full p-2 border rounded">
+                <select v-model="sourceFilter" @change="() => fetchItems(1)">
                     <option value="">{{ $t('allSources') }}</option>
                     <option v-for="option in sourceOptions" :key="option.value" :value="option.value">
                         {{ option.label }}
@@ -35,7 +39,7 @@
 
             <!-- Фильтр по проектам -->
             <div class="mx-2">
-                <select v-model="projectId" @change="() => fetchItems(1)" class="w-full p-2 border rounded">
+                <select v-model="projectId" @change="() => fetchItems(1)">
                     <option value="">{{ $t('allProjects') }}</option>
                     <template v-if="allProjects.length">
                         <option v-for="project in allProjects" :key="project.id" :value="project.id">
@@ -46,7 +50,7 @@
             </div>
 
             <div class="">
-                <select v-model="dateFilter" @change="() => fetchItems(1)" class="w-full p-2 pl-10 border rounded">
+                <select v-model="dateFilter" @change="() => fetchItems(1)" class="pl-10">
                     <option value="all_time">{{ $t('allTime') }}</option>
                     <option value="today">{{ $t('today') }}</option>
                     <option value="yesterday">{{ $t('yesterday') }}</option>
@@ -58,12 +62,12 @@
                 </select>
             </div>
             <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-4">
-                <input type="date" v-model="startDate" @change="() => fetchItems(1)" class="w-full p-2 border rounded" />
-                <input type="date" v-model="endDate" @change="() => fetchItems(1)" class="w-full p-2 border rounded" />
+                <input type="date" v-model="startDate" @change="() => fetchItems(1)" />
+                <input type="date" v-model="endDate" @change="() => fetchItems(1)" />
             </div>
 
             <!-- Кнопка сброса фильтров -->
-            <div class="ml-4">
+            <div v-if="hasActiveFilters" class="ml-4">
                 <PrimaryButton 
                     :onclick="resetFilters"
                     icon="fas fa-filter-circle-xmark"
@@ -183,10 +187,10 @@ export default {
     },
 
     mounted() {
-        this.fetchItems();
-        // Кассы и проекты загружаются автоматически через store при установке компании
-        this.allCashRegisters = this.$store.getters.cashRegisters;
-        this.allProjects = this.$store.getters.projects;
+      this.fetchItems();
+      // Кассы и проекты загружаются автоматически через store при установке компании
+      this.allCashRegisters = this.$store.getters.cashRegisters;
+      this.allProjects = this.$store.getters.activeProjects;
     },
     beforeUnmount() {
         eventBus.off('global-search', this.handleSearch);
@@ -393,6 +397,15 @@ export default {
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
+        },
+        hasActiveFilters() {
+            return this.cashRegisterId !== '' ||
+                   this.transactionTypeFilter !== '' ||
+                   this.sourceFilter !== '' ||
+                   this.projectId !== '' ||
+                   this.dateFilter !== 'all_time' ||
+                   this.startDate !== null ||
+                   this.endDate !== null;
         }
     },
     watch: {

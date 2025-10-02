@@ -150,9 +150,11 @@ export default {
             await this.$store.dispatch('loadCurrencies');
             this.currencies = this.$store.getters.currencies;
         },
-        async fetchAllProjects() {
-            this.allProjects = await ProjectController.getActiveItems();
-        },
+    async fetchAllProjects() {
+      // Используем данные из store
+      await this.$store.dispatch('loadProjects');
+      this.allProjects = this.$store.getters.activeProjects;
+    },
         async save() {
             this.saveLoading = true;
 

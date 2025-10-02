@@ -277,10 +277,18 @@ export default {
         groupedPermissions() {
             const groups = {};
             this.allPermissions.forEach((p) => {
-                const parts = p.name.split('_');
-                const prefix = parts.length >= 3 ? `${parts[0]}_${parts[1]}` : parts[0];
-                if (!groups[prefix]) groups[prefix] = [];
-                groups[prefix].push(p);
+                let groupKey;
+                
+                // Специальная обработка для settings permissions
+                if (p.name.startsWith('settings_')) {
+                    groupKey = 'settings';
+                } else {
+                    const parts = p.name.split('_');
+                    groupKey = parts.length >= 3 ? `${parts[0]}_${parts[1]}` : parts[0];
+                }
+                
+                if (!groups[groupKey]) groups[groupKey] = [];
+                groups[groupKey].push(p);
             });
             return groups;
         },
@@ -380,20 +388,40 @@ export default {
             this.showPassword = false;
             this.showConfirmPassword = false;
             this.showNewPassword = false;
+            this.currentTab = 'info'; // Сбрасываем на первую вкладку
             if (this.$refs.imageInput) {
                 this.$refs.imageInput.value = null;
             }
             this.resetFormChanges();
         },
         isGroupChecked(group) {
-            const groupPermissions = this.allPermissions
-                .filter((p) => p.name.startsWith(`${group}_`));
+            let groupPermissions;
+            
+            // Специальная обработка для settings группы
+            if (group === 'settings') {
+                groupPermissions = this.allPermissions
+                    .filter((p) => p.name.startsWith('settings_'));
+            } else {
+                groupPermissions = this.allPermissions
+                    .filter((p) => p.name.startsWith(`${group}_`));
+            }
+            
             return groupPermissions.every((p) => this.form.permissions.includes(p.name));
         },
         toggleGroup(group) {
-            const groupPermissions = this.allPermissions
-                .filter((p) => p.name.startsWith(`${group}_`))
-                .map((p) => p.name);
+            let groupPermissions;
+            
+            // Специальная обработка для settings группы
+            if (group === 'settings') {
+                groupPermissions = this.allPermissions
+                    .filter((p) => p.name.startsWith('settings_'))
+                    .map((p) => p.name);
+            } else {
+                groupPermissions = this.allPermissions
+                    .filter((p) => p.name.startsWith(`${group}_`))
+                    .map((p) => p.name);
+            }
+            
             const allChecked = this.isGroupChecked(group);
             if (allChecked) {
                 this.form.permissions = this.form.permissions.filter(
@@ -414,10 +442,7 @@ export default {
             return [...permissions].sort((a, b) => a.name.localeCompare(b.name));
         },
         permissionIcon,
-        permissionLabel(name) {
-            const action = name.split("_").at(-1);
-            return this.$t(action) || action;
-        },
+        permissionLabel,
         permissionColor,
         permissionGroupLabel(name) {
             const parts = name.split("_");
@@ -562,6 +587,7 @@ export default {
                     this.form.companies = newEditingItem.companies?.map(c => c.id) || [];
                     this.form.permissions = newEditingItem.permissions || [];
                     this.editingItemId = newEditingItem.id || null;
+                    this.currentTab = 'info'; // Всегда открываем первую вкладку
                     
                     if (newEditingItem.photo) {
                         this.selected_image = this.getUserPhotoSrc(newEditingItem);

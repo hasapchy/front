@@ -1,6 +1,19 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('addService') }}</PrimaryButton>
+        <div class="flex items-center space-x-4">
+            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"></PrimaryButton>
+            
+            <!-- Фильтр по категориям -->
+            <div class="flex items-center space-x-2">
+                <select v-model="selectedCategoryId" @change="onCategoryFilterChange" 
+                        class="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">{{ $t('allCategoriesFilter') }}</option>
+                    <option v-for="category in categories" :key="category.id" :value="category.id">
+                        {{ category.name }}
+                    </option>
+                </select>
+            </div>
+        </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
@@ -17,7 +30,7 @@
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
         <ProductsCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" :editingItem="editingItem" default-type="service" />
+            @deleted-error="handleDeletedError" :editingItem="editingItem" :defaultType="'service'" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
@@ -32,7 +45,9 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import ProductController from '@/api/ProductController';
+import CategoryController from '@/api/CategoryController';
 import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
+import { eventBus } from '@/eventBus';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
@@ -50,6 +65,8 @@ export default {
             data: null,
             loading: false,
             selectedIds: [],
+            categories: [],
+            selectedCategoryId: '',
             controller: ProductController,
             savedSuccessText: this.$t('productSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProduct'),
@@ -71,12 +88,35 @@ export default {
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', true);
+        
+        eventBus.on('global-search', this.handleSearch);
     },
 
     mounted() {
+        this.fetchCategories();
         this.fetchItems();
     },
+
+    beforeUnmount() {
+        eventBus.off('global-search', this.handleSearch);
+    },
     methods: {
+        async fetchCategories() {
+            try {
+                this.categories = await CategoryController.getAllItems();
+            } catch (error) {
+                console.error('Ошибка при загрузке категорий:', error);
+            }
+        },
+
+        onCategoryFilterChange() {
+            this.fetchItems(1);
+        },
+
+        handleSearch(query) {
+            this.$store.dispatch('setSearchQuery', query);
+            this.fetchItems(1, false);
+        },
         itemMapper(i, c) {
             switch (c) {
                 case 'retail_price':
@@ -98,9 +138,15 @@ export default {
                 this.loading = true;
             }
             try {
-                console.log('[ServicesPage] fetchItems start', { page, companyId: this.$store.getters.currentCompanyId });
-                const new_data = await ProductController.getItems(page, false);
-                console.log('[ServicesPage] fetchItems result', { page, items: new_data?.items?.length, total: new_data?.total });
+                const params = {};
+                if (this.selectedCategoryId) {
+                    params.category_id = this.selectedCategoryId;
+                }
+                if (this.searchQuery) {
+                    params.search = this.searchQuery;
+                }
+                
+                const new_data = await ProductController.getItems(page, false, params);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProductList'), error.message, true);
@@ -111,6 +157,9 @@ export default {
         }
     },
     computed: {
+        searchQuery() {
+            return this.$store.state.searchQuery;
+        },
     },
 }
 </script>

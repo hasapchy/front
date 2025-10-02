@@ -40,7 +40,6 @@ export default class CacheInvalidator {
       });
     });
 
-    console.log(`🗑️ Инвалидирован кэш для ${type}: удалено ${removedCount} записей`);
     return removedCount;
   }
 
@@ -75,7 +74,6 @@ export default class CacheInvalidator {
       }
     });
 
-    console.log(`🗑️ Инвалидирован кэш компании ${companyId}: удалено ${removedCount} записей`);
     return removedCount;
   }
 
@@ -97,7 +95,6 @@ export default class CacheInvalidator {
 
     cacheKeys.forEach(key => localStorage.removeItem(key));
     
-    console.log(`🗑️ Инвалидирован весь кэш: удалено ${cacheKeys.length} записей`);
     return cacheKeys.length;
   }
 
@@ -137,7 +134,6 @@ export default class CacheInvalidator {
   static onCompanyChange(oldCompanyId, newCompanyId) {
     // Очищаем данные старой компании из store
     // (это делается в store, здесь только логируем)
-    console.log(`🔄 Смена компании: ${oldCompanyId} → ${newCompanyId}`);
   }
 
   /**

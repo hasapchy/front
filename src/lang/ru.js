@@ -66,7 +66,6 @@ export default {
   productCategories: 'Категории товаров/услуг',
   orderStatuses: 'Статусы заказов',
   orderAdditionalFields: 'Доп. поля заказов',
-  addAdditionalField: 'Добавить поле',
   additionalFields: 'Дополнительные поля',
   errorGettingAdditionalFieldsList: 'Ошибка получения списка дополнительных полей',
   additionalFieldSaved: 'Дополнительное поле сохранено',
@@ -119,7 +118,6 @@ export default {
   // Создание и редактирование
   createProject: 'Создать проект',
   editProject: 'Редактировать проект',
-  addProject: 'Добавить проект',
   
   // Дополнительные действия
   selectCategory: 'Выберите категорию',
@@ -170,9 +168,11 @@ export default {
   selectCurrencyFirst: 'Сначала выберите валюту',
   newRateWillClosePrevious: 'При создании нового курса все предыдущие активные курсы будут автоматически закрыты',
   customPermissions: 'Кастомные настройки',
-  settings_edit_any_date: 'Изменение даты',
+  settings: 'Настройки',
+  settings_edit_any_date: 'Изменение любой даты',
   settings_project: 'Настройки проекта',
   settings_project_budget_view: 'Просмотр бюджета проекта',
+  settings_currencies_view: 'Просмотр других валют',
   price: 'Цена',
   quantity: 'Количество',
   date: 'Дата',
@@ -187,6 +187,10 @@ export default {
   selectMainCategory: 'Выберите основную категорию',
   selectSubCategory: 'Выберите подкатегорию',
   selectSubCategories: 'Выберите подкатегории',
+  subCategories: 'Подкатегории',
+  categoriesCount: 'категорий',
+  filterByCategory: 'Фильтр по категории',
+  allCategoriesFilter: 'Все категории',
   selectAll: 'Выбрать все',
   deselectAll: 'Снять все',
   
@@ -651,7 +655,6 @@ export default {
   
   // Дополнительные переводы для UI
   order: 'Заказ',
-  addOrder: 'Добавить заказ',
   client: 'Клиент',
   date: 'Дата',
   clientType: 'Тип клиента',
@@ -788,7 +791,6 @@ export default {
   
   // Фразы для пользователей
   createUser: 'Пользователь',
-  addUser: 'Добавить пользователя',
   addClient: 'Добавить клиента',
   editUser: 'Редактировать пользователя',
   userCreated: 'Пользователь создан',
@@ -840,7 +842,6 @@ export default {
   createdBy: 'Создал',
   
   // Фразы для товаров
-  addProduct: 'Добавить товар',
   createProduct: 'Товар',
   editProduct: 'Редактировать товар',
   productCreated: 'Товар создан',
@@ -851,7 +852,6 @@ export default {
   errorUpdatingProduct: 'Ошибка обновления товара',
   
   // Фразы для услуг
-  addService: 'Добавить услугу',
   editService: 'Редактировать услугу',
   serviceCreated: 'Услуга создана',
   serviceAdded: 'Услуга добавлена',
@@ -890,12 +890,10 @@ export default {
   cashRegister: 'Касса',
   
   // Фразы для складов
-  addWarehouse: 'Добавить склад',
   createWarehouse: 'Склад',
   editWarehouse: 'Редактировать склад',
   
   // Фразы для продаж
-  addSale: 'Добавить продажу',
   createSale: 'Продажа',
   editSale: 'Продажа',
   
@@ -910,27 +908,22 @@ export default {
   purchasePrice: 'Цена закупки',
   
   // Фразы для транзакций
-  addTransaction: 'Добавить транзакцию',
   createTransaction: 'Транзакция',
   editTransaction: 'Редактировать транзакцию',
   
   // Фразы для переводов
-  addTransfer: 'Добавить трансфер',
   createTransfer: 'Трансфер',
   editTransfer: 'Трансфер',
   
   // Фразы для поступлений на склад
-  addReceipt: 'Отметить поступление',
   createReceipt: 'Запись поступления',
   editReceipt: 'Запись поступления',
   
   // Фразы для списаний со склада
-  addWriteoff: 'Добавить списание',
   createWriteoff: 'Списание',
   editWriteoff: 'Редактировать списание со склада',
   
   // Фразы для движений по складу
-  addMovement: 'Перемещение',
   createMovement: 'Движение',
   editMovement: 'Редактировать движение по складу',
   
@@ -1009,7 +1002,6 @@ export default {
 
   // Счета
   invoices: 'Счета',
-  addInvoice: 'Добавить счет',
   createInvoice: 'Создать счет',
   editInvoice: 'Редактировать счет',
   invoiceNumber: 'Номер счета',

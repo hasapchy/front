@@ -1,9 +1,7 @@
 <template>
     <div class="flex justify-between items-center mb-2">
         <div class="flex items-center">
-            <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus">
-                {{ $t('addAdditionalField') }}
-            </PrimaryButton>
+            <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"></PrimaryButton>
         </div>
         <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" @changePage="fetchItems" />
     </div>

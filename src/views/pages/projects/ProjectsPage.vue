@@ -1,7 +1,11 @@
 <template>
     <div class="flex justify-between items-center mb-4">
         <div class="flex items-center flex-wrap gap-2">
-            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('addProject') }}</PrimaryButton>
+            <PrimaryButton 
+                :onclick="() => { showModal(null) }" 
+                icon="fas fa-plus"
+                :disabled="!$store.getters.hasPermission('projects_create')">
+            </PrimaryButton>
             
             <!-- Фильтр по статусу -->
             <div class="ml-2">

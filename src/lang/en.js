@@ -30,7 +30,6 @@ export default {
   selectCompany: 'Select Company',
   errorLoadingCompanies: 'Error loading companies',
   errorChangingCompany: 'Error changing company',
-  addCompany: 'Add Company',
   editCompany: 'Edit Company',
   companySaved: 'Company saved',
   errorSavingCompany: 'Error saving company',
@@ -79,7 +78,6 @@ export default {
   deselectAll: 'Deselect all',
   
   // Order related
-  addOrder: 'Add Order',
   createOrder: 'Create Order',
   editOrder: 'Edit Order',
   orderSaved: 'Order saved',
@@ -145,7 +143,6 @@ export default {
   isAdmin: 'Administrator',
   admin: 'Admin',
   companies: 'Companies',
-  addCompany: 'Add Company',
   editCompany: 'Edit Company',
   companyName: 'Company Name',
   enterCompanyName: 'Enter company name',
@@ -231,7 +228,6 @@ export default {
   login: 'Login',
   
   // Transaction Categories
-  addTransactionCategory: 'Add Transaction Category',
   createTransactionCategory: 'Transaction Category',
   editTransactionCategory: 'Transaction Category',
   deleteTransactionCategory: 'Delete Transaction Category',
@@ -272,4 +268,10 @@ export default {
     paymentType: 'Payment type',
     cashPayment: 'Cash payment',
     selectCashRegister: 'Select cash register',
+    
+    // Settings permissions
+    settings: 'Settings',
+    settings_edit_any_date: 'Edit Any Date',
+    settings_project_budget_view: 'View Project Budget',
+    settings_currencies_view: 'View Other Currencies',
 }

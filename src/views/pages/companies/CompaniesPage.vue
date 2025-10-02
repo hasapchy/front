@@ -1,6 +1,10 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus">{{ $t('addCompany') }}</PrimaryButton>
+        <PrimaryButton 
+            :onclick="() => showModal(null)" 
+            icon="fas fa-plus"
+            :disabled="!$store.getters.hasPermission('companies_create')">
+        </PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>

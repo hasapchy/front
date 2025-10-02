@@ -1,7 +1,11 @@
 <template>
     <div class="flex justify-between items-center mb-2">
         <div class="flex justify-start items-center">
-            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('addMovement') }}</PrimaryButton>
+            <PrimaryButton 
+                :onclick="() => { showModal(null) }" 
+                icon="fas fa-plus"
+                :disabled="!$store.getters.hasPermission('warehouse_movements_create')">
+            </PrimaryButton>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />

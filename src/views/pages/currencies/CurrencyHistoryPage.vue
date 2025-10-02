@@ -6,7 +6,6 @@
                 :onclick="() => showModal(null)" 
                 :disabled="!$store.getters.hasPermission('currency_history_create')"
                 icon="fas fa-plus">
-                {{ $t('addExchangeRate') }}
             </PrimaryButton>
             <div class="flex items-center space-x-2">
                 <label class="text-sm font-medium">{{ $t('selectCurrency') }}:</label>

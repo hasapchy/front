@@ -217,7 +217,6 @@ export default {
             this.$nextTick(() => {
                 if (this.users && this.users.length > 0) {
                     this.selectedUsers = this.users.map(user => user.id.toString());
-                    console.log('После очистки формы выбраны все пользователи:', this.selectedUsers);
                 }
             });
         },
@@ -275,18 +274,15 @@ export default {
             } else if (!this.editingItem) {
                 // При создании нового проекта - выбираем всех пользователей по умолчанию
                 this.selectedUsers = this.users.map(user => user.id.toString());
-                console.log('Автоматически выбраны все пользователи:', this.selectedUsers);
             }
         },
         selectAllUsers() {
             if (this.users && this.users.length > 0) {
                 this.selectedUsers = this.users.map(user => user.id.toString());
-                console.log('Выбраны все пользователи:', this.selectedUsers);
             }
         },
         deselectAllUsers() {
             this.selectedUsers = [];
-            console.log('Снят выбор со всех пользователей');
         },
         async save() {
             if (this.uploading) {
@@ -475,7 +471,6 @@ export default {
                     // Дополнительная проверка: если это создание нового проекта и пользователи загружены, выбираем всех
                     if (!newEditingItem && this.users && this.users.length > 0 && this.selectedUsers.length === 0) {
                         this.selectedUsers = this.users.map(user => user.id.toString());
-                        console.log('Watcher: выбраны все пользователи для нового проекта:', this.selectedUsers);
                     }
                 });
             },

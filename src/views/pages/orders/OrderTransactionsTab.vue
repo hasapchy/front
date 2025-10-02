@@ -4,9 +4,7 @@
             {{ $t('saveOrderFirst') }}
         </div>
         <div v-else>
-            <PrimaryButton icon="fas fa-plus" :onclick="showTransactionModal" class="my-3">
-                {{ $t('add') }} {{ $t('transaction') }}
-            </PrimaryButton>
+            <PrimaryButton icon="fas fa-plus" :onclick="showTransactionModal" class="my-3"></PrimaryButton>
 
             <DraggableTable v-if="transactions.length" table-key="order.transactions" :columns-config="columnsConfig"
                 :table-data="transactions" :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="editTransaction" />

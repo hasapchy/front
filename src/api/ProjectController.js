@@ -88,7 +88,7 @@ export default class ProjectController {
 
   static async getAllItems() {
     try {
-      const response = await api.get(`/projects/all`);
+      const response = await api.get(`/projects/all?active_only=true`);
       const data = response.data;
       // Преобразуем полученные данные в DTO
       const items = data.map((item) => {
@@ -159,7 +159,7 @@ export default class ProjectController {
 
   static async getActiveItems() {
     try {
-      const response = await api.get(`/projects/active`);
+      const response = await api.get(`/projects/all?active_only=true`);
       const data = response.data;
       // Преобразуем полученные данные в DTO
       const items = data.map((item) => {

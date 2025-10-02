@@ -1,6 +1,6 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus">{{ $t('addWarehouse') }}</PrimaryButton>
+        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"></PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             @changePage="fetchItems" />
     </div>
@@ -59,7 +59,6 @@ export default {
 
             columnsConfig: [
                 { name: 'name', label: this.$t('name') },
-                { name: 'users', label: this.$t('access') },
                 { name: 'createdAt', label: this.$t('creationDate') }
             ],
         }
@@ -71,8 +70,6 @@ export default {
     methods: {
         itemMapper(i, c) {
             switch (c) {
-                case 'users':
-                    return (i.users || '').length + ' ' + this.$t('users');
                 case 'createdAt':
                     return i.formatCreatedAt();
                 default:

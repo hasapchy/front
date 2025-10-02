@@ -4,7 +4,7 @@ import { startApiCall, endApiCall, getStore } from "@/store/storeManager";
 
 // Создаем инстанс axios
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_APP_BASE_URL}/api`,
+  baseURL: `${import.meta.env.VITE_APP_BASE_URL || 'http://192.168.0.103'}/api`,
   headers: {
     "Content-Type": "application/json",
   },

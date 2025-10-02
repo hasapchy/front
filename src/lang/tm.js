@@ -31,7 +31,6 @@ export default {
   selectCompany: 'Kompaniýa saýla',
   errorLoadingCompanies: 'Kompaniýalary ýükleme ýalňyşlygy',
   errorChangingCompany: 'Kompaniýa üýtgetmekde ýalňyşlyk',
-  addCompany: 'Kompaniýa goş',
   editCompany: 'Kompaniýa redaktirle',
   companySaved: 'Kompaniýa saklandy',
   errorSavingCompany: 'Kompaniýa saklamakda ýalňyşlyk',
@@ -56,7 +55,6 @@ export default {
   productCategories: 'Önüm/hyzmat kategoriýalary',
   orderStatuses: 'Sargyt ýagdaýlary',
   orderAdditionalFields: 'Sargyt goş. meýdanlary',
-  addAdditionalField: 'Meýdan goş',
   additionalFields: 'Goşmaça meýdanlar',
   errorGettingAdditionalFieldsList: 'Goşmaça meýdanlaryň sanawyny almakda ýalňyşlyk',
   additionalFieldSaved: 'Goşmaça meýdan saklandy',
@@ -102,7 +100,6 @@ export default {
   // Создание и редактирование
   createProject: 'Proýekti döret',
   editProject: 'Proýekti redaktir et',
-  addProject: 'Proýekti goşuň',
   
   // Дополнительные действия
   selectCategory: 'Kategoriýany saýlaň',
@@ -518,7 +515,6 @@ export default {
   isAdmin: 'Administrator',
   admin: 'Admin',
   companies: 'Kompaniýalar',
-  addCompany: 'Kompaniýa goşmak',
   editCompany: 'Kompaniýa redaktirlemek',
   companyName: 'Kompaniýanyň ady',
   enterCompanyName: 'Kompaniýanyň adyny giriziň',
@@ -576,7 +572,6 @@ export default {
   
   // Дополнительные переводы для UI
   order: 'Sargyt',
-  addOrder: 'Sargyty goşuň',
   client: 'Müşderi',
   clientType: 'Müşderi görnüşi',
   active: 'Işjeň',
@@ -713,7 +708,6 @@ export default {
   
   // Фразы для пользователей
   createUser: 'Ulanyjyny döret',
-  addUser: 'Ulanyjyny goşuň',
   addClient: 'Müşderini goşuň',
   editUser: 'Ulanyjyny redaktir et',
   userCreated: 'Ulanyjy döredildi',
@@ -745,12 +739,10 @@ export default {
   errorUpdatingOrder: 'Sargyty täzelemekde ýalňyşlyk',
   
   // Фразы для категорий заказов
-  addOrderCategory: 'Sargyt kategoriýasyny goşuň',
   createOrderCategory: 'Sargyt kategoriýasy',
   editOrderCategory: 'Sargyt kategoriýasy',
   
   // Фразы для товаров
-  addProduct: 'Önümi goşuň',
   createProduct: 'Önüm',
   editProduct: 'Önüm',
   productCreated: 'Önüm döredildi',
@@ -761,7 +753,6 @@ export default {
   errorUpdatingProduct: 'Önümi täzelemekde ýalňyşlyk',
   
   // Фразы для услуг
-  addService: 'Hyzmaty goşuň',
   editService: 'Hyzmaty redaktir et',
   serviceCreated: 'Hyzmat döredildi',
   serviceAdded: 'Hyzmat goşuldy',
@@ -779,7 +770,6 @@ export default {
   errorUpdatingCompany: 'Kompanyiýany täzelemekde ýalňyşlyk',
   
   // Фразы для проектов
-  addProject: 'Proýekti goşuň',
   createProject: 'Proýekt',
   editProject: 'Proýekt',
   projectCreated: 'Proýekt döredildi',
@@ -803,12 +793,10 @@ export default {
   cashRegister: 'Kassa',
   
   // Фразы для складов
-  addWarehouse: 'Ammary goşuň',
   createWarehouse: 'Ammary döret',
   editWarehouse: 'Ammary redaktir et',
   
   // Фразы для продаж
-  addSale: 'Satuwy goşuň',
   createSale: 'Satuw',
   editSale: 'Satuw',
   
@@ -837,27 +825,22 @@ export default {
   selectCategoryFirst: 'Ilki kategoriýany saýlaň',
   
   // Фразы для транзакций
-  addTransaction: 'Tranzaksiyany goşuň',
   createTransaction: 'Tranzaksiya',
   editTransaction: 'Tranzaksiya',
   
   // Фразы для переводов
-  addTransfer: 'Transferi goşuň',
   createTransfer: 'Transfer',
   editTransfer: 'Transfer',
   
   // Фразы для поступлений на склад
-  addReceipt: 'Girişi bellemek',
   createReceipt: 'Giriş ýazgysy',
   editReceipt: 'Giriş ýazgysy',
   
   // Фразы для списаний со склада
-  addWriteoff: 'Çykyş',
   createWriteoff: 'Çykyş',
   editWriteoff: 'Çykyş ýazgysyny redaktir et',
   
   // Фразы для движений по складу
-  addMovement: 'Hereket',
   createMovement: 'Hereket',
   editMovement: 'Ambar hereketini redaktir et',
   
@@ -953,7 +936,6 @@ export default {
   enterPassword: 'Açarsöz giriziň',
   
   // Transaction Categories
-  addTransactionCategory: 'Amal kategoriýasyny goş',
   createTransactionCategory: 'Amal kategoriýasy',
   editTransactionCategory: 'Amal kategoriýasy',
   deleteTransactionCategory: 'Amal kategoriýasyny poz',
@@ -986,4 +968,10 @@ export default {
   pdfGenerated: 'PDF döredildi',
   errorGeneratingPdf: 'PDF döretmekde ýalňyşlyk',
   saveInvoiceFirst: 'Ilki hasaby saklaň',
+  
+  // Settings permissions
+  settings: 'Sazlamalar',
+  settings_edit_any_date: 'Islendik senäni üýtget',
+  settings_project_budget_view: 'Proýekt büdjetini gör',
+  settings_currencies_view: 'Başga walýutalary gör',
 }

@@ -1,8 +1,12 @@
 <template>
     <div class="flex justify-between items-center mb-4">
         <div class="flex justify-start items-center">
-                    <PrimaryButton :onclick="openCreateWarehouse" icon="fas fa-plus">{{ $t('addWarehouse') }}</PrimaryButton>
-        <PrimaryButton :onclick="openCreateProduct" icon="fas fa-plus" class="ml-2">{{ $t('addProduct') }}</PrimaryButton>
+            <PrimaryButton :onclick="openCreateWarehouse" icon="fas fa-plus"
+                :disabled="!$store.getters.hasPermission('warehouses_create')">
+            </PrimaryButton>
+            <PrimaryButton :onclick="openCreateProduct" icon="fas fa-plus" class="ml-2"
+                :disabled="!$store.getters.hasPermission('products_create')">
+            </PrimaryButton>
             <div class="ml-4">
                 <select v-model="warehouseId" @change="fetchItems" class="p-2 border rounded">
                     <option value="">{{ $t('allWarehouses') }}</option>
@@ -29,8 +33,8 @@
     </div>
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.warehouse_stocks" :columns-config="translatedColumnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
+            <DraggableTable table-key="admin.warehouse_stocks" :columns-config="translatedColumnsConfig"
+                :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
@@ -44,13 +48,11 @@
     </SideModalDialog>
 
     <SideModalDialog :showForm="modalCreateProduct" :onclose="() => modalCreateProduct = false" :level="1">
-        <ProductsCreatePage :defaultType="'product'" @saved="onProductSaved"
-            @saved-error="handleSavedError" />
+        <ProductsCreatePage :defaultType="'product'" @saved="onProductSaved" @saved-error="handleSavedError" />
     </SideModalDialog>
 
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
-        <ProductsCreatePage :editingItem="editingItem" @saved="onProductEdited"
-            @saved-error="handleSavedError" />
+        <ProductsCreatePage :editingItem="editingItem" @saved="onProductEdited" @saved-error="handleSavedError" />
     </SideModalDialog>
 </template>
 
@@ -63,7 +65,6 @@ import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import WarehouseStockController from '@/api/WarehouseStockController';
 import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import CategoryController from '@/api/CategoryController';
-import WarehouseController from '@/api/WarehouseController';
 import AdminWarehouseCreatePage from '@/views/pages/admin/warehouses/AdminWarehouseCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';

@@ -1,8 +1,10 @@
 <template>
     <div class="flex justify-between items-center mb-2">
         <div class="flex items-center space-x-3">
-            <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus">
-                {{ $t('addOrder') }}
+            <PrimaryButton 
+                :onclick="() => showModal(null)" 
+                icon="fas fa-plus"
+                :disabled="!$store.getters.hasPermission('orders_create')">
             </PrimaryButton>
             
             <div>
@@ -31,10 +33,10 @@
                 </select>
             </div>
 
-            <div>
+            <div v-if="hasActiveFilters">
                 <PrimaryButton 
                     :onclick="resetFilters"
-                    icon="fas fa-trash"
+                    icon="fas fa-filter-circle-xmark"
                     :isLight="true">
                 </PrimaryButton>
             </div>
@@ -207,6 +209,13 @@ export default {
             }
             // Если нет заказов в текущем результате, используем сохраненный символ
             return this.savedCurrencySymbol || '';
+        },
+        hasActiveFilters() {
+            return this.dateFilter !== 'all_time' ||
+                   this.startDate !== null ||
+                   this.endDate !== null ||
+                   this.statusFilter !== '' ||
+                   this.paidOrdersFilter !== false;
         }
     },
     methods: {

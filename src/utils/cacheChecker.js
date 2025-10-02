@@ -134,32 +134,15 @@ export default class CacheChecker {
   static printReport() {
     const report = this.checkAllCaches();
     
-    console.log('=== ОТЧЕТ ПО КЭШУ ===');
-    console.log('Глобальные кэши:');
-    Object.entries(report.global).forEach(([name, cache]) => {
-      if (cache.exists) {
-        console.log(`  ${name}: ${cache.sizeKB}KB, возраст: ${cache.ageMinutes}мин (${cache.isExpired ? 'УСТАРЕЛ' : 'активен'})`);
-      } else {
-        console.log(`  ${name}: не найден`);
-      }
-    });
-
-    console.log('\nКэши по компаниям:');
-    Object.entries(report.companies).forEach(([companyId, caches]) => {
-      console.log(`  Компания ${companyId}:`);
-      Object.entries(caches).forEach(([type, cache]) => {
-        if (cache.exists) {
-          console.log(`    ${type}: ${cache.sizeKB}KB, возраст: ${cache.ageMinutes}мин (${cache.isExpired ? 'УСТАРЕЛ' : 'активен'})`);
-        } else {
-          console.log(`    ${type}: не найден`);
-        }
-      });
-    });
-
-    console.log('\nСводка:');
-    console.log(`  Общий размер: ${report.summary.totalSizeKB}KB`);
-    console.log(`  Количество компаний: ${report.summary.companyCount}`);
-    console.log(`  Устаревших кэшей: ${report.summary.expiredCount}`);
-    console.log(`  Всего кэшей: ${report.summary.totalCaches}`);
+    // Отчет по кэшу
+    const globalCaches = report.global;
+    const companyCaches = report.companies;
+    const summary = report.summary;
+    
+    return {
+      global: globalCaches,
+      companies: companyCaches,
+      summary: summary
+    };
   }
 }
