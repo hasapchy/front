@@ -14,6 +14,8 @@ export default {
   paymentType: 'Тип оплаты',
   cashPayment: 'Оплата наличными',
   selectCashRegister: 'Выберите кассу',
+  debtOperation: 'Долговая операция',
+  debtOperationDescription: 'При включении этой опции касса не будет изменена, но операция будет зафиксирована как долговая',
   contracts: 'Контракты',
   enableSound: 'Включить звук',
   disableSound: 'Выключить звук',
@@ -643,7 +645,9 @@ export default {
   
   // Общие
   no: 'Нет',
+  income: 'Приход',
   outcome: 'Расход',
+  debt: 'Долг',
   noRightsToChangeSettings: 'У вас нет прав для изменения настроек',
   
   // Дополнительные переводы
@@ -728,6 +732,7 @@ export default {
   users: 'Пользователи',
   
   // Транзакции
+  addTransaction: 'Добавить транзакцию',
   allCashRegisters: 'Все кассы',
   allTime: 'За все время',
   lastWeek: 'Прошлая неделя',

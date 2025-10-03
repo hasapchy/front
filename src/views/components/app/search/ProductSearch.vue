@@ -355,7 +355,8 @@ export default {
                 
                 this.lastProducts = allItems
                     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                    .slice(0, 10);
+                    .slice(0, 10)
+                    .map(item => ProductSearchDto.fromApi(item));
                     
             } catch (error) {
                 console.error('Ошибка загрузки последних товаров:', error);
@@ -367,7 +368,7 @@ export default {
                 this.productSearchLoading = true;
                 try {
                     const results = await ProductController.searchItems(this.productSearch, this.onlyProducts ? true : null, this.warehouseId);
-                    this.productResults = results;
+                    this.productResults = results.map(item => ProductSearchDto.fromApi(item));
                     this.productSearchLoading = false;
                 } catch (error) {
                     console.error('Ошибка поиска товаров:', error);

@@ -1,5 +1,4 @@
 import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
-import ClientDto from "../client/ClientDto";
 
 export default class TransactionDto {
   constructor(
@@ -8,6 +7,7 @@ export default class TransactionDto {
     isTransfer,
     isSale,
     isReceipt,
+    isDebt,
     cashId,
     cashName,
     cashAmount,
@@ -40,6 +40,7 @@ export default class TransactionDto {
     this.isTransfer = isTransfer;
     this.isSale = isSale;
     this.isReceipt = isReceipt;
+    this.isDebt = isDebt;
     this.cashId = cashId;
     this.cashName = cashName;
     this.cashAmount = cashAmount;
@@ -78,18 +79,27 @@ export default class TransactionDto {
   }
 
   typeCell() {
+    let debtIcon = '';
+    if (this.isDebt === 1 || this.isDebt === true) {
+      debtIcon = ' <i class="fas fa-exclamation-triangle text-[#FFA500]" title="Долговая операция"></i>';
+    }
+    
     if (this.isTransfer === 1 || this.isTransfer === true) {
-      return '<i class="fas fa-right-left text-[#337AB7] mr-2"></i> Трансфер';
-    } else if (this.isSale === 1 || this.isSale === true) {
+      return '<i class="fas fa-right-left text-[#337AB7] mr-2"></i> Трансфер' + debtIcon;
+    } else {
       return this.type === 1
-        ? '<i class="fas fa-shopping-cart text-[#5CB85C] mr-2"></i> Продажа'
-        : '<i class="fas fa-shopping-cart text-[#EE4F47] mr-2"></i> Продажа';
+        ? '<i class="fas fa-circle-down text-[#5CB85C] mr-2"></i> Приход' + debtIcon
+        : '<i class="fas fa-circle-up text-[#EE4F47] mr-2"></i> Расход' + debtIcon;
+    }
+  }
+
+  sourceCell() {
+    if (this.isSale === 1 || this.isSale === true) {
+      return '<i class="fas fa-shopping-cart text-[#5CB85C] mr-2"></i> Продажа';
     } else if (this.isReceipt === 1 || this.isReceipt === true) {
       return '<i class="fas fa-box text-[#FFA500] mr-2"></i> Оприходование';
     } else {
-      return this.type === 1
-        ? '<i class="fas fa-circle-down text-[#5CB85C] mr-2"></i> Приход'
-        : '<i class="fas fa-circle-up text-[#EE4F47] mr-2"></i> Расход';
+      return '<i class="fas fa-circle text-[#6C757D] mr-2"></i> Прочее';
     }
   }
 

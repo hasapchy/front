@@ -12,13 +12,14 @@
                             <span class="text-sm font-bold text-black ml-1">({{ item.currency_symbol || item.currency_code || '' }})</span>
                         </span>
                     </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div v-for="balance in item.balance" :key="balance.title" class="text-center">
+                    <div :class="getGridClass(item.balance)">
+                        <div v-for="balance in getVisibleBalanceItems(item.balance)" :key="balance.title" class="text-center">
                             <div class="mb-1 flex items-center justify-center space-x-1">
                                 <span class="text-xs font-medium text-gray-700">{{ translateBalanceTitle(balance.title) }}</span>
                                 <i :class="{
                                     'fas fa-arrow-up text-green-500': balance.type === 'income',
                                     'fas fa-arrow-down text-red-500': balance.type === 'outcome',
+                                    'fas fa-exclamation-triangle text-orange-500': balance.type === 'debt',
                                     'fas fa-calculator text-blue-500': balance.type === 'default',
                                     'fas fa-chart-line text-orange-500': balance.type === 'project_income'
                                 }" class="text-xs"></i>
@@ -26,6 +27,7 @@
                             <div :class="{
                                 'text-green-600': balance.type === 'income',
                                 'text-red-600': balance.type === 'outcome',
+                                'text-orange-600': balance.type === 'debt',
                                 'text-blue-600': balance.type === 'default',
                                 'text-orange-600': balance.type === 'project_income',
                                 'font-bold text-sm': true
@@ -65,10 +67,23 @@ export default {
         this.fetchItems();
     },
     methods: {
+        getVisibleBalanceItems(balanceItems) {
+            return balanceItems.filter(item => !(item.type === 'debt' && Number(item.value) === 0));
+        },
+        getGridClass(balanceItems) {
+            const visibleItems = this.getVisibleBalanceItems(balanceItems);
+            const itemCount = visibleItems.length;
+            
+            if (itemCount === 1) return 'grid grid-cols-1 gap-2';
+            if (itemCount === 2) return 'grid grid-cols-2 gap-2';
+            if (itemCount === 3) return 'grid grid-cols-3 gap-2';
+            return 'grid grid-cols-4 gap-2';
+        },
         translateBalanceTitle(title) {
             const translations = {
                 'Приход': 'income',
                 'Расход': 'outcome', 
+                'Долг': 'debt',
                 'Итого': 'итого',
                 'Главная касса': 'mainCashRegister'
             };

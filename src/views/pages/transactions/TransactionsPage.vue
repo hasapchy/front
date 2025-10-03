@@ -155,6 +155,7 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'type', label: 'type', html: true },
+                { name: 'source', label: 'source', html: true },
                 { name: 'cashName', label: 'cashRegister' },
                 { name: 'cashAmount', label: 'amount', html: true },
                 { name: 'origAmount', label: 'originalAmount' },
@@ -173,7 +174,6 @@ export default {
                 { name: 'dateUser', label: 'date' },
             ],
             sourceOptions: [
-                { value: 'project', label: this.$t('project') },
                 { value: 'sale', label: this.$t('sale') },
                 { value: 'order', label: this.$t('order') },
                 { value: 'other', label: this.$t('other') },
@@ -211,6 +211,8 @@ export default {
             switch (c) {
                 case 'type':
                     return i.typeCell();
+                case 'source':
+                    return i.sourceCell();
                 case 'cashName':
                     return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
                 case 'cashAmount':

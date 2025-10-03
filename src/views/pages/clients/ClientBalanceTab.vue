@@ -393,6 +393,11 @@ export default {
                 this.editingItem.balance = updatedClient.balance;
 
             } catch (error) {
+                console.error('Ошибка при обновлении баланса клиента:', error);
+                // Если клиент не найден (404), не обновляем баланс
+                if (error.response?.status === 404) {
+                    console.warn('Клиент не найден, пропускаем обновление баланса');
+                }
             }
         },
     },

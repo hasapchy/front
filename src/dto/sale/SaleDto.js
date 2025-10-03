@@ -1,6 +1,4 @@
 import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
-import ClientDto from "../client/ClientDto";
-import SaleProductDto from "./SaleProductDto";
 
 export default class SaleDto {
   constructor(
@@ -26,7 +24,8 @@ export default class SaleDto {
     note = "",
     date = "",
     createdAt = "",
-    updatedAt = ""
+    updatedAt = "",
+    _transactions = null
   ) {
     this.id = id;
     this.price = price;
@@ -45,9 +44,9 @@ export default class SaleDto {
     this.projectId = projectId;
     this.projectName = projectName;
     this.transactionId = transactionId;
-    /** @type {ClientDto | null} */
+    /** @type {Object | null} */
     this.client = client;
-    /** @type {Array<SaleProductDto> | null} */
+    /** @type {Array<Object> | null} */
     this.products = products;
     this.note = note;
     this.date = date;
@@ -57,13 +56,13 @@ export default class SaleDto {
 
   priceInfo() {
     const symbol = this.currencySymbol || "Нет валюты";
-    const isDiscount = this.price !== this.totalPrice;
+    const isDiscount = this.discount > 0;
 
     if (!isDiscount) {
       return `${this.totalPrice} ${symbol}`;
     }
 
-    return `${this.totalPrice} ${symbol} (${this.price} ${symbol}, скидка: ${this.discount} ${symbol})`;
+    return `${this.totalPrice} ${symbol} (скидка: ${this.discount} ${symbol})`;
   }
 
   productsHtmlList() {
@@ -83,7 +82,11 @@ export default class SaleDto {
   }
 
   cashNameDisplay() {
-    return this.cashName ? this.cashName : "В долг (баланс)";
+    return this.cashName || "";
+  }
+
+  warehouseNameDisplay() {
+    return this.warehouseName ? this.warehouseName : "Склад не указан";
   }
 
   formatDate() {

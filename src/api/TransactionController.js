@@ -58,6 +58,7 @@ export default class TransactionController {
           item.is_transfer,
           item.is_sale,
           item.is_receipt,
+          item.is_debt,
           item.cash_id,
           item.cash_name,
           item.cash_amount,

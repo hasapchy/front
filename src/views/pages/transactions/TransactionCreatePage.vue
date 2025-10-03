@@ -25,6 +25,12 @@
                 </option>
             </select>
         </div>
+        <div class="mt-2">
+            <label class="inline-flex items-center">
+                <input type="checkbox" v-model="isDebt" :disabled="!!editingItemId" />
+                <span class="ml-2">{{ $t('debtOperation') }}</span>
+            </label>
+        </div>
         <div class="flex items-center space-x-2">
             <div class="w-full mt-2">
                 <label class="required">{{ $t('amountBeforeConversion') }}</label>
@@ -151,6 +157,7 @@ export default {
                 return new Date().toISOString().substring(0, 16);
             })(),
             note: this.editingItem ? this.editingItem.note : '',
+            isDebt: this.editingItem ? this.editingItem.isDebt : false,
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
             currencies: [],
@@ -267,7 +274,8 @@ export default {
                             client_id: this.selectedClient?.id,
                             orig_amount: this.origAmount,
                             currency_id: this.currencyIdComputed,
-                            note: this.note
+                            note: this.note,
+                            is_debt: this.isDebt
                         });
                 } else {
                     var resp = await TransactionController.storeItem({
@@ -280,7 +288,8 @@ export default {
                         project_id: this.projectId,
                         date: this.date,
                         client_id: this.selectedClient?.id,
-                        order_id: this.orderId
+                        order_id: this.orderId,
+                        is_debt: this.isDebt
                     });
                 }
                 if (resp.message) {
@@ -327,6 +336,7 @@ export default {
             this.cashId = this.allCashRegisters.length ? this.allCashRegisters[0].id : '';
             this.origAmount = 0;
             this.note = '';
+            this.isDebt = false;
             this.categoryId = 4; // Устанавливаем id = 4 для типа income по умолчанию
             this.projectId = this.initialProjectId || '';
             this.date = new Date().toISOString().substring(0, 16);
@@ -358,6 +368,7 @@ export default {
                 this.editingItem.isTransfer,
                 this.editingItem.isSale,
                 this.editingItem.isReceipt,
+                this.editingItem.isDebt,
                 this.editingItem.cashId,
                 this.editingItem.cashName,
                 this.editingItem.cashAmount,

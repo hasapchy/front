@@ -8,7 +8,7 @@
                 :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
                 :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
         </div>
-        <div v-if="type === 'cash'" class="mt-2">
+        <div class="mt-2">
             <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
             <select v-model="cashId" :disabled="!!editingItemId">
                 <option value="">{{ $t('no') }}</option>
@@ -19,16 +19,16 @@
         </div>
         <div class="mt-2">
             <label class="block mb-1 required">{{ $t('paymentType') }}</label>
-            <div>
+            <div class="flex space-x-4">
                 <label class="inline-flex items-center">
                     <input type="radio" v-model="type" value="cash" :disabled="!!editingItemId" />
-                    <span class="ml-2">{{ $t('toCash') }}</span>
+                    <i class="fas fa-cash-register ml-2 mr-1" style="color: #337AB7;"></i>
+                    <span>{{ $t('toCash') }}</span>
                 </label>
-            </div>
-            <div>
                 <label class="inline-flex items-center">
                     <input type="radio" v-model="type" value="balance" :disabled="!!editingItemId" />
-                    <span class="ml-2">{{ $t('toClientBalance') }}</span>
+                    <i class="fas fa-wallet ml-2 mr-1" style="color: #337AB7;"></i>
+                    <span>{{ $t('toClientBalance') }}</span>
                 </label>
             </div>
         </div>
@@ -134,7 +134,8 @@ export default {
                 this.fetchCurrencies(),
                 this.fetchAllWarehouses(),
                 this.fetchAllProjects(),
-                this.fetchAllCashRegisters()
+                this.fetchAllCashRegisters(),
+                this.fetchClients()
             ]);
             
             if (!this.editingItem) {
@@ -143,6 +144,11 @@ export default {
                 }
                 if (this.allCashRegisters.length > 0 && !this.cashId) {
                     this.cashId = this.allCashRegisters[0].id;
+                }
+                // Инициализируем currencyId для типа balance
+                const defaultCurrency = this.currencies.find((c) => c.is_default);
+                if (defaultCurrency && !this.currencyId) {
+                    this.currencyId = defaultCurrency.id;
                 }
             }
             
@@ -244,17 +250,32 @@ export default {
             
             this.allCashRegisters = this.$store.getters.cashRegisters;
         },
+        async fetchClients() {
+            // Загружаем клиентов в store для компонента ClientSearch
+            await this.$store.dispatch('loadClients');
+        },
         async save() {
             this.saveLoading = true;
             try {
+                // Проверяем обязательные поля
+                if (!this.selectedClient?.id) {
+                    throw new Error('Необходимо выбрать клиента');
+                }
+                if (!this.warehouseId) {
+                    throw new Error('Необходимо выбрать склад');
+                }
+                if (!this.products || this.products.length === 0) {
+                    throw new Error('Необходимо добавить товары');
+                }
+
                 var formData = {
                     client_id: this.selectedClient?.id,
                     project_id: this.projectId || null,
                     warehouse_id: this.warehouseId,
                     currency_id:
                         this.type === "cash" ? this.selectedCash?.currency_id : this.currencyId,
-                    cash_id: this.type === "cash" ? this.cashId : null,
-                    type: this.type,
+                    cash_id: this.cashId, // всегда отправляем выбранную кассу
+                    type: this.type, // "cash" или "balance" - is_debt определяется автоматически
                     date: this.date,
                     note: this.note,
                     discount: this.discount,
@@ -265,6 +286,8 @@ export default {
                         price: p.price,
                     })),
                 };
+
+                console.log('Отправляемые данные продажи:', formData);
 
                 let resp;
                 if (this.editingItemId != null) {
@@ -277,7 +300,22 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
+                console.error('Ошибка при сохранении продажи:', error);
+                console.error('Детали ошибки:', error.response?.data);
+                
+                let errorMessage = this.getApiErrorMessage(error);
+                
+                // Если это ошибка валидации, показываем более понятное сообщение
+                if (error.response?.status === 400) {
+                    const validationErrors = error.response?.data?.errors;
+                    if (validationErrors) {
+                        console.error('Ошибки валидации:', validationErrors);
+                        const firstError = Object.values(validationErrors)[0];
+                        errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+                    }
+                }
+                
+                this.$emit('saved-error', errorMessage);
             }
             this.saveLoading = false;
         },
@@ -320,12 +358,17 @@ export default {
     },
     watch: {
         type: {
-            handler(newType) {
+            handler(newType, oldType) {
                 if (newType === "balance") {
-                    this.cashId = "";
+                    // Не сбрасываем cashId, сохраняем выбранное значение
                     const defaultCurrency = this.currencies.find((c) => c.is_default);
                     if (defaultCurrency) {
                         this.currencyId = defaultCurrency.id;
+                    }
+                } else if (newType === "cash" && oldType === "balance") {
+                    // При переключении обратно на кассу, если касса не выбрана, выбираем первую
+                    if (!this.cashId && this.allCashRegisters.length > 0) {
+                        this.cashId = this.allCashRegisters[0].id;
                     }
                 }
             },

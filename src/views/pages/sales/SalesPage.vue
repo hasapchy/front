@@ -115,6 +115,9 @@ export default {
             if (c === 'cashName') {
                 return i.cashNameDisplay();
             }
+            if (c === 'warehouseName') {
+                return i.warehouseNameDisplay();
+            }
             switch (c) {
                 case 'products':
                     return i.productsHtmlList();

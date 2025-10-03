@@ -8,7 +8,7 @@
             </PrimaryButton>
             
             <div>
-                <select v-model="dateFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
+                <select v-model="dateFilter" @change="fetchItems" class="p-2 border border-gray-300 rounded bg-white">
                     <option value="all_time">{{ $t('allTime') }}</option>
                     <option value="today">{{ $t('today') }}</option>
                     <option value="yesterday">{{ $t('yesterday') }}</option>
@@ -19,16 +19,30 @@
                     <option value="custom">{{ $t('selectDates') }}</option>
                 </select>
             </div>
-            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center">
-                <input type="date" v-model="startDate" @change="fetchItems" class="w-full p-2 border rounded" />
-                <input type="date" v-model="endDate" @change="fetchItems" class="w-full p-2 border rounded" />
-            </div>
 
             <div>
-                <select v-model="statusFilter" @change="fetchItems" class="w-full p-2 pl-10 border rounded">
+                <select v-model="statusFilter" @change="fetchItems" class="p-2 border border-gray-300 rounded bg-white">
                     <option value="">{{ $t('allStatuses') }}</option>
                     <option v-for="status in statuses" :key="status.id" :value="status.id">
                         {{ status.name }}
+                    </option>
+                </select>
+            </div>
+
+            <div>
+                <select v-model="projectFilter" @change="fetchItems" class="p-2 border border-gray-300 rounded bg-white">
+                    <option value="">{{ $t('allProjects') }}</option>
+                    <option v-for="project in projects" :key="project.id" :value="project.id">
+                        {{ project.name }}
+                    </option>
+                </select>
+            </div>
+
+            <div>
+                <select v-model="clientFilter" @change="fetchItems" class="p-2 border border-gray-300 rounded bg-white">
+                    <option value="">{{ $t('allClients') }}</option>
+                    <option v-for="client in clients" :key="client.id" :value="client.id">
+                        {{ client.fullName() }}
                     </option>
                 </select>
             </div>
@@ -39,6 +53,11 @@
                     icon="fas fa-filter-circle-xmark"
                     :isLight="true">
                 </PrimaryButton>
+            </div>
+            
+            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center">
+                <input type="date" v-model="startDate" @change="fetchItems" class="p-2 border border-gray-300 rounded" />
+                <input type="date" v-model="endDate" @change="fetchItems" class="p-2 border border-gray-300 rounded" />
             </div>
         </div>
         
@@ -124,6 +143,8 @@ import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
 import OrderStatusController from "@/api/OrderStatusController";
+import ProjectController from "@/api/ProjectController";
+import ClientController from "@/api/ClientController";
 import { markRaw } from "vue";
 import BatchButton from "@/views/components/app/buttons/BatchButton.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
@@ -150,6 +171,8 @@ export default {
             data: null,
             loading: false,
             statuses: [],
+            projects: [],
+            clients: [],
             selectedIds: [],
             showBatchStatusSelect: false,
             timelineCollapsed: true,
@@ -179,6 +202,8 @@ export default {
             startDate: null,
             endDate: null,
             statusFilter: '',
+            projectFilter: '',
+            clientFilter: '',
             paidOrdersFilter: false,
             transactionModal: false,
             editingTransaction: null,
@@ -188,6 +213,8 @@ export default {
     created() {
         this.fetchItems();
         this.fetchStatuses();
+        this.fetchProjects();
+        this.fetchClients();
 
         this.$store.commit("SET_SETTINGS_OPEN", false);
         
@@ -215,6 +242,8 @@ export default {
                    this.startDate !== null ||
                    this.endDate !== null ||
                    this.statusFilter !== '' ||
+                   this.projectFilter !== '' ||
+                   this.clientFilter !== '' ||
                    this.paidOrdersFilter !== false;
         }
     },
@@ -272,7 +301,7 @@ export default {
                     currentStatusFilter = '4'; // Статус "Оплачен"
                 }
                 
-                const newData = await OrderController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, currentStatusFilter);
+                const newData = await OrderController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, currentStatusFilter, this.projectFilter, this.clientFilter);
                 this.data = newData;
                 
                 // Сохраняем символ валюты из первого заказа, если он есть
@@ -299,6 +328,22 @@ export default {
             // Используем данные из store
             await this.$store.dispatch('loadOrderStatuses');
             this.statuses = this.$store.getters.orderStatuses;
+        },
+
+        async fetchProjects() {
+            try {
+                this.projects = await ProjectController.getActiveItems();
+            } catch (error) {
+                console.error('Ошибка при загрузке проектов:', error);
+            }
+        },
+
+        async fetchClients() {
+            try {
+                this.clients = await ClientController.getAllItems();
+            } catch (error) {
+                console.error('Ошибка при загрузке клиентов:', error);
+            }
         },
 
         async handleChangeStatus(ids, statusId) {
@@ -376,6 +421,8 @@ export default {
             this.startDate = '';
             this.endDate = '';
             this.statusFilter = '';
+            this.projectFilter = '';
+            this.clientFilter = '';
             this.paidOrdersFilter = false;
             this.fetchItems();
         },

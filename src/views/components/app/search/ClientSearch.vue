@@ -51,12 +51,12 @@
                 <div class="flex justify-between items-center">
                     <div>
                         <label class="required">{{ $t('client') }}</label>
-                        <p><span class="font-semibold text-sm">{{ $t('name') }}:</span> {{ clientFullName }}</p>
-                        <p><span class="font-semibold text-sm">{{ $t('phone') }}:</span> {{ clientPhones[0]?.phone || $t('noPhone') }}</p>
-                        <p><span class="font-semibold text-sm">{{ $t('balance') }}:</span>
-                            <span
+                        <p><span class="text-xs">{{ $t('name') }}:</span> <span class="font-semibold text-sm">{{ clientFullName }}</span></p>
+                        <p><span class="text-xs">{{ $t('phone') }}:</span> <span class="font-semibold text-sm">{{ clientPhones[0]?.phone || $t('noPhone') }}</span></p>
+                        <p><span class="text-xs">{{ $t('balance') }}:</span>
+                            <span class="font-semibold text-sm"
                                 :class="selectedClient.balance == 0 ? 'text-[#337AB7]' : selectedClient.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
-                                {{ clientBalance }}
+                                {{ clientBalance }} {{ defaultCurrencySymbol }}
                                 <span v-if="selectedClient.balance > 0">({{ $t('clientOwesUs') }})</span>
                                 <span v-else-if="selectedClient.balance < 0">({{ $t('weOweClient') }})</span>
                                 <span v-else>({{ $t('mutualSettlement') }})</span>
@@ -144,6 +144,12 @@ export default {
             if (!this.selectedClient) return [];
             const phones = this.selectedClient.phones || [];
             return Array.isArray(phones) ? phones : [];
+        },
+        defaultCurrencySymbol() {
+            if (!this.$store || !this.$store.state) return '';
+            const currencies = this.$store.state.currencies || [];
+            const defaultCurrency = currencies.find(c => c.is_default);
+            return defaultCurrency ? defaultCurrency.symbol : '';
         }
     },
     created() {
