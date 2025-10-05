@@ -7,7 +7,7 @@
             <PrimaryButton :onclick="openCreateProduct" icon="fas fa-plus" class="ml-2"
                 :disabled="!$store.getters.hasPermission('products_create')">
             </PrimaryButton>
-            <div class="ml-4">
+            <div class="ml-2">
                 <select v-model="warehouseId" @change="fetchItems" class="p-2 border rounded">
                     <option value="">{{ $t('allWarehouses') }}</option>
                     <template v-if="allWarehouses.length">
@@ -29,7 +29,9 @@
             </div>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            @changePage="fetchItems" />
+            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+            storage-key="warehousesStockPerPage"
+            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
@@ -97,6 +99,8 @@ export default {
                 { name: 'categoryName', label: 'category' },
                 { name: 'createdAt', label: 'createdAt' }
             ],
+            perPage: 10,
+            perPageOptions: [10, 25, 50, 100]
         }
     },
     computed: {
@@ -131,6 +135,10 @@ export default {
                     return i[c];
             }
         },
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
@@ -138,7 +146,7 @@ export default {
             var category_id = this.categoryId != '' ? this.categoryId : null;
             var warehouse_id = this.warehouseId != '' ? this.warehouseId : null;
             try {
-                const new_data = await WarehouseStockController.getStocks(page, warehouse_id, category_id);
+                const new_data = await WarehouseStockController.getStocks(page, warehouse_id, category_id, this.perPage);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification('Ошибка получения списка товаров на складе', error.message, true);

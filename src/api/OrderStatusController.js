@@ -6,7 +6,7 @@ import api from "./axiosInstance";
 export default class OrderStatusController {
   static async getAllItems() {
     const response = await api.get(`/order_statuses/all`);
-    return response.data.map(
+    return (response.data || []).map(
       (item) =>
         new OrderStatusDto(
           item.id,
@@ -28,10 +28,10 @@ export default class OrderStatusController {
     );
   }
 
-  static async getItems(page = 1) {
-    const response = await api.get(`/order_statuses?page=${page}`);
+  static async getItems(page = 1, per_page = 10) {
+    const response = await api.get(`/order_statuses?page=${page}&per_page=${per_page}`);
     const data = response.data;
-    const items = data.items.map(
+    const items = (data.items || []).map(
       (item) =>
         new OrderStatusDto(
           item.id,

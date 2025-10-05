@@ -126,7 +126,7 @@ export default class OrderAfValueDto {
   }
 
   static fromApiArray(dataArray) {
-    return dataArray.map(item => OrderAfValueDto.fromApi(item));
+    return (dataArray || []).map(item => OrderAfValueDto.fromApi(item));
   }
 
   static fromFormData(fieldId, value) {

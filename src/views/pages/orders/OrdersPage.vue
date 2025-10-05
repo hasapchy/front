@@ -71,7 +71,10 @@
                     @change="handlePaidOrdersFilterChange"
                 />
             </div>
-            <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" @changePage="fetchItems" />
+            <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" 
+                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+                storage-key="ordersPerPage"
+                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
         </div>
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
@@ -208,6 +211,8 @@ export default {
             transactionModal: false,
             editingTransaction: null,
             savedCurrencySymbol: '',
+            perPage: 10,
+            perPageOptions: [10, 25, 50, 100]
         };
     },
     created() {
@@ -293,6 +298,10 @@ export default {
             this.$store.dispatch('setSearchQuery', query);
             this.fetchItems(1, false);
         },
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
@@ -301,7 +310,7 @@ export default {
                     currentStatusFilter = '4'; // Статус "Оплачен"
                 }
                 
-                const newData = await OrderController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, currentStatusFilter, this.projectFilter, this.clientFilter);
+                const newData = await OrderController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, currentStatusFilter, this.projectFilter, this.clientFilter, this.perPage);
                 this.data = newData;
                 
                 // Сохраняем символ валюты из первого заказа, если он есть

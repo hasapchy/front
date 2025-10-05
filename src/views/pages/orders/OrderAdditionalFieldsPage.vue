@@ -3,7 +3,10 @@
         <div class="flex items-center">
             <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"></PrimaryButton>
         </div>
-        <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" @changePage="fetchItems" />
+        <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" 
+            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+            storage-key="orderAdditionalFieldsPerPage"
+            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
 
     <transition name="fade" mode="out-in">
@@ -76,6 +79,8 @@ export default {
                 { name: "default", label: 'default' },
                 { name: "createdAt", label: 'createdAt' },
             ],
+            perPage: 10,
+            perPageOptions: [10, 25, 50, 100]
         };
     },
     created() {
@@ -107,11 +112,15 @@ export default {
                 this.closeModal();
             }
         },
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
+        },
 
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                const newData = await OrderAfController.getItemsPaginated(page);
+                const newData = await OrderAfController.getItemsPaginated(page, this.perPage);
                 this.data = newData;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingAdditionalFieldsList'), error.message, true);

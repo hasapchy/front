@@ -41,9 +41,9 @@ export default class ClientController {
     }
   }
 
-  static async getItems(page = 1, search = null, includeInactive = false, statusFilter = null, typeFilter = null) {
+  static async getItems(page = 1, search = null, includeInactive = false, statusFilter = null, typeFilter = null, per_page = 10) {
     try {
-      const params = { page: page };
+      const params = { page: page, per_page: per_page };
       if (search) {
         params.search = search;
       }
@@ -60,7 +60,7 @@ export default class ClientController {
       const data = response.data;
       
       // Преобразуем полученные данные в DTO
-      const items = data.items.map((item) => {
+      const items = (data.items || []).map((item) => {
         // Получаем данные телефонов и email'ов из Eloquent relationships
         let phones = item.phones || [];
         let emails = item.emails || [];

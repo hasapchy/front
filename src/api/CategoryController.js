@@ -3,11 +3,11 @@ import CategoryDto from "@/dto/category/CategoryDto";
 import api from "./axiosInstance";
 
 export default class CategoryController {
-  static async getItems(page = 1) {
+  static async getItems(page = 1, per_page = 10) {
     try {
-      const response = await api.get(`/categories?page=${page}`);
+      const response = await api.get(`/categories?page=${page}&per_page=${per_page}`);
       const data = response.data;
-      const items = data.items.map((item) => {
+      const items = (data.items || []).map((item) => {
         return new CategoryDto(
           item.id,
           item.name,
@@ -40,7 +40,7 @@ export default class CategoryController {
     try {
       const response = await api.get(`/categories/all`);
       const data = response.data;
-      const items = data.map((item) => {
+      const items = (data || []).map((item) => {
         return new CategoryDto(
           item.id,
           item.name,

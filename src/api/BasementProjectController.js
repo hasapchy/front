@@ -16,10 +16,14 @@ export default class BasementProjectController {
         }
       });
       
-      const response = await basementApi.get(`/projects?${queryParams.toString()}`);
+      // Если запрашиваем активные проекты, используем endpoint /projects/all
+      const endpoint = params.active_only ? '/projects/all' : '/projects';
+      const response = await basementApi.get(`${endpoint}?${queryParams.toString()}`);
       const data = response.data;
       
-      const items = data.items.map((item) => {
+      // Обрабатываем данные в зависимости от endpoint
+      const itemsData = params.active_only ? data : data.items;
+      const items = itemsData.map((item) => {
         // Обрабатываем данные клиента
         let clientData = null;
         if (item.client) {
@@ -66,6 +70,11 @@ export default class BasementProjectController {
           item.status
         );
       });
+
+      // Для активных проектов возвращаем массив, для обычных - пагинированный ответ
+      if (params.active_only) {
+        return items;
+      }
 
       const paginatedResponse = new PaginatedResponse(
         items,

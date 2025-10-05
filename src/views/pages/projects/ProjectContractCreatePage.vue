@@ -68,9 +68,10 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import notificationMixin from "@/mixins/notificationMixin";
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, notificationMixin],
     components: { /* FileUploader, */ PrimaryButton, AlertDialog },
     emits: ['saved', 'saved-error', 'close-request'],
     props: {
@@ -187,7 +188,7 @@ export default {
         },
         async save() {
             if (!this.projectId && !this.editingItem) {
-                this.$notify?.({ type: 'error', text: 'Ошибка: не указан ID проекта' });
+                this.showNotification('Ошибка', 'Не указан ID проекта', true);
                 return;
             }
             
@@ -219,16 +220,16 @@ export default {
 
                 if (response.success) {
                     this.$emit('saved', response.item);
-                    this.$notify?.({ type: 'success', text: response.message });
+                    this.showNotification('Успех', response.message, false);
                     this.resetFormChanges();
                 } else {
                     this.$emit('saved-error', response.error);
-                    this.$notify?.({ type: 'error', text: response.error });
+                    this.showNotification('Ошибка', response.error, true);
                 }
             } catch (error) {
                 console.error('Error saving contract:', error);
                 this.$emit('saved-error', error);
-                this.$notify?.({ type: 'error', text: 'Ошибка при сохранении контракта' });
+                this.showNotification('Ошибка', 'Ошибка при сохранении контракта', true);
             } finally {
                 this.saveLoading = false;
             }

@@ -2,8 +2,8 @@ import { UserDto } from "@/dto/users/UserDto";
 import api from "./axiosInstance";
 
 const UsersController = {
-  async getItems(page = 1) {
-    const { data } = await api.get(`/users?page=${page}`);
+  async getItems(page = 1, per_page = 10) {
+    const { data } = await api.get(`/users?page=${page}&per_page=${per_page}`);
     return {
       items: UserDto.fromArray(data.data),
       currentPage: data.current_page,

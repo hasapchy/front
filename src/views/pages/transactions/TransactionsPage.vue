@@ -6,7 +6,7 @@
                 icon="fas fa-plus"
                 :disabled="!$store.getters.hasPermission('transactions_create')">
             </PrimaryButton>
-            <div class="mx-4">
+            <div class="ml-2">
                 <select v-model="cashRegisterId" @change="() => fetchItems(1)">
                     <option value="">{{ $t('allCashRegisters') }}</option>
                     <template v-if="allCashRegisters.length">
@@ -18,7 +18,7 @@
             </div>
 
             <!-- Фильтр по типу транзакции -->
-            <div class="mx-2">
+            <div class="ml-2">
                 <select v-model="transactionTypeFilter" @change="() => fetchItems(1)">
                     <option value="">{{ $t('allTransactionTypes') }}</option>
                     <option value="income">{{ $t('income') }}</option>
@@ -28,7 +28,7 @@
             </div>
 
             <!-- Фильтр по источнику средств -->
-            <div class="mx-2">
+            <div class="ml-2">
                 <select v-model="sourceFilter" @change="() => fetchItems(1)">
                     <option value="">{{ $t('allSources') }}</option>
                     <option v-for="option in sourceOptions" :key="option.value" :value="option.value">
@@ -38,7 +38,7 @@
             </div>
 
             <!-- Фильтр по проектам -->
-            <div class="mx-2">
+            <div class="ml-2">
                 <select v-model="projectId" @change="() => fetchItems(1)">
                     <option value="">{{ $t('allProjects') }}</option>
                     <template v-if="allProjects.length">
@@ -49,8 +49,8 @@
                 </select>
             </div>
 
-            <div class="">
-                <select v-model="dateFilter" @change="() => fetchItems(1)" class="pl-10">
+            <div class="ml-2">
+                <select v-model="dateFilter" @change="() => fetchItems(1)">
                     <option value="all_time">{{ $t('allTime') }}</option>
                     <option value="today">{{ $t('today') }}</option>
                     <option value="yesterday">{{ $t('yesterday') }}</option>
@@ -61,13 +61,13 @@
                     <option value="custom">{{ $t('selectDates') }}</option>
                 </select>
             </div>
-            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-4">
+            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-2">
                 <input type="date" v-model="startDate" @change="() => fetchItems(1)" />
                 <input type="date" v-model="endDate" @change="() => fetchItems(1)" />
             </div>
 
             <!-- Кнопка сброса фильтров -->
-            <div v-if="hasActiveFilters" class="ml-4">
+            <div v-if="hasActiveFilters" class="ml-2">
                 <PrimaryButton 
                     :onclick="resetFilters"
                     icon="fas fa-filter-circle-xmark"
@@ -76,7 +76,9 @@
             </div>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            @changePage="fetchItems" />
+            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+            storage-key="transactionsPerPage"
+            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
     <TransactionsBalance ref="balanceRef" :cash-register-id="cashRegisterId || null" :start-date="startDate"
         :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter" :source-filter="sourceFilter" />
@@ -138,6 +140,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: TransactionController,
+            showStatusSelect: false, // транзакции не имеют статусов
             allCashRegisters: [],
             cashRegisterId: '',
             dateFilter: 'all_time',
@@ -156,6 +159,7 @@ export default {
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'type', label: 'type', html: true },
                 { name: 'source', label: 'source', html: true },
+                { name: 'debt', label: 'debt', html: true },
                 { name: 'cashName', label: 'cashRegister' },
                 { name: 'cashAmount', label: 'amount', html: true },
                 { name: 'origAmount', label: 'originalAmount' },
@@ -177,7 +181,9 @@ export default {
                 { value: 'sale', label: this.$t('sale') },
                 { value: 'order', label: this.$t('order') },
                 { value: 'other', label: this.$t('other') },
-            ]
+            ],
+            perPage: 10,
+            perPageOptions: [10, 25, 50, 100]
         }
     },
     created() {
@@ -213,6 +219,8 @@ export default {
                     return i.typeCell();
                 case 'source':
                     return i.sourceCell();
+                case 'debt':
+                    return i.debtCell();
                 case 'cashName':
                     return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
                 case 'cashAmount':
@@ -236,6 +244,10 @@ export default {
             this.$store.dispatch('setSearchQuery', query);
             this.fetchItems(1, false);
         },
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
@@ -251,7 +263,8 @@ export default {
                         this.searchQuery,
                         this.transactionTypeFilter,
                         this.sourceFilter,
-                        this.projectId
+                        this.projectId,
+                        this.perPage
                     );
                 } else {
                     new_data = await TransactionController.getItems(
@@ -262,7 +275,8 @@ export default {
                         this.searchQuery,
                         this.transactionTypeFilter,
                         this.sourceFilter,
-                        this.projectId
+                        this.projectId,
+                        this.perPage
                     );
                 }
                 
@@ -386,15 +400,8 @@ export default {
                     action: nonTransferIds.length > 0 ? this.deleteItems : null,
                     disabled: this.loadingBatch || nonTransferIds.length === 0,
                 },
-                {
-                    label: 'Сменить статус', 
-                    icon: "fas fa-edit",
-                    type: "info",
-                    action: null, 
-                    render: true, 
-                },
             ];
-        }
+        },
     },
     computed: {
         searchQuery() {

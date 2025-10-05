@@ -5,7 +5,7 @@
                 icon="fas fa-plus"></PrimaryButton>
             
             <!-- Фильтр по статусу -->
-            <div class="mx-4">
+            <div class="ml-2">
                 <select v-model="statusFilter" @change="() => fetchItems(1)">
                     <option value="">{{ $t('allStatuses') }}</option>
                     <option value="active">{{ $t('active') }}</option>
@@ -14,7 +14,7 @@
             </div>
 
             <!-- Фильтр по типу клиента -->
-            <div class="mx-2">
+            <div class="ml-2">
                 <select v-model="typeFilter" @change="() => fetchItems(1)">
                     <option value="">{{ $t('allTypes') }}</option>
                     <option value="company">{{ $t('company') }}</option>
@@ -23,7 +23,7 @@
             </div>
 
             <!-- Кнопка сброса фильтров -->
-            <div v-if="hasActiveFilters" class="ml-4">
+            <div v-if="hasActiveFilters" class="ml-2">
                 <PrimaryButton 
                     :onclick="resetFilters"
                     icon="fas fa-filter-circle-xmark"
@@ -32,7 +32,9 @@
             </div>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            @changePage="fetchItems" />
+            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+            storage-key="clientsPerPage"
+            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
@@ -101,6 +103,8 @@ export default {
                 { name: 'status', label: 'status', html: true },
                 { name: 'dateUser', label: 'dateUser' },
             ],
+            perPage: 10,
+            perPageOptions: [10, 25, 50, 100]
         }
     },
     created() {
@@ -140,12 +144,17 @@ export default {
             this.$store.dispatch('setSearchQuery', query);
             this.fetchItems(1, false);
         },
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
             }
             try {
-                const new_data = await ClientController.getItems(page, this.searchQuery, true, this.statusFilter, this.typeFilter); // includeInactive = true
+                const includeInactive = this.statusFilter === '' || this.statusFilter === 'inactive';
+                const new_data = await ClientController.getItems(page, this.searchQuery, includeInactive, this.statusFilter, this.typeFilter, this.perPage);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingClientList'), error.message, true);

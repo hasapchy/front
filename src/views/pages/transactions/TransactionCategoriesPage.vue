@@ -1,10 +1,12 @@
 <template>
     <div class="flex justify-between items-center mb-4">
         <PrimaryButton :onclick="() => { showModal(null) }"
-            :disabled="!$store.getters.hasPermission('transaction_categories_create')" icon="fas fa-plus">{{ $t('addTransactionCategory') }}
+            :disabled="!$store.getters.hasPermission('transaction_categories_create')" icon="fas fa-plus">
         </PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            @changePage="fetchItems" />
+            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+            storage-key="transactionCategoriesPerPage"
+            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
@@ -51,6 +53,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: TransactionCategoryController,
+            showStatusSelect: false, // категории транзакций не имеют статусов
             savedSuccessText: this.$t('transactionCategorySuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingTransactionCategory'),
             deletedSuccessText: this.$t('transactionCategorySuccessfullyDeleted'),
@@ -63,6 +66,8 @@ export default {
                 { name: 'user_name', label: this.$t('createdBy') },
                 { name: 'createdAt', label: this.$t('creationDate') }
             ],
+            perPage: 10,
+            perPageOptions: [10, 25, 50, 100]
         }
     },
     created() {
@@ -91,10 +96,14 @@ export default {
                 this.closeModal();
             }
         },
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                this.data = await TransactionCategoryController.getItems(page);
+                this.data = await TransactionCategoryController.getItems(page, this.perPage);
             } catch (error) {
                 this.showNotification('Ошибка получения списка категорий транзакций', error.message, true);
             }

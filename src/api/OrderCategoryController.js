@@ -3,8 +3,8 @@ import OrderCategoryDto from "@/dto/order/OrderCategoryDto";
 import api from "./axiosInstance";
 
 export default class OrderCategoryController {
-  static async getItems(page = 1) {
-    const response = await api.get(`/order_categories?page=${page}`);
+  static async getItems(page = 1, per_page = 10) {
+    const response = await api.get(`/order_categories?page=${page}&per_page=${per_page}`);
     const data = response.data;
     const items = data.items.map(
       (item) =>

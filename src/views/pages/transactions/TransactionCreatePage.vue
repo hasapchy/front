@@ -27,7 +27,7 @@
         </div>
         <div class="mt-2">
             <label class="inline-flex items-center">
-                <input type="checkbox" v-model="isDebt" :disabled="!!editingItemId" />
+                <input type="checkbox" v-model="isDebt" />
                 <span class="ml-2">{{ $t('debtOperation') }}</span>
             </label>
         </div>
@@ -148,18 +148,28 @@ export default {
             origAmount: this.editingItem ? this.editingItem.origAmount : (this.prefillAmount || 0),
             currencyId: this.editingItem ? this.editingItem.origCurrencyId : '',
             categoryId: this.editingItem ? this.editingItem.categoryId : 4, // По умолчанию id = 4 для типа income
-            projectId: this.editingItem ? this.editingItem.projectId : '',
+            projectId: this.editingItem ? this.editingItem.projectId : (this.initialProjectId || ''),
             date: (() => {
                 if (this.editingItem && this.editingItem.date) {
-                    const formatted = this.editingItem.date.substring(0, 16);
-                    return formatted;
+                    // Если date является строкой
+                    if (typeof this.editingItem.date === 'string') {
+                        return this.editingItem.date.substring(0, 16);
+                    }
+                    // Если date является объектом Date
+                    if (this.editingItem.date instanceof Date) {
+                        return this.editingItem.date.toISOString().substring(0, 16);
+                    }
+                    // Если date является объектом с методом toISOString
+                    if (this.editingItem.date.toISOString && typeof this.editingItem.date.toISOString === 'function') {
+                        return this.editingItem.date.toISOString().substring(0, 16);
+                    }
                 }
                 return new Date().toISOString().substring(0, 16);
             })(),
             note: this.editingItem ? this.editingItem.note : '',
             isDebt: this.editingItem ? this.editingItem.isDebt : false,
             editingItemId: this.editingItem ? this.editingItem.id : null,
-            selectedClient: this.editingItem ? this.editingItem.client : null,
+            selectedClient: this.editingItem ? (this.editingItem.client || this.initialClient) : this.initialClient,
             currencies: [],
             allCategories: [],
             allProjects: [],
@@ -197,14 +207,6 @@ export default {
             ]);
             
             if (!this.editingItem) {
-                if (this.initialClient) {
-                    this.selectedClient = this.initialClient;
-                }
-                if (this.initialProjectId) {
-                    this.projectId = this.initialProjectId;
-                }
-                
-                // Устанавливаем первую доступную кассу и её валюту
                 if (this.allCashRegisters.length > 0 && !this.cashId) {
                     this.cashId = this.allCashRegisters[0].id;
                     this.currencyId = this.allCashRegisters[0].currency_id;
@@ -458,7 +460,10 @@ export default {
         },
         initialProjectId: {
             handler(newProjectId) {
-                if (!this.editingItemId && newProjectId) {
+                // Применяем initialProjectId если:
+                // 1. Это создание новой транзакции ИЛИ
+                // 2. Это редактирование, но у транзакции нет проекта
+                if (newProjectId && (!this.editingItemId || !this.projectId)) {
                     this.projectId = newProjectId;
                 }
             },
@@ -466,7 +471,10 @@ export default {
         },
         initialClient: {
             handler(newClient) {
-                if (!this.editingItemId && newClient) {
+                // Применяем initialClient если:
+                // 1. Это создание новой транзакции ИЛИ
+                // 2. Это редактирование, но у транзакции нет клиента
+                if (newClient && (!this.editingItemId || !this.selectedClient)) {
                     this.selectedClient = newClient;
                 }
             },
@@ -505,7 +513,7 @@ export default {
                     this.categoryId = newEditingItem.categoryId || '';
                     this.projectId = newEditingItem.projectId || '';
                     this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
-                    this.selectedClient = newEditingItem.client || null;
+                    this.selectedClient = newEditingItem.client || this.initialClient || null;
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     // При создании новой транзакции устанавливаем значения по умолчанию

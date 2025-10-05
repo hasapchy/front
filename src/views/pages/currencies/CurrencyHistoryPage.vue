@@ -8,7 +8,6 @@
                 icon="fas fa-plus">
             </PrimaryButton>
             <div class="flex items-center space-x-2">
-                <label class="text-sm font-medium">{{ $t('selectCurrency') }}:</label>
                 <select v-model="selectedCurrencyId" @change="onCurrencyChange" class="px-3 py-1 border rounded">
                     <option value="">{{ $t('selectCurrency') }}</option>
                     <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
@@ -18,7 +17,9 @@
             </div>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            @changePage="fetchItems" />
+            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+            storage-key="currencyHistoryPerPage"
+            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
     
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
@@ -121,6 +122,8 @@ export default {
                 { name: 'duration', label: 'duration', size: 100 },
                 { name: 'status', label: 'status', size: 100, html: true },
             ],
+            perPage: 10,
+            perPageOptions: [10, 25, 50, 100]
         }
     },
     created() {
@@ -155,13 +158,13 @@ export default {
                 const currency = this.currencies.find(c => c.id == this.selectedCurrencyId);
                 this.selectedCurrency = currency;
                 
-                const historyData = await CurrencyHistoryController.getCurrencyHistory(this.selectedCurrencyId);
+                const historyData = await CurrencyHistoryController.getCurrencyHistory(this.selectedCurrencyId, 1, this.perPage);
                 
                 // Преобразуем в формат для таблицы
                 this.data = {
                     items: historyData.history,
-                    currentPage: 1,
-                    lastPage: 1
+                    currentPage: historyData.currentPage,
+                    lastPage: historyData.lastPage
                 };
             } catch (error) {
                 this.showNotification(this.$t('errorLoadingHistory'), error.message, true);
@@ -195,6 +198,10 @@ export default {
             } else {
                 this.closeModal();
             }
+        },
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
         },
         
         async fetchItems(page = 1, silent = false) {

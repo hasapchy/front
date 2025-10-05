@@ -18,47 +18,20 @@
             </div>
             
             <!-- Фильтр по клиенту -->
-            <div class="ml-2 relative">
-                <div v-if="selectedClient == null" class="relative">
-                    <input type="text" v-model="clientSearch" :placeholder="$t('enterClientNameOrNumber')"
-                        class="w-full p-2 border rounded" @focus="showClientDropdown = true" @blur="handleClientBlur" />
-                    <transition name="appear">
-                        <ul v-show="showClientDropdown"
-                            class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
-                            <li v-if="clientSearchLoading" class="p-2 text-gray-500">{{ $t('loading') }}</li>
-                            <template v-else-if="clientSearch.length === 0">
-                                <li v-for="client in lastClients" :key="client.id" @mousedown.prevent="selectClient(client)"
-                                    class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                                    <div class="flex justify-between">
-                                        <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                                        <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
-                                    </div>
-                                </li>
-                            </template>
-                            <li v-else-if="clientSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}</li>
-                            <li v-else-if="clientResults.length === 0" class="p-2 text-gray-500">{{ $t('notFound') }}</li>
-                            <li v-for="client in clientResults" :key="client.id" @mousedown.prevent="() => selectClient(client)"
-                                class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                                <div class="flex justify-between">
-                                    <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                                    <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
-                                </div>
-                            </li>
-                        </ul>
-                    </transition>
-                </div>
-                <div v-else class="relative">
-                    <input type="text" :value="selectedClient.fullName()" readonly
-                        class="w-full p-2 border rounded bg-gray-50" />
-                    <button @click="deselectClient" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-red-500 text-lg cursor-pointer">×</button>
-                </div>
+            <div class="ml-2">
+                <ClientSearch 
+                    v-model:selectedClient="selectedClient" 
+                    @update:selectedClient="handleClientChange" />
             </div>
             
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            @changePage="fetchItems" />
+            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+            storage-key="projectsPerPage"
+            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
+        :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.projects" :columns-config="translatedColumnsConfig" :table-data="data.items"
@@ -87,7 +60,6 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import ProjectController from '@/api/ProjectController';
 import ProjectStatusController from '@/api/ProjectStatusController';
-import ClientController from '@/api/ClientController';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -99,12 +71,12 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
+import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import { markRaw } from 'vue';
-import debounce from 'lodash.debounce';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, tableTranslationMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell },
     data() {
         return {
             data: null,
@@ -114,18 +86,15 @@ export default {
             statuses: [],
             clientFilter: '',
             clients: [],
-            // Новые данные для поиска клиентов
+            clientModalOpen: false,
             selectedClient: null,
-            clientSearch: '',
-            clientSearchLoading: false,
-            clientResults: [],
-            lastClients: [],
-            showClientDropdown: false,
             controller: ProjectController,
             savedSuccessText: this.$t('projectSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProject'),
             deletedSuccessText: this.$t('projectSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingProject'),
+            perPage: 10,
+            perPageOptions: [10, 25, 50, 100]
         }
     },
     created() {
@@ -136,14 +105,11 @@ export default {
         // Загружаем статусы первыми, чтобы они были доступны при создании проекта
         await this.fetchProjectStatuses();
         await this.fetchClients();
-        await this.fetchLastClients();
         this.fetchItems();
     },
     methods: {
         itemMapper(i, c) {
             switch (c) {
-                case 'clientId':
-                    return i.clientId != null && i.client ? i.client.fullName() : this.$t('notSpecified');
                 case 'users':
                     return (i.users || '').length + ' ' + this.$t('users');
                 case 'createdAt':
@@ -182,47 +148,16 @@ export default {
                 console.error('Error fetching clients:', error);
             }
         },
-        async fetchLastClients() {
-            try {
-                const paginated = await ClientController.getItems(1, null, false);
-                this.lastClients = paginated.items.slice(0, 10);
-            } catch (error) {
-                console.error('Error fetching last clients:', error);
-            }
+        handleClientChange() {
+            this.fetchItems();
         },
-        searchClients: debounce(async function () {
-            if (this.clientSearch.length >= 3) {
-                this.clientSearchLoading = true;
-                try {
-                    const results = await ClientController.search(this.clientSearch);
-                    this.clientResults = results;
-                } catch (error) {
-                    console.error('Search error:', error);
-                    this.clientResults = [];
-                } finally {
-                    this.clientSearchLoading = false;
-                }
-            } else {
-                this.clientResults = [];
-            }
-        }, 250),
-        async selectClient(client) {
-            this.showClientDropdown = false;
-            this.clientSearch = '';
-            this.clientResults = [];
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
+        },
+        openClientModal(client) {
             this.selectedClient = client;
-            this.clientFilter = client.id;
-            this.fetchItems();
-        },
-        deselectClient() {
-            this.selectedClient = null;
-            this.clientFilter = '';
-            this.fetchItems();
-        },
-        handleClientBlur() {
-            requestAnimationFrame(() => {
-                this.showClientDropdown = false;
-            });
+            this.clientModalOpen = true;
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
@@ -233,7 +168,7 @@ export default {
                 if (this.statusFilter) filters.status_id = this.statusFilter;
                 if (this.clientFilter) filters.client_id = this.clientFilter;
                 
-                const new_data = await ProjectController.getItems(page, filters);
+                const new_data = await ProjectController.getItems(page, filters, this.perPage);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProjectList'), error.message, true);
@@ -249,6 +184,7 @@ export default {
                 await ProjectController.batchUpdateStatus({ ids, status_id: statusId });
                 await this.fetchItems(this.data.currentPage, true);
                 this.showNotification(this.$t('statusUpdated'), "", false);
+                this.selectedIds = []; // Очищаем выбранные элементы
             } catch (error) {
                 this.showNotification(this.$t('errorUpdatingStatus'), this.getApiErrorMessage(error), true);
             }
@@ -261,35 +197,26 @@ export default {
             }
             this.fetchItems();
         },
+        // Переопределяем метод из modalMixin для добавления специфичной логики
         showModal(item = null) {
             this.modalDialog = true;
             this.showTimeline = true;
             this.editingItem = item;
         },
+        // Переопределяем метод из crudEventMixin для добавления специфичной логики
         async handleSaved() {
             this.showNotification(this.savedSuccessText, "", false);
             this.closeModal();
             
-            // Очищаем фильтр клиента при создании нового проекта
-            if (!this.editingItem) {
-                this.selectedClient = null;
-                this.clientFilter = '';
-            }
-            
             // Обновляем список
             this.fetchItems();
         },
+        // Переопределяем метод из crudEventMixin для добавления специфичной логики
         async handleDeleted() {
             // После удаления проекта обновляем список
             this.fetchItems();
             this.showNotification(this.deletedSuccessText, "", false);
             this.closeModal();
-        },
-    },
-    watch: {
-        clientSearch: {
-            handler: 'searchClients',
-            immediate: true,
         },
     },
     computed: {
@@ -300,31 +227,17 @@ export default {
                 { name: 'name', label: 'name' },
                 { name: "statusName", label: 'projectStatus', component: markRaw(StatusSelectCell), props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId), }), },
                 { name: 'dateUser', label: 'dateUser' },
-                { name: 'clientId', label: 'client' },
+                {
+                    name: 'client',
+                    label: 'client',
+                    component: markRaw(ClientButtonCell),
+                    props: (item) => ({
+                        client: item.client,
+                    })
+                },
                 { name: 'users', label: 'access' },
             ];
         }
     },
 }
 </script>
-
-<style scoped>
-.appear-enter-active,
-.appear-leave-active {
-    transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.appear-enter-from,
-.appear-leave-to {
-    transform: scaleY(0);
-    opacity: 0;
-    transform-origin: top;
-}
-
-.appear-enter-to,
-.appear-leave-from {
-    transform: scaleY(1);
-    opacity: 1;
-    transform-origin: top;
-}
-</style>

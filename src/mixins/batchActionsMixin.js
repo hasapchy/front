@@ -4,6 +4,7 @@ export default {
       loadingBatch: false,
       deleteDialog: false,
       idsToDelete: [],
+      showStatusSelect: true, // по умолчанию показываем смену статуса
     };
   },
   methods: {
@@ -52,7 +53,7 @@ export default {
       // Добавляем кнопку удаления только если у пользователя есть права
       if (this.$store?.getters?.hasPermission?.('projects_delete')) {
         actions.push({
-          label: "Удалить",
+          label: "",
           icon: "fas fa-trash",
           type: "danger",
           action: this.deleteItems,
@@ -60,14 +61,16 @@ export default {
         });
       }
       
-      // Добавляем другие действия
-      actions.push({
-        label: 'Сменить статус', 
-        icon: "fas fa-edit",
-        type: "info",
-        action: null, 
-        render: true, 
-      });
+      // Добавляем кнопку смены статуса только если компонент явно это разрешает
+      if (this.showStatusSelect !== false) {
+        actions.push({
+          label: 'Сменить статус', 
+          icon: "fas fa-edit",
+          type: "info",
+          action: null, 
+          render: true, 
+        });
+      }
       
       return actions;
     },

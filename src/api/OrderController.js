@@ -6,9 +6,9 @@ import OrderProductDto from "@/dto/order/OrderProductDto";
 import OrderAfController from "./OrderAfController";
 
 export default class OrderController {
-  static async getItemsPaginated(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, statusFilter = '', projectFilter = '', clientFilter = '') {
+  static async getItemsPaginated(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, statusFilter = '', projectFilter = '', clientFilter = '', per_page = 10) {
     try {
-      const params = { page: page };
+      const params = { page: page, per_page: per_page };
       if (search) {
         params.search = search;
       }
@@ -30,7 +30,7 @@ export default class OrderController {
       }
       const response = await api.get("/orders", { params });
       const data = response.data;
-      const items = data.items.map((item) => {
+      const items = (data.items || []).map((item) => {
         var client = null;
         if (item.client) {
           client = new ClientDto(

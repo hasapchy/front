@@ -8,7 +8,9 @@
             </PrimaryButton>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            @changePage="fetchItems" />
+            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+            storage-key="warehousesWriteoffPerPage"
+            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
@@ -70,6 +72,8 @@ export default {
                 { name: 'products', label: 'products', html: true },
                 { name: 'note', label: 'note' },
             ],
+            perPage: 10,
+            perPageOptions: [10, 25, 50, 100]
         }
     },
     computed: {
@@ -102,12 +106,16 @@ export default {
                 this.closeModal();
             }
         },
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
             }
             try {
-                const new_data = await WarehouseWriteoffController.getItems(page);
+                const new_data = await WarehouseWriteoffController.getItems(page, this.perPage);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification('Ошибка получения списка списаний', error.message, true);

@@ -3,9 +3,9 @@ import api from "./axiosInstance";
 import TransferDto from "@/dto/transfer/TransferDto";
 
 export default class TransferController {
-  static async getItems(page = 1) {
+  static async getItems(page = 1, per_page = 10) {
     try {
-      const response = await api.get(`/transfers?page=${page}`);
+      const response = await api.get(`/transfers?page=${page}&per_page=${per_page}`);
       const data = response.data;
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {

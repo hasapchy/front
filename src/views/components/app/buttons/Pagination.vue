@@ -1,6 +1,16 @@
 <template>
-    <div class="flex justify-center">
-        <nav >
+    <div class="flex justify-between items-center">
+        <!-- Per Page Selector -->
+        <PerPageSelector 
+            v-if="showPerPageSelector"
+            :per-page="perPage"
+            :per-page-options="perPageOptions"
+            :storage-key="storageKey"
+            @per-page-change="$emit('perPageChange', $event)"
+        />
+        
+        <!-- Pagination Controls -->
+        <nav>
             <ul class="flex items-center -space-x-px h-8 text-sm">
                 <li>
                     <button type="button" :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
@@ -37,12 +47,33 @@
 </template>
 
 <script>
+import PerPageSelector from '@/views/components/app/forms/PerPageSelector.vue';
+
 export default {
+    components: {
+        PerPageSelector
+    },
     props: {
         currentPage: Number,
-        lastPage: Number
+        lastPage: Number,
+        perPage: {
+            type: Number,
+            default: 10
+        },
+        perPageOptions: {
+            type: Array,
+            default: () => [10, 25, 50, 100]
+        },
+        showPerPageSelector: {
+            type: Boolean,
+            default: true
+        },
+        storageKey: {
+            type: String,
+            default: 'perPage'
+        }
     },
-    emits: ['changePage'],
+    emits: ['changePage', 'perPageChange'],
     computed: {
         pages() {
             let start = Math.max(1, this.currentPage - 2);

@@ -5,9 +5,9 @@ import WarehouseReceiptProductDto from "@/dto/warehouse/WarehouseReceiptProductD
 import WarehouseReceiptDto from "@/dto/warehouse/WarehouseReceiptDto";
 
 export default class WarehouseReceiptController {
-  static async getStocks(page = 1) {
+  static async getStocks(page = 1, per_page = 10) {
     try {
-      const response = await api.get(`/warehouse_receipts?page=${page}`);
+      const response = await api.get(`/warehouse_receipts?page=${page}&per_page=${per_page}`);
       const data = response.data;
 
       const items = data.items.map((item) => {

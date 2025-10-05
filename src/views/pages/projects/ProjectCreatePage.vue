@@ -14,11 +14,12 @@
             </div>
             <div>
                 <label>{{ $t('projectDate') }}</label>
-                <input type="datetime-local" v-model="date" 
+                <input type="datetime-local" v-model="date"
                     :disabled="!!editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
                     :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
             </div>
-            <div v-if="$store.getters.hasPermission('settings_project_budget_view')" class="flex items-center space-x-2">
+            <div v-if="$store.getters.hasPermission('settings_project_budget_view')"
+                class="flex items-center space-x-2">
                 <div class="w-full">
                     <label class="required">{{ $t('projectBudget') }}</label>
                     <input type="number" v-model="budget" step="0.01" min="0">
@@ -37,20 +38,19 @@
             </div>
             <div v-if="currencyId && $store.getters.hasPermission('settings_project_budget_view')" class="mt-2">
                 <label class="required">{{ $t('projectExchangeRate') }}</label>
-                <input type="number" v-model="exchangeRate" step="0.000001" min="0.000001" 
-                       :placeholder="defaultExchangeRate" class="w-full">
+                <input type="number" v-model="exchangeRate" step="0.000001" min="0.000001"
+                    :placeholder="defaultExchangeRate" class="w-full">
                 <small class="text-gray-500">{{ $t('exchangeRateHelp') }}</small>
             </div>
-            
+
             <div>
                 <div class="flex justify-between items-center mb-2">
                     <label class="required">{{ $t('assignUsers') }}</label>
-                    <div v-if="users != null && users.length > 0" class="flex gap-2">
-                        <PrimaryButton :onclick="selectAllUsers" :is-info="true" class="text-xs py-1 px-2">
-                            Выбрать всех
-                        </PrimaryButton>
-                        <PrimaryButton :onclick="deselectAllUsers" :is-light="true" class="text-xs py-1 px-2">
-                            Снять всех
+                    <div v-if="users != null && users.length > 0">
+                        <PrimaryButton :onclick="toggleAllUsers" :is-info="!allUsersSelected"
+                            :is-light="allUsersSelected"
+                            :icon="allUsersSelected ? 'fas fa-times' : 'fas fa-check-double'" class="text-xs py-1 px-2"
+                            :title="allUsersSelected ? $t('deselectAll') : $t('selectAll')">
                         </PrimaryButton>
                     </div>
                 </div>
@@ -62,19 +62,14 @@
                         <span class="text-black">{{ user.name }}</span>
                     </label>
                 </div>
-                
+
             </div>
         </div>
         <div v-show="currentTab === 'files' && editingItem">
-            <FileUploader
-                :files="editingItem ? editingItem.getFormattedFiles() : []"
-                :uploading="uploading"
-                :upload-progress="uploadProgress"
-                :disabled="!editingItemId"
-                @file-change="handleFileChange"
-                @delete-file="showDeleteFileDialog"
-                @delete-multiple-files="showDeleteMultipleFilesDialog"
-            />
+            <FileUploader ref="fileUploader" :files="editingItem ? editingItem.getFormattedFiles() : []"
+                :uploading="uploading" :upload-progress="uploadProgress" :disabled="!editingItemId"
+                :deleting="deletingFiles" @file-change="handleFileChange" @delete-file="showDeleteFileDialog"
+                @delete-multiple-files="showDeleteMultipleFilesDialog" />
         </div>
         <div v-show="currentTab === 'balance' && editingItem">
             <ProjectBalanceTab :editing-item="editingItem" />
@@ -84,22 +79,22 @@
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null && $store.getters.hasPermission('projects_delete')" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-trash">
+        <PrimaryButton v-if="editingItem != null && $store.getters.hasPermission('projects_delete')"
+            :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading" icon="fas fa-trash">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('projects_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('projects_create'))">
         </PrimaryButton>
     </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="$t('deleteProject')" :confirm-text="$t('deleteProject')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('deleteProject')"
+        :confirm-text="$t('deleteProject')" :leave-text="$t('cancel')" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
+        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     <AlertDialog :dialog="deleteFileDialog" @confirm="confirmDeleteFile" @leave="closeDeleteFileDialog"
-        :descr="deleteFileIndex === 'multiple' ? 
-            `${$t('confirmDeleteSelected')} (${selectedFileIds.length})?` : 
-            `${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`"
-                  :confirm-text="$t('deleteFile')" :leave-text="$t('cancel')" />
+        :descr="deleteFileIndex === 'multiple' ?
+            `${$t('confirmDeleteSelected')} (${selectedFileIds.length})?` :
+            `${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`" :confirm-text="$t('deleteFile')" :leave-text="$t('cancel')"
+        :confirm-loading="deletingFiles" />
 </template>
 
 <script>
@@ -149,6 +144,7 @@ export default {
             deleteFileDialog: false,
             deleteFileIndex: -1,
             selectedFileIds: [],
+            deletingFiles: false,
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'info' },
@@ -156,14 +152,15 @@ export default {
                 { name: "balance", label: "balance" },
                 { name: "contracts", label: "contracts" },
             ],
-            
+
+
 
         }
     },
     computed: {
         translatedTabs() {
             const availableTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name === 'info');
-            
+
             return availableTabs.map(tab => ({
                 ...tab,
                 label: this.$t(tab.label)
@@ -173,13 +170,16 @@ export default {
             if (!this.currencyId) return '1.000000';
             const currency = this.currencies.find(c => c.id === this.currencyId);
             if (!currency) return '1.000000';
-            
+
             // Если валюта не дефолтная (не манат), показываем 1/курс
             if (!currency.is_default && currency.exchange_rate) {
                 return (1 / currency.exchange_rate).toFixed(6);
             }
-            
+
             return currency.exchange_rate?.toFixed(6) || '1.000000';
+        },
+        allUsersSelected() {
+            return this.users && this.users.length > 0 && this.selectedUsers.length === this.users.length;
         }
     },
     created() {
@@ -193,14 +193,13 @@ export default {
                 this.fetchUsers(),
                 this.fetchCurrencies()
             ]);
-            
-            
+
+
             this.saveInitialState();
         });
     },
     methods: {
         clearForm() {
-            // Сбрасываем форму и таб на первый (info)
             this.name = '';
             this.budget = 0;
             this.currencyId = '';
@@ -212,13 +211,6 @@ export default {
             this.editingItemId = null;
             this.currentTab = 'info';
             this.resetFormChanges(); // Сбрасываем состояние изменений
-            
-            // После очистки формы выбираем всех пользователей по умолчанию
-            this.$nextTick(() => {
-                if (this.users && this.users.length > 0) {
-                    this.selectedUsers = this.users.map(user => user.id.toString());
-                }
-            });
         },
         changeTab(tabName) {
             if ((tabName === 'files' || tabName === 'balance' || tabName === 'contracts') && !this.editingItem) {
@@ -273,7 +265,7 @@ export default {
                 this.selectedUsers = this.editingItem.getUserIds();
             } else if (!this.editingItem) {
                 // При создании нового проекта - выбираем всех пользователей по умолчанию
-                this.selectedUsers = this.users.map(user => user.id.toString());
+                this.selectAllUsers();
             }
         },
         selectAllUsers() {
@@ -284,12 +276,19 @@ export default {
         deselectAllUsers() {
             this.selectedUsers = [];
         },
+        toggleAllUsers() {
+            if (this.allUsersSelected) {
+                this.deselectAllUsers();
+            } else {
+                this.selectAllUsers();
+            }
+        },
         async save() {
             if (this.uploading) {
                 alert(this.$t('waitForFileUpload'));
                 return;
             }
-            
+
             // Валидация обязательных полей (только если у пользователя есть права на просмотр бюджета)
             if (this.$store.getters.hasPermission('settings_project_budget_view')) {
                 if (!this.currencyId) {
@@ -301,7 +300,7 @@ export default {
                     return;
                 }
             }
-            
+
             this.saveLoading = true;
             try {
                 let resp;
@@ -338,7 +337,7 @@ export default {
         },
         async deleteItem() {
             if (!this.editingItemId) return;
-            
+
             this.deleteLoading = true;
             try {
                 await ProjectController.deleteItem(this.editingItemId);
@@ -363,43 +362,76 @@ export default {
             }
             if (!files || !files.length) return;
 
-            this.uploading = true;
-            this.uploadProgress = 0;
-            
-            try {
-                const progressInterval = setInterval(() => {
-                    if (this.uploadProgress < 90) {
-                        this.uploadProgress += Math.random() * 10;
-                    }
-                }, 200);
+            const fileArray = Array.from(files);
 
-                const uploadedFiles = await ProjectController.uploadFiles(this.editingItemId, files);
-                
-                clearInterval(progressInterval);
-                this.uploadProgress = 100;
-                
+            // Создаем массив файлов для отслеживания прогресса
+            const uploadingFileIds = fileArray.map((file, index) => ({
+                id: Date.now() + index,
+                name: file.name,
+                size: file.size,
+                progress: 0,
+                error: null
+            }));
+
+            // Устанавливаем массив файлов в компонент
+            this.$refs.fileUploader.uploadingFiles = uploadingFileIds;
+
+            try {
+                // Симулируем прогресс загрузки для всех файлов
+                const progressIntervals = uploadingFileIds.map(fileInfo => {
+                    return setInterval(() => {
+                        const currentProgress = this.$refs.fileUploader.uploadingFiles.find(f => f.id === fileInfo.id)?.progress || 0;
+                        if (currentProgress < 90) {
+                            this.$refs.fileUploader.updateUploadProgress(fileInfo.id, currentProgress + Math.random() * 10);
+                        }
+                    }, 200);
+                });
+
+                // Загружаем все файлы одновременно
+                const uploadedFiles = await ProjectController.uploadFiles(this.editingItemId, fileArray);
+
+                // Останавливаем все интервалы прогресса
+                progressIntervals.forEach(interval => clearInterval(interval));
+
+                // Устанавливаем 100% для всех файлов
+                uploadingFileIds.forEach(fileInfo => {
+                    this.$refs.fileUploader.updateUploadProgress(fileInfo.id, 100);
+                });
+
+                // Обновляем список файлов проекта
                 if (this.editingItem && this.editingItem.files) {
                     this.editingItem.files = uploadedFiles;
                 }
-                
+
+                // Очищаем список загружающихся файлов через 2 секунды
                 setTimeout(() => {
-                    this.uploading = false;
-                    this.uploadProgress = 0;
-                }, 1000);
-                
-            } catch (e) {
-                this.uploading = false;
-                this.uploadProgress = 0;
-                alert('Ошибка загрузки файлов');
+                    this.$refs.fileUploader.uploadingFiles = [];
+                }, 2000);
+
+            } catch (error) {
+                console.error('Ошибка при загрузке файлов:', error);
+
+                // Устанавливаем ошибку для всех файлов
+                uploadingFileIds.forEach(fileInfo => {
+                    this.$refs.fileUploader.updateUploadProgress(fileInfo.id, 0, 'Ошибка загрузки файла');
+                });
+
+                alert('Произошла ошибка при загрузке файлов');
+
+                // Очищаем список загружающихся файлов при ошибке
+                setTimeout(() => {
+                    this.$refs.fileUploader.uploadingFiles = [];
+                }, 3000);
             }
         },
         showDeleteFileDialog(filePath) {
             this.deleteFileIndex = filePath;
             this.deleteFileDialog = true;
         },
-        
-        showDeleteMultipleFilesDialog() {
-            if (this.selectedFileIds.length === 0) return;
+
+        showDeleteMultipleFilesDialog(selectedFileIds) {
+            if (!selectedFileIds || selectedFileIds.length === 0) return;
+            this.selectedFileIds = selectedFileIds;
             this.deleteFileIndex = 'multiple';
             this.deleteFileDialog = true;
         },
@@ -409,40 +441,43 @@ export default {
         },
         async confirmDeleteFile() {
             if (this.deleteFileIndex === -1 || !this.editingItemId) return;
-            
+
+            this.deletingFiles = true;
+
             try {
                 let updatedFiles;
-                
+
                 if (this.deleteFileIndex === 'multiple') {
                     for (const filePath of this.selectedFileIds) {
                         updatedFiles = await ProjectController.deleteFile(this.editingItemId, filePath);
+                    }
+                    // Очищаем выбранные файлы в FileUploader компоненте
+                    if (this.$refs.fileUploader) {
+                        this.$refs.fileUploader.selectedFileIds = [];
                     }
                     this.selectedFileIds = []; // Очищаем выбранные файлы
                 } else {
                     updatedFiles = await ProjectController.deleteFile(this.editingItemId, this.deleteFileIndex);
                 }
-                
+
                 if (this.editingItem && this.editingItem.files && updatedFiles) {
                     this.editingItem.files = updatedFiles;
                 }
             } catch (e) {
                 alert('Ошибка удаления файла');
+            } finally {
+                this.deletingFiles = false;
+                this.closeDeleteFileDialog();
             }
-
-            this.closeDeleteFileDialog();
         },
-
-
-
-
     },
-    
+
     beforeUnmount() {
         if (window.deleteFile) {
             delete window.deleteFile;
         }
     },
-    
+
     watch: {
         editingItem: {
             handler(newEditingItem) {
@@ -459,9 +494,8 @@ export default {
                     this.selectedClient = newEditingItem.client || null;
                     this.selectedUsers = newEditingItem.getUserIds() || [];
                     this.editingItemId = newEditingItem.id || null;
-                    
-                    // Всегда сбрасываем таб на info при открытии проекта
-                    this.currentTab = 'info';
+
+                    // Не переключаем таб автоматически - пользователь сам выбирает нужный таб
                 } else {
                     // Очищаем форму для создания нового проекта
                     this.clearForm();

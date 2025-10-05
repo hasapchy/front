@@ -63,9 +63,9 @@
               <BasementServicesRow v-model="form.products" />
             </div>
 
-            <!-- Товары и Остатки: 50/50 -->
+            <!-- Товары на складе и Остатки: 50/50 -->
             <div class="grid grid-cols-2 gap-6">
-              <!-- Товары -->
+              <!-- Товары на складе -->
               <div>
                 <BasementProductSearch
                   v-model="form.products"
@@ -101,31 +101,40 @@
         </div>
 
         <!-- Кнопки -->
-        <div class="flex justify-end space-x-3">
-          <PrimaryButton
-            v-if="isEditing"
-            :is-light="true"
-            icon="fas fa-times"
-            :onclick="closeModal"
-          >
-            {{ $t('cancel') }}
-          </PrimaryButton>
-          <router-link v-else to="/basement/orders">
+        <div class="flex flex-col items-end space-y-2">
+          <!-- Подсказка, почему кнопка неактивна -->
+          <div v-if="!canSave && !loading" class="text-sm text-gray-500 text-right">
+            <div v-if="!form.client_id">• Выберите клиента</div>
+            <div v-if="!form.warehouse_id">• Выберите склад</div>
+            <div v-if="!hasValidProducts">• Добавьте товары с количеством больше 0</div>
+          </div>
+          
+          <div class="flex space-x-3">
             <PrimaryButton
+              v-if="isEditing"
               :is-light="true"
               icon="fas fa-times"
+              :onclick="closeModal"
             >
               {{ $t('cancel') }}
             </PrimaryButton>
-          </router-link>
-          <PrimaryButton
-            :is-loading="loading"
-            :disabled="loading"
-            icon="fas fa-save"
-            :onclick="isEditing ? updateOrder : createOrder"
-          >
-            {{ isEditing ? $t('updateOrder') : $t('createOrder') }}
-          </PrimaryButton>
+            <router-link v-else to="/basement/orders">
+              <PrimaryButton
+                :is-light="true"
+                icon="fas fa-times"
+              >
+                {{ $t('cancel') }}
+              </PrimaryButton>
+            </router-link>
+            <PrimaryButton
+              :is-loading="loading"
+              :disabled="!canSave"
+              icon="fas fa-save"
+              :onclick="isEditing ? updateOrder : createOrder"
+            >
+              {{ isEditing ? $t('updateOrder') : $t('createOrder') }}
+            </PrimaryButton>
+          </div>
         </div>
 
       </form>
@@ -239,6 +248,28 @@ export default {
     },
     isEditing() {
       return !!this.editingItem || !!this.orderId
+    },
+    hasValidProducts() {
+      // Проверяем, что есть товары с количеством больше 0
+      const hasProductsWithQuantity = this.form.products && this.form.products.some(p => 
+        p.quantity && p.quantity > 0
+      )
+      const hasStockItemsWithQuantity = this.form.stockItems && this.form.stockItems.some(item => 
+        item.quantity && item.quantity > 0
+      )
+      
+      return hasProductsWithQuantity || hasStockItemsWithQuantity
+    },
+    canSave() {
+      // Кнопка активна только если:
+      // 1. Есть клиент
+      // 2. Есть склад
+      // 3. Есть валидные товары с количеством > 0
+      // 4. Не идет загрузка
+      return this.form.client_id && 
+             this.form.warehouse_id && 
+             this.hasValidProducts && 
+             !this.loading
     }
   },
   async mounted() {
@@ -284,8 +315,10 @@ export default {
     },
     async loadProjects() {
       try {
-        const paginated = await BasementProjectController.getItems(1);
-        this.allProjects = paginated.items || [];
+        // Загружаем только активные проекты (исключаем "Завершен" и "Отменен")
+        const projects = await BasementProjectController.getItems(1, { active_only: true });
+        // Для активных проектов возвращается массив, а не пагинированный ответ
+        this.allProjects = Array.isArray(projects) ? projects : (projects.items || []);
       } catch (error) {
         console.error('Ошибка загрузки проектов:', error);
         this.allProjects = [];
@@ -328,11 +361,11 @@ export default {
         validationErrors.push('• Выберите склад')
       }
       
-      const hasProducts = this.form.products && this.form.products.length > 0
-      const hasStockItems = this.form.stockItems && this.form.stockItems.length > 0
+      // Проверяем, что есть товары с количеством больше 0
+      const hasValidProducts = this.hasValidProducts
       
-      if (!hasProducts && !hasStockItems) {
-        validationErrors.push('• Добавьте товары или остатки в заказ')
+      if (!hasValidProducts) {
+        validationErrors.push('• Добавьте товары с количеством больше 0')
       }
       
       if (validationErrors.length > 0) {
@@ -348,23 +381,27 @@ export default {
       try {
         const token = BasementAuthController.getToken()
         
-        // Все товары и услуги сохраняются в order_products
-        const validProducts = this.form.products.map(p => ({
-          product_id: p.productId,
-          quantity: Math.max(p.quantity || 0, 0), // Минимум 0 для API
-          price: p.price || 0,
-          width: p.width || null,
-          height: p.height || null
-        }))
+        // Все товары и услуги сохраняются в order_products (фильтруем товары с количеством 0)
+        const validProducts = this.form.products
+          .filter(p => p.quantity && p.quantity > 0) // Убираем товары с нулевым количеством
+          .map(p => ({
+            product_id: p.productId,
+            quantity: p.quantity,
+            price: p.price || 0,
+            width: p.width || null,
+            height: p.height || null
+          }))
         
-        // Остатки (товары с бесконечным остатком) сохраняются как temp_products
-        const tempProducts = this.form.stockItems.map(item => ({
-          name: item.name,
-          description: item.description || '',
-          quantity: item.quantity || 0,
-          price: item.price || 0,
-          unit_id: item.unit_id || null,
-        }))
+        // Остатки (товары с бесконечным остатком) сохраняются как temp_products (фильтруем товары с количеством 0)
+        const tempProducts = this.form.stockItems
+          .filter(item => item.quantity && item.quantity > 0) // Убираем товары с нулевым количеством
+          .map(item => ({
+            name: item.name,
+            description: item.description || '',
+            quantity: item.quantity,
+            price: item.price || 0,
+            unit_id: item.unit_id || null,
+          }))
         
         const orderData = {
           client_id: this.form.client_id,
@@ -414,11 +451,11 @@ export default {
         validationErrors.push('• Выберите склад')
       }
       
-      const hasProducts = this.form.products && this.form.products.length > 0
-      const hasStockItems = this.form.stockItems && this.form.stockItems.length > 0
+      // Проверяем, что есть товары с количеством больше 0
+      const hasValidProducts = this.hasValidProducts
       
-      if (!hasProducts && !hasStockItems) {
-        validationErrors.push('• Добавьте товары или остатки в заказ')
+      if (!hasValidProducts) {
+        validationErrors.push('• Добавьте товары с количеством больше 0')
       }
       
       if (validationErrors.length > 0) {
@@ -443,14 +480,16 @@ export default {
           height: p.height || null
         }))
         
-        // Остатки (товары с бесконечным остатком) сохраняются как temp_products
-        const tempProducts = this.form.stockItems.map(item => ({
-          name: item.name,
-          description: item.description || '',
-          quantity: item.quantity || 0,
-          price: item.price || 0,
-          unit_id: item.unit_id || null,
-        }))
+        // Остатки (товары с бесконечным остатком) сохраняются как temp_products (фильтруем товары с количеством 0)
+        const tempProducts = this.form.stockItems
+          .filter(item => item.quantity && item.quantity > 0) // Убираем товары с нулевым количеством
+          .map(item => ({
+            name: item.name,
+            description: item.description || '',
+            quantity: item.quantity,
+            price: item.price || 0,
+            unit_id: item.unit_id || null,
+          }))
         
         const orderData = {
           client_id: this.form.client_id,

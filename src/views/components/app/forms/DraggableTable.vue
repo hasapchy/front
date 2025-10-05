@@ -1,7 +1,7 @@
 <template>
 
   <div class="flex flex-row-reverse">
-    <TableFilterButton v-if="columns.length">
+    <TableFilterButton v-if="columns.length" :onReset="resetColumns">
       <ul>
         <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
           <li v-for="(element, index) in columns" :key="element.name" @click="toggleVisible(index)"
@@ -17,9 +17,6 @@
           </li>
         </draggable>
       </ul>
-      <div class="flex flex-row-reverse">
-        <button @click="resetColumns" class="text-[#337AB7] hover:underline mr-3 cursor-pointer">{{ $t('reset') }}</button>
-      </div>
     </TableFilterButton>
   </div>
 
@@ -86,11 +83,12 @@
 import { VueDraggableNext } from 'vue-draggable-next';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
+import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import dayjs from 'dayjs';
 export default {
   name: 'DragaggableTable',
   emits: ['selectionChange'],
-  components: { draggable: VueDraggableNext, TableFilterButton, StatusSelectCell, },
+  components: { draggable: VueDraggableNext, TableFilterButton, StatusSelectCell, PrimaryButton },
   props: {
     tableKey: { type: String, required: true },
     columnsConfig: { type: Array, required: true },

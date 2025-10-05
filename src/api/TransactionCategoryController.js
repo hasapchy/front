@@ -3,10 +3,10 @@ import TransactionCategoryDto from "@/dto/transaction/TransactionCategoryDto";
 import api from "./axiosInstance";
 
 export default class TransactionCategoryController {
-  static async getItems(page = 1) {
-    const response = await api.get(`/transaction_categories?page=${page}`);
+  static async getItems(page = 1, per_page = 10) {
+    const response = await api.get(`/transaction_categories?page=${page}&per_page=${per_page}`);
     const data = response.data;
-    const items = data.items.map(
+    const items = (data.items || []).map(
       (item) =>
         new TransactionCategoryDto({
           id: item.id,
@@ -29,7 +29,7 @@ export default class TransactionCategoryController {
 
     static async getAllItems() {
         const response = await api.get(`/transaction_categories/all`);
-        return response.data.map(
+        return (response.data || []).map(
             (item) =>
                 new TransactionCategoryDto({
                     id: item.id,

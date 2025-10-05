@@ -4,9 +4,9 @@ import WarehouseMovementProductDto from "@/dto/warehouse/WarehouseMovementProduc
 import WarehouseMovementDto from "@/dto/warehouse/WarehouseMovementDto";
 
 export default class WarehouseMovementController {
-  static async getItems(page = 1) {
+  static async getItems(page = 1, per_page = 10) {
     try {
-      const response = await api.get(`/warehouse_movements?page=${page}`);
+      const response = await api.get(`/warehouse_movements?page=${page}&per_page=${per_page}`);
       const data = response.data;
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {

@@ -6,12 +6,26 @@
       <i class="fas fa-chevron-down text-xs ml-2 text-white"></i>
     </div>
 
-    <ul v-if="isOpen" class="absolute z-10 mt-1 w-full bg-white border rounded shadow-lg max-h-60 overflow-auto">
-      <template v-for="(group, groupIndex) in sortedStatuses" :key="group.category?.id">
-        <li v-for="(s, index) in group.items" :key="s.id"
-          :class="['px-2 py-3 hover:bg-gray-100 cursor-pointer flex items-center justify-between', { 'mb-2': !(groupIndex === sortedStatuses.length - 1 && index === group.items.length - 1) }]"
-          @click="selectStatus(s.id)" :style="{ backgroundColor: getColorStyle(s), color: '#fff' }">
-          <span>{{ s.name }}</span>
+    <ul v-if="isOpen" class="absolute z-50 top-full mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+      <template v-for="group in sortedStatuses" :key="group.category?.id">
+        <li v-for="s in group.items" :key="s.id"
+          :class="[
+            'px-4 py-3 cursor-pointer flex items-center transition-all duration-200',
+            s.id === value 
+              ? 'bg-blue-50 border-l-4 border-blue-500 text-blue-700 font-semibold' 
+              : 'hover:bg-gray-50 border-l-4 border-transparent hover:border-blue-400 hover:bg-blue-50'
+          ]"
+          @click="selectStatus(s.id)">
+          <div class="flex items-center">
+            <div :class="[
+              'w-3 h-3 rounded-full mr-3 flex-shrink-0',
+              s.id === value ? 'ring-2 ring-blue-500 ring-offset-1' : ''
+            ]" :style="{ backgroundColor: getColorStyle(s) }"></div>
+            <span :class="[
+              'text-sm font-medium',
+              s.id === value ? 'text-blue-700' : 'text-gray-700'
+            ]">{{ s.name }}</span>
+          </div>
         </li>
       </template>
     </ul>

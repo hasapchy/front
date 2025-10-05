@@ -45,10 +45,16 @@ export default {
         const title = computed(() => route.meta.title ? this.$t(route.meta.title) : this.$t('accountingSystem'));
         const binded = computed(() => {
           if (route.meta.binded) {
-            return route.meta.binded.map(tab => ({
-              ...tab,
-              name: this.$t(tab.name)
-            }));
+            return route.meta.binded
+              .filter(tab => {
+                // Проверяем права доступа для каждого таба
+                const routePermission = this.getRoutePermission(tab.path);
+                return !routePermission || this.$store.getters.hasPermission(routePermission);
+              })
+              .map(tab => ({
+                ...tab,
+                name: this.$t(tab.name)
+              }));
           }
           return [];
         });
@@ -74,6 +80,24 @@ export default {
         
         onCompanyChanged(companyId) {
             this.$forceUpdate();
+        },
+
+        getRoutePermission(path) {
+            // Маппинг путей к правам доступа (используем названия из PermissionsSeeder)
+            const permissionMap = {
+                '/categories': 'categories_view',
+                '/order_statuses': 'order_statuses_view',
+                '/project_statuses': 'order_statuscategories_view', // Используем то, что есть в сидере
+                '/transaction_categories': 'transaction_categories_view',
+                '/order_additional_fields': 'order_categories_view', // Используем то, что есть в сидере
+                '/transactions': 'transactions_view',
+                '/transfers': 'transfers_view',
+                '/cash-registers': 'cash_registers_view',
+                '/invoices': 'invoices_view',
+                '/products': 'products_view',
+                '/services': 'products_view'
+            };
+            return permissionMap[path];
         }
     },
     

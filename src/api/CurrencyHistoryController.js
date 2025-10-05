@@ -14,14 +14,17 @@ export default class CurrencyHistoryController {
   }
 
   // Получение истории курсов для конкретной валюты
-  static async getCurrencyHistory(currencyId) {
+  static async getCurrencyHistory(currencyId, page = 1, per_page = 10) {
     try {
-      const response = await api.get(`/currency-history/${currencyId}`);
+      const response = await api.get(`/currency-history/${currencyId}?page=${page}&per_page=${per_page}`);
       const data = response.data;
       
       return {
         currency: data.currency,
-        history: data.history.map(item => CurrencyHistoryDto.fromApi(item))
+        history: (data.history || []).map(item => CurrencyHistoryDto.fromApi(item)),
+        currentPage: data.current_page,
+        lastPage: data.last_page,
+        total: data.total
       };
     } catch (error) {
       console.error("Error fetching currency history:", error);

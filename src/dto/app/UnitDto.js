@@ -7,7 +7,7 @@ class UnitDto {
     }
     
     static fromJsonArray(jsonArray) {
-        return jsonArray.map(json => UnitDto.fromJson(json));
+        return (jsonArray || []).map(json => UnitDto.fromJson(json));
     }
 }
 

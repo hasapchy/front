@@ -3,9 +3,9 @@
 
         <!-- Услуги вынесены в отдельный компонент -->
 
-        <!-- Товары - Поиск -->
+        <!-- Товары на складе - Поиск -->
         <div class="relative">
-            <label class="block mb-1 font-medium text-gray-700">{{ $t('products') }}</label>
+            <label class="block mb-1 font-medium text-gray-700">Товары на складе</label>
             <input type="text" ref="productInput" v-model="productSearch" :placeholder="$t('enterProductNameOrCode')"
                 class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" @focus="onFocus" @blur="handleProductBlur" :disabled="disabled" />
 
@@ -61,12 +61,35 @@
         </div>
 
         <label class="block mt-4 mb-1">{{ $t('specifiedProductsAndServices') }}</label>
+        
+        <!-- Предупреждения -->
+        <div v-if="hasZeroQuantityProducts || hasExceededStock" class="mb-2 space-y-2">
+            <!-- Предупреждение о товарах с нулевым количеством -->
+            <div v-if="hasZeroQuantityProducts" class="p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 mr-2"></i>
+                    <span class="text-sm text-yellow-800">
+                        Товары с количеством 0 будут исключены из заказа
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Предупреждение о превышении остатков (только для товаров, не для услуг) -->
+            <div v-if="hasExceededStock" class="p-2 bg-orange-50 border border-orange-200 rounded-md">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle text-orange-600 mr-2"></i>
+                    <span class="text-sm text-orange-800">
+                        Количество некоторых товаров превышает доступный остаток
+                    </span>
+                </div>
+            </div>
+        </div>
         <table class="min-w-full bg-white shadow-md rounded mb-6 w-full">
             <thead class="bg-gray-100 rounded-t-sm">
                 <tr>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">{{ $t('name') }}</th>
+                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">Название</th>
                     <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-20">
-                        {{ $t('quantity') }}</th>
+                        Количество</th>
                     <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
                         Ширина (м)</th>
                     <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
@@ -75,7 +98,11 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="(product, index) in products" :key="index" class="border-b border-gray-300">
+                <tr v-for="(product, index) in products" :key="index" 
+                    :class="[
+                        'border-b border-gray-300',
+                        (!product.quantity || product.quantity <= 0) ? 'bg-red-50' : ''
+                    ]">
                     <td class="py-2 px-4 border-x border-gray-300">
                         <div class="flex items-center">
                             <div class="w-7 h-7 flex items-center justify-center mr-2">
@@ -89,6 +116,10 @@
                     <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
                         <div class="w-full p-1 text-right bg-gray-100 border border-gray-300 rounded text-sm">
                             {{ product.quantity || 0 }} {{ product.unitShortName || product.unit_short_name || '' }}
+                            <!-- Показываем остаток только для товаров, не для услуг -->
+                            <div v-if="!isService(product)" class="text-xs mt-1" :class="getStockQuantityClass(product)">
+                                Остаток: {{ product.stock_quantity || 0 }}
+                            </div>
                         </div>
                     </td>
                     <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
@@ -104,7 +135,7 @@
                             placeholder="0" />
                     </td>
                     <td class="px-4 border-x border-gray-300">
-                        <button @click="removeSelectedProduct(product.productId)"
+                        <button @click="removeSelectedProduct(index)"
                             class="text-red-500 text-2xl cursor-pointer z-99" :disabled="disabled">
                             ×
                         </button>
@@ -183,6 +214,23 @@ export default {
         
         filteredServices() {
             return this.services;
+        },
+        
+        hasZeroQuantityProducts() {
+            return this.products.some(product => !product.quantity || product.quantity <= 0);
+        },
+        
+        hasExceededStock() {
+            return this.products.some(product => {
+                // Для услуг не проверяем превышение остатка
+                if (this.isService(product)) {
+                    return false;
+                }
+                
+                const stockQuantity = product.stock_quantity || 0;
+                const orderQuantity = product.quantity || 0;
+                return orderQuantity > stockQuantity && stockQuantity > 0;
+            });
         }
     },
     async created() {
@@ -289,10 +337,20 @@ export default {
                 console.error('Error selecting service:', error);
             }
         },
-        removeSelectedProduct(id) {
-            this.products = this.products.filter(p => p.productId !== id);
-            // Удаляем размеры для товара
-            delete this.productDimensions[id];
+        removeSelectedProduct(index) {
+            const productToRemove = this.products[index];
+            if (productToRemove) {
+                // Удаляем размеры для товара, если это была последняя запись с таким productId
+                const remainingProductsWithSameId = this.products.filter((p, i) => 
+                    i !== index && p.productId === productToRemove.productId
+                );
+                if (remainingProductsWithSameId.length === 0) {
+                    delete this.productDimensions[productToRemove.productId];
+                }
+            }
+            
+            // Удаляем товар по индексу
+            this.products = this.products.filter((_, i) => i !== index);
             this.updateTotals();
         },
         handleProductBlur() {
@@ -434,6 +492,49 @@ export default {
                 this.productDimensions[product.productId][field] = 0;
             }
             this.calculateQuantity(product);
+        },
+        
+        isService(product) {
+            // Проверяем, является ли продукт услугой
+            // Услуги имеют type = 0, товары имеют type = 1
+            const isServiceType = product.type === 0 || product.type === '0' || product.type === false;
+            
+            // Дополнительная проверка: если у товара нет информации о stock_quantity
+            // (undefined, null или пустая строка), то это услуга
+            const hasNoStockInfo = product.stock_quantity === undefined || 
+                                  product.stock_quantity === null || 
+                                  product.stock_quantity === '';
+            
+            // Если явно указан тип услуги, или если нет информации о типе и остатке
+            return isServiceType || (!product.type && hasNoStockInfo);
+        },
+        
+        getStockDisplayValue(product) {
+            // Для услуг (type = 0) показываем бесконечный остаток
+            if (this.isService(product)) {
+                return '∞';
+            }
+            return product.stock_quantity || 0;
+        },
+        
+        getStockQuantityClass(product) {
+            // Для услуг не показываем остаток
+            if (this.isService(product)) {
+                return 'text-gray-400'; // Серый цвет для услуг
+            }
+            
+            const stockQuantity = product.stock_quantity || 0;
+            const orderQuantity = product.quantity || 0;
+            
+            if (stockQuantity === 0) {
+                return 'text-red-600 font-medium'; // Нет в наличии
+            } else if (orderQuantity > stockQuantity) {
+                return 'text-orange-600 font-medium'; // Превышение остатка
+            } else if (stockQuantity <= 5) {
+                return 'text-yellow-600 font-medium'; // Мало остатка
+            } else {
+                return 'text-gray-600'; // Нормальный остаток
+            }
         },
         
     },

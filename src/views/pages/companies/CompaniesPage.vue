@@ -6,7 +6,9 @@
             :disabled="!$store.getters.hasPermission('companies_create')">
         </PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            @changePage="fetchItems" />
+            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+            storage-key="companiesPerPage"
+            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading" :key="`table-${$i18n.locale}`">
@@ -66,6 +68,8 @@ export default {
                 { name: 'logo', label: 'logo', html: true },
                 { name: 'createdAt', label: 'created' },
             ],
+            perPage: 10,
+            perPageOptions: [10, 25, 50, 100]
         };
     },
     created() {
@@ -80,11 +84,15 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                this.data = await CompaniesController.getItems(page);
+                this.data = await CompaniesController.getItems(page, this.perPage);
             } catch (error) {
                 this.showNotification(this.$t('errorLoadingCompanies'), error.message, true);
             }
             if (!silent) this.loading = false;
+        },
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
         },
         handleModalClose() {
             const formRef = this.$refs.companiescreatepageForm;

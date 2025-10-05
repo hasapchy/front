@@ -2,7 +2,9 @@
     <div class="flex justify-between items-center mb-4">
         <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"></PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            @changePage="fetchItems" />
+            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+            storage-key="projectStatusesPerPage"
+            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
@@ -63,6 +65,8 @@ export default {
                 { name: 'color', label: 'color' },
                 { name: 'createdAt', label: 'creationDate' }
             ],
+            perPage: 10,
+            perPageOptions: [10, 25, 50, 100]
         }
     },
     created() {
@@ -87,15 +91,20 @@ export default {
                 this.closeModal();
             }
         },
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                this.data = await ProjectStatusController.getItems(page);
+                this.data = await ProjectStatusController.getItems(page, this.perPage);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingStatuses'), error.message, true);
             }
             if (!silent) this.loading = false;
         },
+        // Переопределяем метод из batchActionsMixin для добавления специфичной логики
         async confirmDeleteItems() {
             this.deleteDialog = false;
             if (this.selectedIds.length === 0) return;

@@ -3,11 +3,12 @@ import PaginatedResponse from '@/dto/app/PaginatedResponseDto';
 import WarehouseStockDto from '@/dto/warehouse/WarehouseStockDto';
 
 export default class WarehouseStockController {
-    static async getStocks(page = 1, warehouse_id = null, category_id = null) {
+    static async getStocks(page = 1, warehouse_id = null, category_id = null, per_page = 10) {
         try {
             const response = await api.get(`/warehouse_stocks?page=${page}`, {
                 params: {
-                    warehouse_id: warehouse_id
+                    warehouse_id: warehouse_id,
+                    per_page: per_page
                     // category_id больше не поддерживается
                 }
             });

@@ -4,9 +4,9 @@ import WarehouseWriteoffProductDto from "@/dto/warehouse/WarehouseWriteoffProduc
 import WarehouseWriteoffDto from "@/dto/warehouse/WarehouseWriteoffDto";
 
 export default class WarehouseWriteoffController {
-  static async getItems(page = 1) {
+  static async getItems(page = 1, per_page = 10) {
     try {
-      const response = await api.get(`/warehouse_writeoffs?page=${page}`);
+      const response = await api.get(`/warehouse_writeoffs?page=${page}&per_page=${per_page}`);
       const data = response.data;
       // Преобразуем полученные данные в DTO
       const items = data.items.map((item) => {

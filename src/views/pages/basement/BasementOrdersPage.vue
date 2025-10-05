@@ -37,7 +37,6 @@
       <div v-else class="space-y-4">
         <div v-for="order in orders" :key="order.id" 
              class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-200 overflow-hidden cursor-pointer"
-             :class="isOrderTooOld(order.created_at) ? 'opacity-75' : ''"
              @dblclick="editOrder(order)">
           <div class="px-6 py-4">
             <!-- Заголовок заказа -->
@@ -54,11 +53,6 @@
               </div>
               <div class="text-sm text-gray-500">
                 {{ formatOrderDate(order.created_at) }}
-                <span v-if="isOrderTooOld(order.created_at)" 
-                      class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                  <i class="fas fa-clock mr-1"></i>
-                  Редактирование заблокировано
-                </span>
               </div>
             </div>
 
@@ -104,14 +98,14 @@
 import { BasementAuthController } from '@/api/BasementAuthController'
 import api from '@/api/axiosInstance'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
-import timeLimitMixin from '@/mixins/timeLimitMixin'
+// import timeLimitMixin from '@/mixins/timeLimitMixin' // Удалено ограничение по времени
 
 export default {
   name: 'BasementOrdersPage',
   components: {
     PrimaryButton
   },
-  mixins: [timeLimitMixin],
+  // mixins: [timeLimitMixin], // Удалено ограничение по времени
   data() {
     return {
       orders: [],
@@ -169,19 +163,21 @@ export default {
       return order.project.name || this.$t('notSpecified')
     },
     editOrder(order) {
-      // Проверяем, можно ли редактировать заказ
-      if (this.isOrderLocked(order.created_at)) {
-        this.showOrderLockedNotification(order, 'edit')
-        return
-      }
-      
+      // Ограничение по времени удалено - можно редактировать в любое время
       // Переходим на страницу редактирования
       this.$router.push(`/basement/orders/${order.id}/edit`)
     },
-    // Метод isOrderTooOld заменен на isOrderLocked из миксина
-    // Оставляем для обратной совместимости с template
-    isOrderTooOld(createdAt) {
-      return this.isOrderLocked(createdAt)
+    // Методы проверки времени удалены - ограничения по времени отключены
+    
+    formatOrderDate(date) {
+      if (!date) return ''
+      return new Date(date).toLocaleString('ru-RU', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
     }
   }
 }

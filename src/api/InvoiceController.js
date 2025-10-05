@@ -6,9 +6,9 @@ import ClientDto from "@/dto/client/ClientDto";
 import OrderDto from "@/dto/order/OrderDto";
 
 export default class InvoiceController {
-  static async getItemsPaginated(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, typeFilter = null, statusFilter = null) {
+  static async getItemsPaginated(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, typeFilter = null, statusFilter = null, per_page = 10) {
     try {
-      const params = { page: page };
+      const params = { page: page, per_page: per_page };
       if (search) {
         params.search = search;
       }
@@ -27,7 +27,7 @@ export default class InvoiceController {
       }
       const response = await api.get("/invoices", { params });
       const data = response.data;
-      const items = data.items.map((item) => {
+      const items = (data.items || []).map((item) => {
         var client = null;
         if (item.client) {
           client = new ClientDto(

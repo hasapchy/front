@@ -4,11 +4,12 @@ import ProductSearchDto from "@/dto/product/ProductSearchDto";
 import api from "./axiosInstance";
 
 export default class ProductController {
-  static async getItems(page = 1, products = true, params = {}) {
+  static async getItems(page = 1, products = true, params = {}, per_page = 10) {
     try {
       // Строим query string из параметров
       const queryParams = new URLSearchParams();
       queryParams.append('page', page);
+      queryParams.append('per_page', per_page);
       
       // Добавляем дополнительные параметры
       Object.keys(params).forEach(key => {
@@ -21,7 +22,7 @@ export default class ProductController {
         `/${products ? "products" : "services"}?${queryParams.toString()}`
       );
       const data = response.data;
-      const items = data.items.map((item) => {
+      const items = (data.items || []).map((item) => {
         // Проверяем различные возможные поля для остатков из таблицы warehouse_stocks
         let stock_quantity = item.stock_quantity;
         if (stock_quantity === undefined || stock_quantity === null) {
@@ -92,7 +93,7 @@ export default class ProductController {
       });
       const data = response.data;
       // Преобразуем полученные данные в DTO для поиска (только необходимые поля)
-      const items = data.map((item) => {
+      const items = (data || []).map((item) => {
         // Проверяем различные возможные поля для остатков из таблицы warehouse_stocks
         let stock_quantity = item.stock_quantity;
         if (stock_quantity === undefined || stock_quantity === null) {

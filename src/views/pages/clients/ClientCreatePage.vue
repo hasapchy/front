@@ -160,7 +160,9 @@ export default {
   },
   computed: {
     translatedTabs() {
-      return this.tabs.map(tab => ({
+      // Скрываем вкладку баланса при создании нового клиента
+      const visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name !== 'balance');
+      return visibleTabs.map(tab => ({
         ...tab,
         label: this.$t(tab.label)
       }));
@@ -180,7 +182,9 @@ export default {
   },
   methods: {
     changeTab(tabName) {
+      // Предотвращаем переход на вкладку баланса при создании нового клиента
       if (tabName === 'balance' && !this.editingItem) {
+        this.currentTab = 'info';
         return;
       }
       this.currentTab = tabName;
@@ -298,6 +302,7 @@ export default {
       this.emails = [];
       this.discountType = "fixed";
       this.discount = 0;
+      // Всегда возвращаемся на вкладку "info" при создании нового клиента
       this.currentTab = "info";
       this.resetFormChanges();
     },
@@ -306,9 +311,6 @@ export default {
     },
     closeDeleteDialog() {
       this.deleteDialog = false;
-    },
-    changeTab(tab) {
-      this.currentTab = tab;
     },
   },
   watch: {

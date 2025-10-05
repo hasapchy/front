@@ -5,7 +5,7 @@
                 :disabled="!$store.getters.hasPermission('sales_create')"></PrimaryButton>
             
             <!-- Фильтр по дате -->
-            <div class="ml-4">
+            <div class="ml-2">
                 <select v-model="dateFilter" @change="fetchItems" class="pl-10">
                     <option value="all_time">{{ $t('allTime') }}</option>
                     <option value="today">{{ $t('today') }}</option>
@@ -17,7 +17,7 @@
                     <option value="custom">{{ $t('selectDates') }}</option>
                 </select>
             </div>
-            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-4">
+            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-2">
                 <input type="date" v-model="startDate" @change="fetchItems" />
                 <input type="date" v-model="endDate" @change="fetchItems" />
             </div>
@@ -25,7 +25,9 @@
 
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            @changePage="fetchItems" />
+            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+            storage-key="salesPerPage"
+            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
@@ -78,6 +80,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: SaleController,
+            showStatusSelect: false, // продажи не имеют статусов
             savedSuccessText: this.$t('saleRecordAdded'),
             savedErrorText: this.$t('errorSavingRecord'),
             deletedSuccessText: this.$t('recordSuccessfullyDeleted'),
@@ -96,6 +99,8 @@ export default {
             dateFilter: 'all_time',
             startDate: null,
             endDate: null,
+            perPage: 10,
+            perPageOptions: [10, 25, 50, 100]
         }
     },
     created() {
@@ -148,12 +153,16 @@ export default {
             this.$store.dispatch('setSearchQuery', query);
             this.fetchItems(1, false);
         },
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
             }
             try {
-                const new_data = await SaleController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate);
+                const new_data = await SaleController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, this.perPage);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingSaleList'), error.message, true);

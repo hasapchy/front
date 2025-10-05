@@ -2,8 +2,6 @@
     <div id="settings-sidebar" :key="$store.getters.permissions.join(',')"
         class="w-50 bg-[#53585C] text-white flex-shrink-0 transform transition-transform duration-300">
         <div>
-            <div class="mb-5"></div>
-
             <ul v-if="hasPermission('users_view')">
                 <SidebarLink to="/users" icon="fa-solid fa-user mr-2" :settings="true">
                     {{ $t('users') }}
@@ -30,37 +28,7 @@
 
             <ul v-if="hasPermission('categories_view')">
                 <SidebarLink to="/categories" icon="fa-solid fa-list-alt mr-2" :settings="true">
-                    {{ $t('productCategories') }}
-                </SidebarLink>
-            </ul>
-
-            <ul v-if="hasPermission('order_statuses_view')">
-                <SidebarLink to="/order_statuses" icon="fa-solid fa-list-alt mr-2" :settings="true">
-                    {{ $t('orderStatuses') }}
-                </SidebarLink>
-            </ul>
-
-            <ul v-if="hasPermission('projects_view')">
-                <SidebarLink to="/project_statuses" icon="fa-solid fa-list-alt mr-2" :settings="true">
-                    {{ $t('projectStatuses') }}
-                </SidebarLink>
-            </ul>
-
-            <ul v-if="hasPermission('order_categories_view')">
-                <SidebarLink to="/order_categories" icon="fa-solid fa-list-alt mr-2" :settings="true">
-                    {{ $t('orderTypes') }}
-                </SidebarLink>
-            </ul>
-
-            <ul v-if="hasPermission('transaction_categories_view')">
-                <SidebarLink to="/transaction_categories" icon="fa-solid fa-list-alt mr-2" :settings="true">
-                    {{ $t('transactionCategories') }}
-                </SidebarLink>
-            </ul>
-
-            <ul v-if="hasPermission('orders_view')">
-                <SidebarLink to="/order_additional_fields" icon="fa-solid fa-list-alt mr-2" :settings="true">
-                    {{ $t('orderAdditionalFields') }}
+                    {{ $t('categories') }}
                 </SidebarLink>
             </ul>
 

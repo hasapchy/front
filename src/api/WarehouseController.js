@@ -3,12 +3,12 @@ import WarehouseDto from '@/dto/warehouse/WarehouseDto';
 import api from './axiosInstance';
 
 export default class WarehouseController {
-    static async getWarehouses(page = 1) {
+    static async getWarehouses(page = 1, per_page = 10) {
         try {
-            const response = await api.get(`/warehouses?page=${page}`);
+            const response = await api.get(`/warehouses?page=${page}&per_page=${per_page}`);
             const data = response.data;
             // Преобразуем полученные данные в DTO
-            const items = data.items.map(item => {
+            const items = (data.items || []).map(item => {
                 return new WarehouseDto(
                     item.id,
                     item.name,
@@ -32,7 +32,7 @@ export default class WarehouseController {
             const response = await api.get(`/warehouses/all`);
             const data = response.data;
             // Преобразуем полученные данные в DTO
-            const items = data.map(item => {
+            const items = (data || []).map(item => {
                 return new WarehouseDto(
                     item.id,
                     item.name,

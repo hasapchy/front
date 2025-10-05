@@ -43,8 +43,10 @@ import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import ProjectContractCreatePage from "./ProjectContractCreatePage.vue";
 import ProjectContractController from "@/api/ProjectContractController";
+import notificationMixin from "@/mixins/notificationMixin";
 
 export default {
+    mixins: [notificationMixin],
     components: {
         DraggableTable,
         SideModalDialog,
@@ -139,11 +141,11 @@ export default {
                     this.editingContractItem = response.item;
                     this.contractModalOpen = true;
                 } else {
-                    this.$notify?.({ type: 'error', text: 'Ошибка при загрузке контракта: ' + response.error });
+                    this.showNotification('Ошибка при загрузке контракта', response.error, true);
                 }
             } catch (error) {
                 console.error('Error loading contract:', error);
-                this.$notify?.({ type: 'error', text: 'Ошибка при загрузке контракта: ' + (error.message || error) });
+                this.showNotification('Ошибка при загрузке контракта', error.message || error, true);
             } finally {
                 this.contractLoading = false;
             }

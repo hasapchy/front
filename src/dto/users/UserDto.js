@@ -26,6 +26,6 @@ export class UserDto {
   }
 
   static fromArray(users) {
-    return users.map((user) => new UserDto(user));
+    return (users || []).map((user) => new UserDto(user));
   }
 }

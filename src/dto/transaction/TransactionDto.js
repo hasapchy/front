@@ -79,17 +79,12 @@ export default class TransactionDto {
   }
 
   typeCell() {
-    let debtIcon = '';
-    if (this.isDebt === 1 || this.isDebt === true) {
-      debtIcon = ' <i class="fas fa-exclamation-triangle text-[#FFA500]" title="Долговая операция"></i>';
-    }
-    
     if (this.isTransfer === 1 || this.isTransfer === true) {
-      return '<i class="fas fa-right-left text-[#337AB7] mr-2"></i> Трансфер' + debtIcon;
+      return '<i class="fas fa-right-left text-[#337AB7] mr-2"></i> Трансфер';
     } else {
       return this.type === 1
-        ? '<i class="fas fa-circle-down text-[#5CB85C] mr-2"></i> Приход' + debtIcon
-        : '<i class="fas fa-circle-up text-[#EE4F47] mr-2"></i> Расход' + debtIcon;
+        ? '<i class="fas fa-circle-down text-[#5CB85C] mr-2"></i> Приход'
+        : '<i class="fas fa-circle-up text-[#EE4F47] mr-2"></i> Расход';
     }
   }
 
@@ -100,6 +95,14 @@ export default class TransactionDto {
       return '<i class="fas fa-box text-[#FFA500] mr-2"></i> Оприходование';
     } else {
       return '<i class="fas fa-circle text-[#6C757D] mr-2"></i> Прочее';
+    }
+  }
+
+  debtCell() {
+    if (this.isDebt === 1 || this.isDebt === true || this.isDebt === '1') {
+      return '<i class="fas fa-check text-green-500"></i>';
+    } else {
+      return '<i class="fas fa-times text-red-500"></i>';
     }
   }
 

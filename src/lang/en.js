@@ -201,6 +201,9 @@ export default {
   errorLoadingContract: 'Error loading contract',
   clickToUploadFiles: 'Click to upload files or drag files here',
   dropFilesToUpload: 'Drop files to upload',
+  clickToUploadImage: 'Click to upload file',
+  dropImageToUpload: 'Drop image to upload',
+  removeImage: 'Remove image',
   amount: 'Amount',
   enterAmount: 'Enter amount',
   selectCurrency: 'Select currency',
@@ -274,4 +277,8 @@ export default {
     settings_edit_any_date: 'Edit Any Date',
     settings_project_budget_view: 'View Project Budget',
     settings_currencies_view: 'View Other Currencies',
+    
+    // Pagination
+    show: 'Show',
+    entries: 'entries',
 }

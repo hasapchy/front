@@ -1,10 +1,9 @@
 <template>
-    <div>
-        <div v-if="selectedClient == null" class="relative">
-            <label class="block mb-1 required">{{ $t('client') }}</label>
-                         <input type="text" v-model="clientSearch" :placeholder="$t('enterClientNameOrNumber')"
-                 class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="handleBlur"
-                 :disabled="disabled" />
+    <div v-if="selectedClient == null" class="relative">
+        <label v-if="showLabel" class="block mb-1 required">{{ $t('client') }}</label>
+        <input type="text" v-model="clientSearch" :placeholder="$t('enterClientNameOrNumber')"
+             class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="handleBlur"
+             :disabled="disabled" />
             <transition name="appear">
                 <ul v-show="showDropdown"
                     class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
@@ -45,8 +44,8 @@
                      </li>
                 </ul>
             </transition>
-        </div>
-        <div v-else class="mt-2">
+    </div>
+    <div v-else class="mt-2">
             <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
                 <div class="flex justify-between items-center">
                     <div>
@@ -68,7 +67,6 @@
                 </div>
             </div>
         </div>
-    </div>
     <SideModalDialog :showForm="modalCreateClient" :onclose="() => modalCreateClient = false" :level="1">
         <ClientCreatePage :editingItem="null" :defaultFirstName="defaultClientName" @saved="onClientCreated" @saved-error="onClientCreatedError" />
     </SideModalDialog>
@@ -106,6 +104,10 @@ export default {
         required: {
             type: Boolean,
             default: false,
+        },
+        showLabel: {
+            type: Boolean,
+            default: true,
         },
     },
     data() {
@@ -265,24 +267,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.appear-enter-active,
-.appear-leave-active {
-    transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.appear-enter-from,
-.appear-leave-to {
-    transform: scaleY(0);
-    opacity: 0;
-    transform-origin: top;
-}
-
-.appear-enter-to,
-.appear-leave-from {
-    transform: scaleY(1);
-    opacity: 1;
-    transform-origin: top;
-}
-</style>

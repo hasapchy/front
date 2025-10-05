@@ -2,8 +2,8 @@
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editProduct') : $t('createProduct') }}</h2>
 
-        <div class="mt-2 flex items-center">
-            <div>
+        <div class="mt-2 flex items-start">
+            <div class="flex-1">
                 <div class="mt-2">
                     <label class="block mb-1 required">{{ $t('type') }}</label>
                     <select v-model="type">
@@ -12,81 +12,95 @@
                         <option value="service">{{ $t('service') }}</option>
                     </select>
                 </div>
-                <div>
-                    <label>{{ $t('image') }}</label>
-                    <input type="file" @change="onFileChange" ref="imageInput">
-                </div>
                 <div class="mt-2">
                     <label class="required">{{ $t('name') }}</label>
                     <input type="text" v-model="name" class="">
                 </div>
+                <div class="mt-2">
+                    <label>{{ $t('description') }}</label>
+                    <input type="text" v-model="description">
+                </div>
+            </div>
+            <div class="ml-3 w-40 flex flex-col">
+                <label class="block mb-1">{{ $t('image') }}</label>
+                <input type="file" @change="onFileChange" ref="imageInput" class="hidden" accept="image/*">
 
-            </div>
-            <div v-if="selected_image" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
-                <img :src="selected_image" alt="Selected Image" class="w-32 h-32 object-cover rounded">
-                <button @click="() => { this.selected_image = null; this.image = null }"
-                    class="mt-2 text-red-500 text-sm">{{ $t('removeImage') }}</button>
-            </div>
-            <div v-else-if="editingItem?.image" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
-                <img :src="getProductImageSrc(editingItem)" alt="Selected Image" class="w-32 h-32 object-cover rounded">
-                <button @click="() => { this.editingItem.image = '' }"
-                    class="mt-2 text-red-500 text-sm">{{ $t('removeImage') }}</button>
+                <div v-if="selected_image"
+                    class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
+                    <img :src="selected_image" alt="Selected Image"
+                        class="max-w-full max-h-full object-contain rounded">
+                    <button @click="() => { this.selected_image = null; this.image = null }"
+                        class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div v-else-if="editingItem?.image"
+                    class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
+                    <img :src="getProductImageSrc(editingItem)" alt="Selected Image"
+                        class="max-w-full max-h-full object-contain rounded">
+                    <button @click="() => { this.editingItem.image = '' }"
+                        class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div v-else @click="$refs.imageInput.click()"
+                    class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                    <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
+                        <img src="/logo.jpg" alt="Placeholder" class="w-16 h-16 object-contain opacity-50">
+                        <span class="text-xs text-gray-500 mt-2 text-center">{{ $t('clickToUploadImage') }}</span>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="mt-2">
             <label class="block mb-1 required">{{ $t('category') }}</label>
-            
+
             <!-- Каскадный селектор -->
             <div class="space-y-2">
                 <!-- Селектор для выбора основной категории -->
                 <div class="flex items-center space-x-2">
-                     <select v-model="selectedParentCategory" @change="onParentCategoryChange" class="flex-1">
-                         <option value="">{{ $t('selectMainCategory') }}</option>
-                         <option v-for="parent in parentCategories" :key="parent.id" :value="parent.id">
-                             {{ parent.name }}
-                         </option>
-                     </select>
-                    <PrimaryButton 
-                        icon="fas fa-plus" 
-                        :is-info="true" 
-                        :onclick="showModal"
+                    <select v-model="selectedParentCategory" @change="onParentCategoryChange" class="flex-1">
+                        <option value="">{{ $t('selectMainCategory') }}</option>
+                        <option v-for="parent in parentCategories" :key="parent.id" :value="parent.id">
+                            {{ parent.name }}
+                        </option>
+                    </select>
+                    <PrimaryButton icon="fas fa-plus" :is-info="true" :onclick="showModal"
                         :disabled="!$store.getters.hasPermission('categories_create')" />
                 </div>
-                
+
                 <!-- Компактное отображение подкатегорий -->
-                <div v-if="selectedParentCategory && childCategories.length > 0" 
-                     class="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div v-if="selectedParentCategory && childCategories.length > 0"
+                    class="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <div class="flex items-center justify-between mb-2">
                         <label class="text-sm font-medium text-blue-800">
                             <i class="fas fa-folder-tree mr-1"></i>
                             {{ $t('subCategories') }}: {{ getParentCategoryName(selectedParentCategory) }}
                         </label>
                         <div class="flex space-x-1">
-                            <button @click="selectAllSubCategories" 
-                                    class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors">
+                            <button @click="selectAllSubCategories"
+                                class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors">
                                 <i class="fas fa-check-double mr-1"></i>{{ $t('selectAll') }}
                             </button>
-                            <button @click="deselectAllSubCategories" 
-                                    class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors">
+                            <button @click="deselectAllSubCategories"
+                                class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors">
                                 <i class="fas fa-times mr-1"></i>{{ $t('deselectAll') }}
                             </button>
                         </div>
                     </div>
-                    
+
                     <!-- Компактная сетка подкатегорий -->
-                    <div class="grid grid-cols-3 gap-1 max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                        <label v-for="child in childCategories" :key="child.id" 
-                               class="flex items-center space-x-1 text-xs cursor-pointer hover:bg-blue-100 p-1 rounded transition-colors"
-                               :class="{ 'bg-blue-200': selectedSubCategories.includes(child.id) }">
-                            <input type="checkbox" 
-                                   :value="child.id" 
-                                   v-model="selectedSubCategories"
-                                   @change="onSubCategoryChange"
-                                   class="text-blue-600 w-3 h-3">
+                    <div
+                        class="grid grid-cols-3 gap-1 max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        <label v-for="child in childCategories" :key="child.id"
+                            class="flex items-center space-x-1 text-xs cursor-pointer hover:bg-blue-100 p-1 rounded transition-colors"
+                            :class="{ 'bg-blue-200': selectedSubCategories.includes(child.id) }">
+                            <input type="checkbox" :value="child.id" v-model="selectedSubCategories"
+                                @change="onSubCategoryChange" class="text-blue-600 w-3 h-3">
                             <span class="truncate" :title="child.name">{{ child.name }}</span>
                         </label>
                     </div>
-                    
+
                     <!-- Счетчик выбранных -->
                     <div v-if="selectedSubCategories.length > 0" class="mt-2 text-xs text-blue-600">
                         <i class="fas fa-info-circle mr-1"></i>
@@ -94,34 +108,31 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Компактное отображение выбранных категорий -->
             <div v-if="selectedCategories.length > 0" class="mt-3">
                 <div class="flex items-center justify-between mb-2">
                     <label class="text-sm font-medium text-gray-700">
                         <i class="fas fa-tags mr-1"></i>{{ $t('selectedCategories') }}
                     </label>
-                    <span class="text-xs text-gray-500">{{ selectedCategories.length }} {{ $t('categoriesCount') }}</span>
+                    <span class="text-xs text-gray-500">{{ selectedCategories.length }} {{ $t('categoriesCount')
+                        }}</span>
                 </div>
                 <div class="flex flex-wrap gap-1">
-                    <div v-for="(category, index) in selectedCategories" :key="category.id" 
-                         class="flex items-center bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 px-2 py-1 rounded-full text-xs border border-blue-200">
-                        <span v-if="category.is_primary" 
-                              class="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded-full mr-1 font-medium">
+                    <div v-for="(category, index) in selectedCategories" :key="category.id"
+                        class="flex items-center bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 px-2 py-1 rounded-full text-xs border border-blue-200">
+                        <span v-if="category.is_primary"
+                            class="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded-full mr-1 font-medium">
                             <i class="fas fa-star mr-0.5"></i>Основная
                         </span>
                         <span class="truncate max-w-32" :title="category.name">{{ category.name }}</span>
-                        <button @click="removeCategory(index)" 
-                                class="ml-1 text-red-500 hover:text-red-700 transition-colors">
+                        <button @click="removeCategory(index)"
+                            class="ml-1 text-red-500 hover:text-red-700 transition-colors">
                             <i class="fas fa-times text-xs"></i>
                         </button>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="mt-2">
-            <label>{{ $t('description') }}</label>
-            <input type="text" v-model="description">
         </div>
         <div class=" mt-2">
             <label class="block mb-1">{{ $t('unit') }}</label>
@@ -163,8 +174,8 @@
             <label>{{ $t('barcode') }}</label>
             <div class="flex items-center space-x-2">
                 <input type="text" v-model="barcode">
-                <PrimaryButton v-if="!barcode" icon="fas fa-barcode" :is-info="true"
-                    :onclick="generateBarcode" :is-full="false">
+                <PrimaryButton v-if="!barcode" icon="fas fa-barcode" :is-info="true" :onclick="generateBarcode"
+                    :is-full="false">
                 </PrimaryButton>
                 <template v-if="barcode">
                     <svg id="barcode-svg" class="w-32 h-12" />
@@ -180,14 +191,14 @@
             :is-loading="deleteLoading" icon="fas fa-trash"
             :disabled="!$store.getters.hasPermission('products_delete')">
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('products_update')) ||
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('products_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('products_create'))">
         </PrimaryButton>
     </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-                  :descr="$t('deleteCategory')" :confirm-text="$t('deleteCategory')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('deleteCategory')"
+        :confirm-text="$t('deleteCategory')" :leave-text="$t('cancel')" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
+        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal" :level="1">
         <AdminCategoryCreatePage @saved="handleSaved" @saved-error="handleSavedError" />
     </SideModalDialog>
@@ -251,7 +262,7 @@ export default {
                 this.fetchCurrencies(),
                 this.fetchAllCategories()
             ]);
-            
+
             this.saveInitialState();
         });
     },
@@ -280,6 +291,13 @@ export default {
             if (!this.selectedParentCategory) return [];
             const children = this.allCategories.filter(cat => cat.parentId == this.selectedParentCategory);
             return children;
+        },
+
+        // Валидация формы
+        isFormValid() {
+            return this.name && this.name.trim() !== '' && 
+                   this.sku && this.sku.trim() !== '' &&
+                   this.selectedCategories.length > 0;
         },
     },
     methods: {
@@ -383,9 +401,9 @@ export default {
                 const category = this.allCategories.find(c => c.id == cat.id);
                 return category && category.parentId;
             });
-            
+
             this.selectedSubCategories = subCategories.map(cat => cat.id);
-            
+
             // Обновляем selectedParentCategory если есть подкатегории
             if (subCategories.length > 0) {
                 const firstSubCategory = this.allCategories.find(cat => cat.id == subCategories[0].id);
@@ -402,31 +420,31 @@ export default {
 
         removeCategory(index) {
             const removedCategory = this.selectedCategories[index];
-            
+
             // Если удалили основную категорию (родительскую), удаляем ВСЕ её подкатегории
             if (removedCategory.is_primary) {
                 // Находим ID родительской категории
                 const parentId = removedCategory.id;
-                
+
                 // Удаляем основную категорию
                 this.selectedCategories.splice(index, 1);
-                
+
                 // Удаляем все её подкатегории
                 this.selectedCategories = this.selectedCategories.filter(cat => {
                     const category = this.allCategories.find(c => c.id == cat.id);
                     return !category || category.parentId != parentId;
                 });
-                
+
                 // Сбрасываем выбор подкатегорий в интерфейсе
                 this.selectedSubCategories = [];
                 this.selectedParentCategory = '';
-                
+
                 // Обновляем selectedSubCategories на основе оставшихся selectedCategories
                 this.updateSelectedSubCategoriesFromSelected();
             } else {
                 // Если удалили подкатегорию, просто удаляем её
                 this.selectedCategories.splice(index, 1);
-                
+
                 // Обновляем selectedSubCategories
                 this.updateSelectedSubCategoriesFromSelected();
             }
@@ -442,6 +460,13 @@ export default {
         onFileChange(event) {
             const file = event.target.files[0];
             if (file) {
+                // Проверяем, что файл является изображением
+                if (!file.type.startsWith('image/')) {
+                    alert(this.$t('onlyImagesAllowed'));
+                    // Очищаем input
+                    event.target.value = '';
+                    return;
+                }
                 this.selected_image = URL.createObjectURL(file);
             }
         },
@@ -564,6 +589,11 @@ export default {
             this.fetchAllCategories();
             this.resetFormChanges();
         },
+        // Переопределяем метод closeForm из mixin, чтобы очищать форму при закрытии
+        closeForm() {
+            this.clearForm();
+            this.$emit('close-request');
+        },
         getFormState() {
             return {
                 type: this.type,
@@ -632,13 +662,13 @@ export default {
                     this.sku = newEditingItem.sku || '';
                     this.image = newEditingItem.image || newEditingItem.productImage || '';
                     this.category_id = newEditingItem.category_id || newEditingItem.categoryId || '';
-                    
+
                     // Загружаем множественные категории
                     if (newEditingItem.categories && newEditingItem.categories.length > 0) {
                         // Определяем родительские категории и подкатегории
                         let parentCategories = [];
                         let subCategories = [];
-                        
+
                         newEditingItem.categories.forEach(cat => {
                             const category = this.allCategories.find(c => c.id == cat.id);
                             if (category) {
@@ -659,15 +689,15 @@ export default {
                                 }
                             }
                         });
-                        
+
                         // Собираем все категории: сначала родительские, потом подкатегории
                         this.selectedCategories = parentCategories.concat(subCategories);
-                        
+
                         // Устанавливаем первую родительскую категорию для селектора
                         if (parentCategories.length > 0) {
                             this.selectedParentCategory = parentCategories[0].id;
                         }
-                        
+
                         // Устанавливаем выбранные подкатегории
                         this.selectedSubCategories = subCategories.map(cat => cat.id);
                     } else {
@@ -707,7 +737,7 @@ export default {
                             }
                         }
                     }
-                    
+
                     this.unit_id = newEditingItem.unit_id || newEditingItem.unitId || '';
                     this.barcode = newEditingItem.barcode || '';
                     this.retail_price = newEditingItem.retail_price !== undefined ? newEditingItem.retail_price : 0;

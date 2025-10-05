@@ -5,19 +5,19 @@ import ProjectDto from "@/dto/project/ProjectDto";
 import CurrencyDto from "@/dto/app/CurrencyDto";
 
 export default class ProjectController {
-  static async getItems(page = 1, params = {}) {
+  static async getItems(page = 1, params = {}, per_page = 10) {
     try {
-      const queryParams = new URLSearchParams({ page: page, ...params });
+      const queryParams = new URLSearchParams({ page: page, per_page: per_page, ...params });
       const response = await api.get(`/projects?${queryParams}`);
       const data = response.data;
       // Преобразуем полученные данные в DTO
-      const items = data.items.map((item) => {
+      const items = (data.items || []).map((item) => {
         var client = null;
         if (item.client) {
           client = new ClientDto(
             item.client.id,
             item.client.client_type,
-            item.client.balance || 0,
+            item.client.balance?.balance || 0,
             item.client.is_supplier,
             item.client.is_conflict,
             item.client.first_name,
@@ -91,13 +91,13 @@ export default class ProjectController {
       const response = await api.get(`/projects/all?active_only=true`);
       const data = response.data;
       // Преобразуем полученные данные в DTO
-      const items = data.map((item) => {
+      const items = (data || []).map((item) => {
         var client = null;
         if (item.client) {
           client = new ClientDto(
             item.client.id,
             item.client.client_type,
-            item.client.balance || 0,
+            item.client.balance?.balance || 0,
             item.client.is_supplier,
             item.client.is_conflict,
             item.client.first_name,
@@ -162,13 +162,13 @@ export default class ProjectController {
       const response = await api.get(`/projects/all?active_only=true`);
       const data = response.data;
       // Преобразуем полученные данные в DTO
-      const items = data.map((item) => {
+      const items = (data || []).map((item) => {
         var client = null;
         if (item.client) {
           client = new ClientDto(
             item.client.id,
             item.client.client_type,
-            item.client.balance || 0,
+            item.client.balance?.balance || 0,
             item.client.is_supplier,
             item.client.is_conflict,
             item.client.first_name,
@@ -236,7 +236,7 @@ export default class ProjectController {
       const client = item.client ? new ClientDto(
         item.client.id,
         item.client.client_type,
-        item.client.balance || 0,
+        item.client.balance?.balance || 0,
         item.client.is_supplier,
         item.client.is_conflict,
         item.client.first_name,
@@ -343,6 +343,16 @@ export default class ProjectController {
     return response.data.files;
   }
 
+  static async getProjectFiles(projectId) {
+    try {
+      const response = await api.get(`/projects/${projectId}`);
+      return response.data.files || [];
+    } catch (error) {
+      console.error("Ошибка при получении файлов проекта:", error);
+      throw error;
+    }
+  }
+
   static async getBalanceHistory(projectId, timestamp = null) {
     try {
       const url = timestamp 
@@ -352,6 +362,16 @@ export default class ProjectController {
       return data; // { history, balance, budget }
     } catch (error) {
       console.error("Ошибка при получении истории баланса проекта:", error);
+      throw error;
+    }
+  }
+
+  static async getDetailedBalance(projectId) {
+    try {
+      const { data } = await api.get(`/projects/${projectId}/detailed-balance`);
+      return data; // { total_balance, real_balance, debt_balance }
+    } catch (error) {
+      console.error("Ошибка при получении детального баланса проекта:", error);
       throw error;
     }
   }

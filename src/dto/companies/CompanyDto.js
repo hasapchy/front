@@ -7,6 +7,9 @@ export class CompanyDto {
   }
 
   static fromArray(companies) {
+    if (!companies || !Array.isArray(companies)) {
+      return [];
+    }
     return companies.map((company) => new CompanyDto(company));
   }
 }

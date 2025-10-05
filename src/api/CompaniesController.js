@@ -2,12 +2,12 @@ import { CompanyDto } from "@/dto/companies/CompanyDto";
 import api from "./axiosInstance";
 
 const CompaniesController = {
-  async getItems() {
-    const { data } = await api.get(`/companies`);
+  async getItems(page = 1, per_page = 10) {
+    const { data } = await api.get(`/companies?page=${page}&per_page=${per_page}`);
     return {
-      items: CompanyDto.fromArray(data),
-      currentPage: 1,
-      lastPage: 1,
+      items: CompanyDto.fromArray(data.data || []),
+      currentPage: data.current_page,
+      lastPage: data.last_page,
     };
   },
 

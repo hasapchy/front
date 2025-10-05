@@ -33,10 +33,6 @@
                     {{ $t('sales') }}
                 </SidebarLink>
 
-                <SidebarLink v-if="hasPermission('invoices_view')" to="/invoices" icon="fas fa-file-invoice mr-2">
-                    {{ $t('invoices') }}
-                </SidebarLink>
-
                 <SidebarLink v-if="hasPermission('transactions_view')" to="/transactions" icon="fas fa-coins mr-2">
                     {{ $t('finance') }}
                 </SidebarLink>

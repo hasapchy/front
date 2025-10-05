@@ -10,17 +10,30 @@
                 {{ $t('addTransaction') }}
             </PrimaryButton>
         </div>
-        <div v-if="$store.getters.hasPermission('settings_project_budget_view')" class="mb-2 flex items-center gap-2">
-            <span><i class="fas fa-wallet text-blue-500"></i></span>
-            <span :class="{
-                'text-[#5CB85C] font-bold': balance >= 0,
-                'text-[#EE4F47] font-bold': balance < 0
-            }">
-                {{ balanceDisplay }}
-            </span>
-            <span class="ml-4"><i class="fas fa-arrow-up text-[#5CB85C]"></i> <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b></span>
-            <span class="ml-4"><i class="fas fa-arrow-down text-[#EE4F47]"></i> <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b></span>
-            <span class="ml-4"><i class="fas fa-chart-line text-purple-500"></i> <b>{{ budgetDisplay }}</b></span>
+        <div v-if="$store.getters.hasPermission('settings_project_budget_view')" class="mb-4">
+            <!-- Основные балансы -->
+            <div class="flex items-center gap-4 mb-2">
+                <span><i class="fas fa-wallet text-blue-500"></i></span>
+                <span :class="{
+                    'text-[#5CB85C] font-bold': detailedBalance.total_balance >= 0,
+                    'text-[#EE4F47] font-bold': detailedBalance.total_balance < 0
+                }">
+                    {{ $t('totalBalance') }}: {{ formatBalance(detailedBalance.total_balance) }}
+                </span>
+                <span class="text-green-600 font-bold">
+                    {{ $t('realBalance') }}: {{ formatBalance(detailedBalance.real_balance) }}
+                </span>
+                <span class="text-orange-600 font-bold">
+                    {{ $t('debtBalance') }}: {{ formatBalance(detailedBalance.debt_balance) }}
+                </span>
+            </div>
+            
+            <!-- Дополнительная информация -->
+            <div class="flex items-center gap-4 text-sm">
+                <span><i class="fas fa-arrow-up text-[#5CB85C]"></i> <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b></span>
+                <span><i class="fas fa-arrow-down text-[#EE4F47]"></i> <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b></span>
+                <span><i class="fas fa-chart-line text-purple-500"></i> <b>{{ budgetDisplay }}</b></span>
+            </div>
         </div>
         <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
         <div v-else-if="balanceHistory.length === 0" class="text-gray-500">
@@ -42,28 +55,12 @@
                 @saved="handleTransactionSaved"
                 @saved-error="handleTransactionSavedError"
                 @close-request="closeTransactionModal" />
+            
             <div v-else-if="transactionLoading" class="p-4 text-center">
                 {{ $t('loading') }}...
             </div>
         </SideModalDialog>
 
-        <!-- Модальное окно для других сущностей -->
-        <SideModalDialog 
-            :showForm="entityModalOpen" 
-            :onclose="closeEntityModal">
-            <component 
-                v-if="selectedEntity && !entityLoading"
-                :is="getModalComponent(selectedEntity.type)"
-                v-bind="getModalProps(selectedEntity)"
-                @saved="handleEntitySaved"
-                @saved-error="handleEntitySavedError"
-                @deleted="handleEntityDeleted"
-                @deleted-error="handleEntityDeletedError"
-                @close-request="closeEntityModal" />
-            <div v-else-if="entityLoading" class="p-4 text-center">
-                {{ $t('loading') }}...
-            </div>
-        </SideModalDialog>
     </div>
 </template>
 
@@ -76,25 +73,8 @@ import { defineAsyncComponent, markRaw } from 'vue';
 const TransactionCreatePage = defineAsyncComponent(() => 
     import("@/views/pages/transactions/TransactionCreatePage.vue")
 );
-const SaleCreatePage = defineAsyncComponent(() => 
-    import("@/views/pages/sales/SaleCreatePage.vue")
-);
-const OrderCreatePage = defineAsyncComponent(() => 
-    import("@/views/pages/orders/OrderCreatePage.vue")
-);
-const WarehousesReceiptCreatePage = defineAsyncComponent(() => 
-    import("@/views/pages/warehouses/WarehousesReceiptCreatePage.vue")
-);
-
 import TransactionController from "@/api/TransactionController";
-import SaleController from "@/api/SaleController";
-import OrderController from "@/api/OrderController";
 import ProjectController from "@/api/ProjectController";
-import AppController from "@/api/AppController";
-
-import api from "@/api/axiosInstance";
-import SaleDto from "@/dto/sale/SaleDto";
-import OrderDto from "@/dto/order/OrderDto";
 import ClientDto from "@/dto/client/ClientDto";
 import TransactionDto from "@/dto/transaction/TransactionDto";
 
@@ -104,9 +84,6 @@ export default {
         SideModalDialog,
         PrimaryButton,
         TransactionCreatePage,
-        SaleCreatePage,
-        OrderCreatePage,
-        WarehousesReceiptCreatePage,
     },
     props: {
         editingItem: { required: true },
@@ -118,17 +95,20 @@ export default {
             balanceHistory: [],
             balance: 0,
             budget: 0,
-            selectedEntity: null,
-            entityModalOpen: false,
-            entityLoading: false,
+            detailedBalance: {
+                total_balance: 0,
+                real_balance: 0,
+                debt_balance: 0
+            },
             transactionModalOpen: false,
             editingTransactionItem: null,
             transactionLoading: false,
             columnsConfig: [
-                { name: "date", label: this.$t("date"), size: 100 },
-                { name: "source", label: this.$t("type") },
-                { name: "description", label: this.$t("description"), size: 600 },
-                { name: "amount", label: this.$t("amount"), size: 120, html: true },
+                { name: "dateUser", label: this.$t("date"), size: 120 },
+                { name: "source", label: this.$t("source"), size: 150, html: true },
+                { name: "user_name", label: this.$t("user"), size: 120 },
+                { name: "amount", label: this.$t("amount"), size: 130, html: true },
+                { name: "is_debt", label: this.$t("debt"), size: 80, html: true },
             ],
             ENTITY_CONFIG: {
                 transaction: {
@@ -143,6 +123,7 @@ export default {
                             r.item.is_transfer,
                             r.item.is_sale || 0,
                             r.item.is_receipt || 0,
+                            r.item.is_debt || 0,
                             r.item.cash_id,
                             r.item.cash_name,
                             r.item.cash_amount,
@@ -157,8 +138,8 @@ export default {
                             r.item.orig_currency_symbol,
                             r.item.user_id,
                             r.item.user_name,
-                            // r.item.category_id,
-                            // r.item.category_name,
+                            r.item.category_id,
+                            r.item.category_name,
                             r.item.category_type,
                             r.item.project_id,
                             r.item.project_name,
@@ -174,95 +155,6 @@ export default {
                     component: markRaw(TransactionCreatePage),
                     prop: 'editingItem',
                 },
-                sale: {
-                    fetch: id => SaleController.getItem(id).then(r => {
-                        let client = null;
-                        if (r.item.client) {
-                            client = ClientDto.fromApi(r.item.client);
-                        }
-                        return new SaleDto(
-                            r.item.id,
-                            r.item.price,
-                            r.item.discount,
-                            r.item.total_price,
-                            r.item.currency_id,
-                            r.item.currency_name,
-                            r.item.currency_code,
-                            r.item.currency_symbol,
-                            r.item.cash_id,
-                            r.item.cash_name,
-                            r.item.warehouse_id,
-                            r.item.warehouse_name,
-                            r.item.user_id,
-                            r.item.user_name,
-                            r.item.project_id,
-                            r.item.project_name,
-                            r.item.transaction_id,
-                            client,
-                            r.item.products,
-                            r.item.note,
-                            r.item.date,
-                            r.item.created_at,
-                            r.item.updated_at
-                        );
-                    }),
-                    component: markRaw(SaleCreatePage),
-                    prop: 'editingItem',
-                },
-                order: {
-                    fetch: id => OrderController.getItem(id).then(r => {
-                        let client = null;
-                        if (r.item.client) {
-                            client = ClientDto.fromApi(r.item.client);
-                        }
-                        return new OrderDto(
-                            r.item.id,
-                            r.item.price,
-                            r.item.discount ?? 0,
-                            r.item.total_price,
-                            r.item.currency_id,
-                            r.item.currency_name,
-                            r.item.currency_code,
-                            r.item.currency_symbol,
-                            r.item.cash_id ?? null,
-                            r.item.cash_name ?? null,
-                            r.item.warehouse_id,
-                            r.item.warehouse_name,
-                            r.item.user_id,
-                            r.item.user_name,
-                            r.item.project_id,
-                            r.item.project_name,
-                            r.item.status_id,
-                            r.item.status_name,
-                            // r.item.category_id,
-                            // r.item.category_name,
-                            client,
-                            r.item.products,
-                            r.item.note ?? "",
-                            r.item.description ?? "",
-                            r.item.date,
-                            r.item.created_at,
-                            r.item.updated_at
-                        );
-                    }),
-                    component: markRaw(OrderCreatePage),
-                    prop: 'editingItem',
-                },
-                receipt: {
-                    fetch: async id => {
-                        const { data } = await api.get(`/warehouse_receipts/${id}`);
-                        return data.item ?? data;
-                    },
-                    component: markRaw(WarehousesReceiptCreatePage),
-                    prop: 'editingItem',
-                },
-                // project_income: {
-                //     fetch: id => ProjectTransactionController.getItem(id).then(r => {
-                //         return ProjectTransactionDto.fromApi(r.item);
-                //     }),
-                //     component: ProjectTransactionCreatePage,
-                //     prop: 'editingItem',
-                // },
             },
         };
     },
@@ -331,6 +223,13 @@ export default {
         this.fetchBalanceHistory();
     },
     methods: {
+        formatBalance(balance) {
+            const formattedBalance = (balance || 0).toFixed(2);
+            if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
+                return `${formattedBalance} ${this.currencyCode}`;
+            }
+            return `${formattedBalance} ${this.editingItem?.currency?.symbol}`;
+        },
         async fetchDefaultCurrency() {
             try {
                 // Используем данные из store
@@ -364,6 +263,9 @@ export default {
                     .map(
                     (item) => ({
                         ...item,
+                        get dateUser() {
+                            return item.date ? new Date(item.date).toLocaleString() : "";
+                        },
                         formatDate() {
                             return item.date ? new Date(item.date).toLocaleString() : "";
                         },
@@ -394,86 +296,86 @@ export default {
                         },
                         label() {
                             switch (item.source) {
-                                case "transaction": return self.$t('transaction');
-                                case "sale": return self.$t('sale');
-                                case "order": return self.$t('order');
-                                case "receipt": return self.$t('receipt');
-                                default: return item.source;
+                                case "transaction": 
+                                    return '<i class="fas fa-circle text-[#6C757D] mr-2"></i> Прочее';
+                                case "sale": 
+                                    return '<i class="fas fa-shopping-cart text-[#5CB85C] mr-2"></i> Продажа';
+                                case "order": 
+                                    return '<i class="fas fa-file-invoice text-[#337AB7] mr-2"></i> Заказ';
+                                case "receipt": 
+                                    return '<i class="fas fa-box text-[#FFA500] mr-2"></i> Оприходование';
+                                default: 
+                                    return item.source;
+                            }
+                        },
+                        formatIsDebt() {
+                            if (item.is_debt === 1 || item.is_debt === true || item.is_debt === '1') {
+                                return '<i class="fas fa-check text-green-500"></i>';
+                            } else {
+                                return '<i class="fas fa-times text-red-500"></i>';
                             }
                         }
                     })
                 );
                 this.balance = data.balance;
                 this.budget = data.budget;
+                
+                // Загружаем детальный баланс
+                try {
+                    const detailedData = await ProjectController.getDetailedBalance(this.editingItem.id);
+                    this.detailedBalance = detailedData;
+                } catch (error) {
+                    console.error('Ошибка при получении детального баланса:', error);
+                    this.detailedBalance = {
+                        total_balance: 0,
+                        real_balance: 0,
+                        debt_balance: 0
+                    };
+                }
             } catch (e) {
                 this.balanceHistory = [];
                 this.balance = 0;
                 this.budget = 0;
+                this.detailedBalance = {
+                    total_balance: 0,
+                    real_balance: 0,
+                    debt_balance: 0
+                };
             }
             this.balanceLoading = false;
         },
         itemMapper(i, c) {
             switch (c) {
-                case "date":
-                    return i.formatDate();
+                case "dateUser":
+                    return i.dateUser;
                 case "source":
                     return i.label?.() ?? i.source;
-                case "user":
+                case "user_name":
                     return i.user_name;
-                case "description":
-                    return i.description;
                 case "amount":
                     return i.formatAmountWithColor?.();
+                case "is_debt":
+                    return i.formatIsDebt?.();
                 default:
                     return i[c];
             }
         },
         async handleBalanceItemClick(item) {
-            // Если это транзакция, открываем модальное окно транзакции
-            if (item.source === 'transaction') {
-                try {
-                    this.transactionLoading = true;
-                    const data = await this.ENTITY_CONFIG.transaction.fetch(item.source_id);
-                    this.editingTransactionItem = data;
-                    this.transactionModalOpen = true;
-                } catch (error) {
-                    console.error('Error loading transaction:', error);
-                    this.$notify?.({ type: 'error', text: 'Ошибка при загрузке транзакции: ' + (error.message || error) });
-                } finally {
-                    this.transactionLoading = false;
-                }
-                return;
-            }
-
-            const config = this.ENTITY_CONFIG[item.source];
-            if (!config) return;
-            this.entityModalOpen = true;
-            this.entityLoading = true;
+            // Всегда открываем транзакцию, поскольку именно в ней содержится финансовая информация
             try {
-                const data = await config.fetch(item.source_id);
-                this.selectedEntity = {
-                    type: item.source,
-                    data,
-                };
-            } catch (e) {
-                this.$notify?.({ type: 'error', text: 'Ошибка при загрузке данных: ' + (e.message || e) });
-                this.entityModalOpen = false;
-                this.selectedEntity = null;
+                this.transactionLoading = true;
+                // Для всех типов источников source_id содержит ID транзакции
+                const data = await this.ENTITY_CONFIG.transaction.fetch(item.source_id);
+                this.editingTransactionItem = data;
+                
+                
+                this.transactionModalOpen = true;
+            } catch (error) {
+                console.error('Error loading transaction:', error);
+                this.$notify?.({ type: 'error', text: 'Ошибка при загрузке транзакции: ' + (error.message || error) });
             } finally {
-                this.entityLoading = false;
+                this.transactionLoading = false;
             }
-        },
-        getModalProps(entity) {
-            const config = this.ENTITY_CONFIG[entity.type];
-            return config ? { [config.prop]: entity.data } : {};
-        },
-        getModalComponent(type) {
-            const component = this.ENTITY_CONFIG[type]?.component;
-            return component || null;
-        },
-        closeEntityModal() {
-            this.entityModalOpen = false;
-            this.selectedEntity = null;
         },
         showAddTransactionModal() {
             this.editingTransactionItem = null;
@@ -492,20 +394,6 @@ export default {
         },
         handleTransactionSavedError(error) {
             console.error('Ошибка сохранения транзакции:', error);
-        },
-        handleEntitySaved() {
-            this.closeEntityModal();
-            this.fetchBalanceHistory();
-        },
-        handleEntitySavedError(error) {
-            // Ошибка сохранения сущности
-        },
-        handleEntityDeleted() {
-            this.closeEntityModal();
-            this.fetchBalanceHistory();
-        },
-        handleEntityDeletedError(error) {
-            // Ошибка удаления сущности
         },
     },
     watch: {

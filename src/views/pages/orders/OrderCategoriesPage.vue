@@ -4,7 +4,9 @@
             :disabled="!$store.getters.hasPermission('order_categories_create')" icon="fas fa-plus">{{ $t('addOrderCategory') }}
         </PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            @changePage="fetchItems" />
+            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+            storage-key="orderCategoriesPerPage"
+            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
@@ -61,6 +63,8 @@ export default {
                 { name: 'name', label: this.$t('name') },
                 { name: 'createdAt', label: this.$t('creationDate') }
             ],
+            perPage: 10,
+            perPageOptions: [10, 25, 50, 100]
         }
     },
     created() {
@@ -83,10 +87,14 @@ export default {
                 this.closeModal();
             }
         },
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                this.data = await OrderCategoryController.getItems(page);
+                this.data = await OrderCategoryController.getItems(page, this.perPage);
             } catch (error) {
                 this.showNotification('Ошибка получения списка категорий заказов', error.message, true);
             }

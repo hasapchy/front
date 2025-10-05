@@ -4,7 +4,7 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 
 export default class OrderAfController {
 
-  static async getItemsPaginated(page = 1, perPage = 20) {
+  static async getItemsPaginated(page = 1, perPage = 10) {
     try {
       const params = { page: page, per_page: perPage };
       

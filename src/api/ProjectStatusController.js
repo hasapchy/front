@@ -5,7 +5,7 @@ import api from "./axiosInstance";
 export default class ProjectStatusController {
   static async getAllItems() {
     const response = await api.get(`/project-statuses/all`);
-    return response.data.map(
+    return (response.data || []).map(
       (item) =>
         new ProjectStatusDto(
           item.id,
@@ -19,10 +19,10 @@ export default class ProjectStatusController {
     );
   }
 
-  static async getItems(page = 1) {
-    const response = await api.get(`/project-statuses?page=${page}`);
+  static async getItems(page = 1, per_page = 10) {
+    const response = await api.get(`/project-statuses?page=${page}&per_page=${per_page}`);
     const data = response.data;
-    const items = data.items.map(
+    const items = (data.items || []).map(
       (item) =>
         new ProjectStatusDto(
           item.id,

@@ -29,7 +29,7 @@
                                 </div>
                             </div>
                             <div class="my-4 flex space-x-2 mx-5 justify-end">
-                                <PrimaryButton :is-danger="true" :onclick="onConfirm">{{ displayConfirmText }}
+                                <PrimaryButton :is-danger="true" :onclick="onConfirm" :is-loading="confirmLoading">{{ displayConfirmText }}
                                 </PrimaryButton>
                                 <PrimaryButton :is-light="true" :onclick="onLeave">{{ displayLeaveText }}</PrimaryButton>
                             </div>
@@ -79,6 +79,11 @@ export default {
         onConfirm: {
             type: Function,
             required: true
+        },
+        confirmLoading: {
+            type: Boolean,
+            required: false,
+            default: false
         }
     },
     computed: {

@@ -5,12 +5,12 @@ import CashRegisterBalanceItemDto from "@/dto/cash_register/CashRegisterBalanceI
 import CashRegisterDto from "@/dto/cash_register/CashRegisterDto";
 
 export default class CashRegisterController {
-  static async getItems(page = 1) {
+  static async getItems(page = 1, per_page = 10) {
     try {
-      const response = await api.get(`/cash_registers?page=${page}`);
+      const response = await api.get(`/cash_registers?page=${page}&per_page=${per_page}`);
       const data = response.data;
       // Преобразуем полученные данные в DTO
-      const items = data.items.map((item) => {
+      const items = (data.items || []).map((item) => {
         return new CashRegisterDto(
           item.id,
           item.name,
@@ -46,7 +46,7 @@ export default class CashRegisterController {
       const response = await api.get(`/cash_registers/all`);
       const data = response.data;
       // Преобразуем полученные данные в DTO
-      const items = data.map((item) => {
+      const items = (data || []).map((item) => {
         return new CashRegisterDto(
           item.id,
           item.name,

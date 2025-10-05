@@ -15,7 +15,9 @@
             </div>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            @changePage="fetchItems" />
+            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+            storage-key="servicesPerPage"
+            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
@@ -84,6 +86,8 @@ export default {
                 { name: 'wholesale_price', label: 'wholesalePrice' },
                 { name: 'dateUser', label: 'dateUser' }
             ],
+            perPage: 10,
+            perPageOptions: [10, 25, 50, 100]
         }
     },
     created() {
@@ -117,6 +121,10 @@ export default {
             this.$store.dispatch('setSearchQuery', query);
             this.fetchItems(1, false);
         },
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
+        },
         itemMapper(i, c) {
             switch (c) {
                 case 'retail_price':
@@ -146,7 +154,7 @@ export default {
                     params.search = this.searchQuery;
                 }
                 
-                const new_data = await ProductController.getItems(page, false, params);
+                const new_data = await ProductController.getItems(page, false, params, this.perPage);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProductList'), error.message, true);

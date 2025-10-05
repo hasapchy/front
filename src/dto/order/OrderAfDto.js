@@ -131,7 +131,7 @@ export default class OrderAfDto {
   }
 
   static fromApiArray(dataArray) {
-    return dataArray.map(item => OrderAfDto.fromApi(item));
+    return (dataArray || []).map(item => OrderAfDto.fromApi(item));
   }
 }
 
