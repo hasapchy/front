@@ -75,7 +75,7 @@ export function permissionGroupLabel(name) {
 }
 
 export function permissionLabel(name) {
-  console.log(`permissionLabel called with: ${name}`);
+
   
   // Специальные названия для settings permissions
   if (name.startsWith('settings_')) {
@@ -86,7 +86,7 @@ export function permissionLabel(name) {
       'settings_currencies_view': 'Просмотр других валют'
     };
     
-    console.log(`Using fallback for ${name}: ${settingsMap[name]}`);
+  
     return settingsMap[name] || name;
   }
 

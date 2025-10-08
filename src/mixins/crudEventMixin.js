@@ -6,7 +6,7 @@ export default {
         "",
         false
       );
-      this.fetchItems(this.data?.currentPage || 1, true);
+      this.fetchItems(this.data?.currentPage || 1, false); // false = не silent, загружаем с сервера
       this.closeModal();
     },
     handleSavedError(m) {

@@ -153,7 +153,7 @@
                     </td>
                     <td class="py-2 px-4 border-x border-gray-300">
                         <div class="w-full p-1 text-right bg-gray-50 border border-gray-300 rounded text-sm">
-                            {{ (product.price || 0).toFixed(2) }} m
+                            {{ (Number(product.price) || 0).toFixed(2) }} m
                         </div>
                     </td>
                     <td class="px-4 border-x border-gray-300">
@@ -318,8 +318,8 @@ export default {
                 const productDto = WarehouseWriteoffProductDto.fromProductDto(product, true);
                 if (productDto && product.id) {
                     productDto.productId = product.id;
-                    // Автоматически устанавливаем цену товара
-                    productDto.price = product.retail_price || product.wholesale_price || product.purchase_price || 0;
+                    // Автоматически устанавливаем цену товара (только розничная цена)
+                    productDto.price = product.retail_price || 0;
                     // Сохраняем тип товара
                     productDto.type = product.type || 1;
                     
@@ -354,8 +354,8 @@ export default {
                 const productDto = WarehouseWriteoffProductDto.fromProductDto(service, false);
                 if (productDto && service.id) {
                     productDto.productId = service.id; // Услуги тоже имеют productId
-                    // Автоматически устанавливаем цену услуги
-                    productDto.price = service.retail_price || service.wholesale_price || service.purchase_price || 0;
+                    // Автоматически устанавливаем цену услуги (только розничная цена)
+                    productDto.price = service.retail_price || 0;
                     // Сохраняем тип (услуги имеют type = 0)
                     productDto.type = service.type || 0;
                     

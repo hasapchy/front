@@ -483,6 +483,9 @@ export default {
                     
                     const fileToUpload = this.hasNewFile ? this.$refs.imageInput?.files[0] : null;
                     savedUser = await UsersController.updateItem(this.editingItemId, updateData, fileToUpload);
+                    
+                    console.log('Saved user response:', savedUser);
+                    console.log('User companies after save:', savedUser.user?.companies);
                 } else {
                     const createData = {
                         name: this.form.name,
@@ -578,6 +581,12 @@ export default {
         editingItem: {
             handler(newEditingItem, oldEditingItem) {
                 if (newEditingItem) {
+                    console.log('Loading user to edit:', {
+                        id: newEditingItem.id,
+                        companies: newEditingItem.companies,
+                        companies_mapped: newEditingItem.companies?.map(c => c.id)
+                    });
+                    
                     this.form.name = newEditingItem.name || '';
                     this.form.email = newEditingItem.email || '';
                     this.form.position = newEditingItem.position || '';
@@ -587,6 +596,8 @@ export default {
                     this.form.companies = newEditingItem.companies?.map(c => c.id) || [];
                     this.form.permissions = newEditingItem.permissions || [];
                     this.editingItemId = newEditingItem.id || null;
+                    
+                    console.log('Form companies set to:', this.form.companies);
                     this.currentTab = 'info'; // Всегда открываем первую вкладку
                     
                     if (newEditingItem.photo) {

@@ -121,7 +121,7 @@
                         </td>
                         <td class="py-2 px-4 border-x border-gray-300">
                             <div class="w-full p-1 text-right bg-gray-50 border border-gray-300 rounded text-sm">
-                                {{ (item.price || 0).toFixed(2) }} m
+                                {{ (Number(item.price) || 0).toFixed(2) }} m
                             </div>
                         </td>
                         <td class="px-4 border-x border-gray-300">
@@ -236,7 +236,7 @@ export default {
                 const tempProduct = {
                     name: product.name,
                     description: product.description || '',
-                    price: product.retail_price || product.wholesale_price || product.purchase_price || 0,
+                    price: product.retail_price || 0, // Только розничная цена
                     unit_id: product.unit_id,
                     unit_short_name: unitShortName,
                     unit_name: unitName,

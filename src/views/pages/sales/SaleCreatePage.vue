@@ -287,7 +287,6 @@ export default {
                     })),
                 };
 
-                console.log('Отправляемые данные продажи:', formData);
 
                 let resp;
                 if (this.editingItemId != null) {
