@@ -1,39 +1,21 @@
 <template>
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <div v-if="data.length === 0" class="text-center text-gray-500 py-8">
-                {{ $t('noDataFound') }}
-            </div>
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
-                <div v-for="item in data" :key="item.id" class="bg-white p-3 rounded-lg shadow-md">
-                    <div class="text-center mb-3">
-                        <span class="text-sm font-semibold">
+            <div v-if="hasDebts" class="flex flex-col gap-3 items-end">
+                <div v-for="item in dataWithDebts" :key="item.id" class="bg-white p-3 rounded-lg shadow-md border-l-4 border-orange-500 min-w-[200px]">
+                    <div class="text-center mb-2">
+                        <span class="text-xs font-semibold">
                             {{ translateCashRegisterName(item.name) }}
-                            <span class="text-sm font-bold text-black ml-1">({{ item.currency_symbol || item.currency_code || '' }})</span>
+                            <span class="text-xs font-bold text-black ml-1">({{ item.currency_symbol || item.currency_code || '' }})</span>
                         </span>
                     </div>
-                    <div :class="getGridClass(item.balance)">
-                        <div v-for="balance in getVisibleBalanceItems(item.balance)" :key="balance.title" class="text-center">
-                            <div class="mb-1 flex items-center justify-center space-x-1">
-                                <span class="text-xs font-medium text-gray-700">{{ translateBalanceTitle(balance.title) }}</span>
-                                <i :class="{
-                                    'fas fa-arrow-up text-green-500': balance.type === 'income',
-                                    'fas fa-arrow-down text-red-500': balance.type === 'outcome',
-                                    'fas fa-exclamation-triangle text-orange-500': balance.type === 'debt',
-                                    'fas fa-calculator text-blue-500': balance.type === 'default',
-                                    'fas fa-chart-line text-orange-500': balance.type === 'project_income'
-                                }" class="text-xs"></i>
-                            </div>
-                            <div :class="{
-                                'text-green-600': balance.type === 'income',
-                                'text-red-600': balance.type === 'outcome',
-                                'text-orange-600': balance.type === 'debt',
-                                'text-blue-600': balance.type === 'default',
-                                'text-orange-600': balance.type === 'project_income',
-                                'font-bold text-sm': true
-                            }" class="leading-tight">
-                                <div class="balance-amount text-base">{{ Number(balance.value).toFixed(0) }}</div>
-                            </div>
+                    <div class="text-center">
+                        <div class="mb-1 flex items-center justify-center space-x-1">
+                            <span class="text-xs font-medium text-gray-700">{{ $t('debt') }}</span>
+                            <i class="fas fa-exclamation-triangle text-orange-500 text-xs"></i>
+                        </div>
+                        <div class="text-orange-600 font-bold text-sm leading-tight">
+                            <div class="balance-amount text-base">{{ Number(item.debtValue).toFixed(0) }}</div>
                         </div>
                     </div>
                 </div>
@@ -44,6 +26,7 @@
         </div>
     </transition>
 </template>
+
 <script>
 import CashRegisterController from '@/api/CashRegisterController';
 import dayjs from 'dayjs';
@@ -63,39 +46,28 @@ export default {
             loading: false,
         };
     },
+    computed: {
+        dataWithDebts() {
+            if (!this.data) return [];
+            
+            return this.data
+                .map(item => {
+                    const debtBalance = item.balance.find(b => b.type === 'debt');
+                    return {
+                        ...item,
+                        debtValue: debtBalance ? debtBalance.value : 0
+                    };
+                })
+                .filter(item => Number(item.debtValue) !== 0);
+        },
+        hasDebts() {
+            return this.dataWithDebts.length > 0;
+        }
+    },
     mounted() {
         this.fetchItems();
     },
     methods: {
-        getVisibleBalanceItems(balanceItems) {
-            // Полностью убираем долги из основного баланса - они показываются отдельно справа
-            return balanceItems.filter(item => item.type !== 'debt');
-        },
-        getGridClass(balanceItems) {
-            const visibleItems = this.getVisibleBalanceItems(balanceItems);
-            const itemCount = visibleItems.length;
-            
-            if (itemCount === 1) return 'grid grid-cols-1 gap-2';
-            if (itemCount === 2) return 'grid grid-cols-2 gap-2';
-            if (itemCount === 3) return 'grid grid-cols-3 gap-2';
-            return 'grid grid-cols-4 gap-2';
-        },
-        translateBalanceTitle(title) {
-            const translations = {
-                'Приход': 'income',
-                'Расход': 'outcome', 
-                'Долг': 'debt',
-                'Итого': 'итого',
-                'Главная касса': 'mainCashRegister'
-            };
-            
-            const translationKey = translations[title];
-            if (translationKey) {
-                return this.$t(translationKey);
-            }
-            
-            return title;
-        },
         translateCashRegisterName(name) {
             const translations = {
                 'Главная касса': 'mainCashRegister'
@@ -114,7 +86,7 @@ export default {
                 let start = null, end = null;
                 switch (this.dateFilter) {
                     case 'today':
-                        start = end = dayjs().utc().add(5, 'hour').format('DD.MM.YYYY'); // UTC+5 для Asia/Ashgabat
+                        start = end = dayjs().utc().add(5, 'hour').format('DD.MM.YYYY');
                         break;
                     case 'yesterday':
                         start = end = dayjs().utc().add(5, 'hour').subtract(1, 'day').format('DD.MM.YYYY');
@@ -179,7 +151,8 @@ export default {
     },
 }
 </script>
-<style>
+
+<style scoped>
 .fade-enter-active,
 .fade-leave-active {
     transition: opacity 0.2s;
@@ -216,3 +189,4 @@ export default {
     }
 }
 </style>
+

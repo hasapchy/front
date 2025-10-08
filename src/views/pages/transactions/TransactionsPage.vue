@@ -80,8 +80,16 @@
             storage-key="transactionsPerPage"
             @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
-    <TransactionsBalance ref="balanceRef" :cash-register-id="cashRegisterId || null" :start-date="startDate"
-        :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter" :source-filter="sourceFilter" />
+    <div class="flex gap-4 mb-4">
+        <div class="flex-1">
+            <TransactionsBalance ref="balanceRef" :cash-register-id="cashRegisterId || null" :start-date="startDate"
+                :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter" :source-filter="sourceFilter" />
+        </div>
+        <div class="w-auto ml-auto">
+            <TransactionsDebtBalance ref="debtBalanceRef" :cash-register-id="cashRegisterId || null" :start-date="startDate"
+                :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter" :source-filter="sourceFilter" />
+        </div>
+    </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
@@ -118,6 +126,7 @@ import TransactionCreatePage from '@/views/pages/transactions/TransactionCreateP
 import CashRegisterController from '@/api/CashRegisterController';
 import ProjectController from '@/api/ProjectController';
 import TransactionsBalance from '@/views/pages/transactions/TransactionsBalance.vue';
+import TransactionsDebtBalance from '@/views/pages/transactions/TransactionsDebtBalance.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -133,7 +142,7 @@ import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin],
-    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalance, ClientButtonCell, BatchButton },
+    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalance, TransactionsDebtBalance, ClientButtonCell, BatchButton },
     data() {
         return {
             data: null,
@@ -159,7 +168,6 @@ export default {
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'type', label: 'type', html: true },
                 { name: 'source', label: 'source', html: true },
-                { name: 'debt', label: 'debt', html: true },
                 { name: 'cashName', label: 'cashRegister' },
                 { name: 'cashAmount', label: 'amount', html: true },
                 { name: 'origAmount', label: 'originalAmount' },
@@ -203,7 +211,12 @@ export default {
     },
     methods: {
         updateBalace() {
-            this.$refs.balanceRef.fetchItems();
+            if (this.$refs.balanceRef) {
+                this.$refs.balanceRef.fetchItems();
+            }
+            if (this.$refs.debtBalanceRef) {
+                this.$refs.debtBalanceRef.fetchItems();
+            }
         },
         handleModalClose() {
             const formRef = this.$refs.transactioncreatepageForm;

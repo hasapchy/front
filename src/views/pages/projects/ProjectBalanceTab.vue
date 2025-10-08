@@ -11,28 +11,34 @@
             </PrimaryButton>
         </div>
         <div v-if="$store.getters.hasPermission('settings_project_budget_view')" class="mb-4">
-            <!-- Основные балансы -->
-            <div class="flex items-center gap-4 mb-2">
-                <span><i class="fas fa-wallet text-blue-500"></i></span>
-                <span :class="{
-                    'text-[#5CB85C] font-bold': detailedBalance.total_balance >= 0,
-                    'text-[#EE4F47] font-bold': detailedBalance.total_balance < 0
-                }">
-                    {{ $t('totalBalance') }}: {{ formatBalance(detailedBalance.total_balance) }}
+            <!-- Все показатели в один ряд -->
+            <div class="flex items-center gap-6">
+                <!-- Приход -->
+                <span class="flex items-center gap-2">
+                    <i class="fas fa-arrow-up text-[#5CB85C]"></i>
+                    <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b>
                 </span>
-                <span class="text-green-600 font-bold">
-                    {{ $t('realBalance') }}: {{ formatBalance(detailedBalance.real_balance) }}
+                
+                <!-- Расход -->
+                <span class="flex items-center gap-2">
+                    <i class="fas fa-arrow-down text-[#EE4F47]"></i>
+                    <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b>
                 </span>
-                <span class="text-orange-600 font-bold">
-                    {{ $t('debtBalance') }}: {{ formatBalance(detailedBalance.debt_balance) }}
+                
+                <!-- Итого -->
+                <span class="flex items-center gap-2">
+                    <i class="fas fa-wallet text-blue-500"></i>
+                    <b :class="{
+                        'text-[#5CB85C]': detailedBalance.total_balance >= 0,
+                        'text-[#EE4F47]': detailedBalance.total_balance < 0
+                    }">{{ formatBalance(detailedBalance.total_balance) }}</b>
                 </span>
-            </div>
-            
-            <!-- Дополнительная информация -->
-            <div class="flex items-center gap-4 text-sm">
-                <span><i class="fas fa-arrow-up text-[#5CB85C]"></i> <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b></span>
-                <span><i class="fas fa-arrow-down text-[#EE4F47]"></i> <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b></span>
-                <span><i class="fas fa-chart-line text-purple-500"></i> <b>{{ budgetDisplay }}</b></span>
+                
+                <!-- Бюджет -->
+                <span class="flex items-center gap-2">
+                    <i class="fas fa-chart-line text-purple-500"></i>
+                    <b class="text-purple-600">{{ budgetDisplay }}</b>
+                </span>
             </div>
         </div>
         <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
@@ -97,8 +103,7 @@ export default {
             budget: 0,
             detailedBalance: {
                 total_balance: 0,
-                real_balance: 0,
-                debt_balance: 0
+                real_balance: 0
             },
             transactionModalOpen: false,
             editingTransactionItem: null,
@@ -108,7 +113,6 @@ export default {
                 { name: "source", label: this.$t("source"), size: 150, html: true },
                 { name: "user_name", label: this.$t("user"), size: 120 },
                 { name: "amount", label: this.$t("amount"), size: 130, html: true },
-                { name: "is_debt", label: this.$t("debt"), size: 80, html: true },
             ],
             ENTITY_CONFIG: {
                 transaction: {
@@ -307,13 +311,6 @@ export default {
                                 default: 
                                     return item.source;
                             }
-                        },
-                        formatIsDebt() {
-                            if (item.is_debt === 1 || item.is_debt === true || item.is_debt === '1') {
-                                return '<i class="fas fa-check text-green-500"></i>';
-                            } else {
-                                return '<i class="fas fa-times text-red-500"></i>';
-                            }
                         }
                     })
                 );
@@ -328,8 +325,7 @@ export default {
                     console.error('Ошибка при получении детального баланса:', error);
                     this.detailedBalance = {
                         total_balance: 0,
-                        real_balance: 0,
-                        debt_balance: 0
+                        real_balance: 0
                     };
                 }
             } catch (e) {
@@ -338,8 +334,7 @@ export default {
                 this.budget = 0;
                 this.detailedBalance = {
                     total_balance: 0,
-                    real_balance: 0,
-                    debt_balance: 0
+                    real_balance: 0
                 };
             }
             this.balanceLoading = false;
@@ -354,8 +349,6 @@ export default {
                     return i.user_name;
                 case "amount":
                     return i.formatAmountWithColor?.();
-                case "is_debt":
-                    return i.formatIsDebt?.();
                 default:
                     return i[c];
             }

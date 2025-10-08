@@ -28,28 +28,6 @@
                         :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
                 </div>
                 <div>
-                    <label>{{ $t('paymentType') }}</label>
-                    <div class="flex space-x-4 mb-2">
-                        <label class="flex items-center">
-                            <input type="radio" v-model="paymentType" value="balance" class="mr-2">
-                            {{ $t('paymentByBalance') }}
-                        </label>
-                        <label class="flex items-center">
-                            <input type="radio" v-model="paymentType" value="cash" class="mr-2">
-                            {{ $t('cashPayment') }}
-                        </label>
-                    </div>
-                </div>
-                <div v-if="paymentType === 'cash'">
-                    <label class="required">{{ $t('cashRegister') }}</label>
-                    <select v-model="cashId">
-                        <option value="">{{ $t('selectCashRegister') }}</option>
-                        <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">
-                            {{ c.name }} ({{ c.currency_symbol || c.currency_code || '' }})
-                        </option>
-                    </select>
-                </div>
-                <div>
                     <label>{{ $t('description') }}</label>
                     <textarea v-model="description"
                         class="w-full border rounded p-2"></textarea>
@@ -144,7 +122,7 @@
             </div>
             <div v-show="currentTab === 'transactions'">
                 <OrderTransactionsTab v-if="editingItemId" :order-id="editingItemId" :client="selectedClient"
-                    :project-id="projectId" :cash-id="paymentType === 'cash' ? cashId : null" :currency-symbol="currencySymbol"
+                    :project-id="projectId" :cash-id="cashId" :currency-symbol="currencySymbol"
                     @updated-paid="paidTotalAmount = $event" />
                 <div v-else class="p-4 text-gray-500">
                     {{ $t('saveOrderFirst') }}
@@ -222,7 +200,6 @@ export default {
             ],
             selectedClient: this.editingItem?.client || null,
             projectId: this.editingItem?.projectId || '',
-            paymentType: this.editingItem?.cashId ? 'cash' : 'balance',
             cashId: this.editingItem ? this.editingItem.cashId : '',
             currencyId: this.editingItem?.currency_id || null,
             warehouseId: this.editingItem?.warehouseId || '',
@@ -480,9 +457,6 @@ export default {
             if (!this.warehouseId) {
                 validationErrors.push('Поле "Склад" обязательно для заполнения');
             }
-            if (this.paymentType === 'cash' && !this.cashId) {
-                validationErrors.push('Поле "Касса" обязательно для заполнения при оплате наличными');
-            }
             if (this.discount && !this.discountType) {
                 validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
             }
@@ -498,13 +472,7 @@ export default {
                 const formData = this.getFormState();
                 // Добавляем недостающие поля
                 formData.client_id = this.selectedClient?.id;
-                
-                // Устанавливаем cashId в зависимости от типа оплаты
-                if (this.paymentType === 'balance') {
-                    formData.cash_id = null;
-                } else {
-                    formData.cash_id = this.cashId;
-                }
+                formData.cash_id = this.cashId || null;
                 formData.products = this.products
                     .filter(p => !p.isTempProduct)
                     .map(p => ({
@@ -546,9 +514,6 @@ export default {
             if (!this.warehouseId) {
                 validationErrors.push('Поле "Склад" обязательно для заполнения');
             }
-            if (this.paymentType === 'cash' && !this.cashId) {
-                validationErrors.push('Поле "Касса" обязательно для заполнения при оплате наличными');
-            }
             if (this.discount && !this.discountType) {
                 validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
             }
@@ -564,13 +529,7 @@ export default {
                 const formData = this.getFormState();
                 // Добавляем недостающие поля
                 formData.client_id = this.selectedClient?.id;
-                
-                // Устанавливаем cashId в зависимости от типа оплаты
-                if (this.paymentType === 'balance') {
-                    formData.cash_id = null;
-                } else {
-                    formData.cash_id = this.cashId;
-                }
+                formData.cash_id = this.cashId || null;
                 formData.products = this.products
                     .filter(p => !p.isTempProduct)
                     .map(p => ({
@@ -746,12 +705,6 @@ export default {
         },
     },
     watch: {
-        paymentType(newType) {
-            // Если выбран тип "баланс", сбрасываем кассу
-            if (newType === 'balance') {
-                this.cashId = '';
-            }
-        },
         cashId: {
             handler(newCashId) {
                 if (!newCashId || !this.allCashRegisters.length) return;
