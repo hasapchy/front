@@ -92,7 +92,6 @@ export default class ProjectController {
 
       // Сохраняем в кэш
       queryCache.set(cacheKey, cacheParams, paginatedResponse);
-      console.log('💾 Сохранено в кэш: projects', cacheParams);
 
       return paginatedResponse;
     } catch (error) {
