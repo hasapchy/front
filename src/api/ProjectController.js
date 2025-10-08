@@ -3,10 +3,21 @@ import api from "./axiosInstance";
 import ClientDto from "@/dto/client/ClientDto";
 import ProjectDto from "@/dto/project/ProjectDto";
 import CurrencyDto from "@/dto/app/CurrencyDto";
+import queryCache from "@/utils/queryCache";
 
 export default class ProjectController {
   static async getItems(page = 1, params = {}, per_page = 10) {
     try {
+      // Проверяем кэш
+      const cacheKey = 'projects_list';
+      const cacheParams = { page, per_page, ...params };
+      const cached = queryCache.get(cacheKey, cacheParams);
+      
+      if (cached) {
+        console.log('📦 Загружено из кэша: projects', cacheParams);
+        return cached;
+      }
+      
       const queryParams = new URLSearchParams({ page: page, per_page: per_page, ...params });
       const response = await api.get(`/projects?${queryParams}`);
       const data = response.data;
@@ -78,6 +89,10 @@ export default class ProjectController {
         data.last_page,
         data.total
       );
+
+      // Сохраняем в кэш
+      queryCache.set(cacheKey, cacheParams, paginatedResponse);
+      console.log('💾 Сохранено в кэш: projects', cacheParams);
 
       return paginatedResponse;
     } catch (error) {
@@ -293,6 +308,8 @@ export default class ProjectController {
   static async storeItem(item) {
     try {
       const { data } = await api.post("/projects", item);
+      // Инвалидируем кэш списков проектов
+      queryCache.invalidate('projects_list');
       return data;
     } catch (error) {
       console.error("Ошибка при создании проекта:", error);
@@ -303,6 +320,8 @@ export default class ProjectController {
   static async updateItem(id, item) {
     try {
       const { data } = await api.put(`/projects/${id}`, item);
+      // Инвалидируем кэш списков проектов
+      queryCache.invalidate('projects_list');
       return data;
     } catch (error) {
       console.error("Ошибка при обновлении проекта:", error);
@@ -313,6 +332,8 @@ export default class ProjectController {
   static async deleteItem(id) {
     try {
       const { data } = await api.delete(`/projects/${id}`);
+      // Инвалидируем кэш списков проектов
+      queryCache.invalidate('projects_list');
       return data;
     } catch (error) {
       console.error("Ошибка при удалении проекта:", error);
@@ -379,6 +400,8 @@ export default class ProjectController {
   static async batchUpdateStatus(data) {
     try {
       const { data: response } = await api.post("/projects/batch-status", data);
+      // Инвалидируем кэш списков проектов после массового обновления
+      queryCache.invalidate('projects_list');
       return response;
     } catch (error) {
       console.error("Ошибка при обновлении статуса проектов:", error);

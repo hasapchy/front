@@ -494,11 +494,13 @@ export default {
                     this.selectedClient = newEditingItem.client || null;
                     this.selectedUsers = newEditingItem.getUserIds() || [];
                     this.editingItemId = newEditingItem.id || null;
-
-                    // Не переключаем таб автоматически - пользователь сам выбирает нужный таб
+                    
+                    // Всегда открываем вкладку "info" при открытии проекта
+                    this.currentTab = 'info';
                 } else {
                     // Очищаем форму для создания нового проекта
                     this.clearForm();
+                    this.currentTab = 'info'; // Сбрасываем вкладку и при закрытии
                 }
                 this.$nextTick(() => {
                     this.saveInitialState();

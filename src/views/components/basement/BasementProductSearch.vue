@@ -124,13 +124,13 @@
                     </td>
                     <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
                         <input type="number" :value="getProductWidth(product)" @input="setProductWidth(product, $event.target.value); calculateQuantity(product)" class="w-full p-1 text-right border border-gray-300 rounded"
-                            :disabled="disabled" min="0" step="0" 
+                            :disabled="disabled" min="0" step="0.01" 
                             @blur="validateInput(product, 'width')"
                             placeholder="0" />
                     </td>
                     <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
                         <input type="number" :value="getProductLength(product)" @input="setProductLength(product, $event.target.value); calculateQuantity(product)" class="w-full p-1 text-right border border-gray-300 rounded"
-                            :disabled="disabled" min="0" step="0"
+                            :disabled="disabled" min="0" step="0.01"
                             @blur="validateInput(product, 'length')"
                             placeholder="0" />
                     </td>

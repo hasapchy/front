@@ -9,7 +9,7 @@
             
             <!-- Фильтр по статусу -->
             <div class="ml-2">
-                <select v-model="statusFilter" @change="() => fetchItems()" class="w-full p-2 pl-10 border rounded">
+                <select v-model="statusFilter" @change="debouncedFetchItems" class="w-full p-2 pl-10 border rounded">
                     <option value="">{{ $t('allStatuses') }}</option>
                     <option v-for="status in statuses" :key="status.id" :value="status.id">
                         {{ status.name }}
@@ -19,9 +19,12 @@
             
             <!-- Фильтр по клиенту -->
             <div class="ml-2">
-                <ClientSearch 
-                    v-model:selectedClient="selectedClient" 
-                    @update:selectedClient="handleClientChange" />
+                <select v-model="clientFilter" @change="debouncedFetchItems" class="w-full p-2 pl-10 border rounded">
+                    <option value="">{{ $t('allClients') }}</option>
+                    <option v-for="client in clients" :key="client.id" :value="client.id">
+                        {{ client.first_name }} {{ client.last_name || client.contact_person }}
+                    </option>
+                </select>
             </div>
             
         </div>
@@ -86,15 +89,14 @@ export default {
             statuses: [],
             clientFilter: '',
             clients: [],
-            clientModalOpen: false,
-            selectedClient: null,
             controller: ProjectController,
             savedSuccessText: this.$t('projectSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProject'),
             deletedSuccessText: this.$t('projectSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingProject'),
             perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            perPageOptions: [10, 25, 50, 100],
+            debounceTimer: null
         }
     },
     created() {
@@ -106,6 +108,12 @@ export default {
         await this.fetchProjectStatuses();
         await this.fetchClients();
         this.fetchItems();
+    },
+    beforeUnmount() {
+        // Очищаем таймер при уничтожении компонента
+        if (this.debounceTimer) {
+            clearTimeout(this.debounceTimer);
+        }
     },
     methods: {
         itemMapper(i, c) {
@@ -148,16 +156,19 @@ export default {
                 console.error('Error fetching clients:', error);
             }
         },
-        handleClientChange() {
-            this.fetchItems();
-        },
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
-        openClientModal(client) {
-            this.selectedClient = client;
-            this.clientModalOpen = true;
+        debouncedFetchItems() {
+            // Очищаем предыдущий таймер
+            if (this.debounceTimer) {
+                clearTimeout(this.debounceTimer);
+            }
+            // Устанавливаем новый таймер на 300ms
+            this.debounceTimer = setTimeout(() => {
+                this.fetchItems();
+            }, 300);
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
