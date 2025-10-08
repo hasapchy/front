@@ -916,6 +916,7 @@ export default {
   contracts: 'Şertnamalar',
   addContract: 'Şertnama goş',
   editContract: 'Şertnamany redaktir et',
+  deleteContract: 'Şertnamany poz',
   noContracts: 'Şertnama ýok',
   note: 'Bellik',
   enterNote: 'Bellik giriziň',

@@ -53,9 +53,14 @@
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+        <PrimaryButton v-if="editingItem != null && $store.getters.hasPermission('projects_delete')"
+            :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading" icon="fas fa-trash">
+        </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
         </PrimaryButton>
     </div>
+    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" 
+        :descr="$t('deleteContract')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
         :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
@@ -98,6 +103,8 @@ export default {
             editingItemId: this.editingItem ? this.editingItem.id : null,
             currencies: [],
             saveLoading: false,
+            deleteDialog: false,
+            deleteLoading: false,
             // uploading: false,
             // uploadProgress: 0,
             // files: []
@@ -195,6 +202,7 @@ export default {
             this.saveLoading = true;
             try {
                 const formData = {
+                    projectId: this.editingItem ? this.editingItem.projectId : this.projectId,
                     number: this.number,
                     amount: this.amount,
                     currencyId: this.currencyId,
@@ -218,11 +226,14 @@ export default {
                     response = await ProjectContractController.createItem(this.projectId, formData);
                 }
 
-                if (response.success) {
-                    this.$emit('saved', response.item);
-                    this.showNotification('Успех', response.message, false);
-                    this.resetFormChanges();
-                } else {
+        if (response.success) {
+            this.$emit('saved', response.item);
+            this.showNotification('Успех', response.message, false);
+            if (!this.editingItem) {
+                this.clearForm();
+            }
+            this.resetFormChanges();
+        } else {
                     this.$emit('saved-error', response.error);
                     this.showNotification('Ошибка', response.error, true);
                 }
@@ -291,6 +302,34 @@ export default {
         //     };
         //     return iconMap[ext] || 'fas fa-file';
         // },
+        showDeleteDialog() {
+            this.deleteDialog = true;
+        },
+        closeDeleteDialog() {
+            this.deleteDialog = false;
+        },
+        async deleteItem() {
+            if (!this.editingItemId) return;
+
+            this.deleteLoading = true;
+            try {
+                const response = await ProjectContractController.deleteItem(this.editingItemId);
+                
+                if (response.success) {
+                    this.showNotification('Успех', response.message || 'Контракт успешно удален', false);
+                    this.$emit('saved'); // Используем тот же эмит, что и при сохранении, чтобы обновить список
+                    this.closeDeleteDialog();
+                    this.clearForm();
+                } else {
+                    this.showNotification('Ошибка', response.error, true);
+                }
+            } catch (error) {
+                console.error('Error deleting contract:', error);
+                this.showNotification('Ошибка', 'Ошибка при удалении контракта', true);
+            } finally {
+                this.deleteLoading = false;
+            }
+        },
         handleCloseRequest() {
             this.$emit('close-request');
         }

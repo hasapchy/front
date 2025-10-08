@@ -191,6 +191,7 @@ export default {
   contracts: 'Contracts',
   addContract: 'Add Contract',
   editContract: 'Edit Contract',
+  deleteContract: 'Delete Contract',
   noContracts: 'No contracts',
   note: 'Note',
   enterNote: 'Enter note',

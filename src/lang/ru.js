@@ -1113,6 +1113,7 @@ export default {
   // Контракты
   addContract: 'Добавить контракт',
   editContract: 'Редактировать контракт',
+  deleteContract: 'Удалить контракт',
   contractNumber: 'Номер контракта',
   enterContractNumber: 'Введите номер контракта',
   note: 'Примечание',
