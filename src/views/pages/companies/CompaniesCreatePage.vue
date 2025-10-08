@@ -14,18 +14,32 @@
             </div>
 
             <div class="mb-4">
-                <label class="">{{ $t('companyLogo') }}</label>
-                <div class="flex items-center space-x-4">
-                    <div class="flex-1">
-                        <input 
-                            type="file" 
-                            @change="handleLogoChange"
-                            accept="image/*"
-                            ref="logoInput"
-                        />
-                        <div class="text-xs text-gray-500 mt-1">
-                            {{ $t('recommendedSize') }}. {{ $t('supportedFormats') }}
-                        </div>
+                <label class="block mb-1">{{ $t('companyLogo') }}</label>
+                <input type="file" @change="handleLogoChange" ref="logoInput" class="hidden" accept="image/*">
+
+                <div v-if="selected_logo"
+                    class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
+                    <img :src="selected_logo" alt="Selected Logo"
+                        class="max-w-full max-h-full object-contain rounded">
+                    <button @click="() => { this.selected_logo = null; this.form.logo = null }"
+                        class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div v-else-if="editingItem?.logo"
+                    class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
+                    <img :src="getCompanyLogoSrc(editingItem)" alt="Company Logo"
+                        class="max-w-full max-h-full object-contain rounded">
+                    <button @click="() => { this.editingItem.logo = '' }"
+                        class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div v-else @click="$refs.logoInput.click()"
+                    class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                    <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
+                        <img src="/logo.jpg" alt="Placeholder" class="w-16 h-16 object-contain opacity-50">
+                        <span class="text-xs text-gray-500 mt-2 text-center">{{ $t('clickToUploadImage') }}</span>
                     </div>
                 </div>
             </div>
@@ -78,6 +92,7 @@ export default {
             deleteLoading: false,
             deleteDialog: false,
             currentLogo: '',
+            selected_logo: null,
         };
     },
     mounted() {
@@ -101,6 +116,10 @@ export default {
             this.form.logo = null;
             this.editingItemId = null;
             this.currentLogo = '';
+            this.selected_logo = null;
+            if (this.$refs.logoInput) {
+                this.$refs.logoInput.value = null;
+            }
             this.resetFormChanges();
             this.$nextTick(() => {
                 this.saveInitialState();
@@ -109,16 +128,18 @@ export default {
         async save() {
             this.saveLoading = true;
             try {
-                const formData = new FormData();
-                formData.append('name', this.form.name);
-                if (this.form.logo) {
-                    formData.append('logo', this.form.logo);
-                }
+                const item = {
+                    name: this.form.name,
+                };
 
                 if (this.editingItem) {
-                    await CompaniesController.updateItem(this.editingItemId, formData);
+                    await CompaniesController.updateItem(
+                        this.editingItemId,
+                        item,
+                        this.$refs.logoInput?.files[0]
+                    );
                 } else {
-                    await CompaniesController.storeItem(formData);
+                    await CompaniesController.storeItem(item, this.$refs.logoInput?.files[0]);
                 }
 
                 this.$emit('saved');
@@ -158,13 +179,31 @@ export default {
         handleLogoChange(event) {
             const file = event.target.files[0];
             if (file) {
+                // Проверяем, что файл является изображением
+                if (!file.type.startsWith('image/')) {
+                    alert(this.$t('onlyImagesAllowed'));
+                    event.target.value = '';
+                    return;
+                }
+                this.selected_logo = URL.createObjectURL(file);
                 this.form.logo = file;
             }
+        },
+        
+        getCompanyLogoSrc(item) {
+            if (!item) return '';
+            if (item.logo)
+                return import.meta.env.VITE_APP_BASE_URL + '/storage/' + item.logo;
+            return '';
         },
         
         loadCompanyData(company) {
             this.form.name = company.name || '';
             this.currentLogo = company.logo || '';
+            this.selected_logo = null; // Сбрасываем выбранное изображение при загрузке данных
+            if (this.$refs.logoInput) {
+                this.$refs.logoInput.value = null;
+            }
         }
     },
     watch: {

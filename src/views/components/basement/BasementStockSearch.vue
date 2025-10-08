@@ -70,12 +70,9 @@
                 <thead class="bg-gray-100 rounded-t-sm">
                     <tr>
                         <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">{{ $t('name') }}</th>
-                        <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-20">
-                            {{ $t('quantity') }}</th>
-                        <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
-                            Ширина (м)</th>
-                        <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
-                            Длина (м)</th>
+                        <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-32">
+                            Количество / Размеры</th>
+                        <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">Цена</th>
                         <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
                     </tr>
                 </thead>
@@ -92,33 +89,40 @@
                             </div>
                         </td>
                         <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
-                            <div class="w-full p-1 text-right bg-gray-100 border border-gray-300 rounded text-sm">
-                                {{ item.quantity || 0 }} {{ item.unit_short_name || '' }}
+                            <!-- Если м² - показываем ширину и длину -->
+                            <div v-if="isSquareMeter(item)" class="space-y-2">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xs text-gray-600 w-16">Ширина:</span>
+                                    <input type="number" v-model.number="item.width" @input="calculateQuantity(item)" 
+                                        class="flex-1 p-1 text-right border border-gray-300 rounded text-sm"
+                                        :disabled="disabled" min="0" step="0.01"
+                                        placeholder="0" />
+                                    <span class="text-xs text-gray-600">м</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xs text-gray-600 w-16">Длина:</span>
+                                    <input type="number" v-model.number="item.height" @input="calculateQuantity(item)" 
+                                        class="flex-1 p-1 text-right border border-gray-300 rounded text-sm"
+                                        :disabled="disabled" min="0" step="0.01"
+                                        placeholder="0" />
+                                    <span class="text-xs text-gray-600">м</span>
+                                </div>
+                                <div class="text-right text-sm font-medium bg-gray-100 p-1 rounded">
+                                    = {{ item.quantity || 0 }} {{ item.unit_short_name || '' }}
+                                </div>
+                            </div>
+                            <!-- Для остальных единиц - просто количество -->
+                            <div v-else>
+                                <input type="number" v-model.number="item.quantity" 
+                                    class="w-full p-1 text-right border border-gray-300 rounded"
+                                    :disabled="disabled" min="0" step="0.01"
+                                    :placeholder="'0 ' + (item.unit_short_name || '')" />
                             </div>
                         </td>
-                        <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
-                            <input 
-                                type="number" 
-                                v-model.number="item.width" 
-                                @input="calculateQuantity(item)" 
-                                class="w-full p-1 text-right border border-gray-300 rounded"
-                                :disabled="disabled" 
-                                min="0" 
-                                step="0.01"
-                                placeholder="0" 
-                            />
-                        </td>
-                        <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
-                            <input 
-                                type="number" 
-                                v-model.number="item.height" 
-                                @input="calculateQuantity(item)" 
-                                class="w-full p-1 text-right border border-gray-300 rounded"
-                                :disabled="disabled" 
-                                min="0" 
-                                step="0.01"
-                                placeholder="0" 
-                            />
+                        <td class="py-2 px-4 border-x border-gray-300">
+                            <div class="w-full p-1 text-right bg-gray-50 border border-gray-300 rounded text-sm">
+                                {{ (item.price || 0).toFixed(2) }} m
+                            </div>
                         </td>
                         <td class="px-4 border-x border-gray-300">
                             <button 
@@ -223,22 +227,36 @@ export default {
                 this.stockSearch = '';
                 this.stockResults = [];
 
+                // Проверяем единицу измерения
+                const unitShortName = product.unit_short_name || product.unit_name || '';
+                const unitName = product.unit_name || '';
+                const isSquareMeter = unitShortName === 'м²' || unitName === 'Квадратный метр';
+
                 // Создаем временный товар с бесконечным остатком
                 const tempProduct = {
                     name: product.name,
                     description: product.description || '',
-                    quantity: 0,
                     price: product.retail_price || product.wholesale_price || product.purchase_price || 0,
                     unit_id: product.unit_id,
-                    unit_short_name: product.unit_short_name || product.unit_name || '',
-                    unit_name: product.unit_name || '',
-                    width: 0,
-                    height: 0,
+                    unit_short_name: unitShortName,
+                    unit_name: unitName,
                     isTempProduct: true, // Помечаем как временный товар
                     imgUrl: product.imgUrl ? product.imgUrl.bind(product) : null,
                     icons: product.icons ? product.icons.bind(product) : null,
                     type: product.type || 1
                 };
+                
+                if (isSquareMeter) {
+                    // Для м² инициализируем ширину и длину
+                    tempProduct.width = 0;
+                    tempProduct.height = 0;
+                    tempProduct.quantity = 0;
+                } else {
+                    // Для остальных единиц просто устанавливаем количество
+                    tempProduct.quantity = 0;
+                    tempProduct.width = 0;
+                    tempProduct.height = 0;
+                }
                 
                 this.stockItems = [...this.stockItems, tempProduct];
                 this.$refs.stockInput.blur();
@@ -260,7 +278,19 @@ export default {
                 ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
                 : '<i class="fas fa-concierge-bell text-[#3571A4]" title="Услуга"></i>';
         },
+        
+        isSquareMeter(item) {
+            // Проверяем, является ли единица измерения квадратным метром
+            const unitShortName = item.unit_short_name || '';
+            const unitName = item.unit_name || '';
+            return unitShortName === 'м²' || unitName === 'Квадратный метр';
+        },
         calculateQuantity(item) {
+            // Расчет количества только для м²
+            if (!this.isSquareMeter(item)) {
+                return; // Для не-м² единиц количество вводится напрямую
+            }
+            
             const width = Number(item.width) || 0;
             const height = Number(item.height) || 0;
             
@@ -274,39 +304,8 @@ export default {
                 return;
             }
             
-            const unitShortName = item.unit_short_name || '';
-            const unitName = item.unit_name || '';
-            
-            let calculatedQuantity = 0;
-            
-            if (unitShortName === 'м²' || unitName === 'Квадратный метр') {
-                calculatedQuantity = width * height;
-            }
-            else if (unitShortName === 'м' || unitName === 'Метр') {
-                calculatedQuantity = 2 * width + 2 * height;
-            }
-            else if (unitShortName === 'л' || unitName === 'Литр') {
-                calculatedQuantity = width * height;
-            }
-            else if (unitShortName === 'кг' || unitName === 'Килограмм' || 
-                     unitShortName === 'г' || unitName === 'Грамм') {
-                calculatedQuantity = width * height;
-            }
-            else if (unitShortName === 'шт' || unitName === 'Штука') {
-                calculatedQuantity = width * height;
-            }
-            else if (unitShortName === 'уп' || unitName === 'Упаковка' ||
-                     unitShortName === 'кор' || unitName === 'Коробка' ||
-                     unitShortName === 'пал' || unitName === 'Паллета' ||
-                     unitShortName === 'комп' || unitName === 'Комплект' ||
-                     unitShortName === 'рул' || unitName === 'Рулон') {
-                calculatedQuantity = width * height;
-            }
-            else {
-                calculatedQuantity = width * height;
-            }
-            
-            item.quantity = calculatedQuantity;
+            // Для м² - площадь (ширина × высота)
+            item.quantity = width * height;
         },
     },
     watch: {

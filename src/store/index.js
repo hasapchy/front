@@ -3,6 +3,7 @@ import api from "@/api/axiosInstance";
 import CacheUtils from "@/utils/cacheUtils";
 import CacheMonitor from "@/utils/cacheMonitor";
 import CacheInvalidator from "@/utils/cacheInvalidator";
+import { CompanyDto } from "@/dto/companies/CompanyDto";
 
 export default createStore({
   state: {
@@ -889,8 +890,9 @@ export default createStore({
     async loadUserCompanies({ commit }) {
       try {
         const response = await api.get('/user/companies');
-        commit('SET_USER_COMPANIES', response.data);
-        return response.data;
+        const companies = CompanyDto.fromArray(response.data);
+        commit('SET_USER_COMPANIES', companies);
+        return companies;
       } catch (error) {
         console.error('Ошибка загрузки компаний пользователя:', error);
         return [];
@@ -899,7 +901,7 @@ export default createStore({
     async loadCurrentCompany({ commit, dispatch }) {
       try {
         const response = await api.get('/user/current-company');
-        const company = response.data.company;
+        const company = new CompanyDto(response.data.company);
         commit('SET_CURRENT_COMPANY', company);
         
         // Если компания установлена, загружаем все данные компании
@@ -916,12 +918,13 @@ export default createStore({
     async setCurrentCompany({ commit, dispatch }, companyId) {
       try {
         const response = await api.post('/user/set-company', { company_id: companyId });
-        commit('SET_CURRENT_COMPANY', response.data.company);
+        const company = new CompanyDto(response.data.company);
+        commit('SET_CURRENT_COMPANY', company);
         
         // После смены компании загружаем все данные компании
         await dispatch('loadCompanyData');
         
-        return response.data.company;
+        return company;
       } catch (error) {
         console.error('Ошибка установки текущей компании:', error);
         throw error;

@@ -4,17 +4,10 @@
         <div class="shrink-0 flex items-center justify-center">
             <a href="/">
                 <img 
-                    v-if="currentCompany?.logo" 
-                    :src="currentCompany.logo" 
+                    :src="getCompanyLogo()" 
                     alt="Company Logo" 
                     class="mb-1 w-auto max-h-12"
                     @error="onLogoError"
-                />
-                <img 
-                    v-else
-                    src="/logo.jpg" 
-                    alt="Default Logo" 
-                    class="mb-1 w-auto max-h-12"
                 />
             </a>
         </div>
@@ -113,8 +106,27 @@ export default {
     },
     
     methods: {
+        getCompanyLogo() {
+            const company = this.currentCompany;
+            if (!company) return '/logo.jpg';
+            
+            // Если есть метод logoUrl в DTO
+            if (company.logoUrl && typeof company.logoUrl === 'function') {
+                return company.logoUrl();
+            }
+            
+            // Если есть поле logo
+            if (company.logo && company.logo.length > 0) {
+                return `${import.meta.env.VITE_APP_BASE_URL}/storage/${company.logo}`;
+            }
+            
+            return '/logo.jpg';
+        },
+        
         onLogoError(event) {
             console.error('Company logo failed to load:', event.target.src);
+            // Устанавливаем дефолтный логотип при ошибке
+            event.target.src = '/logo.jpg';
         }
     }
 }

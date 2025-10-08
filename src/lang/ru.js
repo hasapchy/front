@@ -351,7 +351,7 @@ export default {
   
   // Склад
   stock: 'Склад',
-  leftovers: 'Остатки',
+  leftovers: 'Отходы материалов',
   unlimited: 'Бесконечно',
   selectedStock: 'Выбранные остатки',
   

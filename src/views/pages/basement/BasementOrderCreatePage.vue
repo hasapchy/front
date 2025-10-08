@@ -100,6 +100,14 @@
           </div>
         </div>
 
+        <!-- Итоговая сумма -->
+        <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
+          <div class="flex justify-between items-center">
+            <span class="text-lg font-semibold text-gray-900">{{ $t('total') || 'Итого' }}:</span>
+            <span class="text-2xl font-bold text-indigo-600">{{ totalAmount.toFixed(2) }} m</span>
+          </div>
+        </div>
+
         <!-- Кнопки -->
         <div class="flex flex-col items-end space-y-2">
           <!-- Подсказка, почему кнопка неактивна -->
@@ -270,6 +278,30 @@ export default {
              this.form.warehouse_id && 
              this.hasValidProducts && 
              !this.loading
+    },
+    totalAmount() {
+      // Подсчитываем итоговую сумму по всем товарам и услугам
+      let total = 0;
+      
+      // Суммируем товары
+      if (this.form.products && this.form.products.length > 0) {
+        total += this.form.products.reduce((sum, product) => {
+          const quantity = Number(product.quantity) || 0;
+          const price = Number(product.price) || 0;
+          return sum + (quantity * price);
+        }, 0);
+      }
+      
+      // Суммируем остатки (stockItems)
+      if (this.form.stockItems && this.form.stockItems.length > 0) {
+        total += this.form.stockItems.reduce((sum, item) => {
+          const quantity = Number(item.quantity) || 0;
+          const price = Number(item.price) || 0;
+          return sum + (quantity * price);
+        }, 0);
+      }
+      
+      return total;
     }
   },
   async mounted() {

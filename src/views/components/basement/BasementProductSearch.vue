@@ -88,12 +88,9 @@
             <thead class="bg-gray-100 rounded-t-sm">
                 <tr>
                     <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">Название</th>
-                    <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-20">
-                        Количество</th>
-                    <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
-                        Ширина (м)</th>
-                    <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-24">
-                        Длина (м)</th>
+                    <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-32">
+                        Количество / Размеры</th>
+                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">Цена</th>
                     <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
                 </tr>
             </thead>
@@ -114,25 +111,50 @@
                         </div>
                     </td>
                     <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
-                        <div class="w-full p-1 text-right bg-gray-100 border border-gray-300 rounded text-sm">
-                            {{ product.quantity || 0 }} {{ product.unitShortName || product.unit_short_name || '' }}
+                        <!-- Если м² - показываем ширину и длину -->
+                        <div v-if="isSquareMeter(product)" class="space-y-2">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs text-gray-600 w-16">Ширина:</span>
+                                <input type="number" :value="getProductWidth(product)" @input="setProductWidth(product, $event.target.value); calculateQuantity(product)" 
+                                    class="flex-1 p-1 text-right border border-gray-300 rounded text-sm"
+                                    :disabled="disabled" min="0" step="0.01" 
+                                    @blur="validateInput(product, 'width')"
+                                    placeholder="0" />
+                                <span class="text-xs text-gray-600">м</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs text-gray-600 w-16">Длина:</span>
+                                <input type="number" :value="getProductLength(product)" @input="setProductLength(product, $event.target.value); calculateQuantity(product)" 
+                                    class="flex-1 p-1 text-right border border-gray-300 rounded text-sm"
+                                    :disabled="disabled" min="0" step="0.01"
+                                    @blur="validateInput(product, 'length')"
+                                    placeholder="0" />
+                                <span class="text-xs text-gray-600">м</span>
+                            </div>
+                            <div class="text-right text-sm font-medium bg-gray-100 p-1 rounded">
+                                = {{ product.quantity || 0 }} {{ product.unitShortName || product.unit_short_name || '' }}
+                            </div>
                             <!-- Показываем остаток только для товаров, не для услуг -->
-                            <div v-if="!isService(product)" class="text-xs mt-1" :class="getStockQuantityClass(product)">
+                            <div v-if="!isService(product)" class="text-xs text-right" :class="getStockQuantityClass(product)">
+                                Остаток: {{ product.stock_quantity || 0 }}
+                            </div>
+                        </div>
+                        <!-- Для остальных единиц - просто количество -->
+                        <div v-else>
+                            <input type="number" v-model.number="product.quantity" 
+                                class="w-full p-1 text-right border border-gray-300 rounded"
+                                :disabled="disabled" min="0" step="0.01"
+                                :placeholder="'0 ' + (product.unitShortName || product.unit_short_name || '')" />
+                            <!-- Показываем остаток только для товаров, не для услуг -->
+                            <div v-if="!isService(product)" class="text-xs mt-1 text-right" :class="getStockQuantityClass(product)">
                                 Остаток: {{ product.stock_quantity || 0 }}
                             </div>
                         </div>
                     </td>
-                    <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
-                        <input type="number" :value="getProductWidth(product)" @input="setProductWidth(product, $event.target.value); calculateQuantity(product)" class="w-full p-1 text-right border border-gray-300 rounded"
-                            :disabled="disabled" min="0" step="0.01" 
-                            @blur="validateInput(product, 'width')"
-                            placeholder="0" />
-                    </td>
-                    <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
-                        <input type="number" :value="getProductLength(product)" @input="setProductLength(product, $event.target.value); calculateQuantity(product)" class="w-full p-1 text-right border border-gray-300 rounded"
-                            :disabled="disabled" min="0" step="0.01"
-                            @blur="validateInput(product, 'length')"
-                            placeholder="0" />
+                    <td class="py-2 px-4 border-x border-gray-300">
+                        <div class="w-full p-1 text-right bg-gray-50 border border-gray-300 rounded text-sm">
+                            {{ (product.price || 0).toFixed(2) }} m
+                        </div>
                     </td>
                     <td class="px-4 border-x border-gray-300">
                         <button @click="removeSelectedProduct(index)"
@@ -296,17 +318,28 @@ export default {
                 const productDto = WarehouseWriteoffProductDto.fromProductDto(product, true);
                 if (productDto && product.id) {
                     productDto.productId = product.id;
-                    // Устанавливаем количество по умолчанию (минимум 0 для API)
-                    productDto.quantity = 0;
                     // Автоматически устанавливаем цену товара
                     productDto.price = product.retail_price || product.wholesale_price || product.purchase_price || 0;
-                    // Инициализируем размеры для товара
-                    this.productDimensions[product.id] = { width: 0, length: 0 };
-                    // Инициализируем поля width и height в самом продукте
-                    productDto.width = 0;
-                    productDto.height = 0;
                     // Сохраняем тип товара
                     productDto.type = product.type || 1;
+                    
+                    // Проверяем единицу измерения
+                    const unitShortName = productDto.unitShortName || productDto.unit_short_name || '';
+                    const unitName = productDto.unitName || productDto.unit_name || '';
+                    const isSquareMeter = unitShortName === 'м²' || unitName === 'Квадратный метр';
+                    
+                    if (isSquareMeter) {
+                        // Для м² инициализируем ширину и длину
+                        this.productDimensions[product.id] = { width: 0, length: 0 };
+                        productDto.width = 0;
+                        productDto.height = 0;
+                        productDto.quantity = 0;
+                    } else {
+                        // Для остальных единиц просто устанавливаем количество
+                        productDto.quantity = 0;
+                        productDto.width = 0;
+                        productDto.height = 0;
+                    }
                 }
                 this.products = [...this.products, productDto];
                 this.updateTotals();
@@ -321,15 +354,28 @@ export default {
                 const productDto = WarehouseWriteoffProductDto.fromProductDto(service, false);
                 if (productDto && service.id) {
                     productDto.productId = service.id; // Услуги тоже имеют productId
-                    // Устанавливаем количество по умолчанию (минимум 0 для API)
-                    productDto.quantity = 0;
                     // Автоматически устанавливаем цену услуги
                     productDto.price = service.retail_price || service.wholesale_price || service.purchase_price || 0;
-                    // Инициализируем размеры для услуги
-                    this.productDimensions[service.id] = { width: 0, length: 0 };
-                    // Инициализируем поля width и height в самом продукте
-                    productDto.width = 0;
-                    productDto.height = 0;
+                    // Сохраняем тип (услуги имеют type = 0)
+                    productDto.type = service.type || 0;
+                    
+                    // Проверяем единицу измерения
+                    const unitShortName = productDto.unitShortName || productDto.unit_short_name || '';
+                    const unitName = productDto.unitName || productDto.unit_name || '';
+                    const isSquareMeter = unitShortName === 'м²' || unitName === 'Квадратный метр';
+                    
+                    if (isSquareMeter) {
+                        // Для м² инициализируем ширину и длину
+                        this.productDimensions[service.id] = { width: 0, length: 0 };
+                        productDto.width = 0;
+                        productDto.height = 0;
+                        productDto.quantity = 0;
+                    } else {
+                        // Для остальных единиц просто устанавливаем количество
+                        productDto.quantity = 0;
+                        productDto.width = 0;
+                        productDto.height = 0;
+                    }
                 }
                 this.products = [...this.products, productDto];
                 this.updateTotals();
@@ -412,6 +458,11 @@ export default {
         
         
         calculateQuantity(product) {
+            // Расчет количества только для м²
+            if (!this.isSquareMeter(product)) {
+                return; // Для не-м² единиц количество вводится напрямую
+            }
+            
             // Инициализируем размеры для товара, если их нет
             if (!this.productDimensions[product.productId]) {
                 this.productDimensions[product.productId] = { width: 0, length: 0 };
@@ -433,48 +484,8 @@ export default {
                 return;
             }
             
-            // Получаем единицы измерения продукта
-            const unitShortName = product.unitShortName || product.unit_short_name || '';
-            const unitName = product.unitName || product.unit_name || '';
-            
-            let calculatedQuantity = 0;
-            
-            // Логика на основе реальных единиц из базы данных
-            if (unitShortName === 'м²' || unitName === 'Квадратный метр') {
-                // Квадратный метр: ширина × длина
-                calculatedQuantity = width * length;
-            }
-            else if (unitShortName === 'м' || unitName === 'Метр') {
-                // Метр: периметр (2 × ширина + 2 × длина)
-                calculatedQuantity = 2 * width + 2 * length;
-            }
-            else if (unitShortName === 'л' || unitName === 'Литр') {
-                // Литр: ширина × длина (площадь для расчета объема)
-                calculatedQuantity = width * length;
-            }
-            else if (unitShortName === 'кг' || unitName === 'Килограмм' || 
-                     unitShortName === 'г' || unitName === 'Грамм') {
-                // Вес: ширина × длина (площадь для расчета веса)
-                calculatedQuantity = width * length;
-            }
-            else if (unitShortName === 'шт' || unitName === 'Штука') {
-                // Штука: ширина × длина
-                calculatedQuantity = width * length;
-            }
-            else if (unitShortName === 'уп' || unitName === 'Упаковка' ||
-                     unitShortName === 'кор' || unitName === 'Коробка' ||
-                     unitShortName === 'пал' || unitName === 'Паллета' ||
-                     unitShortName === 'комп' || unitName === 'Комплект' ||
-                     unitShortName === 'рул' || unitName === 'Рулон') {
-                // Упаковочные единицы: ширина × длина
-                calculatedQuantity = width * length;
-            }
-            else {
-                // Для остальных единиц: ширина × длина
-                calculatedQuantity = width * length;
-            }
-            
-            product.quantity = calculatedQuantity; // Без округления
+            // Для м² - площадь (ширина × длина)
+            product.quantity = width * length;
             
             this.updateTotals();
         },
@@ -507,6 +518,13 @@ export default {
             
             // Если явно указан тип услуги, или если нет информации о типе и остатке
             return isServiceType || (!product.type && hasNoStockInfo);
+        },
+        
+        isSquareMeter(product) {
+            // Проверяем, является ли единица измерения квадратным метром
+            const unitShortName = product.unitShortName || product.unit_short_name || '';
+            const unitName = product.unitName || product.unit_name || '';
+            return unitShortName === 'м²' || unitName === 'Квадратный метр';
         },
         
         getStockDisplayValue(product) {

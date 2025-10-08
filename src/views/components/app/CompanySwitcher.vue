@@ -5,7 +5,7 @@
       class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border-0 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
     >
       <div class="company-logo">
-        <img :src="currentCompany?.logo || 'logo.jpg'" 
+        <img :src="getCompanyLogo(currentCompany)" 
              :alt="currentCompany?.name" 
              class="w-6 h-6 object-contain rounded">
       </div>
@@ -35,7 +35,7 @@
           :class="{ 'bg-blue-50 text-blue-700': selectedCompanyId === company.id }"
         >
           <div class="company-logo">
-            <img :src="company.logo || 'logo.jpg'" 
+            <img :src="getCompanyLogo(company)" 
                  :alt="company.name" 
                  class="w-6 h-6 object-contain rounded">
           </div>
@@ -128,6 +128,17 @@ export default {
   methods: {
     toggleDropdown() {
       this.isOpen = !this.isOpen
+    },
+    
+    getCompanyLogo(company) {
+      if (!company) return '/logo.jpg';
+      if (company.logoUrl && typeof company.logoUrl === 'function') {
+        return company.logoUrl();
+      }
+      if (company.logo && company.logo.length > 0) {
+        return `${import.meta.env.VITE_APP_BASE_URL}/storage/${company.logo}`;
+      }
+      return '/logo.jpg';
     },
     
     async selectCompany(companyId) {

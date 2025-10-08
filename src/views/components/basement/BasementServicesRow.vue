@@ -115,10 +115,25 @@ export default {
                 const productDto = WarehouseWriteoffProductDto.fromProductDto(service, false);
                 if (productDto && service.id) {
                     productDto.productId = service.id;
-                    productDto.quantity = 0;
                     productDto.price = service.retail_price || service.wholesale_price || service.purchase_price || 0;
-                    productDto.width = 0;
-                    productDto.height = 0;
+                    productDto.type = service.type || 0; // Услуги имеют type = 0
+                    
+                    // Проверяем единицу измерения
+                    const unitShortName = productDto.unitShortName || productDto.unit_short_name || '';
+                    const unitName = productDto.unitName || productDto.unit_name || '';
+                    const isSquareMeter = unitShortName === 'м²' || unitName === 'Квадратный метр';
+                    
+                    if (isSquareMeter) {
+                        // Для м² инициализируем ширину и длину
+                        productDto.width = 0;
+                        productDto.height = 0;
+                        productDto.quantity = 0;
+                    } else {
+                        // Для остальных единиц просто устанавливаем количество
+                        productDto.quantity = 0;
+                        productDto.width = 0;
+                        productDto.height = 0;
+                    }
                 }
                 this.products = [...this.products, productDto];
             } catch (error) {

@@ -11,14 +11,48 @@ const CompaniesController = {
     };
   },
 
-  async storeItem(payload) {
-    const { data } = await api.post("/companies", payload);
-    return data;
+  async storeItem(item, logoFile) {
+    try {
+      const formData = new FormData();
+      Object.keys(item).forEach((key) => {
+        formData.append(key, item[key]);
+      });
+      if (logoFile) {
+        formData.append("logo", logoFile);
+      }
+
+      const { data } = await api.post("/companies", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return data;
+    } catch (error) {
+      console.error("Ошибка при создании компании:", error);
+      throw error;
+    }
   },
 
-  async updateItem(id, payload) {
-    const { data } = await api.put(`/companies/${id}`, payload);
-    return data;
+  async updateItem(id, item, logoFile) {
+    try {
+      const formData = new FormData();
+      Object.keys(item).forEach((key) => {
+        formData.append(key, item[key]);
+      });
+      if (logoFile) {
+        formData.append("logo", logoFile);
+      }
+
+      const { data } = await api.post(`/companies/${id}`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return data;
+    } catch (error) {
+      console.error("Ошибка при обновлении компании:", error);
+      throw error;
+    }
   },
 
   async deleteItem(id) {

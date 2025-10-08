@@ -131,7 +131,7 @@ export default class CacheInvalidator {
   /**
    * Инвалидировать кэш при смене компании
    */
-  static onCompanyChange(oldCompanyId, newCompanyId) {
+  static onCompanyChange(_oldCompanyId, _newCompanyId) {
     // Очищаем данные старой компании из store
     // (это делается в store, здесь только логируем)
   }

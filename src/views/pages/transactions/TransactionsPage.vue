@@ -266,32 +266,19 @@ export default {
                 this.loading = true;
             }
             try {
-                let new_data;
-                if (this.dateFilter === 'custom') {
-                    new_data = await TransactionController.getItems(
-                        page,
-                        this.cashRegisterId,
-                        this.dateFilter,
-                        null, // order_id
-                        this.searchQuery,
-                        this.transactionTypeFilter,
-                        this.sourceFilter,
-                        this.projectId,
-                        this.perPage
-                    );
-                } else {
-                    new_data = await TransactionController.getItems(
-                        page,
-                        this.cashRegisterId,
-                        this.dateFilter,
-                        null, // order_id
-                        this.searchQuery,
-                        this.transactionTypeFilter,
-                        this.sourceFilter,
-                        this.projectId,
-                        this.perPage
-                    );
-                }
+                const new_data = await TransactionController.getItems(
+                    page,
+                    this.cashRegisterId,
+                    this.dateFilter,
+                    null, // order_id
+                    this.searchQuery,
+                    this.transactionTypeFilter,
+                    this.sourceFilter,
+                    this.projectId,
+                    this.perPage,
+                    this.startDate,
+                    this.endDate
+                );
                 
                 // Обычная пагинация
                 this.data = new_data;
