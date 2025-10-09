@@ -110,7 +110,7 @@ export default {
             transactionLoading: false,
             columnsConfig: [
                 { name: "dateUser", label: this.$t("date"), size: 120 },
-                { name: "note", label: this.$t("note"), size: 200 },
+                { name: "source", label: this.$t("note"), size: 200, html: true },
                 { name: "user_name", label: this.$t("user"), size: 120 },
                 { name: "is_debt", label: this.$t("debt"), size: 80, html: true },
                 { name: "amount", label: this.$t("amount"), size: 130, html: true },
@@ -344,8 +344,8 @@ export default {
             switch (c) {
                 case "dateUser":
                     return i.dateUser;
-                case "note":
-                    return i.note || '-';
+                case "source":
+                    return i.label?.() ?? i.source;
                 case "user_name":
                     return i.user_name;
                 case "is_debt":
