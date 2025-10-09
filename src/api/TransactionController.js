@@ -15,7 +15,8 @@ export default class TransactionController {
     project_id = null,
     per_page = 10,
     start_date = null,
-    end_date = null
+    end_date = null,
+    is_debt = null
   ) {
     try {
       const response = await api.get("/transactions", {
@@ -31,6 +32,7 @@ export default class TransactionController {
           per_page: per_page,
           start_date: start_date,
           end_date: end_date,
+          is_debt: is_debt,
         },
       });
       const data = response.data;

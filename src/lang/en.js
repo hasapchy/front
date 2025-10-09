@@ -258,6 +258,9 @@ export default {
   // Filters
   resetFilters: 'Reset Filters',
   allProjects: 'All Projects',
+  allTransactions: 'All Transactions',
+  debt: 'Debt',
+  notDebt: 'Not Debt',
   
   // Product Categories
   productCategory: 'Product Category',

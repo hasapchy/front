@@ -866,8 +866,11 @@ export default {
   
   // Новые переводы для фильтров транзакций
   allTransactionTypes: 'Ähli tranzaksiya görnüşleri',
+  allTransactions: 'Ähli tranzaksiyalar',
   allSources: 'Ähli çeşmeler',
   allStatuses: 'Ähli ýagdaýlar',
+  debt: 'Karz',
+  notDebt: 'Karz däl',
   completed: 'Tamamlandy',
   cancelled: 'Ýatyryldy',
   pending: 'Garaşylýar',

@@ -953,8 +953,10 @@ export default {
   
   // Новые переводы для фильтров транзакций
   allTransactionTypes: 'Все типы транзакций',
+  allTransactions: 'Все транзакции',
   allSources: 'Все источники',
   allStatuses: 'Все статусы',
+  notDebt: 'Не долг',
   completed: 'Завершено',
   cancelled: 'Отменено',
   pending: 'В ожидании',

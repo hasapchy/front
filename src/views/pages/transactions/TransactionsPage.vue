@@ -49,6 +49,15 @@
                 </select>
             </div>
 
+            <!-- Фильтр по долгу -->
+            <div class="ml-2">
+                <select v-model="isDebtFilter" @change="() => fetchItems(1)">
+                    <option value="">{{ $t('allTransactions') }}</option>
+                    <option value="true">{{ $t('debt') }}</option>
+                    <option value="false">{{ $t('notDebt') }}</option>
+                </select>
+            </div>
+
             <div class="ml-2">
                 <select v-model="dateFilter" @change="() => fetchItems(1)">
                     <option value="all_time">{{ $t('allTime') }}</option>
@@ -158,6 +167,7 @@ export default {
             transactionTypeFilter: '',
             sourceFilter: '',
             projectId: '',
+            isDebtFilter: '',
             allProjects: [],
             savedSuccessText: this.$t('transactionSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingTransaction'),
@@ -277,7 +287,8 @@ export default {
                     this.projectId,
                     this.perPage,
                     this.startDate,
-                    this.endDate
+                    this.endDate,
+                    this.isDebtFilter
                 );
                 
                 // Обычная пагинация
@@ -303,6 +314,7 @@ export default {
             this.transactionTypeFilter = '';
             this.sourceFilter = '';
             this.projectId = '';
+            this.isDebtFilter = '';
             this.dateFilter = 'all_time';
             this.startDate = null;
             this.endDate = null;
@@ -412,6 +424,7 @@ export default {
                    this.transactionTypeFilter !== '' ||
                    this.sourceFilter !== '' ||
                    this.projectId !== '' ||
+                   this.isDebtFilter !== '' ||
                    this.dateFilter !== 'all_time' ||
                    this.startDate !== null ||
                    this.endDate !== null;

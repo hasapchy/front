@@ -110,8 +110,9 @@ export default {
             transactionLoading: false,
             columnsConfig: [
                 { name: "dateUser", label: this.$t("date"), size: 120 },
-                { name: "source", label: this.$t("source"), size: 150, html: true },
+                { name: "note", label: this.$t("note"), size: 200 },
                 { name: "user_name", label: this.$t("user"), size: 120 },
+                { name: "is_debt", label: this.$t("debt"), size: 80, html: true },
                 { name: "amount", label: this.$t("amount"), size: 130, html: true },
             ],
             ENTITY_CONFIG: {
@@ -343,10 +344,16 @@ export default {
             switch (c) {
                 case "dateUser":
                     return i.dateUser;
-                case "source":
-                    return i.label?.() ?? i.source;
+                case "note":
+                    return i.note || '-';
                 case "user_name":
                     return i.user_name;
+                case "is_debt":
+                    if (i.is_debt === 1 || i.is_debt === true || i.is_debt === '1') {
+                        return '<i class="fas fa-check text-green-500"></i>';
+                    } else {
+                        return '<i class="fas fa-times text-red-500"></i>';
+                    }
                 case "amount":
                     return i.formatAmountWithColor?.();
                 default:
