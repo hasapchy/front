@@ -184,7 +184,7 @@ export default {
                 { name: 'cashAmount', label: 'amount', html: true },
                 { name: 'origAmount', label: 'originalAmount' },
                 { name: 'categoryName', label: 'category' },
-                { name: 'note', label: 'note', html: true },
+                { name: 'note', label: 'note', html: true, size: 200 },
                 { name: 'projectName', label: 'project' },
                 {
                     name: 'client',
