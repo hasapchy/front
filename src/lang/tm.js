@@ -987,4 +987,9 @@ export default {
   settings_edit_any_date: 'Islendik senäni üýtget',
   settings_project_budget_view: 'Proýekt büdjetini gör',
   settings_currencies_view: 'Başga walýutalary gör',
+  
+  // Image cropper
+  cropImage: 'Suraty kesip al',
+  apply: 'Ulan',
+  preview: 'Öňünden syn',
 }

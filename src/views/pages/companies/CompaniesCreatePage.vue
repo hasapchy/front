@@ -59,6 +59,14 @@
         :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
         <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
             :is-danger="notificationIsDanger" @close="closeNotification" />
+        
+        <!-- Image Cropper Modal -->
+        <ImageCropperModal
+            :show="showCropperModal"
+            :imageSrc="tempImageSrc"
+            @close="closeCropperModal"
+            @cropped="handleCroppedImage"
+        />
     </div>
 </template>
 
@@ -66,6 +74,7 @@
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
+import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
 import CompaniesController from '@/api/CompaniesController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -73,7 +82,7 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
-    components: { PrimaryButton, AlertDialog, NotificationToast },
+    components: { PrimaryButton, AlertDialog, NotificationToast, ImageCropperModal },
     props: {
         editingItem: {
             type: Object,
@@ -93,6 +102,9 @@ export default {
             deleteDialog: false,
             currentLogo: '',
             selected_logo: null,
+            showCropperModal: false,
+            tempImageSrc: '',
+            croppedFile: null,
         };
     },
     mounted() {
@@ -117,6 +129,9 @@ export default {
             this.editingItemId = null;
             this.currentLogo = '';
             this.selected_logo = null;
+            this.croppedFile = null;
+            this.showCropperModal = false;
+            this.tempImageSrc = '';
             if (this.$refs.logoInput) {
                 this.$refs.logoInput.value = null;
             }
@@ -185,9 +200,41 @@ export default {
                     event.target.value = '';
                     return;
                 }
-                this.selected_logo = URL.createObjectURL(file);
-                this.form.logo = file;
+                // Открываем модальное окно для обрезки
+                this.tempImageSrc = URL.createObjectURL(file);
+                this.showCropperModal = true;
             }
+        },
+        
+        closeCropperModal() {
+            this.showCropperModal = false;
+            this.tempImageSrc = '';
+            // Очищаем input file
+            if (this.$refs.logoInput) {
+                this.$refs.logoInput.value = '';
+            }
+        },
+        
+        handleCroppedImage(blob) {
+            // Создаем File объект из blob
+            const fileName = `cropped_logo_${Date.now()}.jpg`;
+            const file = new File([blob], fileName, { type: 'image/jpeg' });
+            
+            // Создаем DataTransfer для добавления файла в input
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            
+            if (this.$refs.logoInput) {
+                this.$refs.logoInput.files = dataTransfer.files;
+            }
+            
+            // Сохраняем обрезанный файл
+            this.croppedFile = file;
+            this.selected_logo = URL.createObjectURL(blob);
+            this.form.logo = file;
+            
+            // Закрываем модальное окно
+            this.closeCropperModal();
         },
         
         getCompanyLogoSrc(item) {

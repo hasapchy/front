@@ -31,8 +31,6 @@
                                     'fas fa-calculator text-blue-500': balance.type === 'default',
                                     'fas fa-chart-line text-orange-500': balance.type === 'project_income'
                                 }" class="text-xs"></i>
-                                <i v-if="balance.type === 'income' || balance.type === 'outcome'" 
-                                   class="fas fa-hand-pointer text-gray-400 text-xs opacity-60 click-hint"></i>
                             </div>
                             <div :class="{
                                 'text-green-600': balance.type === 'income',
@@ -261,19 +259,5 @@ export default {
 
 .clickable-balance:active {
     transform: translateY(0);
-}
-
-/* Анимация для иконки подсказки */
-.click-hint {
-    animation: pulse-hint 2s ease-in-out infinite;
-}
-
-@keyframes pulse-hint {
-    0%, 100% {
-        opacity: 0.4;
-    }
-    50% {
-        opacity: 0.8;
-    }
 }
 </style>

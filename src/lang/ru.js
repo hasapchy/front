@@ -1160,4 +1160,9 @@ export default {
   errorSavingReceipt: 'Ошибка сохранения оприходования',
   receiptSuccessfullyDeleted: 'Оприходование успешно удалено',
   errorDeletingReceipt: 'Ошибка удаления оприходования',
+  
+  // Image cropper
+  cropImage: 'Обрезать изображение',
+  apply: 'Применить',
+  preview: 'Предпросмотр',
 }

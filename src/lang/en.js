@@ -292,4 +292,9 @@ export default {
     // Search
     searchPlaceholder: 'Type to search...',
     searchFieldsHint: 'Search by: ID, client, note',
+    
+    // Image cropper
+    cropImage: 'Crop Image',
+    apply: 'Apply',
+    preview: 'Preview',
 }

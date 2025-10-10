@@ -16,7 +16,6 @@
                         <div class="mb-1 flex items-center justify-center space-x-1">
                             <span class="text-xs font-medium text-gray-700">{{ $t('debt') }}</span>
                             <i class="fas fa-exclamation-triangle text-orange-500 text-xs"></i>
-                            <i class="fas fa-hand-pointer text-gray-400 text-xs opacity-60 click-hint"></i>
                         </div>
                         <div class="text-orange-600 font-bold text-sm leading-tight">
                             <div class="balance-amount text-base">{{ Number(item.debtValue).toFixed(0) }}</div>
@@ -209,20 +208,6 @@ export default {
 
 .clickable-debt:active {
     transform: translateY(0);
-}
-
-/* Анимация для иконки подсказки */
-.click-hint {
-    animation: pulse-hint 2s ease-in-out infinite;
-}
-
-@keyframes pulse-hint {
-    0%, 100% {
-        opacity: 0.4;
-    }
-    50% {
-        opacity: 0.8;
-    }
 }
 </style>
 

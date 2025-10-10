@@ -6,7 +6,7 @@
         <div class="inline-flex items-center justify-center mb-4">
           <img 
             src="/logo.jpg" 
-            alt="Lebizli tehnologia merezi" 
+            alt="Lebizli Tehnologiya Merkezi" 
             class="h-20 w-auto object-contain"
           >
         </div>
@@ -108,13 +108,13 @@
             <div class="w-12 h-12 flex items-center justify-center mr-3">
               <img 
                 src="https://ltm.studio/assets/images/ltm.png" 
-                alt="Lebizli tehnologia merezi" 
+                alt="Lebizli Tehnologiya Merkezi" 
                 class="h-12 w-auto object-contain"
               >
             </div>
             <div class="text-left">
               <p class="text-sm font-semibold text-gray-800">{{ $t('developedBy') || 'Разработано компанией' }}</p>
-              <p class="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Lebizli tehnologia merezi</p>
+              <p class="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Lebizli Tehnologiya Merkezi</p>
             </div>
           </div>
           
@@ -143,7 +143,7 @@
         </div>
         
         <p class="text-sm text-gray-600">
-          © 2025 Lebizli tehnologia merezi. {{ $t('allRightsReserved') || 'Все права защищены' }}
+          © 2025 Lebizli Tehnologiya Merkezi. {{ $t('allRightsReserved') || 'Все права защищены' }}
         </p>
       </div>
     </div>

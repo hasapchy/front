@@ -19,12 +19,12 @@
                         >
                     </div>
                     <div v-if="selected_image" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
-                        <img :src="selected_image" alt="Selected Image" class="w-32 h-32 object-cover rounded">
+                        <img :src="selected_image" alt="Selected Image" class="w-32 h-32 object-cover rounded-full">
                         <button @click="() => { this.selected_image = null; this.image = null }"
                             class="mt-2 text-red-500 text-sm">{{ $t('removeImage') }}</button>
                     </div>
                     <div v-else-if="editingItem?.photo && editingItem.photo !== ''" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
-                        <img :src="getUserPhotoSrc(editingItem)" alt="Current Photo" class="w-32 h-32 object-cover rounded">
+                        <img :src="getUserPhotoSrc(editingItem)" alt="Current Photo" class="w-32 h-32 object-cover rounded-full">
                         <button @click="() => { this.editingItem.photo = '' }"
                             class="mt-2 text-red-500 text-sm">{{ $t('removeImage') }}</button>
                     </div>
@@ -205,11 +205,20 @@
         :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
         :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+        
+    <!-- Image Cropper Modal -->
+    <ImageCropperModal
+        :show="showCropperModal"
+        :imageSrc="tempImageSrc"
+        @close="closeCropperModal"
+        @cropped="handleCroppedImage"
+    />
 </template>
 
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
 import UsersController from '@/api/UsersController';
 import CompaniesController from '@/api/CompaniesController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
@@ -229,7 +238,7 @@ import AuthController from '@/api/AuthController';
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, userPhotoMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { PrimaryButton, AlertDialog, TabBar },
+    components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal },
     props: {
         editingItem: { type: Object, required: false, default: null },
     },
@@ -261,6 +270,9 @@ export default {
             selected_image: null,
             image: '',
             hasNewFile: false,
+            showCropperModal: false,
+            tempImageSrc: '',
+            croppedFile: null,
             tabs: [
                 { name: 'info', label: 'information' },
                 { name: 'permissions', label: 'permissions' }
@@ -347,11 +359,49 @@ export default {
         onFileChange(event) {
             const file = event.target.files[0];
             if (file) {
-                this.selected_image = URL.createObjectURL(file);
-                this.hasNewFile = true;
+                // Проверяем, что файл является изображением
+                if (!file.type.startsWith('image/')) {
+                    alert(this.$t('onlyImagesAllowed'));
+                    event.target.value = '';
+                    return;
+                }
+                // Открываем модальное окно для обрезки
+                this.tempImageSrc = URL.createObjectURL(file);
+                this.showCropperModal = true;
             } else {
                 this.hasNewFile = false;
             }
+        },
+        
+        closeCropperModal() {
+            this.showCropperModal = false;
+            this.tempImageSrc = '';
+            // Очищаем input file
+            if (this.$refs.imageInput) {
+                this.$refs.imageInput.value = '';
+            }
+        },
+        
+        handleCroppedImage(blob) {
+            // Создаем File объект из blob
+            const fileName = `cropped_user_${Date.now()}.jpg`;
+            const file = new File([blob], fileName, { type: 'image/jpeg' });
+            
+            // Создаем DataTransfer для добавления файла в input
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            
+            if (this.$refs.imageInput) {
+                this.$refs.imageInput.files = dataTransfer.files;
+            }
+            
+            // Сохраняем обрезанный файл
+            this.croppedFile = file;
+            this.selected_image = URL.createObjectURL(blob);
+            this.hasNewFile = true;
+            
+            // Закрываем модальное окно
+            this.closeCropperModal();
         },
         async fetchPermissions() {
             const allPermissions = await UsersController.getAllPermissions();
@@ -384,6 +434,9 @@ export default {
             this.selected_image = null;
             this.image = null;
             this.hasNewFile = false;
+            this.croppedFile = null;
+            this.showCropperModal = false;
+            this.tempImageSrc = '';
             this.editingItemId = null;
             this.showPassword = false;
             this.showConfirmPassword = false;
