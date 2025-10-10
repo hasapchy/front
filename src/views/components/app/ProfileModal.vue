@@ -162,14 +162,6 @@ export default {
             const fileName = `cropped_profile_${Date.now()}.jpg`;
             const file = new File([blob], fileName, { type: 'image/jpeg' });
             
-            // Создаем DataTransfer для добавления файла в input
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(file);
-            
-            if (this.$refs.imageInput) {
-                this.$refs.imageInput.files = dataTransfer.files;
-            }
-            
             // Сохраняем обрезанный файл
             this.croppedFile = file;
             this.selected_image = URL.createObjectURL(blob);
@@ -240,7 +232,10 @@ export default {
                     updateData.photo = '';
                 }
                 
-                const savedUser = await UsersController.updateProfile(updateData, this.$refs.imageInput?.files[0]);
+                // Используем обрезанный файл, если он есть, иначе файл из input
+                const fileToUpload = this.croppedFile || this.$refs.imageInput?.files[0];
+                
+                const savedUser = await UsersController.updateProfile(updateData, fileToUpload);
                 
                 this.$store.commit('SET_USER', savedUser.user);
                 

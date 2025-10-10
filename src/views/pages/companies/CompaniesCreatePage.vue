@@ -147,14 +147,17 @@ export default {
                     name: this.form.name,
                 };
 
+                // Используем обрезанный файл, если он есть, иначе файл из input
+                const fileToUpload = this.croppedFile || this.$refs.logoInput?.files[0];
+
                 if (this.editingItem) {
                     await CompaniesController.updateItem(
                         this.editingItemId,
                         item,
-                        this.$refs.logoInput?.files[0]
+                        fileToUpload
                     );
                 } else {
-                    await CompaniesController.storeItem(item, this.$refs.logoInput?.files[0]);
+                    await CompaniesController.storeItem(item, fileToUpload);
                 }
 
                 this.$emit('saved');
@@ -219,14 +222,6 @@ export default {
             // Создаем File объект из blob
             const fileName = `cropped_logo_${Date.now()}.jpg`;
             const file = new File([blob], fileName, { type: 'image/jpeg' });
-            
-            // Создаем DataTransfer для добавления файла в input
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(file);
-            
-            if (this.$refs.logoInput) {
-                this.$refs.logoInput.files = dataTransfer.files;
-            }
             
             // Сохраняем обрезанный файл
             this.croppedFile = file;

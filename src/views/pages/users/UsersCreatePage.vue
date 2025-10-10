@@ -387,14 +387,6 @@ export default {
             const fileName = `cropped_user_${Date.now()}.jpg`;
             const file = new File([blob], fileName, { type: 'image/jpeg' });
             
-            // Создаем DataTransfer для добавления файла в input
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(file);
-            
-            if (this.$refs.imageInput) {
-                this.$refs.imageInput.files = dataTransfer.files;
-            }
-            
             // Сохраняем обрезанный файл
             this.croppedFile = file;
             this.selected_image = URL.createObjectURL(blob);
@@ -534,7 +526,8 @@ export default {
                         updateData.photo = '';
                     }
                     
-                    const fileToUpload = this.hasNewFile ? this.$refs.imageInput?.files[0] : null;
+                    // Используем обрезанный файл, если он есть, иначе файл из input
+                    const fileToUpload = this.hasNewFile ? (this.croppedFile || this.$refs.imageInput?.files[0]) : null;
                     savedUser = await UsersController.updateItem(this.editingItemId, updateData, fileToUpload);
                 } else {
                     const createData = {
@@ -549,7 +542,8 @@ export default {
                         companies: Array.isArray(this.form.companies) ? this.form.companies : this.form.companies.split(',').filter(c => c.trim() !== '')
                     };
                     
-                    const fileToUpload = this.hasNewFile ? this.$refs.imageInput?.files[0] : null;
+                    // Используем обрезанный файл, если он есть, иначе файл из input
+                    const fileToUpload = this.hasNewFile ? (this.croppedFile || this.$refs.imageInput?.files[0]) : null;
                     savedUser = await UsersController.storeItem(createData, fileToUpload);
                 }
 
