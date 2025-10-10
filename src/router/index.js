@@ -450,38 +450,61 @@ router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem("token");
   const user = localStorage.getItem("user");
 
-  // Проверка для обычных пользователей
-  if (to.meta.requiresAuth && !token) {
-    return next("/auth/login");
+  let userData = null;
+  let isBasementWorker = false;
+  let isAdmin = false;
+
+  // Парсим данные пользователя
+  try {
+    if (user) {
+      userData = JSON.parse(user);
+      isBasementWorker = userData.roles && userData.roles.includes('basement_worker');
+      isAdmin = userData.roles && userData.roles.includes('admin');
+    }
+  } catch {
+    userData = null;
   }
 
-  // Проверка для подвальных работников
+  // Проверка для basement маршрутов
   if (to.meta.requiresBasementAuth) {
     if (!token) {
       return next("/basement/login");
     }
     
-    // Проверяем роль пользователя
-    try {
-      const userData = JSON.parse(user || '{}');
-      if (!userData.roles || !userData.roles.includes('basement_worker')) {
-        return next("/auth/login");
-      }
-    } catch {
-      return next("/basement/login");
+    // Только basement_worker или admin могут попасть в basement
+    if (!isBasementWorker && !isAdmin) {
+      return next("/auth/login");
+    }
+    
+    // Продолжаем к basement маршруту
+    return next();
+  }
+
+  // Проверка для обычных маршрутов (основная система)
+  if (to.meta.requiresAuth) {
+    if (!token) {
+      return next("/auth/login");
+    }
+    
+    // ВАЖНО: Если пользователь ТОЛЬКО basement_worker (не admin), блокируем доступ к основной системе
+    if (isBasementWorker && !isAdmin) {
+      return next("/basement/orders");
     }
   }
 
-  // Если пользователь без basement_worker роли пытается зайти в basement
-  if (to.meta.requiresBasementAuth && token) {
-    try {
-      const userData = JSON.parse(user || '{}');
-      if (!userData.roles || !userData.roles.includes('basement_worker')) {
-        return next("/auth/login"); // Редирект на основной логин
-      }
-    } catch {
-      return next("/basement/login");
+  // Если пользователь пытается попасть на страницу логина, но уже авторизован
+  if (to.name === 'Login' && token) {
+    if (isBasementWorker && !isAdmin) {
+      return next("/basement/orders");
     }
+    return next("/");
+  }
+
+  if (to.name === 'BasementLogin' && token) {
+    if (isBasementWorker || isAdmin) {
+      return next("/basement/orders");
+    }
+    return next("/");
   }
 
   const userPermissions = store.getters["permissions"];

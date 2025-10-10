@@ -118,7 +118,7 @@
                 </div>
                 <ProductSearch ref="productSearch" v-model="products" :show-quantity="true" :show-price="true" :show-price-type="true"
                     :is-sale="true" :isOrder="true" :currency-symbol="currencySymbol" :warehouse-id="warehouseId"
-                    v-model:discount="discount" v-model:discountType="discountType" required @product-removed="onProductRemoved" />
+                    :project-id="projectId" v-model:discount="discount" v-model:discountType="discountType" required @product-removed="onProductRemoved" />
             </div>
             <div v-show="currentTab === 'transactions'">
                 <OrderTransactionsTab v-if="editingItemId" :order-id="editingItemId" :client="selectedClient"
@@ -819,6 +819,25 @@ export default {
         },
         '$store.state.orderStatuses'(newVal) {
             this.statuses = newVal;
+        },
+        projectId(newProjectId) {
+            // При выборе проекта переключаем все товары на оптовые цены
+            if (newProjectId && this.products.length > 0) {
+                this.products.forEach(product => {
+                    if (product.wholesale_price !== undefined && product.wholesale_price > 0) {
+                        product.price = product.wholesale_price;
+                        product.priceType = 'wholesale';
+                    }
+                });
+            } else if (!newProjectId && this.products.length > 0) {
+                // При отмене выбора проекта возвращаем розничные цены
+                this.products.forEach(product => {
+                    if (product.retail_price !== undefined) {
+                        product.price = product.retail_price;
+                        product.priceType = 'retail';
+                    }
+                });
+            }
         }
     }
 }

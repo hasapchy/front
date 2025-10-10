@@ -60,7 +60,7 @@
 
             <!-- Услуги на всю ширину -->
             <div>
-              <BasementServicesRow v-model="form.products" />
+              <BasementServicesRow v-model="form.products" :project-id="form.project_id" />
             </div>
 
             <!-- Товары на складе и Остатки: 50/50 -->
@@ -71,6 +71,7 @@
                   v-model="form.products"
                   :show-quantity="true"
                   :required="true"
+                  :project-id="form.project_id"
                 />
               </div>
 
@@ -79,6 +80,7 @@
                 <BasementStockSearch
                   v-model="form.stockItems"
                   :show-quantity="true"
+                  :project-id="form.project_id"
                 />
               </div>
             </div>

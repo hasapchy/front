@@ -92,11 +92,13 @@
     <div class="flex gap-4 mb-4">
         <div class="flex-1">
             <TransactionsBalance ref="balanceRef" :cash-register-id="cashRegisterId || null" :start-date="startDate"
-                :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter" :source-filter="sourceFilter" />
+                :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter" :source-filter="sourceFilter"
+                @balance-click="handleBalanceClick" />
         </div>
         <div class="w-auto ml-auto">
             <TransactionsDebtBalance ref="debtBalanceRef" :cash-register-id="cashRegisterId || null" :start-date="startDate"
-                :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter" :source-filter="sourceFilter" />
+                :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter" :source-filter="sourceFilter"
+                @debt-click="handleDebtClick" />
         </div>
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
@@ -182,7 +184,7 @@ export default {
                 { name: 'cashAmount', label: 'amount', html: true },
                 { name: 'origAmount', label: 'originalAmount' },
                 { name: 'categoryName', label: 'category' },
-                { name: 'note', label: 'note' },
+                { name: 'note', label: 'note', html: true },
                 { name: 'projectName', label: 'project' },
                 {
                     name: 'client',
@@ -190,7 +192,7 @@ export default {
                     component: markRaw(ClientButtonCell),
                     props: (item) => ({
                         client: item.client,
-
+                        searchQuery: this.searchQuery
                     })
                 },
                 { name: 'dateUser', label: 'date' },
@@ -236,7 +238,18 @@ export default {
                 this.closeModal();
             }
         },
+        highlightText(text, search) {
+            if (!text || !search) return text;
+            const searchStr = String(search).trim();
+            if (!searchStr) return text;
+            
+            const textStr = String(text);
+            const regex = new RegExp(`(${searchStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return textStr.replace(regex, '<mark style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 3px; font-weight: bold;">$1</mark>');
+        },
         itemMapper(i, c) {
+            const search = this.searchQuery;
+            
             switch (c) {
                 case 'type':
                     return i.typeCell();
@@ -250,13 +263,9 @@ export default {
                     return i.cashAmountData();
                 case 'origAmount':
                     return i.origAmountData();
-                case 'client':
-                    if (!i.client) return '';
-                    const name = i.client.fullName();
-                    const firstPhone = i.client.phones?.[0]?.phone;
-                    return firstPhone
-                        ? `${name} (${firstPhone})`
-                        : name;
+                case 'note':
+                    if (!i.note) return '';
+                    return search ? this.highlightText(i.note, search) : i.note;
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
                 default:
@@ -308,6 +317,33 @@ export default {
             }
             this.modalDialog = true;
             this.editingItem = item;
+        },
+        handleBalanceClick(data) {
+            // Проверяем, установлены ли уже такие же фильтры
+            const isSameFilters = 
+                this.cashRegisterId === data.cashRegisterId &&
+                this.transactionTypeFilter === data.transactionType;
+            
+            if (isSameFilters) {
+                // Если уже установлены такие же фильтры, сбрасываем их
+                this.cashRegisterId = '';
+                this.transactionTypeFilter = '';
+            } else {
+                // Устанавливаем фильтры по кассе и типу транзакции
+                this.cashRegisterId = data.cashRegisterId;
+                this.transactionTypeFilter = data.transactionType;
+            }
+            this.fetchItems(1);
+        },
+        handleDebtClick() {
+            // Если фильтр уже установлен на долги, сбрасываем его
+            if (this.isDebtFilter === 'true') {
+                this.isDebtFilter = '';
+            } else {
+                // Иначе устанавливаем фильтр на долговые записи
+                this.isDebtFilter = 'true';
+            }
+            this.fetchItems(1);
         },
         resetFilters() {
             this.cashRegisterId = '';

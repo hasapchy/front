@@ -13,7 +13,15 @@
                         </span>
                     </div>
                     <div :class="getGridClass(item.balance)">
-                        <div v-for="balance in getVisibleBalanceItems(item.balance)" :key="balance.title" class="text-center">
+                        <div v-for="balance in getVisibleBalanceItems(item.balance)" :key="balance.title" 
+                             class="text-center"
+                             :class="{
+                                 'clickable-balance cursor-pointer rounded p-2 transition-all duration-200': balance.type === 'income' || balance.type === 'outcome',
+                                 'hover-income': balance.type === 'income',
+                                 'hover-outcome': balance.type === 'outcome'
+                             }"
+                             :title="(balance.type === 'income' || balance.type === 'outcome') ? $t('clickToFilterTransactions') : ''"
+                             @click="handleBalanceClick(item, balance)">
                             <div class="mb-1 flex items-center justify-center space-x-1">
                                 <span class="text-xs font-medium text-gray-700">{{ translateBalanceTitle(balance.title) }}</span>
                                 <i :class="{
@@ -23,6 +31,8 @@
                                     'fas fa-calculator text-blue-500': balance.type === 'default',
                                     'fas fa-chart-line text-orange-500': balance.type === 'project_income'
                                 }" class="text-xs"></i>
+                                <i v-if="balance.type === 'income' || balance.type === 'outcome'" 
+                                   class="fas fa-hand-pointer text-gray-400 text-xs opacity-60 click-hint"></i>
                             </div>
                             <div :class="{
                                 'text-green-600': balance.type === 'income',
@@ -70,6 +80,15 @@ export default {
         this.fetchItems();
     },
     methods: {
+        handleBalanceClick(cashRegister, balance) {
+            // Только для прихода и расхода
+            if (balance.type === 'income' || balance.type === 'outcome') {
+                this.$emit('balance-click', {
+                    cashRegisterId: cashRegister.id,
+                    transactionType: balance.type
+                });
+            }
+        },
         getVisibleBalanceItems(balanceItems) {
             // Полностью убираем долги из основного баланса - они показываются отдельно справа
             return balanceItems.filter(item => item.type !== 'debt');
@@ -216,6 +235,45 @@ export default {
 @media (min-width: 1025px) {
     .balance-amount {
         font-size: 1.2rem;
+    }
+}
+
+/* Стили для кликабельных элементов баланса */
+.clickable-balance {
+    border: 2px dashed transparent;
+    position: relative;
+}
+
+.clickable-balance:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.hover-income:hover {
+    background-color: rgba(92, 184, 92, 0.1);
+    border-color: rgba(92, 184, 92, 0.3);
+}
+
+.hover-outcome:hover {
+    background-color: rgba(238, 79, 71, 0.1);
+    border-color: rgba(238, 79, 71, 0.3);
+}
+
+.clickable-balance:active {
+    transform: translateY(0);
+}
+
+/* Анимация для иконки подсказки */
+.click-hint {
+    animation: pulse-hint 2s ease-in-out infinite;
+}
+
+@keyframes pulse-hint {
+    0%, 100% {
+        opacity: 0.4;
+    }
+    50% {
+        opacity: 0.8;
     }
 }
 </style>

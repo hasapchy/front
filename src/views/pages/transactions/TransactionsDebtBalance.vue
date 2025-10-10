@@ -2,7 +2,10 @@
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <div v-if="hasDebts" class="flex flex-col gap-3 items-end">
-                <div v-for="item in dataWithDebts" :key="item.id" class="bg-white p-3 rounded-lg shadow-md border-l-4 border-orange-500 min-w-[200px]">
+                <div v-for="item in dataWithDebts" :key="item.id" 
+                     class="bg-white p-3 rounded-lg shadow-md border-l-4 border-orange-500 min-w-[200px] cursor-pointer clickable-debt transition-all duration-200"
+                     @click="handleDebtClick"
+                     :title="$t('clickToFilterDebts')">
                     <div class="text-center mb-2">
                         <span class="text-xs font-semibold">
                             {{ translateCashRegisterName(item.name) }}
@@ -13,6 +16,7 @@
                         <div class="mb-1 flex items-center justify-center space-x-1">
                             <span class="text-xs font-medium text-gray-700">{{ $t('debt') }}</span>
                             <i class="fas fa-exclamation-triangle text-orange-500 text-xs"></i>
+                            <i class="fas fa-hand-pointer text-gray-400 text-xs opacity-60 click-hint"></i>
                         </div>
                         <div class="text-orange-600 font-bold text-sm leading-tight">
                             <div class="balance-amount text-base">{{ Number(item.debtValue).toFixed(0) }}</div>
@@ -71,6 +75,9 @@ export default {
         this.fetchItems();
     },
     methods: {
+        handleDebtClick() {
+            this.$emit('debt-click');
+        },
         translateCashRegisterName(name) {
             const translations = {
                 'Главная касса': 'mainCashRegister'
@@ -189,6 +196,32 @@ export default {
 @media (min-width: 1025px) {
     .balance-amount {
         font-size: 1.2rem;
+    }
+}
+
+/* Стили для кликабельного элемента долга */
+.clickable-debt:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px -1px rgba(255, 152, 0, 0.3), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    background-color: rgba(255, 152, 0, 0.05);
+    border-left-width: 6px;
+}
+
+.clickable-debt:active {
+    transform: translateY(0);
+}
+
+/* Анимация для иконки подсказки */
+.click-hint {
+    animation: pulse-hint 2s ease-in-out infinite;
+}
+
+@keyframes pulse-hint {
+    0%, 100% {
+        opacity: 0.4;
+    }
+    50% {
+        opacity: 0.8;
     }
 }
 </style>

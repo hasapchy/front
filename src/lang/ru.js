@@ -19,7 +19,7 @@ export default {
   paymentType: 'Тип оплаты',
   cashPayment: 'Оплата наличными',
   selectCashRegister: 'Выберите кассу',
-  debtOperation: 'Долговая операция',
+  debtOperation: 'Долг',
   debtOperationDescription: 'При включении этой опции касса не будет изменена, но операция будет зафиксирована как долговая',
   contracts: 'Контракты',
   enableSound: 'Включить звук',
@@ -323,6 +323,7 @@ export default {
   
   // Поиск
   searchPlaceholder: 'Введите для поиска...',
+  searchFieldsHint: 'Поиск по: ID, клиенту, примечанию',
   
   // Валидация
   required: 'Это поле обязательно',
@@ -751,6 +752,8 @@ export default {
   errorSavingTransaction: 'Ошибка сохранения транзакции',
   transactionSuccessfullyDeleted: 'Транзакция успешно удалена',
   errorDeletingTransaction: 'Ошибка удаления транзакции',
+  clickToFilterDebts: 'Нажмите, чтобы отфильтровать долги',
+  clickToFilterTransactions: 'Нажмите, чтобы отфильтровать транзакции',
   
   // Трансферы
   errorGettingTransferList: 'Ошибка получения списка трансферов',

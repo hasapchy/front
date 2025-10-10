@@ -1,12 +1,12 @@
 <template>
     <aside class="w-40 bg-[#282E33] text-white flex-shrink-0 transform transition-transform duration-300 relative">
 
-        <div class="shrink-0 flex items-center justify-center">
+        <div class="shrink-0 flex items-center justify-center py-4">
             <a href="/">
                 <img 
                     :src="getCompanyLogo()" 
                     alt="Company Logo" 
-                    class="mb-1 w-auto max-h-12"
+                    class="mb-1 w-28 h-28 rounded-full object-cover border-2 border-gray-600 shadow-lg"
                     @error="onLogoError"
                 />
             </a>
@@ -15,7 +15,7 @@
         <div class="pb-32">
             <ul>
                 <SidebarLink to="/" icon="fas fa-building mr-2">
-                    {{ $t('myCompany') }}
+                    {{ currentCompanyName }}
                 </SidebarLink>
 
                 <SidebarLink v-if="hasPermission('orders_view')" to="/orders" icon="fas fa-cart-arrow-down mr-2">
@@ -102,6 +102,13 @@ export default {
         },
         currentCompany() {
             return this.$store.getters.currentCompany;
+        },
+        currentCompanyName() {
+            const company = this.currentCompany;
+            if (!company || !company.name) {
+                return this.$t('myCompany');
+            }
+            return company.name;
         }
     },
     

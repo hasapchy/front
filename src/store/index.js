@@ -863,6 +863,9 @@ export default createStore({
       localStorage.removeItem('productStatuses_cache');
       localStorage.removeItem('productStatuses_cache_timestamp');
       
+      // НЕ очищаем текущую компанию, только кэш данных
+      // localStorage.removeItem('current_company');
+      
       // Очищаем кэш данных компаний
       const keys = Object.keys(localStorage);
       keys.forEach(key => {
@@ -900,9 +903,33 @@ export default createStore({
     },
     async loadCurrentCompany({ commit, dispatch }) {
       try {
+        // Сначала пробуем загрузить из localStorage
+        const cachedCompany = localStorage.getItem('current_company');
+        if (cachedCompany) {
+          try {
+            const companyData = JSON.parse(cachedCompany);
+            const company = new CompanyDto(companyData);
+            commit('SET_CURRENT_COMPANY', company);
+            
+            // Если компания установлена, загружаем все данные компании
+            if (company?.id) {
+              await dispatch('loadCompanyData');
+            }
+            
+            return company;
+          } catch (parseError) {
+            console.error('Ошибка парсинга кэшированной компании:', parseError);
+            localStorage.removeItem('current_company');
+          }
+        }
+        
+        // Если в localStorage нет или произошла ошибка, загружаем с сервера
         const response = await api.get('/user/current-company');
         const company = new CompanyDto(response.data.company);
         commit('SET_CURRENT_COMPANY', company);
+        
+        // Сохраняем в localStorage
+        localStorage.setItem('current_company', JSON.stringify(response.data.company));
         
         // Если компания установлена, загружаем все данные компании
         if (company?.id) {
@@ -920,6 +947,9 @@ export default createStore({
         const response = await api.post('/user/set-company', { company_id: companyId });
         const company = new CompanyDto(response.data.company);
         commit('SET_CURRENT_COMPANY', company);
+        
+        // Сохраняем в localStorage
+        localStorage.setItem('current_company', JSON.stringify(response.data.company));
         
         // После смены компании загружаем все данные компании
         await dispatch('loadCompanyData');
@@ -1029,6 +1059,8 @@ export default createStore({
       commit('SET_PROJECT_STATUSES', []);
       commit('SET_TRANSACTION_CATEGORIES', []);
       commit('SET_PRODUCT_STATUSES', []);
+      // Очищаем текущую компанию из localStorage
+      localStorage.removeItem('current_company');
     },
     // Инициализация всех систем кэширования
     initCacheSystems({ dispatch }) {

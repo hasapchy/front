@@ -231,6 +231,7 @@ export default {
   
   // Поиск
   searchPlaceholder: 'Gözlemek üçin ýazyň...',
+  searchFieldsHint: 'Gözleg: ID, müşderi, bellik',
   
   // Валидация
   required: 'Bu meýdan hökmany',
@@ -443,6 +444,7 @@ export default {
   number: '№',
   access: 'Giriş',
   creator: 'Dörediji',
+  source: 'Çeşme',
   note: 'Bellik',
   project: 'Proýekt',
   destination: 'Nire',
@@ -880,6 +882,8 @@ export default {
   showPaidOrders: 'Tölenen sargytlary görkez',
   hidePaidOrders: 'Tölenen sargytlary gizle',
   paidOrdersFilter: 'Tölenen sargytlaryň filtr',
+  clickToFilterDebts: 'Karzlary filter etmek üçin basyň',
+  clickToFilterTransactions: 'Tranzaksiyalary filter etmek üçin basyň',
   
   // Файлы
   noFilesUploaded: 'Faýllar ýüklenmedi',

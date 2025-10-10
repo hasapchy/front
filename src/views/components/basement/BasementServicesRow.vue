@@ -37,6 +37,10 @@ export default {
         disabled: {
             type: Boolean,
             default: false
+        },
+        projectId: {
+            type: [String, Number],
+            default: null
         }
     },
     data() {
@@ -115,7 +119,12 @@ export default {
                 const productDto = WarehouseWriteoffProductDto.fromProductDto(service, false);
                 if (productDto && service.id) {
                     productDto.productId = service.id;
-                    productDto.price = service.retail_price || service.wholesale_price || service.purchase_price || 0;
+                    // Если выбран проект, используем оптовую цену, иначе розничную
+                    if (this.projectId && service.wholesale_price > 0) {
+                        productDto.price = service.wholesale_price || 0;
+                    } else {
+                        productDto.price = service.retail_price || 0;
+                    }
                     productDto.type = service.type || 0; // Услуги имеют type = 0
                     
                     // Проверяем единицу измерения

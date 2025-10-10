@@ -163,6 +163,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        projectId: {
+            type: [String, Number],
+            default: null
+        },
     },
     data() {
         return {
@@ -233,10 +237,18 @@ export default {
                 const isSquareMeter = unitShortName === 'м²' || unitName === 'Квадратный метр';
 
                 // Создаем временный товар с бесконечным остатком
+                let price;
+                // Если выбран проект, используем оптовую цену, иначе розничную
+                if (this.projectId && product.wholesale_price > 0) {
+                    price = product.wholesale_price || 0;
+                } else {
+                    price = product.retail_price || 0;
+                }
+                
                 const tempProduct = {
                     name: product.name,
                     description: product.description || '',
-                    price: product.retail_price || 0, // Только розничная цена
+                    price: price,
                     unit_id: product.unit_id,
                     unit_short_name: unitShortName,
                     unit_name: unitName,
@@ -335,5 +347,18 @@ export default {
     transform: scaleY(1);
     opacity: 1;
     transform-origin: top;
+}
+
+/* Скрываем стрелки у input type="number" */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
 }
 </style>

@@ -53,6 +53,8 @@ const AuthController = {
             localStorage.removeItem('token_expires_at');
             localStorage.removeItem('refresh_token_expires_at');
             localStorage.removeItem('user');
+            // Очищаем текущую компанию
+            localStorage.removeItem('current_company');
         }
     },
 

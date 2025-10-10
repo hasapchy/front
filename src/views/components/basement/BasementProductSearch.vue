@@ -202,6 +202,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        projectId: {
+            type: [String, Number],
+            default: null
+        },
     },
     data() {
         return {
@@ -318,8 +322,12 @@ export default {
                 const productDto = WarehouseWriteoffProductDto.fromProductDto(product, true);
                 if (productDto && product.id) {
                     productDto.productId = product.id;
-                    // Автоматически устанавливаем цену товара (только розничная цена)
-                    productDto.price = product.retail_price || 0;
+                    // Если выбран проект, используем оптовую цену, иначе розничную
+                    if (this.projectId && product.wholesale_price > 0) {
+                        productDto.price = product.wholesale_price || 0;
+                    } else {
+                        productDto.price = product.retail_price || 0;
+                    }
                     // Сохраняем тип товара
                     productDto.type = product.type || 1;
                     
@@ -354,8 +362,12 @@ export default {
                 const productDto = WarehouseWriteoffProductDto.fromProductDto(service, false);
                 if (productDto && service.id) {
                     productDto.productId = service.id; // Услуги тоже имеют productId
-                    // Автоматически устанавливаем цену услуги (только розничная цена)
-                    productDto.price = service.retail_price || 0;
+                    // Если выбран проект, используем оптовую цену, иначе розничную
+                    if (this.projectId && service.wholesale_price > 0) {
+                        productDto.price = service.wholesale_price || 0;
+                    } else {
+                        productDto.price = service.retail_price || 0;
+                    }
                     // Сохраняем тип (услуги имеют type = 0)
                     productDto.type = service.type || 0;
                     
@@ -608,5 +620,18 @@ export default {
     line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+/* Скрываем стрелки у input type="number" */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
 }
 </style>

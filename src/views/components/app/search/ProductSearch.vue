@@ -257,6 +257,10 @@ export default {
         warehouseId: {
             type: [String, Number],
             default: null
+        },
+        projectId: {
+            type: [String, Number],
+            default: null
         }
     },
     data() {
@@ -396,8 +400,14 @@ export default {
                         productDto = SaleProductDto.fromProductDto(product, true);
                         productDto.retail_price = product.retail_price || 0;
                         productDto.wholesale_price = product.wholesale_price || 0;
-                        productDto.priceType = 'retail';
-                        productDto.price = productDto.retail_price;
+                        // Если выбран проект, используем оптовую цену
+                        if (this.projectId && productDto.wholesale_price > 0) {
+                            productDto.priceType = 'wholesale';
+                            productDto.price = productDto.wholesale_price;
+                        } else {
+                            productDto.priceType = 'retail';
+                            productDto.price = productDto.retail_price;
+                        }
                     } else {
                         productDto = WarehouseWriteoffProductDto.fromProductDto(product, true);
                         if (this.showPriceType) {

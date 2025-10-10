@@ -96,6 +96,7 @@ export default {
   unlimited: 'Unlimited',
   selectedStock: 'Selected Stock',
   project: 'Project',
+  source: 'Source',
   note: 'Note',
   products: 'Products',
   orderAmount: 'Order Amount',
@@ -261,6 +262,8 @@ export default {
   allTransactions: 'All Transactions',
   debt: 'Debt',
   notDebt: 'Not Debt',
+  clickToFilterDebts: 'Click to filter debts',
+  clickToFilterTransactions: 'Click to filter transactions',
   
   // Product Categories
   productCategory: 'Product Category',
@@ -285,4 +288,8 @@ export default {
     // Pagination
     show: 'Show',
     entries: 'entries',
+    
+    // Search
+    searchPlaceholder: 'Type to search...',
+    searchFieldsHint: 'Search by: ID, client, note',
 }

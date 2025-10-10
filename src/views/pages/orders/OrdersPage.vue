@@ -191,13 +191,13 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: "id", label: "№", size: 20 },
                 { name: "dateUser", label: 'dateUser' },
-                { name: "client", label: 'client', component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, }), },
+                { name: "client", label: 'client', component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, searchQuery: this.searchQuery }), },
                 { name: "statusName", label: 'status', component: markRaw(StatusSelectCell), props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId), }), },
                 { name: "cashName", label: 'cashRegister' },
                 { name: "warehouseName", label: 'warehouse' },
                 { name: "products", label: 'products', html: true },
                 { name: "totalPrice", label: 'orderAmount' },
-                { name: "note", label: 'note' },
+                { name: "note", label: 'note', html: true },
                 { name: "description", label: 'description' },
                 { name: "projectName", label: 'project' },
             ],
@@ -253,7 +253,18 @@ export default {
         }
     },
     methods: {
+        highlightText(text, search) {
+            if (!text || !search) return text;
+            const searchStr = String(search).trim();
+            if (!searchStr) return text;
+            
+            const textStr = String(text);
+            const regex = new RegExp(`(${searchStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return textStr.replace(regex, '<mark style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 3px; font-weight: bold;">$1</mark>');
+        },
         itemMapper(i, c) {
+            const search = this.searchQuery;
+            
             switch (c) {
                 case "products":
                     return i.productsHtmlList();
@@ -275,7 +286,8 @@ export default {
                         ? i.priceInfo()
                         : `${i.totalPrice} ${i.currencySymbol || ""}`;
                 case "note":
-                    return i.note || "";
+                    if (!i.note) return "";
+                    return search ? this.highlightText(i.note, search) : i.note;
                 case "description":
                     return i.description || "";
                 case "projectName":
