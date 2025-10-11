@@ -37,10 +37,8 @@ export default {
                 // Загружаем компании пользователя и текущую компанию
                 try {
                     await this.$store.dispatch('loadUserCompanies');
+                    // loadCurrentCompany уже вызывает loadCompanyData внутри, не нужно дублировать
                     await this.$store.dispatch('loadCurrentCompany');
-                    
-                    // После загрузки текущей компании загружаем все данные компании
-                    await this.$store.dispatch('loadCompanyData');
                 } catch (error) {
                     console.error('Ошибка загрузки компаний:', error);
                 }

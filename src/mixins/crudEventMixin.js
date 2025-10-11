@@ -1,3 +1,5 @@
+import CacheInvalidator from '@/utils/cacheInvalidator';
+
 export default {
   methods: {
     handleSaved() {
@@ -6,6 +8,13 @@ export default {
         "",
         false
       );
+      
+      // Инвалидируем кэш при сохранении
+      if (this.cacheInvalidationType) {
+        const companyId = this.$store.state.currentCompany?.id;
+        CacheInvalidator.onUpdate(this.cacheInvalidationType, companyId);
+      }
+      
       this.fetchItems(this.data?.currentPage || 1, false); // false = не silent, загружаем с сервера
       this.closeModal();
     },
@@ -22,6 +31,13 @@ export default {
         "",
         false
       );
+      
+      // Инвалидируем кэш при удалении
+      if (this.cacheInvalidationType) {
+        const companyId = this.$store.state.currentCompany?.id;
+        CacheInvalidator.onDelete(this.cacheInvalidationType, companyId);
+      }
+      
       this.fetchItems(this.data?.currentPage || 1, true);
       this.closeModal();
     },

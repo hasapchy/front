@@ -89,18 +89,17 @@
             storage-key="transactionsPerPage"
             @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
-    <div class="flex gap-4 mb-4">
-        <div class="flex-1">
-            <TransactionsBalance ref="balanceRef" :cash-register-id="cashRegisterId || null" :start-date="startDate"
-                :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter" :source-filter="sourceFilter"
-                @balance-click="handleBalanceClick" />
-        </div>
-        <div class="w-auto ml-auto">
-            <TransactionsDebtBalance ref="debtBalanceRef" :cash-register-id="cashRegisterId || null" :start-date="startDate"
-                :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter" :source-filter="sourceFilter"
-                @debt-click="handleDebtClick" />
-        </div>
-    </div>
+    <!-- ✅ Один компонент вместо двух - один API запрос вместо двух! -->
+    <TransactionsBalanceWrapper 
+        :cash-register-id="cashRegisterId || null" 
+        :start-date="startDate"
+        :end-date="endDate" 
+        :date-filter="dateFilter" 
+        :transaction-type-filter="transactionTypeFilter" 
+        :source-filter="sourceFilter"
+        @balance-click="handleBalanceClick"
+        @debt-click="handleDebtClick" 
+    />
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
@@ -114,7 +113,7 @@
     </transition>
     
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <TransactionCreatePage ref="transactioncreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
+        <TransactionCreatePage v-if="modalDialog" ref="transactioncreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
             @copy-transaction="handleCopyTransaction"
             :editingItem="editingItem" :default-cash-id="cashRegisterId || null" />
@@ -136,8 +135,7 @@ import TransactionController from '@/api/TransactionController';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import CashRegisterController from '@/api/CashRegisterController';
 import ProjectController from '@/api/ProjectController';
-import TransactionsBalance from '@/views/pages/transactions/TransactionsBalance.vue';
-import TransactionsDebtBalance from '@/views/pages/transactions/TransactionsDebtBalance.vue';
+import TransactionsBalanceWrapper from '@/views/pages/transactions/TransactionsBalanceWrapper.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -153,13 +151,14 @@ import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin],
-    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalance, TransactionsDebtBalance, ClientButtonCell, BatchButton },
+    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, BatchButton },
     data() {
         return {
             data: null,
             loading: false,
             selectedIds: [],
             controller: TransactionController,
+            cacheInvalidationType: 'transactions', // Тип кэша для инвалидации
             showStatusSelect: false, // транзакции не имеют статусов
             allCashRegisters: [],
             cashRegisterId: '',

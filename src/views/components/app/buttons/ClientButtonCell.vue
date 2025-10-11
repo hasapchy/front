@@ -5,7 +5,7 @@
     </div>
 
     <SideModalDialog :showForm="modalOpen" :onclose="() => modalOpen = false">
-        <ClientCreatePage :editingItem="client" @saved="handleSaved" @saved-error="() => modalOpen = false"
+        <ClientCreatePage v-if="modalOpen" :editingItem="client" @saved="handleSaved" @saved-error="() => modalOpen = false"
             @deleted="handleDeleted" />
     </SideModalDialog>
 </template>

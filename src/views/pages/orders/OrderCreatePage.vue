@@ -364,9 +364,9 @@ export default {
             this.allWarehouses = this.$store.getters.warehouses;
         },
     async fetchAllProjects() {
-      // Всегда загружаем данные заново
-      await this.$store.dispatch('loadProjects');
-      this.allProjects = this.$store.getters.activeProjects;
+      // Загружаем проекты напрямую с сервера (с Backend кэшем)
+      const ProjectController = (await import('@/api/ProjectController')).default;
+      this.allProjects = await ProjectController.getActiveItems();
     },
         async fetchAllProductCategories() {
             try {

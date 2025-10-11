@@ -52,6 +52,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: OrderStatusController,
+            cacheInvalidationType: 'orderStatuses', // Тип кэша для инвалидации
             savedSuccessText: this.$t('statusSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingStatus'),
             deletedSuccessText: this.$t('statusSuccessfullyDeleted'),

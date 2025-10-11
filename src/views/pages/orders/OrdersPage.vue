@@ -91,7 +91,7 @@
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed" 
         :showTimelineButton="!!editingItem" @toggle-timeline="toggleTimeline">
-        <OrderCreatePage ref="ordercreatepageForm" @saved="handleSaved" @saved-silent="handleSavedSilent" @saved-error="handleSavedError"
+        <OrderCreatePage v-if="modalDialog" ref="ordercreatepageForm" @saved="handleSaved" @saved-silent="handleSavedSilent" @saved-error="handleSavedError"
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
 
         <template #timeline>
@@ -101,6 +101,7 @@
 
     <SideModalDialog :showForm="invoiceModalDialog" :onclose="handleInvoiceModalClose">
         <InvoiceCreatePage 
+            v-if="invoiceModalDialog"
             ref="invoiceCreateForm" 
             @saved="handleInvoiceSaved" 
             @saved-error="handleInvoiceSavedError"
@@ -183,6 +184,7 @@ export default {
             invoiceModalDialog: false,
             loadingDelete: false,
             controller: OrderController,
+            cacheInvalidationType: 'orders', // Тип кэша для инвалидации
             savedSuccessText: this.$t('orderSaved'),
             savedErrorText: this.$t('errorSavingOrder'),
             deletedSuccessText: this.$t('orderDeleted'),
@@ -218,8 +220,11 @@ export default {
     created() {
         this.fetchItems();
         this.fetchStatuses();
-        this.fetchProjects();
-        this.fetchClients();
+        
+        // Projects и Clients уже загружаются глобально в App.vue через loadCompanyData
+        // Просто берем их из store
+        this.projects = this.$store.getters.projects || [];
+        this.clients = this.$store.getters.clients || [];
 
         this.$store.commit("SET_SETTINGS_OPEN", false);
         
@@ -250,6 +255,19 @@ export default {
                    this.projectFilter !== '' ||
                    this.clientFilter !== '' ||
                    this.paidOrdersFilter !== false;
+        }
+    },
+    watch: {
+        // Обновляем clients и projects когда они загружаются в store
+        '$store.state.clients'(newClients) {
+            if (newClients && newClients.length > 0) {
+                this.clients = newClients;
+            }
+        },
+        '$store.state.projects'(newProjects) {
+            if (newProjects && newProjects.length > 0) {
+                this.projects = newProjects;
+            }
         }
     },
     methods: {
@@ -351,21 +369,7 @@ export default {
             this.statuses = this.$store.getters.orderStatuses;
         },
 
-        async fetchProjects() {
-            try {
-                this.projects = await ProjectController.getActiveItems();
-            } catch (error) {
-                console.error('Ошибка при загрузке проектов:', error);
-            }
-        },
-
-        async fetchClients() {
-            try {
-                this.clients = await ClientController.getAllItems();
-            } catch (error) {
-                console.error('Ошибка при загрузке клиентов:', error);
-            }
-        },
+        // fetchProjects и fetchClients удалены - данные берутся из store через watch
 
         async handleChangeStatus(ids, statusId) {
             if (!ids.length) return;

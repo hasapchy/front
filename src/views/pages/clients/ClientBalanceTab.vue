@@ -92,6 +92,8 @@ export default {
 
             balanceLoading: false,
             balanceHistory: [],
+            lastFetchedClientId: null, // Для предотвращения дублирования запросов
+            forceRefresh: false,
             selectedEntity: null,
             entityModalOpen: false,
             entityLoading: false,
@@ -252,10 +254,7 @@ export default {
     },
     async mounted() {
         await this.fetchDefaultCurrency();
-        
-        if (this.editingItem && this.editingItem.id) {
-            this.fetchBalanceHistory();
-        }
+        // fetchBalanceHistory вызывается через watch
     },
 
     methods: {
@@ -272,11 +271,20 @@ export default {
         },
         async fetchBalanceHistory() {
             if (!this.editingItem || !this.editingItem.id) return;
+            
+            // Предотвращаем повторные запросы для того же клиента
+            if (this.lastFetchedClientId === this.editingItem.id && !this.forceRefresh) {
+                return;
+            }
+            
             this.balanceLoading = true;
             try {
                 this.balanceHistory = await ClientController.getBalanceHistory(
                     this.editingItem.id
                 );
+                
+                this.lastFetchedClientId = this.editingItem.id;
+                this.forceRefresh = false;
                 
                 await this.updateClientBalance();
             } catch (e) {
@@ -402,12 +410,13 @@ export default {
         },
     },
     watch: {
-        editingItem: {
-            handler(newVal) {
-                if (newVal && newVal.id) {
+        'editingItem.id': {
+            handler(newId) {
+                if (newId) {
                     this.fetchBalanceHistory();
                 } else {
                     this.balanceHistory = [];
+                    this.lastFetchedClientId = null;
                     this.selectedEntity = null;
                     this.entityModalOpen = false;
                     this.entityLoading = false;

@@ -53,6 +53,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: TransactionCategoryController,
+            cacheInvalidationType: 'transactionCategories', // Тип кэша для инвалидации
             showStatusSelect: false, // категории транзакций не имеют статусов
             savedSuccessText: this.$t('transactionCategorySuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingTransactionCategory'),

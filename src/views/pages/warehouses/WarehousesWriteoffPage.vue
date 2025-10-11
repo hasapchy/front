@@ -24,7 +24,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <WarehousesWriteoffCreatePage ref="warehouseswriteoffcreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <WarehousesWriteoffCreatePage v-if="modalDialog" ref="warehouseswriteoffcreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -59,6 +59,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: WarehouseWriteoffController,
+            cacheInvalidationType: 'writeoffs', // Тип кэша для инвалидации
             editingItem: null,
             savedSuccessText: this.$t('writeoffSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingWriteoff'),

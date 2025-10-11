@@ -63,6 +63,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: CashRegisterController,
+            cacheInvalidationType: 'cashRegisters', // Тип кэша для инвалидации
             savedSuccessText: this.$t('cashRegisterSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingCashRegister'),
             deletedSuccessText: this.$t('cashRegisterSuccessfullyDeleted'),

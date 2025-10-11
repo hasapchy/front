@@ -24,7 +24,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <WarehousesMovementCreatePage ref="warehousesmovementcreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <WarehousesMovementCreatePage v-if="modalDialog" ref="warehousesmovementcreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -59,6 +59,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: WarehouseMovementController,
+            cacheInvalidationType: 'movements', // Тип кэша для инвалидации
             editingItem: null,
             savedSuccessText: this.$t('movementSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingMovement'),

@@ -16,14 +16,31 @@ export default class CacheInvalidator {
       transactionCategories: ['transactionCategories_cache'],
       productStatuses: ['productStatuses_cache'],
       
-      // Данные компании
+      // Данные компании (справочники)
       warehouses: ['warehouses_'],
       cashRegisters: ['cashRegisters_'],
       clients: ['clients_'],
       products: ['products_'],
       services: ['services_'],
       categories: ['categories_'],
-      projects: ['projects_']
+      projects: ['projects_'],
+      users: ['users_'],
+      companies: ['companies_'],
+      
+      // Данные компании (транзакционные)
+      orders: ['orders_'],
+      sales: ['sales_'],
+      transactions: ['transactions_'],
+      invoices: ['invoices_'],
+      transfers: ['transfers_'],
+      orderFields: ['orderFields_'],
+      orderCategories: ['orderCategories_'],
+      
+      // Складские операции
+      receipts: ['receipts_'],
+      writeoffs: ['writeoffs_'],
+      movements: ['movements_'],
+      stocks: ['stocks_']
     };
 
     const keysToRemove = patterns[type] || [];
@@ -48,13 +65,29 @@ export default class CacheInvalidator {
    */
   static invalidateByCompany(companyId) {
     const patterns = [
+      // Справочники
       'warehouses_',
       'cashRegisters_',
       'clients_',
       'products_',
       'services_',
       'categories_',
-      'projects_'
+      'projects_',
+      'users_',
+      'companies_',
+      // Транзакционные данные
+      'orders_',
+      'sales_',
+      'transactions_',
+      'invoices_',
+      'transfers_',
+      'orderFields_',
+      'orderCategories_',
+      // Складские операции
+      'receipts_',
+      'writeoffs_',
+      'movements_',
+      'stocks_'
     ];
 
     let removedCount = 0;
@@ -84,13 +117,29 @@ export default class CacheInvalidator {
     const cacheKeys = Object.keys(localStorage).filter(key => 
       key.includes('_cache') || 
       key.includes('_timestamp') ||
+      // Справочники
       key.startsWith('warehouses_') ||
       key.startsWith('cashRegisters_') ||
       key.startsWith('clients_') ||
       key.startsWith('products_') ||
       key.startsWith('services_') ||
       key.startsWith('categories_') ||
-      key.startsWith('projects_')
+      key.startsWith('projects_') ||
+      key.startsWith('users_') ||
+      key.startsWith('companies_') ||
+      // Транзакционные данные
+      key.startsWith('orders_') ||
+      key.startsWith('sales_') ||
+      key.startsWith('transactions_') ||
+      key.startsWith('invoices_') ||
+      key.startsWith('transfers_') ||
+      key.startsWith('orderFields_') ||
+      key.startsWith('orderCategories_') ||
+      // Складские операции
+      key.startsWith('receipts_') ||
+      key.startsWith('writeoffs_') ||
+      key.startsWith('movements_') ||
+      key.startsWith('stocks_')
     );
 
     cacheKeys.forEach(key => localStorage.removeItem(key));

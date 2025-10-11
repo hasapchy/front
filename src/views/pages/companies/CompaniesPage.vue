@@ -56,6 +56,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: CompaniesController,
+            cacheInvalidationType: 'companies', // Тип кэша для инвалидации
             savedSuccessText: this.$t('companySaved'),
             savedErrorText: this.$t('errorSavingCompany'),
             deletedSuccessText: this.$t('companyDeleted'),

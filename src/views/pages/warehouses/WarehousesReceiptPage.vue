@@ -24,7 +24,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <WarehousesReceiptCreatePage ref="warehousesreceiptcreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <WarehousesReceiptCreatePage v-if="modalDialog" ref="warehousesreceiptcreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -71,6 +71,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: WarehouseReceiptController,
+            cacheInvalidationType: 'receipts', // Тип кэша для инвалидации
             editingItem: null,
             savedSuccessText: this.$t('receiptSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingReceipt'),

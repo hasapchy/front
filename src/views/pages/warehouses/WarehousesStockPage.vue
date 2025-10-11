@@ -80,7 +80,7 @@ export default {
         return {
             data: null,
             loading: false,
-
+            cacheInvalidationType: 'stocks', // Тип кэша для инвалидации
             allWarehouses: [],
             allCategories: [],
             warehouseId: '',

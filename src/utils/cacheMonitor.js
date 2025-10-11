@@ -1,6 +1,7 @@
 /**
  * Мониторинг кэша localStorage
  */
+import { getCacheTTL } from '@/constants/cacheTTL';
 
 export default class CacheMonitor {
   static MAX_CACHE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -112,13 +113,8 @@ export default class CacheMonitor {
    * Получить TTL для ключа кэша
    */
   static getCacheTTL(key) {
-    // Глобальные кэши - 24 часа
-    if (key.includes('_cache')) {
-      return 24 * 60 * 60 * 1000;
-    }
-    
-    // Данные компании - 10 минут
-    return 10 * 60 * 1000;
+    // Используем централизованную функцию
+    return getCacheTTL(key);
   }
 
   /**

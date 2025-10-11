@@ -46,7 +46,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <ProjectCreatePage ref="projectcreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <ProjectCreatePage v-if="modalDialog" ref="projectcreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -90,6 +90,7 @@ export default {
             clientFilter: '',
             clients: [],
             controller: ProjectController,
+            cacheInvalidationType: 'projects', // Тип кэша для инвалидации
             savedSuccessText: this.$t('projectSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProject'),
             deletedSuccessText: this.$t('projectSuccessfullyDeleted'),
@@ -106,7 +107,10 @@ export default {
     async mounted() {
         // Загружаем статусы первыми, чтобы они были доступны при создании проекта
         await this.fetchProjectStatuses();
-        await this.fetchClients();
+        
+        // Клиенты уже загружаются глобально в App.vue через loadCompanyData
+        this.clients = this.$store.getters.clients;
+        
         this.fetchItems();
     },
     beforeUnmount() {
@@ -145,15 +149,6 @@ export default {
                 this.statuses = this.$store.getters.projectStatuses;
             } catch (error) {
                 console.error('Error fetching project statuses:', error);
-            }
-        },
-        async fetchClients() {
-            try {
-                // Используем данные из store
-                await this.$store.dispatch('loadClients');
-                this.clients = this.$store.getters.clients;
-            } catch (error) {
-                console.error('Error fetching clients:', error);
             }
         },
         handlePerPageChange(newPerPage) {

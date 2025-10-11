@@ -1,3 +1,5 @@
+import CacheInvalidator from '@/utils/cacheInvalidator';
+
 export default {
   data() {
     return {
@@ -36,6 +38,12 @@ export default {
 
       if (deletedCount > 0) {
         this.showNotification?.(`Удалено ${deletedCount} элементов`);
+        
+        // Инвалидируем кэш при массовом удалении
+        if (this.cacheInvalidationType) {
+          const companyId = this.$store.state.currentCompany?.id;
+          CacheInvalidator.onDelete(this.cacheInvalidationType, companyId);
+        }
       }
 
       if (errors.length > 0) {

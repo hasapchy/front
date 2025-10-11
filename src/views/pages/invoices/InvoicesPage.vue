@@ -63,7 +63,7 @@
     </transition>
     
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <InvoiceCreatePage ref="invoicecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
+        <InvoiceCreatePage v-if="modalDialog" ref="invoicecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" 
             :preselectedOrderIds="preselectedOrderIds" />
     </SideModalDialog>
@@ -117,6 +117,7 @@ export default {
             editingItem: null,
             loadingDelete: false,
             controller: InvoiceController,
+            cacheInvalidationType: 'invoices', // Тип кэша для инвалидации
             savedSuccessText: this.$t('invoiceSaved'),
             savedErrorText: this.$t('errorSavingInvoice'),
             deletedSuccessText: this.$t('invoiceDeleted'),

@@ -56,6 +56,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: UsersController,
+            cacheInvalidationType: 'users', // Тип кэша для инвалидации
             savedSuccessText: this.$t('userSaved'),
             savedErrorText: this.$t('errorSavingUser'),
             deletedSuccessText: this.$t('userDeleted'),

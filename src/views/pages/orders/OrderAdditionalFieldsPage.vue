@@ -65,6 +65,7 @@ export default {
             editingItem: null,
             loadingDelete: false,
             controller: OrderAfController,
+            cacheInvalidationType: 'orderFields', // Тип кэша для инвалидации
             savedSuccessText: this.$t('additionalFieldSaved'),
             savedErrorText: this.$t('errorSavingAdditionalField'),
             deletedSuccessText: this.$t('additionalFieldDeleted'),

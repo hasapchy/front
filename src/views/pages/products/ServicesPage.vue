@@ -31,7 +31,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
-        <ProductsCreatePage @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <ProductsCreatePage v-if="modalDialog" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" :editingItem="editingItem" :defaultType="'service'" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -70,6 +70,7 @@ export default {
             categories: [],
             selectedCategoryId: '',
             controller: ProductController,
+            cacheInvalidationType: 'services', // Тип кэша для инвалидации
             savedSuccessText: this.$t('productSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProduct'),
             deletedSuccessText: this.$t('productSuccessfullyDeleted'),
@@ -107,7 +108,9 @@ export default {
     methods: {
         async fetchCategories() {
             try {
-                this.categories = await CategoryController.getAllItems();
+                // ✅ Используем данные из store (кэшированные!)
+                await this.$store.dispatch('loadCategories');
+                this.categories = this.$store.getters.categories;
             } catch (error) {
                 console.error('Ошибка при загрузке категорий:', error);
             }

@@ -11,10 +11,8 @@ export default {
     // Слушаем события смены компании
     eventBus.on('company-changed', this.onCompanyChanged);
     
-    // Загружаем текущую компанию при инициализации, если её нет в store
-    if (!this.currentCompanyId) {
-      await this.$store.dispatch('loadCurrentCompany');
-    }
+    // Компания уже загружается глобально в App.vue, не нужно дублировать загрузку
+    // Если currentCompanyId нет, значит App.vue еще загружается - просто ждем
   },
   
   beforeUnmount() {

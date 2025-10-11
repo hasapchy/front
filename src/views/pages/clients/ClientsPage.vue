@@ -48,7 +48,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <ClientCreatePage ref="clientForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <ClientCreatePage v-if="modalDialog" ref="clientForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -83,6 +83,7 @@ export default {
             data: null,
             loading: false,
             controller: ClientController,
+            cacheInvalidationType: 'clients', // Тип кэша для инвалидации
             selectedIds: [],
             statusFilter: '',
             typeFilter: '',

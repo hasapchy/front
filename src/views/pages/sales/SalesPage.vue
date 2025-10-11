@@ -41,7 +41,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <SaleCreatePage ref="salecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <SaleCreatePage v-if="modalDialog" ref="salecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -80,6 +80,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: SaleController,
+            cacheInvalidationType: 'sales', // Тип кэша для инвалидации
             showStatusSelect: false, // продажи не имеют статусов
             savedSuccessText: this.$t('saleRecordAdded'),
             savedErrorText: this.$t('errorSavingRecord'),

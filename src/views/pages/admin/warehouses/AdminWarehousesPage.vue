@@ -36,13 +36,14 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import crudEventMixin from '@/mixins/crudEventMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, batchActionsMixin,getApiErrorMessageMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
     components: {
         NotificationToast,
         PrimaryButton,
@@ -58,7 +59,7 @@ export default {
             data: null,
             loading: false,
             selectedIds: [],
-
+            cacheInvalidationType: 'warehouses', // Тип кэша для инвалидации
             columnsConfig: [
                 { name: 'name', label: this.$t('name') },
                 { name: 'createdAt', label: this.$t('creationDate') }
@@ -108,6 +109,14 @@ export default {
         },
         handleSaved() {
             this.showNotification(this.$t('warehouseSuccessfullyAdded'), '', false);
+            
+            // Инвалидируем кэш при сохранении
+            if (this.cacheInvalidationType) {
+                const companyId = this.$store.state.currentCompany?.id;
+                const CacheInvalidator = require('@/utils/cacheInvalidator').default;
+                CacheInvalidator.onUpdate(this.cacheInvalidationType, companyId);
+            }
+            
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },
@@ -116,6 +125,14 @@ export default {
         },
         handleDeleted() {
             this.showNotification(this.$t('warehouseSuccessfullyDeleted'), '', false);
+            
+            // Инвалидируем кэш при удалении
+            if (this.cacheInvalidationType) {
+                const companyId = this.$store.state.currentCompany?.id;
+                const CacheInvalidator = require('@/utils/cacheInvalidator').default;
+                CacheInvalidator.onDelete(this.cacheInvalidationType, companyId);
+            }
+            
             this.fetchItems(this.data?.currentPage || 1, true);
             this.closeModal();
         },

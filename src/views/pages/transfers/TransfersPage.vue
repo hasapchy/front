@@ -22,7 +22,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <TransferCreatePage ref="transfercreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <TransferCreatePage v-if="modalDialog" ref="transfercreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -66,6 +66,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: TransferController,
+            cacheInvalidationType: 'transfers', // Тип кэша для инвалидации
             savedSuccessText: this.$t('transferSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingTransfer'),
             deletedSuccessText: this.$t('transferSuccessfullyDeleted'),

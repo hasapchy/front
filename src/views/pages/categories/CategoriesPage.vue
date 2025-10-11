@@ -66,6 +66,7 @@ export default {
             loading: false,
             selectedIds: [],
             controller: CategoryController,
+            cacheInvalidationType: 'categories', // Тип кэша для инвалидации
             savedSuccessText: this.$t('categorySuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingCategory'),
             deletedSuccessText: this.$t('categorySuccessfullyDeleted'),

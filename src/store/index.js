@@ -1,9 +1,10 @@
 import { createStore } from "vuex";
 import api from "@/api/axiosInstance";
-import CacheUtils from "@/utils/cacheUtils";
 import CacheMonitor from "@/utils/cacheMonitor";
 import CacheInvalidator from "@/utils/cacheInvalidator";
 import { CompanyDto } from "@/dto/companies/CompanyDto";
+import CACHE_TTL from "@/constants/cacheTTL";
+import createPersistedState from "vuex-persistedstate";
 
 export default createStore({
   state: {
@@ -295,12 +296,12 @@ export default createStore({
       }
     },
     async loadUnits({ commit, state, dispatch }) {
-      // Если уже загружаются, ждем завершения (с таймаутом)
+      // Если уже загружаются, ждем завершения
       if (state.loadingFlags.units) {
         return dispatch('waitForLoading', 'units');
       }
 
-      // Если уже загружены, не загружаем повторно
+      // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
       if (state.units.length > 0) {
         return;
       }
@@ -308,47 +309,23 @@ export default createStore({
       commit('SET_LOADING_FLAG', { type: 'units', loading: true });
       
       try {
-        // Проверяем кэш (24 часа)
-        const cachedUnits = CacheUtils.get('units_cache', 24 * 60 * 60 * 1000);
-        if (cachedUnits) {
-          commit('SET_UNITS', cachedUnits);
-          return;
-        }
-        
-        // Загружаем с сервера
         const response = await api.get('/app/units');
         const data = response.data;
         commit('SET_UNITS', data);
-        
-        // Сохраняем в кэш
-        CacheUtils.set('units_cache', data);
+        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
       } catch (error) {
         console.error('Ошибка загрузки единиц измерения:', error);
-        // При ошибке пытаемся использовать устаревший кэш
-        const cachedUnits = CacheUtils.get('units_cache', Infinity);
-        if (cachedUnits) {
-          commit('SET_UNITS', cachedUnits);
-        }
       } finally {
         commit('SET_LOADING_FLAG', { type: 'units', loading: false });
       }
     },
-    async loadCurrencies({ commit, state }) {
+    async loadCurrencies({ commit, state, dispatch }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.currencies) {
-        return new Promise((resolve) => {
-          const checkLoaded = () => {
-            if (!state.loadingFlags.currencies) {
-              resolve();
-            } else {
-              setTimeout(checkLoaded, 100);
-            }
-          };
-          checkLoaded();
-        });
+        return dispatch('waitForLoading', 'currencies');
       }
 
-      // Если уже загружены, не загружаем повторно
+      // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
       if (state.currencies.length > 0) {
         return;
       }
@@ -356,27 +333,12 @@ export default createStore({
       commit('SET_LOADING_FLAG', { type: 'currencies', loading: true });
       
       try {
-        // Проверяем кэш (24 часа)
-        const cachedCurrencies = CacheUtils.get('currencies_cache', 24 * 60 * 60 * 1000);
-        if (cachedCurrencies) {
-          commit('SET_CURRENCIES', cachedCurrencies);
-          return;
-        }
-        
-        // Загружаем с сервера
         const response = await api.get('/app/currency');
         const data = response.data;
         commit('SET_CURRENCIES', data);
-        
-        // Сохраняем в кэш
-        CacheUtils.set('currencies_cache', data);
+        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
       } catch (error) {
         console.error('Ошибка загрузки валют:', error);
-        // При ошибке пытаемся использовать устаревший кэш
-        const cachedCurrencies = CacheUtils.get('currencies_cache', Infinity);
-        if (cachedCurrencies) {
-          commit('SET_CURRENCIES', cachedCurrencies);
-        }
       } finally {
         commit('SET_LOADING_FLAG', { type: 'currencies', loading: false });
       }
@@ -387,35 +349,18 @@ export default createStore({
         return dispatch('waitForLoading', 'warehouses');
       }
 
+      // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
+      if (state.warehouses.length > 0) {
+        return;
+      }
 
       commit('SET_LOADING_FLAG', { type: 'warehouses', loading: true });
       
       try {
-        // Проверяем кэш для текущей компании
-        const companyId = state.currentCompany?.id;
-        if (companyId) {
-          const cachedData = localStorage.getItem(`warehouses_${companyId}`);
-          const cacheTimestamp = localStorage.getItem(`warehouses_${companyId}_timestamp`);
-          const now = Date.now();
-          const cacheAge = 10 * 60 * 1000; // 10 минут для данных компании
-          
-          if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
-            const warehouses = JSON.parse(cachedData);
-            commit('SET_WAREHOUSES', warehouses);
-            return;
-          }
-        }
-        
-        // Используем контроллер для правильного преобразования в DTO
         const WarehouseController = (await import('@/api/WarehouseController')).default;
         const data = await WarehouseController.getAllItems();
         commit('SET_WAREHOUSES', data);
-        
-        // Кэшируем для текущей компании
-        if (companyId) {
-          localStorage.setItem(`warehouses_${companyId}`, JSON.stringify(data));
-          localStorage.setItem(`warehouses_${companyId}_timestamp`, Date.now().toString());
-        }
+        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
       } catch (error) {
         console.error('Ошибка загрузки складов:', error);
         commit('SET_WAREHOUSES', []);
@@ -429,47 +374,26 @@ export default createStore({
         return dispatch('waitForLoading', 'cashRegisters');
       }
 
+      // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
+      if (state.cashRegisters.length > 0) {
+        return;
+      }
+
       commit('SET_LOADING_FLAG', { type: 'cashRegisters', loading: true });
       
       try {
-        // Проверяем кэш для текущей компании
         const companyId = state.currentCompany?.id;
-        
-        // Если компания не установлена, НЕ загружаем данные
         if (!companyId) {
           commit('SET_CASH_REGISTERS', []);
           return;
         }
         
-        const cachedData = localStorage.getItem(`cashRegisters_${companyId}`);
-        const cacheTimestamp = localStorage.getItem(`cashRegisters_${companyId}_timestamp`);
-        const now = Date.now();
-        const cacheAge = 10 * 60 * 1000; // 10 минут для данных компании
-        
-        if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
-          const cashRegisters = JSON.parse(cachedData);
-          commit('SET_CASH_REGISTERS', cashRegisters);
-          return;
-        }
-        
-        // Используем контроллер для правильного преобразования в DTO
         const CashRegisterController = (await import('@/api/CashRegisterController')).default;
         const data = await CashRegisterController.getAllItems();
         commit('SET_CASH_REGISTERS', data);
-        
-        // Кэшируем для текущей компании
-        localStorage.setItem(`cashRegisters_${companyId}`, JSON.stringify(data));
-        localStorage.setItem(`cashRegisters_${companyId}_timestamp`, Date.now().toString());
+        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
       } catch (error) {
         console.error('Ошибка загрузки касс:', error);
-        // При ошибке пытаемся использовать кэш
-        const companyId = state.currentCompany?.id;
-        if (companyId) {
-          const cachedData = localStorage.getItem(`cashRegisters_${companyId}`);
-          if (cachedData) {
-            commit('SET_CASH_REGISTERS', JSON.parse(cachedData));
-          }
-        }
       } finally {
         commit('SET_LOADING_FLAG', { type: 'cashRegisters', loading: false });
       }
@@ -480,69 +404,18 @@ export default createStore({
         return dispatch('waitForLoading', 'clients');
       }
 
+      // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
+      if (state.clients.length > 0) {
+        return;
+      }
 
       commit('SET_LOADING_FLAG', { type: 'clients', loading: true });
       
       try {
-        // Проверяем кэш для текущей компании
-        const companyId = state.currentCompany?.id;
-        if (companyId) {
-          const cachedData = localStorage.getItem(`clients_${companyId}`);
-          const cacheTimestamp = localStorage.getItem(`clients_${companyId}_timestamp`);
-          const now = Date.now();
-          const cacheAge = 10 * 60 * 1000; // 10 минут для данных компании
-          
-          if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
-            const ClientDto = (await import('@/dto/client/ClientDto')).default;
-            const rawClients = JSON.parse(cachedData);
-            
-            // Проверяем формат данных - если уже ClientDto (camelCase), используем как есть
-            const clients = rawClients.map(clientData => {
-              if (clientData.firstName !== undefined) {
-                // Данные уже в формате ClientDto, создаем новый объект
-                return new ClientDto(
-                  clientData.id,
-                  clientData.clientType,
-                  clientData.balance,
-                  clientData.isSupplier,
-                  clientData.isConflict,
-                  clientData.firstName,
-                  clientData.lastName,
-                  clientData.contactPerson,
-                  clientData.address,
-                  clientData.note,
-                  clientData.status,
-                  clientData.discountType,
-                  clientData.discount,
-                  clientData.createdAt,
-                  clientData.updatedAt,
-                  clientData.emails || [],
-                  clientData.phones || [],
-                  clientData.userId,
-                  clientData.userName
-                );
-              } else {
-                // Данные в формате API (snake_case), используем fromApi
-                return ClientDto.fromApi(clientData);
-              }
-            });
-            
-            commit('SET_CLIENTS', clients);
-            return;
-          }
-        }
-        
-        // Используем контроллер для правильного преобразования в DTO
         const ClientController = (await import('@/api/ClientController')).default;
         const data = await ClientController.getAllItems();
         commit('SET_CLIENTS', data);
-        
-        // Кэшируем для текущей компании (сохраняем сырые данные для корректного восстановления)
-        if (companyId) {
-          const rawData = data.map(client => client.toJson ? client.toJson() : client);
-          localStorage.setItem(`clients_${companyId}`, JSON.stringify(rawData));
-          localStorage.setItem(`clients_${companyId}_timestamp`, Date.now().toString());
-        }
+        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
       } catch (error) {
         console.error('Ошибка загрузки клиентов:', error);
         commit('SET_CLIENTS', []);
@@ -551,124 +424,64 @@ export default createStore({
       }
     },
     async loadProducts({ commit, state }) {
-      try {
-        // Включаем локальный кэш товаров по компании (10 минут)
-        const companyId = state.currentCompany?.id;
-        if (companyId) {
-          const cachedData = localStorage.getItem(`products_${companyId}`);
-          const cacheTimestamp = localStorage.getItem(`products_${companyId}_timestamp`);
-          const now = Date.now();
-          const cacheAge = 10 * 60 * 1000;
-          if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
-            const products = JSON.parse(cachedData);
-            commit('SET_PRODUCTS', products);
-            return;
-          }
-        }
+      // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
+      if (state.products.length > 0) {
+        return;
+      }
 
+      try {
         const ProductController = (await import('@/api/ProductController')).default;
         const data = await ProductController.getItems(1, true);
         commit('SET_PRODUCTS', data.items);
-        if (companyId) {
-          localStorage.setItem(`products_${companyId}`, JSON.stringify(data.items));
-          localStorage.setItem(`products_${companyId}_timestamp`, Date.now().toString());
-        }
+        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
       } catch (error) {
         console.error('Ошибка загрузки товаров:', error);
         commit('SET_PRODUCTS', []);
       }
     },
     async loadServices({ commit, state }) {
+      // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
+      if (state.services.length > 0) {
+        return;
+      }
+
       try {
-        // Проверяем кэш для текущей компании
-        const companyId = state.currentCompany?.id;
-        if (companyId) {
-          const cachedData = localStorage.getItem(`services_${companyId}`);
-          const cacheTimestamp = localStorage.getItem(`services_${companyId}_timestamp`);
-          const now = Date.now();
-          const cacheAge = 10 * 60 * 1000; // 10 минут для данных компании
-          
-          if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
-            const services = JSON.parse(cachedData);
-            commit('SET_SERVICES', services);
-            return;
-          }
-        }
-        
-        // Используем контроллер для правильного преобразования в DTO
         const ProductController = (await import('@/api/ProductController')).default;
         const data = await ProductController.getItems(1, false); // получаем услуги
         commit('SET_SERVICES', data.items);
-        
-        // Кэшируем для текущей компании
-        if (companyId) {
-          localStorage.setItem(`services_${companyId}`, JSON.stringify(data.items));
-          localStorage.setItem(`services_${companyId}_timestamp`, Date.now().toString());
-        }
+        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
       } catch (error) {
         console.error('Ошибка загрузки услуг:', error);
         commit('SET_SERVICES', []);
       }
     },
     async loadCategories({ commit, state }) {
+      // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
+      if (state.categories.length > 0) {
+        return;
+      }
+
       try {
-        // Проверяем кэш для текущей компании
-        const companyId = state.currentCompany?.id;
-        if (companyId) {
-          const cachedData = localStorage.getItem(`categories_${companyId}`);
-          const cacheTimestamp = localStorage.getItem(`categories_${companyId}_timestamp`);
-          const now = Date.now();
-          const cacheAge = 10 * 60 * 1000; // 10 минут для данных компании
-          
-          if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
-            const categories = JSON.parse(cachedData);
-            commit('SET_CATEGORIES', categories);
-            return;
-          }
-        }
-        
-        // Используем контроллер для правильного преобразования в DTO
         const CategoryController = (await import('@/api/CategoryController')).default;
         const data = await CategoryController.getAllItems();
         commit('SET_CATEGORIES', data);
-        
-        // Кэшируем для текущей компании
-        if (companyId) {
-          localStorage.setItem(`categories_${companyId}`, JSON.stringify(data));
-          localStorage.setItem(`categories_${companyId}_timestamp`, Date.now().toString());
-        }
+        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
       } catch (error) {
         console.error('Ошибка загрузки категорий:', error);
         commit('SET_CATEGORIES', []);
       }
     },
     async loadProjects({ commit, state }) {
+      // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
+      if (state.projects.length > 0) {
+        return;
+      }
+
       try {
-        // Проверяем кэш для текущей компании
-        const companyId = state.currentCompany?.id;
-        if (companyId) {
-          const cachedData = localStorage.getItem(`projects_${companyId}`);
-          const cacheTimestamp = localStorage.getItem(`projects_${companyId}_timestamp`);
-          const now = Date.now();
-          const cacheAge = 10 * 60 * 1000; // 10 минут для данных компании
-          
-          if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheAge) {
-            const projects = JSON.parse(cachedData);
-            commit('SET_PROJECTS', projects);
-            return;
-          }
-        }
-        
-        // Используем контроллер для правильного преобразования в DTO
         const ProjectController = (await import('@/api/ProjectController')).default;
         const data = await ProjectController.getAllItems();
         commit('SET_PROJECTS', data);
-        
-        // Кэшируем для текущей компании
-        if (companyId) {
-          localStorage.setItem(`projects_${companyId}`, JSON.stringify(data));
-          localStorage.setItem(`projects_${companyId}_timestamp`, Date.now().toString());
-        }
+        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
       } catch (error) {
         console.error('Ошибка загрузки проектов:', error);
         commit('SET_PROJECTS', []);
@@ -680,7 +493,7 @@ export default createStore({
         return dispatch('waitForLoading', 'orderStatuses');
       }
 
-      // Если уже загружены, не загружаем повторно
+      // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
       if (state.orderStatuses.length > 0) {
         return;
       }
@@ -688,27 +501,12 @@ export default createStore({
       commit('SET_LOADING_FLAG', { type: 'orderStatuses', loading: true });
       
       try {
-        // Проверяем кэш (24 часа)
-        const cachedOrderStatuses = CacheUtils.get('orderStatuses_cache', 24 * 60 * 60 * 1000);
-        if (cachedOrderStatuses) {
-          commit('SET_ORDER_STATUSES', cachedOrderStatuses);
-          return;
-        }
-        
-        // Загружаем с сервера
         const OrderStatusController = (await import('@/api/OrderStatusController')).default;
         const data = await OrderStatusController.getAllItems();
         commit('SET_ORDER_STATUSES', data);
-        
-        // Сохраняем в кэш
-        CacheUtils.set('orderStatuses_cache', data);
+        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
       } catch (error) {
         console.error('Ошибка загрузки статусов заказов:', error);
-        // При ошибке пытаемся использовать устаревший кэш
-        const cachedOrderStatuses = CacheUtils.get('orderStatuses_cache', Infinity);
-        if (cachedOrderStatuses) {
-          commit('SET_ORDER_STATUSES', cachedOrderStatuses);
-        }
       } finally {
         commit('SET_LOADING_FLAG', { type: 'orderStatuses', loading: false });
       }
@@ -719,7 +517,7 @@ export default createStore({
         return dispatch('waitForLoading', 'projectStatuses');
       }
 
-      // Если уже загружены, не загружаем повторно
+      // Если уже в state - возвращаем (vuex-persistedstate уже восстановил из localStorage!)
       if (state.projectStatuses.length > 0) {
         return;
       }
@@ -727,27 +525,13 @@ export default createStore({
       commit('SET_LOADING_FLAG', { type: 'projectStatuses', loading: true });
       
       try {
-        // Проверяем кэш (24 часа)
-        const cachedProjectStatuses = CacheUtils.get('projectStatuses_cache', 24 * 60 * 60 * 1000);
-        if (cachedProjectStatuses) {
-          commit('SET_PROJECT_STATUSES', cachedProjectStatuses);
-          return;
-        }
-        
-        // Загружаем с сервера
+        // Загружаем с сервера (vuex-persistedstate автоматически сохранит!)
         const ProjectStatusController = (await import('@/api/ProjectStatusController')).default;
         const data = await ProjectStatusController.getAllItems();
         commit('SET_PROJECT_STATUSES', data);
-        
-        // Сохраняем в кэш
-        CacheUtils.set('projectStatuses_cache', data);
+        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
       } catch (error) {
         console.error('Ошибка загрузки статусов проектов:', error);
-        // При ошибке пытаемся использовать устаревший кэш
-        const cachedProjectStatuses = CacheUtils.get('projectStatuses_cache', Infinity);
-        if (cachedProjectStatuses) {
-          commit('SET_PROJECT_STATUSES', cachedProjectStatuses);
-        }
       } finally {
         commit('SET_LOADING_FLAG', { type: 'projectStatuses', loading: false });
       }
@@ -758,7 +542,7 @@ export default createStore({
         return dispatch('waitForLoading', 'transactionCategories');
       }
 
-      // Если уже загружены, не загружаем повторно
+      // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
       if (state.transactionCategories.length > 0) {
         return;
       }
@@ -766,27 +550,12 @@ export default createStore({
       commit('SET_LOADING_FLAG', { type: 'transactionCategories', loading: true });
       
       try {
-        // Проверяем кэш (24 часа)
-        const cachedTransactionCategories = CacheUtils.get('transactionCategories_cache', 24 * 60 * 60 * 1000);
-        if (cachedTransactionCategories) {
-          commit('SET_TRANSACTION_CATEGORIES', cachedTransactionCategories);
-          return;
-        }
-        
-        // Загружаем с сервера
         const TransactionCategoryController = (await import('@/api/TransactionCategoryController')).default;
         const data = await TransactionCategoryController.getAllItems();
         commit('SET_TRANSACTION_CATEGORIES', data);
-        
-        // Сохраняем в кэш
-        CacheUtils.set('transactionCategories_cache', data);
+        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
       } catch (error) {
         console.error('Ошибка загрузки категорий транзакций:', error);
-        // При ошибке пытаемся использовать устаревший кэш
-        const cachedTransactionCategories = CacheUtils.get('transactionCategories_cache', Infinity);
-        if (cachedTransactionCategories) {
-          commit('SET_TRANSACTION_CATEGORIES', cachedTransactionCategories);
-        }
       } finally {
         commit('SET_LOADING_FLAG', { type: 'transactionCategories', loading: false });
       }
@@ -797,7 +566,7 @@ export default createStore({
         return dispatch('waitForLoading', 'productStatuses');
       }
 
-      // Если уже загружены, не загружаем повторно
+      // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
       if (state.productStatuses.length > 0) {
         return;
       }
@@ -805,27 +574,12 @@ export default createStore({
       commit('SET_LOADING_FLAG', { type: 'productStatuses', loading: true });
       
       try {
-        // Проверяем кэш (24 часа)
-        const cachedProductStatuses = CacheUtils.get('productStatuses_cache', 24 * 60 * 60 * 1000);
-        if (cachedProductStatuses) {
-          commit('SET_PRODUCT_STATUSES', cachedProductStatuses);
-          return;
-        }
-        
-        // Загружаем с сервера
         const AppController = (await import('@/api/AppController')).default;
         const data = await AppController.getProductStatuses();
         commit('SET_PRODUCT_STATUSES', data);
-        
-        // Сохраняем в кэш
-        CacheUtils.set('productStatuses_cache', data);
+        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
       } catch (error) {
         console.error('Ошибка загрузки статусов товаров:', error);
-        // При ошибке пытаемся использовать устаревший кэш
-        const cachedProductStatuses = CacheUtils.get('productStatuses_cache', Infinity);
-        if (cachedProductStatuses) {
-          commit('SET_PRODUCT_STATUSES', cachedProductStatuses);
-        }
       } finally {
         commit('SET_LOADING_FLAG', { type: 'productStatuses', loading: false });
       }
@@ -834,18 +588,30 @@ export default createStore({
     async loadCompanyData({ dispatch, commit, state }) {
       if (!state.currentCompany?.id) return;
       
-      commit('CLEAR_COMPANY_DATA');
+      // Защита от повторной загрузки - проверяем флаг
+      if (state.loadingFlags.companyData) {
+        return;
+      }
       
-      // Загружаем все данные параллельно
-      await Promise.all([
-        dispatch('loadWarehouses'),
-        dispatch('loadCashRegisters'),
-        dispatch('loadClients'),
-        dispatch('loadProducts'),
-        dispatch('loadServices'),
-        dispatch('loadCategories'),
-        dispatch('loadProjects')
-      ]);
+      commit('SET_LOADING_FLAG', { type: 'companyData', loading: true });
+      
+      try {
+        commit('CLEAR_COMPANY_DATA');
+        
+        // Загружаем только нужные данные параллельно
+        // Products/Services НЕ загружаются глобально - они загружаются на своих страницах через API
+        await Promise.all([
+          dispatch('loadWarehouses'),
+          dispatch('loadCashRegisters'),
+          dispatch('loadClients'),
+          // dispatch('loadProducts'),   // ❌ Убрано - ProductsPage делает API запрос
+          // dispatch('loadServices'),   // ❌ Убрано - ServicesPage делает API запрос
+          dispatch('loadCategories'),    // ✅ Нужно для фильтров
+          dispatch('loadProjects')
+        ]);
+      } finally {
+        commit('SET_LOADING_FLAG', { type: 'companyData', loading: false });
+      }
     },
     // Очистка кэша
     async clearCache({ commit }) {
@@ -1031,15 +797,12 @@ export default createStore({
     },
     // Инвалидация при CRUD операциях
     onDataCreate({ dispatch }, { type, companyId = null }) {
-      CacheInvalidator.onCreate(type, companyId);
       dispatch('invalidateCache', { type, companyId });
     },
     onDataUpdate({ dispatch }, { type, companyId = null }) {
-      CacheInvalidator.onUpdate(type, companyId);
       dispatch('invalidateCache', { type, companyId });
     },
     onDataDelete({ dispatch }, { type, companyId = null }) {
-      CacheInvalidator.onDelete(type, companyId);
       dispatch('invalidateCache', { type, companyId });
     },
     // Инвалидация при смене компании
@@ -1133,4 +896,101 @@ export default createStore({
     cacheInfo: () => CacheMonitor.getCacheInfo(),
     cacheStatus: () => CacheMonitor.getCacheStatus(),
   },
+  plugins: [
+    createPersistedState({
+      key: 'birhasap_vuex_cache',
+      paths: [
+        // Глобальные справочники (24 часа)
+        'units',
+        'currencies',
+        'orderStatuses',
+        'projectStatuses',
+        'transactionCategories',
+        'productStatuses',
+        
+        // Данные компании (10 минут)
+        'warehouses',
+        'cashRegisters',
+        // 'clients',   // ← НЕ кэшируем, т.к. это DTO с методами
+        'categories',   // ← Нужно для фильтров
+        // 'projects',  // ← НЕ кэшируем, т.к. это DTO с методами
+        // 'products',  // ← НЕ кэшируем глобально - каждая страница загружает свои данные
+        // 'services',  // ← НЕ кэшируем глобально - каждая страница загружает свои данные
+        
+        // Текущая компания и настройки
+        'currentCompany',
+        'userCompanies',
+        'soundEnabled',
+      ],
+      
+      // Кастомная логика для проверки TTL при восстановлении
+      getState: (key, storage) => {
+        const value = storage.getItem(key);
+        if (!value) return undefined;
+        
+        try {
+          const state = JSON.parse(value);
+          
+          // Проверяем TTL для каждого кэшируемого поля
+          const now = Date.now();
+          const fieldsToCheck = {
+            // Глобальные
+            units: CACHE_TTL.units,
+            currencies: CACHE_TTL.currencies,
+            orderStatuses: CACHE_TTL.orderStatuses,
+            projectStatuses: CACHE_TTL.projectStatuses,
+            transactionCategories: CACHE_TTL.transactionCategories,
+            productStatuses: CACHE_TTL.productStatuses,
+            
+            // Данные компании
+            warehouses: CACHE_TTL.warehouses,
+            cashRegisters: CACHE_TTL.cashRegisters,
+            categories: CACHE_TTL.categories,
+            // clients и projects НЕ кэшируем (DTO с методами)
+            // products и services НЕ кэшируем глобально (загружаются на своих страницах)
+          };
+          
+          // Проверяем timestamp для каждого поля
+          Object.keys(fieldsToCheck).forEach(field => {
+            if (state[field] && Array.isArray(state[field]) && state[field].length > 0) {
+              const timestampKey = `${field}_timestamp`;
+              const timestamp = storage.getItem(timestampKey);
+              
+              if (timestamp && (now - parseInt(timestamp)) > fieldsToCheck[field]) {
+                // TTL истёк - очищаем это поле
+                state[field] = [];
+                storage.removeItem(timestampKey);
+              }
+            }
+          });
+          
+          return state;
+        } catch {
+          // Ошибка парсинга state - возвращаем пустое состояние
+          return undefined;
+        }
+      },
+      
+      // Сохраняем timestamp при каждом изменении
+      setState: (key, state, storage) => {
+        storage.setItem(key, JSON.stringify(state));
+        
+        // Сохраняем timestamp для каждого массива данных
+        const now = Date.now().toString();
+        const fieldsWithTimestamp = [
+          'units', 'currencies', 'orderStatuses', 'projectStatuses',
+          'transactionCategories', 'productStatuses', 'warehouses',
+          'cashRegisters', 'categories'
+          // clients и projects НЕ кэшируем (DTO с методами)
+          // products и services НЕ кэшируем глобально (загружаются на своих страницах)
+        ];
+        
+        fieldsWithTimestamp.forEach(field => {
+          if (state[field] && Array.isArray(state[field]) && state[field].length > 0) {
+            storage.setItem(`${field}_timestamp`, now);
+          }
+        });
+      }
+    })
+  ],
 });

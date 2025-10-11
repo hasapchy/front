@@ -54,6 +54,7 @@ export default {
             selectedIds: [],
             deleteDialog: false,
             controller: ProjectStatusController,
+            cacheInvalidationType: 'projectStatuses', // Тип кэша для инвалидации
             savedSuccessText: this.$t('statusSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingStatus'),
             deletedSuccessText: this.$t('statusSuccessfullyDeleted'),

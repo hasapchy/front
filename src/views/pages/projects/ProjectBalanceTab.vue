@@ -99,6 +99,8 @@ export default {
             currencyCode: '',
             balanceLoading: false,
             balanceHistory: [],
+            lastFetchedProjectId: null, // Для предотвращения дублирования запросов
+            forceRefresh: false,
             balance: 0,
             budget: 0,
             detailedBalance: {
@@ -226,7 +228,7 @@ export default {
     },
     async mounted() {
         await this.fetchDefaultCurrency();
-        this.fetchBalanceHistory();
+        // fetchBalanceHistory вызывается через watch
     },
     methods: {
         formatBalance(balance) {
@@ -249,10 +251,16 @@ export default {
         },
         async fetchBalanceHistory() {
             if (!this.editingItem) return;
+            
+            // Предотвращаем повторные запросы для того же проекта
+            if (this.lastFetchedProjectId === this.editingItem.id && !this.forceRefresh) {
+                return;
+            }
+            
             this.balanceLoading = true;
             try {
-                // Добавляем timestamp для принудительного обновления кэша
-                const data = await ProjectController.getBalanceHistory(this.editingItem.id, Date.now());
+                // НЕ используем timestamp - позволяем Backend кэшировать!
+                const data = await ProjectController.getBalanceHistory(this.editingItem.id);
                 const self = this; // Сохраняем ссылку на компонент
                 
                 // Получаем информацию о валютах
@@ -330,6 +338,10 @@ export default {
                         real_balance: 0
                     };
                 }
+                
+                // Сохраняем ID загруженного проекта
+                this.lastFetchedProjectId = this.editingItem.id;
+                this.forceRefresh = false;
             } catch (e) {
                 this.balanceHistory = [];
                 this.balance = 0;
@@ -391,6 +403,7 @@ export default {
         handleTransactionSaved() {
             this.closeTransactionModal();
             // Небольшая задержка для обновления кэша на backend
+            this.forceRefresh = true; // Принудительное обновление
             setTimeout(() => {
                 this.fetchBalanceHistory();
             }, 100);
@@ -400,9 +413,14 @@ export default {
         },
     },
     watch: {
-        editingItem: {
-            handler() {
-                this.fetchBalanceHistory();
+        'editingItem.id': {
+            handler(newId) {
+                if (newId) {
+                    this.fetchBalanceHistory();
+                } else {
+                    this.balanceHistory = [];
+                    this.lastFetchedProjectId = null;
+                }
             },
             immediate: true,
         },
