@@ -49,12 +49,10 @@ export default {
     },
     data() {
         return {
-            data: null,
-            loading: false,
             selectedIds: [],
             deleteDialog: false,
             controller: ProjectStatusController,
-            cacheInvalidationType: 'projectStatuses', // Тип кэша для инвалидации
+            cacheInvalidationType: 'projectStatuses',
             savedSuccessText: this.$t('statusSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingStatus'),
             deletedSuccessText: this.$t('statusSuccessfullyDeleted'),
@@ -65,9 +63,7 @@ export default {
                 { name: 'name', label: 'name' },
                 { name: 'color', label: 'color' },
                 { name: 'createdAt', label: 'creationDate' }
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     created() {
@@ -82,14 +78,6 @@ export default {
                     return i.formatCreatedAt ? i.formatCreatedAt() : i.createdAt;
                 default:
                     return i[c];
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.projectstatuscreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
             }
         },
         handlePerPageChange(newPerPage) {

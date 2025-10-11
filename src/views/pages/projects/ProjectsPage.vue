@@ -82,21 +82,18 @@ export default {
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             statusFilter: '',
             statuses: [],
             clientFilter: '',
             clients: [],
             controller: ProjectController,
-            cacheInvalidationType: 'projects', // Тип кэша для инвалидации
+            cacheInvalidationType: 'projects',
             savedSuccessText: this.$t('projectSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProject'),
             deletedSuccessText: this.$t('projectSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingProject'),
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100],
             debounceTimer: null
         }
     },
@@ -132,14 +129,6 @@ export default {
                     return i.description || 'Не указано';
                 default:
                     return i[c];
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.projectcreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
             }
         },
         async fetchProjectStatuses() {
@@ -208,21 +197,6 @@ export default {
             this.modalDialog = true;
             this.showTimeline = true;
             this.editingItem = item;
-        },
-        // Переопределяем метод из crudEventMixin для добавления специфичной логики
-        async handleSaved() {
-            this.showNotification(this.savedSuccessText, "", false);
-            this.closeModal();
-            
-            // Обновляем список
-            this.fetchItems();
-        },
-        // Переопределяем метод из crudEventMixin для добавления специфичной логики
-        async handleDeleted() {
-            // После удаления проекта обновляем список
-            this.fetchItems();
-            this.showNotification(this.deletedSuccessText, "", false);
-            this.closeModal();
         },
     },
     computed: {

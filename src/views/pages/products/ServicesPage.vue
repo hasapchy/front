@@ -64,13 +64,12 @@ export default {
     components: { NotificationToast, PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             categories: [],
             selectedCategoryId: '',
             controller: ProductController,
-            cacheInvalidationType: 'services', // Тип кэша для инвалидации
+            cacheInvalidationType: 'services',
             savedSuccessText: this.$t('productSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProduct'),
             deletedSuccessText: this.$t('productSuccessfullyDeleted'),
@@ -86,9 +85,7 @@ export default {
                 { name: 'retail_price', label: 'retailPrice' },
                 { name: 'wholesale_price', label: 'wholesalePrice' },
                 { name: 'dateUser', label: 'dateUser' }
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     created() {

@@ -49,12 +49,9 @@ export default {
     components: { NotificationToast, PrimaryButton, SideModalDialog, TransactionCategoryCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
             controller: TransactionCategoryController,
-            cacheInvalidationType: 'transactionCategories', // Тип кэша для инвалидации
-            showStatusSelect: false, // категории транзакций не имеют статусов
+            cacheInvalidationType: 'transactionCategories',
+            showStatusSelect: false,
             savedSuccessText: this.$t('transactionCategorySuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingTransactionCategory'),
             deletedSuccessText: this.$t('transactionCategorySuccessfullyDeleted'),
@@ -66,9 +63,7 @@ export default {
                 { name: 'type', label: this.$t('type') },
                 { name: 'user_name', label: this.$t('createdBy') },
                 { name: 'createdAt', label: this.$t('creationDate') }
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     created() {
@@ -87,14 +82,6 @@ export default {
                     return i.user_name || '-';
                 default:
                     return i[c];
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.transactioncategorycreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
             }
         },
         handlePerPageChange(newPerPage) {

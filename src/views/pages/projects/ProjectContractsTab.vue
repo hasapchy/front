@@ -75,9 +75,6 @@ export default {
             ],
         };
     },
-    async mounted() {
-        this.fetchContracts();
-    },
     methods: {
         async fetchContracts() {
             if (!this.editingItem) return;

@@ -52,11 +52,10 @@ export default {
     components: { NotificationToast, PrimaryButton, SideModalDialog, CompaniesCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             controller: CompaniesController,
-            cacheInvalidationType: 'companies', // Тип кэша для инвалидации
+            cacheInvalidationType: 'companies',
             savedSuccessText: this.$t('companySaved'),
             savedErrorText: this.$t('errorSavingCompany'),
             deletedSuccessText: this.$t('companyDeleted'),
@@ -68,9 +67,7 @@ export default {
                 { name: 'name', label: 'name' },
                 { name: 'logo', label: 'logo', html: true },
                 { name: 'createdAt', label: 'created' },
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         };
     },
     created() {
@@ -94,14 +91,6 @@ export default {
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
-        },
-        handleModalClose() {
-            const formRef = this.$refs.companiescreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
-            }
         },
         itemMapper(item, column) {
             switch (column) {

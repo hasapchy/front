@@ -91,6 +91,7 @@
     </div>
     <!-- ✅ Один компонент вместо двух - один API запрос вместо двух! -->
     <TransactionsBalanceWrapper 
+        ref="balanceWrapper"
         :cash-register-id="cashRegisterId || null" 
         :start-date="startDate"
         :end-date="endDate" 
@@ -154,12 +155,11 @@ export default {
     components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, BatchButton },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             controller: TransactionController,
-            cacheInvalidationType: 'transactions', // Тип кэша для инвалидации
-            showStatusSelect: false, // транзакции не имеют статусов
+            cacheInvalidationType: 'transactions',
+            showStatusSelect: false,
             allCashRegisters: [],
             cashRegisterId: '',
             dateFilter: 'all_time',
@@ -200,9 +200,7 @@ export default {
                 { value: 'sale', label: this.$t('sale') },
                 { value: 'order', label: this.$t('order') },
                 { value: 'other', label: this.$t('other') },
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     created() {
@@ -222,19 +220,9 @@ export default {
     },
     methods: {
         updateBalace() {
-            if (this.$refs.balanceRef) {
-                this.$refs.balanceRef.fetchItems();
-            }
-            if (this.$refs.debtBalanceRef) {
-                this.$refs.debtBalanceRef.fetchItems();
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.transactioncreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
+            // Обновляем баланс кассы и долгов (один компонент для обоих)
+            if (this.$refs.balanceWrapper) {
+                this.$refs.balanceWrapper.fetchItems();
             }
         },
         highlightText(text, search) {
@@ -357,24 +345,16 @@ export default {
         },
         // Переопределяем методы из crudEventMixin для обновления баланса
         handleSaved() {
-            this.showNotification(
-                this.savedSuccessText || "Успешно сохранено",
-                "",
-                false
-            );
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.updateBalace(); // Обновляем баланс касс
-            this.closeModal();
+            // Вызываем метод из миксина
+            this.$options.mixins.find(m => m.methods?.handleSaved)?.methods.handleSaved.call(this);
+            // Добавляем специфическую логику
+            this.updateBalace();
         },
         handleDeleted() {
-            this.showNotification(
-                this.deletedSuccessText || "Успешно удалено",
-                "",
-                false
-            );
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.updateBalace(); // Обновляем баланс касс
-            this.closeModal();
+            // Вызываем метод из миксина
+            this.$options.mixins.find(m => m.methods?.handleDeleted)?.methods.handleDeleted.call(this);
+            // Добавляем специфическую логику
+            this.updateBalace();
         },
         handleCopyTransaction(copiedTransaction) {
             // Закрываем текущее модальное окно

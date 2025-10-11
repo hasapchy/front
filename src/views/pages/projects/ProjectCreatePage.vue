@@ -258,7 +258,9 @@ export default {
             }
         },
         async fetchUsers() {
-            this.users = await UsersController.getAllUsers();
+            // ✅ Используем данные из store (кэшированные!)
+            await this.$store.dispatch('loadUsers');
+            this.users = this.$store.getters.users;
 
             if (this.editingItem && Array.isArray(this.editingItem.users)) {
                 // При редактировании существующего проекта - загружаем выбранных пользователей

@@ -56,16 +56,18 @@ export default {
     },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
-            cacheInvalidationType: 'warehouses', // Тип кэша для инвалидации
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
+            cacheInvalidationType: 'warehouses',
+            controller: WarehouseController,
+            savedSuccessText: this.$t('warehouseSuccessfullyAdded'),
+            savedErrorText: this.$t('errorSavingWarehouse'),
+            deletedSuccessText: this.$t('warehouseSuccessfullyDeleted'),
+            deletedErrorText: this.$t('errorDeletingWarehouse'),
             columnsConfig: [
                 { name: 'name', label: this.$t('name') },
                 { name: 'createdAt', label: this.$t('creationDate') }
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     created() {
@@ -79,14 +81,6 @@ export default {
                     return i.formatCreatedAt();
                 default:
                     return i[c];
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.adminwarehousecreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
             }
         },
         handlePerPageChange(newPerPage) {
@@ -106,38 +100,6 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
-        },
-        handleSaved() {
-            this.showNotification(this.$t('warehouseSuccessfullyAdded'), '', false);
-            
-            // Инвалидируем кэш при сохранении
-            if (this.cacheInvalidationType) {
-                const companyId = this.$store.state.currentCompany?.id;
-                const CacheInvalidator = require('@/utils/cacheInvalidator').default;
-                CacheInvalidator.onUpdate(this.cacheInvalidationType, companyId);
-            }
-            
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleSavedError(m) {
-            this.showNotification(this.$t('errorSavingWarehouse'), m, true);
-        },
-        handleDeleted() {
-            this.showNotification(this.$t('warehouseSuccessfullyDeleted'), '', false);
-            
-            // Инвалидируем кэш при удалении
-            if (this.cacheInvalidationType) {
-                const companyId = this.$store.state.currentCompany?.id;
-                const CacheInvalidator = require('@/utils/cacheInvalidator').default;
-                CacheInvalidator.onDelete(this.cacheInvalidationType, companyId);
-            }
-            
-            this.fetchItems(this.data?.currentPage || 1, true);
-            this.closeModal();
-        },
-        handleDeletedError(m) {
-            this.showNotification(this.$t('errorDeletingWarehouse'), m, true);
         }
     },
     computed: {

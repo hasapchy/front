@@ -62,11 +62,10 @@ export default {
     },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             controller: TransferController,
-            cacheInvalidationType: 'transfers', // Тип кэша для инвалидации
+            cacheInvalidationType: 'transfers',
             savedSuccessText: this.$t('transferSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingTransfer'),
             deletedSuccessText: this.$t('transferSuccessfullyDeleted'),
@@ -79,9 +78,7 @@ export default {
                 { name: 'cashToName', label: 'destination' },
                 { name: 'note', label: 'note' },
                 { name: 'dateUser', label: 'date' },
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     created() {
@@ -100,14 +97,6 @@ export default {
                     return `${i.formatDate()} / ${i.userName}`;
                 default:
                     return i[c];
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.transfercreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
             }
         },
         handlePerPageChange(newPerPage) {

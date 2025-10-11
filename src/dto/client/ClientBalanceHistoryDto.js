@@ -4,7 +4,7 @@ export default class ClientBalanceHistoryDto {
     this.source = source; // тип источника: 'sale', 'receipt', 'transaction', 'order'
     this.sourceId = sourceId; // ID записи
     this.date = date; // дата
-    this.amount = typeof amount === 'number' ? amount : 0; // сумма со знаком
+    this.amount = parseFloat(amount) || 0; // сумма со знаком
     this.description = description; // описание
   }
 

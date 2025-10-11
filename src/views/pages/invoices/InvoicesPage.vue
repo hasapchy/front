@@ -111,13 +111,12 @@ export default {
     },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             editingItem: null,
             loadingDelete: false,
             controller: InvoiceController,
-            cacheInvalidationType: 'invoices', // Тип кэша для инвалидации
+            cacheInvalidationType: 'invoices',
             savedSuccessText: this.$t('invoiceSaved'),
             savedErrorText: this.$t('errorSavingInvoice'),
             deletedSuccessText: this.$t('invoiceDeleted'),
@@ -138,9 +137,7 @@ export default {
             startDate: null,
             endDate: null,
             statusFilter: '',
-            preselectedOrderIds: [],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            preselectedOrderIds: []
         };
     },
     created() {
@@ -195,14 +192,6 @@ export default {
 
                 default:
                     return i[c];
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.invoicecreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
             }
         },
 

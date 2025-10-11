@@ -111,9 +111,21 @@ export default {
         return {
             data: null,
             loading: false,
+            fetchDebounceTimer: null,
         };
     },
     computed: {
+        // Вычисляемое свойство для отслеживания всех фильтров
+        filters() {
+            return {
+                cashRegisterId: this.cashRegisterId,
+                dateFilter: this.dateFilter,
+                startDate: this.startDate,
+                endDate: this.endDate,
+                transactionTypeFilter: this.transactionTypeFilter,
+                sourceFilter: this.sourceFilter
+            };
+        },
         dataWithDebts() {
             if (!this.data) return [];
             
@@ -130,9 +142,6 @@ export default {
         hasDebts() {
             return this.dataWithDebts.length > 0;
         }
-    },
-    mounted() {
-        this.fetchItems();
     },
     methods: {
         handleBalanceClick(cashRegister, balance) {
@@ -251,13 +260,29 @@ export default {
         }
     },
     watch: {
-        cashRegisterId: 'fetchItems',
-        dateFilter: 'fetchItems',
-        startDate: 'fetchItems',
-        endDate: 'fetchItems',
-        transactionTypeFilter: 'fetchItems',
-        sourceFilter: 'fetchItems',
+        // ✅ Объединяем все фильтры в один watch для предотвращения дублей
+        filters: {
+            handler() {
+                // Очищаем предыдущий таймер
+                if (this.fetchDebounceTimer) {
+                    clearTimeout(this.fetchDebounceTimer);
+                }
+                
+                // Устанавливаем новый таймер (100ms debounce)
+                this.fetchDebounceTimer = setTimeout(() => {
+                    this.fetchItems();
+                }, 100);
+            },
+            immediate: true,
+            deep: true
+        }
     },
+    beforeUnmount() {
+        // Очищаем таймер при уничтожении компонента
+        if (this.fetchDebounceTimer) {
+            clearTimeout(this.fetchDebounceTimer);
+        }
+    }
 }
 </script>
 

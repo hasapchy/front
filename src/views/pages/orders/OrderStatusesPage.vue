@@ -48,11 +48,9 @@ export default {
     },
     data() {
         return {
-            data: null,
-            loading: false,
             selectedIds: [],
             controller: OrderStatusController,
-            cacheInvalidationType: 'orderStatuses', // Тип кэша для инвалидации
+            cacheInvalidationType: 'orderStatuses',
             savedSuccessText: this.$t('statusSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingStatus'),
             deletedSuccessText: this.$t('statusSuccessfullyDeleted'),
@@ -63,9 +61,7 @@ export default {
                 { name: 'name', label: 'name' },
                 { name: 'categoryName', label: 'category' },
                 { name: 'createdAt', label: 'creationDate' }
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     created() {
@@ -78,14 +74,6 @@ export default {
                     return i.formatCreatedAt ? i.formatCreatedAt() : i.createdAt;
                 default:
                     return i[c];
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.orderstatuscreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
             }
         },
         handlePerPageChange(newPerPage) {

@@ -76,12 +76,11 @@ export default {
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, ClientButtonCell, BatchButton, AlertDialog },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             controller: SaleController,
-            cacheInvalidationType: 'sales', // Тип кэша для инвалидации
-            showStatusSelect: false, // продажи не имеют статусов
+            cacheInvalidationType: 'sales',
+            showStatusSelect: false,
             savedSuccessText: this.$t('saleRecordAdded'),
             savedErrorText: this.$t('errorSavingRecord'),
             deletedSuccessText: this.$t('recordSuccessfullyDeleted'),
@@ -99,9 +98,7 @@ export default {
             ],
             dateFilter: 'all_time',
             startDate: null,
-            endDate: null,
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            endDate: null
         }
     },
     created() {
@@ -140,14 +137,6 @@ export default {
                         : name;
                 default:
                     return i[c];
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.salecreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
             }
         },
         handleSearch(query) {

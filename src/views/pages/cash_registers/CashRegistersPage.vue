@@ -59,16 +59,14 @@ export default {
     },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             controller: CashRegisterController,
-            cacheInvalidationType: 'cashRegisters', // Тип кэша для инвалидации
+            cacheInvalidationType: 'cashRegisters',
             savedSuccessText: this.$t('cashRegisterSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingCashRegister'),
             deletedSuccessText: this.$t('cashRegisterSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingCashRegister'),
-
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: this.$t('number'), size: 60 },
@@ -77,9 +75,7 @@ export default {
                 { name: 'users', label: this.$t('access') },
                 { name: 'createdAt', label: this.$t('creationDate') },
                 { name: 'dateUser', label: this.$t('dateUser'), html: true },
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     created() {
@@ -104,14 +100,6 @@ export default {
                     return `${i.formatDate()} / ${i.userName}`;
                 default:
                     return i[c];
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.cashregistercreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
             }
         },
         handlePerPageChange(newPerPage) {

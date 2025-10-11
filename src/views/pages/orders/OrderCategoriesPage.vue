@@ -49,11 +49,10 @@ export default {
     components: { NotificationToast, PrimaryButton, SideModalDialog, OrderCategoryCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             controller: OrderCategoryController,
-            cacheInvalidationType: 'orderCategories', // Тип кэша для инвалидации
+            cacheInvalidationType: 'orderCategories',
             savedSuccessText: this.$t('orderCategorySuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingOrderCategory'),
             deletedSuccessText: this.$t('orderCategorySuccessfullyDeleted'),
@@ -63,9 +62,7 @@ export default {
                 { name: 'id', label: '№', size: 60 },
                 { name: 'name', label: this.$t('name') },
                 { name: 'createdAt', label: this.$t('creationDate') }
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     created() {
@@ -78,14 +75,6 @@ export default {
                     return i.formatCreatedAt();
                 default:
                     return i[c];
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.ordercategorycreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
             }
         },
         handlePerPageChange(newPerPage) {

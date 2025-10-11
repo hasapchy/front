@@ -1,6 +1,25 @@
 import CacheInvalidator from '@/utils/cacheInvalidator';
 
 export default {
+  data() {
+    // ✅ Синхронно загружаем perPage из localStorage ДО первого рендера
+    const savedPerPage = localStorage.getItem('perPage');
+    const perPage = savedPerPage ? parseInt(savedPerPage, 10) : 10;
+    
+    return {
+      data: null,
+      loading: false,
+      perPage: perPage,
+      perPageOptions: [10, 25, 50, 100],
+      // controller, cacheInvalidationType, savedSuccessText и т.д. - переопределяются в компонентах
+    };
+  },
+  watch: {
+    // ✅ Сохраняем perPage в localStorage при изменении
+    perPage(newValue) {
+      localStorage.setItem('perPage', newValue.toString());
+    }
+  },
   methods: {
     handleSaved() {
       this.showNotification(
@@ -15,7 +34,7 @@ export default {
         CacheInvalidator.onUpdate(this.cacheInvalidationType, companyId);
       }
       
-      this.fetchItems(this.data?.currentPage || 1, false); // false = не silent, загружаем с сервера
+      this.fetchItems(this.data?.currentPage || 1, true); // true = silent режим, без перезагрузки UI
       this.closeModal();
     },
     handleSavedError(m) {
@@ -38,7 +57,7 @@ export default {
         CacheInvalidator.onDelete(this.cacheInvalidationType, companyId);
       }
       
-      this.fetchItems(this.data?.currentPage || 1, true);
+      this.fetchItems(this.data?.currentPage || 1, true); // true = silent режим
       this.closeModal();
     },
     handleDeletedError(m) {

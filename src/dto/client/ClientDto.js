@@ -154,4 +154,30 @@ export default class ClientDto {
       data.user?.name || data.user_name
     );
   }
+
+  static fromArray(dataArray) {
+    if (!Array.isArray(dataArray)) return [];
+    
+    return dataArray.map(data => new ClientDto(
+      data.id,
+      data.clientType || data.client_type,
+      data.balance || data.balance_amount || 0,
+      data.isSupplier || data.is_supplier,
+      data.isConflict || data.is_conflict,
+      data.firstName || data.first_name,
+      data.lastName || data.last_name,
+      data.contactPerson || data.contact_person,
+      data.address,
+      data.note,
+      data.status,
+      data.discountType || data.discount_type,
+      data.discount,
+      data.createdAt || data.created_at,
+      data.updatedAt || data.updated_at,
+      data.emails || [],
+      data.phones || [],
+      data.userId || data.user_id,
+      data.userName || data.user_name
+    ));
+  }
 }

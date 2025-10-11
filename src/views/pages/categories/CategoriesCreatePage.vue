@@ -91,10 +91,14 @@ export default {
             };
         },
         async fetchUsers() {
-            this.users = await UsersController.getAllUsers();
+            // ✅ Используем данные из store (кэш!)
+            await this.$store.dispatch('loadUsers');
+            this.users = this.$store.getters.users;
         },
         async fetchAllCategories() {
-            this.allCategories = await CategoryController.getAllItems();
+            // ✅ Используем данные из store (кэш!)
+            await this.$store.dispatch('loadCategories');
+            this.allCategories = this.$store.getters.categories;
         },
         async save() {
             this.saveLoading = true;

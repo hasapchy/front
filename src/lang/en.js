@@ -256,6 +256,18 @@ export default {
   receiptSuccessfullyDeleted: 'Receipt successfully deleted',
   errorDeletingReceipt: 'Error deleting receipt',
   
+  // Warehouse movements
+  movementSuccessfullyAdded: 'Movement successfully added',
+  errorSavingMovement: 'Error saving movement',
+  movementSuccessfullyDeleted: 'Movement successfully deleted',
+  errorDeletingMovement: 'Error deleting movement',
+  
+  // Warehouse writeoffs
+  writeoffSuccessfullyAdded: 'Writeoff successfully added',
+  errorSavingWriteoff: 'Error saving writeoff',
+  writeoffSuccessfullyDeleted: 'Writeoff successfully deleted',
+  errorDeletingWriteoff: 'Error deleting writeoff',
+  
   // Filters
   resetFilters: 'Reset Filters',
   allProjects: 'All Projects',

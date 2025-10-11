@@ -108,25 +108,31 @@
                 </div> -->
             </div>
             <div v-show="currentTab === 'products'">
-                <div>
-                    <label class="required">{{ $t('warehouse') }}</label>
-                    <select v-model="warehouseId" required>
-                        <option value="">{{ $t('no') }}</option>
-                        <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">{{ parent.name }}
-                        </option>
-                    </select>
-                </div>
-                <ProductSearch ref="productSearch" v-model="products" :show-quantity="true" :show-price="true" :show-price-type="true"
-                    :is-sale="true" :isOrder="true" :currency-symbol="currencySymbol" :warehouse-id="warehouseId"
-                    :project-id="projectId" v-model:discount="discount" v-model:discountType="discountType" required @product-removed="onProductRemoved" />
+                <!-- ✅ Ленивая загрузка: компонент рендерится только после первого посещения вкладки -->
+                <template v-if="productsTabVisited">
+                    <div>
+                        <label class="required">{{ $t('warehouse') }}</label>
+                        <select v-model="warehouseId" required>
+                            <option value="">{{ $t('no') }}</option>
+                            <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">{{ parent.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <ProductSearch ref="productSearch" v-model="products" :show-quantity="true" :show-price="true" :show-price-type="true"
+                        :is-sale="true" :isOrder="true" :currency-symbol="currencySymbol" :warehouse-id="warehouseId"
+                        :project-id="projectId" v-model:discount="discount" v-model:discountType="discountType" required @product-removed="onProductRemoved" />
+                </template>
             </div>
             <div v-show="currentTab === 'transactions'">
-                <OrderTransactionsTab v-if="editingItemId" :order-id="editingItemId" :client="selectedClient"
-                    :project-id="projectId" :cash-id="cashId" :currency-symbol="currencySymbol"
-                    @updated-paid="paidTotalAmount = $event" />
-                <div v-else class="p-4 text-gray-500">
-                    {{ $t('saveOrderFirst') }}
-                </div>
+                <!-- ✅ Ленивая загрузка: компонент рендерится только после первого посещения вкладки -->
+                <template v-if="transactionsTabVisited">
+                    <OrderTransactionsTab v-if="editingItemId" :order-id="editingItemId" :client="selectedClient"
+                        :project-id="projectId" :cash-id="cashId" :currency-symbol="currencySymbol"
+                        @updated-paid="paidTotalAmount = $event" />
+                    <div v-else class="p-4 text-gray-500">
+                        {{ $t('saveOrderFirst') }}
+                    </div>
+                </template>
             </div>
         </div>
     </div>
@@ -154,10 +160,10 @@
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
         :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     <SideModalDialog :showForm="projectModalDialog" :onclose="closeProjectModal" :level="1">
-        <ProjectCreatePage @saved="handleProjectSaved" @saved-error="handleProjectSavedError" />
+        <ProjectCreatePage v-if="projectModalDialog" @saved="handleProjectSaved" @saved-error="handleProjectSavedError" />
     </SideModalDialog>
     <SideModalDialog :showForm="productCategoryModalDialog" :onclose="closeProductCategoryModal" :level="1">
-        <CategoriesCreatePage @saved="handleProductCategorySaved" @saved-error="handleProductCategorySavedError" />
+        <CategoriesCreatePage v-if="productCategoryModalDialog" @saved="handleProductCategorySaved" @saved-error="handleProductCategorySavedError" />
     </SideModalDialog>
 </template>
 
@@ -193,6 +199,8 @@ export default {
     data() {
         return {
             currentTab: 'info',
+            productsTabVisited: false, // ✅ Флаг для ленивой загрузки вкладки "Товары"
+            transactionsTabVisited: false, // ✅ Флаг для ленивой загрузки вкладки "Транзакции"
             tabs: [
                 { name: 'info', label: 'info' },
                 { name: 'products', label: 'products' },
@@ -229,13 +237,26 @@ export default {
             // additionalFieldValues: {},
         };
     },
-    created() {
-        this.fetchAllWarehouses();
-        this.fetchAllCashRegisters();
-        this.fetchAllProjects();
-        this.fetchAllProductCategories();
-        this.fetchCurrencies();
-        this.fetchOrderStatuses();
+    async created() {
+        // ✅ Загружаем данные один раз при создании компонента
+        await Promise.all([
+            this.fetchAllWarehouses(),
+            this.fetchAllCashRegisters(),
+            this.fetchAllProjects(),
+            this.fetchAllProductCategories(),
+            this.fetchCurrencies(),
+            this.fetchOrderStatuses()
+        ]);
+        
+        // Устанавливаем дефолтные значения для нового заказа
+        if (!this.editingItem) {
+            if (this.allWarehouses.length > 0 && !this.warehouseId) {
+                this.warehouseId = this.allWarehouses[0].id;
+            }
+            if (this.allCashRegisters.length > 0 && !this.cashId) {
+                this.cashId = this.allCashRegisters[0].id;
+            }
+        }
     },
     mounted() {
         this.$watch('editingItem', async (newItem, oldItem) => {
@@ -248,32 +269,9 @@ export default {
             this.handleEditingItemChange(this.editingItem);
         }
         
-        this.$nextTick(async () => {
-            await Promise.all([
-                this.fetchAllWarehouses(),
-                this.fetchAllProductCategories(),
-                this.fetchAllCashRegisters()
-            ]);
-            
-            if (!this.editingItem) {
-                if (this.allWarehouses.length > 0 && !this.warehouseId) {
-                    this.warehouseId = this.allWarehouses[0].id;
-                }
-                if (this.allCashRegisters.length > 0 && !this.cashId) {
-                    this.cashId = this.allCashRegisters[0].id;
-                }
-                // if (this.allCategories.length > 0 && !this.categoryId) {
-                //     this.categoryId = this.allCategories[0].id;
-                // }
-                // if (this.categoryId) {
-                //     await this.loadAdditionalFields(this.categoryId, false);
-                // }
-            }
-            
-            // Сохраняем начальное состояние после полной инициализации формы
-            this.$nextTick(() => {
-                this.saveInitialState();
-            });
+        // Сохраняем начальное состояние после полной инициализации формы
+        this.$nextTick(() => {
+            this.saveInitialState();
         });
     },
     computed: {
@@ -364,13 +362,22 @@ export default {
             this.allWarehouses = this.$store.getters.warehouses;
         },
     async fetchAllProjects() {
-      // Загружаем проекты напрямую с сервера (с Backend кэшем)
-      const ProjectController = (await import('@/api/ProjectController')).default;
-      this.allProjects = await ProjectController.getActiveItems();
+      if (this.allProjects.length > 0) return; // Уже загружены
+      
+      await this.$store.dispatch('loadProjects');
+      this.allProjects = this.$store.getters.projects;
     },
         async fetchAllProductCategories() {
+            // ✅ Проверяем есть ли уже данные
+            if (this.allProductCategories.length > 0) return;
+            
             try {
-                this.allProductCategories = await CategoriesController.getParentCategories();
+                // Используем store для categories
+                await this.$store.dispatch('loadCategories');
+                const allCategories = this.$store.getters.categories;
+                
+                // Фильтруем только родительские
+                this.allProductCategories = allCategories.filter(c => !c.parentId);
             } catch (error) {
                 this.allProductCategories = [];
             }
@@ -407,6 +414,14 @@ export default {
         },
         changeTab(tabName) {
             this.currentTab = tabName;
+            
+            // ✅ Устанавливаем флаги при первом посещении вкладки (ленивая загрузка)
+            if (tabName === 'products' && !this.productsTabVisited) {
+                this.productsTabVisited = true;
+            }
+            if (tabName === 'transactions' && !this.transactionsTabVisited) {
+                this.transactionsTabVisited = true;
+            }
         },
         // async loadAdditionalFields(categoryId, preserveValues = true) {
         //     try {
@@ -601,6 +616,9 @@ export default {
             this.statusId = 1;
             this.paidTotalAmount = 0;
             this.removedTempProducts = [];
+            // Сбрасываем флаги ленивой загрузки для нового заказа
+            this.productsTabVisited = false;
+            this.transactionsTabVisited = false;
             // this.additionalFields = [];
             // this.additionalFieldValues = {};
             this.resetFormInitialization();
@@ -742,6 +760,13 @@ export default {
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
+                    // ✅ Для существующего заказа сразу помечаем вкладки как посещенные
+                    // чтобы компоненты загрузились (там уже есть данные)
+                    if (newEditingItem.id) {
+                        this.productsTabVisited = true;
+                        this.transactionsTabVisited = true;
+                    }
+                    
                     this.selectedClient = newEditingItem.client || null;
                     this.projectId = newEditingItem.projectId || newEditingItem.project_id || '';
                     this.warehouseId = newEditingItem.warehouseId || (this.allWarehouses.length ? this.allWarehouses[0].id : '');

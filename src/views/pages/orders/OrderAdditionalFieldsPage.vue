@@ -59,13 +59,12 @@ export default {
     },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             editingItem: null,
             loadingDelete: false,
             controller: OrderAfController,
-            cacheInvalidationType: 'orderFields', // Тип кэша для инвалидации
+            cacheInvalidationType: 'orderFields',
             savedSuccessText: this.$t('additionalFieldSaved'),
             savedErrorText: this.$t('errorSavingAdditionalField'),
             deletedSuccessText: this.$t('additionalFieldDeleted'),
@@ -79,9 +78,7 @@ export default {
                 { name: "required", label: 'required' },
                 { name: "default", label: 'default' },
                 { name: "createdAt", label: 'createdAt' },
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         };
     },
     created() {
@@ -103,14 +100,6 @@ export default {
                     return i.createdAt ? new Date(i.createdAt).toLocaleDateString() : "-";
                 default:
                     return i[c];
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.additionalFieldForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
             }
         },
         handlePerPageChange(newPerPage) {

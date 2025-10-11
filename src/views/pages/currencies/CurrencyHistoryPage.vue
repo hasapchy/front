@@ -101,14 +101,12 @@ export default {
     },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             currencies: [],
             selectedCurrencyId: '',
             selectedCurrency: null,
             controller: CurrencyHistoryController,
-            // Настройка текстов для crudEventMixin
             savedSuccessText: this.$t('exchangeRateSaved'),
             savedErrorText: this.$t('errorSavingExchangeRate'),
             deletedSuccessText: this.$t('exchangeRateDeleted'),
@@ -121,9 +119,7 @@ export default {
                 { name: 'endDate', label: 'endDate', size: 120 },
                 { name: 'duration', label: 'duration', size: 100 },
                 { name: 'status', label: 'status', size: 100, html: true },
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     created() {
@@ -192,13 +188,6 @@ export default {
             }
         },
         
-        handleModalClose() {
-            if (this.$refs.currencyHistoryForm && this.$refs.currencyHistoryForm.handleCloseRequest) {
-                this.$refs.currencyHistoryForm.handleCloseRequest();
-            } else {
-                this.closeModal();
-            }
-        },
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);

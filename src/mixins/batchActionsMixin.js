@@ -3,6 +3,7 @@ import CacheInvalidator from '@/utils/cacheInvalidator';
 export default {
   data() {
     return {
+      selectedIds: [], // Выбранные элементы для batch операций
       loadingBatch: false,
       deleteDialog: false,
       idsToDelete: [],

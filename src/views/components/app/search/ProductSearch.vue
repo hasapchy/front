@@ -268,7 +268,6 @@ export default {
             productSearch: '',
             productSearchLoading: false,
             productResults: [],
-            lastProducts: [],
             showDropdown: false,
             modalCreateProduct: false,
             modalCreateTempProduct: false,
@@ -322,50 +321,21 @@ export default {
                 this.$emit('update:discountType', value);
             }
         },
+        lastProducts() {
+            // ✅ Берем из store вместо локального state
+            return this.$store.getters.lastProducts;
+        }
     },
-    created() {
-        this.fetchLastProducts();
+    async created() {
+        // ✅ Загружаем из store (глобальный кэш!)
+        await this.$store.dispatch('loadLastProducts');
     },
     methods: {
         async fetchLastProducts() {
-            try {
-                // Используем данные из store вместо API вызовов
-                let allItems = [];
-                
-                if (this.onlyProducts) {
-                    // Только товары из store
-                    if (this.$store.getters.products.length > 0) {
-                        allItems = this.$store.getters.products;
-                    } else {
-                        await this.$store.dispatch('loadProducts');
-                        allItems = this.$store.getters.products;
-                    }
-                } else {
-                    // Товары и услуги из store
-                    const products = this.$store.getters.products.length > 0 
-                        ? this.$store.getters.products 
-                        : (await this.$store.dispatch('loadProducts'), this.$store.getters.products);
-                    
-                    const services = this.$store.getters.services.length > 0 
-                        ? this.$store.getters.services 
-                        : (await this.$store.dispatch('loadServices'), this.$store.getters.services);
-                    
-                    // Защита от неправильных данных
-                    const safeProducts = Array.isArray(products) ? products : [];
-                    const safeServices = Array.isArray(services) ? services : [];
-                    
-                    allItems = [...safeProducts, ...safeServices];
-                }
-                
-                this.lastProducts = allItems
-                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                    .slice(0, 10)
-                    .map(item => ProductSearchDto.fromApi(item));
-                    
-            } catch (error) {
-                console.error('Ошибка загрузки последних товаров:', error);
-                this.lastProducts = [];
-            }
+            // ✅ Перезагружаем данные из store (очищаем кэш)
+            this.$store.commit('SET_LAST_PRODUCTS', []);
+            this.$store.commit('SET_LAST_PRODUCTS_DATA', []);
+            await this.$store.dispatch('loadLastProducts');
         },
         searchProducts: debounce(async function () {
             if (this.productSearch.length >= 3) {
@@ -522,10 +492,10 @@ export default {
             immediate: true,
         },
         warehouseId: {
-            handler() {
-                // При изменении склада перезагружаем результаты поиска и последние товары
-                this.fetchLastProducts();
-                if (this.productSearch.length >= 3) {
+            handler(newWarehouseId, oldWarehouseId) {
+                // ✅ lastProducts НЕ зависят от склада - это просто "последние 10 товаров"
+                // Только перезагружаем поиск (он зависит от склада)
+                if (this.productSearch.length >= 3 && newWarehouseId !== oldWarehouseId) {
                     this.searchProducts();
                 }
             },

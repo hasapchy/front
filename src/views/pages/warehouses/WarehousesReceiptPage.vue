@@ -67,11 +67,10 @@ export default {
     },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             controller: WarehouseReceiptController,
-            cacheInvalidationType: 'receipts', // Тип кэша для инвалидации
+            cacheInvalidationType: 'receipts',
             editingItem: null,
             savedSuccessText: this.$t('receiptSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingReceipt'),
@@ -87,9 +86,7 @@ export default {
                 { name: 'products', label: 'products', html: true },
                 { name: 'amount', label: 'totalAmount' },
                 { name: 'note', label: 'note' },
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     created() {
@@ -115,14 +112,6 @@ export default {
                     return i.priceInfo();
                 default:
                     return i[c];
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.warehousesreceiptcreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
             }
         },
         handlePerPageChange(newPerPage) {

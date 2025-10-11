@@ -52,11 +52,10 @@ export default {
     components: { NotificationToast, PrimaryButton, SideModalDialog, UsersCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             controller: UsersController,
-            cacheInvalidationType: 'users', // Тип кэша для инвалидации
+            cacheInvalidationType: 'users',
             savedSuccessText: this.$t('userSaved'),
             savedErrorText: this.$t('errorSavingUser'),
             deletedSuccessText: this.$t('userDeleted'),
@@ -72,9 +71,7 @@ export default {
                 { name: 'isAdmin', label: 'admin', size: 80 },
                 { name: 'lastLoginAt', label: 'lastLogin' },
                 { name: 'createdAt', label: 'created' },
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         };
     },
     created() {
@@ -98,14 +95,6 @@ export default {
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
-        },
-        handleModalClose() {
-            const formRef = this.$refs.userscreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
-            }
         },
         itemMapper(item, column) {
             switch (column) {

@@ -62,11 +62,10 @@ export default {
     },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             controller: CategoryController,
-            cacheInvalidationType: 'categories', // Тип кэша для инвалидации
+            cacheInvalidationType: 'categories',
             savedSuccessText: this.$t('categorySuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingCategory'),
             deletedSuccessText: this.$t('categorySuccessfullyDeleted'),
@@ -79,9 +78,7 @@ export default {
                 { name: 'users', label: 'access' },
                 { name: 'userName', label: 'creator' },
                 { name: 'createdAt', label: 'creationDate' }
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     created() {
@@ -100,14 +97,6 @@ export default {
                     return i.formatCreatedAt();
                 default:
                     return i[c];
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.admincategorycreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
             }
         },
         handlePerPageChange(newPerPage) {

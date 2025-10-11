@@ -972,6 +972,18 @@ export default {
   receiptSuccessfullyDeleted: 'Giriş ýazgysy üstünlikli pozuldy',
   errorDeletingReceipt: 'Giriş ýazgysyny pozmakda ýalňyşlyk',
   
+  // Warehouse movements
+  movementSuccessfullyAdded: 'Hereket üstünlikli goşuldy',
+  errorSavingMovement: 'Hereketi saklamakda ýalňyşlyk',
+  movementSuccessfullyDeleted: 'Hereket üstünlikli pozuldy',
+  errorDeletingMovement: 'Hereketi pozmakda ýalňyşlyk',
+  
+  // Warehouse writeoffs
+  writeoffSuccessfullyAdded: 'Çykyş üstünlikli goşuldy',
+  errorSavingWriteoff: 'Çykyşy saklamakda ýalňyşlyk',
+  writeoffSuccessfullyDeleted: 'Çykyş üstünlikli pozuldy',
+  errorDeletingWriteoff: 'Çykyşy pozmakda ýalňyşlyk',
+  
   // PDF Generation
   generatePdf: 'PDF döret',
   shortPdf: 'Gysga',

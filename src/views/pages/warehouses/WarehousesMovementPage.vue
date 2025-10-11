@@ -55,11 +55,10 @@ export default {
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, WarehousesMovementCreatePage, BatchButton, AlertDialog },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             controller: WarehouseMovementController,
-            cacheInvalidationType: 'movements', // Тип кэша для инвалидации
+            cacheInvalidationType: 'movements',
             editingItem: null,
             savedSuccessText: this.$t('movementSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingMovement'),
@@ -72,9 +71,7 @@ export default {
                 { name: 'direction', label: 'direction', html: true },
                 { name: 'products', label: 'products', html: true },
                 { name: 'note', label: 'note' },
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     computed: {
@@ -97,14 +94,6 @@ export default {
                     return `${i.formatDate()} / ${i.userName}`;
                 default:
                     return i[c];
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.warehousesmovementcreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
             }
         },
         handlePerPageChange(newPerPage) {

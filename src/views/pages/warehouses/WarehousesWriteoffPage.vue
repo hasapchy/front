@@ -55,11 +55,10 @@ export default {
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, WarehousesWriteoffCreatePage, BatchButton, AlertDialog },
     data() {
         return {
-            data: null,
-            loading: false,
-            selectedIds: [],
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             controller: WarehouseWriteoffController,
-            cacheInvalidationType: 'writeoffs', // Тип кэша для инвалидации
+            cacheInvalidationType: 'writeoffs',
             editingItem: null,
             savedSuccessText: this.$t('writeoffSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingWriteoff'),
@@ -72,9 +71,7 @@ export default {
                 { name: 'warehouseName', label: 'warehouse' },
                 { name: 'products', label: 'products', html: true },
                 { name: 'note', label: 'note' },
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     computed: {
@@ -97,14 +94,6 @@ export default {
                     return i.client?.fullName() || 'Не указан';
                 default:
                     return i[c];
-            }
-        },
-        handleModalClose() {
-            const formRef = this.$refs.warehouseswriteoffcreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
             }
         },
         handlePerPageChange(newPerPage) {

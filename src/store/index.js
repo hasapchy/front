@@ -26,6 +26,7 @@ export default createStore({
     loadingFlags: {
       units: false,
       currencies: false,
+      users: false,
       warehouses: false,
       cashRegisters: false,
       clients: false,
@@ -38,18 +39,24 @@ export default createStore({
       transactionCategories: false,
       productStatuses: false
     },
+    users: [], // Пользователи (для модалок создания)
     warehouses: [], // Склады
     cashRegisters: [], // Кассы
-    clients: [], // Клиенты
+    clients: [], // Клиенты (DTO с методами)
+    clientsData: [], // Plain data для кэширования
     products: [], // Товары
     services: [], // Услуги
+    lastProducts: [], // Последние 10 товаров для ProductSearch (DTO с методами)
+    lastProductsData: [], // Plain data для кэширования
     categories: [], // Категории
-    projects: [], // Проекты
+    projects: [], // Проекты (DTO с методами)
+    projectsData: [], // Plain data для кэширования
     orderStatuses: [], // Статусы заказов
     projectStatuses: [], // Статусы проектов
     transactionCategories: [], // Категории транзакций
     productStatuses: [], // Статусы товаров
     currentCompany: null, // Текущая выбранная компания
+    lastCompanyId: null, // ID последней загруженной компании (для отслеживания смены)
     userCompanies: [], // Список компаний пользователя
     // Кэш данных по компаниям (удаляем, используем только localStorage)
     // companyDataCache: {}, // { companyId: { warehouses: [], clients: [], ... } }
@@ -123,6 +130,9 @@ export default createStore({
     SET_CURRENCIES(state, currencies) {
       state.currencies = currencies;
     },
+    SET_USERS(state, users) {
+      state.users = users;
+    },
     SET_WAREHOUSES(state, warehouses) {
       state.warehouses = warehouses;
     },
@@ -132,17 +142,29 @@ export default createStore({
     SET_CLIENTS(state, clients) {
       state.clients = clients;
     },
+    SET_CLIENTS_DATA(state, clientsData) {
+      state.clientsData = clientsData;
+    },
     SET_PRODUCTS(state, products) {
       state.products = products;
     },
     SET_SERVICES(state, services) {
       state.services = services;
     },
+    SET_LAST_PRODUCTS(state, lastProducts) {
+      state.lastProducts = lastProducts;
+    },
+    SET_LAST_PRODUCTS_DATA(state, lastProductsData) {
+      state.lastProductsData = lastProductsData;
+    },
     SET_CATEGORIES(state, categories) {
       state.categories = categories;
     },
     SET_PROJECTS(state, projects) {
       state.projects = projects;
+    },
+    SET_PROJECTS_DATA(state, projectsData) {
+      state.projectsData = projectsData;
     },
     SET_ORDER_STATUSES(state, orderStatuses) {
       state.orderStatuses = orderStatuses;
@@ -164,13 +186,18 @@ export default createStore({
     //   state.companyDataCache[companyId][dataType] = data;
     // },
     CLEAR_COMPANY_DATA(state) {
+      // Очищаем ВСЕ данные компании (вызывается только при смене компании)
       state.warehouses = [];
       state.cashRegisters = [];
       state.clients = [];
+      state.clientsData = [];
       state.products = [];
       state.services = [];
+      state.lastProducts = []; // ✅ Очищаем DTO
+      // НЕ очищаем lastProductsData - пусть кэшируется
       state.categories = [];
       state.projects = [];
+      state.projectsData = [];
       // НЕ очищаем глобальные данные (статусы, валюты, единицы)
       // state.orderStatuses = [];
       // state.projectStatuses = [];
@@ -179,6 +206,9 @@ export default createStore({
     },
     SET_CURRENT_COMPANY(state, company) {
       state.currentCompany = company;
+    },
+    SET_LAST_COMPANY_ID(state, companyId) {
+      state.lastCompanyId = companyId;
     },
     SET_USER_COMPANIES(state, companies) {
       state.userCompanies = companies;
@@ -343,6 +373,31 @@ export default createStore({
         commit('SET_LOADING_FLAG', { type: 'currencies', loading: false });
       }
     },
+    async loadUsers({ commit, state, dispatch }) {
+      // Если уже загружаются, ждем завершения
+      if (state.loadingFlags.users) {
+        return dispatch('waitForLoading', 'users');
+      }
+
+      // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
+      if (state.users.length > 0) {
+        return;
+      }
+
+      commit('SET_LOADING_FLAG', { type: 'users', loading: true });
+      
+      try {
+        const UsersController = (await import('@/api/UsersController')).default;
+        const data = await UsersController.getAllUsers();
+        commit('SET_USERS', data);
+        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
+      } catch (error) {
+        console.error('Ошибка загрузки пользователей:', error);
+        commit('SET_USERS', []);
+      } finally {
+        commit('SET_LOADING_FLAG', { type: 'users', loading: false });
+      }
+    },
     async loadWarehouses({ commit, state, dispatch }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.warehouses) {
@@ -404,7 +459,16 @@ export default createStore({
         return dispatch('waitForLoading', 'clients');
       }
 
-      // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
+      // ✅ СНАЧАЛА проверяем есть ли кэшированные plain data (vuex-persistedstate восстановил)
+      if (state.clientsData.length > 0 && state.clients.length === 0) {
+        // Конвертируем plain data в DTO
+        const ClientDto = (await import('@/dto/client/ClientDto')).default;
+        const clients = ClientDto.fromArray(state.clientsData);
+        commit('SET_CLIENTS', clients);
+        return;
+      }
+
+      // Если DTO уже в state - возвращаем
       if (state.clients.length > 0) {
         return;
       }
@@ -414,11 +478,17 @@ export default createStore({
       try {
         const ClientController = (await import('@/api/ClientController')).default;
         const data = await ClientController.getAllItems();
+        
+        // Сохраняем DTO для использования
         commit('SET_CLIENTS', data);
-        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
+        
+        // Сохраняем plain data для кэширования в localStorage
+        const plainData = data.map(client => ({ ...client }));
+        commit('SET_CLIENTS_DATA', plainData);
       } catch (error) {
         console.error('Ошибка загрузки клиентов:', error);
         commit('SET_CLIENTS', []);
+        commit('SET_CLIENTS_DATA', []);
       } finally {
         commit('SET_LOADING_FLAG', { type: 'clients', loading: false });
       }
@@ -472,7 +542,16 @@ export default createStore({
       }
     },
     async loadProjects({ commit, state }) {
-      // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
+      // ✅ СНАЧАЛА проверяем есть ли кэшированные plain data (vuex-persistedstate восстановил)
+      if (state.projectsData.length > 0 && state.projects.length === 0) {
+        // Конвертируем plain data в DTO
+        const ProjectDto = (await import('@/dto/project/ProjectDto')).default;
+        const projects = ProjectDto.fromArray(state.projectsData);
+        commit('SET_PROJECTS', projects);
+        return;
+      }
+
+      // Если DTO уже в state - возвращаем
       if (state.projects.length > 0) {
         return;
       }
@@ -480,11 +559,51 @@ export default createStore({
       try {
         const ProjectController = (await import('@/api/ProjectController')).default;
         const data = await ProjectController.getAllItems();
+        
+        // Сохраняем DTO для использования
         commit('SET_PROJECTS', data);
-        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
+        
+        // Сохраняем plain data для кэширования в localStorage
+        const plainData = data.map(project => ({ ...project }));
+        commit('SET_PROJECTS_DATA', plainData);
       } catch (error) {
         console.error('Ошибка загрузки проектов:', error);
         commit('SET_PROJECTS', []);
+        commit('SET_PROJECTS_DATA', []);
+      }
+    },
+    async loadLastProducts({ commit, state }) {
+      // ✅ Проверяем plain data версию (из localStorage)
+      if (state.lastProductsData.length > 0 && state.lastProducts.length === 0) {
+        // Конвертируем plain data в DTO
+        const ProductSearchDto = (await import('@/dto/product/ProductSearchDto')).default;
+        const lastProducts = state.lastProductsData.map(item => ProductSearchDto.fromApi(item));
+        commit('SET_LAST_PRODUCTS', lastProducts);
+        return;
+      }
+
+      // ✅ Если DTO уже в state - возвращаем
+      if (state.lastProducts.length > 0) {
+        return;
+      }
+
+      try {
+        const ProductController = (await import('@/api/ProductController')).default;
+        const results = await ProductController.getItems(1, null, {}, 10);
+        
+        // Преобразуем в DTO для поиска
+        const ProductSearchDto = (await import('@/dto/product/ProductSearchDto')).default;
+        const lastProducts = (results.items || []).map(item => ProductSearchDto.fromApi(item));
+        
+        commit('SET_LAST_PRODUCTS', lastProducts);
+        
+        // ✅ Сохраняем plain data для кэширования
+        const plainData = (results.items || []).map(item => ({ ...item }));
+        commit('SET_LAST_PRODUCTS_DATA', plainData);
+      } catch (error) {
+        console.error('Ошибка загрузки последних товаров:', error);
+        commit('SET_LAST_PRODUCTS', []);
+        commit('SET_LAST_PRODUCTS_DATA', []);
       }
     },
     async loadOrderStatuses({ commit, state, dispatch }) {
@@ -596,7 +715,12 @@ export default createStore({
       commit('SET_LOADING_FLAG', { type: 'companyData', loading: true });
       
       try {
-        commit('CLEAR_COMPANY_DATA');
+        // ✅ Очищаем данные ТОЛЬКО если сменилась компания
+        const companyChanged = state.lastCompanyId !== state.currentCompany.id;
+        if (companyChanged) {
+          commit('CLEAR_COMPANY_DATA');
+          commit('SET_LAST_COMPANY_ID', state.currentCompany.id);
+        }
         
         // Загружаем только нужные данные параллельно
         // Products/Services НЕ загружаются глобально - они загружаются на своих страницах через API
@@ -667,37 +791,22 @@ export default createStore({
         return [];
       }
     },
-    async loadCurrentCompany({ commit, dispatch }) {
+    async loadCurrentCompany({ commit, dispatch, state }) {
       try {
-        // Сначала пробуем загрузить из localStorage
-        const cachedCompany = localStorage.getItem('current_company');
-        if (cachedCompany) {
-          try {
-            const companyData = JSON.parse(cachedCompany);
-            const company = new CompanyDto(companyData);
-            commit('SET_CURRENT_COMPANY', company);
-            
-            // Если компания установлена, загружаем все данные компании
-            if (company?.id) {
-              await dispatch('loadCompanyData');
-            }
-            
-            return company;
-          } catch (parseError) {
-            console.error('Ошибка парсинга кэшированной компании:', parseError);
-            localStorage.removeItem('current_company');
-          }
+        // ✅ Проверяем есть ли компания в state (vuex-persistedstate восстановил)
+        if (state.currentCompany?.id) {
+          // Компания уже в state, загружаем только данные
+          await dispatch('loadCompanyData');
+          return state.currentCompany;
         }
         
-        // Если в localStorage нет или произошла ошибка, загружаем с сервера
+        // Если в state нет, загружаем с сервера
         const response = await api.get('/user/current-company');
         const company = new CompanyDto(response.data.company);
         commit('SET_CURRENT_COMPANY', company);
+        commit('SET_LAST_COMPANY_ID', company.id);
         
-        // Сохраняем в localStorage
-        localStorage.setItem('current_company', JSON.stringify(response.data.company));
-        
-        // Если компания установлена, загружаем все данные компании
+        // Загружаем данные компании
         if (company?.id) {
           await dispatch('loadCompanyData');
         }
@@ -714,10 +823,10 @@ export default createStore({
         const company = new CompanyDto(response.data.company);
         commit('SET_CURRENT_COMPANY', company);
         
-        // Сохраняем в localStorage
-        localStorage.setItem('current_company', JSON.stringify(response.data.company));
+        // vuex-persistedstate автоматически сохранит в localStorage, не нужно дублировать
         
         // После смены компании загружаем все данные компании
+        // loadCompanyData сам проверит что компания изменилась и очистит кэш
         await dispatch('loadCompanyData');
         
         return company;
@@ -793,6 +902,12 @@ export default createStore({
         commit(clearMutations[type], []);
       }
       
+      // ✅ При изменении products/services - очищаем lastProducts и lastProductsData
+      if (type === 'products' || type === 'services') {
+        commit('SET_LAST_PRODUCTS', []);
+        commit('SET_LAST_PRODUCTS_DATA', []);
+      }
+      
       return removedCount;
     },
     // Инвалидация при CRUD операциях
@@ -861,11 +976,13 @@ export default createStore({
     },
     units: (state) => state.units,
     currencies: (state) => state.currencies,
+    users: (state) => state.users,
     warehouses: (state) => state.warehouses,
     cashRegisters: (state) => state.cashRegisters,
     clients: (state) => state.clients,
     products: (state) => state.products,
     services: (state) => state.services,
+    lastProducts: (state) => state.lastProducts,
     categories: (state) => state.categories,
     projects: (state) => state.projects, // Все проекты для страницы проектов
     activeProjects: (state) => state.projects.filter(p => p.statusId !== 3 && p.statusId !== 4), // Только активные для форм
@@ -903,6 +1020,7 @@ export default createStore({
         // Глобальные справочники (24 часа)
         'units',
         'currencies',
+        'users',         // ✅ Пользователи (для модалок создания)
         'orderStatuses',
         'projectStatuses',
         'transactionCategories',
@@ -911,14 +1029,16 @@ export default createStore({
         // Данные компании (10 минут)
         'warehouses',
         'cashRegisters',
-        // 'clients',   // ← НЕ кэшируем, т.к. это DTO с методами
+        'clientsData',   // ✅ Кэшируем plain data (без методов DTO)
         'categories',   // ← Нужно для фильтров
-        // 'projects',  // ← НЕ кэшируем, т.к. это DTO с методами
+        'projectsData',  // ✅ Кэшируем plain data (без методов DTO)
+        'lastProductsData',  // ✅ Последние товары - plain data (5 минут)
         // 'products',  // ← НЕ кэшируем глобально - каждая страница загружает свои данные
         // 'services',  // ← НЕ кэшируем глобально - каждая страница загружает свои данные
         
         // Текущая компания и настройки
         'currentCompany',
+        'lastCompanyId', // ✅ Для отслеживания смены компании
         'userCompanies',
         'soundEnabled',
       ],
@@ -937,6 +1057,7 @@ export default createStore({
             // Глобальные
             units: CACHE_TTL.units,
             currencies: CACHE_TTL.currencies,
+            users: 24 * 60 * 60 * 1000, // 24 часа (как глобальный справочник)
             orderStatuses: CACHE_TTL.orderStatuses,
             projectStatuses: CACHE_TTL.projectStatuses,
             transactionCategories: CACHE_TTL.transactionCategories,
@@ -945,9 +1066,11 @@ export default createStore({
             // Данные компании
             warehouses: CACHE_TTL.warehouses,
             cashRegisters: CACHE_TTL.cashRegisters,
+            clientsData: CACHE_TTL.clients, // Plain data версия
             categories: CACHE_TTL.categories,
-            // clients и projects НЕ кэшируем (DTO с методами)
-            // products и services НЕ кэшируем глобально (загружаются на своих страницах)
+            projectsData: CACHE_TTL.projects, // Plain data версия
+            lastProductsData: 5 * 60 * 1000, // 5 минут (часто меняющиеся данные)
+            // products, services НЕ кэшируем глобально (загружаются на своих страницах)
           };
           
           // Проверяем timestamp для каждого поля
@@ -978,11 +1101,10 @@ export default createStore({
         // Сохраняем timestamp для каждого массива данных
         const now = Date.now().toString();
         const fieldsWithTimestamp = [
-          'units', 'currencies', 'orderStatuses', 'projectStatuses',
+          'units', 'currencies', 'users', 'orderStatuses', 'projectStatuses',
           'transactionCategories', 'productStatuses', 'warehouses',
-          'cashRegisters', 'categories'
-          // clients и projects НЕ кэшируем (DTO с методами)
-          // products и services НЕ кэшируем глобально (загружаются на своих страницах)
+          'cashRegisters', 'clientsData', 'categories', 'projectsData', 'lastProductsData'
+          // products, services НЕ кэшируем глобально (загружаются на своих страницах)
         ];
         
         fieldsWithTimestamp.forEach(field => {

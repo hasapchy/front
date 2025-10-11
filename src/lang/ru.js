@@ -1161,6 +1161,18 @@ export default {
   receiptSuccessfullyDeleted: 'Оприходование успешно удалено',
   errorDeletingReceipt: 'Ошибка удаления оприходования',
   
+  // Warehouse movements
+  movementSuccessfullyAdded: 'Перемещение успешно добавлено',
+  errorSavingMovement: 'Ошибка сохранения перемещения',
+  movementSuccessfullyDeleted: 'Перемещение успешно удалено',
+  errorDeletingMovement: 'Ошибка удаления перемещения',
+  
+  // Warehouse writeoffs
+  writeoffSuccessfullyAdded: 'Списание успешно добавлено',
+  errorSavingWriteoff: 'Ошибка сохранения списания',
+  writeoffSuccessfullyDeleted: 'Списание успешно удалено',
+  errorDeletingWriteoff: 'Ошибка удаления списания',
+  
   // Image cropper
   cropImage: 'Обрезать изображение',
   apply: 'Применить',

@@ -1,14 +1,40 @@
 <template>
     <div class="mt-4">
-        <h3 class="text-md font-semibold mb-2">{{ $t('balanceHistory') }}</h3>
-        <div v-if="editingItem" class="mb-2 flex items-center gap-2">
-            <span>{{ $t('finalBalance') }}:</span>
-            <span :class="{
-                'text-[#5CB85C] font-bold': editingItem.balance >= 0,
-                'text-[#EE4F47] font-bold': editingItem.balance < 0
-            }">
-                {{ editingItem.balanceFormatted() }} {{ currencyCode }}
-            </span>
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
+            <PrimaryButton 
+                v-if="$store.getters.hasPermission('transactions_create')"
+                icon="fas fa-plus" 
+                :onclick="showAddTransactionModal" 
+                :is-small="true">
+                {{ $t('addTransaction') }}
+            </PrimaryButton>
+        </div>
+        
+        <!-- Статистика баланса -->
+        <div class="mb-4">
+            <div class="flex items-center gap-6">
+                <!-- Приход -->
+                <span class="flex items-center gap-2">
+                    <i class="fas fa-arrow-up text-[#5CB85C]"></i>
+                    <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b>
+                </span>
+                
+                <!-- Расход -->
+                <span class="flex items-center gap-2">
+                    <i class="fas fa-arrow-down text-[#EE4F47]"></i>
+                    <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b>
+                </span>
+                
+                <!-- Итого (баланс клиента) -->
+                <span class="flex items-center gap-2">
+                    <i class="fas fa-wallet text-blue-500"></i>
+                    <b :class="{
+                        'text-[#5CB85C]': totalBalance >= 0,
+                        'text-[#EE4F47]': totalBalance < 0
+                    }">{{ formatBalance(totalBalance) }}</b>
+                </span>
+            </div>
         </div>
 
         <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
@@ -19,16 +45,21 @@
             :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
             :onItemClick="handleBalanceItemClick" />
 
+        <!-- Модальное окно для транзакций -->
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
                 <div class="p-8 flex justify-center items-center min-h-[200px]">
-                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
                 </div>
             </template>
-            <template v-else-if="selectedEntity && selectedEntity.type && selectedEntity.data">
-                <component 
-                    :is="getModalComponent(selectedEntity.type)" 
-                    v-bind="getModalProps(selectedEntity)"
+            <template v-else>
+                <TransactionCreatePage 
+                    v-if="selectedEntity && selectedEntity.type === 'transaction'"
+                    :editingItem="editingTransactionItem"
+                    :preselectedClientId="editingItem.id"
                     @saved="onEntitySaved"
                     @saved-error="onEntitySavedError"
                     @deleted="onEntityDeleted"
@@ -41,29 +72,14 @@
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
-import { defineAsyncComponent, markRaw } from 'vue';
+import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import { defineAsyncComponent } from 'vue';
 
 const TransactionCreatePage = defineAsyncComponent(() => 
     import("@/views/pages/transactions/TransactionCreatePage.vue")
 );
-const SaleCreatePage = defineAsyncComponent(() => 
-    import("@/views/pages/sales/SaleCreatePage.vue")
-);
-const OrderCreatePage = defineAsyncComponent(() => 
-    import("@/views/pages/orders/OrderCreatePage.vue")
-);
-const WarehousesReceiptCreatePage = defineAsyncComponent(() => 
-    import("@/views/pages/warehouses/WarehousesReceiptCreatePage.vue")
-);
 import TransactionController from "@/api/TransactionController";
 import ClientController from "@/api/ClientController";
-import SaleController from "@/api/SaleController";
-import OrderController from "@/api/OrderController";
-import AppController from "@/api/AppController";
-
-import api from "@/api/axiosInstance";
-import SaleDto from "@/dto/sale/SaleDto";
-import OrderDto from "@/dto/order/OrderDto";
 import ClientDto from "@/dto/client/ClientDto";
 import TransactionDto from "@/dto/transaction/TransactionDto";
 
@@ -71,10 +87,8 @@ export default {
     components: {
         DraggableTable,
         SideModalDialog,
+        PrimaryButton,
         TransactionCreatePage,
-        SaleCreatePage,
-        OrderCreatePage,
-        WarehousesReceiptCreatePage,
     },
     emits: ['balance-updated'],
     props: {
@@ -94,14 +108,21 @@ export default {
             balanceHistory: [],
             lastFetchedClientId: null, // Для предотвращения дублирования запросов
             forceRefresh: false,
+            totalBalance: 0,
+            totalIncome: 0,
+            totalExpense: 0,
+            transactionModalOpen: false,
+            editingTransactionItem: null,
             selectedEntity: null,
             entityModalOpen: false,
             entityLoading: false,
             columnsConfig: [
-                { name: "date", label: this.$t("date"), size: 100 },
-                { name: "type", label: this.$t("type") },
-                { name: "description", label: this.$t("description"), size: 600 },
-                { name: "amount", label: this.$t("amount"), size: 120, html: true },
+                { name: "dateUser", label: this.$t("date"), size: 120 },
+                { name: "source", label: this.$t("source"), size: 150, html: true },
+                { name: "note", label: this.$t("note"), size: 200 },
+                { name: "user_name", label: this.$t("user"), size: 120 },
+                { name: "is_debt", label: this.$t("debt"), size: 80, html: true },
+                { name: "amount", label: this.$t("amount"), size: 130, html: true },
             ],
             ENTITY_CONFIG: {
                 transaction: {
@@ -150,8 +171,6 @@ export default {
                             r.item.orig_currency_symbol,
                             r.item.user_id,
                             r.item.user_name,
-                            // r.item.category_id,
-                            // r.item.category_name,
                             r.item.category_type,
                             r.item.project_id,
                             r.item.project_name,
@@ -164,90 +183,6 @@ export default {
                             r.item.orders || []
                         );
                     }),
-                    component: markRaw(TransactionCreatePage),
-                    prop: 'editingItem',
-                },
-                sale: {
-                    fetch: id => SaleController.getItem(id).then(r => {
-                        let client = null;
-                        if (r.item.client) {
-                            client = ClientDto.fromApi(r.item.client);
-                        }
-                        return new SaleDto(
-                            r.item.id,
-                            r.item.price,
-                            r.item.discount,
-                            r.item.total_price,
-                            r.item.currency_id,
-                            r.item.currency_name,
-                            r.item.currency_code,
-                            r.item.currency_symbol,
-                            r.item.cash_id,
-                            r.item.cash_name,
-                            r.item.warehouse_id,
-                            r.item.warehouse_name,
-                            r.item.user_id,
-                            r.item.user_name,
-                            r.item.project_id,
-                            r.item.project_name,
-                            r.item.transaction_id,
-                            client,
-                            r.item.products,
-                            r.item.note,
-                            r.item.date,
-                            r.item.created_at,
-                            r.item.updated_at
-                        );
-                    }),
-                    component: markRaw(SaleCreatePage),
-                    prop: 'editingItem',
-                },
-                order: {
-                    fetch: id => OrderController.getItem(id).then(r => {
-                        let client = null;
-                        if (r.item.client) {
-                            client = ClientDto.fromApi(r.item.client);
-                        }
-                        return new OrderDto(
-                            r.item.id,
-                            r.item.price,
-                            r.item.discount ?? 0,
-                            r.item.total_price,
-                            r.item.currency_id,
-                            r.item.currency_name,
-                            r.item.currency_code,
-                            r.item.currency_symbol,
-                            r.item.cash_id ?? null,
-                            r.item.cash_name ?? null,
-                            r.item.warehouse_id,
-                            r.item.warehouse_name,
-                            r.item.user_id,
-                            r.item.user_name,
-                            r.item.project_id,
-                            r.item.project_name,
-                            r.item.status_id,
-                            r.item.status_name,
-                            // r.item.category_id,
-                            // r.item.category_name,
-                            client,
-                            r.item.products,
-                            r.item.note ?? "",
-                            r.item.description ?? "",
-                            r.item.date,
-                            r.item.created_at,
-                            r.item.updated_at
-                        );
-                    }),
-                    component: markRaw(OrderCreatePage),
-                    prop: 'editingItem',
-                },
-                receipt: {
-                    fetch: async id => {
-                        const { data } = await api.get(`/warehouse_receipts/${id}`);
-                        return data.item ?? data;
-                    },
-                    component: markRaw(WarehousesReceiptCreatePage),
-                    prop: 'editingItem',
                 },
             },
         };
@@ -279,9 +214,52 @@ export default {
             
             this.balanceLoading = true;
             try {
-                this.balanceHistory = await ClientController.getBalanceHistory(
+                const data = await ClientController.getBalanceHistory(
                     this.editingItem.id
                 );
+                const self = this; // Сохраняем ссылку на компонент
+                
+                // Маппим данные для отображения, добавляя методы форматирования
+                this.balanceHistory = (data || []).map(item => ({
+                    ...item,
+                    get dateUser() {
+                        return item.date ? new Date(item.date).toLocaleString() : "";
+                    },
+                    formatDate() {
+                        return item.date ? new Date(item.date).toLocaleString() : "";
+                    },
+                    formatAmountWithColor() {
+                        const val = parseFloat(item.amount);
+                        const color = val >= 0 ? "#5CB85C" : "#EE4F47";
+                        return `<span style="color:${color};font-weight:bold">${val.toFixed(2)} ${self.currencyCode}</span>`;
+                    },
+                    label() {
+                        switch (item.source) {
+                            case "transaction": 
+                                return '<i class="fas fa-circle text-[#6C757D] mr-2"></i> Прочее';
+                            case "sale": 
+                                return '<i class="fas fa-shopping-cart text-[#5CB85C] mr-2"></i> Продажа';
+                            case "order": 
+                                return '<i class="fas fa-file-invoice text-[#337AB7] mr-2"></i> Заказ';
+                            case "receipt": 
+                                return '<i class="fas fa-box text-[#FFA500] mr-2"></i> Оприходование';
+                            default: 
+                                return item.source;
+                        }
+                    }
+                }));
+                
+                // Вычисляем приход, расход и баланс
+                this.totalIncome = this.balanceHistory
+                    .filter(item => item.amount > 0)
+                    .reduce((sum, item) => sum + parseFloat(item.amount), 0);
+                
+                this.totalExpense = Math.abs(this.balanceHistory
+                    .filter(item => item.amount < 0)
+                    .reduce((sum, item) => sum + parseFloat(item.amount), 0));
+                
+                this.totalBalance = this.balanceHistory
+                    .reduce((sum, item) => sum + parseFloat(item.amount), 0);
                 
                 this.lastFetchedClientId = this.editingItem.id;
                 this.forceRefresh = false;
@@ -289,6 +267,9 @@ export default {
                 await this.updateClientBalance();
             } catch (e) {
                 this.balanceHistory = [];
+                this.totalIncome = 0;
+                this.totalExpense = 0;
+                this.totalBalance = 0;
             } finally {
                 this.balanceLoading = false;
             }
@@ -296,12 +277,20 @@ export default {
 
         itemMapper(i, c) {
             switch (c) {
-                case "date":
-                    return i.formatDate();
-                case "type":
-                    return i.label?.() ?? i.type;
-                case "description":
-                    return i.description;
+                case "dateUser":
+                    return i.dateUser;
+                case "source":
+                    return i.label?.() ?? i.source;
+                case "note":
+                    return i.note || i.description || '';
+                case "user_name":
+                    return i.user_name || '';
+                case "is_debt":
+                    if (i.is_debt === 1 || i.is_debt === true || i.is_debt === '1') {
+                        return '<i class="fas fa-check text-green-500"></i>';
+                    } else {
+                        return '<i class="fas fa-times text-red-500"></i>';
+                    }
                 case "amount":
                     return i.formatAmountWithColor?.();
                 default:
@@ -311,61 +300,35 @@ export default {
         async handleBalanceItemClick(item) {
             if (!this.editingItem || !this.editingItem.id) return;
             
-            const config = this.ENTITY_CONFIG[item.source];
-            if (!config) return;
-            this.entityModalOpen = true;
-            this.entityLoading = true;
+            // Всегда открываем транзакцию, поскольку именно в ней содержится финансовая информация
             try {
-                const data = await config.fetch(item.sourceId);
-                if (data) {
-                    this.selectedEntity = {
-                        type: item.source,
-                        data,
-                    };
-                } else {
-                    throw new Error('Данные не загружены');
-                }
-            } catch (e) {
-                this.$notify?.({ type: 'error', text: 'Ошибка при загрузке данных: ' + (e.message || e) });
-                this.entityModalOpen = false;
-                this.selectedEntity = null;
+                this.entityLoading = true;
+                // source_id содержит ID транзакции
+                const data = await this.ENTITY_CONFIG.transaction.fetch(item.source_id);
+                this.editingTransactionItem = data;
+                
+                this.entityModalOpen = true;
+                this.selectedEntity = {
+                    type: 'transaction',
+                    data,
+                };
+            } catch (error) {
+                console.error('Error loading transaction:', error);
+                this.$notify?.({ type: 'error', text: 'Ошибка при загрузке транзакции' });
             } finally {
                 this.entityLoading = false;
             }
         },
-        getModalProps(entity) {
-            const config = this.ENTITY_CONFIG[entity.type];
-            if (!config) return {};
+        showAddTransactionModal() {
+            // Создаем новую транзакцию с привязкой к текущему клиенту
+            if (!this.editingItem || !this.editingItem.id) return;
             
-
-            if (entity.type === 'transaction' && entity.data && !entity.data.client && entity.data.clientId && this.editingItem && this.editingItem.id) {
-                const client = ClientDto.fromApi({
-                    id: entity.data.clientId,
-                    client_type: this.editingItem.clientType || 'individual',
-                    balance: this.editingItem.balance || '0.00',
-                    is_supplier: this.editingItem.isSupplier || false,
-                    is_conflict: this.editingItem.isConflict || false,
-                    first_name: this.editingItem.firstName || 'Неизвестный',
-                    last_name: this.editingItem.lastName || 'Клиент',
-                    contact_person: this.editingItem.contactPerson || '',
-                    address: this.editingItem.address || '',
-                    note: this.editingItem.note || '',
-                    status: this.editingItem.status || 'active',
-                    discount_type: this.editingItem.discountType || 'none',
-                    discount: this.editingItem.discount || 0,
-                    created_at: this.editingItem.createdAt || new Date().toISOString(),
-                    updated_at: this.editingItem.updatedAt || new Date().toISOString(),
-                    emails: this.editingItem.emails || [],
-                    phones: this.editingItem.phones || []
-                });
-                return { [config.prop]: { ...entity.data, client } };
-            }
-            
-            return { [config.prop]: entity.data };
-        },
-        getModalComponent(type) {
-            const component = this.ENTITY_CONFIG[type]?.component;
-            return component || null;
+            this.editingTransactionItem = null; // Очищаем для создания новой
+            this.selectedEntity = {
+                type: 'transaction',
+                data: null
+            };
+            this.entityModalOpen = true;
         },
         closeEntityModal() {
             this.entityModalOpen = false;
@@ -408,6 +371,17 @@ export default {
                 }
             }
         },
+        formatBalance(balance) {
+            return `${balance.toFixed(2)} ${this.currencyCode}`;
+        },
+    },
+    computed: {
+        totalIncomeDisplay() {
+            return `${this.totalIncome.toFixed(2)} ${this.currencyCode}`;
+        },
+        totalExpenseDisplay() {
+            return `${this.totalExpense.toFixed(2)} ${this.currencyCode}`;
+        }
     },
     watch: {
         'editingItem.id': {
@@ -420,6 +394,9 @@ export default {
                     this.selectedEntity = null;
                     this.entityModalOpen = false;
                     this.entityLoading = false;
+                    this.totalBalance = 0;
+                    this.totalIncome = 0;
+                    this.totalExpense = 0;
                 }
             },
             immediate: true,

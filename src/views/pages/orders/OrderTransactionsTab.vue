@@ -58,17 +58,13 @@ export default {
             ]
         }
     },
-    mounted() {
-        this.fetchTransactions();
-        this.fetchPaidTotal();
-    },
     watch: {
         orderId: {
             handler() {
                 this.fetchTransactions();
                 this.fetchPaidTotal();
             },
-            immediate: true
+            immediate: true  // ← Вызывается при монтировании, mounted не нужен
         }
     },
     methods: {

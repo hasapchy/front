@@ -153,4 +153,30 @@ export default class ProjectDto {
     const budgetInManat = this.getBudgetInManat();
     return `${this.budget} ${this.currency.symbol} (${budgetInManat} TMT)`;
   }
+
+  static fromArray(dataArray) {
+    if (!Array.isArray(dataArray)) return [];
+    
+    return dataArray.map(data => new ProjectDto(
+      data.id,
+      data.name,
+      data.budget,
+      data.currencyId || data.currency_id,
+      data.exchangeRate || data.exchange_rate,
+      data.date,
+      data.clientId || data.client_id,
+      data.client,
+      data.userId || data.user_id,
+      data.userName || data.user_name,
+      data.users || [],
+      data.createdAt || data.created_at,
+      data.updatedAt || data.updated_at,
+      data.files || [],
+      data.currency,
+      data.description,
+      data.creator,
+      data.statusId || data.status_id,
+      data.status
+    ));
+  }
 }

@@ -80,14 +80,10 @@ export default {
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog },
     data() {
         return {
-            data: null,
-            loading: false,
             controller: ClientController,
-            cacheInvalidationType: 'clients', // Тип кэша для инвалидации
-            selectedIds: [],
+            cacheInvalidationType: 'clients',
             statusFilter: '',
             typeFilter: '',
-            // Настройка текстов для crudEventMixin
             savedSuccessText: this.$t('clientSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingClient'),
             deletedSuccessText: this.$t('clientSuccessfullyDeleted'),
@@ -103,9 +99,7 @@ export default {
                 { name: 'discount', label: 'discount' },
                 { name: 'status', label: 'status', html: true },
                 { name: 'dateUser', label: 'dateUser' },
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     created() {
@@ -168,13 +162,6 @@ export default {
             this.statusFilter = '';
             this.typeFilter = '';
             this.fetchItems(1);
-        },
-        handleModalClose() {
-            if (this.$refs.clientForm && this.$refs.clientForm.handleCloseRequest) {
-                this.$refs.clientForm.handleCloseRequest();
-            } else {
-                this.closeModal();
-            }
         }
     },
     computed: {

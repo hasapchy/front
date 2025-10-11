@@ -8,7 +8,7 @@
             </PrimaryButton>
             
             <div>
-                <select v-model="dateFilter" @change="fetchItems" class="p-2 border border-gray-300 rounded bg-white">
+                <select v-model="dateFilter" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded bg-white">
                     <option value="all_time">{{ $t('allTime') }}</option>
                     <option value="today">{{ $t('today') }}</option>
                     <option value="yesterday">{{ $t('yesterday') }}</option>
@@ -21,7 +21,7 @@
             </div>
 
             <div>
-                <select v-model="statusFilter" @change="fetchItems" class="p-2 border border-gray-300 rounded bg-white">
+                <select v-model="statusFilter" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded bg-white">
                     <option value="">{{ $t('allStatuses') }}</option>
                     <option v-for="status in statuses" :key="status.id" :value="status.id">
                         {{ status.name }}
@@ -30,7 +30,7 @@
             </div>
 
             <div>
-                <select v-model="projectFilter" @change="fetchItems" class="p-2 border border-gray-300 rounded bg-white">
+                <select v-model="projectFilter" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded bg-white">
                     <option value="">{{ $t('allProjects') }}</option>
                     <option v-for="project in projects" :key="project.id" :value="project.id">
                         {{ project.name }}
@@ -39,7 +39,7 @@
             </div>
 
             <div>
-                <select v-model="clientFilter" @change="fetchItems" class="p-2 border border-gray-300 rounded bg-white">
+                <select v-model="clientFilter" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded bg-white">
                     <option value="">{{ $t('allClients') }}</option>
                     <option v-for="client in clients" :key="client.id" :value="client.id">
                         {{ client.fullName() }}
@@ -56,8 +56,8 @@
             </div>
             
             <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center">
-                <input type="date" v-model="startDate" @change="fetchItems" class="p-2 border border-gray-300 rounded" />
-                <input type="date" v-model="endDate" @change="fetchItems" class="p-2 border border-gray-300 rounded" />
+                <input type="date" v-model="startDate" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded" />
+                <input type="date" v-model="endDate" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded" />
             </div>
         </div>
         
@@ -172,19 +172,18 @@ export default {
     components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell },
     data() {
         return {
-            data: null,
-            loading: false,
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             statuses: [],
             projects: [],
             clients: [],
-            selectedIds: [],
             showBatchStatusSelect: false,
             timelineCollapsed: true,
             editingItem: null,
             invoiceModalDialog: false,
             loadingDelete: false,
             controller: OrderController,
-            cacheInvalidationType: 'orders', // Тип кэша для инвалидации
+            cacheInvalidationType: 'orders',
             savedSuccessText: this.$t('orderSaved'),
             savedErrorText: this.$t('errorSavingOrder'),
             deletedSuccessText: this.$t('orderDeleted'),
@@ -212,9 +211,7 @@ export default {
             paidOrdersFilter: false,
             transactionModal: false,
             editingTransaction: null,
-            savedCurrencySymbol: '',
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            savedCurrencySymbol: ''
         };
     },
     created() {
@@ -315,14 +312,6 @@ export default {
                     return i[c];
             }
         },
-        handleModalClose() {
-            const formRef = this.$refs.ordercreatepageForm;
-            if (formRef && formRef.handleCloseRequest) {
-                formRef.handleCloseRequest();
-            } else {
-                this.closeModal();
-            }
-        },
 
         handleSearch(query) {
             this.$store.dispatch('setSearchQuery', query);
@@ -361,6 +350,15 @@ export default {
             }
         },
 
+        // Переопределяем метод из crudEventMixin для обновления timeline
+        handleSaved() {
+            // Вызываем метод из миксина
+            this.$options.mixins.find(m => m.methods?.handleSaved)?.methods.handleSaved.call(this);
+            // Добавляем специфическую логику - обновление timeline
+            if (this.$refs.timelinePanel && !this.timelineCollapsed) {
+                this.$refs.timelinePanel.refreshTimeline();
+            }
+        },
 
         
         async fetchStatuses() {
