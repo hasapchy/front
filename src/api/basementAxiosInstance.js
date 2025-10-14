@@ -4,7 +4,7 @@ import store from "@/store";
 
 // Создаем инстанс axios для basement
 const basementApi = axios.create({
-  baseURL: `${import.meta.env.VITE_APP_BASE_URL}/api`,
+  baseURL: `${import.meta.env.VITE_APP_BASE_URL}/api/basement`,
   headers: {
     "Content-Type": "application/json",
   },

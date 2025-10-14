@@ -261,6 +261,10 @@ export default {
         projectId: {
             type: [String, Number],
             default: null
+        },
+        useAllProducts: {
+            type: Boolean,
+            default: false // Для basement - загружать ВСЕ товары
         }
     },
     data() {
@@ -322,20 +326,33 @@ export default {
             }
         },
         lastProducts() {
-            // ✅ Берем из store вместо локального state
+            // ✅ Для basement загружаем ВСЕ товары, иначе - последние 10
+            if (this.useAllProducts) {
+                return this.$store.getters.allProducts;
+            }
             return this.$store.getters.lastProducts;
         }
     },
     async created() {
         // ✅ Загружаем из store (глобальный кэш!)
-        await this.$store.dispatch('loadLastProducts');
+        if (this.useAllProducts) {
+            await this.$store.dispatch('loadAllProducts');
+        } else {
+            await this.$store.dispatch('loadLastProducts');
+        }
     },
     methods: {
         async fetchLastProducts() {
             // ✅ Перезагружаем данные из store (очищаем кэш)
-            this.$store.commit('SET_LAST_PRODUCTS', []);
-            this.$store.commit('SET_LAST_PRODUCTS_DATA', []);
-            await this.$store.dispatch('loadLastProducts');
+            if (this.useAllProducts) {
+                this.$store.commit('SET_ALL_PRODUCTS', []);
+                this.$store.commit('SET_ALL_PRODUCTS_DATA', []);
+                await this.$store.dispatch('loadAllProducts');
+            } else {
+                this.$store.commit('SET_LAST_PRODUCTS', []);
+                this.$store.commit('SET_LAST_PRODUCTS_DATA', []);
+                await this.$store.dispatch('loadLastProducts');
+            }
         },
         searchProducts: debounce(async function () {
             if (this.productSearch.length >= 3) {

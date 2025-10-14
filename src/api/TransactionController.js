@@ -181,4 +181,17 @@ export default class TransactionController {
     }
   }
 
+  // Обновить статус долга транзакции (доступно всегда, без ограничения по времени)
+  static async updateDebtStatus(id, isDebt) {
+    try {
+      const { data } = await api.patch(`/transactions/${id}/debt-status`, {
+        is_debt: isDebt
+      });
+      return data;
+    } catch (error) {
+      console.error('Ошибка при обновлении статуса долга:', error);
+      throw error;
+    }
+  }
+
 }

@@ -34,8 +34,17 @@ export default {
         CacheInvalidator.onUpdate(this.cacheInvalidationType, companyId);
       }
       
-      this.fetchItems(this.data?.currentPage || 1, true); // true = silent режим, без перезагрузки UI
-      this.closeModal();
+      // Обновляем данные на текущей странице в silent режиме
+      this.fetchItems(this.data?.currentPage || 1, true).then(() => {
+        // Восстанавливаем позицию скролла после обновления данных
+        if (this.restoreScrollPosition) {
+          this.restoreScrollPosition();
+        }
+      });
+      
+      // Закрываем модальное окно, пропуская восстановление скролла (мы уже это сделали выше)
+      this.shouldRestoreScrollOnClose = false;
+      this.closeModal(true); // true = пропустить восстановление скролла
     },
     handleSavedError(m) {
       this.showNotification(
@@ -57,8 +66,17 @@ export default {
         CacheInvalidator.onDelete(this.cacheInvalidationType, companyId);
       }
       
-      this.fetchItems(this.data?.currentPage || 1, true); // true = silent режим
-      this.closeModal();
+      // Обновляем данные на текущей странице в silent режиме
+      this.fetchItems(this.data?.currentPage || 1, true).then(() => {
+        // Восстанавливаем позицию скролла после обновления данных
+        if (this.restoreScrollPosition) {
+          this.restoreScrollPosition();
+        }
+      });
+      
+      // Закрываем модальное окно, пропуская восстановление скролла (мы уже это сделали выше)
+      this.shouldRestoreScrollOnClose = false;
+      this.closeModal(true); // true = пропустить восстановление скролла
     },
     handleDeletedError(m) {
       this.showNotification(

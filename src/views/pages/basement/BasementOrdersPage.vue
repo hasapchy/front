@@ -41,7 +41,7 @@
 
 <script>
 import { BasementAuthController } from '@/api/BasementAuthController'
-import api from '@/api/axiosInstance'
+import basementApi from '@/api/basementAxiosInstance'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'
 
@@ -63,34 +63,28 @@ export default {
         { 
           name: 'id', 
           label: `${this.$t('order')} #`, 
-          size: 100 
-        },
-        { 
-          name: 'status', 
-          label: this.$t('status'), 
-          size: 150,
-          html: true
+          size: 120 
         },
         { 
           name: 'client', 
           label: this.$t('client'), 
-          size: 200 
+          size: 250 
         },
         { 
           name: 'project', 
           label: this.$t('project'), 
-          size: 200 
+          size: 250 
         },
         { 
           name: 'products', 
           label: this.$t('products'), 
-          size: 300,
+          size: 350,
           html: true
         },
         { 
           name: 'created_at', 
           label: this.$t('date'), 
-          size: 150 
+          size: 180 
         }
       ]
     }
@@ -101,10 +95,7 @@ export default {
   methods: {
     async loadOrders() {
       try {
-        const token = BasementAuthController.getToken()
-        const { data } = await api.get('/orders', {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        const { data } = await basementApi.get('/orders')
         this.orders = data.items || []
       } catch (error) {
         console.error('Ошибка загрузки заказов:', error)
@@ -117,8 +108,6 @@ export default {
       switch (columnName) {
         case 'id':
           return order.id
-        case 'status':
-          return this.formatStatus(order.status)
         case 'client':
           return this.getClientName(order)
         case 'project':
@@ -130,19 +119,6 @@ export default {
         default:
           return order[columnName] || '-'
       }
-    },
-    formatStatus(status) {
-      if (!status) return '<span class="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">-</span>'
-      
-      const statusClasses = {
-        'Новый': 'bg-green-100 text-green-800',
-        'В работе': 'bg-yellow-100 text-yellow-800',
-        'Завершен': 'bg-blue-100 text-blue-800',
-        'Отменен': 'bg-red-100 text-red-800'
-      }
-      
-      const className = statusClasses[status.name] || 'bg-gray-100 text-gray-800'
-      return `<span class="px-2 py-1 rounded-full text-xs ${className}">${status.name}</span>`
     },
     formatProducts(products) {
       if (!products || products.length === 0) {

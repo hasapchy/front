@@ -6,9 +6,9 @@
             <div v-show="currentTab === 'info'">
                 <ClientSearch v-model:selectedClient="selectedClient" />
                 <div>
-                    <label>{{ $t('productCategory') }}</label>
+                    <label class="required">{{ $t('productCategory') }}</label>
                     <div class="flex items-center space-x-2">
-                        <select v-model="categoryId">
+                        <select v-model="categoryId" required>
                             <option value="">{{ $t('no') }}</option>
                             <option v-for="category in allProductCategories" :key="category.id" :value="category.id">
                                 {{ category.name }}
@@ -469,6 +469,9 @@ export default {
 
         async save() {
             const validationErrors = [];
+            if (!this.categoryId) {
+                validationErrors.push('Поле "Категория" обязательно для заполнения');
+            }
             if (!this.warehouseId) {
                 validationErrors.push('Поле "Склад" обязательно для заполнения');
             }
@@ -526,6 +529,9 @@ export default {
         async saveWithoutClose() {
             const validationErrors = [];
             
+            if (!this.categoryId) {
+                validationErrors.push('Поле "Категория" обязательно для заполнения');
+            }
             if (!this.warehouseId) {
                 validationErrors.push('Поле "Склад" обязательно для заполнения');
             }

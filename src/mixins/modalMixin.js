@@ -4,16 +4,35 @@ export default {
       modalDialog: false,
       editingItem: null,
       showTimeline: false,
+      savedScrollPosition: 0, // Сохраненная позиция скролла
+      shouldRestoreScrollOnClose: true, // Флаг для контроля восстановления скролла
     };
   },
   methods: {
     showModal(item = null) {
+      // Сохраняем текущую позицию скролла перед открытием модального окна
+      this.savedScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+      this.shouldRestoreScrollOnClose = true; // Сбрасываем флаг
+      
       this.modalDialog = true;
       this.showTimeline = true;
       this.editingItem = item;
     },
-    closeModal() {
+    closeModal(skipScrollRestore = false) {
       this.modalDialog = false;
+      
+      // Восстанавливаем позицию скролла при закрытии модального окна
+      // (если закрываем без сохранения или если не указано иное)
+      if (!skipScrollRestore && this.shouldRestoreScrollOnClose) {
+        this.$nextTick(() => {
+          requestAnimationFrame(() => {
+            window.scrollTo({
+              top: this.savedScrollPosition,
+              behavior: 'instant'
+            });
+          });
+        });
+      }
     },
     // Универсальный обработчик закрытия модального окна
     // Проверяет, есть ли у формы метод handleCloseRequest (для несохраненных изменений)
@@ -26,6 +45,18 @@ export default {
       } else {
         this.closeModal();
       }
+    },
+    // Восстановление позиции скролла
+    restoreScrollPosition() {
+      this.$nextTick(() => {
+        // Используем requestAnimationFrame для более плавного восстановления
+        requestAnimationFrame(() => {
+          window.scrollTo({
+            top: this.savedScrollPosition,
+            behavior: 'instant' // Мгновенный переход без анимации
+          });
+        });
+      });
     },
   },
 };

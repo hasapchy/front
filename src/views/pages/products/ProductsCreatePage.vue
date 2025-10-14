@@ -295,9 +295,16 @@ export default {
 
         // Валидация формы
         isFormValid() {
-            return this.name && this.name.trim() !== '' && 
-                   this.sku && this.sku.trim() !== '' &&
-                   this.selectedCategories.length > 0;
+            const isValid = this.name && this.name.trim() !== '' && 
+                           this.sku && this.sku.trim() !== '' &&
+                           this.selectedCategories.length > 0;
+            console.log('Form validation:', {
+                name: this.name,
+                sku: this.sku,
+                selectedCategoriesLength: this.selectedCategories.length,
+                isValid
+            });
+            return isValid;
         },
     },
     methods: {
@@ -664,77 +671,31 @@ export default {
                     this.category_id = newEditingItem.category_id || newEditingItem.categoryId || '';
 
                     // Загружаем множественные категории
+                    console.log('Editing item categories:', newEditingItem.categories);
                     if (newEditingItem.categories && newEditingItem.categories.length > 0) {
-                        // Определяем родительские категории и подкатегории
-                        let parentCategories = [];
-                        let subCategories = [];
+                        // Просто добавляем все категории как выбранные
+                        this.selectedCategories = newEditingItem.categories.map(cat => ({
+                            id: parseInt(cat.id),
+                            name: cat.name,
+                            is_primary: true // Все категории считаем основными для простоты
+                        }));
+                        console.log('Selected categories set:', this.selectedCategories);
 
-                        newEditingItem.categories.forEach(cat => {
-                            const category = this.allCategories.find(c => c.id == cat.id);
-                            if (category) {
-                                if (!category.parentId) {
-                                    // Это родительская категория
-                                    parentCategories.push({
-                                        id: parseInt(cat.id),
-                                        name: cat.name,
-                                        is_primary: true
-                                    });
-                                } else {
-                                    // Это подкатегория
-                                    subCategories.push({
-                                        id: parseInt(cat.id),
-                                        name: cat.name,
-                                        is_primary: false
-                                    });
-                                }
-                            }
-                        });
-
-                        // Собираем все категории: сначала родительские, потом подкатегории
-                        this.selectedCategories = parentCategories.concat(subCategories);
-
-                        // Устанавливаем первую родительскую категорию для селектора
-                        if (parentCategories.length > 0) {
-                            this.selectedParentCategory = parentCategories[0].id;
+                        // Устанавливаем первую категорию для селектора
+                        if (this.selectedCategories.length > 0) {
+                            this.selectedParentCategory = this.selectedCategories[0].id;
                         }
-
-                        // Устанавливаем выбранные подкатегории
-                        this.selectedSubCategories = subCategories.map(cat => cat.id);
                     } else {
                         // Для обратной совместимости
                         this.selectedCategories = [];
                         if (this.category_id) {
-                            const category = this.allCategories.find(cat => cat.id == this.category_id);
-                            if (category) {
-                                if (!category.parentId) {
-                                    // Это родительская категория
-                                    this.selectedCategories = [{
-                                        id: parseInt(category.id),
-                                        name: category.name,
-                                        is_primary: true
-                                    }];
-                                    this.selectedParentCategory = category.id;
-                                } else {
-                                    // Это подкатегория, нужно найти родительскую
-                                    const parentCategory = this.allCategories.find(cat => cat.id == category.parentId);
-                                    if (parentCategory) {
-                                        this.selectedCategories = [
-                                            {
-                                                id: parseInt(parentCategory.id),
-                                                name: parentCategory.name,
-                                                is_primary: true
-                                            },
-                                            {
-                                                id: parseInt(category.id),
-                                                name: category.name,
-                                                is_primary: false
-                                            }
-                                        ];
-                                        this.selectedParentCategory = parentCategory.id;
-                                        this.selectedSubCategories = [category.id];
-                                    }
-                                }
-                            }
+                            // Просто добавляем категорию как выбранную
+                            this.selectedCategories = [{
+                                id: parseInt(this.category_id),
+                                name: this.category_name || 'Категория',
+                                is_primary: true
+                            }];
+                            this.selectedParentCategory = this.category_id;
                         }
                     }
 

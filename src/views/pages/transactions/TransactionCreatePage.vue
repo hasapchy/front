@@ -267,18 +267,44 @@ export default {
 
             try {
                 if (this.editingItemId != null) {
-                    var resp = await TransactionController.updateItem(
-                        this.editingItemId,
-                        {
-                            category_id: this.categoryId,
-                            project_id: this.projectId,
-                            date: this.date,
-                            client_id: this.selectedClient?.id,
-                            orig_amount: this.origAmount,
-                            currency_id: this.currencyIdComputed,
-                            note: this.note,
-                            is_debt: this.isDebt
-                        });
+                    // Проверяем, изменилось ли только поле is_debt
+                    const originalDate = this.editingItem?.date ? 
+                        (typeof this.editingItem.date === 'string' ? this.editingItem.date.substring(0, 16) : 
+                        this.editingItem.date.toISOString ? this.editingItem.date.toISOString().substring(0, 16) : 
+                        this.editingItem.date) : null;
+                    
+                    const normalizeEmptyValue = (val) => val === '' || val === null || val === undefined ? null : val;
+                    
+                    const onlyDebtChanged = this.editingItem && 
+                        this.editingItem.isDebt !== this.isDebt &&
+                        this.editingItem.categoryId === this.categoryId &&
+                        normalizeEmptyValue(this.editingItem.projectId) === normalizeEmptyValue(this.projectId) &&
+                        originalDate === this.date &&
+                        normalizeEmptyValue(this.editingItem.clientId) === normalizeEmptyValue(this.selectedClient?.id) &&
+                        parseFloat(this.editingItem.origAmount) === parseFloat(this.origAmount) &&
+                        this.editingItem.origCurrencyId === this.currencyIdComputed &&
+                        (this.editingItem.note || '') === (this.note || '');
+
+                    if (onlyDebtChanged) {
+                        // Используем специальный endpoint для обновления только статуса долга
+                        var resp = await TransactionController.updateDebtStatus(
+                            this.editingItemId,
+                            this.isDebt
+                        );
+                    } else {
+                        var resp = await TransactionController.updateItem(
+                            this.editingItemId,
+                            {
+                                category_id: this.categoryId,
+                                project_id: this.projectId,
+                                date: this.date,
+                                client_id: this.selectedClient?.id,
+                                orig_amount: this.origAmount,
+                                currency_id: this.currencyIdComputed,
+                                note: this.note,
+                                is_debt: this.isDebt
+                            });
+                    }
                 } else {
                     var resp = await TransactionController.storeItem({
                         type: this.type == "income" ? 1 : this.type == "outcome" ? 0 : null,

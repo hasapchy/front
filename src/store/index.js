@@ -1,5 +1,6 @@
 import { createStore } from "vuex";
 import api from "@/api/axiosInstance";
+import basementApi from "@/api/basementAxiosInstance";
 import CacheMonitor from "@/utils/cacheMonitor";
 import CacheInvalidator from "@/utils/cacheInvalidator";
 import { CompanyDto } from "@/dto/companies/CompanyDto";
@@ -48,6 +49,8 @@ export default createStore({
     services: [], // Услуги
     lastProducts: [], // Последние 10 товаров для ProductSearch (DTO с методами)
     lastProductsData: [], // Plain data для кэширования
+    allProducts: [], // ВСЕ товары и услуги для ProductSearch (DTO с методами)
+    allProductsData: [], // Plain data для кэширования (30 дней)
     categories: [], // Категории
     projects: [], // Проекты (DTO с методами)
     projectsData: [], // Plain data для кэширования
@@ -157,6 +160,12 @@ export default createStore({
     SET_LAST_PRODUCTS_DATA(state, lastProductsData) {
       state.lastProductsData = lastProductsData;
     },
+    SET_ALL_PRODUCTS(state, allProducts) {
+      state.allProducts = allProducts;
+    },
+    SET_ALL_PRODUCTS_DATA(state, allProductsData) {
+      state.allProductsData = allProductsData;
+    },
     SET_CATEGORIES(state, categories) {
       state.categories = categories;
     },
@@ -194,7 +203,8 @@ export default createStore({
       state.products = [];
       state.services = [];
       state.lastProducts = []; // ✅ Очищаем DTO
-      // НЕ очищаем lastProductsData - пусть кэшируется
+      state.allProducts = []; // ✅ Очищаем DTO
+      // НЕ очищаем lastProductsData и allProductsData - пусть кэшируется
       state.categories = [];
       state.projects = [];
       state.projectsData = [];
@@ -325,7 +335,7 @@ export default createStore({
         });
       }
     },
-    async loadUnits({ commit, state, dispatch }) {
+    async loadUnits({ commit, state, dispatch, getters }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.units) {
         return dispatch('waitForLoading', 'units');
@@ -339,7 +349,8 @@ export default createStore({
       commit('SET_LOADING_FLAG', { type: 'units', loading: true });
       
       try {
-        const response = await api.get('/app/units');
+        const apiInstance = getters.isBasementMode ? basementApi : api;
+        const response = await apiInstance.get('/app/units');
         const data = response.data;
         commit('SET_UNITS', data);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
@@ -349,7 +360,7 @@ export default createStore({
         commit('SET_LOADING_FLAG', { type: 'units', loading: false });
       }
     },
-    async loadCurrencies({ commit, state, dispatch }) {
+    async loadCurrencies({ commit, state, dispatch, getters }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.currencies) {
         return dispatch('waitForLoading', 'currencies');
@@ -363,7 +374,8 @@ export default createStore({
       commit('SET_LOADING_FLAG', { type: 'currencies', loading: true });
       
       try {
-        const response = await api.get('/app/currency');
+        const apiInstance = getters.isBasementMode ? basementApi : api;
+        const response = await apiInstance.get('/app/currency');
         const data = response.data;
         commit('SET_CURRENCIES', data);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
@@ -606,6 +618,44 @@ export default createStore({
         commit('SET_LAST_PRODUCTS_DATA', []);
       }
     },
+    async loadAllProducts({ commit, state }) {
+      // ✅ Проверяем plain data версию (из localStorage с TTL 30 дней)
+      if (state.allProductsData.length > 0 && state.allProducts.length === 0) {
+        // Конвертируем plain data в DTO
+        const ProductSearchDto = (await import('@/dto/product/ProductSearchDto')).default;
+        const allProducts = state.allProductsData.map(item => ProductSearchDto.fromApi(item));
+        commit('SET_ALL_PRODUCTS', allProducts);
+        return;
+      }
+
+      // ✅ Если DTO уже в state - возвращаем
+      if (state.allProducts.length > 0) {
+        return;
+      }
+
+      try {
+        const ProductController = (await import('@/api/ProductController')).default;
+        
+        // Загружаем ВСЕ товары и услуги (без пагинации, 1000 записей)
+        const results = await ProductController.getItems(1, null, {}, 1000);
+        
+        // Преобразуем в DTO для поиска
+        const ProductSearchDto = (await import('@/dto/product/ProductSearchDto')).default;
+        const allProducts = (results.items || []).map(item => ProductSearchDto.fromApi(item));
+        
+        commit('SET_ALL_PRODUCTS', allProducts);
+        
+        // ✅ Сохраняем plain data для кэширования (30 дней!)
+        const plainData = (results.items || []).map(item => ({ ...item }));
+        commit('SET_ALL_PRODUCTS_DATA', plainData);
+        
+        console.log(`✅ Загружено ${allProducts.length} товаров и услуг для поиска (кэш на 30 дней)`);
+      } catch (error) {
+        console.error('Ошибка загрузки всех товаров:', error);
+        commit('SET_ALL_PRODUCTS', []);
+        commit('SET_ALL_PRODUCTS_DATA', []);
+      }
+    },
     async loadOrderStatuses({ commit, state, dispatch }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.orderStatuses) {
@@ -791,8 +841,16 @@ export default createStore({
         return [];
       }
     },
-    async loadCurrentCompany({ commit, dispatch, state }) {
+    async loadCurrentCompany({ commit, dispatch, state, getters }) {
       try {
+        // Для basement системы используем компанию по умолчанию
+        if (getters.isBasementMode) {
+          const defaultCompany = new CompanyDto({ id: 1, name: 'Default Company' });
+          commit('SET_CURRENT_COMPANY', defaultCompany);
+          commit('SET_LAST_COMPANY_ID', defaultCompany.id);
+          return defaultCompany;
+        }
+        
         // ✅ Проверяем есть ли компания в state (vuex-persistedstate восстановил)
         if (state.currentCompany?.id) {
           // Компания уже в state, загружаем только данные
@@ -836,9 +894,11 @@ export default createStore({
       }
     },
     // Принудительное обновление прав пользователя
-    async refreshUserPermissions({ commit }) {
+    async refreshUserPermissions({ commit, getters }) {
       try {
-        const response = await api.get('/user/me');
+        // Выбираем правильный API в зависимости от режима
+        const apiInstance = getters.isBasementMode ? basementApi : api;
+        const response = await apiInstance.get('/user/me');
         commit('SET_USER', response.data.user);
         commit('SET_PERMISSIONS', response.data.permissions);
         return response.data;
@@ -902,10 +962,12 @@ export default createStore({
         commit(clearMutations[type], []);
       }
       
-      // ✅ При изменении products/services - очищаем lastProducts и lastProductsData
+      // ✅ При изменении products/services - очищаем lastProducts и allProducts
       if (type === 'products' || type === 'services') {
         commit('SET_LAST_PRODUCTS', []);
         commit('SET_LAST_PRODUCTS_DATA', []);
+        commit('SET_ALL_PRODUCTS', []);
+        commit('SET_ALL_PRODUCTS_DATA', []);
       }
       
       return removedCount;
@@ -964,6 +1026,10 @@ export default createStore({
     notificationTimeoutId: (state) => state.notificationTimeoutId,
     tokenInfo: (state) => state.tokenInfo,
     isTokenExpired: (state) => state.tokenInfo.needsRefresh,
+    isBasementMode: (state) => {
+      // Проверяем, находимся ли мы в basement режиме по роли пользователя
+      return state.user && state.user.roles && state.user.roles.includes('basement_worker')
+    },
     accessTokenTimeLeft: (state) => {
       if (!state.tokenInfo.accessTokenExpiresAt) return 0;
       const timeLeft = state.tokenInfo.accessTokenExpiresAt - Date.now();
@@ -983,6 +1049,7 @@ export default createStore({
     products: (state) => state.products,
     services: (state) => state.services,
     lastProducts: (state) => state.lastProducts,
+    allProducts: (state) => state.allProducts,
     categories: (state) => state.categories,
     projects: (state) => state.projects, // Все проекты для страницы проектов
     activeProjects: (state) => state.projects.filter(p => p.statusId !== 3 && p.statusId !== 4), // Только активные для форм
@@ -1033,6 +1100,7 @@ export default createStore({
         'categories',   // ← Нужно для фильтров
         'projectsData',  // ✅ Кэшируем plain data (без методов DTO)
         'lastProductsData',  // ✅ Последние товары - plain data (5 минут)
+        'allProductsData',  // ✅ ВСЕ товары - plain data (30 дней!)
         // 'products',  // ← НЕ кэшируем глобально - каждая страница загружает свои данные
         // 'services',  // ← НЕ кэшируем глобально - каждая страница загружает свои данные
         
@@ -1070,6 +1138,7 @@ export default createStore({
             categories: CACHE_TTL.categories,
             projectsData: CACHE_TTL.projects, // Plain data версия
             lastProductsData: 5 * 60 * 1000, // 5 минут (часто меняющиеся данные)
+            allProductsData: CACHE_TTL.products, // 30 дней (ВСЕ товары для поиска)
             // products, services НЕ кэшируем глобально (загружаются на своих страницах)
           };
           
@@ -1103,7 +1172,7 @@ export default createStore({
         const fieldsWithTimestamp = [
           'units', 'currencies', 'users', 'orderStatuses', 'projectStatuses',
           'transactionCategories', 'productStatuses', 'warehouses',
-          'cashRegisters', 'clientsData', 'categories', 'projectsData', 'lastProductsData'
+          'cashRegisters', 'clientsData', 'categories', 'projectsData', 'lastProductsData', 'allProductsData'
           // products, services НЕ кэшируем глобально (загружаются на своих страницах)
         ];
         

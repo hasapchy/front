@@ -16,8 +16,13 @@
                     <li v-if="productSearchLoading" class="p-2 text-gray-500">{{ $t('loading') }}</li>
                     <template v-else-if="productSearch.length === 0">
                         <li v-if="!lastProducts || lastProducts.length === 0" class="p-2 text-gray-500">{{ $t('noData') }}</li>
-                        <li v-else v-for="product in lastProducts" :key="product.id" @mousedown.prevent="selectProduct(product)"
-                            class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
+                        <template v-else>
+                            <li class="p-2 bg-gray-50 text-xs text-gray-600 border-b border-gray-300 sticky top-0">
+                                <i class="fas fa-box-open mr-1"></i>
+                                Все товары и услуги ({{ lastProducts.length }})
+                            </li>
+                            <li v-for="product in lastProducts" :key="product.id" @mousedown.prevent="selectProduct(product)"
+                                class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
                             <div class="flex justify-between items-center">
                                 <div class="flex items-center">
                                     <div class="w-7 h-7 flex items-center justify-center mr-2">
@@ -35,6 +40,7 @@
                                 </div>
                             </div>
                         </li>
+                        </template>
                     </template>
                     <li v-else-if="productSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}</li>
                     <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">{{ $t('notFound') }}</li>
@@ -84,87 +90,23 @@
                 </div>
             </div>
         </div>
-        <table class="min-w-full bg-white shadow-md rounded mb-6 w-full">
-            <thead class="bg-gray-100 rounded-t-sm">
-                <tr>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">Название</th>
-                    <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-32">
-                        Количество / Размеры</th>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">Цена</th>
-                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="(product, index) in products" :key="index" 
-                    :class="[
-                        'border-b border-gray-300',
-                        (!product.quantity || product.quantity <= 0) ? 'bg-red-50' : ''
-                    ]">
-                    <td class="py-2 px-4 border-x border-gray-300">
-                        <div class="flex items-center">
-                            <div class="w-7 h-7 flex items-center justify-center mr-2">
-                                <img v-if="product.imgUrl && product.imgUrl()" :src="product.imgUrl()" alt="icon"
-                                    class="w-7 h-7 object-cover rounded" loading="lazy" />
-                                <span v-else v-html="product.icons ? product.icons() : getDefaultIcon(product)"></span>
-                            </div>
-                            {{ product.productName || product.name }}
-                        </div>
-                    </td>
-                    <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
-                        <!-- Если м² - показываем ширину и длину -->
-                        <div v-if="isSquareMeter(product)" class="space-y-2">
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs text-gray-600 w-16">Ширина:</span>
-                                <input type="number" :value="getProductWidth(product)" @input="setProductWidth(product, $event.target.value); calculateQuantity(product)" 
-                                    class="flex-1 p-1 text-right border border-gray-300 rounded text-sm"
-                                    :disabled="disabled" min="0" step="0.01" 
-                                    @blur="validateInput(product, 'width')"
-                                    placeholder="0" />
-                                <span class="text-xs text-gray-600">м</span>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs text-gray-600 w-16">Длина:</span>
-                                <input type="number" :value="getProductLength(product)" @input="setProductLength(product, $event.target.value); calculateQuantity(product)" 
-                                    class="flex-1 p-1 text-right border border-gray-300 rounded text-sm"
-                                    :disabled="disabled" min="0" step="0.01"
-                                    @blur="validateInput(product, 'length')"
-                                    placeholder="0" />
-                                <span class="text-xs text-gray-600">м</span>
-                            </div>
-                            <div class="text-right text-sm font-medium bg-gray-100 p-1 rounded">
-                                = {{ product.quantity || 0 }} {{ product.unitShortName || product.unit_short_name || '' }}
-                            </div>
-                            <!-- Показываем остаток только для товаров, не для услуг -->
-                            <div v-if="!isService(product)" class="text-xs text-right" :class="getStockQuantityClass(product)">
-                                Остаток: {{ product.stock_quantity || 0 }}
-                            </div>
-                        </div>
-                        <!-- Для остальных единиц - просто количество -->
-                        <div v-else>
-                            <input type="number" v-model.number="product.quantity" 
-                                class="w-full p-1 text-right border border-gray-300 rounded"
-                                :disabled="disabled" min="0" step="0.01"
-                                :placeholder="'0 ' + (product.unitShortName || product.unit_short_name || '')" />
-                            <!-- Показываем остаток только для товаров, не для услуг -->
-                            <div v-if="!isService(product)" class="text-xs mt-1 text-right" :class="getStockQuantityClass(product)">
-                                Остаток: {{ product.stock_quantity || 0 }}
-                            </div>
-                        </div>
-                    </td>
-                    <td class="py-2 px-4 border-x border-gray-300">
-                        <div class="w-full p-1 text-right bg-gray-50 border border-gray-300 rounded text-sm">
-                            {{ (Number(product.price) || 0).toFixed(2) }} m
-                        </div>
-                    </td>
-                    <td class="px-4 border-x border-gray-300">
-                        <button @click="removeSelectedProduct(index)"
-                            class="text-red-500 text-2xl cursor-pointer z-99" :disabled="disabled">
-                            ×
-                        </button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <!-- DraggableTable для товаров -->
+        <DraggableTable 
+            v-if="products.length > 0"
+            table-key="basementProducts"
+            :columns-config="productTableColumns"
+            :table-data="products"
+            :item-mapper="productItemMapper"
+            :show-actions="false"
+            :on-item-click="removeProductByItem"
+            class="mb-6"
+        />
+        
+        <!-- Пустое состояние -->
+        <div v-else class="text-center py-8 text-gray-500 bg-gray-50 rounded-lg mb-6">
+            <i class="fas fa-box-open text-4xl mb-2"></i>
+            <p>Добавьте товары в заказ</p>
+        </div>
         
     </div>
 </template>
@@ -174,11 +116,13 @@ import BasementProductController from '@/api/BasementProductController';
 import debounce from 'lodash.debounce';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import ServiceCard from './ServiceCard.vue';
+import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 
 // Vue 3 compatibility - $set and $delete removed
 export default {
     components: {
-        ServiceCard
+        ServiceCard,
+        DraggableTable
     },
     emits: ['update:modelValue'],
     props: {
@@ -212,7 +156,6 @@ export default {
             productSearch: '',
             productSearchLoading: false,
             productResults: [],
-            lastProducts: [],
             showProductDropdown: false,
             services: [],
             servicesLoading: false,
@@ -257,17 +200,50 @@ export default {
                 const orderQuantity = product.quantity || 0;
                 return orderQuantity > stockQuantity && stockQuantity > 0;
             });
+        },
+        
+        lastProducts() {
+            // ✅ Берем ВСЕ товары из store (кэш на 30 дней!)
+            return this.$store.getters.allProducts;
+        },
+        
+        // Конфигурация колонок для DraggableTable
+        productTableColumns() {
+            return [
+                { 
+                    name: 'name', 
+                    label: 'Название', 
+                    size: 300 
+                },
+                { 
+                    name: 'quantity', 
+                    label: 'Количество / Размеры', 
+                    size: 250 
+                },
+                { 
+                    name: 'price', 
+                    label: 'Цена', 
+                    size: 120 
+                },
+                { 
+                    name: 'actions', 
+                    label: 'Действия', 
+                    size: 80 
+                }
+            ]
         }
     },
     async created() {
-        await this.fetchLastProducts();
+        // ✅ Загружаем ВСЕ товары из store (кэш на 30 дней!)
+        await this.$store.dispatch('loadAllProducts');
         await this.loadServices();
     },
     methods: {
         async onFocus() {
             this.showProductDropdown = true;
             if (!this.lastProducts || this.lastProducts.length === 0) {
-                await this.fetchLastProducts();
+                // ✅ Загружаем из store если пусто
+                await this.$store.dispatch('loadAllProducts');
             }
         },
         async loadServices() {
@@ -280,19 +256,6 @@ export default {
                 this.services = [];
             } finally {
                 this.servicesLoading = false;
-            }
-        },
-        async fetchLastProducts() {
-            try {
-                const prodPage = await BasementProductController.getItems(1, true);
-                let products = prodPage.items || [];
-                
-                this.lastProducts = products
-                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                    .slice(0, 10);
-            } catch (error) {
-                console.error('Error fetching products:', error);
-                this.lastProducts = [];
             }
         },
         searchProducts: debounce(async function () {
@@ -564,6 +527,115 @@ export default {
                 return 'text-yellow-600 font-medium'; // Мало остатка
             } else {
                 return 'text-gray-600'; // Нормальный остаток
+            }
+        },
+        
+        // Обработчик для DraggableTable
+        productItemMapper(product, columnName) {
+            switch (columnName) {
+                case 'name':
+                    return this.renderProductName(product);
+                case 'quantity':
+                    return this.renderProductQuantity(product);
+                case 'price':
+                    return this.renderProductPrice(product);
+                case 'actions':
+                    return this.renderProductActions(product);
+                default:
+                    return product[columnName] || '-';
+            }
+        },
+        
+        // Рендеринг названия товара с иконкой
+        renderProductName(product) {
+            const icon = product.imgUrl && product.imgUrl() 
+                ? `<img src="${product.imgUrl()}" alt="icon" class="w-7 h-7 object-cover rounded" loading="lazy" />`
+                : (product.icons ? product.icons() : this.getDefaultIcon(product));
+            
+            return `
+                <div class="flex items-center">
+                    <div class="w-7 h-7 flex items-center justify-center mr-2">
+                        ${icon}
+                    </div>
+                    ${product.productName || product.name}
+                </div>
+            `;
+        },
+        
+        // Рендеринг количества/размеров товара
+        renderProductQuantity(product) {
+            if (this.isSquareMeter(product)) {
+                // Для м² показываем ширину и длину
+                const width = this.getProductWidth(product);
+                const length = this.getProductLength(product);
+                const quantity = product.quantity || 0;
+                const unit = product.unitShortName || product.unit_short_name || '';
+                const stockInfo = !this.isService(product) ? 
+                    `<div class="text-xs text-right mt-1 ${this.getStockQuantityClass(product)}">
+                        Остаток: ${product.stock_quantity || 0}
+                    </div>` : '';
+                
+                return `
+                    <div class="space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-gray-600 w-16">Ширина:</span>
+                            <span class="flex-1 p-1 text-right border border-gray-300 rounded text-sm bg-gray-50">
+                                ${width} м
+                            </span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-gray-600 w-16">Длина:</span>
+                            <span class="flex-1 p-1 text-right border border-gray-300 rounded text-sm bg-gray-50">
+                                ${length} м
+                            </span>
+                        </div>
+                        <div class="text-right text-sm font-medium bg-gray-100 p-1 rounded">
+                            = ${quantity} ${unit}
+                        </div>
+                        ${stockInfo}
+                    </div>
+                `;
+            } else {
+                // Для остальных единиц - просто количество
+                const stockInfo = !this.isService(product) ? 
+                    `<div class="text-xs mt-1 text-right ${this.getStockQuantityClass(product)}">
+                        Остаток: ${product.stock_quantity || 0}
+                    </div>` : '';
+                
+                return `
+                    <div>
+                        <div class="w-full p-1 text-right border border-gray-300 rounded bg-gray-50">
+                            ${product.quantity || 0} ${product.unitShortName || product.unit_short_name || ''}
+                        </div>
+                        ${stockInfo}
+                    </div>
+                `;
+            }
+        },
+        
+        // Рендеринг цены товара
+        renderProductPrice(product) {
+            return `
+                <div class="w-full p-1 text-right bg-gray-50 border border-gray-300 rounded text-sm">
+                    ${(Number(product.price) || 0).toFixed(2)} m
+                </div>
+            `;
+        },
+        
+        // Рендеринг действий для товара
+        renderProductActions(product) {
+            return `
+                <div class="text-center">
+                    <span class="text-red-500 text-2xl">×</span>
+                </div>
+            `;
+        },
+        
+        // Обработчик клика по товару для удаления
+        removeProductByItem(product) {
+            const index = this.products.indexOf(product);
+            if (index !== -1) {
+                this.removeSelectedProduct(index);
             }
         },
         

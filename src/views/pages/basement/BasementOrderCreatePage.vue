@@ -85,6 +85,20 @@
               </div>
             </div>
 
+            <!-- Таблица товаров -->
+            <div v-if="allOrderItems.length > 0">
+              <label class="block text-sm font-medium text-gray-700 mb-4">
+                {{ $t('orderItems') || 'Товары в заказе' }}
+              </label>
+              <DraggableTable 
+                table-key="basementOrderItems"
+                :columns-config="productTableColumns"
+                :table-data="allOrderItems"
+                :item-mapper="productItemMapper"
+                :show-actions="false"
+              />
+            </div>
+
             <!-- Примечание -->
             <div>
               <label class="block text-sm font-medium text-gray-700">
@@ -199,8 +213,9 @@
 
 <script>
 import { BasementAuthController } from '@/api/BasementAuthController'
-import api from '@/api/axiosInstance'
+import basementApi from '@/api/basementAxiosInstance'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
+import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'
 import BasementClientSearch from '@/views/components/basement/BasementClientSearch.vue'
 import BasementProductSearch from '@/views/components/basement/BasementProductSearch.vue'
 import BasementStockSearch from '@/views/components/basement/BasementStockSearch.vue'
@@ -214,6 +229,7 @@ export default {
   mixins: [getApiErrorMessage, crudEventMixin],
   components: {
     PrimaryButton,
+    DraggableTable,
     BasementClientSearch,
     BasementProductSearch,
     BasementStockSearch,
@@ -234,7 +250,8 @@ export default {
         stockItems: [], // Товары с бесконечным остатком (temp_products)
         note: '',
         cash_id: 1, // Значение по умолчанию
-        warehouse_id: 1 // Значение по умолчанию
+        warehouse_id: 1, // Значение по умолчанию
+        category_id: null // Категория заказа (определяется по пользователю)
       },
       selectedClient: null,
       allProjects: [],
@@ -304,21 +321,115 @@ export default {
       }
       
       return total;
+    },
+    // Объединенные товары для таблицы
+    allOrderItems() {
+      const items = []
+      
+      // Добавляем обычные товары
+      if (this.form.products && this.form.products.length > 0) {
+        this.form.products.forEach((product, index) => {
+          if (product.quantity && product.quantity > 0) {
+            items.push({
+              id: `product_${product.productId}_${index}`,
+              type: 'product',
+              name: product.name || product.productName,
+              quantity: product.quantity,
+              price: product.price || 0,
+              unit: product.unit || product.unitName || '',
+              total: (product.quantity || 0) * (product.price || 0),
+              originalIndex: index,
+              originalProduct: product
+            })
+          }
+        })
+      }
+      
+      // Добавляем товары с бесконечным остатком (stockItems)
+      if (this.form.stockItems && this.form.stockItems.length > 0) {
+        this.form.stockItems.forEach((item, index) => {
+          if (item.quantity && item.quantity > 0) {
+            items.push({
+              id: `stock_${index}`,
+              type: 'stock',
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price || 0,
+              unit: item.unit_short_name || item.unit_name || '',
+              total: (item.quantity || 0) * (item.price || 0),
+              originalIndex: index,
+              originalItem: item
+            })
+          }
+        })
+      }
+      
+      return items
+    },
+    // Конфигурация колонок для таблицы товаров
+    productTableColumns() {
+      return [
+        { 
+          name: 'name', 
+          label: this.$t('product') || 'Товар', 
+          size: 300 
+        },
+        { 
+          name: 'quantity', 
+          label: this.$t('quantity') || 'Количество', 
+          size: 120 
+        },
+        { 
+          name: 'unit', 
+          label: this.$t('unit') || 'Ед.', 
+          size: 80 
+        },
+        { 
+          name: 'price', 
+          label: this.$t('price') || 'Цена', 
+          size: 120 
+        },
+        { 
+          name: 'total', 
+          label: this.$t('total') || 'Сумма', 
+          size: 120 
+        }
+      ]
     }
   },
   async mounted() {
+    // Определяем категорию по текущему пользователю
+    this.setCategoryByUser();
+    
     // Загружаем кассы, склады и проекты в фоне, не блокируя загрузку страницы
     this.loadCashRegisters();
     this.loadWarehouses();
     this.loadProjects();
   },
   methods: {
+    setCategoryByUser() {
+      // Хардкод соответствия: юзер 6 = категория 2, 7 = 3, 8 = 14
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          const userId = user.id;
+          
+          const basementCategoryMap = {
+            6: 2,
+            7: 3,
+            8: 14
+          };
+          
+          this.form.category_id = basementCategoryMap[userId] || null;
+        }
+      } catch (error) {
+        console.error('Ошибка определения категории пользователя:', error);
+      }
+    },
     async loadCashRegisters() {
       try {
-        const token = BasementAuthController.getToken();
-        const { data } = await api.get('/cash_registers/all', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const { data } = await basementApi.get('/cash_registers/all');
         
         if (data && data.length > 0) {
           // Автоматически выбираем первую кассу
@@ -332,10 +443,7 @@ export default {
     },
     async loadWarehouses() {
       try {
-        const token = BasementAuthController.getToken();
-        const { data } = await api.get('/warehouses', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const { data } = await basementApi.get('/warehouses');
         
         if (data && data.length > 0) {
           // Автоматически выбираем первый склад
@@ -365,10 +473,7 @@ export default {
     async createClient() {
       this.clientLoading = true
       try {
-        const token = BasementAuthController.getToken()
-        const { data } = await api.post('/clients', this.clientForm, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        const { data } = await basementApi.post('/clients', this.clientForm)
         
         this.selectedClient = data
         this.form.client_id = data.id
@@ -413,8 +518,6 @@ export default {
       }
 
       try {
-        const token = BasementAuthController.getToken()
-        
         // Все товары и услуги сохраняются в order_products (фильтруем товары с количеством 0)
         const validProducts = this.form.products
           .filter(p => p.quantity && p.quantity > 0) // Убираем товары с нулевым количеством
@@ -443,14 +546,13 @@ export default {
           cash_id: this.form.cash_id,
           warehouse_id: this.form.warehouse_id,
           currency_id: 1, // Используем валюту по умолчанию
+          category_id: this.form.category_id, // Категория заказа
           note: this.form.note || '',
           products: validProducts,
           temp_products: tempProducts
         }
 
-        const { data } = await api.post('/orders', orderData, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        const { data } = await basementApi.post('/orders', orderData)
         
         // Уведомление об успехе
         this.$store.dispatch('showNotification', { 
@@ -503,8 +605,6 @@ export default {
       }
 
       try {
-        const token = BasementAuthController.getToken()
-        
         // Все товары и услуги сохраняются в order_products
         const validProducts = this.form.products.map(p => ({
           product_id: p.productId,
@@ -531,6 +631,7 @@ export default {
           cash_id: this.form.cash_id,
           warehouse_id: this.form.warehouse_id,
           currency_id: 1,
+          category_id: this.form.category_id, // Категория заказа
           note: this.form.note || '',
           products: validProducts,
           temp_products: tempProducts
@@ -542,9 +643,7 @@ export default {
           throw new Error('ID заказа не найден')
         }
         
-        const { data } = await api.put(`/orders/${orderId}`, orderData, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        const { data } = await basementApi.put(`/orders/${orderId}`, orderData)
         
         // Уведомление об успехе
         this.$store.dispatch('showNotification', { 
@@ -591,10 +690,7 @@ export default {
       } else if (this.orderId) {
         // Загружаем данные заказа по ID из роута
         try {
-          const token = BasementAuthController.getToken()
-          const { data } = await api.get(`/orders/${parseInt(this.orderId)}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
+          const { data } = await basementApi.get(`/orders/${parseInt(this.orderId)}`)
           
           const orderData = data.item || data
           this.fillFormWithOrderData(orderData)
@@ -615,6 +711,7 @@ export default {
       this.form.project_id = orderData.project_id || ''
       this.form.cash_id = orderData.cash_id || 1
       this.form.warehouse_id = orderData.warehouse_id || 1
+      this.form.category_id = orderData.category_id || this.form.category_id
       this.form.note = orderData.note || ''
       
       // Устанавливаем выбранного клиента
@@ -655,6 +752,23 @@ export default {
           height: 0,
           isTempProduct: true
         }))
+      }
+    },
+    // Обработчик для DraggableTable
+    productItemMapper(item, columnName) {
+      switch (columnName) {
+        case 'name':
+          return item.name
+        case 'quantity':
+          return item.quantity
+        case 'unit':
+          return item.unit
+        case 'price':
+          return item.price.toFixed(2)
+        case 'total':
+          return item.total.toFixed(2)
+        default:
+          return item[columnName] || '-'
       }
     }
   },

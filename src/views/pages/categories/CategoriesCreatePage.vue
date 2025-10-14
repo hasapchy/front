@@ -21,7 +21,7 @@
             <label class="block mb-1">{{ $t('parentCategory') }}</label>
             <select v-model="selectedParentCategoryId" v-if="allCategories.length">
                 <option value="">{{ $t('no') }}</option>
-                <option v-for="parent in allCategories" :key="parent.id" :value="parent.id">{{ parent.name }}
+                <option v-for="parent in availableParentCategories" :key="parent.id" :value="parent.id">{{ parent.name }}
                 </option>
             </select>
         </div>
@@ -81,6 +81,17 @@ export default {
             
             this.saveInitialState();
         });
+    },
+    computed: {
+        // Исключаем текущую редактируемую категорию из списка возможных родителей
+        availableParentCategories() {
+            if (!this.editingItemId) {
+                // Если создаем новую категорию, показываем все категории
+                return this.allCategories;
+            }
+            // Если редактируем существующую категорию, исключаем её саму
+            return this.allCategories.filter(category => category.id != this.editingItemId);
+        }
     },
     methods: {
         getFormState() {
@@ -168,11 +179,20 @@ export default {
                 if (newEditingItem) {
                     this.name = newEditingItem.name || '';
                     this.selectedUsers = newEditingItem.getUserIds() || [];
-                    this.selectedParentCategoryId = newEditingItem.parentId || '';
                     this.editingItemId = newEditingItem.id || null;
+                    
+                    // Проверяем, что родительская категория не является самой собой
+                    const parentId = newEditingItem.parentId || '';
+                    if (parentId == this.editingItemId) {
+                        // Если категория ссылается сама на себя, сбрасываем родительскую категорию
+                        this.selectedParentCategoryId = '';
+                    } else {
+                        this.selectedParentCategoryId = parentId;
+                    }
                 } else {
                     this.name = '';
                     this.selectedUsers = [];
+                    this.selectedParentCategoryId = '';
                     this.editingItemId = null;
                 }
                 this.$nextTick(() => {
