@@ -33,6 +33,7 @@
                     :key="order.id"
                     :order="order"
                     :is-selected="selectedIds.includes(order.id)"
+                    :is-project-mode="isProjectMode"
                     @dblclick="handleCardDoubleClick"
                     @select-toggle="handleCardSelectToggle"
                 />
@@ -79,6 +80,10 @@ export default {
         currencySymbol: {
             type: String,
             default: ''
+        },
+        isProjectMode: {
+            type: Boolean,
+            default: false
         }
     },
     emits: ['change', 'card-dblclick', 'card-select-toggle'],

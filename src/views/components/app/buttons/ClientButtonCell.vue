@@ -37,8 +37,8 @@ export default {
             if (!this.client) return 'Не указан';
             
             const name = this.client.fullName();
-            const firstPhone = this.client.phones?.[0]?.phone;
-            const text = firstPhone ? `${name} (${firstPhone})` : name;
+            // Убрали отображение телефона, но поиск по нему работает на бэкенде
+            const text = name;
             
             if (this.searchQuery && this.searchQuery.trim()) {
                 return this.highlightText(text, this.searchQuery);

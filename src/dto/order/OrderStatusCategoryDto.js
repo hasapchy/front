@@ -1,3 +1,5 @@
+import { dayjsDate } from '@/utils/dateUtils';
+
 export default class OrderStatusCategoryDto {
   constructor(id, name, color, userId, createdAt, updatedAt) {
     this.id = id;
@@ -6,5 +8,9 @@ export default class OrderStatusCategoryDto {
     this.userId = userId;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+  }
+
+  formatCreatedAt() {
+    return dayjsDate(this.createdAt);
   }
 }

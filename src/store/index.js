@@ -341,6 +341,16 @@ export default createStore({
         return dispatch('waitForLoading', 'units');
       }
 
+      // ✅ Проверяем не истек ли кэш единиц
+      const timestamp = localStorage.getItem('units_timestamp');
+      const now = Date.now();
+      const ttl = CACHE_TTL.units;
+      
+      // Если timestamp отсутствует или истек - очищаем state
+      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+        commit('SET_UNITS', []);
+      }
+
       // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
       if (state.units.length > 0) {
         return;
@@ -364,6 +374,16 @@ export default createStore({
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.currencies) {
         return dispatch('waitForLoading', 'currencies');
+      }
+
+      // ✅ Проверяем не истек ли кэш валют
+      const timestamp = localStorage.getItem('currencies_timestamp');
+      const now = Date.now();
+      const ttl = CACHE_TTL.currencies;
+      
+      // Если timestamp отсутствует или истек - очищаем state
+      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+        commit('SET_CURRENCIES', []);
       }
 
       // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
@@ -391,6 +411,16 @@ export default createStore({
         return dispatch('waitForLoading', 'users');
       }
 
+      // ✅ Проверяем не истек ли кэш пользователей
+      const timestamp = localStorage.getItem('users_timestamp');
+      const now = Date.now();
+      const ttl = 24 * 60 * 60 * 1000; // 24 часа (глобальный справочник)
+      
+      // Если timestamp отсутствует или истек - очищаем state
+      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+        commit('SET_USERS', []);
+      }
+
       // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
       if (state.users.length > 0) {
         return;
@@ -416,6 +446,16 @@ export default createStore({
         return dispatch('waitForLoading', 'warehouses');
       }
 
+      // ✅ Проверяем не истек ли кэш складов
+      const timestamp = localStorage.getItem('warehouses_timestamp');
+      const now = Date.now();
+      const ttl = CACHE_TTL.warehouses;
+      
+      // Если timestamp отсутствует или истек - очищаем state
+      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+        commit('SET_WAREHOUSES', []);
+      }
+
       // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
       if (state.warehouses.length > 0) {
         return;
@@ -439,6 +479,16 @@ export default createStore({
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.cashRegisters) {
         return dispatch('waitForLoading', 'cashRegisters');
+      }
+
+      // ✅ Проверяем не истек ли кэш касс
+      const timestamp = localStorage.getItem('cashRegisters_timestamp');
+      const now = Date.now();
+      const ttl = CACHE_TTL.cashRegisters;
+      
+      // Если timestamp отсутствует или истек - очищаем state
+      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+        commit('SET_CASH_REGISTERS', []);
       }
 
       // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
@@ -469,6 +519,17 @@ export default createStore({
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.clients) {
         return dispatch('waitForLoading', 'clients');
+      }
+
+      // ✅ Проверяем не истек ли кэш клиентов
+      const timestamp = localStorage.getItem('clientsData_timestamp');
+      const now = Date.now();
+      const ttl = CACHE_TTL.clients;
+      
+      // Если timestamp отсутствует или истек - очищаем state
+      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+        commit('SET_CLIENTS', []);
+        commit('SET_CLIENTS_DATA', []);
       }
 
       // ✅ СНАЧАЛА проверяем есть ли кэшированные plain data (vuex-persistedstate восстановил)
@@ -538,6 +599,16 @@ export default createStore({
       }
     },
     async loadCategories({ commit, state }) {
+      // ✅ Проверяем не истек ли кэш категорий
+      const timestamp = localStorage.getItem('categories_timestamp');
+      const now = Date.now();
+      const ttl = CACHE_TTL.categories; // 10 минут
+      
+      // Если timestamp отсутствует или истек - очищаем state
+      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+        commit('SET_CATEGORIES', []);
+      }
+      
       // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
       if (state.categories.length > 0) {
         return;
@@ -554,6 +625,17 @@ export default createStore({
       }
     },
     async loadProjects({ commit, state }) {
+      // ✅ Проверяем не истек ли кэш проектов
+      const timestamp = localStorage.getItem('projectsData_timestamp');
+      const now = Date.now();
+      const ttl = CACHE_TTL.projects;
+      
+      // Если timestamp отсутствует или истек - очищаем state
+      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+        commit('SET_PROJECTS', []);
+        commit('SET_PROJECTS_DATA', []);
+      }
+
       // ✅ СНАЧАЛА проверяем есть ли кэшированные plain data (vuex-persistedstate восстановил)
       if (state.projectsData.length > 0 && state.projects.length === 0) {
         // Конвертируем plain data в DTO
@@ -704,6 +786,16 @@ export default createStore({
         return dispatch('waitForLoading', 'orderStatuses');
       }
 
+      // ✅ Проверяем не истек ли кэш статусов заказов
+      const timestamp = localStorage.getItem('orderStatuses_timestamp');
+      const now = Date.now();
+      const ttl = CACHE_TTL.orderStatuses;
+      
+      // Если timestamp отсутствует или истек - очищаем state
+      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+        commit('SET_ORDER_STATUSES', []);
+      }
+
       // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
       if (state.orderStatuses.length > 0) {
         return;
@@ -726,6 +818,16 @@ export default createStore({
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.projectStatuses) {
         return dispatch('waitForLoading', 'projectStatuses');
+      }
+
+      // ✅ Проверяем не истек ли кэш статусов проектов
+      const timestamp = localStorage.getItem('projectStatuses_timestamp');
+      const now = Date.now();
+      const ttl = CACHE_TTL.projectStatuses;
+      
+      // Если timestamp отсутствует или истек - очищаем state
+      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+        commit('SET_PROJECT_STATUSES', []);
       }
 
       // Если уже в state - возвращаем (vuex-persistedstate уже восстановил из localStorage!)
@@ -753,6 +855,16 @@ export default createStore({
         return dispatch('waitForLoading', 'transactionCategories');
       }
 
+      // ✅ Проверяем не истек ли кэш категорий транзакций
+      const timestamp = localStorage.getItem('transactionCategories_timestamp');
+      const now = Date.now();
+      const ttl = CACHE_TTL.transactionCategories;
+      
+      // Если timestamp отсутствует или истек - очищаем state
+      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+        commit('SET_TRANSACTION_CATEGORIES', []);
+      }
+
       // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
       if (state.transactionCategories.length > 0) {
         return;
@@ -775,6 +887,16 @@ export default createStore({
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.productStatuses) {
         return dispatch('waitForLoading', 'productStatuses');
+      }
+
+      // ✅ Проверяем не истек ли кэш статусов товаров
+      const timestamp = localStorage.getItem('productStatuses_timestamp');
+      const now = Date.now();
+      const ttl = CACHE_TTL.productStatuses;
+      
+      // Если timestamp отсутствует или истек - очищаем state
+      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+        commit('SET_PRODUCT_STATUSES', []);
       }
 
       // Если уже в state - возвращаем (vuex-persistedstate восстановил!)

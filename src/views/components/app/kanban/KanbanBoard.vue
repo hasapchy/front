@@ -39,6 +39,7 @@
                     :selected-ids="selectedIds"
                     :disabled="loading"
                     :currency-symbol="currencySymbol"
+                    :is-project-mode="isProjectMode"
                     @change="handleOrderMove($event, column.id)"
                     @card-dblclick="handleCardDoubleClick"
                     @card-select-toggle="handleCardSelectToggle"
@@ -85,6 +86,10 @@ export default {
         currencySymbol: {
             type: String,
             default: ''
+        },
+        isProjectMode: {
+            type: Boolean,
+            default: false
         }
     },
     emits: ['order-moved', 'card-dblclick', 'card-select-toggle'],

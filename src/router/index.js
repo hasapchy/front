@@ -20,6 +20,7 @@ import TransfersPage from "@/views/pages/transfers/TransfersPage.vue";
 import SalesPage from "@/views/pages/sales/SalesPage.vue";
 import OrdersPage from "@/views/pages/orders/OrdersPage.vue";
 import OrderStatusesPage from "@/views/pages/orders/OrderStatusesPage.vue";
+import OrderStatusCategoriesPage from "@/views/pages/orders/OrderStatusCategoriesPage.vue";
 import OrderCategoriesPage from "@/views/pages/orders/OrderCategoriesPage.vue";
 import OrderAdditionalFieldsPage from "@/views/pages/orders/OrderAdditionalFieldsPage.vue";
 import TransactionCategoriesPage from "@/views/pages/transactions/TransactionCategoriesPage.vue";
@@ -224,6 +225,42 @@ const routes = [
           requiresAuth: true,
           permission: "order_statuses_view",
           binded: [
+            {
+              name: "orderStatusCategories",
+              path: "/order_status_categories",
+            },
+            {
+              name: "categories",
+              path: "/categories",
+            },
+            {
+              name: "projectStatuses", 
+              path: "/project_statuses",
+            },
+            {
+              name: "transactionCategories",
+              path: "/transaction_categories",
+            },
+            {
+              name: "orderAdditionalFields",
+              path: "/order_additional_fields",
+            },
+          ],
+        },
+      },
+      {
+        path: "/order_status_categories",
+        name: "order_status_categories",
+        component: OrderStatusCategoriesPage,
+        meta: { 
+          title: "orderStatusCategories", 
+          requiresAuth: true,
+          permission: "order_statuscategories_view",
+          binded: [
+            {
+              name: "orderStatuses",
+              path: "/order_statuses",
+            },
             {
               name: "categories",
               path: "/categories",

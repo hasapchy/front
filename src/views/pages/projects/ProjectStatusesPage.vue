@@ -39,24 +39,26 @@ import ProjectStatusCreatePage from './ProjectStatusCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
+import batchActionsMixin from '@/mixins/batchActionsMixin';
+import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, tableTranslationMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
     components: {
         NotificationToast, PrimaryButton, SideModalDialog, ProjectStatusCreatePage, Pagination, DraggableTable, AlertDialog, BatchButton
     },
     data() {
         return {
-            selectedIds: [],
-            deleteDialog: false,
+            // selectedIds, deleteDialog - из batchActionsMixin
             controller: ProjectStatusController,
             cacheInvalidationType: 'projectStatuses',
-            savedSuccessText: this.$t('statusSuccessfullyAdded'),
-            savedErrorText: this.$t('errorSavingStatus'),
-            deletedSuccessText: this.$t('statusSuccessfullyDeleted'),
-            deletedErrorText: this.$t('errorDeletingStatus'),
+            savedSuccessText: this.$t('projectStatusSuccessfullyAdded'),
+            savedErrorText: this.$t('errorSavingProjectStatus'),
+            deletedSuccessText: this.$t('projectStatusSuccessfullyDeleted'),
+            deletedErrorText: this.$t('errorDeletingProjectStatus'),
+            showStatusSelect: false, // не показываем смену статуса для статусов
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: '№', size: 60 },
@@ -70,10 +72,29 @@ export default {
         this.fetchItems();
     },
     methods: {
+        getBatchActions() {
+            const actions = [];
+            
+            // Добавляем кнопку удаления только если у пользователя есть права
+            if (this.$store?.getters?.hasPermission?.('projects_delete')) {
+                actions.push({
+                    label: "",
+                    icon: "fas fa-trash",
+                    type: "danger",
+                    action: this.deleteItems,
+                    disabled: this.loadingBatch,
+                });
+            }
+            
+            return actions;
+        },
         itemMapper(i, c) {
             switch (c) {
                 case 'color':
-                    return i.color;
+                    if (i.color) {
+                        return `<div style="width: 20px; height: 20px; background-color: ${i.color}; border-radius: 4px; display: inline-block; border: 1px solid #ddd;"></div>`;
+                    }
+                    return '-';
                 case 'createdAt':
                     return i.formatCreatedAt ? i.formatCreatedAt() : i.createdAt;
                 default:
@@ -89,25 +110,9 @@ export default {
             try {
                 this.data = await ProjectStatusController.getItems(page, this.perPage);
             } catch (error) {
-                this.showNotification(this.$t('errorGettingStatuses'), error.message, true);
+                this.showNotification(this.$t('errorGettingProjectStatuses'), error.message, true);
             }
             if (!silent) this.loading = false;
-        },
-        // Переопределяем метод из batchActionsMixin для добавления специфичной логики
-        async confirmDeleteItems() {
-            this.deleteDialog = false;
-            if (this.selectedIds.length === 0) return;
-            
-            try {
-                for (const id of this.selectedIds) {
-                    await ProjectStatusController.deleteItem(id);
-                }
-                this.selectedIds = [];
-                this.showNotification(this.$t('statusSuccessfullyDeleted'), '', false);
-                this.fetchItems(this.data.currentPage, true);
-            } catch (error) {
-                this.showNotification(this.$t('errorDeletingStatus'), error.message, true);
-            }
         }
     }
 }

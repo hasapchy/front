@@ -45,6 +45,17 @@ export default class ProjectDto {
     this.status = status;
   }
 
+  get statusName() {
+    return this.status?.name || '';
+  }
+
+  set statusName(value) {
+    // Сеттер для совместимости с канбаном
+    if (this.status) {
+      this.status.name = value;
+    }
+  }
+
   formatDate() {
     return dayjsDateTime(this.date);
   }

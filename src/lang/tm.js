@@ -406,6 +406,8 @@ export default {
   categorySuccessfullyDeleted: 'Kategoriýa üstünlikli pozuldy',
   orderCategorySuccessfullyAdded: 'Sargyt kategoriýasy üstünlikli goşuldy',
   orderCategorySuccessfullyDeleted: 'Sargyt kategoriýasy üstünlikli pozuldy',
+  orderStatusCategorySuccessfullyAdded: 'Sargyt ýagdaýy kategoriýasy üstünlikli goşuldy',
+  orderStatusCategorySuccessfullyDeleted: 'Sargyt ýagdaýy kategoriýasy üstünlikli pozuldy',
   statusSuccessfullyAdded: 'Ýagdaý üstünlikli goşuldy',
   statusSuccessfullyDeleted: 'Ýagdaý üstünlikli pozuldy',
   statusUpdateError: 'Ýagdaý üýtgemekde ýalňyşlyk',
@@ -418,6 +420,9 @@ export default {
   errorGettingOrderCategories: 'Sargyt kategoriýalaryny almakda ýalňyşlyk',
   errorSavingOrderCategory: 'Sargyt kategoriýasyny saklamakda ýalňyşlyk',
   errorDeletingOrderCategory: 'Sargyt kategoriýasyny pozmakda ýalňyşlyk',
+  errorGettingOrderStatusCategories: 'Sargyt ýagdaýy kategoriýalaryny almakda ýalňyşlyk',
+  errorSavingOrderStatusCategory: 'Sargyt ýagdaýy kategoriýasyny saklamakda ýalňyşlyk',
+  errorDeletingOrderStatusCategory: 'Sargyt ýagdaýy kategoriýasyny pozmakda ýalňyşlyk',
   
   // Валидация
   productNameRequired: 'Önüm ady hökmany',

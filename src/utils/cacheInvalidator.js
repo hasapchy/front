@@ -11,7 +11,8 @@ export default class CacheInvalidator {
       // Глобальные кэши
       currencies: ['currencies_cache'],
       units: ['units_cache'],
-      orderStatuses: ['orderStatuses_cache'],
+      orderStatuses: ['orderStatuses_cache', 'order_status_categories_cache'],
+      orderStatusCategories: ['order_status_categories_cache', 'orderStatuses_cache'],
       projectStatuses: ['projectStatuses_cache'],
       transactionCategories: ['transactionCategories_cache'],
       productStatuses: ['productStatuses_cache'],
@@ -55,6 +56,15 @@ export default class CacheInvalidator {
           removedCount++;
         }
       });
+      
+      // ✅ Также удаляем timestamp для справочников без суффикса компании
+      // Например: categories_timestamp, warehouses_timestamp и т.д.
+      if (pattern.endsWith('_')) {
+        const timestampKey = pattern.slice(0, -1) + '_timestamp'; // categories_ -> categories_timestamp
+        localStorage.removeItem(timestampKey);
+      } else {
+        localStorage.removeItem(`${pattern}_timestamp`);
+      }
     });
 
     return removedCount;

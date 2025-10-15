@@ -1,4 +1,4 @@
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { dayjsDateTime } from "@/utils/dateUtils";
 export default class OrderStatusDto {
   constructor(
     id,
@@ -15,6 +15,10 @@ export default class OrderStatusDto {
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
+  get categoryName() {
+    return this.category ? this.category.name : '-';
+  }
+
   formatDate() {
     return dayjsDateTime(this.date);
   }

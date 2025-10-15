@@ -368,11 +368,8 @@ export default {
       this.allProjects = this.$store.getters.projects;
     },
         async fetchAllProductCategories() {
-            // ✅ Проверяем есть ли уже данные
-            if (this.allProductCategories.length > 0) return;
-            
             try {
-                // Используем store для categories
+                // Загружаем категории из store
                 await this.$store.dispatch('loadCategories');
                 const allCategories = this.$store.getters.categories;
                 
@@ -658,6 +655,9 @@ export default {
             this.productCategoryModalDialog = false;
         },
         handleProductCategorySaved(category) {
+            // ✅ Сначала очищаем state категорий в store для принудительной перезагрузки
+            this.$store.commit('SET_CATEGORIES', []);
+            // Затем перезагружаем категории
             this.fetchAllProductCategories();
             if (category && category.id) {
                 this.categoryId = category.id;
