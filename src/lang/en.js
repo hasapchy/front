@@ -52,6 +52,14 @@ export default {
   orderAdditionalFields: 'Order Add. Fields',
   generalSettings: 'Settings',
   
+  // Kanban
+  kanbanByStatuses: 'Kanban by statuses',
+  groupBy: 'Group by',
+  compactView: 'Compact view',
+  withoutProject: 'Without project',
+  noOrders: 'No orders',
+  orderUpdated: 'Order updated',
+  
   // Actions
   add: 'Add',
   

@@ -6,6 +6,22 @@
                 icon="fas fa-plus"
                 :disabled="!$store.getters.hasPermission('orders_create')">
             </PrimaryButton>
+
+            <!-- Переключатель вида -->
+            <div class="flex items-center border border-gray-300 rounded overflow-hidden">
+                <button 
+                    @click="viewMode = 'table'"
+                    class="px-3 py-2 transition-colors"
+                    :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                    <i class="fas fa-table"></i>
+                </button>
+                <button 
+                    @click="viewMode = 'kanban'"
+                    class="px-3 py-2 transition-colors"
+                    :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                    <i class="fas fa-columns"></i>
+                </button>
+            </div>
             
             <div>
                 <select v-model="dateFilter" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded bg-white">
@@ -71,7 +87,7 @@
                     @change="handlePaidOrdersFilterChange"
                 />
             </div>
-            <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" 
+            <Pagination v-if="data && viewMode === 'table'" :currentPage="data.currentPage" :lastPage="data.lastPage" 
                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
                 storage-key="ordersPerPage"
                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
@@ -80,11 +96,30 @@
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
         :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
         :handle-change-status="handleChangeStatus" :show-status-select="true" />
+    
     <transition name="fade" mode="out-in">
-        <div v-if="data && !loading" :key="`table-${$i18n.locale}`">
+        <!-- Табличный вид -->
+        <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.orders" :columns-config="translatedColumnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" :onItemClick="(i) => showModal(i)" @selectionChange="selectedIds = $event" />
         </div>
+
+        <!-- Канбан вид -->
+        <div v-else-if="data && !loading && viewMode === 'kanban'" key="kanban-view">
+            <KanbanBoard
+                :orders="data.items"
+                :statuses="statuses"
+                :projects="projects"
+                :selected-ids="selectedIds"
+                :loading="loading"
+                :currency-symbol="currencySymbol"
+                @order-moved="handleOrderMoved"
+                @card-dblclick="showModal"
+                @card-select-toggle="toggleSelectRow"
+            />
+        </div>
+
+        <!-- Загрузка -->
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i>
         </div>
@@ -141,6 +176,7 @@ import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import Pagination from "@/views/components/app/buttons/Pagination.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
+import KanbanBoard from "@/views/components/app/kanban/KanbanBoard.vue";
 import OrderController from "@/api/OrderController";
 import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
 import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
@@ -169,11 +205,12 @@ const TimelinePanel = defineAsyncComponent(() =>
 
 export default {
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
             // selectedIds - из batchActionsMixin
+            viewMode: 'table', // 'table' или 'kanban'
             statuses: [],
             projects: [],
             clients: [],
@@ -264,6 +301,21 @@ export default {
         '$store.state.projects'(newProjects) {
             if (newProjects && newProjects.length > 0) {
                 this.projects = newProjects;
+            }
+        },
+        viewMode(newMode) {
+            // Сохраняем режим просмотра в localStorage
+            localStorage.setItem('orders_viewMode', newMode);
+            
+            // В режиме канбана загружаем все заказы (без пагинации)
+            if (newMode === 'kanban') {
+                this.perPage = 1000; // Большое число для загрузки всех заказов
+                this.fetchItems(1, false);
+            } else {
+                // Возвращаем обычную пагинацию для таблицы
+                const savedPerPage = localStorage.getItem('ordersPerPage');
+                this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
+                this.fetchItems(1, false);
             }
         }
     },
@@ -518,6 +570,92 @@ export default {
 
         handleTransactionSavedError(error) {
             this.showNotification(this.$t('error'), error, true);
+        },
+
+        // Обработчик перемещения заказа в канбане
+        async handleOrderMoved(updateData) {
+            try {
+                if (updateData.type === 'status') {
+                    // Сначала обновляем локально для плавности
+                    const order = this.data.items.find(o => o.id === updateData.orderId);
+                    if (order) {
+                        order.statusId = updateData.statusId;
+                        const status = this.statuses.find(s => s.id === updateData.statusId);
+                        if (status) {
+                            order.statusName = status.name;
+                        }
+                    }
+                    
+                    // Отправляем на сервер в фоне
+                    OrderController.batchUpdateStatus({ 
+                        ids: [updateData.orderId], 
+                        status_id: updateData.statusId 
+                    }).then(() => {
+                        // Показываем уведомление об успехе
+                        this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
+                        
+                        // Обновляем timeline если открыт
+                        if (this.editingItem && this.editingItem.id === updateData.orderId && this.$refs.timelinePanel && !this.timelineCollapsed) {
+                            this.$refs.timelinePanel.refreshTimeline();
+                        }
+                    }).catch(error => {
+                        const errors = this.getApiErrorMessage(error);
+                        this.showNotification(this.$t('error'), errors.join("\n"), true);
+                        // При ошибке откатываем изменения
+                        this.fetchItems(this.data.currentPage, true);
+                    });
+                    
+                } else if (updateData.type === 'project') {
+                    // Сначала обновляем локально
+                    const order = this.data.items.find(o => o.id === updateData.orderId);
+                    if (order) {
+                        order.projectId = updateData.projectId;
+                        const project = this.projects.find(p => p.id === updateData.projectId);
+                        if (project) {
+                            order.projectName = project.name;
+                        }
+                    }
+                    
+                    // Отправляем на сервер в фоне
+                    OrderController.updateItem(updateData.orderId, {
+                        project_id: updateData.projectId
+                    }).then(() => {
+                        // Показываем уведомление об успехе
+                        this.showNotification(this.$t('success'), this.$t('orderUpdated'), false);
+                    }).catch(error => {
+                        const errors = this.getApiErrorMessage(error);
+                        this.showNotification(this.$t('error'), errors.join("\n"), true);
+                        // При ошибке откатываем изменения
+                        this.fetchItems(this.data.currentPage, true);
+                    });
+                }
+            } catch (error) {
+                const errors = this.getApiErrorMessage(error);
+                this.showNotification(this.$t('error'), errors.join("\n"), true);
+                // Перезагружаем данные для отмены изменения
+                await this.fetchItems(this.data.currentPage, true);
+            }
+        },
+
+        // Переключение выбора строки (для канбана)
+        toggleSelectRow(id) {
+            if (this.selectedIds.includes(id)) {
+                this.selectedIds = this.selectedIds.filter(x => x !== id);
+            } else {
+                this.selectedIds = [...this.selectedIds, id];
+            }
+        }
+    },
+    mounted() {
+        // Восстанавливаем режим просмотра из localStorage
+        const savedViewMode = localStorage.getItem('orders_viewMode');
+        if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
+            this.viewMode = savedViewMode;
+            
+            // Если восстанавливаем канбан режим, загружаем больше заказов
+            if (savedViewMode === 'kanban') {
+                this.perPage = 1000;
+            }
         }
     }
 };

@@ -1,0 +1,152 @@
+<template>
+    <div class="kanban-column flex flex-col h-full bg-gray-50 rounded-lg">
+        <!-- Заголовок колонки -->
+        <div class="column-header px-4 py-3 rounded-t-lg" :style="{ backgroundColor: statusColor }">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <h3 class="font-semibold text-white">{{ status.name }}</h3>
+                    <span class="text-xs text-gray-800 bg-white px-2 py-0.5 rounded-full font-medium">
+                        {{ orders.length }}
+                    </span>
+                </div>
+                <!-- Общая сумма по колонке -->
+                <div v-if="columnTotal > 0" class="text-xs text-white font-medium">
+                    {{ columnTotal.toFixed(2) }} {{ currencySymbol }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Область для карточек -->
+        <div class="column-content flex-1 overflow-y-auto p-3" ref="scrollContainer">
+            <draggable
+                :list="orders"
+                group="orders"
+                :animation="200"
+                ghost-class="ghost-card"
+                drag-class="dragging-card"
+                @change="handleChange"
+                :disabled="disabled"
+                class="min-h-[200px]"
+            >
+                <KanbanCard
+                    v-for="order in orders"
+                    :key="order.id"
+                    :order="order"
+                    :is-selected="selectedIds.includes(order.id)"
+                    @dblclick="handleCardDoubleClick"
+                    @select-toggle="handleCardSelectToggle"
+                />
+            </draggable>
+
+            <!-- Пустая колонка -->
+            <div v-if="orders.length === 0" class="flex items-center justify-center h-32 text-gray-400 text-sm">
+                <div class="text-center">
+                    <i class="fas fa-inbox text-2xl mb-2"></i>
+                    <p>{{ $t('noOrders') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+import { VueDraggableNext } from 'vue-draggable-next';
+import KanbanCard from './KanbanCard.vue';
+
+export default {
+    name: 'KanbanColumn',
+    components: {
+        draggable: VueDraggableNext,
+        KanbanCard
+    },
+    props: {
+        status: {
+            type: Object,
+            required: true
+        },
+        orders: {
+            type: Array,
+            required: true
+        },
+        selectedIds: {
+            type: Array,
+            default: () => []
+        },
+        disabled: {
+            type: Boolean,
+            default: false
+        },
+        currencySymbol: {
+            type: String,
+            default: ''
+        }
+    },
+    emits: ['change', 'card-dblclick', 'card-select-toggle'],
+    computed: {
+        statusColor() {
+            // Используем тот же подход, что и в StatusSelectCell
+            // Поддержка как категорий (для заказов), так и прямого цвета
+            const hex = this.status.category?.color || this.status.color;
+            return hex || '#3571A4'; // Дефолтный цвет, если не задан
+        },
+        columnTotal() {
+            return this.orders.reduce((sum, order) => {
+                return sum + (parseFloat(order.totalPrice) || 0);
+            }, 0);
+        }
+    },
+    methods: {
+        handleChange(evt) {
+            this.$emit('change', evt);
+        },
+        handleCardDoubleClick(order) {
+            this.$emit('card-dblclick', order);
+        },
+        handleCardSelectToggle(orderId) {
+            this.$emit('card-select-toggle', orderId);
+        }
+    },
+};
+</script>
+
+<style scoped>
+.kanban-column {
+    width: 320px;
+    min-width: 320px;
+    max-height: calc(100vh - 250px);
+}
+
+.column-content {
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5E0 transparent;
+}
+
+.column-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.column-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.column-content::-webkit-scrollbar-thumb {
+    background-color: #CBD5E0;
+    border-radius: 3px;
+}
+
+.column-content::-webkit-scrollbar-thumb:hover {
+    background-color: #A0AEC0;
+}
+
+.ghost-card {
+    opacity: 0.5;
+    background: #e3f2fd;
+    border: 2px dashed #2196f3;
+}
+
+.dragging-card {
+    opacity: 0.8;
+    transform: rotate(2deg);
+}
+</style>
+

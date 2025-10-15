@@ -56,6 +56,14 @@ export default {
   orderStatuses: 'Sargyt ýagdaýlary',
   orderAdditionalFields: 'Sargyt goş. meýdanlary',
   additionalFields: 'Goşmaça meýdanlar',
+  
+  // Kanban
+  kanbanByStatuses: 'Ýagdaýa görä kanban',
+  groupBy: 'Toparla',
+  compactView: 'Gysga görnüş',
+  withoutProject: 'Proýeksiz',
+  noOrders: 'Sargyt ýok',
+  orderUpdated: 'Sargyt täzelendi',
   errorGettingAdditionalFieldsList: 'Goşmaça meýdanlaryň sanawyny almakda ýalňyşlyk',
   additionalFieldSaved: 'Goşmaça meýdan saklandy',
   errorSavingAdditionalField: 'Goşmaça meýdany saklamakda ýalňyşlyk',

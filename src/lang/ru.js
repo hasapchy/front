@@ -67,6 +67,14 @@ export default {
   users: 'Пользователи',
   settings: 'Кастомные права',
   
+  // Канбан
+  kanbanByStatuses: 'Канбан по статусам',
+  groupBy: 'Группировать по',
+  compactView: 'Компактный вид',
+  withoutProject: 'Без проекта',
+  noOrders: 'Нет заказов',
+  orderUpdated: 'Заказ обновлен',
+  
   // Дополнительные навигационные элементы
   finance: 'Финансы',
   cashRegisters: 'Кассы',
