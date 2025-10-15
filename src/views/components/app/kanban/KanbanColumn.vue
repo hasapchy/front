@@ -1,5 +1,5 @@
 <template>
-    <div class="kanban-column flex flex-col h-full bg-gray-50 rounded-lg">
+    <div class="kanban-column flex flex-col h-full rounded-lg" :style="{ backgroundColor: lightBackgroundColor }">
         <!-- Заголовок колонки -->
         <div class="column-header px-4 py-3 rounded-t-lg" :style="{ backgroundColor: statusColor }">
             <div class="flex items-center justify-between">
@@ -39,7 +39,7 @@
             </draggable>
 
             <!-- Пустая колонка -->
-            <div v-if="orders.length === 0" class="flex items-center justify-center h-32 text-gray-400 text-sm">
+            <div v-if="orders.length === 0" class="flex items-center justify-center flex-1 text-gray-400 text-sm">
                 <div class="text-center">
                     <i class="fas fa-inbox text-2xl mb-2"></i>
                     <p>{{ $t('noOrders') }}</p>
@@ -89,6 +89,11 @@ export default {
             const hex = this.status.category?.color || this.status.color;
             return hex || '#3571A4'; // Дефолтный цвет, если не задан
         },
+        lightBackgroundColor() {
+            // Осветляем цвет статуса для фона колонки
+            const color = this.statusColor;
+            return this.lightenColor(color, 0.92); // 92% светлее = очень светлый оттенок
+        },
         columnTotal() {
             return this.orders.reduce((sum, order) => {
                 return sum + (parseFloat(order.totalPrice) || 0);
@@ -104,6 +109,22 @@ export default {
         },
         handleCardSelectToggle(orderId) {
             this.$emit('card-select-toggle', orderId);
+        },
+        // Функция для осветления цвета
+        lightenColor(color, amount) {
+            // Конвертируем HEX в RGB
+            const hex = color.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            
+            // Осветляем: двигаемся к белому (255, 255, 255)
+            const newR = Math.round(r + (255 - r) * amount);
+            const newG = Math.round(g + (255 - g) * amount);
+            const newB = Math.round(b + (255 - b) * amount);
+            
+            // Конвертируем обратно в HEX
+            return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
         }
     },
 };
@@ -113,6 +134,7 @@ export default {
 .kanban-column {
     width: 320px;
     min-width: 320px;
+    height: calc(100vh - 250px);
     max-height: calc(100vh - 250px);
 }
 

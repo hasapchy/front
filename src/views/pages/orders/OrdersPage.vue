@@ -93,7 +93,41 @@
                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
         </div>
     </div>
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
+    <!-- Счётчик выбранных карточек для канбана -->
+    <div v-if="selectedIds.length && viewMode === 'kanban'" class="mb-3 flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-check-square text-blue-600"></i>
+                <span class="font-medium text-blue-800">
+                    {{ $t('selected') }}: <strong>{{ selectedIds.length }}</strong>
+                </span>
+            </div>
+            <button 
+                @click="selectedIds = []"
+                class="text-sm text-blue-600 hover:text-blue-800 underline">
+                {{ $t('clearSelection') }}
+            </button>
+        </div>
+        <div class="flex items-center space-x-2">
+            <select 
+                v-model="batchStatusId"
+                class="px-3 py-1 border border-blue-300 rounded bg-white text-sm"
+                @change="handleBatchStatusChange">
+                <option value="">{{ $t('changeStatus') }}</option>
+                <option v-for="status in statuses" :key="status.id" :value="status.id">
+                    {{ status.name }}
+                </option>
+            </select>
+            <button 
+                @click="confirmDeleteItems"
+                class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm">
+                <i class="fas fa-trash mr-1"></i>
+                {{ $t('delete') }}
+            </button>
+        </div>
+    </div>
+    
+    <BatchButton v-if="selectedIds.length && viewMode === 'table'" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
         :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
         :handle-change-status="handleChangeStatus" :show-status-select="true" />
     
@@ -198,6 +232,7 @@ import { defineAsyncComponent } from "vue";
 import { eventBus } from "@/eventBus";
 import OrderPaymentFilter from "@/views/components/app/forms/OrderPaymentFilter.vue";
 import StatusSelectCell from "@/views/components/app/buttons/StatusSelectCell.vue";
+import debounce from "lodash.debounce";
 
 const TimelinePanel = defineAsyncComponent(() => 
     import("@/views/components/app/dialog/TimelinePanel.vue")
@@ -248,7 +283,9 @@ export default {
             paidOrdersFilter: false,
             transactionModal: false,
             editingTransaction: null,
-            savedCurrencySymbol: ''
+            savedCurrencySymbol: '',
+            pendingStatusUpdates: new Map(), // Для debounce обновлений статусов
+            batchStatusId: '', // Для массового изменения статуса в канбане
         };
     },
     created() {
@@ -573,7 +610,7 @@ export default {
         },
 
         // Обработчик перемещения заказа в канбане
-        async handleOrderMoved(updateData) {
+        handleOrderMoved(updateData) {
             try {
                 if (updateData.type === 'status') {
                     // Сначала обновляем локально для плавности
@@ -586,24 +623,11 @@ export default {
                         }
                     }
                     
-                    // Отправляем на сервер в фоне
-                    OrderController.batchUpdateStatus({ 
-                        ids: [updateData.orderId], 
-                        status_id: updateData.statusId 
-                    }).then(() => {
-                        // Показываем уведомление об успехе
-                        this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
-                        
-                        // Обновляем timeline если открыт
-                        if (this.editingItem && this.editingItem.id === updateData.orderId && this.$refs.timelinePanel && !this.timelineCollapsed) {
-                            this.$refs.timelinePanel.refreshTimeline();
-                        }
-                    }).catch(error => {
-                        const errors = this.getApiErrorMessage(error);
-                        this.showNotification(this.$t('error'), errors.join("\n"), true);
-                        // При ошибке откатываем изменения
-                        this.fetchItems(this.data.currentPage, true);
-                    });
+                    // Сохраняем в очередь для debounce
+                    this.pendingStatusUpdates.set(updateData.orderId, updateData.statusId);
+                    
+                    // Вызываем debounced функцию
+                    this.debouncedStatusUpdate();
                     
                 } else if (updateData.type === 'project') {
                     // Сначала обновляем локально
@@ -620,22 +644,60 @@ export default {
                     OrderController.updateItem(updateData.orderId, {
                         project_id: updateData.projectId
                     }).then(() => {
-                        // Показываем уведомление об успехе
                         this.showNotification(this.$t('success'), this.$t('orderUpdated'), false);
                     }).catch(error => {
                         const errors = this.getApiErrorMessage(error);
                         this.showNotification(this.$t('error'), errors.join("\n"), true);
-                        // При ошибке откатываем изменения
                         this.fetchItems(this.data.currentPage, true);
                     });
                 }
             } catch (error) {
                 const errors = this.getApiErrorMessage(error);
                 this.showNotification(this.$t('error'), errors.join("\n"), true);
-                // Перезагружаем данные для отмены изменения
-                await this.fetchItems(this.data.currentPage, true);
+                this.fetchItems(this.data.currentPage, true);
             }
         },
+
+        // Debounced функция для отправки обновлений статусов
+        debouncedStatusUpdate: debounce(function() {
+            if (this.pendingStatusUpdates.size === 0) return;
+            
+            // Группируем обновления по статусам
+            const updatesByStatus = new Map();
+            this.pendingStatusUpdates.forEach((statusId, orderId) => {
+                if (!updatesByStatus.has(statusId)) {
+                    updatesByStatus.set(statusId, []);
+                }
+                updatesByStatus.get(statusId).push(orderId);
+            });
+            
+            // Очищаем очередь
+            this.pendingStatusUpdates.clear();
+            
+            // Отправляем батч-запросы для каждого статуса
+            const promises = [];
+            updatesByStatus.forEach((orderIds, statusId) => {
+                const promise = OrderController.batchUpdateStatus({ 
+                    ids: orderIds, 
+                    status_id: statusId 
+                }).then(() => {
+                    // Обновляем timeline если открыт один из обновленных заказов
+                    if (this.editingItem && orderIds.includes(this.editingItem.id) && this.$refs.timelinePanel && !this.timelineCollapsed) {
+                        this.$refs.timelinePanel.refreshTimeline();
+                    }
+                }).catch(error => {
+                    const errors = this.getApiErrorMessage(error);
+                    this.showNotification(this.$t('error'), errors.join("\n"), true);
+                    this.fetchItems(this.data.currentPage, true);
+                });
+                promises.push(promise);
+            });
+            
+            // Показываем уведомление после всех обновлений
+            Promise.all(promises).then(() => {
+                this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
+            });
+        }, 500),
 
         // Переключение выбора строки (для канбана)
         toggleSelectRow(id) {
@@ -644,6 +706,15 @@ export default {
             } else {
                 this.selectedIds = [...this.selectedIds, id];
             }
+        },
+
+        // Массовое изменение статуса в канбане
+        handleBatchStatusChange() {
+            if (!this.batchStatusId || this.selectedIds.length === 0) return;
+            
+            this.handleChangeStatus(this.selectedIds, this.batchStatusId);
+            this.batchStatusId = '';
+            this.selectedIds = [];
         }
     },
     mounted() {

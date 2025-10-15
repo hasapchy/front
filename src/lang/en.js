@@ -84,6 +84,9 @@ export default {
   selectSubCategories: 'Select subcategories',
   selectAll: 'Select all',
   deselectAll: 'Deselect all',
+  selected: 'Selected',
+  clearSelection: 'Clear selection',
+  changeStatus: 'Change status',
   
   // Order related
   createOrder: 'Create Order',

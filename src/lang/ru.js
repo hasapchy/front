@@ -208,6 +208,9 @@ export default {
   allCategoriesFilter: 'Все категории',
   selectAll: 'Выбрать все',
   deselectAll: 'Снять все',
+  selected: 'Выбрано',
+  clearSelection: 'Снять выбор',
+  changeStatus: 'Изменить статус',
   
   // Продукты и услуги
   selectType: 'Выберите тип',
