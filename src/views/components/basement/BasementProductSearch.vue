@@ -213,22 +213,26 @@ export default {
                 { 
                     name: 'name', 
                     label: 'Название', 
-                    size: 300 
+                    size: 300,
+                    html: true  // Включаем HTML рендеринг для этой колонки
                 },
                 { 
                     name: 'quantity', 
                     label: 'Количество / Размеры', 
-                    size: 250 
+                    size: 250,
+                    html: true  // Включаем HTML рендеринг для этой колонки
                 },
                 { 
                     name: 'price', 
                     label: 'Цена', 
-                    size: 120 
+                    size: 120,
+                    html: true  // Включаем HTML рендеринг для этой колонки
                 },
                 { 
                     name: 'actions', 
                     label: 'Действия', 
-                    size: 80 
+                    size: 80,
+                    html: true  // Включаем HTML рендеринг для этой колонки
                 }
             ]
         }

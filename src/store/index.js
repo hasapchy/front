@@ -584,7 +584,7 @@ export default createStore({
         commit('SET_PROJECTS_DATA', []);
       }
     },
-    async loadLastProducts({ commit, state }) {
+    async loadLastProducts({ commit, state, getters }) {
       // ✅ Проверяем plain data версию (из localStorage)
       if (state.lastProductsData.length > 0 && state.lastProducts.length === 0) {
         // Конвертируем plain data в DTO
@@ -600,8 +600,30 @@ export default createStore({
       }
 
       try {
-        const ProductController = (await import('@/api/ProductController')).default;
-        const results = await ProductController.getItems(1, null, {}, 10);
+        let results;
+        
+        // ✅ Для basement режима используем BasementProductController
+        if (getters.isBasementMode) {
+          const BasementProductController = (await import('@/api/BasementProductController')).default;
+          
+          // Загружаем последние товары и услуги для basement
+          const [productsResult, servicesResult] = await Promise.all([
+            BasementProductController.getItems(1, true, {}, 5), // последние 5 товаров
+            BasementProductController.getItems(1, false, {}, 5) // последние 5 услуг
+          ]);
+          
+          // Объединяем результаты
+          const allItems = [
+            ...(productsResult.items || []),
+            ...(servicesResult.items || [])
+          ];
+          
+          results = { items: allItems };
+        } else {
+          // Для обычного режима используем ProductController
+          const ProductController = (await import('@/api/ProductController')).default;
+          results = await ProductController.getItems(1, null, {}, 10);
+        }
         
         // Преобразуем в DTO для поиска
         const ProductSearchDto = (await import('@/dto/product/ProductSearchDto')).default;
@@ -618,7 +640,7 @@ export default createStore({
         commit('SET_LAST_PRODUCTS_DATA', []);
       }
     },
-    async loadAllProducts({ commit, state }) {
+    async loadAllProducts({ commit, state, getters }) {
       // ✅ Проверяем plain data версию (из localStorage с TTL 30 дней)
       if (state.allProductsData.length > 0 && state.allProducts.length === 0) {
         // Конвертируем plain data в DTO
@@ -634,10 +656,30 @@ export default createStore({
       }
 
       try {
-        const ProductController = (await import('@/api/ProductController')).default;
+        let results;
         
-        // Загружаем ВСЕ товары и услуги (без пагинации, 1000 записей)
-        const results = await ProductController.getItems(1, null, {}, 1000);
+        // ✅ Для basement режима используем BasementProductController
+        if (getters.isBasementMode) {
+          const BasementProductController = (await import('@/api/BasementProductController')).default;
+          
+          // Загружаем товары и услуги отдельно для basement
+          const [productsResult, servicesResult] = await Promise.all([
+            BasementProductController.getItems(1, true, {}, 1000), // товары
+            BasementProductController.getItems(1, false, {}, 1000) // услуги
+          ]);
+          
+          // Объединяем результаты
+          const allItems = [
+            ...(productsResult.items || []),
+            ...(servicesResult.items || [])
+          ];
+          
+          results = { items: allItems };
+        } else {
+          // Для обычного режима используем ProductController
+          const ProductController = (await import('@/api/ProductController')).default;
+          results = await ProductController.getItems(1, null, {}, 1000);
+        }
         
         // Преобразуем в DTO для поиска
         const ProductSearchDto = (await import('@/dto/product/ProductSearchDto')).default;

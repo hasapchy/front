@@ -4,11 +4,12 @@ import ProductSearchDto from "@/dto/product/ProductSearchDto";
 import basementApi from "./basementAxiosInstance";
 
 export default class BasementProductController {
-  static async getItems(page = 1, products = true, params = {}) {
+  static async getItems(page = 1, products = true, params = {}, per_page = 10) {
     try {
       // Строим query string из параметров
       const queryParams = new URLSearchParams();
       queryParams.append('page', page);
+      queryParams.append('per_page', per_page);
       
       // Для basement всегда фильтруем по категории 1
       queryParams.append('filter_by_category_1', 'true');

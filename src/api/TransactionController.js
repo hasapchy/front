@@ -112,6 +112,8 @@ export default class TransactionController {
   }
   static async getItem(id) {
     const { data } = await api.get(`/transactions/${id}`);
+    // Возвращаем RAW данные для обратной совместимости
+    // Места где нужен DTO, преобразуют данные сами
     return data;
   }
 

@@ -27,8 +27,16 @@
         </div>
         <div class="mt-2">
             <label class="inline-flex items-center">
-                <input type="checkbox" v-model="isDebt" />
+                <input 
+                    type="checkbox" 
+                    v-model="isDebt" 
+                    @change="handleDebtChange"
+                    :disabled="debtSaving"
+                />
                 <span class="ml-2">{{ $t('debtOperation') }}</span>
+                <span v-if="debtSaving" class="ml-2 text-gray-500">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </span>
             </label>
         </div>
         <div class="flex items-center space-x-2">
@@ -178,6 +186,7 @@ export default {
             deleteDialog: false,
             deleteLoading: false,
             orderInfo: null,
+            debtSaving: false,
 
         }
     },
@@ -222,6 +231,29 @@ export default {
         });
     },
     methods: {
+        // Обработчик изменения чекбокса "Долг" - сохраняет сразу при редактировании
+        async handleDebtChange() {
+            // Если это редактирование существующей транзакции
+            if (this.editingItemId) {
+                this.debtSaving = true;
+                try {
+                    await TransactionController.updateDebtStatus(
+                        this.editingItemId,
+                        this.isDebt
+                    );
+                    // Уведомление об успехе (опционально)
+                    this.$emit('saved', { message: 'Статус долга обновлён' });
+                } catch (error) {
+                    // Откатываем значение при ошибке
+                    this.isDebt = !this.isDebt;
+                    this.$emit('saved-error', this.getApiErrorMessage(error));
+                } finally {
+                    this.debtSaving = false;
+                }
+            }
+            // Если это создание новой транзакции - ничего не делаем, 
+            // значение сохранится при общем сохранении
+        },
         getFormState() {
             return {
                 selectedClient: this.selectedClient?.id || null,
@@ -267,44 +299,18 @@ export default {
 
             try {
                 if (this.editingItemId != null) {
-                    // Проверяем, изменилось ли только поле is_debt
-                    const originalDate = this.editingItem?.date ? 
-                        (typeof this.editingItem.date === 'string' ? this.editingItem.date.substring(0, 16) : 
-                        this.editingItem.date.toISOString ? this.editingItem.date.toISOString().substring(0, 16) : 
-                        this.editingItem.date) : null;
-                    
-                    const normalizeEmptyValue = (val) => val === '' || val === null || val === undefined ? null : val;
-                    
-                    const onlyDebtChanged = this.editingItem && 
-                        this.editingItem.isDebt !== this.isDebt &&
-                        this.editingItem.categoryId === this.categoryId &&
-                        normalizeEmptyValue(this.editingItem.projectId) === normalizeEmptyValue(this.projectId) &&
-                        originalDate === this.date &&
-                        normalizeEmptyValue(this.editingItem.clientId) === normalizeEmptyValue(this.selectedClient?.id) &&
-                        parseFloat(this.editingItem.origAmount) === parseFloat(this.origAmount) &&
-                        this.editingItem.origCurrencyId === this.currencyIdComputed &&
-                        (this.editingItem.note || '') === (this.note || '');
-
-                    if (onlyDebtChanged) {
-                        // Используем специальный endpoint для обновления только статуса долга
-                        var resp = await TransactionController.updateDebtStatus(
-                            this.editingItemId,
-                            this.isDebt
-                        );
-                    } else {
-                        var resp = await TransactionController.updateItem(
-                            this.editingItemId,
-                            {
-                                category_id: this.categoryId,
-                                project_id: this.projectId,
-                                date: this.date,
-                                client_id: this.selectedClient?.id,
-                                orig_amount: this.origAmount,
-                                currency_id: this.currencyIdComputed,
-                                note: this.note,
-                                is_debt: this.isDebt
-                            });
-                    }
+                    var resp = await TransactionController.updateItem(
+                        this.editingItemId,
+                        {
+                            category_id: this.categoryId,
+                            project_id: this.projectId,
+                            date: this.date,
+                            client_id: this.selectedClient?.id,
+                            orig_amount: this.origAmount,
+                            currency_id: this.currencyIdComputed,
+                            note: this.note,
+                            is_debt: this.isDebt
+                        });
                 } else {
                     var resp = await TransactionController.storeItem({
                         type: this.type == "income" ? 1 : this.type == "outcome" ? 0 : null,
@@ -541,6 +547,7 @@ export default {
                     this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
                     this.selectedClient = newEditingItem.client || this.initialClient || null;
                     this.editingItemId = newEditingItem.id || null;
+                    this.isDebt = newEditingItem.isDebt || false;
                 } else {
                     // При создании новой транзакции устанавливаем значения по умолчанию
                     this.type = "income";
@@ -555,6 +562,7 @@ export default {
                     this.date = new Date().toISOString().substring(0, 16);
                     this.selectedClient = this.initialClient || null;
                     this.editingItemId = null;
+                    this.isDebt = false;
                 }
                 this.$nextTick(() => {
                     this.saveInitialState();
