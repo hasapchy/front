@@ -17,9 +17,9 @@
                             </div>
                             <div :class="getGridClass(item.balance)">
                                 <div v-for="balance in getVisibleBalanceItems(item.balance)" :key="balance.title" 
-                                     class="text-center"
+                                     class="text-center balance-item"
                                      :class="{
-                                         'clickable-balance cursor-pointer rounded p-2 transition-all duration-200': balance.type === 'income' || balance.type === 'outcome',
+                                         'clickable-balance': balance.type === 'income' || balance.type === 'outcome',
                                          'hover-income': balance.type === 'income',
                                          'hover-outcome': balance.type === 'outcome'
                                      }"
@@ -297,29 +297,37 @@ export default {
     opacity: 0;
 }
 
-/* Income clickable styling */
-.clickable-balance.hover-income:hover {
-    background-color: rgba(34, 197, 94, 0.1); /* green-500 with opacity */
-    transform: scale(1.02);
+/* Базовые стили для всех элементов баланса */
+.balance-item {
+    border: 1px solid transparent !important;
+    border-radius: 0.5rem !important;
+    padding: 0.5rem !important;
+    min-height: 60px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
 }
 
-/* Outcome clickable styling */
+/* Стили для кликабельных элементов баланса */
+.clickable-balance {
+    cursor: pointer !important;
+}
+
+.clickable-balance.hover-income:hover {
+    border: 1px dashed #22c55e !important;
+    background-color: rgba(34, 197, 94, 0.05) !important;
+}
+
 .clickable-balance.hover-outcome:hover {
-    background-color: rgba(239, 68, 68, 0.1); /* red-500 with opacity */
-    transform: scale(1.02);
+    border: 1px dashed #ef4444 !important;
+    background-color: rgba(239, 68, 68, 0.05) !important;
 }
 
 /* Debt clickable styling */
 .clickable-debt:hover {
     background-color: rgba(249, 115, 22, 0.05); /* orange-500 with very light opacity */
-    transform: scale(1.02);
     border-left-width: 6px;
-}
-
-/* Balance amount animation on hover */
-.clickable-balance:hover .balance-amount,
-.clickable-debt:hover .balance-amount {
-    font-size: 1.125rem; /* slightly larger */
 }
 </style>
 

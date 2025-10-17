@@ -180,7 +180,6 @@ export default {
             selectedClient: this.editingItem ? (this.editingItem.client || this.initialClient) : this.initialClient,
             currencies: [],
             allCategories: [],
-            allProjects: [],
             allCashRegisters: [],
             saveLoading: false,
             deleteDialog: false,
@@ -203,6 +202,10 @@ export default {
             const wanted = this.type === 'income' ? 1 : 0; // 1 для income, 0 для outcome
             const filtered = this.allCategories.filter(cat => cat.type === wanted);
             return filtered;
+        },
+        allProjects() {
+            // ✅ Берем напрямую из Store - автоматически обновляется при изменениях
+            return this.$store.getters.activeProjects || [];
         }
     },
     mounted() {
@@ -210,10 +213,12 @@ export default {
             await Promise.all([
                 this.fetchCurrencies(),
                 this.fetchAllCategories(),
-                this.fetchAllProjects(),
                 this.fetchAllCashRegisters(),
                 this.loadOrderInfo()
             ]);
+            
+            // ✅ Загружаем проекты в Store если их там нет
+            await this.$store.dispatch('loadProjects');
             
             if (!this.editingItem) {
                 if (this.allCashRegisters.length > 0 && !this.cashId) {
@@ -281,11 +286,6 @@ export default {
                 this.allCategories = [];
             }
         },
-    async fetchAllProjects() {
-      // Используем данные из store
-      await this.$store.dispatch('loadProjects');
-      this.allProjects = this.$store.getters.activeProjects;
-    },
         async fetchAllCashRegisters() {
             // Используем данные из store
             await this.$store.dispatch('loadCashRegisters');
@@ -584,9 +584,7 @@ export default {
         '$store.state.cashRegisters'(newVal) {
             this.allCashRegisters = newVal;
         },
-        '$store.state.projects'(newVal) {
-            this.allProjects = newVal;
-        },
+        // ✅ allProjects теперь computed property, не нужен watcher
         '$store.state.currencies'(newVal) {
             this.currencies = newVal;
         },

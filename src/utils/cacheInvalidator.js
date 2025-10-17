@@ -20,11 +20,12 @@ export default class CacheInvalidator {
       // Данные компании (справочники)
       warehouses: ['warehouses_'],
       cashRegisters: ['cashRegisters_'],
-      clients: ['clients_'],
-      products: ['products_'],
+      clients: ['clients_', 'clientsData'],
+      clientCategories: ['clientCategories_'],
+      products: ['products_', 'lastProductsData', 'allProductsData'],
       services: ['services_'],
       categories: ['categories_'],
-      projects: ['projects_'],
+      projects: ['projects_', 'projectsData'],
       users: ['users_'],
       companies: ['companies_'],
       
@@ -79,6 +80,7 @@ export default class CacheInvalidator {
       'warehouses_',
       'cashRegisters_',
       'clients_',
+      'clientCategories_',
       'products_',
       'services_',
       'categories_',
@@ -149,7 +151,12 @@ export default class CacheInvalidator {
       key.startsWith('receipts_') ||
       key.startsWith('writeoffs_') ||
       key.startsWith('movements_') ||
-      key.startsWith('stocks_')
+      key.startsWith('stocks_') ||
+      // Plain data для кэширования (Store)
+      key === 'clientsData' ||
+      key === 'projectsData' ||
+      key === 'lastProductsData' ||
+      key === 'allProductsData'
     );
 
     cacheKeys.forEach(key => localStorage.removeItem(key));

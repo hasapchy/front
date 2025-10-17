@@ -234,6 +234,16 @@ export default {
             // Используем данные из store
             await this.$store.dispatch('loadCurrencies');
             this.currencies = this.$store.getters.currencies;
+            
+            // ✅ При создании нового проекта устанавливаем дефолтную валюту
+            if (!this.editingItem && !this.currencyId) {
+                const defaultCurrency = this.currencies.find(c => c.is_default);
+                if (defaultCurrency) {
+                    this.currencyId = defaultCurrency.id;
+                    // Для дефолтной валюты курс всегда 1
+                    this.exchangeRate = 1;
+                }
+            }
         },
         async onCurrencyChange() {
             if (this.currencyId) {
@@ -328,6 +338,10 @@ export default {
                 }
 
                 if (resp.message) {
+                    // ✅ Очищаем Store проектов, чтобы они перезагрузились
+                    this.$store.commit('SET_PROJECTS', []);
+                    this.$store.commit('SET_PROJECTS_DATA', []);
+                    
                     this.$emit('saved');
                     this.clearForm();
                 }

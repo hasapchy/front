@@ -14,9 +14,9 @@
                     </div>
                     <div :class="getGridClass(item.balance)">
                         <div v-for="balance in getVisibleBalanceItems(item.balance)" :key="balance.title" 
-                             class="text-center"
+                             class="text-center balance-item"
                              :class="{
-                                 'clickable-balance cursor-pointer rounded p-2 transition-all duration-200': balance.type === 'income' || balance.type === 'outcome',
+                                 'clickable-balance': balance.type === 'income' || balance.type === 'outcome',
                                  'hover-income': balance.type === 'income',
                                  'hover-outcome': balance.type === 'outcome'
                              }"
@@ -236,28 +236,38 @@ export default {
     }
 }
 
+/* Базовые стили для всех элементов баланса */
+.balance-item {
+    border: 2px solid transparent !important;
+    border-radius: 0.5rem !important;
+    padding: 0.5rem !important;
+    min-height: 60px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    transform: none !important;
+    box-shadow: none !important;
+    transition: none !important;
+}
+
 /* Стили для кликабельных элементов баланса */
 .clickable-balance {
-    border: 2px dashed transparent;
-    position: relative;
+    cursor: pointer !important;
 }
 
-.clickable-balance:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+.clickable-balance.hover-income:hover {
+    border: 3px dashed #22c55e !important;
+    border-style: dashed !important;
+    background-color: rgba(34, 197, 94, 0.1) !important;
+    transform: none !important;
+    box-shadow: none !important;
 }
 
-.hover-income:hover {
-    background-color: rgba(92, 184, 92, 0.1);
-    border-color: rgba(92, 184, 92, 0.3);
-}
-
-.hover-outcome:hover {
-    background-color: rgba(238, 79, 71, 0.1);
-    border-color: rgba(238, 79, 71, 0.3);
-}
-
-.clickable-balance:active {
-    transform: translateY(0);
+.clickable-balance.hover-outcome:hover {
+    border: 3px dashed #ef4444 !important;
+    border-style: dashed !important;
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    transform: none !important;
+    box-shadow: none !important;
 }
 </style>
