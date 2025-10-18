@@ -343,6 +343,8 @@ export default {
                     }
                     // Сохраняем тип товара
                     productDto.type = product.type || 1;
+                    // Сохраняем остаток на складе
+                    productDto.stock_quantity = product.stock_quantity || 0;
                     
                     // Проверяем единицу измерения
                     const unitShortName = productDto.unitShortName || productDto.unit_short_name || '';
@@ -383,6 +385,8 @@ export default {
                     }
                     // Сохраняем тип (услуги имеют type = 0)
                     productDto.type = service.type || 0;
+                    // Для услуг остаток не нужен, но на всякий случай сохраняем
+                    productDto.stock_quantity = service.stock_quantity || 0;
                     
                     // Проверяем единицу измерения
                     const unitShortName = productDto.unitShortName || productDto.unit_short_name || '';

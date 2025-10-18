@@ -8,7 +8,8 @@ export default class WarehouseWriteoffProductDto {
         unitName,
         unitShortName,
         quantity,
-        snId) {
+        snId,
+        stockQuantity) {
         this.id = id;
         this.writeOffId = writeOffId;
         this.productId = productId;
@@ -19,6 +20,7 @@ export default class WarehouseWriteoffProductDto {
         this.unitShortName = unitShortName;
         this.quantity = quantity;
         this.snId = snId;
+        this.stock_quantity = stockQuantity;
     }
 
     static fromProductDto(productDto, def = false) {
@@ -32,7 +34,8 @@ export default class WarehouseWriteoffProductDto {
             productDto.unit_name,
             productDto.unit_short_name,
             def ? 1 : 0,
-            ''
+            '',
+            productDto.stock_quantity || 0
         );
     }
 
