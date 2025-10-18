@@ -11,6 +11,7 @@
 
                 <div class="flex items-center gap-4">
                     <Search v-if="showSearch" />
+                    <ClearCacheButton />
                     <SoundToggle />
                     <CompanySwitcher @company-changed="onCompanyChanged" />
                     <LanguageSwitcher @language-changed="onLanguageChanged" />
@@ -30,6 +31,7 @@ import LanguageSwitcher from './LanguageSwitcher.vue';
 import CompanySwitcher from './CompanySwitcher.vue';
 import SoundToggle from './SoundToggle.vue';
 import UserProfileDropdown from './UserProfileDropdown.vue';
+import ClearCacheButton from './ClearCacheButton.vue';
 import { eventBus } from '@/eventBus';
 
 export default {
@@ -39,6 +41,7 @@ export default {
         CompanySwitcher,
         SoundToggle,
         UserProfileDropdown,
+        ClearCacheButton,
     },
     data() {
         const route = useRoute();

@@ -17,7 +17,9 @@ export default class WarehouseReceiptDto {
     createdAt = "",
     updatedAt = "",
     cashId = null,
-    cashName = null
+    cashName = null,
+    projectId = null,
+    currencySymbol = null
   ) {
     this.id = id;
     this.warehouseId = warehouseId;
@@ -34,6 +36,11 @@ export default class WarehouseReceiptDto {
 
     this.cashId = cashId;
     this.cashName = cashName;
+    this.projectId = projectId;
+    this.currencySymbol = currencySymbol;
+    
+    // Вычисляемое поле: если есть cashId, то тип "cash", иначе "balance"
+    this.type = this.cashId ? 'cash' : 'balance';
   }
 
   productsHtmlList() {
@@ -52,14 +59,19 @@ export default class WarehouseReceiptDto {
     return res;
   }
   cashNameDisplay() {
-    return this.cashName ? this.cashName : "В долг (баланс)";
+    // Согласно новой архитектуре, касса всегда указывается
+    // Тип операции (долг или нет) определяется полем is_debt в транзакции
+    return this.cashName || "Не указана";
+  }
+  
+  paymentTypeDisplay() {
+    // Вычисляем тип оплаты на основе того, как было создано
+    // Согласно новой архитектуре: cash_id всегда заполнен, type определяет is_debt
+    return this.type === 'cash' ? 'В кассу' : 'В долг';
   }
 
   priceInfo() {
-    const symbol =
-      this.cash && this.cash.currency && this.cash.currency.symbol
-        ? this.cash.currency.symbol
-        : "Нет валюты";
+    const symbol = this.currencySymbol || "m"; // По умолчанию "m" (манат)
 
     const total = this.totalPrice ?? this.amount ?? this.price ?? 0;
     return `${total} ${symbol}`;

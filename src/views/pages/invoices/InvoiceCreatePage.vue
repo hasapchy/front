@@ -335,7 +335,7 @@ export default {
                 
                 const data = {
                     ...this.formData,
-                    client_id: this.selectedClient.id,
+                    client_id: this.selectedClient?.id,
                     order_ids: this.editingItem ? this.formData.order_ids : this.selectedOrders.map(o => o.id),
                     products: invoiceProducts,
                     total_amount: totalAmount,

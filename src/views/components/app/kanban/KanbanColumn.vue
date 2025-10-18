@@ -4,6 +4,10 @@
         <div class="column-header px-4 py-3 rounded-t-lg" :style="{ backgroundColor: statusColor }">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
+                    <!-- Ручка для перетаскивания колонки -->
+                    <div class="column-drag-handle cursor-move text-white opacity-60 hover:opacity-100 transition-opacity">
+                        <i class="fas fa-grip-vertical text-sm"></i>
+                    </div>
                     <h3 class="font-semibold text-white">{{ status.name }}</h3>
                     <span class="text-xs text-gray-800 bg-white px-2 py-0.5 rounded-full font-medium">
                         {{ orders.length }}

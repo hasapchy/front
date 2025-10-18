@@ -704,6 +704,7 @@ export default {
   active: 'Активен',
   problemClient: 'Проблемный клиент',
   toClientBalance: 'В баланс клиента',
+  inDebt: 'В долг',
   
   // Новые ключи для интернационализации
   // Basement worker interface
@@ -1207,4 +1208,11 @@ export default {
   cropImage: 'Обрезать изображение',
   apply: 'Применить',
   preview: 'Предпросмотр',
+  
+  // Cache
+  clearCache: 'Очистить кэш',
+  confirmClearCache: 'Вы уверены, что хотите очистить весь кэш? Это может занять несколько секунд.',
+  cacheCleared: 'Кэш очищен',
+  cacheSuccessfullyCleared: 'Кэш успешно очищен. Страница будет перезагружена.',
+  errorClearingCache: 'Ошибка при очистке кэша',
 }

@@ -339,10 +339,16 @@ export default {
         },
         lastProducts() {
             // ✅ Для basement загружаем ВСЕ товары, иначе - последние 10
-            if (this.useAllProducts) {
-                return this.$store.getters.allProducts;
+            let products = this.useAllProducts 
+                ? this.$store.getters.allProducts 
+                : this.$store.getters.lastProducts;
+            
+            // ✅ Фильтруем только товары (исключаем услуги), если onlyProducts === true
+            if (this.onlyProducts) {
+                products = products.filter(p => Boolean(p.type));
             }
-            return this.$store.getters.lastProducts;
+            
+            return products;
         }
     },
     async created() {
@@ -371,7 +377,14 @@ export default {
                 this.productSearchLoading = true;
                 try {
                     const results = await ProductController.searchItems(this.productSearch, this.onlyProducts ? true : null, this.warehouseId);
-                    this.productResults = results.map(item => ProductSearchDto.fromApi(item));
+                    let products = results.map(item => ProductSearchDto.fromApi(item));
+                    
+                    // ✅ Дополнительная фильтрация на фронтенде: только товары, если onlyProducts === true
+                    if (this.onlyProducts) {
+                        products = products.filter(p => Boolean(p.type));
+                    }
+                    
+                    this.productResults = products;
                     this.productSearchLoading = false;
                 } catch (error) {
                     console.error('Ошибка поиска товаров:', error);

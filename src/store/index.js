@@ -6,8 +6,9 @@ import CacheInvalidator from "@/utils/cacheInvalidator";
 import { CompanyDto } from "@/dto/companies/CompanyDto";
 import CACHE_TTL from "@/constants/cacheTTL";
 import createPersistedState from "vuex-persistedstate";
+import { eventBus } from "@/eventBus";
 
-export default createStore({
+const store = createStore({
   state: {
     user: null,
     permissions: [],
@@ -1349,3 +1350,10 @@ export default createStore({
     })
   ],
 });
+
+// Обработчик события обновления компании
+eventBus.on('company-updated', () => {
+  store.dispatch('loadUserCompanies');
+});
+
+export default store;

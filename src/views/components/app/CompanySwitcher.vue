@@ -136,7 +136,9 @@ export default {
         return company.logoUrl();
       }
       if (company.logo && company.logo.length > 0) {
-        return `${import.meta.env.VITE_APP_BASE_URL}/storage/${company.logo}`;
+        // Добавляем timestamp для инвалидации кэша браузера
+        const timestamp = company.updatedAt ? new Date(company.updatedAt).getTime() : Date.now();
+        return `${import.meta.env.VITE_APP_BASE_URL}/storage/${company.logo}?v=${timestamp}`;
       }
       return '/logo.jpg';
     },

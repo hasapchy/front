@@ -27,26 +27,37 @@
         </div>
 
         <div class="mt-2">
-            <label class="block mb-1 required">{{ $t('paymentType') }}</label>
-            <div>
-                <label class="inline-flex items-center">
-                    <input type="radio" v-model="type" value="cash" :disabled="!!editingItemId">
-                    <span class="ml-2">{{ $t('toCash') }}</span>
-                </label>
-            </div>
-            <div>
-                <label class="inline-flex items-center">
-                    <input type="radio" v-model="type" value="balance">
-                    <span class="ml-2">{{ $t('toClientBalance') }}</span>
-                </label>
-            </div>
-        </div>
-        <div v-if="type === 'cash'" class="mt-2">
             <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
             <select v-model="cashId" :disabled="!!editingItemId">
                 <option value="">{{ $t('no') }}</option>
                 <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">
                     {{ c.name }} ({{ c.currency_symbol || c.currency_code || '' }})
+                </option>
+            </select>
+        </div>
+
+        <div class="mt-2">
+            <label class="block mb-1 required">{{ $t('paymentType') }}</label>
+            <div class="flex space-x-4">
+                <label class="inline-flex items-center">
+                    <input type="radio" v-model="type" value="cash" :disabled="!!editingItemId">
+                    <i class="fas fa-cash-register ml-2 mr-1" style="color: #337AB7;"></i>
+                    <span>{{ $t('toCash') }}</span>
+                </label>
+                <label class="inline-flex items-center">
+                    <input type="radio" v-model="type" value="balance" :disabled="!!editingItemId">
+                    <i class="fas fa-handshake ml-2 mr-1" style="color: #F0AD4E;"></i>
+                    <span>{{ $t('inDebt') }}</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="mt-2">
+            <label>{{ $t('project') }}</label>
+            <select v-model="projectId" :disabled="!!editingItemId">
+                <option value="">{{ $t('no') }}</option>
+                <option v-for="project in allProjects" :key="project.id" :value="project.id">
+                    {{ project.name }}
                 </option>
             </select>
         </div>
@@ -59,14 +70,21 @@
         <ProductSearch v-model="products" :disabled="!!editingItemId" :show-quantity="true" :show-price="true"
             :is-receipt="true" :only-products="true" :warehouse-id="warehouseId" required />
     </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('warehouse_receipts_delete')">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_receipts_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('warehouse_receipts_create'))">
-        </PrimaryButton>
+    
+    <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
+        <div class="flex items-center space-x-2">
+            <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
+                :is-loading="deleteLoading" icon="fas fa-trash"
+                :disabled="!$store.getters.hasPermission('warehouse_receipts_delete')">
+            </PrimaryButton>
+            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_receipts_update')) ||
+                (editingItemId == null && !$store.getters.hasPermission('warehouse_receipts_create'))">
+            </PrimaryButton>
+        </div>
+        
+        <div v-if="products && products.length > 0" class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
+            <div>{{ $t('total') || 'Итого' }}: <span class="font-bold">{{ totalAmount.toFixed(2) }} {{ defaultCurrencySymbol }}</span></div>
+        </div>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="$t('deleteReceiptConfirm')"
@@ -103,6 +121,7 @@ export default {
             date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
             note: this.editingItem ? this.editingItem.note : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId || '' : '',
+            projectId: this.editingItem ? this.editingItem.projectId || '' : '',
             type: this.editingItem ? this.editingItem.type : 'cash',
             cashId: this.editingItem ? this.editingItem.cashId : '',
             products: this.editingItem ? this.editingItem.products : [],
@@ -112,8 +131,23 @@ export default {
             deleteDialog: false,
             deleteLoading: false,
             allWarehouses: [],
+            allProjects: [],
             currencies: [],
             allCashRegisters: [],
+        }
+    },
+    computed: {
+        totalAmount() {
+            if (!this.products || this.products.length === 0) return 0;
+            return this.products.reduce((sum, product) => {
+                const quantity = Number(product.quantity) || 0;
+                const price = Number(product.price) || 0;
+                return sum + (quantity * price);
+            }, 0);
+        },
+        defaultCurrencySymbol() {
+            const defaultCurrency = this.currencies.find(c => c.is_default);
+            return defaultCurrency ? defaultCurrency.symbol : '';
         }
     },
     mounted() {
@@ -121,7 +155,8 @@ export default {
             await Promise.all([
                 this.fetchCurrencies(),
                 this.fetchAllWarehouses(),
-                this.fetchAllCashRegisters()
+                this.fetchAllCashRegisters(),
+                this.fetchAllProjects()
             ]);
             
             if (!this.editingItem) {
@@ -162,24 +197,72 @@ export default {
                 this.cashId = this.allCashRegisters[0].id;
             }
         },
+        async fetchAllProjects() {
+            // Используем данные из store
+            await this.$store.dispatch('loadProjects');
+            this.allProjects = this.$store.getters.projects;
+        },
 
         async save() {
+            // Проверяем обязательные поля
+            const validationErrors = [];
+            
+            if (!this.selectedClient?.id) {
+                validationErrors.push('• Выберите клиента (поставщика)');
+            }
+            
+            if (!this.warehouseId) {
+                validationErrors.push('• Выберите склад');
+            }
+            
+            if (!this.cashId) {
+                validationErrors.push('• Выберите кассу');
+            }
+            
+            if (!this.type || (this.type !== 'cash' && this.type !== 'balance')) {
+                validationErrors.push('• Выберите тип оплаты (В кассу или В долг)');
+            }
+            
+            if (!this.products || this.products.length === 0) {
+                validationErrors.push('• Добавьте товары');
+            }
+            
+            // Проверяем, что у всех товаров есть обязательные поля
+            const invalidProducts = this.products.filter(p => 
+                !p.productId || !p.quantity || p.quantity <= 0 || !p.price || p.price < 0
+            );
+            
+            if (invalidProducts.length > 0) {
+                validationErrors.push('• У некоторых товаров не заполнены обязательные поля (ID, количество, цена)');
+                console.error('Невалидные товары:', invalidProducts);
+            }
+            
+            if (validationErrors.length > 0) {
+                this.$emit('saved-error', validationErrors.join('\n'));
+                return;
+            }
 
             this.saveLoading = true;
             try {
+                const productsData = this.products.map(product => ({
+                    product_id: product.productId,
+                    quantity: product.quantity,
+                    price: product.price
+                }));
+                
                 var formData = {
-                    client_id: this.selectedClient.id,
+                    client_id: this.selectedClient?.id,
                     warehouse_id: this.warehouseId,
+                    project_id: this.projectId || null,
+                    date: this.date,
                     note: this.note,
-                    type: this.type,
-                    cash_id: this.type === 'cash' ? this.cashId : null,
-
-                    products: this.products.map(product => ({
-                        product_id: product.productId,
-                        quantity: product.quantity,
-                        price: product.price
-                    }))
+                    cash_id: this.cashId, // всегда отправляем выбранную кассу
+                    type: this.type, // "cash" или "balance" - is_debt определяется автоматически
+                    products: productsData
                 };
+                
+                // Для отладки: выводим ВСЕ данные перед отправкой
+                console.log('Отправка данных приходования (ПОЛНАЯ):', formData);
 
                 if (this.editingItemId != null) {
                     var resp = await WarehouseReceiptController.updateReceipt(
@@ -193,7 +276,19 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
+                console.error('Полная ошибка при сохранении:', error);
+                let errorMessage = this.getApiErrorMessage(error);
+                
+                // Если есть детали валидации от Laravel
+                if (error.response?.data?.errors) {
+                    const validationErrors = error.response.data.errors;
+                    const errorMessages = Object.keys(validationErrors).map(field => {
+                        return `${field}: ${validationErrors[field].join(', ')}`;
+                    });
+                    errorMessage = errorMessages.join('\n');
+                }
+                
+                this.$emit('saved-error', errorMessage);
             }
             this.saveLoading = false;
         },
@@ -219,10 +314,13 @@ export default {
             this.date = new Date().toISOString().substring(0, 16);
             this.note = '';
             this.warehouseId = '';
+            this.projectId = '';
             this.currencyId = '';
             this.selectedClient = null;
             this.products = [];
             this.editingItemId = null;
+            this.type = 'cash'; // Сбрасываем на значение по умолчанию
+            this.cashId = this.allCashRegisters.length > 0 ? this.allCashRegisters[0].id : '';
             this.resetFormChanges();
         },
         showDeleteDialog() {
@@ -240,10 +338,14 @@ export default {
                     this.date = newEditingItem.date || '';
                     this.note = newEditingItem.note || '';
                     this.warehouseId = newEditingItem.warehouseId || '';
+                    this.projectId = newEditingItem.projectId || '';
                     this.currencyId = newEditingItem.currencyId || '';
                     this.selectedClient = newEditingItem.client || null;
                     this.editingItemId = newEditingItem.id || null;
                     this.products = newEditingItem.products || [];
+                    this.cashId = newEditingItem.cashId || '';
+                    // Устанавливаем type на основе наличия cashId
+                    this.type = newEditingItem.type || (newEditingItem.cashId ? 'cash' : 'balance');
                 } else {
                     this.clearForm();
                 }

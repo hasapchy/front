@@ -30,9 +30,19 @@
 
         <!-- Канбан доска -->
         <div class="kanban-board overflow-x-auto pb-4">
-            <div class="kanban-columns flex space-x-4" :class="{ 'compact': compactView }">
+            <draggable
+                :list="sortedColumns"
+                group="columns"
+                :animation="200"
+                ghost-class="ghost-column"
+                drag-class="dragging-column"
+                handle=".column-drag-handle"
+                @change="handleColumnReorder"
+                class="kanban-columns flex space-x-4"
+                :class="{ 'compact': compactView }"
+            >
                 <KanbanColumn
-                    v-for="column in columns"
+                    v-for="column in sortedColumns"
                     :key="column.id"
                     :status="column"
                     :orders="column.orders"
@@ -44,7 +54,7 @@
                     @card-dblclick="handleCardDoubleClick"
                     @card-select-toggle="handleCardSelectToggle"
                 />
-            </div>
+            </draggable>
         </div>
 
         <!-- Индикатор загрузки -->
@@ -55,11 +65,13 @@
 </template>
 
 <script>
+import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanColumn from './KanbanColumn.vue';
 
 export default {
     name: 'KanbanBoard',
     components: {
+        draggable: VueDraggableNext,
         KanbanColumn
     },
     props: {
@@ -95,14 +107,12 @@ export default {
     emits: ['order-moved', 'card-dblclick', 'card-select-toggle'],
     data() {
         return {
-            compactView: false
+            compactView: false,
+            columnOrder: [], // Массив ID колонок в пользовательском порядке
+            sortedColumns: [] // Отсортированные колонки для отображения
         };
     },
     computed: {
-        columns() {
-            // Всегда группируем по статусам
-            return this.getStatusColumns();
-        },
         totalOrders() {
             return this.orders.length;
         },
@@ -110,6 +120,10 @@ export default {
             return this.orders.reduce((sum, order) => {
                 return sum + (parseFloat(order.totalPrice) || 0);
             }, 0);
+        },
+        // Ключ для localStorage в зависимости от режима (проекты/заказы)
+        storageKey() {
+            return this.isProjectMode ? 'kanban_column_order_projects' : 'kanban_column_order_orders';
         }
     },
     methods: {
@@ -144,11 +158,74 @@ export default {
         },
         handleCardSelectToggle(orderId) {
             this.$emit('card-select-toggle', orderId);
+        },
+        handleColumnReorder() {
+            // Когда пользователь меняет порядок колонок через drag&drop
+            const order = this.sortedColumns.map(col => col.id);
+            this.columnOrder = order;
+            localStorage.setItem(this.storageKey, JSON.stringify(order));
+        },
+        loadColumnOrder() {
+            try {
+                const saved = localStorage.getItem(this.storageKey);
+                if (saved) {
+                    this.columnOrder = JSON.parse(saved);
+                }
+            } catch (error) {
+                console.error('Error loading column order:', error);
+                this.columnOrder = [];
+            }
+        },
+        updateSortedColumns() {
+            // Получаем колонки по статусам
+            const statusColumns = this.getStatusColumns();
+            
+            // Если нет сохраненного порядка, используем как есть
+            if (!this.columnOrder || this.columnOrder.length === 0) {
+                this.sortedColumns = statusColumns;
+                return;
+            }
+            
+            // Сортируем колонки согласно сохраненному порядку
+            const orderedColumns = [];
+            const columnMap = new Map(statusColumns.map(col => [col.id, col]));
+            
+            // Сначала добавляем колонки в сохраненном порядке
+            this.columnOrder.forEach(id => {
+                if (columnMap.has(id)) {
+                    orderedColumns.push(columnMap.get(id));
+                    columnMap.delete(id);
+                }
+            });
+            
+            // Затем добавляем новые колонки, которых не было в сохраненном порядке
+            columnMap.forEach(col => {
+                orderedColumns.push(col);
+            });
+            
+            this.sortedColumns = orderedColumns;
         }
     },
     watch: {
         compactView(newValue) {
             localStorage.setItem('kanban_compactView', newValue);
+        },
+        isProjectMode() {
+            // При переключении режима загружаем соответствующий порядок
+            this.loadColumnOrder();
+            this.updateSortedColumns();
+        },
+        orders: {
+            handler() {
+                this.updateSortedColumns();
+            },
+            deep: true
+        },
+        statuses: {
+            handler() {
+                this.updateSortedColumns();
+            },
+            deep: true
         }
     },
     mounted() {
@@ -157,6 +234,12 @@ export default {
         if (savedCompactView !== null) {
             this.compactView = savedCompactView === 'true';
         }
+        
+        // Загружаем порядок колонок
+        this.loadColumnOrder();
+        
+        // Инициализируем отсортированные колонки
+        this.updateSortedColumns();
     }
 };
 </script>
@@ -192,6 +275,19 @@ export default {
 .kanban-columns.compact .kanban-column {
     width: 280px;
     min-width: 280px;
+}
+
+/* Стили для перетаскивания колонок */
+.ghost-column {
+    opacity: 0.4;
+    background: #e3f2fd;
+    border: 2px dashed #2196f3;
+}
+
+.dragging-column {
+    opacity: 0.8;
+    transform: rotate(1deg);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 </style>
 

@@ -223,6 +223,7 @@ export default {
   update: 'Update',
   
   // Basement worker interface
+  inDebt: 'On credit',
   basement: 'Basement',
   worker: 'Worker',
   enterProjectName: 'Enter project name',
@@ -320,4 +321,11 @@ export default {
     cropImage: 'Crop Image',
     apply: 'Apply',
     preview: 'Preview',
+    
+    // Cache
+    clearCache: 'Clear Cache',
+    confirmClearCache: 'Are you sure you want to clear all cache? This may take a few seconds.',
+    cacheCleared: 'Cache Cleared',
+    cacheSuccessfullyCleared: 'Cache successfully cleared. The page will reload.',
+    errorClearingCache: 'Error clearing cache',
 }

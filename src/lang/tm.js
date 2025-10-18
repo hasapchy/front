@@ -609,6 +609,7 @@ export default {
   active: 'Işjeň',
   problemClient: 'Kynçylykly müşderi',
   toClientBalance: 'Müşderi balansyna',
+  inDebt: 'Karz',
   
   // Новые ключи для интернационализации
   // Basement worker interface
@@ -1034,4 +1035,11 @@ export default {
   cropImage: 'Suraty kesip al',
   apply: 'Ulan',
   preview: 'Öňünden syn',
+  
+  // Cache
+  clearCache: 'Keşi arassala',
+  confirmClearCache: 'Ähli keşi arassalamagy isleýärsiňizmi? Bu birnäçe sekunt alyp biler.',
+  cacheCleared: 'Keş arassalandy',
+  cacheSuccessfullyCleared: 'Keş üstünlikli arassalandy. Sahypa täzeden ýükleniler.',
+  errorClearingCache: 'Keşi arassalamakda ýalňyşlyk',
 }

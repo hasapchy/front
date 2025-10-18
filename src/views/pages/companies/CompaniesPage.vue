@@ -46,6 +46,7 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
+import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
@@ -76,6 +77,12 @@ export default {
 
     mounted() {
         this.fetchItems();
+        // Слушаем события обновления компаний для перезагрузки данных
+        eventBus.on('company-updated', this.handleCompanyUpdated);
+    },
+
+    beforeUnmount() {
+        eventBus.off('company-updated', this.handleCompanyUpdated);
     },
 
     methods: {
@@ -91,6 +98,11 @@ export default {
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
+        },
+        handleCompanyUpdated() {
+            // Перезагружаем список компаний и обновляем Store
+            this.fetchItems();
+            this.$store.dispatch('loadUserCompanies');
         },
         itemMapper(item, column) {
             switch (column) {

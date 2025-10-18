@@ -79,6 +79,7 @@ import CompaniesController from '@/api/CompaniesController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
@@ -161,6 +162,8 @@ export default {
                 }
 
                 this.$emit('saved');
+                // Отправляем событие об обновлении компании
+                eventBus.emit('company-updated');
                 this.clearForm();
             } catch (error) {
                 const errorMessage = this.getApiErrorMessage(error);
@@ -234,8 +237,14 @@ export default {
         
         getCompanyLogoSrc(item) {
             if (!item) return '';
-            if (item.logo)
-                return import.meta.env.VITE_APP_BASE_URL + '/storage/' + item.logo;
+            if (item.logoUrl && typeof item.logoUrl === 'function') {
+                return item.logoUrl();
+            }
+            if (item.logo) {
+                // Добавляем timestamp для инвалидации кэша браузера
+                const timestamp = item.updatedAt ? new Date(item.updatedAt).getTime() : Date.now();
+                return import.meta.env.VITE_APP_BASE_URL + '/storage/' + item.logo + '?v=' + timestamp;
+            }
             return '';
         },
         
