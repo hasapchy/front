@@ -92,6 +92,10 @@
                     <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">{{ $t('name') }}</th>
                     <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-20">
                         {{ $t('quantity') }}</th>
+                    <th v-if="isOrder" class="text-left border border-gray-300 py-2 px-4 font-medium w-20">
+                        Ширина</th>
+                    <th v-if="isOrder" class="text-left border border-gray-300 py-2 px-4 font-medium w-20">
+                        Длина</th>
                     <th v-if="showPrice" class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
                         {{ isReceipt ? $t('purchasePrice') : $t('price') }}
                     </th>
@@ -113,6 +117,14 @@
                     <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
                         <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right"
                             :disabled="disabled" min="0.01" @input="updateTotals" />
+                    </td>
+                    <td v-if="isOrder" class="py-2 px-4 border-x border-gray-300">
+                        <input type="number" v-model.number="product.width" class="w-full p-1 text-right"
+                            :disabled="disabled" min="0" step="0.01" @input="updateTotals" />
+                    </td>
+                    <td v-if="isOrder" class="py-2 px-4 border-x border-gray-300">
+                        <input type="number" v-model.number="product.height" class="w-full p-1 text-right"
+                            :disabled="disabled" min="0" step="0.01" @input="updateTotals" />
                     </td>
                     <td v-if="showPrice" class="py-2 px-4 border-x border-gray-300">
                         <div class="flex items-center space-x-2">

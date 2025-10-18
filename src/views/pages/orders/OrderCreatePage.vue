@@ -493,7 +493,9 @@ export default {
                     .map(p => ({
                         product_id: p.productId,
                         quantity: p.quantity,
-                        price: p.price
+                        price: p.price,
+                        width: p.width || null,
+                        height: p.height || null
                     }));
                 formData.temp_products = this.products
                     .filter(p => p.isTempProduct)
@@ -503,6 +505,8 @@ export default {
                         quantity: p.quantity,
                         price: p.price,
                         unit_id: p.unitId || p.unit_id || null,
+                        width: p.width || null,
+                        height: p.height || null
                     }));
                 formData.remove_temp_products = this.removedTempProducts;
                 let resp;
@@ -553,7 +557,9 @@ export default {
                     .map(p => ({
                         product_id: p.productId,
                         quantity: p.quantity,
-                        price: p.price
+                        price: p.price,
+                        width: p.width || null,
+                        height: p.height || null
                     }));
                 formData.temp_products = this.products
                     .filter(p => p.isTempProduct)
@@ -563,6 +569,8 @@ export default {
                         quantity: p.quantity,
                         price: p.price,
                         unit_id: p.unitId || p.unit_id || null,
+                        width: p.width || null,
+                        height: p.height || null
                     }));
                 formData.remove_temp_products = this.removedTempProducts;
                 
@@ -792,6 +800,8 @@ export default {
                                 description: p.description || '',
                                 quantity: Number(p.quantity) || 0,
                                 price: Number(p.price) || 0,
+                                width: Number(p.width) || null,
+                                height: Number(p.height) || null,
                                 unitId: (p.unit_id ?? p.unitId) ?? null,
                                 productId: p.productId || p.product_id || this.generateTempProductId(),
                                 isTempProduct: true,
@@ -804,6 +814,8 @@ export default {
                             name: p.product_name || p.productName || p.name,
                             quantity: Number(p.quantity) || 0,
                             price: Number(p.price) || 0,
+                            width: Number(p.width) || null,
+                            height: Number(p.height) || null,
                             unitId: (p.unit_id ?? p.unitId) ?? null,
                             icons() {
                                 const isProduct = p.product_type == 1 || p.product_type === '1' || p.type == 1 || p.type === '1';
