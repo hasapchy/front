@@ -510,7 +510,8 @@ export default {
             }
             
             // Для м² - площадь (ширина × длина)
-            product.quantity = width * length;
+            // Округляем до 4 знаков после запятой, чтобы избежать проблем с точностью чисел с плавающей точкой
+            product.quantity = Math.round(width * length * 10000) / 10000;
             
             this.updateTotals();
         },
