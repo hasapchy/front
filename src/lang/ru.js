@@ -1215,4 +1215,8 @@ export default {
   cacheCleared: 'Кэш очищен',
   cacheSuccessfullyCleared: 'Кэш успешно очищен. Страница будет перезагружена.',
   errorClearingCache: 'Ошибка при очистке кэша',
+  
+  // Selection
+  selectAll: 'Выбрать все',
+  deselectAll: 'Отменить выбор',
 }

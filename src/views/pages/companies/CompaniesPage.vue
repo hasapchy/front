@@ -7,7 +7,6 @@
         </PrimaryButton>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-            storage-key="companiesPerPage"
             @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
     <transition name="fade" mode="out-in">

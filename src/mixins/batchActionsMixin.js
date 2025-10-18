@@ -60,7 +60,12 @@ export default {
       const actions = [];
       
       // Добавляем кнопку удаления только если у пользователя есть права
-      if (this.$store?.getters?.hasPermission?.('projects_delete')) {
+      // Проверяем разные права в зависимости от типа сущности
+      const hasDeletePermission = this.$store?.getters?.hasPermission?.('orders_delete') || 
+                                 this.$store?.getters?.hasPermission?.('projects_delete') ||
+                                 this.$store?.getters?.hasPermission?.('clients_delete');
+      
+      if (hasDeletePermission) {
         actions.push({
           label: "",
           icon: "fas fa-trash",

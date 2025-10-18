@@ -1,13 +1,13 @@
 <template>
     <transition name="fade" mode="out-in">
-        <div v-if="$store.state.user !== null" key="routerview" class="flex min-h-screen h-100 bg-white">
+        <div v-if="$store.state.user !== null" key="routerview" class="flex min-h-screen h-100 bg-white overflow-x-hidden">
             <AppSidebarComponent />
             <transition name="settings-sidebar">
                 <AppSettingsSidebarComponent v-if="this.$store.state.settings_open" />
             </transition>
-            <div id="main-content" class="flex flex-col flex-1 transition-transform duration-300 h-full">
+            <div id="main-content" class="flex flex-col flex-1 transition-transform duration-300 h-full overflow-x-hidden">
                 <AppHeaderComponent />
-                <main class="flex-1 overflow-auto p-4 pt-0">
+                <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 pt-0">
                     <router-view />
                 </main>
             </div>

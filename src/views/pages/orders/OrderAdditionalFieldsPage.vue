@@ -5,7 +5,6 @@
         </div>
         <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" 
             :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-            storage-key="orderAdditionalFieldsPerPage"
             @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
 

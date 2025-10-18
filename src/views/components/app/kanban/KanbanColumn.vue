@@ -9,9 +9,19 @@
                         <i class="fas fa-grip-vertical text-sm"></i>
                     </div>
                     <h3 class="font-semibold text-white">{{ status.name }}</h3>
-                    <span class="text-xs text-gray-800 bg-white px-2 py-0.5 rounded-full font-medium">
-                        {{ orders.length }}
-                    </span>
+                    <div class="flex items-center space-x-1">
+                        <span class="text-xs text-gray-800 bg-white px-2 py-0.5 rounded-full font-medium">
+                            {{ orders.length }}
+                        </span>
+                        <button 
+                            v-if="orders.length > 0"
+                            @click="handleSelectAll"
+                            class="w-5 h-5 rounded border-2 border-white flex items-center justify-center text-white hover:bg-white hover:bg-opacity-20 transition-all"
+                            :class="{ 'bg-white text-gray-800': isAllSelected }"
+                            :title="isAllSelected ? $t('deselectAll') : $t('selectAll')">
+                            <i v-if="isAllSelected" class="fas fa-check text-xs text-gray-800"></i>
+                        </button>
+                    </div>
                 </div>
                 <!-- Общая сумма по колонке -->
                 <div v-if="columnTotal > 0" class="text-xs text-white font-medium">
@@ -90,7 +100,7 @@ export default {
             default: false
         }
     },
-    emits: ['change', 'card-dblclick', 'card-select-toggle'],
+    emits: ['change', 'card-dblclick', 'card-select-toggle', 'column-select-toggle'],
     computed: {
         statusColor() {
             // Используем тот же подход, что и в StatusSelectCell
@@ -107,6 +117,10 @@ export default {
             return this.orders.reduce((sum, order) => {
                 return sum + (parseFloat(order.totalPrice) || 0);
             }, 0);
+        },
+        isAllSelected() {
+            if (this.orders.length === 0) return false;
+            return this.orders.every(order => this.selectedIds.includes(order.id));
         }
     },
     methods: {
@@ -118,6 +132,17 @@ export default {
         },
         handleCardSelectToggle(orderId) {
             this.$emit('card-select-toggle', orderId);
+        },
+        handleSelectAll() {
+            if (this.isAllSelected) {
+                // Убираем все карточки этой колонки из выбранных
+                const columnOrderIds = this.orders.map(order => order.id);
+                this.$emit('column-select-toggle', columnOrderIds, false);
+            } else {
+                // Добавляем все карточки этой колонки к выбранным
+                const columnOrderIds = this.orders.map(order => order.id);
+                this.$emit('column-select-toggle', columnOrderIds, true);
+            }
         },
         // Функция для осветления цвета
         lightenColor(color, amount) {
@@ -143,9 +168,16 @@ export default {
 .kanban-column {
     width: 320px;
     min-width: 320px;
+    max-height: calc(100vh - 250px); /* Фиксированная максимальная высота */
+    display: flex;
+    flex-direction: column;
 }
 
 .column-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: calc(100vh - 300px); /* Учитываем высоту заголовка */
     scrollbar-width: thin;
     scrollbar-color: #CBD5E0 transparent;
 }

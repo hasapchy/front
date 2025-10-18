@@ -1042,4 +1042,8 @@ export default {
   cacheCleared: 'Keş arassalandy',
   cacheSuccessfullyCleared: 'Keş üstünlikli arassalandy. Sahypa täzeden ýükleniler.',
   errorClearingCache: 'Keşi arassalamakda ýalňyşlyk',
+  
+  // Selection
+  selectAll: 'Ählisini saýla',
+  deselectAll: 'Saýlamagy ýatyryň',
 }

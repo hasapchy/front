@@ -328,4 +328,8 @@ export default {
     cacheCleared: 'Cache Cleared',
     cacheSuccessfullyCleared: 'Cache successfully cleared. The page will reload.',
     errorClearingCache: 'Error clearing cache',
+    
+    // Selection
+    selectAll: 'Select All',
+    deselectAll: 'Deselect All',
 }

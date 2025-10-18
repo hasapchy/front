@@ -312,6 +312,14 @@ input[type="checkbox"] {
     gap: 8px;
 }
 
+html {
+    overflow-x: hidden; /* Предотвращаем горизонтальный скролл на уровне документа */
+}
+
+body {
+    overflow-x: hidden; /* Предотвращаем горизонтальный скролл на уровне body */
+}
+
 body,
 select,
 input,

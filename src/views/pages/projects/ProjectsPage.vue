@@ -48,41 +48,7 @@
         <div class="flex items-center space-x-3">
             <Pagination v-if="data && viewMode === 'table'" :currentPage="data.currentPage" :lastPage="data.lastPage"
                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-                storage-key="projectsPerPage"
                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-        </div>
-    </div>
-    <!-- Счётчик выбранных карточек для канбана -->
-    <div v-if="selectedIds.length && viewMode === 'kanban'" class="mb-3 flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3">
-        <div class="flex items-center space-x-3">
-            <div class="flex items-center space-x-2">
-                <i class="fas fa-check-square text-blue-600"></i>
-                <span class="font-medium text-blue-800">
-                    {{ $t('selected') }}: <strong>{{ selectedIds.length }}</strong>
-                </span>
-            </div>
-            <button 
-                @click="selectedIds = []"
-                class="text-sm text-blue-600 hover:text-blue-800 underline">
-                {{ $t('clearSelection') }}
-            </button>
-        </div>
-        <div class="flex items-center space-x-2">
-            <select 
-                v-model="batchStatusId"
-                class="px-3 py-1 border border-blue-300 rounded bg-white text-sm"
-                @change="handleBatchStatusChange">
-                <option value="">{{ $t('changeStatus') }}</option>
-                <option v-for="status in statuses" :key="status.id" :value="status.id">
-                    {{ status.name }}
-                </option>
-            </select>
-            <button 
-                @click="confirmDeleteItems"
-                class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm">
-                <i class="fas fa-trash mr-1"></i>
-                {{ $t('delete') }}
-            </button>
         </div>
     </div>
     
@@ -98,7 +64,7 @@
         </div>
 
         <!-- Канбан вид -->
-        <div v-else-if="data && !loading && viewMode === 'kanban'" key="kanban-view">
+        <div v-else-if="data && !loading && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
             <KanbanBoard
                 :orders="data.items"
                 :statuses="statuses"
@@ -107,9 +73,14 @@
                 :loading="loading"
                 :currency-symbol="''"
                 :is-project-mode="true"
+                :batch-status-id="batchStatusId"
                 @order-moved="handleProjectMoved"
                 @card-dblclick="showModal"
                 @card-select-toggle="toggleSelectRow"
+                @column-select-toggle="handleColumnSelectToggle"
+                @batch-status-change="handleBatchStatusChangeFromToolbar"
+                @batch-delete="() => deleteItems(selectedIds)"
+                @clear-selection="() => selectedIds = []"
             />
         </div>
 
@@ -360,11 +331,37 @@ export default {
             }
         },
 
+        // Обработка выбора всех карточек в колонке
+        handleColumnSelectToggle(orderIds, select) {
+            if (select) {
+                // Добавляем все ID колонки к выбранным
+                const newSelectedIds = [...this.selectedIds];
+                orderIds.forEach(id => {
+                    if (!newSelectedIds.includes(id)) {
+                        newSelectedIds.push(id);
+                    }
+                });
+                this.selectedIds = newSelectedIds;
+            } else {
+                // Убираем все ID колонки из выбранных
+                this.selectedIds = this.selectedIds.filter(id => !orderIds.includes(id));
+            }
+        },
+
         // Массовое изменение статуса в канбане
         handleBatchStatusChange() {
             if (!this.batchStatusId || this.selectedIds.length === 0) return;
             
             this.handleChangeStatus(this.selectedIds, this.batchStatusId);
+            this.batchStatusId = '';
+            this.selectedIds = [];
+        },
+
+        // Обработка смены статуса из toolbar канбана
+        handleBatchStatusChangeFromToolbar(statusId) {
+            if (!statusId || this.selectedIds.length === 0) return;
+            
+            this.handleChangeStatus(this.selectedIds, statusId);
             this.batchStatusId = '';
             this.selectedIds = [];
         }
@@ -408,3 +405,11 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+/* Контейнер для канбана - изолируем канбан */
+.kanban-view-container {
+    width: 100%;
+    /* Не добавляем overflow здесь - канбан сам управляет своим скроллом */
+}
+</style>
