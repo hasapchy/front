@@ -9,9 +9,6 @@ export default class WarehouseReceiptController {
     try {
       const response = await api.get(`/warehouse_receipts?page=${page}&per_page=${per_page}`);
       const data = response.data;
-      
-      // Логирование для отладки
-      console.log('Сырые данные от API:', data.items?.[0]);
 
       const items = data.items.map((item) => {
         // Маппинг клиента (поставщика) - используем supplier из eager loading
@@ -85,15 +82,6 @@ export default class WarehouseReceiptController {
         
         return dto;
       });
-      
-      // Логирование после маппинга
-      if (items.length > 0) {
-        console.log('DTO после маппинга:', items[0]);
-        console.log('Клиент в DTO:', items[0].client);
-        console.log('Товары в DTO:', items[0].products);
-        console.log('Касса в DTO:', items[0].cashName);
-        console.log('Символ валюты в DTO:', items[0].currencySymbol);
-      }
 
       const paginatedResponse = new PaginatedResponse(
         items,
@@ -111,39 +99,18 @@ export default class WarehouseReceiptController {
   }
 
   static async storeReceipt(formData) {
-    try {
-      const { data } = await api.post("/warehouse_receipts", formData);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при оприходовании:", error);
-      // Выводим детали валидации, если есть
-      if (error.response?.data) {
-        console.error("Детали ошибки от сервера:", error.response.data);
-      }
-      if (error.response?.data?.errors) {
-        console.error("Ошибки валидации:", error.response.data.errors);
-      }
-      throw error;
-    }
+    const { data } = await api.post("/warehouse_receipts", formData);
+    return data;
   }
+
   static async updateReceipt(id, formData) {
-    try {
-      const { data } = await api.put(`/warehouse_receipts/${id}`, formData);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении оприходования:", error);
-      throw error;
-    }
+    const { data } = await api.put(`/warehouse_receipts/${id}`, formData);
+    return data;
   }
 
   static async deleteReceipt(id) {
-    try {
-      const { data } = await api.delete(`/warehouse_receipts/${id}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении оприходования:", error);
-      throw error;
-    }
+    const { data } = await api.delete(`/warehouse_receipts/${id}`);
+    return data;
   }
 }
 

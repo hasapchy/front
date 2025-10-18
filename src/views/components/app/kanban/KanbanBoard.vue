@@ -247,28 +247,32 @@ export default {
 <style scoped>
 .kanban-board-wrapper {
     position: relative;
+    max-width: 100%;
+    overflow-x: auto;
 }
 
 .kanban-board {
+    overflow-x: visible;
+    overflow-y: visible;
     scrollbar-width: thin;
     scrollbar-color: #CBD5E0 #F7FAFC;
 }
 
-.kanban-board::-webkit-scrollbar {
+.kanban-board-wrapper::-webkit-scrollbar {
     height: 8px;
 }
 
-.kanban-board::-webkit-scrollbar-track {
+.kanban-board-wrapper::-webkit-scrollbar-track {
     background: #F7FAFC;
     border-radius: 4px;
 }
 
-.kanban-board::-webkit-scrollbar-thumb {
+.kanban-board-wrapper::-webkit-scrollbar-thumb {
     background-color: #CBD5E0;
     border-radius: 4px;
 }
 
-.kanban-board::-webkit-scrollbar-thumb:hover {
+.kanban-board-wrapper::-webkit-scrollbar-thumb:hover {
     background-color: #A0AEC0;
 }
 

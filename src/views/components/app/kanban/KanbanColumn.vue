@@ -143,8 +143,6 @@ export default {
 .kanban-column {
     width: 320px;
     min-width: 320px;
-    height: calc(100vh - 250px);
-    max-height: calc(100vh - 250px);
 }
 
 .column-content {

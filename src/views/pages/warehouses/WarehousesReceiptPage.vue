@@ -83,7 +83,6 @@ export default {
                 { name: 'client', label: 'client', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
                 { name: 'warehouseName', label: 'warehouse' },
                 { name: 'cashName', label: 'cashRegister' },
-                { name: 'paymentType', label: 'paymentType' },
                 { name: 'products', label: 'products', html: true },
                 { name: 'amount', label: 'totalAmount' },
                 { name: 'note', label: 'note' },
@@ -102,8 +101,6 @@ export default {
             switch (c) {
                 case 'cashName':
                     return i.cashNameDisplay();
-                case 'paymentType':
-                    return i.paymentTypeDisplay();
                 case 'products':
                     return i.productsHtmlList();
                 case 'dateUser':
@@ -126,13 +123,6 @@ export default {
             }
             try {
                 const new_data = await WarehouseReceiptController.getStocks(page, this.perPage);
-                console.log('Загруженные данные приходований:', new_data);
-                if (new_data.items && new_data.items.length > 0) {
-                    console.log('Первое приходование:', new_data.items[0]);
-                    console.log('Клиент первого приходования:', new_data.items[0].client);
-                    console.log('Товары первого приходования:', new_data.items[0].products);
-                    console.log('Касса первого приходования:', new_data.items[0].cashName);
-                }
                 this.data = new_data;
             } catch (error) {
                 this.showNotification('Ошибка получения списка оприходований', error.message, true);

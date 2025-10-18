@@ -64,7 +64,7 @@
 
         <div class="mt-2">
             <label>{{ $t('note') }}</label>
-            <input type="text" v-model="note" :disabled="!!editingItemId">
+            <input type="text" v-model="note">
         </div>
 
         <ProductSearch v-model="products" :disabled="!!editingItemId" :show-quantity="true" :show-price="true"
@@ -234,7 +234,6 @@ export default {
             
             if (invalidProducts.length > 0) {
                 validationErrors.push('• У некоторых товаров не заполнены обязательные поля (ID, количество, цена)');
-                console.error('Невалидные товары:', invalidProducts);
             }
             
             if (validationErrors.length > 0) {
@@ -260,9 +259,6 @@ export default {
                     type: this.type, // "cash" или "balance" - is_debt определяется автоматически
                     products: productsData
                 };
-                
-                // Для отладки: выводим ВСЕ данные перед отправкой
-                console.log('Отправка данных приходования (ПОЛНАЯ):', formData);
 
                 if (this.editingItemId != null) {
                     var resp = await WarehouseReceiptController.updateReceipt(
@@ -272,11 +268,15 @@ export default {
                     var resp = await WarehouseReceiptController.storeReceipt(formData);
                 }
                 if (resp.message) {
+                    // Инвалидируем кэш товаров, т.к. остатки изменились
+                    await this.$store.dispatch('invalidateCache', { type: 'products' });
+                    // Перезагружаем список товаров для ProductSearch
+                    await this.$store.dispatch('loadAllProducts');
+                    
                     this.$emit('saved');
                     this.clearForm();
                 }
             } catch (error) {
-                console.error('Полная ошибка при сохранении:', error);
                 let errorMessage = this.getApiErrorMessage(error);
                 
                 // Если есть детали валидации от Laravel

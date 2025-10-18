@@ -81,12 +81,19 @@ export default class ProductController {
       throw error;
     }
   }
-  static async searchItems($search_term, params = {}) {
+  static async searchItems($search_term, productsOnly = null, warehouseId = null) {
     try {
       const searchParams = {
         search: $search_term,
-        ...params
       };
+      
+      if (productsOnly !== null) {
+        searchParams.products_only = productsOnly;
+      }
+      
+      if (warehouseId) {
+        searchParams.warehouse_id = warehouseId;
+      }
       
       const response = await api.get("/products/search", {
         params: searchParams,

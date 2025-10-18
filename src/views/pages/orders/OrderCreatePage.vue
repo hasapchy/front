@@ -119,7 +119,7 @@
                         </select>
                     </div>
                     <ProductSearch ref="productSearch" v-model="products" :show-quantity="true" :show-price="true" :show-price-type="true"
-                        :is-sale="true" :isOrder="true" :currency-symbol="currencySymbol" :warehouse-id="warehouseId"
+                        :is-sale="true" :currency-symbol="currencySymbol" :warehouse-id="warehouseId"
                         :project-id="projectId" v-model:discount="discount" v-model:discountType="discountType" required @product-removed="onProductRemoved" />
                 </template>
             </div>
@@ -493,9 +493,7 @@ export default {
                     .map(p => ({
                         product_id: p.productId,
                         quantity: p.quantity,
-                        price: p.price,
-                        width: p.width || null,
-                        height: p.height || null
+                        price: p.price
                     }));
                 formData.temp_products = this.products
                     .filter(p => p.isTempProduct)
@@ -504,9 +502,7 @@ export default {
                         description: p.description || '',
                         quantity: p.quantity,
                         price: p.price,
-                        unit_id: p.unitId || p.unit_id || null,
-                        width: p.width || null,
-                        height: p.height || null
+                        unit_id: p.unitId || p.unit_id || null
                     }));
                 formData.remove_temp_products = this.removedTempProducts;
                 let resp;
@@ -557,9 +553,7 @@ export default {
                     .map(p => ({
                         product_id: p.productId,
                         quantity: p.quantity,
-                        price: p.price,
-                        width: p.width || null,
-                        height: p.height || null
+                        price: p.price
                     }));
                 formData.temp_products = this.products
                     .filter(p => p.isTempProduct)
@@ -568,9 +562,7 @@ export default {
                         description: p.description || '',
                         quantity: p.quantity,
                         price: p.price,
-                        unit_id: p.unitId || p.unit_id || null,
-                        width: p.width || null,
-                        height: p.height || null
+                        unit_id: p.unitId || p.unit_id || null
                     }));
                 formData.remove_temp_products = this.removedTempProducts;
                 
@@ -800,8 +792,6 @@ export default {
                                 description: p.description || '',
                                 quantity: Number(p.quantity) || 0,
                                 price: Number(p.price) || 0,
-                                width: Number(p.width) || null,
-                                height: Number(p.height) || null,
                                 unitId: (p.unit_id ?? p.unitId) ?? null,
                                 productId: p.productId || p.product_id || this.generateTempProductId(),
                                 isTempProduct: true,
@@ -814,8 +804,6 @@ export default {
                             name: p.product_name || p.productName || p.name,
                             quantity: Number(p.quantity) || 0,
                             price: Number(p.price) || 0,
-                            width: Number(p.width) || null,
-                            height: Number(p.height) || null,
                             unitId: (p.unit_id ?? p.unitId) ?? null,
                             icons() {
                                 const isProduct = p.product_type == 1 || p.product_type === '1' || p.type == 1 || p.type === '1';

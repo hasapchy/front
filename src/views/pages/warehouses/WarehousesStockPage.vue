@@ -182,12 +182,13 @@ export default {
             this.showNotification('Ошибка сохранения товара', err, true);
         },
         async showModal(item) {
-            const page = 1;
             try {
-                const productsPage = await ProductController.getItems(page);
-                const found = productsPage.items.find(p => p.id === item.productId);
-                if (found) {
-                    this.editingItem = found;
+                // Используем поиск по имени товара (быстрее чем загружать все страницы)
+                const searchResults = await ProductController.searchItems(item.productName);
+                const product = searchResults.find(p => p.id === item.productId);
+                
+                if (product) {
+                    this.editingItem = product;
                     this.modalDialog = true;
                 } else {
                     this.showNotification('Товар не найден', '', true);

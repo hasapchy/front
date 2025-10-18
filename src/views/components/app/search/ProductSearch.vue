@@ -64,23 +64,13 @@
                     </div>
                 </li>
                 <li class="p-2 border-t border-gray-300 bg-gray-50 sticky bottom-0">
-                    <div class="flex space-x-2">
-                                                 <PrimaryButton 
-                             :is-info="true" 
-                             :is-full="true"
-                             icon="fas fa-plus"
-                             @mousedown.prevent="openCreateProductModal">
-                             {{ $t('createProductOrService') }}{{ productSearch ? ` "${productSearch}"` : '' }}
-                         </PrimaryButton>
-                                                 <PrimaryButton 
-                             v-if="isOrder"
-                             :is-light="true" 
-                             :is-full="true"
-                             icon="fas fa-plus"
-                             @mousedown.prevent="openCreateTempProductModal">
-                             {{ $t('createTemporaryProduct') }}{{ productSearch ? ` "${productSearch}"` : '' }}
-                         </PrimaryButton>
-                    </div>
+                    <PrimaryButton 
+                        :is-info="true" 
+                        :is-full="true"
+                        icon="fas fa-plus"
+                        @mousedown.prevent="openCreateProductModal">
+                        {{ $t('createProductOrService') }}{{ productSearch ? ` "${productSearch}"` : '' }}
+                    </PrimaryButton>
                 </li>
             </ul>
         </transition>
@@ -92,10 +82,6 @@
                     <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">{{ $t('name') }}</th>
                     <th v-if="showQuantity" class="text-left border border-gray-300 py-2 px-4 font-medium w-20">
                         {{ $t('quantity') }}</th>
-                    <th v-if="isOrder" class="text-left border border-gray-300 py-2 px-4 font-medium w-20">
-                        Ширина</th>
-                    <th v-if="isOrder" class="text-left border border-gray-300 py-2 px-4 font-medium w-20">
-                        Длина</th>
                     <th v-if="showPrice" class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
                         {{ isReceipt ? $t('purchasePrice') : $t('price') }}
                     </th>
@@ -117,14 +103,6 @@
                     <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
                         <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right"
                             :disabled="disabled" min="0.01" @input="updateTotals" />
-                    </td>
-                    <td v-if="isOrder" class="py-2 px-4 border-x border-gray-300">
-                        <input type="number" v-model.number="product.width" class="w-full p-1 text-right"
-                            :disabled="disabled" min="0" step="0.01" @input="updateTotals" />
-                    </td>
-                    <td v-if="isOrder" class="py-2 px-4 border-x border-gray-300">
-                        <input type="number" v-model.number="product.height" class="w-full p-1 text-right"
-                            :disabled="disabled" min="0" step="0.01" @input="updateTotals" />
                     </td>
                     <td v-if="showPrice" class="py-2 px-4 border-x border-gray-300">
                         <div class="flex items-center space-x-2">
@@ -186,10 +164,6 @@
         <ProductsCreatePage :defaultType="defaultProductType" :defaultName="defaultProductName" :editingItem="null"
             @saved="onProductCreated" @saved-error="onProductCreatedError" />
     </SideModalDialog>
-    <SideModalDialog :showForm="modalCreateTempProduct" :onclose="() => modalCreateTempProduct = false" :level="1">
-        <OrderTempProductCreatePage :defaultName="defaultProductName" :editingItem="null"
-            @saved="onTempProductCreated" @saved-error="onProductCreatedError" />
-    </SideModalDialog>
 </template>
 
 <script>
@@ -200,7 +174,6 @@ import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProduc
 import WarehouseReceiptProductDto from '@/dto/warehouse/WarehouseReceiptProductDto';
 import SaleProductDto from '@/dto/sale/SaleProductDto';
 import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
-import OrderTempProductCreatePage from '@/views/pages/orders/OrderTempProductCreatePage.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -210,7 +183,6 @@ export default {
     emits: ['update:modelValue', 'update:discount', 'update:discountType', 'update:subtotal', 'update:totalPrice', 'product-removed'],
     components: {
         ProductsCreatePage,
-        OrderTempProductCreatePage,
         SideModalDialog,
         PrimaryButton,
     },
@@ -262,10 +234,6 @@ export default {
             type: String,
             default: 'fixed'
         },
-        isOrder: {
-            type: Boolean,
-            default: false
-        },
         warehouseId: {
             type: [String, Number],
             default: null
@@ -286,11 +254,10 @@ export default {
             productResults: [],
             showDropdown: false,
             modalCreateProduct: false,
-            modalCreateTempProduct: false,
             defaultProductType: 'product',
             defaultProductName: '',
-            tempProductCounter: 1000000,
-            removedTempProducts: [],
+            warehouseProducts: [], // Товары с учетом выбранного склада
+            warehouseProductsLoaded: false,
         };
     },
     computed: {
@@ -338,6 +305,18 @@ export default {
             }
         },
         lastProducts() {
+            // ✅ Если выбран склад, используем товары загруженные для этого склада
+            if (this.warehouseId && this.warehouseProductsLoaded) {
+                let products = this.warehouseProducts;
+                
+                // Фильтруем только товары (исключаем услуги), если onlyProducts === true
+                if (this.onlyProducts) {
+                    products = products.filter(p => Boolean(p.type));
+                }
+                
+                return products;
+            }
+            
             // ✅ Для basement загружаем ВСЕ товары, иначе - последние 10
             let products = this.useAllProducts 
                 ? this.$store.getters.allProducts 
@@ -352,17 +331,35 @@ export default {
         }
     },
     async created() {
-        // ✅ Загружаем из store (глобальный кэш!)
-        if (this.useAllProducts) {
+        // ✅ Если выбран склад, загружаем товары для этого склада
+        if (this.warehouseId) {
+            await this.loadWarehouseProducts();
+        } else if (this.useAllProducts) {
+            // Для basement загружаем ВСЕ товары
             await this.$store.dispatch('loadAllProducts');
         } else {
+            // Иначе загружаем последние 10 товаров
             await this.$store.dispatch('loadLastProducts');
         }
     },
     methods: {
+        async loadWarehouseProducts() {
+            // Загружаем товары с учетом выбранного склада
+            try {
+                const results = await ProductController.getItems(1, null, { warehouse_id: this.warehouseId }, 50);
+                this.warehouseProducts = results.items || [];
+                this.warehouseProductsLoaded = true;
+            } catch (error) {
+                console.error('Ошибка загрузки товаров для склада:', error);
+                this.warehouseProducts = [];
+                this.warehouseProductsLoaded = true;
+            }
+        },
         async fetchLastProducts() {
-            // ✅ Перезагружаем данные из store (очищаем кэш)
-            if (this.useAllProducts) {
+            // ✅ Перезагружаем данные
+            if (this.warehouseId) {
+                await this.loadWarehouseProducts();
+            } else if (this.useAllProducts) {
                 this.$store.commit('SET_ALL_PRODUCTS', []);
                 this.$store.commit('SET_ALL_PRODUCTS_DATA', []);
                 await this.$store.dispatch('loadAllProducts');
@@ -444,12 +441,6 @@ export default {
         },
         removeSelectedProduct(id) {
             const removedProduct = this.products.find(p => p.productId === id);
-            if (removedProduct && removedProduct.isTempProduct) {
-                if (!this.removedTempProducts) {
-                    this.removedTempProducts = [];
-                }
-                this.removedTempProducts.push(removedProduct.name);
-            }
             
             this.products = this.products.filter(p => p.productId !== id);
             this.updateTotals();
@@ -473,13 +464,6 @@ export default {
             this.defaultProductName = this.productSearch;
             this.modalCreateProduct = true;
         },
-        openCreateTempProductModal() {
-            this.defaultProductName = this.productSearch;
-            this.modalCreateTempProduct = true;
-        },
-        generateTempProductId() {
-            return this.tempProductCounter++;
-        },
         onProductCreated(newProduct) {
             this.modalCreateProduct = false;
             if (newProduct) {
@@ -488,35 +472,6 @@ export default {
         },
         onProductCreatedError(error) {
             this.showNotification('Ошибка создания товара', error, true);
-        },
-        onTempProductCreated(newProduct) {
-            this.modalCreateTempProduct = false;
-            if (newProduct) {
-                const tempProduct = {
-                    productId: this.generateTempProductId(),
-                    productName: newProduct.name,
-                    name: newProduct.name,
-                    quantity: newProduct.quantity,
-                    price: newProduct.price,
-                    description: newProduct.description,
-                    unitId: newProduct.unitId,
-                    type: newProduct.type || 1,
-                    isTempProduct: true,
-                    icons() { return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>'; }
-                };
-                
-                const updatedProducts = [...this.products, tempProduct];
-                this.$emit('update:modelValue', updatedProducts);
-                this.updateTotals();
-                this.productSearch = '';
-                this.productResults = [];
-            }
-        },
-        getRemovedTempProducts() {
-            return [...this.removedTempProducts];
-        },
-        resetRemovedTempProducts() {
-            this.removedTempProducts = [];
         },
         getDefaultIcon(product) {
             if (product.isTempProduct) {
@@ -534,11 +489,21 @@ export default {
             immediate: true,
         },
         warehouseId: {
-            handler(newWarehouseId, oldWarehouseId) {
-                // ✅ lastProducts НЕ зависят от склада - это просто "последние 10 товаров"
-                // Только перезагружаем поиск (он зависит от склада)
-                if (this.productSearch.length >= 3 && newWarehouseId !== oldWarehouseId) {
-                    this.searchProducts();
+            async handler(newWarehouseId, oldWarehouseId) {
+                if (newWarehouseId !== oldWarehouseId) {
+                    // ✅ Если склад выбран, загружаем товары для этого склада
+                    if (newWarehouseId) {
+                        await this.loadWarehouseProducts();
+                    } else {
+                        // Склад убрали - очищаем товары склада
+                        this.warehouseProducts = [];
+                        this.warehouseProductsLoaded = false;
+                    }
+                    
+                    // Перезагружаем поиск если есть текст поиска
+                    if (this.productSearch.length >= 3) {
+                        this.searchProducts();
+                    }
                 }
             },
         },
