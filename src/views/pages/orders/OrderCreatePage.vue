@@ -784,20 +784,6 @@ export default {
                     }
                     
                     this.selectedClient = newEditingItem.client || null;
-                    // Обновляем баланс клиента из Store/API при редактировании
-                    if (this.selectedClient?.id) {
-                        const storeClients = (this.$store && this.$store.getters && this.$store.getters.clients) ? this.$store.getters.clients : [];
-                        const clientFromStore = storeClients.find(c => c.id === this.selectedClient.id);
-                        if (clientFromStore) {
-                            this.selectedClient = clientFromStore;
-                        }
-                        // Подтверждаем актуальный баланс с сервера
-                        import('@/api/ClientController').then(({ default: ClientController }) => {
-                            ClientController.getItem(this.selectedClient.id).then(fresh => {
-                                this.selectedClient = fresh;
-                            }).catch(() => {});
-                        });
-                    }
                     this.projectId = newEditingItem.projectId || newEditingItem.project_id || '';
                     this.warehouseId = newEditingItem.warehouseId || (this.allWarehouses.length ? this.allWarehouses[0].id : '');
                     this.cashId = newEditingItem.cashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
