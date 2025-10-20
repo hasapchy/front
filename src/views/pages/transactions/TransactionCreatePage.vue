@@ -219,11 +219,6 @@ export default {
             
             // ✅ Загружаем проекты в Store если их там нет
             await this.$store.dispatch('loadProjects');
-            
-            // ✅ При открытии существующей транзакции подтягиваем актуальный баланс клиента
-            if (this.selectedClient?.id) {
-                await this.updateClientBalance();
-            }
 
             if (!this.editingItem) {
                 if (this.allCashRegisters.length > 0 && !this.cashId) {
@@ -338,10 +333,6 @@ export default {
                     });
                 }
                 if (resp.message) {
-                    if (this.selectedClient) {
-                        await this.updateClientBalance();
-                    }
-                    
                     // Проверяем, нужно ли закрыть заказ (только для модалки доплаты)
                     if (this.isPaymentModal) {
                         await this.checkAndCloseOrder();
@@ -365,9 +356,6 @@ export default {
             try {
                 var resp = await TransactionController.deleteItem(this.editingItemId);
                 if (resp.message || resp.success || resp) {
-                    if (this.selectedClient) {
-                        await this.updateClientBalance();
-                    }
                     this.$emit('deleted');
                     this.clearForm();
                 }
@@ -394,23 +382,6 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
-        },
-        async updateClientBalance() {
-            if (this.selectedClient && this.selectedClient.id) {
-                try {
-                    // Сначала пробуем взять актуального клиента из Store (мгновенно, без сети)
-                    const storeClients = (this.$store && this.$store.getters && this.$store.getters.clients) ? this.$store.getters.clients : [];
-                    const clientFromStore = storeClients.find(c => c.id === this.selectedClient.id);
-                    if (clientFromStore) {
-                        this.selectedClient = clientFromStore;
-                    }
-                    // Затем подтверждаем баланс прямым запросом к API (обновит при расхождении)
-                    const updatedClient = await ClientController.getItem(this.selectedClient.id);
-                    this.selectedClient = updatedClient;
-                } catch (error) {
-                    // Ошибка при обновлении баланса клиента
-                }
-            }
         },
         copyTransaction() {
             // Создаем новый экземпляр TransactionDto из текущей транзакции
@@ -572,10 +543,6 @@ export default {
                     this.selectedClient = newEditingItem.client || this.initialClient || null;
                     this.editingItemId = newEditingItem.id || null;
                     this.isDebt = newEditingItem.isDebt || false;
-                    // ✅ Обновляем данные клиента, чтобы был актуальный баланс
-                    if (this.selectedClient?.id) {
-                        this.updateClientBalance();
-                    }
                 } else {
                     // При создании новой транзакции устанавливаем значения по умолчанию
                     this.type = "income";
@@ -625,6 +592,19 @@ export default {
         },
         '$store.state.transactionCategories'(newVal) {
             this.allCategories = newVal;
+        },
+        '$store.state.clients': {
+            handler(newClients) {
+                // Автоматически обновляем selectedClient из Store когда кэш обновляется
+                if (this.selectedClient?.id && newClients.length) {
+                    const updated = newClients.find(c => c.id === this.selectedClient.id);
+                    if (updated) {
+                        this.selectedClient = updated;
+                    }
+                }
+            },
+            immediate: true,
+            deep: true
         }
     }
 }

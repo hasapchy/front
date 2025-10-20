@@ -73,7 +73,7 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'name', label: 'name' },
-                { name: 'color', label: 'color' },
+                { name: 'color', label: 'color', html: true },
                 { name: 'createdAt', label: 'creationDate' }
             ]
         }

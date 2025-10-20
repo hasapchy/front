@@ -122,6 +122,7 @@ import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vu
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import { markRaw } from 'vue';
 import debounce from "lodash.debounce";
+import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, tableTranslationMixin],
@@ -169,12 +170,18 @@ export default {
         }
         
         this.fetchItems();
+        
+        // Слушаем события инвалидации кэша
+        eventBus.on('cache:invalidate', this.handleCacheInvalidate);
     },
     beforeUnmount() {
         // Очищаем таймер при уничтожении компонента
         if (this.debounceTimer) {
             clearTimeout(this.debounceTimer);
         }
+        
+        // Отписываемся от события
+        eventBus.off('cache:invalidate', this.handleCacheInvalidate);
     },
     methods: {
         itemMapper(i, c) {
@@ -198,6 +205,13 @@ export default {
                 this.statuses = this.$store.getters.projectStatuses;
             } catch (error) {
                 console.error('Error fetching project statuses:', error);
+            }
+        },
+        async handleCacheInvalidate({ type }) {
+            // Перезагружаем статусы проектов при инвалидации их кэша
+            if (type === 'projectStatuses') {
+                console.log('[ProjectsPage] Перезагрузка статусов проектов из-за инвалидации кэша');
+                await this.fetchProjectStatuses();
             }
         },
         handlePerPageChange(newPerPage) {
@@ -388,9 +402,8 @@ export default {
             return [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
-                { name: 'name', label: 'name' },
-                { name: "statusName", label: 'projectStatus', component: markRaw(StatusSelectCell), props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId), }), },
                 { name: 'dateUser', label: 'dateUser' },
+                { name: "statusName", label: 'projectStatus', component: markRaw(StatusSelectCell), props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId), }), },
                 {
                     name: 'client',
                     label: 'client',
@@ -399,7 +412,7 @@ export default {
                         client: item.client,
                     })
                 },
-                { name: 'users', label: 'access' },
+                { name: 'name', label: 'name' },
             ];
         }
     },

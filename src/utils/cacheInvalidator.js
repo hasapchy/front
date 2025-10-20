@@ -2,6 +2,8 @@
  * Инвалидация кэша при изменении данных
  */
 
+import { eventBus } from '@/eventBus';
+
 export default class CacheInvalidator {
   /**
    * Зависимости между типами кэша
@@ -85,6 +87,9 @@ export default class CacheInvalidator {
         localStorage.removeItem(`${pattern}_timestamp`);
       }
     });
+
+    // ✅ Отправляем событие об инвалидации кэша для очистки Vuex Store
+    eventBus.emit('cache:invalidate', { type });
 
     return removedCount;
   }

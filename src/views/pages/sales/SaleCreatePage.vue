@@ -138,13 +138,9 @@ export default {
                 this.fetchClients()
             ]);
             
+            // Инициализация по умолчанию для нового элемента происходит через watchers на Store
+            // (allWarehouses, allCashRegisters автоматически установят первые значения)
             if (!this.editingItem) {
-                if (this.allWarehouses.length > 0 && !this.warehouseId) {
-                    this.warehouseId = this.allWarehouses[0].id;
-                }
-                if (this.allCashRegisters.length > 0 && !this.cashId) {
-                    this.cashId = this.allCashRegisters[0].id;
-                }
                 // Инициализируем currencyId для типа balance
                 const defaultCurrency = this.currencies.find((c) => c.is_default);
                 if (defaultCurrency && !this.currencyId) {
@@ -372,14 +368,6 @@ export default {
                 }
             },
         },
-        allWarehouses: {
-            handler(newWarehouses) {
-                if (newWarehouses.length && !this.warehouseId && !this.editingItem) {
-                    this.warehouseId = newWarehouses[0].id;
-                }
-            },
-            immediate: true,
-        },
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
@@ -411,18 +399,51 @@ export default {
             immediate: true,
         },
         // Отслеживаем изменения в store
-        '$store.state.warehouses'(newVal) {
-            this.allWarehouses = newVal;
+        '$store.state.warehouses': {
+            handler(newVal) {
+                this.allWarehouses = newVal;
+                // Автоматически выбираем первый склад при создании новой продажи
+                if (newVal.length && !this.warehouseId && !this.editingItem) {
+                    this.warehouseId = newVal[0].id;
+                }
+            },
+            immediate: true
         },
-        '$store.state.cashRegisters'(newVal) {
-            this.allCashRegisters = newVal;
+        '$store.state.cashRegisters': {
+            handler(newVal) {
+                this.allCashRegisters = newVal;
+                // Автоматически выбираем первую кассу при создании новой продажи
+                if (newVal.length && !this.cashId && !this.editingItem) {
+                    this.cashId = newVal[0].id;
+                }
+            },
+            immediate: true
         },
-        '$store.state.projects'(newVal) {
-            // Фильтруем только активные проекты
-            this.allProjects = newVal.filter(p => p.statusId !== 3 && p.statusId !== 4);
+        '$store.state.projects': {
+            handler(newVal) {
+                // Фильтруем только активные проекты
+                this.allProjects = newVal.filter(p => p.statusId !== 3 && p.statusId !== 4);
+            },
+            immediate: true
         },
-        '$store.state.currencies'(newVal) {
-            this.currencies = newVal;
+        '$store.state.currencies': {
+            handler(newVal) {
+                this.currencies = newVal;
+            },
+            immediate: true
+        },
+        '$store.state.clients': {
+            handler(newClients) {
+                // Автоматически обновляем selectedClient из Store если он есть
+                if (this.selectedClient?.id && newClients.length) {
+                    const updated = newClients.find(c => c.id === this.selectedClient.id);
+                    if (updated) {
+                        this.selectedClient = updated;
+                    }
+                }
+            },
+            immediate: true,
+            deep: true
         },
     },
 };

@@ -1356,4 +1356,41 @@ eventBus.on('company-updated', () => {
   store.dispatch('loadUserCompanies');
 });
 
+// Обработчик события инвалидации кэша
+eventBus.on('cache:invalidate', ({ type }) => {
+  // Очищаем соответствующие данные в state при инвалидации кэша
+  const stateMapping = {
+    projectStatuses: 'SET_PROJECT_STATUSES',
+    orderStatuses: 'SET_ORDER_STATUSES',
+    orderStatusCategories: 'SET_ORDER_STATUSES', // также инвалидируем orderStatuses
+    transactionCategories: 'SET_TRANSACTION_CATEGORIES',
+    productStatuses: 'SET_PRODUCT_STATUSES',
+    currencies: 'SET_CURRENCIES',
+    units: 'SET_UNITS',
+    warehouses: 'SET_WAREHOUSES',
+    cashRegisters: 'SET_CASH_REGISTERS',
+    clients: 'SET_CLIENTS',
+    categories: 'SET_CATEGORIES',
+    projects: 'SET_PROJECTS',
+    users: 'SET_USERS',
+    products: 'SET_PRODUCTS',
+    services: 'SET_SERVICES',
+  };
+
+  const mutation = stateMapping[type];
+  if (mutation) {
+    console.log(`[Store] Очистка state "${type}" из-за инвалидации кэша`);
+    store.commit(mutation, []);
+    
+    // Для clients также очищаем clientsData
+    if (type === 'clients') {
+      store.commit('SET_CLIENTS_DATA', []);
+    }
+    // Для projects также очищаем projectsData
+    if (type === 'projects') {
+      store.commit('SET_PROJECTS_DATA', []);
+    }
+  }
+});
+
 export default store;

@@ -875,6 +875,19 @@ export default {
         '$store.state.orderStatuses'(newVal) {
             this.statuses = newVal;
         },
+        '$store.state.clients': {
+            handler(newClients) {
+                // Автоматически обновляем selectedClient из Store если он есть
+                if (this.selectedClient?.id && newClients.length) {
+                    const updated = newClients.find(c => c.id === this.selectedClient.id);
+                    if (updated) {
+                        this.selectedClient = updated;
+                    }
+                }
+            },
+            immediate: true,
+            deep: true
+        },
         projectId(newProjectId) {
             // При выборе проекта переключаем все товары на оптовые цены
             if (newProjectId && this.products.length > 0) {
