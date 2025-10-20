@@ -1,4 +1,5 @@
 import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { formatCurrency } from "@/utils/numberUtils";
 import OrderAfValueDto from "./OrderAfValueDto";
 
 export default class OrderDto {
@@ -66,9 +67,9 @@ export default class OrderDto {
 
   priceInfo() {
     if (this.discount && this.discount > 0) {
-      return `${this.totalPrice} ${this.currencySymbol} (из ${this.price} ${this.currencySymbol}, скидка ${this.discount} ${this.currencySymbol})`;
+      return `${formatCurrency(this.totalPrice, this.currencySymbol)} (из ${formatCurrency(this.price, this.currencySymbol)}, скидка ${formatCurrency(this.discount, this.currencySymbol)})`;
     }
-    return `${this.totalPrice} ${this.currencySymbol}`;
+    return formatCurrency(this.totalPrice, this.currencySymbol);
   }
 
   productsHtmlList() {

@@ -3,7 +3,7 @@
     <div v-if="user !== null" key="routerview" class="min-h-screen bg-gray-100">
       <!-- Навигация -->
       <nav class="bg-white shadow">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto px-4 sm:px-6 lg:px-8">
           <div class="flex justify-between items-center h-16">
             <div class="flex">
               <div class="flex-shrink-0 flex items-center">
@@ -46,7 +46,7 @@
       </nav>
 
       <!-- Основной контент -->
-      <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main class="mx-auto py-6 sm:px-6 lg:px-8">
         <router-view />
       </main>
       

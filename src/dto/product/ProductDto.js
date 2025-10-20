@@ -1,4 +1,5 @@
 import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { formatNumber } from "@/utils/numberUtils";
 class ProductDto {
   constructor({
     id,
@@ -89,7 +90,7 @@ class ProductDto {
     if (typeof price !== "number") {
       price = parseFloat(price);
     }
-    return isNaN(price) ? "" : price.toFixed(2).replace(/\.0+$/, "");
+    return isNaN(price) ? "" : formatNumber(price, 2, true);
     // + ' ' + (this.currency_symbol || '')
   }
 

@@ -71,6 +71,7 @@ import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import ProductController from '@/api/ProductController';
+import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [modalMixin, notificationMixin, tableTranslationMixin],
@@ -106,12 +107,16 @@ export default {
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
+        eventBus.on('global-search', this.handleSearch);
     },
 
     mounted() {
         this.fetchItems();
         this.fetchAllCategories();
         this.fetchAllWarehouses();
+    },
+    beforeUnmount() {
+        eventBus.off('global-search', this.handleSearch);
     },
     methods: {
         async fetchAllCategories() {
@@ -145,7 +150,7 @@ export default {
             var category_id = this.categoryId != '' ? this.categoryId : null;
             var warehouse_id = this.warehouseId != '' ? this.warehouseId : null;
             try {
-                const new_data = await WarehouseStockController.getStocks(page, warehouse_id, category_id, this.perPage);
+                const new_data = await WarehouseStockController.getStocks(page, warehouse_id, category_id, this.perPage, this.searchQuery);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification('Ошибка получения списка товаров на складе', error.message, true);
@@ -153,6 +158,10 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
+        },
+        handleSearch(query) {
+            this.$store.dispatch('setSearchQuery', query);
+            this.fetchItems(1, false);
         },
         openCreateWarehouse() {
             this.modalCreateWarehouse = true;
@@ -195,6 +204,11 @@ export default {
             } catch (error) {
                 this.showNotification('Ошибка загрузки товара', error.message, true);
             }
+        },
+    },
+    computed: {
+        searchQuery() {
+            return this.$store.state.searchQuery;
         },
     },
 }

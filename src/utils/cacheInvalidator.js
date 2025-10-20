@@ -4,6 +4,24 @@
 
 export default class CacheInvalidator {
   /**
+   * Зависимости между типами кэша
+   * Когда инвалидируется тип из ключа, автоматически инвалидируются типы из значения
+   * Согласно BALANCE_LOGIC_TZ.md: все операции (sales, orders, transactions, receipts) 
+   * влияют на баланс клиента через таблицу transactions
+   */
+  static dependencies = {
+    // При изменении продаж/заказов/транзакций/оприходований -> инвалидировать клиентов
+    sales: ['clients', 'projects'],
+    orders: ['clients', 'projects'],
+    transactions: ['clients', 'projects', 'cashRegisters'],
+    receipts: ['clients'], // поставщики тоже клиенты
+    writeoffs: [],
+    movements: [],
+    transfers: ['cashRegisters'], // переводы между кассами
+    invoices: [], // счета не влияют на баланс напрямую
+  };
+
+  /**
    * Инвалидировать кэш по типу данных
    */
   static invalidateByType(type) {
@@ -172,6 +190,9 @@ export default class CacheInvalidator {
     if (companyId) {
       this.invalidateByCompany(companyId);
     }
+    
+    // Инвалидировать зависимые типы
+    this.invalidateDependencies(type, companyId);
   }
 
   /**
@@ -182,6 +203,9 @@ export default class CacheInvalidator {
     if (companyId) {
       this.invalidateByCompany(companyId);
     }
+    
+    // Инвалидировать зависимые типы
+    this.invalidateDependencies(type, companyId);
   }
 
   /**
@@ -192,6 +216,24 @@ export default class CacheInvalidator {
     if (companyId) {
       this.invalidateByCompany(companyId);
     }
+    
+    // Инвалидировать зависимые типы
+    this.invalidateDependencies(type, companyId);
+  }
+
+  /**
+   * Инвалидировать зависимые типы кэша
+   */
+  static invalidateDependencies(type, companyId = null) {
+    const dependentTypes = this.dependencies[type] || [];
+    
+    dependentTypes.forEach(dependentType => {
+      console.log(`[CacheInvalidator] Инвалидация зависимого типа "${dependentType}" из-за изменения "${type}"`);
+      this.invalidateByType(dependentType);
+      if (companyId) {
+        this.invalidateByCompany(companyId);
+      }
+    });
   }
 
   /**

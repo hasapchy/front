@@ -27,6 +27,7 @@ import i18n from "./i18n";
 import AuthController from "./api/AuthController";
 import { setStore } from "./store/storeManager";
 import soundManager from "./utils/soundUtils";
+import { formatNumber, formatCurrency } from "./utils/numberUtils";
 
 async function bootstrapApp() {
   const token = localStorage.getItem("token");
@@ -51,7 +52,13 @@ async function bootstrapApp() {
   // Запускаем системы кэширования
   store.dispatch('initCacheSystems');
 
-  createApp(App).use(router).use(store).use(i18n).mount("#app");
+  const app = createApp(App);
+  
+  // Глобальные методы для форматирования чисел
+  app.config.globalProperties.$formatNumber = formatNumber;
+  app.config.globalProperties.$formatCurrency = formatCurrency;
+  
+  app.use(router).use(store).use(i18n).mount("#app");
 }
 
 bootstrapApp();

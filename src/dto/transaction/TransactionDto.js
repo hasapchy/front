@@ -1,4 +1,5 @@
 import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { formatCurrency } from "@/utils/numberUtils";
 
 export default class TransactionDto {
   constructor(
@@ -113,11 +114,11 @@ export default class TransactionDto {
     } else {
       res += ' class="text-[#EE4F47] font-semibold"> -';
     }
-    res += `${this.cashAmount} ${this.cashCurrencySymbol}</span>`;
+    res += `${formatCurrency(this.cashAmount, this.cashCurrencySymbol)}</span>`;
     return res;
   }
   origAmountData() {
-    return `${this.origAmount} ${this.origCurrencySymbol}`;
+    return formatCurrency(this.origAmount, this.origCurrencySymbol);
   }
 
   formatDate() {

@@ -17,8 +17,10 @@
             <div class="ml-2">
                 <select v-model="typeFilter" @change="() => fetchItems(1)">
                     <option value="">{{ $t('allTypes') }}</option>
-                    <option value="company">{{ $t('company') }}</option>
                     <option value="individual">{{ $t('individual') }}</option>
+                    <option value="company">{{ $t('company') }}</option>
+                    <option value="employee">{{ $t('employee') }}</option>
+                    <option value="investor">{{ $t('investor') }}</option>
                 </select>
             </div>
 

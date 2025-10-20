@@ -1,4 +1,5 @@
 import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { formatNumber, formatCurrency } from "@/utils/numberUtils";
 import "dayjs/locale/ru";
 
 export default class ProjectDto {
@@ -152,17 +153,17 @@ export default class ProjectDto {
   // Получить отображение бюджета с двумя валютами
   getBudgetDisplay() {
     if (!this.currencyId || !this.currency) {
-      return this.budget; // Если валюта не выбрана, возвращаем только бюджет
+      return formatNumber(this.budget); // Если валюта не выбрана, возвращаем только бюджет
     }
     
     // Если валюта дефолтная (манат), показываем только бюджет
     if (this.currency.is_default) {
-      return `${this.budget} ${this.currency.symbol}`;
+      return formatCurrency(this.budget, this.currency.symbol);
     }
     
     // Для не-дефолтной валюты показываем бюджет в валюте и эквивалент в манатах
     const budgetInManat = this.getBudgetInManat();
-    return `${this.budget} ${this.currency.symbol} (${budgetInManat} TMT)`;
+    return `${formatCurrency(this.budget, this.currency.symbol)} (${formatNumber(budgetInManat)} TMT)`;
   }
 
   static fromArray(dataArray) {

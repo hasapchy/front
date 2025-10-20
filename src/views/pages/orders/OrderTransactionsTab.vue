@@ -55,6 +55,7 @@ export default {
                 { name: 'amount', label: 'Сумма', html: true },
                 { name: 'cashName', label: 'Касса' },
                 { name: 'date', label: 'Дата' },
+                { name: 'userName', label: 'Пользователь' },
             ]
         }
     },
@@ -125,6 +126,8 @@ export default {
                     return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
                 case 'date':
                     return i.formatDate?.() || '-';
+                case 'userName':
+                    return i.userName || '-';
                 default:
                     return i[c];
             }

@@ -234,7 +234,8 @@ export default {
                     formatAmountWithColor() {
                         const val = parseFloat(item.amount);
                         const color = val >= 0 ? "#5CB85C" : "#EE4F47";
-                        return `<span style="color:${color};font-weight:bold">${val.toFixed(2)} ${self.currencyCode}</span>`;
+                        const formatted = self.$formatNumber(val, 2, true);
+                        return `<span style="color:${color};font-weight:bold">${formatted} ${self.currencyCode}</span>`;
                     },
                     label() {
                         switch (item.source) {
@@ -375,15 +376,15 @@ export default {
             }
         },
         formatBalance(balance) {
-            return `${balance.toFixed(2)} ${this.currencyCode}`;
+            return `${this.$formatNumber(balance, 2, true)} ${this.currencyCode}`;
         },
     },
     computed: {
         totalIncomeDisplay() {
-            return `${this.totalIncome.toFixed(2)} ${this.currencyCode}`;
+            return `${this.$formatNumber(this.totalIncome, 2, true)} ${this.currencyCode}`;
         },
         totalExpenseDisplay() {
-            return `${this.totalExpense.toFixed(2)} ${this.currencyCode}`;
+            return `${this.$formatNumber(this.totalExpense, 2, true)} ${this.currencyCode}`;
         }
     },
     watch: {

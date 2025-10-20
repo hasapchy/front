@@ -40,7 +40,7 @@
                                 'text-orange-600': balance.type === 'project_income',
                                 'font-bold text-sm': true
                             }" class="leading-tight">
-                                <div class="balance-amount text-base">{{ Number(balance.value).toFixed(0) }}</div>
+                                <div class="balance-amount text-base">{{ $formatNumber(balance.value, 0, false) }}</div>
                             </div>
                         </div>
                     </div>

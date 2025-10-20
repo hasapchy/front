@@ -1,4 +1,5 @@
 import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { formatCurrency } from "@/utils/numberUtils";
 
 export default class TransferDto {
     constructor(id, cashFromId, cashFromName, currencyFromId, currencyFromName, currencyFromCode, currencyFromSymbol, cashToId, cashToName, currencyToId, currencyToName, currencyToCode, currencyToSymbol, amount, userId, userName, date = null, note = null) {
@@ -24,7 +25,7 @@ export default class TransferDto {
 
     amountDescription() {
         var res = '<i class="fas fa-right-long text-[#EE4F47] mr-2"></i>';
-        res += `<span class="font-semibold">${this.amount} ${this.currencyFromSymbol}</span>`;
+        res += `<span class="font-semibold">${formatCurrency(this.amount, this.currencyFromSymbol)}</span>`;
         res += '<i class="fas fa-right-long text-[#5CB85C] ml-2"></i>';
         return res;
     }

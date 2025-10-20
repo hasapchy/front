@@ -256,6 +256,11 @@ export default {
             if (this.allCashRegisters.length > 0 && !this.cashId) {
                 this.cashId = this.allCashRegisters[0].id;
             }
+            // Если касса не выбрана, берем дефолтную валюту из Store
+            const defaultCurrency = (this.currencies || []).find((c) => c.is_default);
+            if (!this.currencyId && defaultCurrency) {
+                this.currencyId = defaultCurrency.id;
+            }
         }
     },
     mounted() {
@@ -750,6 +755,11 @@ export default {
                     const selectedCash = newCashRegisters.find(c => c.id == this.cashId);
                     if (selectedCash?.currency_id) {
                         this.currencyId = selectedCash.currency_id;
+                    } else {
+                        const defaultCurrency = (this.currencies || []).find(c => c.is_default);
+                        if (defaultCurrency) {
+                            this.currencyId = defaultCurrency.id;
+                        }
                     }
                 }
             },
@@ -774,6 +784,20 @@ export default {
                     }
                     
                     this.selectedClient = newEditingItem.client || null;
+                    // Обновляем баланс клиента из Store/API при редактировании
+                    if (this.selectedClient?.id) {
+                        const storeClients = (this.$store && this.$store.getters && this.$store.getters.clients) ? this.$store.getters.clients : [];
+                        const clientFromStore = storeClients.find(c => c.id === this.selectedClient.id);
+                        if (clientFromStore) {
+                            this.selectedClient = clientFromStore;
+                        }
+                        // Подтверждаем актуальный баланс с сервера
+                        import('@/api/ClientController').then(({ default: ClientController }) => {
+                            ClientController.getItem(this.selectedClient.id).then(fresh => {
+                                this.selectedClient = fresh;
+                            }).catch(() => {});
+                        });
+                    }
                     this.projectId = newEditingItem.projectId || newEditingItem.project_id || '';
                     this.warehouseId = newEditingItem.warehouseId || (this.allWarehouses.length ? this.allWarehouses[0].id : '');
                     this.cashId = newEditingItem.cashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');

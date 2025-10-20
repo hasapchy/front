@@ -1,4 +1,5 @@
 import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { formatCurrency } from "@/utils/numberUtils";
 import ClientDto from "../client/ClientDto";
 import WarehouseReceiptProductDto from "./WarehouseReceiptProductDto";
 
@@ -74,7 +75,7 @@ export default class WarehouseReceiptDto {
     const symbol = this.currencySymbol || "m"; // По умолчанию "m" (манат)
 
     const total = this.totalPrice ?? this.amount ?? this.price ?? 0;
-    return `${total} ${symbol}`;
+    return formatCurrency(total, symbol);
   }
 
   formatDate() {

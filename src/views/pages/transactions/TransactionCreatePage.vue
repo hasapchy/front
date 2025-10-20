@@ -220,10 +220,21 @@ export default {
             // ✅ Загружаем проекты в Store если их там нет
             await this.$store.dispatch('loadProjects');
             
+            // ✅ При открытии существующей транзакции подтягиваем актуальный баланс клиента
+            if (this.selectedClient?.id) {
+                await this.updateClientBalance();
+            }
+
             if (!this.editingItem) {
                 if (this.allCashRegisters.length > 0 && !this.cashId) {
                     this.cashId = this.allCashRegisters[0].id;
                     this.currencyId = this.allCashRegisters[0].currency_id;
+                } else {
+                    // Если касса не выбрана, используем дефолтную валюту из Store
+                    const defaultCurrency = (this.currencies || []).find(c => c.is_default);
+                    if (defaultCurrency && !this.currencyId) {
+                        this.currencyId = defaultCurrency.id;
+                    }
                 }
                 
                 // Устанавливаем предзаполненную сумму если она есть
@@ -387,6 +398,13 @@ export default {
         async updateClientBalance() {
             if (this.selectedClient && this.selectedClient.id) {
                 try {
+                    // Сначала пробуем взять актуального клиента из Store (мгновенно, без сети)
+                    const storeClients = (this.$store && this.$store.getters && this.$store.getters.clients) ? this.$store.getters.clients : [];
+                    const clientFromStore = storeClients.find(c => c.id === this.selectedClient.id);
+                    if (clientFromStore) {
+                        this.selectedClient = clientFromStore;
+                    }
+                    // Затем подтверждаем баланс прямым запросом к API (обновит при расхождении)
                     const updatedClient = await ClientController.getItem(this.selectedClient.id);
                     this.selectedClient = updatedClient;
                 } catch (error) {
@@ -518,6 +536,12 @@ export default {
                 const cash = this.allCashRegisters.find(c => c.id === newCashId);
                 if (cash?.currency_id) {
                     this.currencyId = cash.currency_id;
+                } else {
+                    // Если у кассы нет валюты — подставляем дефолтную валюту из Store
+                    const defaultCurrency = (this.currencies || []).find(c => c.is_default);
+                    if (defaultCurrency) {
+                        this.currencyId = defaultCurrency.id;
+                    }
                 }
             }
         },
@@ -548,6 +572,10 @@ export default {
                     this.selectedClient = newEditingItem.client || this.initialClient || null;
                     this.editingItemId = newEditingItem.id || null;
                     this.isDebt = newEditingItem.isDebt || false;
+                    // ✅ Обновляем данные клиента, чтобы был актуальный баланс
+                    if (this.selectedClient?.id) {
+                        this.updateClientBalance();
+                    }
                 } else {
                     // При создании новой транзакции устанавливаем значения по умолчанию
                     this.type = "income";
@@ -587,6 +615,13 @@ export default {
         // ✅ allProjects теперь computed property, не нужен watcher
         '$store.state.currencies'(newVal) {
             this.currencies = newVal;
+            // Если валюта не выбрана и касса не выбрана/не определяет валюту — берём дефолтную валюту из Store
+            if (!this.currencyId) {
+                const defaultCurrency = (this.currencies || []).find(c => c.is_default);
+                if (defaultCurrency && (!this.cashId || !this.allCashRegisters.find(c => c.id == this.cashId)?.currency_id)) {
+                    this.currencyId = defaultCurrency.id;
+                }
+            }
         },
         '$store.state.transactionCategories'(newVal) {
             this.allCategories = newVal;

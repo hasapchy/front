@@ -198,6 +198,14 @@ export default {
   infiniteScroll: 'Infinite scroll',
   
   allClients: 'All Clients',
+  individual: 'Individual',
+  company: 'Company',
+  employee: 'Employee',
+  investor: 'Investor',
+  selectEmployee: 'Select Employee',
+  firstName: 'First Name',
+  lastName: 'Last Name',
+  contactPerson: 'Contact Person',
   
   // Contracts
   contracts: 'Contracts',

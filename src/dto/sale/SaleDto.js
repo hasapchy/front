@@ -1,4 +1,5 @@
 import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { formatCurrency } from "@/utils/numberUtils";
 
 export default class SaleDto {
   constructor(
@@ -59,10 +60,10 @@ export default class SaleDto {
     const isDiscount = this.discount > 0;
 
     if (!isDiscount) {
-      return `${this.totalPrice} ${symbol}`;
+      return formatCurrency(this.totalPrice, symbol);
     }
 
-    return `${this.totalPrice} ${symbol} (скидка: ${this.discount} ${symbol})`;
+    return `${formatCurrency(this.totalPrice, symbol)} (скидка: ${formatCurrency(this.discount, symbol)})`;
   }
 
   productsHtmlList() {

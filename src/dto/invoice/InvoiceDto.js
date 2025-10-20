@@ -1,4 +1,5 @@
 import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { formatCurrency } from "@/utils/numberUtils";
 
 export default class InvoiceDto {
   constructor(
@@ -39,7 +40,7 @@ export default class InvoiceDto {
     const currencySymbol = this.orders && this.orders.length > 0 
       ? this.orders[0].currencySymbol || 'Нет валюты'
       : 'Нет валюты';
-    return `${this.totalAmount} ${currencySymbol}`;
+    return formatCurrency(this.totalAmount, currencySymbol);
   }
 
   productsHtmlList() {

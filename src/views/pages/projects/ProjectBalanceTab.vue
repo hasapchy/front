@@ -169,11 +169,11 @@ export default {
     computed: {
         balanceFormatted() {
             const balance = typeof this.balance === 'number' ? this.balance : 0;
-            return balance.toFixed(2);
+            return this.$formatNumber(balance, 2, true);
         },
         budgetFormatted() {
             const budget = parseFloat(this.budget) || 0;
-            return budget.toFixed(2);
+            return this.$formatNumber(budget, 2, true);
         },
         budgetDisplay() {
             if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
@@ -204,10 +204,10 @@ export default {
                 .reduce((sum, item) => sum + parseFloat(item.amount), 0));
         },
         totalIncomeFormatted() {
-            return this.totalIncome.toFixed(2);
+            return this.$formatNumber(this.totalIncome, 2, true);
         },
         totalExpenseFormatted() {
-            return this.totalExpense.toFixed(2);
+            return this.$formatNumber(this.totalExpense, 2, true);
         },
         totalIncomeDisplay() {
             if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
@@ -232,7 +232,7 @@ export default {
     },
     methods: {
         formatBalance(balance) {
-            const formattedBalance = (balance || 0).toFixed(2);
+            const formattedBalance = this.$formatNumber(balance || 0, 2, true);
             if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
                 return `${formattedBalance} ${this.currencyCode}`;
             }
@@ -301,12 +301,15 @@ export default {
                                 
                                 // Если валюта кассы отличается от валюты проекта, показываем исходную сумму в скобках
                                 if (originalSymbol !== projectCurrency) {
-                                    return `<span style="color:${color};font-weight:bold">${val.toFixed(2)} ${projectCurrency} (${originalAmount.toFixed(2)} ${originalSymbol})</span>`;
+                                    const formattedVal = self.$formatNumber(val, 2, true);
+                                    const formattedOrig = self.$formatNumber(originalAmount, 2, true);
+                                    return `<span style="color:${color};font-weight:bold">${formattedVal} ${projectCurrency} (${formattedOrig} ${originalSymbol})</span>`;
                                 }
                             }
                             
                             // Для всех случаев показываем сумму в валюте проекта
-                            return `<span style="color:${color};font-weight:bold">${val.toFixed(2)} ${projectCurrency}</span>`;
+                            const formattedVal = self.$formatNumber(val, 2, true);
+                            return `<span style="color:${color};font-weight:bold">${formattedVal} ${projectCurrency}</span>`;
                         },
                         label() {
                             switch (item.source) {

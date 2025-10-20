@@ -11,6 +11,17 @@
           <select v-model="clientType">
             <option value="individual">{{ $t('individual') }}</option>
             <option value="company">{{ $t('company') }}</option>
+            <option value="employee">{{ $t('employee') }}</option>
+            <option value="investor">{{ $t('investor') }}</option>
+          </select>
+        </div>
+        <div v-if="clientType === 'employee' || clientType === 'investor'">
+          <label class="required">{{ $t('selectEmployee') }}</label>
+          <select v-model="employeeId" required>
+            <option :value="null">{{ $t('selectEmployee') }}</option>
+            <option v-for="user in users" :key="user.id" :value="user.id">
+              {{ user.name }}
+            </option>
           </select>
         </div>
         <div>
@@ -136,6 +147,7 @@ export default {
       lastName: this.editingItem ? this.editingItem.lastName : "",
       contactPerson: this.editingItem ? this.editingItem.contactPerson : "",
       clientType: this.editingItem ? this.editingItem.clientType : "individual",
+      employeeId: this.editingItem ? this.editingItem.employeeId : null,
       address: this.editingItem ? this.editingItem.address : "",
       note: this.editingItem ? this.editingItem.note : "",
       status: this.editingItem ? this.editingItem.status : true,
@@ -166,6 +178,9 @@ export default {
         ...tab,
         label: this.$t(tab.label)
       }));
+    },
+    users() {
+      return this.$store.getters.users || [];
     }
   },
   mounted() {
@@ -195,6 +210,7 @@ export default {
         lastName: this.lastName,
         contactPerson: this.contactPerson,
         clientType: this.clientType,
+        employeeId: this.employeeId,
         address: this.address,
         note: this.note,
         status: this.status,
@@ -243,6 +259,7 @@ export default {
           last_name: this.lastName,
           contact_person: this.contactPerson,
           client_type: this.clientType,
+          employee_id: this.employeeId,
           address: this.address,
           note: this.note,
           status: this.status,
@@ -293,6 +310,7 @@ export default {
       this.lastName = "";
       this.contactPerson = "";
       this.clientType = "individual";
+      this.employeeId = null;
       this.address = "";
       this.note = "";
       this.status = true;
@@ -326,6 +344,7 @@ export default {
           this.lastName = newEditingItem.lastName || "";
           this.contactPerson = newEditingItem.contactPerson || "";
           this.clientType = newEditingItem.clientType || "individual";
+          this.employeeId = newEditingItem.employeeId || null;
           this.address = newEditingItem.address || "";
           this.note = newEditingItem.note || "";
           this.status = newEditingItem.status || false;

@@ -1,6 +1,7 @@
 import ClientPhoneDto from "./ClientPhoneDto";
 import ClientEmailDto from "./ClientEmailDto";
 import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { formatNumber } from "@/utils/numberUtils";
 
 // ClientDto описывает структуру клиента
 export default class ClientDto {
@@ -23,7 +24,9 @@ export default class ClientDto {
     emails = [],
     phones = [],
     userId = null,
-    userName = null
+    userName = null,
+    employeeId = null,
+    employee = null
   ) {
     this.id = id; // Идентификатор клиента
     this.clientType = clientType; // Тип клиента
@@ -42,6 +45,8 @@ export default class ClientDto {
     this.updatedAt = updatedAt; // Дата обновления клиента
     this.userId = userId; // ID пользователя, создавшего клиента
     this.userName = userName; // Имя пользователя, создавшего клиента
+    this.employeeId = employeeId; // ID сотрудника (для типов employee/investor)
+    this.employee = employee; // Объект сотрудника
     this.emails = (emails || []).map(
       (email) => new ClientEmailDto(email.id, email.client_id, email.email)
     ); // Список email-ов
@@ -51,7 +56,7 @@ export default class ClientDto {
   }
 
   balanceFormatted() {
-    return this.balance.toFixed(2);
+    return formatNumber(this.balance, 2, true);
   }
 
   fullName() {
@@ -65,6 +70,12 @@ export default class ClientDto {
     if (this.clientType === "company") {
       res +=
         '<i class="fas fa-building text-[#3571A4] mr-2" title="Компания"></i>';
+    } else if (this.clientType === "employee") {
+      res +=
+        '<i class="fas fa-id-badge text-[#3571A4] mr-2" title="Сотрудник"></i>';
+    } else if (this.clientType === "investor") {
+      res +=
+        '<i class="fas fa-hand-holding-usd text-[#3571A4] mr-2" title="Инвестор"></i>';
     } else {
       res +=
         '<i class="fas fa-user text-[#3571A4] mr-2" title="Индивидульный клиент"></i>';
@@ -151,7 +162,9 @@ export default class ClientDto {
       data.emails || [],
       data.phones || [],
       data.user_id,
-      data.user?.name || data.user_name
+      data.user?.name || data.user_name,
+      data.employee_id,
+      data.employee
     );
   }
 
@@ -177,7 +190,9 @@ export default class ClientDto {
       data.emails || [],
       data.phones || [],
       data.userId || data.user_id,
-      data.userName || data.user_name
+      data.userName || data.user_name,
+      data.employeeId || data.employee_id,
+      data.employee
     ));
   }
 }
