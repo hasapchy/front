@@ -155,70 +155,49 @@ export default {
         }
     },
     created() {
-        // Проверяем, не загружаются ли уже клиенты
-        if (this.$store.getters.clients.length === 0) {
-            this.fetchLastClients();
-        } else {
-            // Если клиенты уже загружены, просто используем их
-            this.lastClients = this.$store.getters.clients
-                .filter((client) => client.status === true)
-                .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
-                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                .slice(0, 10);
-        }
+        // Загружаем последних клиентов напрямую из API
+        this.fetchLastClients();
     },
     emits: ['update:selectedClient'],
     methods: {
         async fetchLastClients() {
-            // Всегда загружаем данные заново, не полагаемся на проверку длины
-            await this.$store.dispatch('loadClients');
-            
-            // Ждем пока данные появятся в store (максимум 3 секунды)
-            let attempts = 0;
-            while (this.$store.getters.clients.length === 0 && attempts < 30) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
+            try {
+                // Загружаем всех клиентов напрямую из API
+                const allClients = await ClientController.getAllItems();
+                
+                // Фильтруем и сортируем
+                this.lastClients = allClients
+                    .filter((client) => client.status === true) // только активные
+                    .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
+                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                    .slice(0, 10);
+            } catch (error) {
+                console.error('Ошибка при загрузке последних клиентов:', error);
+                this.lastClients = [];
             }
-            
-            const allClients = this.$store.getters.clients;
-            
-            this.lastClients = allClients
-                .filter((client) => client.status === true) // только активные
-                .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
-                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                .slice(0, 10);
         },
-                 searchClients: debounce(async function () {
-             if (this.clientSearch.length >= 3) {
-                 this.clientSearchLoading = true;
-                 try {
-                     // Используем данные из store вместо API запроса
-                     await this.$store.dispatch('loadClients');
-                     const allClients = this.$store.getters.clients;
-                     
-                     // Фильтруем клиентов по поисковому запросу
-                     const searchTerm = this.clientSearch.toLowerCase();
-                     const results = allClients.filter(client => {
-                         return client.firstName?.toLowerCase().includes(searchTerm) ||
-                                client.lastName?.toLowerCase().includes(searchTerm) ||
-                                client.contactPerson?.toLowerCase().includes(searchTerm) ||
-                                client.phones?.some(phone => phone.phone?.includes(searchTerm)) ||
-                                client.emails?.some(email => email.email?.toLowerCase().includes(searchTerm));
-                     });
-                     
-                     this.clientResults = this.onlySuppliers
-                         ? results.filter((client) => client.isSupplier)
-                         : results;
-                     
+        searchClients: debounce(async function () {
+            if (this.clientSearch.length >= 3) {
+                this.clientSearchLoading = true;
+                try {
+                    // Используем прямой API запрос для поиска
+                    const results = await ClientController.search(this.clientSearch);
+                    
+                    // Фильтруем по поставщикам если нужно
+                    this.clientResults = this.onlySuppliers
+                        ? results.filter((client) => client.isSupplier)
+                        : results;
+                    
                 } catch (error) {
+                    console.error('Ошибка при поиске клиентов:', error);
                     this.clientResults = [];
-                 } finally {
-                     this.clientSearchLoading = false;
-                 }
-             } else {
-                 this.clientResults = [];
-             }
-         }, 250),
+                } finally {
+                    this.clientSearchLoading = false;
+                }
+            } else {
+                this.clientResults = [];
+            }
+        }, 250),
         async selectClient(client) {
             this.showDropdown = false;
             this.clientSearch = '';
