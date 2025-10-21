@@ -76,3 +76,31 @@ export function parseFormattedNumber(formattedValue) {
   return isNaN(num) ? 0 : num;
 }
 
+/**
+ * Форматирует количество (quantity) с 2 знаками после запятой
+ * @param {number|string} value - Количество для форматирования
+ * @returns {string} - Отформатированное количество
+ * 
+ * Примеры:
+ * formatQuantity(10) => "10.00"
+ * formatQuantity(10.5) => "10.50"
+ * formatQuantity(10.567) => "10.57"
+ */
+export function formatQuantity(value) {
+  // Проверяем на пустое значение
+  if (value === null || value === undefined || value === '') {
+    return '0.00';
+  }
+
+  // Преобразуем в число
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  
+  // Проверяем, является ли значение числом
+  if (isNaN(num)) {
+    return '0.00';
+  }
+
+  // Возвращаем число с 2 знаками после запятой
+  return num.toFixed(2);
+}
+

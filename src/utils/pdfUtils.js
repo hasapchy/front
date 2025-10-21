@@ -1,5 +1,6 @@
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
+import { formatQuantity } from './numberUtils';
 
 // Устанавливаем шрифты
 if (pdfFonts && pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
@@ -84,7 +85,7 @@ export class InvoicePdfGenerator {
               { text: (index + 1).toString(), alignment: 'center' },
               { text: product.productName || '' },
             { 
-              text: `${Number(product.quantity)}${product.getUnitName ? product.getUnitName() : (product.unitName || product.unit_name || product.unitShortName || product.unit?.name || 'шт.')}`, 
+              text: `${formatQuantity(product.quantity)} ${product.getUnitName ? product.getUnitName() : (product.unitName || product.unit_name || product.unitShortName || product.unit?.name || 'шт.')}`, 
               alignment: 'center' 
             },
             { 
@@ -420,7 +421,7 @@ export class InvoicePdfGenerator {
           { text: globalIndex.toString(), alignment: 'center' },
           { text: product.productName || '' },
           {
-            text: `${Number(product.quantity)}${product.getUnitName ? product.getUnitName() : (product.unitName || product.unit_name || product.unitShortName || product.unit?.name || 'шт.')}`,
+            text: `${formatQuantity(product.quantity)} ${product.getUnitName ? product.getUnitName() : (product.unitName || product.unit_name || product.unitShortName || product.unit?.name || 'шт.')}`,
             alignment: 'center'
           },
           {

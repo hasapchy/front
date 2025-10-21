@@ -72,6 +72,7 @@ import modalMixin from '@/mixins/modalMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import ProductController from '@/api/ProductController';
 import { eventBus } from '@/eventBus';
+import { formatQuantity } from '@/utils/numberUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, tableTranslationMixin],
@@ -132,7 +133,7 @@ export default {
                 case 'image':
                     return i.productImage ? i.imgUrl() : null;
                 case 'quantity':
-                    return i.quantity + ' ' + i.unitShortName;
+                    return formatQuantity(i.quantity) + ' ' + i.unitShortName;
                 case 'createdAt':
                     return i.formatCreatedAt();
                 default:

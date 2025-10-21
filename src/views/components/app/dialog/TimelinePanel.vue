@@ -114,6 +114,7 @@ import { dayjsDateTime } from '@/utils/dateUtils';
 import CommentController from '@/api/CommentController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import { translateField, formatFieldValue } from '@/utils/fieldTranslations';
+import { formatQuantity } from '@/utils/numberUtils';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 
@@ -238,7 +239,7 @@ export default {
                 case 'amount':
                     return typeof value === 'number' ? `${value.toLocaleString('ru-RU')} ₽` : value;
                 case 'quantity':
-                    return typeof value === 'number' ? value.toString() : value;
+                    return typeof value === 'number' ? formatQuantity(value) : value;
                 case 'created_at':
                 case 'updated_at':
                     return dayjs(value).format('DD.MM.YYYY HH:mm');

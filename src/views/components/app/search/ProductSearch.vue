@@ -102,7 +102,7 @@
                     </td>
                     <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
                         <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right"
-                            :disabled="disabled" min="0.01" @input="updateTotals" />
+                            :disabled="disabled" min="0.01" step="0.01" @input="updateTotals" />
                     </td>
                     <td v-if="showPrice" class="py-2 px-4 border-x border-gray-300">
                         <div class="flex items-center space-x-2">

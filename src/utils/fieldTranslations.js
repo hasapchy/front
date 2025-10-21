@@ -1,3 +1,5 @@
+import { formatQuantity } from './numberUtils';
+
 // Переводы полей для таймлайна
 export const fieldTranslations = {
     'date': 'Дата',
@@ -39,6 +41,11 @@ export function translateField(fieldName) {
 export function formatFieldValue(fieldName, value) {
     if (value === null || value === undefined || value === '') {
         return '—';
+    }
+    
+    // Для количества добавляем форматирование с 2 знаками после запятой
+    if (fieldName === 'quantity') {
+        return formatQuantity(value);
     }
     
     // Для цен добавляем форматирование без валюты
