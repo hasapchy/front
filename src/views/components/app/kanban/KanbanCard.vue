@@ -42,8 +42,19 @@
                 <i class="fas fa-calendar text-gray-400"></i>
                 <span>{{ formatDate(order.date) }}</span>
                 <span class="text-gray-400">•</span>
-                <i class="fas fa-user-circle text-gray-400"></i>
-                <span>{{ order.userName || $t('notSpecified') }}</span>
+                <div class="flex items-center space-x-1">
+                    <!-- Фотография пользователя -->
+                    <div class="w-4 h-4 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                        <img 
+                            v-if="getUserPhotoSrc({ photo: order.user_photo })" 
+                            :src="getUserPhotoSrc({ photo: order.user_photo })" 
+                            :alt="order.userName || $t('notSpecified')"
+                            class="w-full h-full object-cover"
+                        >
+                        <i v-else class="fas fa-user text-gray-400 text-xs"></i>
+                    </div>
+                    <span>{{ order.userName || $t('notSpecified') }}</span>
+                </div>
             </div>
         </div>
 
@@ -80,9 +91,11 @@
 
 <script>
 import { dayjsDateTime } from '@/utils/dateUtils';
+import userPhotoMixin from '@/mixins/userPhotoMixin';
 
 export default {
     name: 'KanbanCard',
+    mixins: [userPhotoMixin],
     props: {
         order: {
             type: Object,
