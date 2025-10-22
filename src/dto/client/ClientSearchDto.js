@@ -64,7 +64,7 @@ export default class ClientSearchDto {
     return new ClientSearchDto(
       data.id,
       data.client_type,
-      data.balance_amount || 0,
+      data.balance || 0,
       data.is_supplier,
       data.is_conflict,
       data.first_name,

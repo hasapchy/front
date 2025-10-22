@@ -28,7 +28,7 @@ export default class ProjectController {
           client = new ClientDto(
             item.client.id,
             item.client.client_type,
-            item.client.balance?.balance || 0,
+            item.client.balance || 0,
             item.client.is_supplier,
             item.client.is_conflict,
             item.client.first_name,
@@ -111,7 +111,7 @@ export default class ProjectController {
           client = new ClientDto(
             item.client.id,
             item.client.client_type,
-            item.client.balance?.balance || 0,
+            item.client.balance || 0,
             item.client.is_supplier,
             item.client.is_conflict,
             item.client.first_name,
@@ -182,7 +182,7 @@ export default class ProjectController {
           client = new ClientDto(
             item.client.id,
             item.client.client_type,
-            item.client.balance?.balance || 0,
+            item.client.balance || 0,
             item.client.is_supplier,
             item.client.is_conflict,
             item.client.first_name,
@@ -250,7 +250,7 @@ export default class ProjectController {
       const client = item.client ? new ClientDto(
         item.client.id,
         item.client.client_type,
-        item.client.balance?.balance || 0,
+        item.client.balance || 0,
         item.client.is_supplier,
         item.client.is_conflict,
         item.client.first_name,

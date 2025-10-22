@@ -30,7 +30,7 @@
                 <input 
                     type="checkbox" 
                     v-model="isDebt" 
-                    :disabled="!!editingItemId"
+                    @change="handleDebtChange"
                 />
                 <span class="ml-2">{{ $t('debtOperation') }}</span>
             </label>
@@ -180,7 +180,7 @@ export default {
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
-            orderInfo: null
+            orderInfo: null,
 
         }
     },
@@ -237,6 +237,11 @@ export default {
         });
     },
     methods: {
+        // Обработчик изменения чекбокса "Долг" - только для отслеживания изменений
+        handleDebtChange() {
+            // Просто отмечаем изменение формы - сохранение произойдет при нажатии "Сохранить"
+            // Никаких API вызовов не делаем
+        },
         getFormState() {
             return {
                 selectedClient: this.selectedClient?.id || null,
@@ -247,7 +252,8 @@ export default {
                 categoryId: this.categoryId,
                 cashId: this.cashId,
                 currencyId: this.currencyIdComputed,
-                projectId: this.projectId
+                projectId: this.projectId,
+                isDebt: this.isDebt
             };
         },
         async fetchCurrencies() {

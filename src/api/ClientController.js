@@ -17,7 +17,7 @@ export default class ClientController {
       return new ClientDto(
         item.id,
         item.client_type,
-        item.balance_amount || 0,
+        item.balance || 0,
         item.is_supplier,
         item.is_conflict,
         item.first_name,
@@ -68,7 +68,7 @@ export default class ClientController {
         return new ClientDto(
           item.id,
           item.client_type,
-          item.balance_amount || 0,
+          item.balance || 0,
           item.is_supplier,
           item.is_conflict,
           item.first_name,
@@ -116,7 +116,7 @@ export default class ClientController {
         return new ClientSearchDto(
           item.id,
           item.client_type,
-          item.balance_amount || 0,
+          item.balance || 0,
           item.is_supplier,
           item.is_conflict,
           item.first_name,
@@ -146,7 +146,7 @@ export default class ClientController {
         return new ClientDto(
           item.id,
           item.client_type,
-          item.balance_amount || 0,
+          item.balance || 0,
           item.is_supplier,
           item.is_conflict,
           item.first_name,

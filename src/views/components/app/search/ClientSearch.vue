@@ -139,7 +139,7 @@ export default {
             if (typeof this.selectedClient.balanceFormatted === 'function') {
                 return this.selectedClient.balanceFormatted();
             }
-            const balance = this.selectedClient.balance || this.selectedClient.balance_amount || 0;
+            const balance = this.selectedClient.balance || 0;
             return parseFloat(balance).toFixed(2);
         },
         clientPhones() {

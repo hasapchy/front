@@ -146,7 +146,7 @@ export default class ClientDto {
     return new ClientDto(
       data.id,
       data.client_type,
-      data.balance_amount || 0,
+      data.balance,
       data.is_supplier,
       data.is_conflict,
       data.first_name,
@@ -174,7 +174,7 @@ export default class ClientDto {
     return dataArray.map(data => new ClientDto(
       data.id,
       data.clientType || data.client_type,
-      data.balance || data.balance_amount || 0,
+      data.balance,
       data.isSupplier || data.is_supplier,
       data.isConflict || data.is_conflict,
       data.firstName || data.first_name,

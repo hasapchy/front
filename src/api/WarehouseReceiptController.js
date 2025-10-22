@@ -14,8 +14,8 @@ export default class WarehouseReceiptController {
         // Маппинг клиента (поставщика) - используем supplier из eager loading
         var client = null;
         if (item.supplier) {
-          // Баланс хранится в отдельной таблице client_balances
-          const balance = item.supplier.balance?.balance || 0;
+          // Баланс теперь хранится в колонке clients.balance
+          const balance = item.supplier.balance || 0;
           
           client = new ClientDto(
             item.supplier.id,
