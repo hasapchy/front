@@ -30,13 +30,9 @@
                 <input 
                     type="checkbox" 
                     v-model="isDebt" 
-                    @change="handleDebtChange"
-                    :disabled="debtSaving"
+                    :disabled="!!editingItemId"
                 />
                 <span class="ml-2">{{ $t('debtOperation') }}</span>
-                <span v-if="debtSaving" class="ml-2 text-gray-500">
-                    <i class="fas fa-spinner fa-spin"></i>
-                </span>
             </label>
         </div>
         <div class="flex items-center space-x-2">
@@ -184,8 +180,7 @@ export default {
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
-            orderInfo: null,
-            debtSaving: false,
+            orderInfo: null
 
         }
     },
@@ -242,29 +237,6 @@ export default {
         });
     },
     methods: {
-        // Обработчик изменения чекбокса "Долг" - сохраняет сразу при редактировании
-        async handleDebtChange() {
-            // Если это редактирование существующей транзакции
-            if (this.editingItemId) {
-                this.debtSaving = true;
-                try {
-                    await TransactionController.updateDebtStatus(
-                        this.editingItemId,
-                        this.isDebt
-                    );
-                    // Уведомление об успехе (опционально)
-                    this.$emit('saved', { message: 'Статус долга обновлён' });
-                } catch (error) {
-                    // Откатываем значение при ошибке
-                    this.isDebt = !this.isDebt;
-                    this.$emit('saved-error', this.getApiErrorMessage(error));
-                } finally {
-                    this.debtSaving = false;
-                }
-            }
-            // Если это создание новой транзакции - ничего не делаем, 
-            // значение сохранится при общем сохранении
-        },
         getFormState() {
             return {
                 selectedClient: this.selectedClient?.id || null,

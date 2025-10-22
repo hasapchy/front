@@ -154,9 +154,19 @@ export default {
             return defaultCurrency ? defaultCurrency.symbol : '';
         }
     },
-    created() {
+    async created() {
         // Загружаем последних клиентов напрямую из API
         this.fetchLastClients();
+        
+        // Если клиент уже выбран (при редактировании), обновляем его данные
+        if (this.selectedClient && this.selectedClient.id) {
+            try {
+                const updatedClient = await ClientController.getItem(this.selectedClient.id);
+                this.$emit('update:selectedClient', updatedClient);
+            } catch (error) {
+                console.error('Ошибка при обновлении данных клиента:', error);
+            }
+        }
     },
     emits: ['update:selectedClient'],
     methods: {

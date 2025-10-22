@@ -1,7 +1,8 @@
 <template>
     <transition name="fade" mode="out-in">
-        <div v-if="data != null && !loading" key="table">
-            <div v-if="hasDebts" class="flex flex-col gap-3 items-end">
+        <div v-if="(data != null || clientDebts != null) && !loading" key="table" class="flex flex-col gap-3 items-end">
+            <!-- Долги по кассам -->
+            <div v-if="hasDebts" class="flex flex-col gap-3">
                 <div v-for="item in dataWithDebts" :key="item.id" 
                      class="bg-white p-3 rounded-lg shadow-md border-l-4 border-orange-500 min-w-[200px] cursor-pointer clickable-debt transition-all duration-200"
                      @click="handleDebtClick"
@@ -23,6 +24,29 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Долги клиентов -->
+            <div v-if="hasClientDebts" class="bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-500 min-w-[250px]">
+                <div class="text-center mb-3">
+                    <span class="text-sm font-semibold">{{ $t('clientDebts') }}</span>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-gray-600">{{ $t('oweUs') }}:</span>
+                        <span class="text-green-600 font-bold">{{ $formatNumber(clientDebts.positive, 2) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-gray-600">{{ $t('weOwe') }}:</span>
+                        <span class="text-red-600 font-bold">{{ $formatNumber(clientDebts.negative, 2) }}</span>
+                    </div>
+                    <div class="border-t pt-2 flex justify-between items-center">
+                        <span class="text-sm font-semibold">{{ $t('balance') }}:</span>
+                        <span class="font-bold text-base" :class="clientDebts.balance >= 0 ? 'text-green-600' : 'text-red-600'">
+                            {{ $formatNumber(clientDebts.balance, 2) }}
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-20">
             <i class="fas fa-spinner fa-spin text-2xl"></i><br>
@@ -32,6 +56,7 @@
 
 <script>
 import CashRegisterController from '@/api/CashRegisterController';
+import TransactionController from '@/api/TransactionController';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 
@@ -49,6 +74,7 @@ export default {
     data() {
         return {
             data: null,
+            clientDebts: null,
             loading: false,
         };
     },
@@ -68,6 +94,9 @@ export default {
         },
         hasDebts() {
             return this.dataWithDebts.length > 0;
+        },
+        hasClientDebts() {
+            return this.clientDebts && (this.clientDebts.positive !== 0 || this.clientDebts.negative !== 0);
         }
     },
     mounted() {
@@ -139,12 +168,44 @@ export default {
                     }
                 });
 
+                // Загружаем долги по кассам
                 this.data = await CashRegisterController.getCashBalance(
                     cashIds,
                     start,
                     end,
                     params
                 );
+                
+                // Загружаем долги клиентов из транзакций
+                try {
+                    const transactionsData = await TransactionController.getItems(
+                        1, // page
+                        this.cashRegisterId,
+                        this.dateFilter,
+                        null, // order_id
+                        '', // search
+                        this.transactionTypeFilter,
+                        this.sourceFilter,
+                        null, // project_id
+                        1, // per_page - минимум для получения статистики
+                        start,
+                        end,
+                        null // is_debt
+                    );
+                    
+                    // Получаем RAW данные из response
+                    const rawData = transactionsData.response || transactionsData;
+                    if (rawData) {
+                        this.clientDebts = {
+                            positive: rawData.total_debt_positive || 0,
+                            negative: rawData.total_debt_negative || 0,
+                            balance: rawData.total_debt_balance || 0
+                        };
+                    }
+                } catch (error) {
+                    console.error('Ошибка при загрузке долгов клиентов:', error);
+                    this.clientDebts = { positive: 0, negative: 0, balance: 0 };
+                }
             } finally {
                 this.loading = false;
             }

@@ -253,17 +253,18 @@ export default {
                     }
                 }));
                 
-                // Вычисляем приход, расход и баланс - ТОЛЬКО для долговых операций
+                // Вычисляем приход, расход и баланс - ВСЕ операции (не только долговые)
+                // Недолговые (is_debt=false) тоже влияют на отображение истории
                 this.totalIncome = this.balanceHistory
-                    .filter(item => item.is_debt && item.amount > 0)
+                    .filter(item => item.amount > 0)
                     .reduce((sum, item) => sum + parseFloat(item.amount), 0);
                 
                 this.totalExpense = Math.abs(this.balanceHistory
-                    .filter(item => item.is_debt && item.amount < 0)
+                    .filter(item => item.amount < 0)
                     .reduce((sum, item) => sum + parseFloat(item.amount), 0));
                 
+                // Итоговый баланс = сумма ВСЕХ операций
                 this.totalBalance = this.balanceHistory
-                    .filter(item => item.is_debt) // Только долговые операции
                     .reduce((sum, item) => sum + parseFloat(item.amount), 0);
                 
                 this.lastFetchedClientId = this.editingItem.id;

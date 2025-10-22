@@ -60,24 +60,66 @@
         <div class="w-auto ml-auto">
             <transition name="fade" mode="out-in">
                 <div v-if="data != null && !loading" key="table">
-                    <div v-if="hasDebts" class="flex flex-col gap-3 items-end">
-                        <div v-for="item in dataWithDebts" :key="item.id" 
-                             class="bg-white p-3 rounded-lg shadow-md border-l-4 border-orange-500 min-w-[200px] cursor-pointer clickable-debt transition-all duration-200"
-                             @click="handleDebtClick"
-                             :title="$t('clickToFilterDebts')">
-                            <div class="text-center mb-2">
-                                <span class="text-xs font-semibold">
-                                    {{ translateCashRegisterName(item.name) }}
-                                    <span class="text-xs font-bold text-black ml-1">({{ item.currency_symbol || item.currency_code || '' }})</span>
-                                </span>
-                            </div>
-                            <div class="text-center">
-                                <div class="mb-1 flex items-center justify-center space-x-1">
-                                    <span class="text-xs font-medium text-gray-700">{{ $t('debt') }}</span>
-                                    <i class="fas fa-exclamation-triangle text-orange-500 text-xs"></i>
+                    <div class="flex flex-col gap-3 items-end">
+                        <!-- Долги кассы -->
+                        <div v-if="hasDebts">
+                            <div v-for="item in dataWithDebts" :key="item.id" 
+                                 class="bg-white p-3 rounded-lg shadow-md border-l-4 border-orange-500 min-w-[200px] cursor-pointer clickable-debt transition-all duration-200"
+                                 @click="handleDebtClick"
+                                 :title="$t('clickToFilterDebts')">
+                                <div class="text-center mb-2">
+                                    <span class="text-xs font-semibold">
+                                        {{ translateCashRegisterName(item.name) }}
+                                        <span class="text-xs font-bold text-black ml-1">({{ item.currency_symbol || item.currency_code || '' }})</span>
+                                    </span>
                                 </div>
-                                <div class="text-orange-600 font-bold text-sm leading-tight">
-                                    <div class="balance-amount text-base">{{ $formatNumber(item.debtValue, 0, false) }}</div>
+                                <div class="text-center">
+                                    <div class="mb-1 flex items-center justify-center space-x-1">
+                                        <span class="text-xs font-medium text-gray-700">{{ $t('debt') }}</span>
+                                        <i class="fas fa-exclamation-triangle text-orange-500 text-xs"></i>
+                                    </div>
+                                    <div class="text-orange-600 font-bold text-sm leading-tight">
+                                        <div class="balance-amount text-base">{{ $formatNumber(item.debtValue, 0, false) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Долги клиентов -->
+                        <div v-if="hasClientDebts" 
+                             class="bg-white p-3 rounded-lg shadow-md border-l-4 border-blue-500 min-w-[200px]">
+                            <div class="text-center mb-2">
+                                <span class="text-xs font-semibold">{{ $t('clientDebts') }}</span>
+                            </div>
+                            <div class="space-y-2">
+                                <div v-if="clientDebts.positive !== 0" class="text-center">
+                                    <div class="mb-1 flex items-center justify-center space-x-1">
+                                        <span class="text-xs font-medium text-gray-700">{{ $t('oweUs') }}</span>
+                                        <i class="fas fa-arrow-down text-green-500 text-xs"></i>
+                                    </div>
+                                    <div class="text-green-600 font-bold text-sm">
+                                        {{ $formatNumber(clientDebts.positive, 0, false) }}
+                                    </div>
+                                </div>
+                                <div v-if="clientDebts.negative !== 0" class="text-center">
+                                    <div class="mb-1 flex items-center justify-center space-x-1">
+                                        <span class="text-xs font-medium text-gray-700">{{ $t('weOwe') }}</span>
+                                        <i class="fas fa-arrow-up text-red-500 text-xs"></i>
+                                    </div>
+                                    <div class="text-red-600 font-bold text-sm">
+                                        {{ $formatNumber(Math.abs(clientDebts.negative), 0, false) }}
+                                    </div>
+                                </div>
+                                <div v-if="clientDebts.balance !== 0" class="text-center pt-2 border-t border-gray-200">
+                                    <div class="mb-1 flex items-center justify-center space-x-1">
+                                        <span class="text-xs font-medium text-gray-700">{{ $t('итого') }}</span>
+                                    </div>
+                                    <div :class="[
+                                        'font-bold text-sm',
+                                        clientDebts.balance > 0 ? 'text-green-600' : 'text-red-600'
+                                    ]">
+                                        {{ $formatNumber(clientDebts.balance, 0, false) }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -93,6 +135,7 @@
 
 <script>
 import CashRegisterController from '@/api/CashRegisterController';
+import TransactionController from '@/api/TransactionController';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 
@@ -112,6 +155,11 @@ export default {
             data: null,
             loading: false,
             fetchDebounceTimer: null,
+            clientDebts: {
+                positive: 0,
+                negative: 0,
+                balance: 0
+            }
         };
     },
     computed: {
@@ -141,6 +189,9 @@ export default {
         },
         hasDebts() {
             return this.dataWithDebts.length > 0;
+        },
+        hasClientDebts() {
+            return this.clientDebts.positive !== 0 || this.clientDebts.negative !== 0;
         }
     },
     methods: {
@@ -254,6 +305,37 @@ export default {
                     end,
                     params
                 );
+
+                // Загружаем долги клиентов из транзакций
+                try {
+                    const transactionsData = await TransactionController.getItems(
+                        1, // page
+                        this.cashRegisterId,
+                        this.dateFilter,
+                        null, // order_id
+                        '', // search
+                        this.transactionTypeFilter,
+                        this.sourceFilter,
+                        null, // project_id
+                        1, // per_page - минимум для получения статистики
+                        start,
+                        end,
+                        null // is_debt
+                    );
+                    
+                    // Получаем RAW данные из response
+                    const rawData = transactionsData.response || transactionsData;
+                    if (rawData) {
+                        this.clientDebts = {
+                            positive: rawData.total_debt_positive || 0,
+                            negative: rawData.total_debt_negative || 0,
+                            balance: rawData.total_debt_balance || 0
+                        };
+                    }
+                } catch (error) {
+                    console.error('Ошибка при загрузке долгов клиентов:', error);
+                    this.clientDebts = { positive: 0, negative: 0, balance: 0 };
+                }
             } finally {
                 this.loading = false;
             }
