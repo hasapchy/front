@@ -8,6 +8,45 @@ import CACHE_TTL from "@/constants/cacheTTL";
 import createPersistedState from "vuex-persistedstate";
 import { eventBus } from "@/eventBus";
 
+// ✅ Utility для retry с exponential backoff
+async function retryWithExponentialBackoff(fn, maxRetries = 3, initialDelay = 1000) {
+  let lastError;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = initialDelay * Math.pow(2, attempt);
+        console.warn(`⚠️ Попытка ${attempt + 1} не удалась, повторяю через ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw lastError;
+}
+
+// ✅ Listener для синхронизации между вкладками
+function initializeStorageSync(_store) {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'birhasap_vuex_cache') {
+      try {
+        const newState = JSON.parse(e.newValue || '{}');
+        const oldState = JSON.parse(e.oldValue || '{}');
+        
+        // Уведомляем об изменениях
+        if (newState.currentCompany?.id !== oldState.currentCompany?.id) {
+          console.log('📡 Синхронизация: компания изменилась в другой вкладке');
+          eventBus.emit('company-changed', newState.currentCompany?.id);
+        }
+      } catch (error) {
+        console.error('Ошибка синхронизации между вкладками:', error);
+      }
+    }
+  });
+}
+
 const store = createStore({
   state: {
     user: null,
@@ -386,6 +425,8 @@ const store = createStore({
         const data = response.data;
         commit('SET_UNITS', data);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
+        localStorage.setItem('units_timestamp', Date.now().toString());
+        console.log(`⚙️ Единицы (${data.length})`);
       } catch (error) {
         console.error('Ошибка загрузки единиц измерения:', error);
       } finally {
@@ -421,6 +462,8 @@ const store = createStore({
         const data = response.data;
         commit('SET_CURRENCIES', data);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
+        localStorage.setItem('currencies_timestamp', Date.now().toString());
+        console.log(`💱 Валюты (${data.length})`);
       } catch (error) {
         console.error('Ошибка загрузки валют:', error);
       } finally {
@@ -455,6 +498,9 @@ const store = createStore({
         const data = await UsersController.getAllUsers();
         commit('SET_USERS', data);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
+        // ✅ ИСПРАВЛЕНИЕ: сохраняем timestamp для TTL проверки
+        localStorage.setItem('users_timestamp', Date.now().toString());
+        console.log(`👥 Пользователи (${data.length})`);
       } catch (error) {
         console.error('Ошибка загрузки пользователей:', error);
         commit('SET_USERS', []);
@@ -492,7 +538,7 @@ const store = createStore({
       if (state.warehouses.length > 0) {
         // Логируем только один раз
         if (!state.loggedDataFlags.warehouses) {
-          console.log(`📦 Склады (${state.warehouses.length}) - из кэша`);
+          console.log(`  📦 Склады (${state.warehouses.length}) - из кэша`);
           commit('SET_LOGGED_DATA_FLAG', { type: 'warehouses', logged: true });
         }
         return;
@@ -502,15 +548,25 @@ const store = createStore({
       
       try {
         const WarehouseController = (await import('@/api/WarehouseController')).default;
-        const data = await WarehouseController.getAllItems();
+        // ✅ Используем retry с exponential backoff
+        const data = await retryWithExponentialBackoff(
+          () => WarehouseController.getAllItems(),
+          3  // maxRetries
+        );
         commit('SET_WAREHOUSES', data);
-        console.log(`📦 Склады (${data.length})`);
+        console.log(`  📦 Склады (${data.length})`);
         
         // ✅ Явно сохраняем timestamp с привязкой к компании
         localStorage.setItem(timestampKey, Date.now().toString());
       } catch (error) {
-        console.error('Ошибка загрузки складов:', error);
+        console.error('❌ Ошибка загрузки складов после всех попыток:', error);
         commit('SET_WAREHOUSES', []);
+        // Уведомляем пользователя только при окончательной ошибке
+        dispatch('showNotification', {
+          title: 'Ошибка загрузки складов',
+          subtitle: error.message,
+          isDanger: true
+        });
       } finally {
         commit('SET_LOADING_FLAG', { type: 'warehouses', loading: false });
       }
@@ -545,7 +601,7 @@ const store = createStore({
       if (state.cashRegisters.length > 0) {
         // Логируем только один раз
         if (!state.loggedDataFlags.cashRegisters) {
-          console.log(`💰 Кассы (${state.cashRegisters.length}) - из кэша`);
+          console.log(`  💰 Кассы (${state.cashRegisters.length}) - из кэша`);
           commit('SET_LOGGED_DATA_FLAG', { type: 'cashRegisters', logged: true });
         }
         return;
@@ -555,14 +611,24 @@ const store = createStore({
       
       try {
         const CashRegisterController = (await import('@/api/CashRegisterController')).default;
-        const data = await CashRegisterController.getAllItems();
+        // ✅ Используем retry с exponential backoff
+        const data = await retryWithExponentialBackoff(
+          () => CashRegisterController.getAllItems(),
+          3
+        );
         commit('SET_CASH_REGISTERS', data);
-        console.log(`💰 Кассы (${data.length})`);
+        console.log(`  💰 Кассы (${data.length})`);
         
         // ✅ Явно сохраняем timestamp с привязкой к компании
         localStorage.setItem(timestampKey, Date.now().toString());
       } catch (error) {
-        console.error('Ошибка загрузки касс:', error);
+        console.error('❌ Ошибка загрузки касс после всех попыток:', error);
+        commit('SET_CASH_REGISTERS', []);
+        dispatch('showNotification', {
+          title: 'Ошибка загрузки касс',
+          subtitle: error.message,
+          isDanger: true
+        });
       } finally {
         commit('SET_LOADING_FLAG', { type: 'cashRegisters', loading: false });
       }
@@ -608,7 +674,7 @@ const store = createStore({
       if (state.clients.length > 0) {
         // Логируем только один раз
         if (!state.loggedDataFlags.clients) {
-          console.log(`👤 Клиенты (${state.clients.length}) - из кэша`);
+          console.log(`  👤 Клиенты (${state.clients.length}) - из кэша`);
           commit('SET_LOGGED_DATA_FLAG', { type: 'clients', logged: true });
         }
         return;
@@ -618,10 +684,11 @@ const store = createStore({
       
       try {
         const ClientController = (await import('@/api/ClientController')).default;
-        const data = await ClientController.getAllItems();
-        
-        // Сохраняем DTO для использования
-        commit('SET_CLIENTS', data);
+        // ✅ Используем retry с exponential backoff
+        const data = await retryWithExponentialBackoff(
+          () => ClientController.getAllItems(),
+          3
+        );
         
         // Сохраняем plain data для кэширования в localStorage
         const plainData = data.map(client => ({ ...client }));
@@ -629,11 +696,16 @@ const store = createStore({
         
         // ✅ Явно сохраняем timestamp с привязкой к компании
         localStorage.setItem(timestampKey, Date.now().toString());
-        console.log(`👤 Клиенты (${data.length})`);
+        console.log(`  👤 Клиенты (${data.length})`);
       } catch (error) {
-        console.error('Ошибка загрузки клиентов:', error);
+        console.error('❌ Ошибка загрузки клиентов после всех попыток:', error);
         commit('SET_CLIENTS', []);
         commit('SET_CLIENTS_DATA', []);
+        dispatch('showNotification', {
+          title: 'Ошибка загрузки клиентов',
+          subtitle: error.message,
+          isDanger: true
+        });
       } finally {
         commit('SET_LOADING_FLAG', { type: 'clients', loading: false });
       }
@@ -694,7 +766,7 @@ const store = createStore({
       if (state.categories.length > 0) {
         // Логируем только один раз
         if (!state.loggedDataFlags.categories) {
-          console.log(`✅ Категории (${state.categories.length}) - из кэша`);
+          console.log(`  ✅ Категории (${state.categories.length}) - из кэша`);
           commit('SET_LOGGED_DATA_FLAG', { type: 'categories', logged: true });
         }
         return;
@@ -702,15 +774,26 @@ const store = createStore({
 
       try {
         const CategoryController = (await import('@/api/CategoryController')).default;
-        const data = await CategoryController.getAllItems();
+        // ✅ Используем retry с exponential backoff
+        const data = await retryWithExponentialBackoff(
+          () => CategoryController.getAllItems(),
+          3
+        );
         commit('SET_CATEGORIES', data);
         
         // ✅ Явно сохраняем timestamp с привязкой к компании
         localStorage.setItem(timestampKey, Date.now().toString());
-        console.log(`✅ Загружено ${data.length} категорий`);
+        console.log(`  ✅ Категории (${data.length})`);
       } catch (error) {
-        console.error('Ошибка загрузки категорий:', error);
+        console.error('❌ Ошибка загрузки категорий после всех попыток:', error);
         commit('SET_CATEGORIES', []);
+        dispatch('showNotification', {
+          title: 'Ошибка загрузки категорий',
+          subtitle: error.message,
+          isDanger: true
+        });
+      } finally {
+        commit('SET_LOADING_FLAG', { type: 'categories', loading: false });
       }
     },
     async loadProjects({ commit, state }) {
@@ -748,7 +831,7 @@ const store = createStore({
       if (state.projects.length > 0) {
         // Логируем только один раз
         if (!state.loggedDataFlags.projects) {
-          console.log(`✅ Проекты (${state.projects.length}) - из кэша`);
+          console.log(`  📋 Проекты (${state.projects.length}) - из кэша`);
           commit('SET_LOGGED_DATA_FLAG', { type: 'projects', logged: true });
         }
         return;
@@ -756,22 +839,30 @@ const store = createStore({
 
       try {
         const ProjectController = (await import('@/api/ProjectController')).default;
-        const data = await ProjectController.getAllItems();
-        
-        // Сохраняем DTO для использования
-        commit('SET_PROJECTS', data);
-        
+        // ✅ Используем retry с exponential backoff
+        const data = await retryWithExponentialBackoff(
+          () => ProjectController.getAllItems(),
+          3
+        );
         // Сохраняем plain data для кэширования в localStorage
         const plainData = data.map(project => ({ ...project }));
         commit('SET_PROJECTS_DATA', plainData);
+        commit('SET_PROJECTS', ProjectDto.fromArray(plainData));
         
         // ✅ Явно сохраняем timestamp с привязкой к компании
         localStorage.setItem(timestampKey, Date.now().toString());
-        console.log(`✅ Загружено ${data.length} проектов`);
+        console.log(`  📋 Проекты (${data.length})`);
       } catch (error) {
-        console.error('Ошибка загрузки проектов:', error);
+        console.error('❌ Ошибка загрузки проектов после всех попыток:', error);
         commit('SET_PROJECTS', []);
         commit('SET_PROJECTS_DATA', []);
+        dispatch('showNotification', {
+          title: 'Ошибка загрузки проектов',
+          subtitle: error.message,
+          isDanger: true
+        });
+      } finally {
+        commit('SET_LOADING_FLAG', { type: 'projects', loading: false });
       }
     },
     async loadLastProducts({ commit, state, getters }) {
@@ -916,6 +1007,8 @@ const store = createStore({
         const data = await OrderStatusController.getAllItems();
         commit('SET_ORDER_STATUSES', data);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
+        localStorage.setItem('orderStatuses_timestamp', Date.now().toString());
+        console.log(`📊 Статусы заказов (${data.length})`);
       } catch (error) {
         console.error('Ошибка загрузки статусов заказов:', error);
       } finally {
@@ -951,6 +1044,8 @@ const store = createStore({
         const data = await ProjectStatusController.getAllItems();
         commit('SET_PROJECT_STATUSES', data);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
+        localStorage.setItem('projectStatuses_timestamp', Date.now().toString());
+        console.log(`🎯 Статусы проектов (${data.length})`);
       } catch (error) {
         console.error('Ошибка загрузки статусов проектов:', error);
       } finally {
@@ -985,6 +1080,8 @@ const store = createStore({
         const data = await TransactionCategoryController.getAllItems();
         commit('SET_TRANSACTION_CATEGORIES', data);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
+        localStorage.setItem('transactionCategories_timestamp', Date.now().toString());
+        console.log(`💳 Категории транзакций (${data.length})`);
       } catch (error) {
         console.error('Ошибка загрузки категорий транзакций:', error);
       } finally {
@@ -1015,10 +1112,12 @@ const store = createStore({
       commit('SET_LOADING_FLAG', { type: 'productStatuses', loading: true });
       
       try {
-        const AppController = (await import('@/api/AppController')).default;
-        const data = await AppController.getProductStatuses();
+        const ProductStatusController = (await import('@/api/ProductStatusController')).default;
+        const data = await ProductStatusController.getAllItems();
         commit('SET_PRODUCT_STATUSES', data);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
+        localStorage.setItem('productStatuses_timestamp', Date.now().toString());
+        console.log(`🏷️ Статусы товаров (${data.length})`);
       } catch (error) {
         console.error('Ошибка загрузки статусов товаров:', error);
       } finally {
@@ -1043,19 +1142,24 @@ const store = createStore({
           console.log(`\n🔄 Переключение на компанию: ${state.currentCompany.name}`);
           commit('CLEAR_COMPANY_DATA');
           commit('SET_LAST_COMPANY_ID', state.currentCompany.id);
+          console.log('📊 Справочники:');
         }
         
-        // Загружаем только нужные данные параллельно
-        // Products/Services НЕ загружаются глобально - они загружаются на своих страницах через API
-        await Promise.all([
+        // ✅ Используем Promise.allSettled вместо Promise.all
+        // Это позволит загружать даже если одно из них упадет
+        const results = await Promise.allSettled([
           dispatch('loadWarehouses'),
           dispatch('loadCashRegisters'),
           dispatch('loadClients'),
-          // dispatch('loadProducts'),   // ❌ Убрано - ProductsPage делает API запрос
-          // dispatch('loadServices'),   // ❌ Убрано - ServicesPage делает API запрос
-          dispatch('loadCategories'),    // ✅ Нужно для фильтров
+          dispatch('loadCategories'),
           dispatch('loadProjects')
         ]);
+        
+        // Проверяем результаты
+        const failed = results.filter(r => r.status === 'rejected');
+        if (failed.length > 0) {
+          console.warn(`⚠️ ${failed.length} справочник(ов) не загрузилось, но остальные доступны`);
+        }
         
         console.log(`✅ Данные компании "${state.currentCompany.name}" загружены\n`);
       } finally {
@@ -1165,14 +1269,12 @@ const store = createStore({
         
         // ✅ Инвалидируем кэш СТАРОЙ компании в localStorage
         if (oldCompanyId && oldCompanyId !== companyId) {
+          // Инвалидируем кэш старой компании
           CacheInvalidator.invalidateByCompany(oldCompanyId);
           
-          // 🚨 КРИТИЧНОЕ ИСПРАВЛЕНИЕ: очищаем vuex-persistedstate данные старой компании
-          // Это предотвращает утечку данных между компаниями
+          // Очищаем данные vuex-persistedstate
           const persistKey = 'birhasap_vuex_cache';
           const stored = JSON.parse(localStorage.getItem(persistKey) || '{}');
-          
-          // Очищаем все данные компании из localStorage
           delete stored.warehouses;
           delete stored.cashRegisters;
           delete stored.clients;
@@ -1189,6 +1291,20 @@ const store = createStore({
           
           // Сохраняем обновленное состояние
           localStorage.setItem(persistKey, JSON.stringify(stored));
+          
+          // ✅ Очищаем кэш транзакций (все ключи связанные с транзакциями)
+          // Удаляем все ключи из localStorage, которые могут относиться к старой компании
+          const keysToDelete = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.includes('transaction') || key.includes('balance'))) {
+              keysToDelete.push(key);
+            }
+          }
+          keysToDelete.forEach(key => localStorage.removeItem(key));
+          if (keysToDelete.length > 0) {
+            console.log(`🗑️ Очищены ${keysToDelete.length} ключей транзакций: ${keysToDelete.join(', ')}`);
+          }
         }
         
         // vuex-persistedstate автоматически сохранит в localStorage, не нужно дублировать
@@ -1498,6 +1614,9 @@ const store = createStore({
     })
   ],
 });
+
+// ✅ Инициализируем синхронизацию между вкладками
+initializeStorageSync(store);
 
 // Обработчик события обновления компании
 eventBus.on('company-updated', () => {
