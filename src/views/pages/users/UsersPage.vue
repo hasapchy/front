@@ -45,9 +45,10 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
 
 export default {
-    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
+    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, UsersCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog },
     data() {
         return {
@@ -110,6 +111,19 @@ export default {
                 default:
                     return item[column];
             }
+        },
+        async onCompanyChanged(companyId) {
+            // ✅ Очищаем выбранные элементы при смене компании
+            this.selectedIds = [];
+            
+            // Перезагружаем данные
+            await this.fetchItems(1, false);
+            
+            // Уведомляем пользователя о смене компании
+            this.$store.dispatch('showNotification', {
+              title: 'Компания изменена',
+              isDanger: false
+            });
         }
     },
 };

@@ -130,6 +130,21 @@ export default {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
+        async onCompanyChanged(companyId) {
+            // ✅ Очищаем фильтры при смене компании
+            this.selectedCategoryId = '';
+            this.selectedIds = [];
+            
+            // Перезагружаем категории и данные
+            await this.fetchCategories();
+            await this.fetchItems(1, false);
+            
+            // Уведомляем пользователя о смене компании
+            this.$store.dispatch('showNotification', {
+              title: 'Компания изменена',
+              isDanger: false
+            });
+        },
         itemMapper(i, c) {
             switch (c) {
                 case 'retail_price':

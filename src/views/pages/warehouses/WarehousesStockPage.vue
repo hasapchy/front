@@ -73,9 +73,10 @@ import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import ProductController from '@/api/ProductController';
 import { eventBus } from '@/eventBus';
 import { formatQuantity } from '@/utils/numberUtils';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, tableTranslationMixin],
+    mixins: [modalMixin, notificationMixin, tableTranslationMixin, companyChangeMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, AdminWarehouseCreatePage },
     data() {
         return {
@@ -103,8 +104,6 @@ export default {
             perPage: 10,
             perPageOptions: [10, 25, 50, 100]
         }
-    },
-    computed: {
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
@@ -143,6 +142,26 @@ export default {
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
+        },
+        async onCompanyChanged(companyId) {
+            // ✅ Очищаем фильтры при смене компании
+            this.warehouseId = '';
+            this.categoryId = '';
+            this.modalCreateWarehouse = false;
+            this.modalCreateProduct = false;
+            this.editingItem = null;
+            this.modalDialog = false;
+            
+            // Перезагружаем данные со страницы 1
+            await this.fetchAllCategories();
+            await this.fetchAllWarehouses();
+            await this.fetchItems(1, false);
+            
+            // Уведомляем пользователя о смене компании
+            this.$store.dispatch('showNotification', {
+              title: 'Компания изменена',
+              isDanger: false
+            });
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {

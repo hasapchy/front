@@ -106,6 +106,19 @@ export default {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
+        async onCompanyChanged(companyId) {
+            // ✅ Очищаем фильтры при смене компании
+            this.selectedIds = [];
+            
+            // Перезагружаем данные со страницы 1
+            await this.fetchItems(1, false);
+            
+            // Уведомляем пользователя о смене компании
+            this.$store.dispatch('showNotification', {
+              title: 'Компания изменена',
+              isDanger: false
+            });
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;

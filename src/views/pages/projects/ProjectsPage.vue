@@ -198,6 +198,23 @@ export default {
                     return i[c];
             }
         },
+        async onCompanyChanged(companyId) {
+            // ✅ Очищаем фильтры и данные при смене компании
+            this.statusFilter = '';
+            this.clientFilter = '';
+            this.selectedIds = [];
+            this.batchStatusId = '';
+            this.pendingStatusUpdates.clear();
+            
+            // Перезагружаем данные со страницы 1
+            await this.fetchItems(1, false);
+            
+            // Уведомляем пользователя о смене компании (из базового миксина)
+            this.$store.dispatch('showNotification', {
+              title: 'Компания изменена',
+              isDanger: false
+            });
+        },
         async fetchProjectStatuses() {
             try {
                 // Используем данные из store

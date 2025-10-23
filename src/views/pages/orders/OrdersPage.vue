@@ -382,6 +382,27 @@ export default {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
+        async onCompanyChanged(companyId) {
+            // ✅ Очищаем фильтры и данные при смене компании
+            this.dateFilter = 'all_time';
+            this.startDate = null;
+            this.endDate = null;
+            this.statusFilter = '';
+            this.projectFilter = '';
+            this.clientFilter = '';
+            this.selectedIds = [];
+            this.batchStatusId = '';
+            this.paidOrdersFilter = false;
+            
+            // Перезагружаем данные со страницы 1
+            await this.fetchItems(1, false);
+            
+            // Уведомляем пользователя о смене компании
+            this.$store.dispatch('showNotification', {
+              title: 'Компания изменена',
+              isDanger: false
+            });
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
