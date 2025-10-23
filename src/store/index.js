@@ -1112,14 +1112,18 @@ const store = createStore({
       commit('SET_LOADING_FLAG', { type: 'productStatuses', loading: true });
       
       try {
-        const ProductStatusController = (await import('@/api/ProductStatusController')).default;
-        const data = await ProductStatusController.getAllItems();
+        const AppController = (await import('@/api/AppController')).default;
+        // ✅ Используем retry с exponential backoff
+        const data = await retryWithExponentialBackoff(
+          () => AppController.getProductStatuses(),
+          3
+        );
         commit('SET_PRODUCT_STATUSES', data);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
         localStorage.setItem('productStatuses_timestamp', Date.now().toString());
         console.log(`🏷️ Статусы товаров (${data.length})`);
       } catch (error) {
-        console.error('Ошибка загрузки статусов товаров:', error);
+        console.error('❌ Ошибка загрузки статусов товаров после всех попыток:', error);
       } finally {
         commit('SET_LOADING_FLAG', { type: 'productStatuses', loading: false });
       }
