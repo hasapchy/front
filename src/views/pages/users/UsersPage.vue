@@ -112,7 +112,7 @@ export default {
                     return item[column];
             }
         },
-        async onCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId) {
             // ✅ Очищаем выбранные элементы при смене компании
             this.selectedIds = [];
             

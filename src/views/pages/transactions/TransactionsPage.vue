@@ -266,6 +266,21 @@ export default {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
+        async handleCompanyChanged(companyId) {
+            // ✅ Очищаем фильтры при смене компании
+            this.cashRegisterId = '';
+            this.dateFilter = 'all_time';
+            this.startDate = null;
+            this.endDate = null;
+            this.transactionTypeFilter = '';
+            this.sourceFilter = '';
+            this.projectId = '';
+            this.isDebtFilter = '';
+            this.selectedIds = [];
+            
+            // Перезагружаем данные со страницы 1
+            await this.fetchItems(1, false);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;

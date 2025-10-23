@@ -130,7 +130,7 @@ export default {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
-        async onCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId) {
             // ✅ Очищаем фильтры при смене компании
             this.selectedCategoryId = '';
             this.selectedIds = [];

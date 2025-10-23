@@ -382,7 +382,7 @@ export default {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
-        async onCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId) {
             // ✅ Очищаем фильтры и данные при смене компании
             this.dateFilter = 'all_time';
             this.startDate = null;

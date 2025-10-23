@@ -21,6 +21,13 @@ export default {
   
   methods: {
     async onCompanyChanged(companyId) {
+      // ✅ Если компонент имеет специфичный обработчик handleCompanyChanged, используем его
+      if (this.handleCompanyChanged) {
+        await this.handleCompanyChanged(companyId);
+        return;
+      }
+      
+      // Иначе используем логику по умолчанию
       // Перезагружаем данные страницы
       if (this.fetchItems) {
         await this.fetchItems();

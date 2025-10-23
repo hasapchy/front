@@ -93,10 +93,11 @@ import tableTranslationMixin from "@/mixins/tableTranslationMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import { defineAsyncComponent } from "vue";
 import { eventBus } from "@/eventBus";
+import companyChangeMixin from "@/mixins/companyChangeMixin";
 
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin, companyChangeMixin],
     components: { 
         NotificationToast, 
         SideModalDialog, 
@@ -201,6 +202,17 @@ export default {
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
+        },
+        async handleCompanyChanged(companyId) {
+            // ✅ Очищаем фильтры при смене компании
+            this.dateFilter = 'all_time';
+            this.startDate = null;
+            this.endDate = null;
+            this.statusFilter = '';
+            this.selectedIds = [];
+            
+            // Перезагружаем данные со страницы 1
+            await this.fetchItems(1, false);
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;

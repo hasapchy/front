@@ -35,8 +35,9 @@ function initializeStorageSync(_store) {
         const newState = JSON.parse(e.newValue || '{}');
         const oldState = JSON.parse(e.oldValue || '{}');
         
-        // Уведомляем об изменениях
+        // Проверяем, изменилась ли компания
         if (newState.currentCompany?.id !== oldState.currentCompany?.id) {
+          // ✅ Эмитим событие при смене компании в другой вкладке
           console.log('📡 Синхронизация: компания изменилась в другой вкладке');
           eventBus.emit('company-changed', newState.currentCompany?.id);
         }
@@ -78,7 +79,7 @@ const store = createStore({
       orderStatuses: false,
       projectStatuses: false,
       transactionCategories: false,
-      productStatuses: false
+      productStatuses: false,
     },
     // ✅ Флаги для отслеживания уже залогированных данных (чтобы не спамить логи)
     loggedDataFlags: {

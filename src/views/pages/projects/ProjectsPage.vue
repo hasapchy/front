@@ -198,7 +198,7 @@ export default {
                     return i[c];
             }
         },
-        async onCompanyChanged(companyId) {
+        async handleCompanyChanged(companyId) {
             // ✅ Очищаем фильтры и данные при смене компании
             this.statusFilter = '';
             this.clientFilter = '';
