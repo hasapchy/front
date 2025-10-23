@@ -30,6 +30,8 @@ async function retryWithExponentialBackoff(fn, maxRetries = 3, initialDelay = 10
 // ✅ Listener для синхронизации между вкладками
 function initializeStorageSync(_store) {
   window.addEventListener('storage', (e) => {
+    // ✅ Слушаем ТОЛЬКО события от ДРУГИХ вкладок (не от этой вкладки)
+    // storage event НЕ срабатывает в той же вкладке, которая пишет
     if (e.key === 'birhasap_vuex_cache') {
       try {
         const newState = JSON.parse(e.newValue || '{}');
@@ -37,7 +39,6 @@ function initializeStorageSync(_store) {
         
         // Проверяем, изменилась ли компания
         if (newState.currentCompany?.id !== oldState.currentCompany?.id) {
-          // ✅ Эмитим событие при смене компании в другой вкладке
           console.log('📡 Синхронизация: компания изменилась в другой вкладке');
           eventBus.emit('company-changed', newState.currentCompany?.id);
         }
@@ -127,7 +128,9 @@ const store = createStore({
       enabled: true,
       intervalId: null,
       lastCheck: null
-    }
+    },
+    // ✅ Флаг для предотвращения цикла между вкладками
+    isChangingCompanyFromThisTab: false,
   },
 
   mutations: {
