@@ -204,13 +204,14 @@ import { eventBus } from "@/eventBus";
 import OrderPaymentFilter from "@/views/components/app/forms/OrderPaymentFilter.vue";
 import StatusSelectCell from "@/views/components/app/buttons/StatusSelectCell.vue";
 import debounce from "lodash.debounce";
+import companyChangeMixin from "@/mixins/companyChangeMixin";
 
 const TimelinePanel = defineAsyncComponent(() => 
     import("@/views/components/app/dialog/TimelinePanel.vue")
 );
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin, companyChangeMixin],
     components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell },
     data() {
         return {

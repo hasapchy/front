@@ -14,6 +14,7 @@ export default class OrderDto {
     clientId,
     userId,
     userName,
+    userPhoto = null,
     cashId,
     cashName,
     warehouseId,
@@ -44,6 +45,7 @@ export default class OrderDto {
     this.clientId = clientId;
     this.userId = userId;
     this.userName = userName;
+    this.userPhoto = userPhoto;
     this.cashId = cashId;
     this.cashName = cashName;
     this.warehouseId = warehouseId;

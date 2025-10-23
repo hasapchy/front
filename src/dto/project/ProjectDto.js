@@ -14,6 +14,7 @@ export default class ProjectDto {
     client = null,
     userId = null,
     userName = null,
+    userPhoto = null,
     users = [],
     createdAt = "",
     updatedAt = "",
@@ -35,6 +36,7 @@ export default class ProjectDto {
     this.client = client;
     this.userId = userId;
     this.userName = userName;
+    this.userPhoto = userPhoto;
     this.users = users;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
@@ -180,6 +182,7 @@ export default class ProjectDto {
       data.client,
       data.userId || data.user_id,
       data.userName || data.user_name,
+      data.userPhoto || data.user_photo,
       data.users || [],
       data.createdAt || data.created_at,
       data.updatedAt || data.updated_at,

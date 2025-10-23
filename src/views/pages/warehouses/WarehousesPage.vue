@@ -21,9 +21,11 @@ import WarehousesStockPage from '@/views/pages/warehouses/WarehousesStockPage.vu
 import WarehousesReceiptPage from '@/views/pages/warehouses/WarehousesReceiptPage.vue';
 import WarehousesWriteoffPage from '@/views/pages/warehouses/WarehousesWriteoffPage.vue';
 import WarehousesMovementPage from '@/views/pages/warehouses/WarehousesMovementPage.vue';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
 
 
 export default {
+    mixins: [companyChangeMixin],
     components: {
         TabBar,
         WarehousesStockPage,

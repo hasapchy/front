@@ -148,10 +148,8 @@ export default {
       
       try {
         // Устанавливаем выбранную компанию через store
+        // ✅ Store сам отправит событие 'company-changed' после загрузки данных
         await this.$store.dispatch('setCurrentCompany', companyId);
-        
-        // Уведомляем другие компоненты о смене компании
-        eventBus.emit('company-changed', companyId);
       } catch (error) {
         console.error('Ошибка при смене компании:', error);
         this.$store.dispatch('showNotification', {

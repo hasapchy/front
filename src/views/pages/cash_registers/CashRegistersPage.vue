@@ -43,9 +43,10 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, batchActionsMixin, crudEventMixin, getApiErrorMessageMixin],
+    mixins: [modalMixin, notificationMixin, batchActionsMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin],
     components: {
         NotificationToast,
         PrimaryButton,

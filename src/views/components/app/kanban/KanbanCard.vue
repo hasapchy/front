@@ -46,8 +46,8 @@
                     <!-- Фотография пользователя -->
                     <div class="w-4 h-4 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                         <img 
-                            v-if="getUserPhotoSrc({ photo: order.user_photo })" 
-                            :src="getUserPhotoSrc({ photo: order.user_photo })" 
+                            v-if="getUserPhotoSrc({ photo: order.userPhoto })" 
+                            :src="getUserPhotoSrc({ photo: order.userPhoto })" 
                             :alt="order.userName || $t('notSpecified')"
                             class="w-full h-full object-cover"
                         >

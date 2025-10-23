@@ -298,12 +298,6 @@ export default {
             const isValid = this.name && this.name.trim() !== '' && 
                            this.sku && this.sku.trim() !== '' &&
                            this.selectedCategories.length > 0;
-            console.log('Form validation:', {
-                name: this.name,
-                sku: this.sku,
-                selectedCategoriesLength: this.selectedCategories.length,
-                isValid
-            });
             return isValid;
         },
     },

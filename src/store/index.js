@@ -41,6 +41,14 @@ const store = createStore({
       transactionCategories: false,
       productStatuses: false
     },
+    // ✅ Флаги для отслеживания уже залогированных данных (чтобы не спамить логи)
+    loggedDataFlags: {
+      warehouses: false,
+      cashRegisters: false,
+      clients: false,
+      categories: false,
+      projects: false,
+    },
     users: [], // Пользователи (для модалок создания)
     warehouses: [], // Склады
     cashRegisters: [], // Кассы
@@ -196,7 +204,6 @@ const store = createStore({
     //   state.companyDataCache[companyId][dataType] = data;
     // },
     CLEAR_COMPANY_DATA(state) {
-      // Очищаем ВСЕ данные компании (вызывается только при смене компании)
       state.warehouses = [];
       state.cashRegisters = [];
       state.clients = [];
@@ -205,10 +212,20 @@ const store = createStore({
       state.services = [];
       state.lastProducts = []; // ✅ Очищаем DTO
       state.allProducts = []; // ✅ Очищаем DTO
-      // НЕ очищаем lastProductsData и allProductsData - пусть кэшируется
+      // ⚠️ ИСПРАВЛЕНИЕ: теперь также очищаем plain data для другой компании!
+      state.lastProductsData = []; // ✅ Очищаем plain data
+      state.allProductsData = []; // ✅ Очищаем plain data
       state.categories = [];
       state.projects = [];
       state.projectsData = [];
+      // ✅ Сбрасываем флаги логирования при смене компании
+      state.loggedDataFlags = {
+        warehouses: false,
+        cashRegisters: false,
+        clients: false,
+        categories: false,
+        projects: false,
+      };
       // НЕ очищаем глобальные данные (статусы, валюты, единицы)
       // state.orderStatuses = [];
       // state.projectStatuses = [];
@@ -235,6 +252,10 @@ const store = createStore({
     },
     SET_CACHE_MONITOR_LAST_CHECK(state, timestamp) {
       state.cacheMonitor.lastCheck = timestamp;
+    },
+    // ✅ Управление флагами залогированных данных
+    SET_LOGGED_DATA_FLAG(state, { type, logged }) {
+      state.loggedDataFlags[type] = logged;
     },
   },
 
@@ -444,11 +465,21 @@ const store = createStore({
     async loadWarehouses({ commit, state, dispatch }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.warehouses) {
+        console.log(`📦 Склады - уже загружаются...`);
         return dispatch('waitForLoading', 'warehouses');
       }
 
-      // ✅ Проверяем не истек ли кэш складов
-      const timestamp = localStorage.getItem('warehouses_timestamp');
+      // ✅ Получаем ID компании
+      const companyId = state.currentCompany?.id;
+      if (!companyId) {
+        commit('SET_WAREHOUSES', []);
+        return;
+      }
+
+      // ✅ Ключ кэша привязан к компании
+      const cacheKey = `warehouses_${companyId}`;
+      const timestampKey = `${cacheKey}_timestamp`;
+      const timestamp = localStorage.getItem(timestampKey);
       const now = Date.now();
       const ttl = CACHE_TTL.warehouses;
       
@@ -459,6 +490,11 @@ const store = createStore({
 
       // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
       if (state.warehouses.length > 0) {
+        // Логируем только один раз
+        if (!state.loggedDataFlags.warehouses) {
+          console.log(`📦 Склады (${state.warehouses.length}) - из кэша`);
+          commit('SET_LOGGED_DATA_FLAG', { type: 'warehouses', logged: true });
+        }
         return;
       }
 
@@ -468,7 +504,10 @@ const store = createStore({
         const WarehouseController = (await import('@/api/WarehouseController')).default;
         const data = await WarehouseController.getAllItems();
         commit('SET_WAREHOUSES', data);
-        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
+        console.log(`📦 Склады (${data.length})`);
+        
+        // ✅ Явно сохраняем timestamp с привязкой к компании
+        localStorage.setItem(timestampKey, Date.now().toString());
       } catch (error) {
         console.error('Ошибка загрузки складов:', error);
         commit('SET_WAREHOUSES', []);
@@ -479,11 +518,21 @@ const store = createStore({
     async loadCashRegisters({ commit, state, dispatch }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.cashRegisters) {
+        console.log(`💰 Кассы - уже загружаются...`);
         return dispatch('waitForLoading', 'cashRegisters');
       }
 
-      // ✅ Проверяем не истек ли кэш касс
-      const timestamp = localStorage.getItem('cashRegisters_timestamp');
+      // ✅ Получаем ID компании
+      const companyId = state.currentCompany?.id;
+      if (!companyId) {
+        commit('SET_CASH_REGISTERS', []);
+        return;
+      }
+
+      // ✅ Ключ кэша привязан к компании
+      const cacheKey = `cashRegisters_${companyId}`;
+      const timestampKey = `${cacheKey}_timestamp`;
+      const timestamp = localStorage.getItem(timestampKey);
       const now = Date.now();
       const ttl = CACHE_TTL.cashRegisters;
       
@@ -494,22 +543,24 @@ const store = createStore({
 
       // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
       if (state.cashRegisters.length > 0) {
+        // Логируем только один раз
+        if (!state.loggedDataFlags.cashRegisters) {
+          console.log(`💰 Кассы (${state.cashRegisters.length}) - из кэша`);
+          commit('SET_LOGGED_DATA_FLAG', { type: 'cashRegisters', logged: true });
+        }
         return;
       }
 
       commit('SET_LOADING_FLAG', { type: 'cashRegisters', loading: true });
       
       try {
-        const companyId = state.currentCompany?.id;
-        if (!companyId) {
-          commit('SET_CASH_REGISTERS', []);
-          return;
-        }
-        
         const CashRegisterController = (await import('@/api/CashRegisterController')).default;
         const data = await CashRegisterController.getAllItems();
         commit('SET_CASH_REGISTERS', data);
-        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
+        console.log(`💰 Кассы (${data.length})`);
+        
+        // ✅ Явно сохраняем timestamp с привязкой к компании
+        localStorage.setItem(timestampKey, Date.now().toString());
       } catch (error) {
         console.error('Ошибка загрузки касс:', error);
       } finally {
@@ -519,11 +570,22 @@ const store = createStore({
     async loadClients({ commit, state, dispatch }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.clients) {
+        console.log(`👤 Клиенты - уже загружаются...`);
         return dispatch('waitForLoading', 'clients');
       }
 
-      // ✅ Проверяем не истек ли кэш клиентов
-      const timestamp = localStorage.getItem('clientsData_timestamp');
+      // ✅ Получаем ID компании
+      const companyId = state.currentCompany?.id;
+      if (!companyId) {
+        commit('SET_CLIENTS', []);
+        commit('SET_CLIENTS_DATA', []);
+        return;
+      }
+
+      // ✅ Ключ кэша привязан к компании
+      const cacheKey = `clients_${companyId}`;
+      const timestampKey = `${cacheKey}_timestamp`;
+      const timestamp = localStorage.getItem(timestampKey);
       const now = Date.now();
       const ttl = CACHE_TTL.clients;
       
@@ -544,6 +606,11 @@ const store = createStore({
 
       // Если DTO уже в state - возвращаем
       if (state.clients.length > 0) {
+        // Логируем только один раз
+        if (!state.loggedDataFlags.clients) {
+          console.log(`👤 Клиенты (${state.clients.length}) - из кэша`);
+          commit('SET_LOGGED_DATA_FLAG', { type: 'clients', logged: true });
+        }
         return;
       }
 
@@ -559,6 +626,10 @@ const store = createStore({
         // Сохраняем plain data для кэширования в localStorage
         const plainData = data.map(client => ({ ...client }));
         commit('SET_CLIENTS_DATA', plainData);
+        
+        // ✅ Явно сохраняем timestamp с привязкой к компании
+        localStorage.setItem(timestampKey, Date.now().toString());
+        console.log(`👤 Клиенты (${data.length})`);
       } catch (error) {
         console.error('Ошибка загрузки клиентов:', error);
         commit('SET_CLIENTS', []);
@@ -600,8 +671,17 @@ const store = createStore({
       }
     },
     async loadCategories({ commit, state }) {
-      // ✅ Проверяем не истек ли кэш категорий
-      const timestamp = localStorage.getItem('categories_timestamp');
+      // ✅ Получаем ID компании
+      const companyId = state.currentCompany?.id;
+      if (!companyId) {
+        commit('SET_CATEGORIES', []);
+        return;
+      }
+
+      // ✅ Ключ кэша привязан к компании
+      const cacheKey = `categories_${companyId}`;
+      const timestampKey = `${cacheKey}_timestamp`;
+      const timestamp = localStorage.getItem(timestampKey);
       const now = Date.now();
       const ttl = CACHE_TTL.categories; // 10 минут
       
@@ -612,6 +692,11 @@ const store = createStore({
       
       // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
       if (state.categories.length > 0) {
+        // Логируем только один раз
+        if (!state.loggedDataFlags.categories) {
+          console.log(`✅ Категории (${state.categories.length}) - из кэша`);
+          commit('SET_LOGGED_DATA_FLAG', { type: 'categories', logged: true });
+        }
         return;
       }
 
@@ -619,15 +704,28 @@ const store = createStore({
         const CategoryController = (await import('@/api/CategoryController')).default;
         const data = await CategoryController.getAllItems();
         commit('SET_CATEGORIES', data);
-        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
+        
+        // ✅ Явно сохраняем timestamp с привязкой к компании
+        localStorage.setItem(timestampKey, Date.now().toString());
+        console.log(`✅ Загружено ${data.length} категорий`);
       } catch (error) {
         console.error('Ошибка загрузки категорий:', error);
         commit('SET_CATEGORIES', []);
       }
     },
     async loadProjects({ commit, state }) {
-      // ✅ Проверяем не истек ли кэш проектов
-      const timestamp = localStorage.getItem('projectsData_timestamp');
+      // ✅ Получаем ID компании
+      const companyId = state.currentCompany?.id;
+      if (!companyId) {
+        commit('SET_PROJECTS', []);
+        commit('SET_PROJECTS_DATA', []);
+        return;
+      }
+
+      // ✅ Ключ кэша привязан к компании
+      const cacheKey = `projects_${companyId}`;
+      const timestampKey = `${cacheKey}_timestamp`;
+      const timestamp = localStorage.getItem(timestampKey);
       const now = Date.now();
       const ttl = CACHE_TTL.projects;
       
@@ -648,6 +746,11 @@ const store = createStore({
 
       // Если DTO уже в state - возвращаем
       if (state.projects.length > 0) {
+        // Логируем только один раз
+        if (!state.loggedDataFlags.projects) {
+          console.log(`✅ Проекты (${state.projects.length}) - из кэша`);
+          commit('SET_LOGGED_DATA_FLAG', { type: 'projects', logged: true });
+        }
         return;
       }
 
@@ -661,6 +764,10 @@ const store = createStore({
         // Сохраняем plain data для кэширования в localStorage
         const plainData = data.map(project => ({ ...project }));
         commit('SET_PROJECTS_DATA', plainData);
+        
+        // ✅ Явно сохраняем timestamp с привязкой к компании
+        localStorage.setItem(timestampKey, Date.now().toString());
+        console.log(`✅ Загружено ${data.length} проектов`);
       } catch (error) {
         console.error('Ошибка загрузки проектов:', error);
         commit('SET_PROJECTS', []);
@@ -933,6 +1040,7 @@ const store = createStore({
         // ✅ Очищаем данные ТОЛЬКО если сменилась компания
         const companyChanged = state.lastCompanyId !== state.currentCompany.id;
         if (companyChanged) {
+          console.log(`\n🔄 Переключение на компанию: ${state.currentCompany.name}`);
           commit('CLEAR_COMPANY_DATA');
           commit('SET_LAST_COMPANY_ID', state.currentCompany.id);
         }
@@ -948,6 +1056,8 @@ const store = createStore({
           dispatch('loadCategories'),    // ✅ Нужно для фильтров
           dispatch('loadProjects')
         ]);
+        
+        console.log(`✅ Данные компании "${state.currentCompany.name}" загружены\n`);
       } finally {
         commit('SET_LOADING_FLAG', { type: 'companyData', loading: false });
       }
@@ -1006,16 +1116,8 @@ const store = createStore({
         return [];
       }
     },
-    async loadCurrentCompany({ commit, dispatch, state, getters }) {
+    async loadCurrentCompany({ commit, dispatch, state }) {
       try {
-        // Для basement системы используем компанию по умолчанию
-        if (getters.isBasementMode) {
-          const defaultCompany = new CompanyDto({ id: 1, name: 'Default Company' });
-          commit('SET_CURRENT_COMPANY', defaultCompany);
-          commit('SET_LAST_COMPANY_ID', defaultCompany.id);
-          return defaultCompany;
-        }
-        
         // ✅ Проверяем есть ли компания в state (vuex-persistedstate восстановил)
         if (state.currentCompany?.id) {
           // Компания уже в state, загружаем только данные
@@ -1023,7 +1125,18 @@ const store = createStore({
           return state.currentCompany;
         }
         
-        // Если в state нет, загружаем с сервера
+        // ✅ НОВОЕ: Если нет currentCompany, но есть lastCompanyId, восстанавливаем последнюю выбранную
+        if (state.lastCompanyId && state.userCompanies?.length > 0) {
+          const lastCompany = state.userCompanies.find(c => c.id === state.lastCompanyId);
+          if (lastCompany) {
+            // Восстанавливаем последнюю выбранную компанию
+            commit('SET_CURRENT_COMPANY', lastCompany);
+            await dispatch('loadCompanyData');
+            return lastCompany;
+          }
+        }
+        
+        // Если lastCompanyId не помог, загружаем с сервера
         const response = await api.get('/user/current-company');
         const company = new CompanyDto(response.data.company);
         commit('SET_CURRENT_COMPANY', company);
@@ -1036,21 +1149,56 @@ const store = createStore({
         
         return company;
       } catch (error) {
-        console.error('Ошибка загрузки текущей компании:', error);
+        console.error('[loadCurrentCompany] Ошибка загрузки текущей компании:', error);
         return null;
       }
     },
     async setCurrentCompany({ commit, dispatch }, companyId) {
       try {
+        // ✅ Получаем старую компанию перед смены
+        const oldCompanyId = this.state.currentCompany?.id;
+        
         const response = await api.post('/user/set-company', { company_id: companyId });
         const company = new CompanyDto(response.data.company);
+        
         commit('SET_CURRENT_COMPANY', company);
+        
+        // ✅ Инвалидируем кэш СТАРОЙ компании в localStorage
+        if (oldCompanyId && oldCompanyId !== companyId) {
+          CacheInvalidator.invalidateByCompany(oldCompanyId);
+          
+          // 🚨 КРИТИЧНОЕ ИСПРАВЛЕНИЕ: очищаем vuex-persistedstate данные старой компании
+          // Это предотвращает утечку данных между компаниями
+          const persistKey = 'birhasap_vuex_cache';
+          const stored = JSON.parse(localStorage.getItem(persistKey) || '{}');
+          
+          // Очищаем все данные компании из localStorage
+          delete stored.warehouses;
+          delete stored.cashRegisters;
+          delete stored.clients;
+          delete stored.clientsData;
+          delete stored.products;
+          delete stored.services;
+          delete stored.lastProducts;
+          delete stored.lastProductsData;
+          delete stored.allProducts;
+          delete stored.allProductsData;
+          delete stored.categories;
+          delete stored.projects;
+          delete stored.projectsData;
+          
+          // Сохраняем обновленное состояние
+          localStorage.setItem(persistKey, JSON.stringify(stored));
+        }
         
         // vuex-persistedstate автоматически сохранит в localStorage, не нужно дублировать
         
         // После смены компании загружаем все данные компании
         // loadCompanyData сам проверит что компания изменилась и очистит кэш
         await dispatch('loadCompanyData');
+        
+        // ✅ Отправляем событие об изменении компании
+        eventBus.emit('company-changed', companyId);
         
         return company;
       } catch (error) {
