@@ -34,6 +34,12 @@ function initializeStorageSync(_store) {
     // storage event НЕ срабатывает в той же вкладке, которая пишет
     if (e.key === 'birhasap_vuex_cache') {
       try {
+        // ✅ Если ЭТА вкладка инициировала смену компании, игнорируем storage event
+        // Это предотвращает цикл между вкладками
+        if (_store.state.isChangingCompanyFromThisTab) {
+          return;
+        }
+        
         const newState = JSON.parse(e.newValue || '{}');
         const oldState = JSON.parse(e.oldValue || '{}');
         
@@ -299,6 +305,9 @@ const store = createStore({
     // ✅ Управление флагами залогированных данных
     SET_LOGGED_DATA_FLAG(state, { type, logged }) {
       state.loggedDataFlags[type] = logged;
+    },
+    SET_IS_CHANGING_COMPANY(state, value) {
+      state.isChangingCompanyFromThisTab = value;
     },
   },
 
@@ -1275,6 +1284,9 @@ const store = createStore({
     },
     async setCurrentCompany({ commit, dispatch }, companyId) {
       try {
+        // ✅ УСТАНАВЛИВАЕМ ФЛАГ - ЭТА ВКЛАДКА ИНИЦИИРУЕТ СМЕНУ КОМПАНИИ
+        commit('SET_IS_CHANGING_COMPANY', true);
+        
         // ✅ Получаем старую компанию перед смены
         const oldCompanyId = this.state.currentCompany?.id;
         
@@ -1329,11 +1341,16 @@ const store = createStore({
         // loadCompanyData сам проверит что компания изменилась и очистит кэш
         await dispatch('loadCompanyData');
         
+        // ✅ ОТКЛЮЧАЕМ ФЛАГ - смена завершена, нормализуем storage event
+        commit('SET_IS_CHANGING_COMPANY', false);
+        
         // ✅ Отправляем событие об изменении компании
         eventBus.emit('company-changed', companyId);
         
         return company;
       } catch (error) {
+        // ✅ ОТКЛЮЧАЕМ ФЛАГ при ошибке
+        commit('SET_IS_CHANGING_COMPANY', false);
         console.error('Ошибка установки текущей компании:', error);
         throw error;
       }
