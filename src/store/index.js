@@ -1282,6 +1282,7 @@ const store = createStore({
         const company = new CompanyDto(response.data.company);
         
         commit('SET_CURRENT_COMPANY', company);
+        commit('SET_LAST_COMPANY_ID', companyId);
         
         // ✅ Инвалидируем кэш старой компании в localStorage
         if (oldCompanyId && oldCompanyId !== companyId) {

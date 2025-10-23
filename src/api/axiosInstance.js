@@ -33,6 +33,14 @@ api.interceptors.request.use(
       config.headers['X-Company-ID'] = store.getters.currentCompanyId;
     }
     
+    // ✅ Отключаем кэширование для основных API запросов (список, поиск, фильтры)
+    // Браузер НЕ должен кэшировать данные которые зависят от параметров запроса
+    if (config.method === 'get' || config.method === 'GET') {
+      config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+      config.headers['Pragma'] = 'no-cache';
+      config.headers['Expires'] = '0';
+    }
+    
     return config;
   },
   (error) => {

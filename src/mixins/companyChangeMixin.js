@@ -11,8 +11,15 @@ export default {
     // Слушаем события смены компании
     eventBus.on('company-changed', this.onCompanyChanged);
     
-    // Компания уже загружается глобально в App.vue, не нужно дублировать загрузку
-    // Если currentCompanyId нет, значит App.vue еще загружается - просто ждем
+    // ✅ Если компания отличается от последней, значит произошла смена
+    // Это может произойти если компонент смонтировался ПОСЛЕ смены компании
+    const currentCompanyId = this.$store.getters.currentCompanyId;
+    const lastCompanyId = this.$store.state.lastCompanyId;
+    
+    if (currentCompanyId && currentCompanyId !== lastCompanyId) {
+      // Вызываем обработчик смены компании
+      await this.onCompanyChanged(currentCompanyId);
+    }
   },
   
   beforeUnmount() {
