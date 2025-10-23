@@ -684,6 +684,8 @@ const store = createStore({
       
       try {
         const ClientController = (await import('@/api/ClientController')).default;
+        const ClientDto = (await import('@/dto/client/ClientDto')).default;  // ✅ Импортируем!
+        
         // ✅ Используем retry с exponential backoff
         const data = await retryWithExponentialBackoff(
           () => ClientController.getAllItems(),
@@ -693,6 +695,10 @@ const store = createStore({
         // Сохраняем plain data для кэширования в localStorage
         const plainData = data.map(client => ({ ...client }));
         commit('SET_CLIENTS_DATA', plainData);
+        
+        // ✅ Конвертируем в DTO и сохраняем
+        const clients = ClientDto.fromArray(plainData);
+        commit('SET_CLIENTS', clients);
         
         // ✅ Явно сохраняем timestamp с привязкой к компании
         localStorage.setItem(timestampKey, Date.now().toString());
@@ -742,7 +748,7 @@ const store = createStore({
         commit('SET_SERVICES', []);
       }
     },
-    async loadCategories({ commit, state }) {
+    async loadCategories({ commit, state, dispatch }) {  // ✅ Добавляем dispatch!
       // ✅ Получаем ID компании
       const companyId = state.currentCompany?.id;
       if (!companyId) {
@@ -796,7 +802,7 @@ const store = createStore({
         commit('SET_LOADING_FLAG', { type: 'categories', loading: false });
       }
     },
-    async loadProjects({ commit, state }) {
+    async loadProjects({ commit, state, dispatch }) {  // ✅ Добавляем dispatch!
       // ✅ Получаем ID компании
       const companyId = state.currentCompany?.id;
       if (!companyId) {
@@ -839,6 +845,8 @@ const store = createStore({
 
       try {
         const ProjectController = (await import('@/api/ProjectController')).default;
+        const ProjectDto = (await import('@/dto/project/ProjectDto')).default;  // ✅ Импортируем!
+        
         // ✅ Используем retry с exponential backoff
         const data = await retryWithExponentialBackoff(
           () => ProjectController.getAllItems(),
