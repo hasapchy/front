@@ -357,6 +357,31 @@ export default {
             this.endDate = null;
             this.fetchItems();
         },
+        // ✅ Обработчик смены компании
+        async handleCompanyChanged(companyId) {
+            // ✅ Очищаем фильтры
+            this.cashRegisterId = '';
+            this.transactionTypeFilter = '';
+            this.sourceFilter = '';
+            this.projectId = '';
+            this.isDebtFilter = '';
+            this.dateFilter = 'all_time';
+            this.startDate = null;
+            this.endDate = null;
+            this.selectedIds = [];
+            
+            // ✅ Перезагружаем данные со страницы 1
+            await this.fetchItems(1, false);
+            
+            // ✅ Обновляем баланс
+            this.updateBalace();
+            
+            // ✅ Уведомляем пользователя о смене компании
+            this.$store.dispatch('showNotification', {
+              title: 'Компания изменена',
+              isDanger: false
+            });
+        },
         // Переопределяем методы из crudEventMixin для обновления баланса
         handleSaved() {
             // Вызываем метод из миксина

@@ -29,24 +29,24 @@ async function retryWithExponentialBackoff(fn, maxRetries = 3, initialDelay = 10
 
 // ✅ Listener для синхронизации между вкладками
 function initializeStorageSync(_store) {
+  let lastEmittedCompanyId = null;
+  
   window.addEventListener('storage', (e) => {
     // ✅ Слушаем ТОЛЬКО события от ДРУГИХ вкладок (не от этой вкладки)
     // storage event НЕ срабатывает в той же вкладке, которая пишет
     if (e.key === 'birhasap_vuex_cache') {
       try {
-        // ✅ Если ЭТА вкладка инициировала смену компании, игнорируем storage event
-        // Это предотвращает цикл между вкладками
-        if (_store.state.isChangingCompanyFromThisTab) {
-          return;
-        }
-        
         const newState = JSON.parse(e.newValue || '{}');
         const oldState = JSON.parse(e.oldValue || '{}');
         
-        // Проверяем, изменилась ли компания
-        if (newState.currentCompany?.id !== oldState.currentCompany?.id) {
+        const newCompanyId = newState.currentCompany?.id;
+        const oldCompanyId = oldState.currentCompany?.id;
+        
+        // ✅ Проверяем, изменилась ли компания И не эмитили ли мы уже это событие
+        if (newCompanyId !== oldCompanyId && newCompanyId !== lastEmittedCompanyId) {
           console.log('📡 Синхронизация: компания изменилась в другой вкладке');
-          eventBus.emit('company-changed', newState.currentCompany?.id);
+          lastEmittedCompanyId = newCompanyId;
+          eventBus.emit('company-changed', newCompanyId);
         }
       } catch (error) {
         console.error('Ошибка синхронизации между вкладками:', error);
@@ -1164,10 +1164,8 @@ const store = createStore({
         // ✅ Очищаем данные ТОЛЬКО если сменилась компания
         const companyChanged = state.lastCompanyId !== state.currentCompany.id;
         if (companyChanged) {
-          console.log(`\n🔄 Переключение на компанию: ${state.currentCompany.name}`);
           commit('CLEAR_COMPANY_DATA');
           commit('SET_LAST_COMPANY_ID', state.currentCompany.id);
-          console.log('📊 Справочники:');
         }
         
         // ✅ Используем Promise.allSettled вместо Promise.all
@@ -1183,10 +1181,8 @@ const store = createStore({
         // Проверяем результаты
         const failed = results.filter(r => r.status === 'rejected');
         if (failed.length > 0) {
-          console.warn(`⚠️ ${failed.length} справочник(ов) не загрузилось, но остальные доступны`);
+          console.warn(`⚠️ ${failed.length} справочник(ов) не загрузилось`);
         }
-        
-        console.log(`✅ Данные компании "${state.currentCompany.name}" загружены\n`);
       } finally {
         commit('SET_LOADING_FLAG', { type: 'companyData', loading: false });
       }
@@ -1206,11 +1202,7 @@ const store = createStore({
       localStorage.removeItem('transactionCategories_cache_timestamp');
       localStorage.removeItem('productStatuses_cache');
       localStorage.removeItem('productStatuses_cache_timestamp');
-      
-      // НЕ очищаем текущую компанию, только кэш данных
-      // localStorage.removeItem('current_company');
-      
-      // Очищаем кэш данных компаний
+    
       const keys = Object.keys(localStorage);
       keys.forEach(key => {
         if (key.includes('_timestamp') || 
@@ -1284,10 +1276,6 @@ const store = createStore({
     },
     async setCurrentCompany({ commit, dispatch }, companyId) {
       try {
-        // ✅ УСТАНАВЛИВАЕМ ФЛАГ - ЭТА ВКЛАДКА ИНИЦИИРУЕТ СМЕНУ КОМПАНИИ
-        commit('SET_IS_CHANGING_COMPANY', true);
-        
-        // ✅ Получаем старую компанию перед смены
         const oldCompanyId = this.state.currentCompany?.id;
         
         const response = await api.post('/user/set-company', { company_id: companyId });
@@ -1295,10 +1283,14 @@ const store = createStore({
         
         commit('SET_CURRENT_COMPANY', company);
         
-        // ✅ Инвалидируем кэш СТАРОЙ компании в localStorage
+        // ✅ Инвалидируем кэш старой компании в localStorage
         if (oldCompanyId && oldCompanyId !== companyId) {
           // Инвалидируем кэш старой компании
           CacheInvalidator.invalidateByCompany(oldCompanyId);
+          
+          // ✅ Очищаем queryCache (кэш для постраничных списков)
+          const queryCache = (await import('@/utils/queryCache')).default;
+          queryCache.clear();
           
           // Очищаем данные vuex-persistedstate
           const persistKey = 'birhasap_vuex_cache';
@@ -1321,7 +1313,6 @@ const store = createStore({
           localStorage.setItem(persistKey, JSON.stringify(stored));
           
           // ✅ Очищаем кэш транзакций (все ключи связанные с транзакциями)
-          // Удаляем все ключи из localStorage, которые могут относиться к старой компании
           const keysToDelete = [];
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
@@ -1330,27 +1321,16 @@ const store = createStore({
             }
           }
           keysToDelete.forEach(key => localStorage.removeItem(key));
-          if (keysToDelete.length > 0) {
-            console.log(`🗑️ Очищены ${keysToDelete.length} ключей транзакций: ${keysToDelete.join(', ')}`);
-          }
         }
         
-        // vuex-persistedstate автоматически сохранит в localStorage, не нужно дублировать
-        
         // После смены компании загружаем все данные компании
-        // loadCompanyData сам проверит что компания изменилась и очистит кэш
         await dispatch('loadCompanyData');
-        
-        // ✅ ОТКЛЮЧАЕМ ФЛАГ - смена завершена, нормализуем storage event
-        commit('SET_IS_CHANGING_COMPANY', false);
         
         // ✅ Отправляем событие об изменении компании
         eventBus.emit('company-changed', companyId);
         
         return company;
       } catch (error) {
-        // ✅ ОТКЛЮЧАЕМ ФЛАГ при ошибке
-        commit('SET_IS_CHANGING_COMPANY', false);
         console.error('Ошибка установки текущей компании:', error);
         throw error;
       }
