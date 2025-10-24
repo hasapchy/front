@@ -23,10 +23,52 @@
         </div>
     </div>
 
-        <!-- Балансы клиентов -->
+        <!-- Статистика балансов -->
         <MutualSettlementsBalanceWrapper 
             :data="clientBalances" 
             :loading="clientBalancesLoading" />
+
+        <!-- Таблица клиентов -->
+        <div v-if="!clientBalancesLoading && clientBalances.length > 0" class="mt-6">
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Клиент
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Баланс
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr v-for="client in clientBalances" :key="client.id" class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">
+                                    {{ client.first_name }} {{ client.last_name }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span :class="{
+                                    'text-green-600': client.debt_amount > 0,
+                                    'text-red-600': client.credit_amount > 0,
+                                    'text-gray-500': client.debt_amount === 0 && client.credit_amount === 0
+                                }" class="text-sm font-semibold">
+                                    <span v-if="client.debt_amount > 0">+{{ $formatNumber(client.debt_amount, 2, true) }} {{ client.currency_symbol }}</span>
+                                    <span v-else-if="client.credit_amount > 0">-{{ $formatNumber(client.credit_amount, 2, true) }} {{ client.currency_symbol }}</span>
+                                    <span v-else>0.00 {{ client.currency_symbol }}</span>
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div v-else-if="!clientBalancesLoading && clientBalances.length === 0" class="mt-6 text-center text-gray-500 py-8">
+            Нет клиентов для отображения
+        </div>
     
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
@@ -109,9 +151,22 @@ export default {
         },
 
         async handleCompanyChanged(companyId) {
+            // Очищаем фильтры
             this.clientId = '';
+            
+            // Очищаем данные
+            this.allClients = [];
+            this.clientBalances = [];
+            
+            // Принудительно перезагружаем данные
             await this.loadClients();
             await this.loadClientBalances();
+            
+            // Уведомляем пользователя о смене компании
+            this.$store.dispatch('showNotification', {
+                title: 'Компания изменена',
+                isDanger: false
+            });
         },
     },
 }
