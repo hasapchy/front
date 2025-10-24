@@ -98,6 +98,7 @@ export default {
                 { name: 'address', label: 'address' },
                 { name: 'note', label: 'note' },
                 { name: 'discount', label: 'discount' },
+                { name: 'balance', label: 'balance' },
                 { name: 'status', label: 'status', html: true },
                 { name: 'dateUser', label: 'dateUser' },
             ]
@@ -127,6 +128,8 @@ export default {
                     return i.emailsHtmlList();
                 case 'discount':
                     return i.discountFormatted();
+                case 'balance':
+                    return i.balanceFormatted();
                 case 'status':
                     return i.statusIcon();
                 case 'dateUser':

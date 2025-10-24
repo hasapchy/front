@@ -3,11 +3,8 @@
         <!-- Balance Cards -->
         <div class="flex-1">
             <transition name="fade" mode="out-in">
-                <div v-if="data != null && !loading" key="table">
-                    <div v-if="data.length === 0" class="text-center text-gray-500 py-8">
-                        {{ $t('noDataFound') }}
-                    </div>
-                    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
+                <div v-if="data != null && !loading && data.length > 0" key="table">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
                         <div v-for="item in data" :key="item.id" class="bg-white p-3 rounded-lg shadow-md">
                             <div class="text-center mb-3">
                                 <span class="text-sm font-semibold">
@@ -50,7 +47,7 @@
                         </div>
                     </div>
                 </div>
-                <div v-else key="loader" class="flex justify-center items-center h-20">
+                <div v-else-if="loading" key="loader" class="flex justify-center items-center h-20">
                     <i class="fas fa-spinner fa-spin text-2xl"></i><br>
                 </div>
             </transition>
@@ -61,30 +58,6 @@
             <transition name="fade" mode="out-in">
                 <div v-if="data != null && !loading" key="table">
                     <div class="flex flex-col gap-3 items-end">
-                        <!-- Долги кассы -->
-                        <div v-if="hasDebts">
-                            <div v-for="item in dataWithDebts" :key="item.id" 
-                                 class="bg-white p-3 rounded-lg shadow-md border-l-4 border-orange-500 min-w-[200px] cursor-pointer clickable-debt transition-all duration-200"
-                                 @click="handleDebtClick"
-                                 :title="$t('clickToFilterDebts')">
-                                <div class="text-center mb-2">
-                                    <span class="text-xs font-semibold">
-                                        {{ translateCashRegisterName(item.name) }}
-                                        <span class="text-xs font-bold text-black ml-1">({{ item.currency_symbol || item.currency_code || '' }})</span>
-                                    </span>
-                                </div>
-                                <div class="text-center">
-                                    <div class="mb-1 flex items-center justify-center space-x-1">
-                                        <span class="text-xs font-medium text-gray-700">{{ $t('debt') }}</span>
-                                        <i class="fas fa-exclamation-triangle text-orange-500 text-xs"></i>
-                                    </div>
-                                    <div class="text-orange-600 font-bold text-sm leading-tight">
-                                        <div class="balance-amount text-base">{{ $formatNumber(item.debtValue, 0, false) }}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Долги клиентов -->
                         <div v-if="hasClientDebts" 
                              class="bg-white p-3 rounded-lg shadow-md border-l-4 border-blue-500 min-w-[200px]">
@@ -174,22 +147,6 @@ export default {
                 sourceFilter: this.sourceFilter
             };
         },
-        dataWithDebts() {
-            if (!this.data) return [];
-            
-            return this.data
-                .map(item => {
-                    const debtBalance = item.balance.find(b => b.type === 'debt');
-                    return {
-                        ...item,
-                        debtValue: debtBalance ? debtBalance.value : 0
-                    };
-                })
-                .filter(item => Number(item.debtValue) !== 0);
-        },
-        hasDebts() {
-            return this.dataWithDebts.length > 0;
-        },
         hasClientDebts() {
             return this.clientDebts.positive !== 0 || this.clientDebts.negative !== 0;
         }
@@ -204,11 +161,8 @@ export default {
                 });
             }
         },
-        handleDebtClick() {
-            this.$emit('debt-click');
-        },
         getVisibleBalanceItems(balanceItems) {
-            // Полностью убираем долги из основного баланса - они показываются отдельно справа
+            // Полностью убираем кредиты из основного баланса - они показываются отдельно справа
             return balanceItems.filter(item => item.type !== 'debt');
         },
         getGridClass(balanceItems) {
@@ -306,7 +260,7 @@ export default {
                     params
                 );
 
-                // Загружаем долги клиентов из транзакций
+                // Загружаем кредиты клиентов из транзакций
                 try {
                     const transactionsData = await TransactionController.getItems(
                         1, // page
@@ -333,7 +287,7 @@ export default {
                         };
                     }
                 } catch (error) {
-                    console.error('Ошибка при загрузке долгов клиентов:', error);
+                    console.error('Ошибка при загрузке кредитов клиентов:', error);
                     this.clientDebts = { positive: 0, negative: 0, balance: 0 };
                 }
             } finally {

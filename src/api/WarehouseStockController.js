@@ -26,8 +26,8 @@ export default class WarehouseStockController {
                     item.unit_id,
                     item.unit_name,
                     item.unit_short_name,
-                    null, // category_id больше не доступен
-                    null, // category_name больше не доступен
+                    item.category_id,
+                    item.category_name,
                     item.quantity,
                     item.created_at
                 );

@@ -2,13 +2,6 @@
     <div class="mt-4">
         <div class="flex justify-between items-center mb-2">
             <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
-            <PrimaryButton 
-                v-if="$store.getters.hasPermission('transactions_create')"
-                icon="fas fa-plus" 
-                :onclick="showAddTransactionModal" 
-                :is-small="true">
-                {{ $t('addTransaction') }}
-            </PrimaryButton>
         </div>
         
         <!-- Статистика баланса -->
@@ -117,12 +110,13 @@ export default {
             entityModalOpen: false,
             entityLoading: false,
             columnsConfig: [
+                { name: "id", label: "№", size: 60 },
                 { name: "dateUser", label: this.$t("date"), size: 120 },
-                { name: "source", label: this.$t("source"), size: 150, html: true },
+                { name: "operationType", label: this.$t("type"), size: 150, html: true },
+                { name: "sourceType", label: "Источник", size: 120 },
                 { name: "note", label: this.$t("note"), size: 200 },
                 { name: "user_name", label: this.$t("user"), size: 120 },
-                { name: "is_debt", label: this.$t("debt"), size: 80, html: true },
-                { name: "amount", label: this.$t("amount"), size: 130, html: true },
+                { name: "clientImpact", label: this.$t("impact"), size: 130, html: true },
             ],
             ENTITY_CONFIG: {
                 transaction: {
@@ -223,49 +217,52 @@ export default {
                 const self = this; // Сохраняем ссылку на компонент
                 
                 // Маппим данные для отображения, добавляя методы форматирования
-                this.balanceHistory = (data || []).map(item => ({
-                    ...item,
-                    get dateUser() {
-                        return item.date ? new Date(item.date).toLocaleString() : "";
-                    },
-                    formatDate() {
-                        return item.date ? new Date(item.date).toLocaleString() : "";
-                    },
-                    formatAmountWithColor() {
-                        const val = parseFloat(item.amount);
-                        const color = val >= 0 ? "#5CB85C" : "#EE4F47";
-                        const formatted = self.$formatNumber(val, 2, true);
-                        return `<span style="color:${color};font-weight:bold">${formatted} ${self.currencyCode}</span>`;
-                    },
-                    label() {
-                        switch (item.source) {
-                            case "transaction": 
-                                return '<i class="fas fa-circle text-[#6C757D] mr-2"></i> Прочее';
-                            case "sale": 
-                                return '<i class="fas fa-shopping-cart text-[#5CB85C] mr-2"></i> Продажа';
-                            case "order": 
-                                return '<i class="fas fa-file-invoice text-[#337AB7] mr-2"></i> Заказ';
-                            case "receipt": 
-                                return '<i class="fas fa-box text-[#FFA500] mr-2"></i> Оприходование';
-                            default: 
-                                return item.source;
+                this.balanceHistory = (data || []).map(item => {
+                    return {
+                        ...item,
+                        get dateUser() {
+                            return item.date ? new Date(item.date).toLocaleString() : "";
+                        },
+                        formatDate() {
+                            return item.date ? new Date(item.date).toLocaleString() : "";
+                        },
+                        formatAmountWithColor() {
+                            const val = parseFloat(item.amount);
+                            const color = val >= 0 ? "#5CB85C" : "#EE4F47";
+                            const formatted = self.$formatNumber(val, 2, true);
+                            return `<span style="color:${color};font-weight:bold">${formatted} ${self.currencyCode}</span>`;
+                        },
+                        label() {
+                            // Определяем тип операции по description (как во взаиморасчетах)
+                            const isDebt = item.description && item.description.includes('(в долг)');
+                            
+                            // Если это долговая операция
+                            if (isDebt) {
+                                return '<i class="fas fa-arrow-up text-red-500 mr-2"></i> Продажа (долг)';
+                            }
+                            
+                            // Если это оплата долга
+                            return '<i class="fas fa-arrow-down text-green-500 mr-2"></i> Оплата клиента';
                         }
-                    }
-                }));
+                    };
+                });
                 
-                // Вычисляем приход, расход и баланс - ВСЕ операции (не только долговые)
-                // Недолговые (is_debt=false) тоже влияют на отображение истории
                 this.totalIncome = this.balanceHistory
-                    .filter(item => item.amount > 0)
+                    .filter(item => {
+                        const isDebt = item.description && item.description.includes('(в долг)');
+                        return isDebt; // Долги увеличивают "доход" (задолженность)
+                    })
+                    .reduce((sum, item) => sum + parseFloat(item.amount), 0);
+
+                this.totalExpense = this.balanceHistory
+                    .filter(item => {
+                        const isDebt = item.description && item.description.includes('(в долг)');
+                        return !isDebt; // Оплаты уменьшают "расход" (погашение долга)
+                    })
                     .reduce((sum, item) => sum + parseFloat(item.amount), 0);
                 
-                this.totalExpense = Math.abs(this.balanceHistory
-                    .filter(item => item.amount < 0)
-                    .reduce((sum, item) => sum + parseFloat(item.amount), 0));
-                
-                // Итоговый баланс = сумма ВСЕХ операций
-                this.totalBalance = this.balanceHistory
-                    .reduce((sum, item) => sum + parseFloat(item.amount), 0);
+                // Итоговый баланс = долги - оплаты (правильная логика взаиморасчетов)
+                this.totalBalance = this.totalIncome - this.totalExpense;
                 
                 this.lastFetchedClientId = this.editingItem.id;
                 this.forceRefresh = false;
@@ -281,36 +278,14 @@ export default {
             }
         },
 
-        itemMapper(i, c) {
-            switch (c) {
-                case "dateUser":
-                    return i.dateUser;
-                case "source":
-                    return i.label?.() ?? i.source;
-                case "note":
-                    return i.note || i.description || '';
-                case "user_name":
-                    return i.user_name || '';
-                case "is_debt":
-                    if (i.is_debt === 1 || i.is_debt === true || i.is_debt === '1') {
-                        return '<i class="fas fa-check text-green-500"></i>';
-                    } else {
-                        return '<i class="fas fa-times text-red-500"></i>';
-                    }
-                case "amount":
-                    return i.formatAmountWithColor?.();
-                default:
-                    return i[c];
-            }
-        },
         async handleBalanceItemClick(item) {
             if (!this.editingItem || !this.editingItem.id) return;
             
             // Всегда открываем транзакцию, поскольку именно в ней содержится финансовая информация
             try {
                 this.entityLoading = true;
-                // source_id содержит ID транзакции
-                const data = await this.ENTITY_CONFIG.transaction.fetch(item.source_id);
+                // sourceId содержит ID транзакции
+                const data = await this.ENTITY_CONFIG.transaction.fetch(item.sourceId);
                 this.editingTransactionItem = data;
                 
                 this.entityModalOpen = true;
@@ -324,17 +299,6 @@ export default {
             } finally {
                 this.entityLoading = false;
             }
-        },
-        showAddTransactionModal() {
-            // Создаем новую транзакцию с привязкой к текущему клиенту
-            if (!this.editingItem || !this.editingItem.id) return;
-            
-            this.editingTransactionItem = null; // Очищаем для создания новой
-            this.selectedEntity = {
-                type: 'transaction',
-                data: null
-            };
-            this.entityModalOpen = true;
         },
         closeEntityModal() {
             this.entityModalOpen = false;
@@ -379,6 +343,35 @@ export default {
         },
         formatBalance(balance) {
             return `${this.$formatNumber(balance, 2, true)} ${this.currencyCode}`;
+        },
+        itemMapper(i, c) {
+            switch (c) {
+                case "id":
+                    return i.sourceId || '-';
+                case "operationType":
+                    const isDebt = i.description && i.description.includes('(в долг)');
+                    return isDebt
+                        ? '<i class="fas fa-arrow-up text-red-500 mr-2"></i> Продажа (долг)'
+                        : '<i class="fas fa-arrow-down text-green-500 mr-2"></i> Оплата клиента';
+                case "sourceType":
+                    return i.getSourceTypeLabel ? i.getSourceTypeLabel() : (i.source_type || '-');
+                case "user_name":
+                    return i.user_name || '-';
+                case "clientImpact":
+                    const isDebtImpact = i.description && i.description.includes('(в долг)');
+                    const formattedAmount = this.$formatNumber(Math.abs(parseFloat(i.amount)), 2, true);
+                    const currencySymbol = this.currencyCode || '';
+                    
+                    if (isDebtImpact) {
+                        // Долг: увеличиваем задолженность (+amount) - красный
+                        return `<span class="text-red-500 font-semibold">+${formattedAmount} ${currencySymbol}</span>`;
+                    } else {
+                        // Оплата: уменьшаем задолженность (-amount) - зелёный
+                        return `<span class="text-green-500 font-semibold">-${formattedAmount} ${currencySymbol}</span>`;
+                    }
+                default:
+                    return i[c];
+            }
         },
     },
     computed: {

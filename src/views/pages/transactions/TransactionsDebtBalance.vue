@@ -168,7 +168,7 @@ export default {
                     }
                 });
 
-                // Загружаем долги по кассам
+                // Загружаем кредиты по кассам
                 this.data = await CashRegisterController.getCashBalance(
                     cashIds,
                     start,
@@ -176,7 +176,7 @@ export default {
                     params
                 );
                 
-                // Загружаем долги клиентов из транзакций
+                // Загружаем кредиты клиентов из транзакций
                 try {
                     const transactionsData = await TransactionController.getItems(
                         1, // page
@@ -203,7 +203,7 @@ export default {
                         };
                     }
                 } catch (error) {
-                    console.error('Ошибка при загрузке долгов клиентов:', error);
+                    console.error('Ошибка при загрузке кредитов клиентов:', error);
                     this.clientDebts = { positive: 0, negative: 0, balance: 0 };
                 }
             } finally {
@@ -259,7 +259,7 @@ export default {
     }
 }
 
-/* Стили для кликабельного элемента долга */
+/* Стили для кликабельного элемента кредита */
 .clickable-debt:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 12px -1px rgba(255, 152, 0, 0.3), 0 4px 6px -1px rgba(0, 0, 0, 0.1);

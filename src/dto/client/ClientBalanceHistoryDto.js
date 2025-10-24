@@ -1,11 +1,13 @@
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { dayjsDateTime } from "@/utils/dateUtils";
 export default class ClientBalanceHistoryDto {
-  constructor(source, sourceId, date, amount, description) {
+  constructor(source, sourceId, date, amount, description, user_name = null, source_type = null) {
     this.source = source; // тип источника: 'sale', 'receipt', 'transaction', 'order'
     this.sourceId = sourceId; // ID записи
     this.date = date; // дата
     this.amount = parseFloat(amount) || 0; // сумма со знаком
     this.description = description; // описание
+    this.user_name = user_name; // имя пользователя
+    this.source_type = source_type; // тип источника (App\Models\Sale, etc.)
   }
 
   formattedAmount() {
@@ -15,6 +17,23 @@ export default class ClientBalanceHistoryDto {
 
   formatDate() {
     return dayjsDateTime(this.date);
+  }
+
+  getSourceTypeLabel() {
+    if (!this.source_type) return 'Неизвестно';
+    
+    switch (this.source_type) {
+      case 'App\\Models\\Sale':
+        return 'Продажа';
+      case 'App\\Models\\Order':
+        return 'Заказ';
+      case 'App\\Models\\WarehouseReceipt':
+        return 'Оприходование';
+      case 'App\\Models\\Transaction':
+        return 'Транзакция';
+      default:
+        return 'Операция';
+    }
   }
 
   label() {

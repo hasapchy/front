@@ -72,7 +72,7 @@ export default {
                 { name: 'id', label: this.$t('number'), size: 60 },
                 { name: 'name', label: this.$t('name') },
                 { name: 'balance', label: this.$t('balance') },
-                { name: 'users', label: this.$t('access') },
+                { name: 'currency', label: this.$t('currency') },
                 { name: 'createdAt', label: this.$t('creationDate') },
                 { name: 'dateUser', label: this.$t('dateUser'), html: true },
             ]
@@ -94,6 +94,8 @@ export default {
                     return i.is_rounding ? this.$t('enabled') : this.$t('disabled');
                 case 'users':
                     return (i.users || '').length + ' ' + this.$t('users');
+                case 'currency':
+                    return (i.currency_code || '') + (i.currency_symbol ? ' (' + i.currency_symbol + ')' : '');
                 case 'createdAt':
                     return i.formatCreatedAt();
                 case 'dateUser':

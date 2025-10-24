@@ -12,9 +12,9 @@ export default {
   balance: 'Баланс',
   totalBalance: 'Общий баланс',
   realBalance: 'Реальный баланс',
-  debtBalance: 'Долговый баланс',
-  debt: 'Долг',
-  clientDebts: 'Долги клиентов',
+  debtBalance: 'Кредитный баланс',
+  debt: 'Кредит',
+  clientDebts: 'Кредиты клиентов',
   oweUs: 'Должны нам',
   weOwe: 'Мы должны',
   source: 'Источник',
@@ -22,8 +22,8 @@ export default {
   paymentType: 'Тип оплаты',
   cashPayment: 'Оплата наличными',
   selectCashRegister: 'Выберите кассу',
-  debtOperation: 'Долг',
-  debtOperationDescription: 'При включении этой опции касса не будет изменена, но операция будет зафиксирована как долговая',
+  debtOperation: 'Кредит',
+  debtOperationDescription: 'При включении этой опции касса не будет изменена, но операция будет зафиксирована как кредитная',
   contracts: 'Контракты',
   enableSound: 'Включить звук',
   disableSound: 'Выключить звук',
@@ -80,6 +80,12 @@ export default {
   
   // Дополнительные навигационные элементы
   finance: 'Финансы',
+    mutualSettlements: 'Взаиморасчеты',
+    impact: 'По клиенту',
+    balance: 'Баланс',
+    debt: 'Долг',
+    credit: 'Кредит',
+    totalBalance: 'Итого',
   cashRegisters: 'Кассы',
   productCategories: 'Категории товаров/услуг',
   orderStatuses: 'Статусы заказов',
@@ -689,7 +695,7 @@ export default {
   no: 'Нет',
   income: 'Приход',
   outcome: 'Расход',
-  debt: 'Долг',
+  debt: 'Кредит',
   noRightsToChangeSettings: 'У вас нет прав для изменения настроек',
   
   // Дополнительные переводы
@@ -707,7 +713,7 @@ export default {
   active: 'Активен',
   problemClient: 'Проблемный клиент',
   toClientBalance: 'В баланс клиента',
-  inDebt: 'В долг',
+  inDebt: 'В кредит',
   
   // Новые ключи для интернационализации
   // Basement worker interface
@@ -786,7 +792,7 @@ export default {
   errorSavingTransaction: 'Ошибка сохранения транзакции',
   transactionSuccessfullyDeleted: 'Транзакция успешно удалена',
   errorDeletingTransaction: 'Ошибка удаления транзакции',
-  clickToFilterDebts: 'Нажмите, чтобы отфильтровать долги',
+  clickToFilterDebts: 'Нажмите, чтобы отфильтровать кредиты',
   clickToFilterTransactions: 'Нажмите, чтобы отфильтровать транзакции',
   
   // Трансферы
@@ -993,7 +999,7 @@ export default {
   allTransactions: 'Все транзакции',
   allSources: 'Все источники',
   allStatuses: 'Все статусы',
-  notDebt: 'Не долг',
+  notDebt: 'Не кредит',
   completed: 'Завершено',
   cancelled: 'Отменено',
   pending: 'В ожидании',

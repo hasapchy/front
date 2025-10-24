@@ -1,6 +1,9 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editTransaction') : $t('createTransaction') }}</h2>
+        <div v-if="isDebt" class="mb-2">
+            <label class="required">{{ $t('client') }}</label>
+        </div>
         <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
         <div>
             <label>{{ $t('date') }}</label>
@@ -279,6 +282,13 @@ export default {
             }
         },
         async save() {
+            // Валидация: если "в кредит", то клиент обязателен
+            if (this.isDebt && !this.selectedClient?.id) {
+                this.$emit('saved-error', 'При транзакции "в кредит" должен быть выбран клиент');
+                this.saveLoading = false;
+                return;
+            }
+
             this.saveLoading = true;
 
             try {

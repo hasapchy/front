@@ -217,7 +217,9 @@ export default class ClientController {
           item.source_id, // Исправлено: было item.sourceId
           item.date,
           item.amount,
-          item.description
+          item.description,
+          item.user_name,
+          item.source_type
         );
       });
       return items;

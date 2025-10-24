@@ -49,14 +49,7 @@
                 </select>
             </div>
 
-            <!-- Фильтр по долгу -->
-            <div class="ml-2">
-                <select v-model="isDebtFilter" @change="() => fetchItems(1)">
-                    <option value="">{{ $t('allTransactions') }}</option>
-                    <option value="true">{{ $t('debt') }}</option>
-                    <option value="false">{{ $t('notDebt') }}</option>
-                </select>
-            </div>
+            <!-- Фильтр по кредиту - УДАЛЕНО, долги показываются на странице "Взаиморасчеты" -->
 
             <div class="ml-2">
                 <select v-model="dateFilter" @change="() => fetchItems(1)">
@@ -98,7 +91,6 @@
         :transaction-type-filter="transactionTypeFilter" 
         :source-filter="sourceFilter"
         @balance-click="handleBalanceClick"
-        @debt-click="handleDebtClick" 
     />
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
@@ -167,7 +159,6 @@ export default {
             transactionTypeFilter: '',
             sourceFilter: '',
             projectId: '',
-            isDebtFilter: '',
             allProjects: [],
             savedSuccessText: this.$t('transactionSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingTransaction'),
@@ -219,7 +210,7 @@ export default {
     },
     methods: {
         updateBalace() {
-            // Обновляем баланс кассы и долгов (один компонент для обоих)
+            // Обновляем баланс кассы и кредитов (один компонент для обоих)
             if (this.$refs.balanceWrapper) {
                 this.$refs.balanceWrapper.fetchItems();
             }
@@ -241,8 +232,6 @@ export default {
                     return i.typeCell();
                 case 'source':
                     return i.sourceCell();
-                case 'debt':
-                    return i.debtCell();
                 case 'cashName':
                     return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
                 case 'cashAmount':
@@ -275,7 +264,6 @@ export default {
             this.transactionTypeFilter = '';
             this.sourceFilter = '';
             this.projectId = '';
-            this.isDebtFilter = '';
             this.selectedIds = [];
             
             // Перезагружаем данные со страницы 1
@@ -298,7 +286,7 @@ export default {
                     this.perPage,
                     this.startDate,
                     this.endDate,
-                    this.isDebtFilter
+                    'false' // ✅ is_debt=false - не показываем долги на этой странице
                 );
                 
                 // Обычная пагинация
@@ -336,22 +324,11 @@ export default {
             }
             this.fetchItems(1);
         },
-        handleDebtClick() {
-            // Если фильтр уже установлен на долги, сбрасываем его
-            if (this.isDebtFilter === 'true') {
-                this.isDebtFilter = '';
-            } else {
-                // Иначе устанавливаем фильтр на долговые записи
-                this.isDebtFilter = 'true';
-            }
-            this.fetchItems(1);
-        },
         resetFilters() {
             this.cashRegisterId = '';
             this.transactionTypeFilter = '';
             this.sourceFilter = '';
             this.projectId = '';
-            this.isDebtFilter = '';
             this.dateFilter = 'all_time';
             this.startDate = null;
             this.endDate = null;
@@ -478,7 +455,6 @@ export default {
                    this.transactionTypeFilter !== '' ||
                    this.sourceFilter !== '' ||
                    this.projectId !== '' ||
-                   this.isDebtFilter !== '' ||
                    this.dateFilter !== 'all_time' ||
                    this.startDate !== null ||
                    this.endDate !== null;

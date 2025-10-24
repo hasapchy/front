@@ -88,7 +88,7 @@ export default {
             }
         },
         getVisibleBalanceItems(balanceItems) {
-            // Полностью убираем долги из основного баланса - они показываются отдельно справа
+            // Полностью убираем кредиты из основного баланса - они показываются отдельно справа
             return balanceItems.filter(item => item.type !== 'debt');
         },
         getGridClass(balanceItems) {

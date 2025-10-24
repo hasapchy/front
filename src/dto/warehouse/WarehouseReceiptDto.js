@@ -61,14 +61,14 @@ export default class WarehouseReceiptDto {
   }
   cashNameDisplay() {
     // Согласно новой архитектуре, касса всегда указывается
-    // Тип операции (долг или нет) определяется полем is_debt в транзакции
+    // Тип операции (кредит или нет) определяется полем is_debt в транзакции
     return this.cashName || "Не указана";
   }
   
   paymentTypeDisplay() {
     // Вычисляем тип оплаты на основе того, как было создано
     // Согласно новой архитектуре: cash_id всегда заполнен, type определяет is_debt
-    return this.type === 'cash' ? 'В кассу' : 'В долг';
+    return this.type === 'cash' ? 'В кассу' : 'В кредит';
   }
 
   priceInfo() {

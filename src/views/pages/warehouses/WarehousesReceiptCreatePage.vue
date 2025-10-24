@@ -220,7 +220,7 @@ export default {
             }
             
             if (!this.type || (this.type !== 'cash' && this.type !== 'balance')) {
-                validationErrors.push('• Выберите тип оплаты (В кассу или В долг)');
+                validationErrors.push('• Выберите тип оплаты (В кассу или В кредит)');
             }
             
             if (!this.products || this.products.length === 0) {

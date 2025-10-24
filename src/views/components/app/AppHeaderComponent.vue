@@ -94,6 +94,7 @@ export default {
                 '/transaction_categories': 'transaction_categories_view',
                 '/order_additional_fields': 'order_categories_view', // Используем то, что есть в сидере
                 '/transactions': 'transactions_view',
+                '/mutual-settlements': 'transactions_view', // ✅ Взаиморасчеты используют те же права что и транзакции
                 '/transfers': 'transfers_view',
                 '/cash-registers': 'cash_registers_view',
                 '/invoices': 'invoices_view',

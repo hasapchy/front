@@ -34,6 +34,7 @@ import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vu
 import BasementLoginPage from "@/views/pages/basement/BasementLoginPage.vue";
 import BasementOrdersPage from "@/views/pages/basement/BasementOrdersPage.vue";
 import BasementOrderCreatePage from "@/views/pages/basement/BasementOrderCreatePage.vue";
+import MutualSettlementsPage from "@/views/pages/mutual_settlements/MutualSettlementsPage.vue";
 const routes = [
   {
     path: "/",
@@ -99,6 +100,10 @@ const routes = [
           showSearch: true,
           binded: [
             {
+              name: "mutualSettlements",
+              path: "/mutual-settlements",
+            },
+            {
               name: "transfers",
               path: "/transfers",
             },
@@ -122,6 +127,10 @@ const routes = [
           requiresAuth: true,
           binded: [
             {
+              name: "mutualSettlements",
+              path: "/mutual-settlements",
+            },
+            {
               name: "finance",
               path: "/transactions",
             },
@@ -140,7 +149,7 @@ const routes = [
         path: "/warehouses",
         name: "Warehouses",
         component: WarehousesPage,
-        meta: { title: "warehouses", requiresAuth: true },
+        meta: { title: "warehouses", requiresAuth: true, showSearch: true },
       },
       {
         path: "/clients",
@@ -395,8 +404,41 @@ const routes = [
           requiresAuth: true,
           binded: [
             {
+              name: "mutualSettlements",
+              path: "/mutual-settlements",
+            },
+            {
               name: "transfers",
               path: "/transfers",
+            },
+            {
+              name: "finance",
+              path: "/transactions",
+            },
+            {
+              name: "invoices",
+              path: "/invoices",
+            },
+          ],
+        },
+      },
+      {
+        path: "/mutual-settlements",
+        name: "MutualSettlements",
+        component: MutualSettlementsPage,
+        meta: {
+          title: "mutualSettlements",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "transactions_view",
+          binded: [
+            {
+              name: "transfers",
+              path: "/transfers",
+            },
+            {
+              name: "cashRegisters",
+              path: "/cash-registers",
             },
             {
               name: "finance",
