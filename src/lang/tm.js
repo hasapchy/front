@@ -53,6 +53,7 @@ export default {
     debt: 'Bergi',
     credit: 'Kredit',
     totalBalance: 'Jemi',
+    source: 'Çeşme',
   projects: 'Proýektler',
   users: 'Ulanyjylar',
   settings: 'Ýörite hukuklar',

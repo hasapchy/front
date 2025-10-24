@@ -44,11 +44,10 @@
             @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
 
-    <!-- Балансы клиентов -->
-    <MutualSettlementsBalanceWrapper 
-        :data="clientBalances" 
-        :loading="clientBalancesLoading"
-        @filter-by-client="handleClientBalanceFilter" />
+        <!-- Балансы клиентов -->
+        <MutualSettlementsBalanceWrapper 
+            :data="clientBalances" 
+            :loading="clientBalancesLoading" />
 
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
@@ -88,11 +87,12 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
+import SourceButtonCell from '@/views/components/app/buttons/SourceButtonCell.vue';
 import MutualSettlementsBalanceWrapper from './MutualSettlementsBalanceWrapper.vue';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, ClientButtonCell, MutualSettlementsBalanceWrapper },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, ClientButtonCell, SourceButtonCell, MutualSettlementsBalanceWrapper },
     data() {
         return {
             controller: TransactionController,
@@ -123,6 +123,16 @@ export default {
                 },
                 { name: 'clientBalance', label: 'balance', html: true },
                 { name: 'clientImpact', label: 'impact', html: true },
+                {
+                    name: 'source',
+                    label: 'source',
+                    component: markRaw(SourceButtonCell),
+                    props: (item) => ({
+                        sourceType: item.sourceType,
+                        sourceId: item.sourceId,
+                        transaction: item
+                    })
+                },
                 { name: 'note', label: 'note', html: true, size: 200 },
                 { name: 'categoryName', label: 'category' },
                 { name: 'dateUser', label: 'date' },
@@ -174,15 +184,6 @@ export default {
             } finally {
                 this.clientBalancesLoading = false;
             }
-        },
-
-        handleClientBalanceFilter(clientId, type) {
-            // Устанавливаем фильтр по клиенту
-            this.clientId = clientId;
-            
-            // Можно добавить дополнительную фильтрацию по типу (долг/кредит)
-            // Пока просто перезагружаем данные
-            this.fetchItems(1, false);
         },
         
         itemMapper(i, c) {

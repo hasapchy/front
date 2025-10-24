@@ -86,6 +86,7 @@ export default {
     debt: 'Долг',
     credit: 'Кредит',
     totalBalance: 'Итого',
+    source: 'Источник',
   cashRegisters: 'Кассы',
   productCategories: 'Категории товаров/услуг',
   orderStatuses: 'Статусы заказов',

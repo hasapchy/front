@@ -1,41 +1,58 @@
 <template>
     <div class="flex gap-4 mb-4">
-        <!-- Client Balance Cards -->
+        <!-- Общие балансы клиентов -->
         <div class="flex-1">
             <transition name="fade" mode="out-in">
                 <div v-if="data != null && !loading && data.length > 0" key="table">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div v-for="item in data" :key="item.id" class="bg-white p-3 rounded-lg shadow-md">
+                        <!-- Общий дебет -->
+                        <div class="bg-white p-3 rounded-lg shadow-md">
                             <div class="text-center mb-3">
-                                <span class="text-sm font-semibold">
-                                    {{ item.first_name }} {{ item.last_name }}
-                                </span>
+                                <span class="text-sm font-semibold">Общий дебет</span>
                             </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <!-- Дебет (нам должны) -->
-                                <div class="text-center balance-item clickable-balance hover-income"
-                                     :title="$t('clickToFilterDebts')"
-                                     @click="handleDebtClick(item)">
-                                    <div class="mb-1 flex items-center justify-center space-x-1">
-                                        <span class="text-xs font-medium text-gray-700">Дебет</span>
-                                        <i class="fas fa-arrow-up text-green-500 text-xs"></i>
-                                    </div>
-                                    <div class="text-green-600 font-bold text-sm leading-tight">
-                                        <div class="balance-amount text-base">{{ $formatNumber(item.debt_amount || 0, 0, false) }}</div>
-                                    </div>
+                            <div class="text-center">
+                                <div class="mb-1 flex items-center justify-center space-x-1">
+                                    <span class="text-xs font-medium text-gray-700">Дебет</span>
+                                    <i class="fas fa-arrow-up text-green-500 text-xs"></i>
                                 </div>
-                                
-                                <!-- Кредит (мы должны) -->
-                                <div class="text-center balance-item clickable-balance hover-outcome"
-                                     :title="$t('clickToFilterCredits')"
-                                     @click="handleCreditClick(item)">
-                                    <div class="mb-1 flex items-center justify-center space-x-1">
-                                        <span class="text-xs font-medium text-gray-700">Кредит</span>
-                                        <i class="fas fa-arrow-down text-red-500 text-xs"></i>
-                                    </div>
-                                    <div class="text-red-600 font-bold text-sm leading-tight">
-                                        <div class="balance-amount text-base">{{ $formatNumber(item.credit_amount || 0, 0, false) }}</div>
-                                    </div>
+                                <div class="text-green-600 font-bold text-sm leading-tight">
+                                    <div class="balance-amount text-base">{{ $formatNumber(totalDebt, 0, false) }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Общий кредит -->
+                        <div class="bg-white p-3 rounded-lg shadow-md">
+                            <div class="text-center mb-3">
+                                <span class="text-sm font-semibold">Общий кредит</span>
+                            </div>
+                            <div class="text-center">
+                                <div class="mb-1 flex items-center justify-center space-x-1">
+                                    <span class="text-xs font-medium text-gray-700">Кредит</span>
+                                    <i class="fas fa-arrow-down text-red-500 text-xs"></i>
+                                </div>
+                                <div class="text-red-600 font-bold text-sm leading-tight">
+                                    <div class="balance-amount text-base">{{ $formatNumber(totalCredit, 0, false) }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Итоговый баланс -->
+                        <div class="bg-white p-3 rounded-lg shadow-md">
+                            <div class="text-center mb-3">
+                                <span class="text-sm font-semibold">Итоговый баланс</span>
+                            </div>
+                            <div class="text-center">
+                                <div class="mb-1 flex items-center justify-center space-x-1">
+                                    <span class="text-xs font-medium text-gray-700">Баланс</span>
+                                    <i class="fas fa-calculator text-blue-500 text-xs"></i>
+                                </div>
+                                <div :class="{
+                                    'text-green-600': totalBalance >= 0,
+                                    'text-red-600': totalBalance < 0,
+                                    'font-bold text-sm': true
+                                }" class="leading-tight">
+                                    <div class="balance-amount text-base">{{ $formatNumber(totalBalance, 0, false) }}</div>
                                 </div>
                             </div>
                         </div>
@@ -66,15 +83,19 @@ export default {
             default: false
         }
     },
-    methods: {
-        handleDebtClick(client) {
-            // Фильтруем по клиенту и показываем только долги
-            this.$emit('filter-by-client', client.id, 'debt');
+    computed: {
+        totalDebt() {
+            return this.data.reduce((sum, client) => sum + (client.debt_amount || 0), 0);
         },
-        handleCreditClick(client) {
-            // Фильтруем по клиенту и показываем только кредиты
-            this.$emit('filter-by-client', client.id, 'credit');
+        totalCredit() {
+            return this.data.reduce((sum, client) => sum + (client.credit_amount || 0), 0);
+        },
+        totalBalance() {
+            return this.totalDebt - this.totalCredit;
         }
+    },
+    methods: {
+        // Убираем методы кликов, так как теперь показываем общие суммы
     }
 };
 </script>

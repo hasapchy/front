@@ -57,6 +57,7 @@ export default {
     debt: 'Debt',
     credit: 'Credit',
     totalBalance: 'Total',
+    source: 'Source',
   projects: 'Projects',
   users: 'Users',
   settings: 'Settings',
