@@ -62,8 +62,6 @@ export default {
     },
     data() {
         return {
-            // data, loading, perPage, perPageOptions - из crudEventMixin
-            // selectedIds - из batchActionsMixin
             controller: CategoryController,
             cacheInvalidationType: 'categories',
             savedSuccessText: this.$t('categorySuccessfullyAdded'),
@@ -75,7 +73,6 @@ export default {
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'name', label: 'name' },
                 { name: 'parentName', label: 'parentCategory' },
-                { name: 'users', label: 'access' },
                 { name: 'userName', label: 'creator' },
                 { name: 'createdAt', label: 'creationDate' }
             ]
@@ -91,8 +88,6 @@ export default {
     methods: {
         itemMapper(i, c) {
             switch (c) {
-                case 'users':
-                    return (i.users || '').length + ' ' + this.$t('users');
                 case 'createdAt':
                     return i.formatCreatedAt();
                 default:

@@ -7,21 +7,24 @@
         <!-- Статистика баланса -->
         <div class="mb-4">
             <div class="flex items-center gap-6">
-                <!-- Приход -->
+                <!-- Долги клиента (нам платят - зеленый) -->
                 <span class="flex items-center gap-2">
                     <i class="fas fa-arrow-up text-[#5CB85C]"></i>
+                    <span class="text-sm text-gray-600">Долги клиента:</span>
                     <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b>
                 </span>
                 
-                <!-- Расход -->
+                <!-- Оплаты клиента (мы платим - красный) -->
                 <span class="flex items-center gap-2">
                     <i class="fas fa-arrow-down text-[#EE4F47]"></i>
+                    <span class="text-sm text-gray-600">Оплаты клиента:</span>
                     <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b>
                 </span>
                 
                 <!-- Итого (баланс клиента) -->
                 <span class="flex items-center gap-2">
                     <i class="fas fa-wallet text-blue-500"></i>
+                    <span class="text-sm text-gray-600">{{ balanceStatusText }}:</span>
                     <b :class="{
                         'text-[#5CB85C]': totalBalance >= 0,
                         'text-[#EE4F47]': totalBalance < 0
@@ -113,7 +116,7 @@ export default {
                 { name: "id", label: "№", size: 60 },
                 { name: "dateUser", label: this.$t("date"), size: 120 },
                 { name: "operationType", label: this.$t("type"), size: 150, html: true },
-                { name: "sourceType", label: "Источник", size: 120 },
+                { name: "sourceType", label: "Источник", size: 120, html: true },
                 { name: "note", label: this.$t("note"), size: 200 },
                 { name: "user_name", label: this.$t("user"), size: 120 },
                 { name: "clientImpact", label: this.$t("impact"), size: 130, html: true },
@@ -247,27 +250,38 @@ export default {
                     };
                 });
                 
-                this.totalIncome = this.balanceHistory
-                    .filter(item => {
-                        const isDebt = item.description && item.description.includes('(в долг)');
-                        return isDebt; // Долги увеличивают "доход" (задолженность)
-                    })
-                    .reduce((sum, item) => sum + parseFloat(item.amount), 0);
+                // Долги клиента (дебет - что клиент нам должен)
+                // Используем комбинацию: положительная сумма + содержит "(в долг)" в описании
+                const debtItems = this.balanceHistory.filter(item => {
+                    const isDebt = item.description && item.description.includes('(в долг)');
+                    const isPositive = parseFloat(item.amount) > 0;
+                    console.log(`Операция ${item.sourceId}: description="${item.description}", amount=${item.amount}, isDebt=${isDebt}, isPositive=${isPositive}`);
+                    return isDebt && isPositive;
+                });
+                console.log('Долги клиента (дебет):', debtItems);
+                this.totalIncome = debtItems.reduce((sum, item) => sum + parseFloat(item.amount), 0);
 
-                this.totalExpense = this.balanceHistory
-                    .filter(item => {
-                        const isDebt = item.description && item.description.includes('(в долг)');
-                        return !isDebt; // Оплаты уменьшают "расход" (погашение долга)
-                    })
-                    .reduce((sum, item) => sum + parseFloat(item.amount), 0);
+                // Оплаты клиента (кредит - что клиент нам заплатил)
+                // Все остальные операции (не долговые)
+                const paymentItems = this.balanceHistory.filter(item => {
+                    const isDebt = item.description && item.description.includes('(в долг)');
+                    const isNotDebt = !isDebt;
+                    console.log(`Операция ${item.sourceId}: description="${item.description}", amount=${item.amount}, isDebt=${isDebt}, isNotDebt=${isNotDebt}`);
+                    return isNotDebt;
+                });
+                console.log('Оплаты клиента (кредит):', paymentItems);
+                this.totalExpense = paymentItems.reduce((sum, item) => sum + Math.abs(parseFloat(item.amount)), 0);
                 
-                // Итоговый баланс = долги - оплаты (правильная логика взаиморасчетов)
-                this.totalBalance = this.totalIncome - this.totalExpense;
+                console.log('Все операции:', this.balanceHistory);
+                console.log('Итого долги (дебет):', this.totalIncome);
+                console.log('Итого оплаты (кредит):', this.totalExpense);
+                
+                // Используем реальный баланс клиента из API
+                await this.updateClientBalance();
+                this.totalBalance = parseFloat(this.editingItem.balance || 0);
                 
                 this.lastFetchedClientId = this.editingItem.id;
                 this.forceRefresh = false;
-                
-                await this.updateClientBalance();
             } catch (e) {
                 this.balanceHistory = [];
                 this.totalIncome = 0;
@@ -354,7 +368,18 @@ export default {
                         ? '<i class="fas fa-arrow-up text-red-500 mr-2"></i> Продажа (долг)'
                         : '<i class="fas fa-arrow-down text-green-500 mr-2"></i> Оплата клиента';
                 case "sourceType":
-                    return i.getSourceTypeLabel ? i.getSourceTypeLabel() : (i.source_type || '-');
+                    // Используем короткие названия с иконками вместо полных путей
+                    if (i.source === 'sale') {
+                        return '<i class="fas fa-shopping-cart text-blue-500 mr-2"></i>Продажа';
+                    } else if (i.source === 'order') {
+                        return '<i class="fas fa-clipboard-list text-purple-500 mr-2"></i>Заказ';
+                    } else if (i.source === 'receipt') {
+                        return '<i class="fas fa-box text-orange-500 mr-2"></i>Оприходование';
+                    } else if (i.source === 'transaction') {
+                        return '<i class="fas fa-exchange-alt text-gray-500 mr-2"></i>Транзакция';
+                    } else {
+                        return '<i class="fas fa-exchange-alt text-gray-500 mr-2"></i>Транзакция';
+                    }
                 case "user_name":
                     return i.user_name || '-';
                 case "clientImpact":
@@ -380,6 +405,15 @@ export default {
         },
         totalExpenseDisplay() {
             return `${this.$formatNumber(this.totalExpense, 2, true)} ${this.currencyCode}`;
+        },
+        balanceStatusText() {
+            if (this.totalBalance > 0) {
+                return 'Клиент нам должен';
+            } else if (this.totalBalance < 0) {
+                return 'Мы клиенту должны';
+            } else {
+                return 'Взаиморасчеты';
+            }
         }
     },
     watch: {
