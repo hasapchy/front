@@ -6,7 +6,7 @@
                     <option value="">{{ $t('allClients') }}</option>
                     <template v-if="allClients.length">
                         <option v-for="client in allClients" :key="client.id" :value="client.id">
-                            {{ client.first_name }} {{ client.last_name }}
+                            {{ ((client.firstName || client.first_name || '') + ' ' + (client.lastName || client.last_name || '')).trim() || 'Клиент без имени' }}
                         </option>
                     </template>
                 </select>
@@ -124,7 +124,11 @@ export default {
         itemMapper(i, c) {
             switch (c) {
                 case 'clientName':
-                    return `${i.first_name} ${i.last_name}`;
+                    // Поддерживаем оба формата: camelCase и snake_case
+                    const firstName = i.firstName || i.first_name || '';
+                    const lastName = i.lastName || i.last_name || '';
+                    const name = `${firstName} ${lastName}`.trim();
+                    return name || 'Клиент без имени';
                 case 'balance':
                     if (i.debt_amount > 0) {
                         return `<span class="text-green-600 font-semibold">+${this.$formatNumber(i.debt_amount, 2, true)} ${i.currency_symbol}</span>`;
