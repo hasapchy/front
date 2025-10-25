@@ -7,17 +7,17 @@
         <!-- Статистика баланса -->
         <div class="mb-4">
             <div class="flex items-center gap-6">
-                <!-- Долги клиента (нам платят - зеленый) -->
+                <!-- Кредит клиента (нам платят - зеленый) -->
                 <span class="flex items-center gap-2">
                     <i class="fas fa-arrow-up text-[#5CB85C]"></i>
-                    <span class="text-sm text-gray-600">Долги клиента:</span>
+                    <span class="text-sm text-gray-600">{{ $t('debt') }}:</span>
                     <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b>
                 </span>
                 
                 <!-- Оплаты клиента (мы платим - красный) -->
                 <span class="flex items-center gap-2">
                     <i class="fas fa-arrow-down text-[#EE4F47]"></i>
-                    <span class="text-sm text-gray-600">Оплаты клиента:</span>
+                    <span class="text-sm text-gray-600">{{ $t('income') }}:</span>
                     <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b>
                 </span>
                 
@@ -193,6 +193,10 @@ export default {
     },
 
     methods: {
+        // Helper функция для проверки is_debt
+        isDebtOperation(item) {
+            return item.is_debt === 1 || item.is_debt === true || item.is_debt === '1';
+        },
         async fetchDefaultCurrency() {
             try {
                 // Используем данные из store
@@ -236,44 +240,39 @@ export default {
                             return `<span style="color:${color};font-weight:bold">${formatted} ${self.currencyCode}</span>`;
                         },
                         label() {
-                            // Определяем тип операции по description (как во взаиморасчетах)
-                            const isDebt = item.description && item.description.includes('(в долг)');
-                            
-                            // Если это долговая операция
-                            if (isDebt) {
-                                return '<i class="fas fa-arrow-up text-red-500 mr-2"></i> Продажа (долг)';
+                            // Если это кредитная операция
+                            if (self.isDebtOperation(item)) {
+                                return '<i class="fas fa-arrow-up text-red-500 mr-2"></i> Продажа (кредит)';
                             }
                             
-                            // Если это оплата долга
+                            // Если это оплата кредита
                             return '<i class="fas fa-arrow-down text-green-500 mr-2"></i> Оплата клиента';
                         }
                     };
                 });
                 
-                // Долги клиента (дебет - что клиент нам должен)
-                // Используем комбинацию: положительная сумма + содержит "(в долг)" в описании
+                // Кредит клиента (дебет - что клиент нам должен)
+                // Используем комбинацию: положительная сумма + is_debt=true
                 const debtItems = this.balanceHistory.filter(item => {
-                    const isDebt = item.description && item.description.includes('(в долг)');
                     const isPositive = parseFloat(item.amount) > 0;
-                    console.log(`Операция ${item.sourceId}: description="${item.description}", amount=${item.amount}, isDebt=${isDebt}, isPositive=${isPositive}`);
-                    return isDebt && isPositive;
+                    console.log(`Операция ${item.sourceId}: is_debt=${item.is_debt}, amount=${item.amount}, isDebt=${this.isDebtOperation(item)}, isPositive=${isPositive}`);
+                    return this.isDebtOperation(item) && isPositive;
                 });
-                console.log('Долги клиента (дебет):', debtItems);
+                console.log('Кредит клиента (дебет):', debtItems);
                 this.totalIncome = debtItems.reduce((sum, item) => sum + parseFloat(item.amount), 0);
 
                 // Оплаты клиента (кредит - что клиент нам заплатил)
-                // Все остальные операции (не долговые)
+                // Все остальные операции (не кредитные)
                 const paymentItems = this.balanceHistory.filter(item => {
-                    const isDebt = item.description && item.description.includes('(в долг)');
-                    const isNotDebt = !isDebt;
-                    console.log(`Операция ${item.sourceId}: description="${item.description}", amount=${item.amount}, isDebt=${isDebt}, isNotDebt=${isNotDebt}`);
+                    const isNotDebt = !this.isDebtOperation(item);
+                    console.log(`Операция ${item.sourceId}: is_debt=${item.is_debt}, amount=${item.amount}, isDebt=${this.isDebtOperation(item)}, isNotDebt=${isNotDebt}`);
                     return isNotDebt;
                 });
                 console.log('Оплаты клиента (кредит):', paymentItems);
                 this.totalExpense = paymentItems.reduce((sum, item) => sum + Math.abs(parseFloat(item.amount)), 0);
                 
                 console.log('Все операции:', this.balanceHistory);
-                console.log('Итого долги (дебет):', this.totalIncome);
+                console.log('Итого кредит (дебет):', this.totalIncome);
                 console.log('Итого оплаты (кредит):', this.totalExpense);
                 
                 // Используем реальный баланс клиента из API
@@ -363,9 +362,8 @@ export default {
                 case "id":
                     return i.sourceId || '-';
                 case "operationType":
-                    const isDebt = i.description && i.description.includes('(в долг)');
-                    return isDebt
-                        ? '<i class="fas fa-arrow-up text-red-500 mr-2"></i> Продажа (долг)'
+                    return this.isDebtOperation(i)
+                        ? '<i class="fas fa-arrow-up text-red-500 mr-2"></i> Продажа (кредит)'
                         : '<i class="fas fa-arrow-down text-green-500 mr-2"></i> Оплата клиента';
                 case "sourceType":
                     // Используем короткие названия с иконками вместо полных путей
@@ -383,12 +381,11 @@ export default {
                 case "user_name":
                     return i.user_name || '-';
                 case "clientImpact":
-                    const isDebtImpact = i.description && i.description.includes('(в долг)');
                     const formattedAmount = this.$formatNumber(Math.abs(parseFloat(i.amount)), 2, true);
                     const currencySymbol = this.currencyCode || '';
                     
-                    if (isDebtImpact) {
-                        // Долг: увеличиваем задолженность (+amount) - красный
+                    if (this.isDebtOperation(i)) {
+                        // Кредит: увеличиваем задолженность (+amount) - красный
                         return `<span class="text-red-500 font-semibold">+${formattedAmount} ${currencySymbol}</span>`;
                     } else {
                         // Оплата: уменьшаем задолженность (-amount) - зелёный

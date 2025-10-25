@@ -615,7 +615,7 @@ export default {
   clientType: 'Müşderi görnüşi',
   active: 'Işjeň',
   problemClient: 'Kynçylykly müşderi',
-  toClientBalance: 'Müşderi balansyna',
+  toClientBalance: 'Karz',
   inDebt: 'Karz',
   
   // Новые ключи для интернационализации

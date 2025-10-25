@@ -713,7 +713,7 @@ export default {
   clientType: 'Тип клиента',
   active: 'Активен',
   problemClient: 'Проблемный клиент',
-  toClientBalance: 'В баланс клиента',
+  toClientBalance: 'В кредит',
   inDebt: 'В кредит',
   
   // Новые ключи для интернационализации

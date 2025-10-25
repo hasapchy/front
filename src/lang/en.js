@@ -243,6 +243,7 @@ export default {
   update: 'Update',
   
   // Basement worker interface
+  toClientBalance: 'On credit',
   inDebt: 'On credit',
   basement: 'Basement',
   worker: 'Worker',
