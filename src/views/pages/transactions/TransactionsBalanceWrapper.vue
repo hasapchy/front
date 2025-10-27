@@ -59,11 +59,11 @@
                 <div v-if="data != null && !loading" key="table">
                     <div class="flex flex-col gap-3 items-end">
                         <!-- Долги клиентов -->
-                        <div class="bg-white p-3 rounded-lg shadow-md min-w-[200px]">
+                        <div class="bg-white p-3 rounded-lg shadow-md min-w-[280px]">
                             <div class="text-center mb-3">
                                 <span class="text-sm font-semibold">{{ $t('clientDebts') }}</span>
                             </div>
-                            <div class="grid grid-cols-1 gap-2">
+                            <div class="grid grid-cols-2 gap-2">
                                 <div class="text-center balance-item">
                                     <div class="mb-1 flex items-center justify-center space-x-1">
                                         <span class="text-xs font-medium text-gray-700">{{ $t('oweUs') }}</span>
