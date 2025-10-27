@@ -153,7 +153,87 @@ export default class SaleController {
   }
 
   static async getItem(id) {
+    console.log('[SaleController] getItem called with id:', id);
     const { data } = await api.get(`/sales/${id}`);
-    return data;
+    console.log('[SaleController] Raw data from backend:', data);
+    
+    // Данные приходят в формате {item: {...}}
+    const item = data.item || data;
+    console.log('[SaleController] Parsed item:', item);
+    
+    // Преобразуем данные в SaleDto
+    var client = null;
+    if (item.client) {
+      client = new ClientDto(
+        item.client.id,
+        item.client.client_type,
+        item.client.balance,
+        item.client.is_supplier,
+        item.client.is_conflict,
+        item.client.first_name,
+        item.client.last_name,
+        item.client.contact_person,
+        item.client.address,
+        item.client.note,
+        item.client.status,
+        item.client.discount_type,
+        item.client.discount,
+        item.client.created_at,
+        item.client.updated_at,
+        item.client.emails || [],
+        item.client.phones || []
+      );
+    }
+    
+    var products = null;
+    if (item.products) {
+      products = item.products.map((product) => {
+        return new SaleProductDto(
+          product.id,
+          product.sale_id,
+          product.product_id,
+          product.product ? product.product.name : null,
+          product.product ? product.product.image : null,
+          product.product && product.product.unit ? product.product.unit.id : null,
+          product.product && product.product.unit ? product.product.unit.name : null,
+          product.product && product.product.unit ? product.product.unit.short_name : null,
+          product.quantity,
+          product.price
+        );
+      });
+    }
+    
+    const saleDto = new SaleDto(
+      item.id,
+      item.price,
+      item.discount,
+      item.transactions && item.transactions.length > 0 ? item.transactions.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0) : item.total_price || 0,
+      item.cash_register && item.cash_register.currency ? item.cash_register.currency.id : item.currency_id,
+      item.cash_register && item.cash_register.currency ? item.cash_register.currency.name : item.currency_name,
+      item.cash_register && item.cash_register.currency ? item.cash_register.currency.code : item.currency_code,
+      item.cash_register && item.cash_register.currency ? item.cash_register.currency.symbol : item.currency_symbol,
+      item.cash_id,
+      item.cash_register ? item.cash_register.name : null,
+      item.warehouse_id,
+      item.warehouse ? item.warehouse.name : null,
+      item.user_id,
+      item.user ? item.user.name : null,
+      item.project_id,
+      item.project ? item.project.name : null,
+      item.transaction_id,
+      client,
+      products,
+      item.note,
+      item.date,
+      item.created_at,
+      item.updated_at,
+      null,
+      item.discount_type || "fixed"
+    );
+    
+    console.log('[SaleController] Created SaleDto:', saleDto);
+    console.log('[SaleController] SaleDto constructor name:', saleDto.constructor.name);
+    
+    return saleDto;
   }
 }

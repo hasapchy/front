@@ -67,7 +67,7 @@
             <input type="text" v-model="note">
         </div>
 
-        <ProductSearch v-model="products" :disabled="!!editingItemId" :show-quantity="true" :show-price="true"
+        <ProductSearch ref="productSearch" v-model="products" :disabled="!!editingItemId" :show-quantity="true" :show-price="true"
             :is-receipt="true" :only-products="true" :warehouse-id="warehouseId" required />
     </div>
     
@@ -331,7 +331,14 @@ export default {
         },
     },
     watch: {
-
+        warehouseId: {
+            async handler(newWarehouseId) {
+                // При изменении склада перезагружаем товары в ProductSearch
+                if (newWarehouseId && this.$refs.productSearch) {
+                    await this.$refs.productSearch.fetchLastProducts();
+                }
+            }
+        },
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {

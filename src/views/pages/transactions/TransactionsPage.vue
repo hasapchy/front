@@ -49,7 +49,13 @@
                 </select>
             </div>
 
-            <!-- Фильтр по кредиту - УДАЛЕНО, долги показываются на странице "Взаиморасчеты" -->
+            <!-- Фильтр по долгам -->
+            <div class="ml-2">
+                <select v-model="debtFilter" @change="() => fetchItems(1)">
+                    <option value="false">{{ $t('nonDebtTransactions') }}</option>
+                    <option value="true">{{ $t('debtsOnly') }}</option>
+                </select>
+            </div>
 
             <div class="ml-2">
                 <select v-model="dateFilter" @change="() => fetchItems(1)">
@@ -129,6 +135,7 @@ import CashRegisterController from '@/api/CashRegisterController';
 import ProjectController from '@/api/ProjectController';
 import TransactionsBalanceWrapper from '@/views/pages/transactions/TransactionsBalanceWrapper.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
+import SourceButtonCell from '@/views/components/app/buttons/SourceButtonCell.vue';
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -143,7 +150,7 @@ import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin],
-    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, BatchButton },
+    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, BatchButton },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -159,6 +166,7 @@ export default {
             transactionTypeFilter: '',
             sourceFilter: '',
             projectId: '',
+            debtFilter: 'false',
             allProjects: [],
             savedSuccessText: this.$t('transactionSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingTransaction'),
@@ -168,10 +176,21 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'type', label: 'type', html: true },
-                { name: 'source', label: 'source', html: true },
+                {
+                    name: 'source',
+                    label: 'source',
+                    component: markRaw(SourceButtonCell),
+                    props: (item) => ({
+                        sourceType: item.sourceType,
+                        sourceId: item.sourceId,
+                        searchQuery: this.searchQuery,
+                        onUpdated: () => this.fetchItems(this.data.current_page, false),
+                        onDeleted: () => this.fetchItems(this.data.current_page, false)
+                    })
+                },
                 { name: 'cashName', label: 'cashRegister' },
                 { name: 'cashAmount', label: 'amount', html: true },
-                { name: 'origAmount', label: 'originalAmount' },
+                { name: 'origAmount', label: 'originalAmount', visible: false },
                 { name: 'categoryName', label: 'category' },
                 { name: 'note', label: 'note', html: true, size: 200 },
                 { name: 'projectName', label: 'project' },
@@ -230,8 +249,6 @@ export default {
             switch (c) {
                 case 'type':
                     return i.typeCell();
-                case 'source':
-                    return i.sourceCell();
                 case 'cashName':
                     return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
                 case 'cashAmount':
@@ -255,20 +272,6 @@ export default {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
-        async handleCompanyChanged(companyId) {
-            // ✅ Очищаем фильтры при смене компании
-            this.cashRegisterId = '';
-            this.dateFilter = 'all_time';
-            this.startDate = null;
-            this.endDate = null;
-            this.transactionTypeFilter = '';
-            this.sourceFilter = '';
-            this.projectId = '';
-            this.selectedIds = [];
-            
-            // Перезагружаем данные со страницы 1
-            await this.fetchItems(1, false);
-        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
@@ -286,7 +289,7 @@ export default {
                     this.perPage,
                     this.startDate,
                     this.endDate,
-                    'false' // ✅ is_debt=false - не показываем долги на этой странице
+                    this.debtFilter // Фильтр по долгам (false/true)
                 );
                 
                 // Обычная пагинация
@@ -329,6 +332,7 @@ export default {
             this.transactionTypeFilter = '';
             this.sourceFilter = '';
             this.projectId = '';
+            this.debtFilter = 'false';
             this.dateFilter = 'all_time';
             this.startDate = null;
             this.endDate = null;
@@ -341,7 +345,7 @@ export default {
             this.transactionTypeFilter = '';
             this.sourceFilter = '';
             this.projectId = '';
-            this.isDebtFilter = '';
+            this.debtFilter = 'false';
             this.dateFilter = 'all_time';
             this.startDate = null;
             this.endDate = null;
@@ -455,6 +459,7 @@ export default {
                    this.transactionTypeFilter !== '' ||
                    this.sourceFilter !== '' ||
                    this.projectId !== '' ||
+                   this.debtFilter !== 'false' ||
                    this.dateFilter !== 'all_time' ||
                    this.startDate !== null ||
                    this.endDate !== null;

@@ -1,6 +1,6 @@
 <template>
-    <div class="w-full h-full px-2 py-2 cursor-pointer text-[#2a6496] hover:underline rounded"
-        @click.stop="openClientModal"
+    <div class="w-full h-full cursor-pointer text-[#2a6496] hover:underline rounded"
+        @dblclick.stop="openClientModal"
         v-html="displayText">
     </div>
 

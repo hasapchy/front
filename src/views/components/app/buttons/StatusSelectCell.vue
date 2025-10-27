@@ -16,16 +16,14 @@
               : 'hover:bg-gray-50 border-l-4 border-transparent hover:border-blue-400 hover:bg-blue-50'
           ]"
           @click="selectStatus(s.id)">
-          <div class="flex items-center">
-            <div :class="[
-              'w-3 h-3 rounded-full mr-3 flex-shrink-0',
-              s.id === value ? 'ring-2 ring-blue-500 ring-offset-1' : ''
-            ]" :style="{ backgroundColor: getColorStyle(s) }"></div>
-            <span :class="[
-              'text-sm font-medium',
-              s.id === value ? 'text-blue-700' : 'text-gray-700'
-            ]">{{ s.name }}</span>
-          </div>
+          <div :class="[
+            'w-3 h-3 rounded-full mr-3 flex-shrink-0',
+            s.id === value ? 'ring-2 ring-blue-500 ring-offset-1' : ''
+          ]" :style="{ backgroundColor: getColorStyle(s) }"></div>
+          <span :class="[
+            'text-sm font-medium',
+            s.id === value ? 'text-blue-700' : 'text-gray-700'
+          ]">{{ s.name }}</span>
         </li>
       </template>
     </ul>
@@ -46,7 +44,7 @@ export default {
   },
   data() {
     return {
-      isOpen: false,
+      isOpen: false
     };
   },
   computed: {
@@ -124,7 +122,7 @@ export default {
       if (this.$refs.dropdownRef && !this.$refs.dropdownRef.contains(e.target)) {
         this.isOpen = false;
       }
-    }
+    },
   },
   mounted() {
     document.addEventListener('click', this.handleClickOutside);

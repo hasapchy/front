@@ -1026,7 +1026,21 @@ const store = createStore({
       try {
         const OrderStatusController = (await import('@/api/OrderStatusController')).default;
         const data = await OrderStatusController.getAllItems();
-        commit('SET_ORDER_STATUSES', data);
+        
+        // Загружаем пользовательский порядок из localStorage
+        const customOrder = localStorage.getItem('orderStatuses_customOrder');
+        if (customOrder) {
+          const orderArray = JSON.parse(customOrder);
+          // Сортируем массив согласно пользовательскому порядку
+          const orderedData = orderArray
+            .map(id => data.find(status => status.id === id))
+            .filter(Boolean)
+            .concat(data.filter(status => !orderArray.includes(status.id)));
+          commit('SET_ORDER_STATUSES', orderedData);
+        } else {
+          commit('SET_ORDER_STATUSES', data);
+        }
+        
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
         localStorage.setItem('orderStatuses_timestamp', Date.now().toString());
         console.log(`📊 Статусы заказов (${data.length})`);

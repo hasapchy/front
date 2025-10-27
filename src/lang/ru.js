@@ -203,6 +203,7 @@ export default {
   date: 'Дата',
   amount: 'Сумма',
   amountBeforeConversion: 'Сумма',
+  minimumAmount: 'Минимальная сумма',
   amountAfterConversion: 'Сумма после конвертации',
   currency: 'Валюта',
   status: 'Статус',
@@ -998,6 +999,8 @@ export default {
   // Новые переводы для фильтров транзакций
   allTransactionTypes: 'Все типы транзакций',
   allTransactions: 'Все транзакции',
+  nonDebtTransactions: 'Некредиторские транзакции',
+  debtsOnly: 'Только долги',
   allSources: 'Все источники',
   allStatuses: 'Все статусы',
   notDebt: 'Не кредит',

@@ -26,11 +26,13 @@ export default class SaleDto {
     date = "",
     createdAt = "",
     updatedAt = "",
-    _transactions = null
+    _transactions = null,
+    discountType = "fixed"
   ) {
     this.id = id;
     this.price = price;
     this.discount = discount;
+    this.discountType = discountType;
     this.totalPrice = totalPrice;
     this.currencyId = currencyId;
     this.currencyName = currencyName;

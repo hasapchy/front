@@ -112,5 +112,78 @@ export default class WarehouseReceiptController {
     const { data } = await api.delete(`/warehouse_receipts/${id}`);
     return data;
   }
+
+  static async getItem(id) {
+    const { data } = await api.get(`/warehouse_receipts/${id}`);
+    
+    // Данные приходят в формате {item: {...}}
+    const item = data.item || data;
+    
+    // Преобразуем данные в WarehouseReceiptDto
+    var client = null;
+    if (item.supplier) {
+      const balance = item.supplier.balance || 0;
+      
+      client = new ClientDto(
+        item.supplier.id,
+        item.supplier.client_type || null,
+        balance,
+        item.supplier.is_supplier || false,
+        item.supplier.is_conflict || false,
+        item.supplier.first_name,
+        item.supplier.last_name,
+        item.supplier.contact_person,
+        item.supplier.address || '',
+        item.supplier.note || '',
+        item.supplier.status,
+        item.supplier.discount_type || 'percent',
+        item.supplier.discount || 0,
+        item.supplier.created_at,
+        item.supplier.updated_at,
+        item.supplier.emails || [],
+        item.supplier.phones || []
+      );
+    }
+    
+    var products = null;
+    if (item.products) {
+      products = item.products.map((product) => {
+        return new WarehouseReceiptProductDto(
+          product.id,
+          product.receipt_id,
+          product.product_id,
+          product.product?.name || 'Товар удален',
+          product.product?.image || null,
+          product.product?.unit_id || null,
+          product.product?.unit?.name || '',
+          product.product?.unit?.short_name || '',
+          product.quantity,
+          product.price,
+          product.sn_id
+        );
+      });
+    }
+    
+    const currencySymbol = item.cash_register?.currency?.symbol || 'm';
+    
+    return new WarehouseReceiptDto(
+      item.id,
+      item.warehouse_id,
+      item.warehouse?.name || '',
+      item.amount,
+      client,
+      products,
+      item.note,
+      item.user_id,
+      item.user?.name || '',
+      item.date,
+      item.created_at,
+      item.updated_at,
+      item.cash_id,
+      item.cash_register?.name || '',
+      item.project_id,
+      currencySymbol
+    );
+  }
 }
 

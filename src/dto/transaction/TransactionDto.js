@@ -34,7 +34,9 @@ export default class TransactionDto {
     date = "",
     createdAt = "",
     updatedAt = "",
-    orders = []
+    orders = [],
+    sourceType = null,
+    sourceId = null
   ) {
     this.id = id;
     this.type = type;
@@ -69,6 +71,8 @@ export default class TransactionDto {
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
     this.orders = orders;
+    this.sourceType = sourceType;
+    this.sourceId = sourceId;
   }
 
   typeName() {
@@ -90,12 +94,35 @@ export default class TransactionDto {
   }
 
   sourceCell() {
+    // Если есть связь, делаем кликабельным
+    if (this.sourceType && this.sourceId) {
+      let icon = '';
+      let text = '';
+      
+      if (this.sourceType.includes('Sale')) {
+        icon = 'fa-shopping-cart';
+        text = 'Продажа';
+      } else if (this.sourceType.includes('Order')) {
+        icon = 'fa-file-invoice';
+        text = 'Заказ';
+      } else if (this.sourceType.includes('WhReceipt')) {
+        icon = 'fa-box';
+        text = 'Оприходование';
+      } else {
+        icon = 'fa-link';
+        text = 'Связь';
+      }
+      
+      return `<i class="fas ${icon} text-[#337AB7] mr-2 cursor-pointer hover:text-[#23527c]" data-source-type="${this.sourceType}" data-source-id="${this.sourceId}" title="Открыть ${text} #${this.sourceId}"></i> ${text}`;
+    }
+    
+    // Если нет связи, обычное отображение
     if (this.isSale === 1 || this.isSale === true) {
       return '<i class="fas fa-shopping-cart text-[#5CB85C] mr-2"></i> Продажа';
     } else if (this.isReceipt === 1 || this.isReceipt === true) {
       return '<i class="fas fa-box text-[#FFA500] mr-2"></i> Оприходование';
     } else {
-      return '<i class="fas fa-circle text-[#6C757D] mr-2"></i> Прочее';
+      return '<i class="fas fa-circle text-[#6C757D] mr-2"></i> Транзакция';
     }
   }
 

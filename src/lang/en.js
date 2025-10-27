@@ -239,6 +239,7 @@ export default {
   removeImage: 'Remove image',
   amount: 'Amount',
   enterAmount: 'Enter amount',
+  minimumAmount: 'Minimum amount',
   selectCurrency: 'Select currency',
   update: 'Update',
   
@@ -305,6 +306,8 @@ export default {
   resetFilters: 'Reset Filters',
   allProjects: 'All Projects',
   allTransactions: 'All Transactions',
+  nonDebtTransactions: 'Non-Credit Transactions',
+  debtsOnly: 'Debts Only',
   debt: 'Credit',
   notDebt: 'Not Credit',
   clickToFilterDebts: 'Click to filter credits',

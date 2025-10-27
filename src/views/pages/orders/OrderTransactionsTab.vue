@@ -35,7 +35,9 @@ export default {
         client: { type: Object, default: null },
         projectId: { type: [String, Number], default: null },
         cashId: { type: [String, Number], default: null },
-        currencySymbol: { type: String, default: '' }
+        currencySymbol: { type: String, default: '' },
+        orderTotal: { type: Number, default: 0 },
+        paidTotal: { type: Number, default: 0 }
     },
     emits: ['updated-paid'],
     components: {
@@ -52,6 +54,7 @@ export default {
             paidTotalAmount: 0,
             columnsConfig: [
                 { name: 'id', label: '№', size: 60 },
+                { name: 'debt', label: 'Долговая', html: true, size: 80 },
                 { name: 'amount', label: 'Сумма', html: true },
                 { name: 'cashName', label: 'Касса' },
                 { name: 'date', label: 'Дата' },
@@ -76,7 +79,10 @@ export default {
             }
             try {
                 const response = await TransactionController.getItems(1, null, "all_time", this.orderId);
-                this.transactions = response.items;
+                // Фильтруем: показываем только реальные платежи (не долговые транзакции)
+                this.transactions = response.items.filter(item => {
+                    return !(item.isDebt === 1 || item.isDebt === true || item.isDebt === '1');
+                });
             } catch (error) {
                 this.transactions = [];
             }
@@ -120,6 +126,8 @@ export default {
         },
         itemMapper(i, c) {
             switch (c) {
+                case 'debt':
+                    return i.debtCell?.() || '-';
                 case 'amount':
                     return i.cashAmountData?.() || '-';
                 case 'cashName':

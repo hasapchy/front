@@ -353,6 +353,4 @@ export default class OrderController {
       throw error;
     }
   }
-
-
 }

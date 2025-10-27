@@ -1,30 +1,31 @@
 <template>
-    <div class="w-full h-full px-2 py-2 cursor-pointer text-[#2a6496] hover:underline rounded"
-        @click.stop="openSourceModal"
-        v-html="displayText">
+    <div v-if="sourceType && sourceId" 
+        class="w-full h-full cursor-pointer text-[#2a6496] hover:underline rounded flex items-center"
+        @dblclick.stop="openSourceModal">
+        <i :class="iconClass" class="mr-2"></i>
+        <span v-html="displayText"></span>
+    </div>
+    <div v-else class="w-full h-full flex items-center">
+        <i class="fas fa-circle text-[#6C757D] mr-2"></i>
+        <span>{{ defaultText }}</span>
     </div>
 
-    <SideModalDialog :showForm="modalOpen" :onclose="() => modalOpen = false">
-        <!-- Продажа -->
-        <SaleCreatePage v-if="modalOpen && sourceType === 'App\\Models\\Sale'" 
-            :editingItem="sourceData" 
-            @saved="handleSaved" 
-            @saved-error="() => modalOpen = false"
-            @deleted="handleDeleted" />
-        
-        <!-- Заказ -->
-        <OrderCreatePage v-if="modalOpen && sourceType === 'App\\Models\\Order'" 
-            :editingItem="sourceData" 
-            @saved="handleSaved" 
-            @saved-error="() => modalOpen = false"
-            @deleted="handleDeleted" />
-        
-        <!-- Оприходование -->
-        <WarehousesReceiptCreatePage v-if="modalOpen && sourceType === 'App\\Models\\WarehouseReceipt'" 
-            :editingItem="sourceData" 
-            @saved="handleSaved" 
-            @saved-error="() => modalOpen = false"
-            @deleted="handleDeleted" />
+    <!-- Модальное окно для Sale -->
+    <SideModalDialog v-if="sourceType && sourceType.includes('Sale')" :showForm="modalOpen" :onclose="() => modalOpen = false">
+        <SaleCreatePage v-if="modalOpen && editingItem" :editingItem="editingItem" 
+            @saved="handleSaved" @saved-error="() => modalOpen = false" @deleted="handleDeleted" />
+    </SideModalDialog>
+
+    <!-- Модальное окно для Order -->
+    <SideModalDialog v-if="sourceType && sourceType.includes('Order')" :showForm="modalOpen" :onclose="() => modalOpen = false">
+        <OrderCreatePage v-if="modalOpen && editingItem" :editingItem="editingItem" 
+            @saved="handleSaved" @saved-error="() => modalOpen = false" @deleted="handleDeleted" />
+    </SideModalDialog>
+
+    <!-- Модальное окно для WhReceipt -->
+    <SideModalDialog v-if="sourceType && sourceType.includes('WhReceipt')" :showForm="modalOpen" :onclose="() => modalOpen = false">
+        <WarehousesReceiptCreatePage v-if="modalOpen && editingItem" :editingItem="editingItem" 
+            @saved="handleSaved" @saved-error="() => modalOpen = false" @deleted="handleDeleted" />
     </SideModalDialog>
 </template>
 
@@ -35,10 +36,16 @@ import OrderCreatePage from '@/views/pages/orders/OrderCreatePage.vue';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
 
 export default {
+    emits: ['updated', 'deleted', 'error'],
     props: {
         sourceType: String,
         sourceId: Number,
-        transaction: Object
+        searchQuery: {
+            type: String,
+            default: ''
+        },
+        onUpdated: Function,
+        onDeleted: Function
     },
     components: {
         SideModalDialog,
@@ -49,74 +56,111 @@ export default {
     data() {
         return {
             modalOpen: false,
-            sourceData: null
-        }
+            editingItem: null,
+            loading: false
+        };
     },
     computed: {
-        displayText() {
-            if (!this.sourceType || !this.sourceId) return '-';
-            
-            switch (this.sourceType) {
-                case 'App\\Models\\Sale':
-                    return `Продажа #${this.sourceId}`;
-                case 'App\\Models\\Order':
-                    return `Заказ #${this.sourceId}`;
-                case 'App\\Models\\WarehouseReceipt':
-                    return `Оприходование #${this.sourceId}`;
-                default:
-                    return `Операция #${this.sourceId}`;
+        iconClass() {
+            if (this.sourceType.includes('Sale')) {
+                return 'fas fa-shopping-cart text-[#5CB85C]';
+            } else if (this.sourceType.includes('Order')) {
+                return 'fas fa-file-invoice text-[#337AB7]';
+            } else if (this.sourceType.includes('WhReceipt')) {
+                return 'fas fa-box text-[#FFA500]';
+            } else {
+                return 'fas fa-link text-[#337AB7]';
             }
+        },
+        displayText() {
+            let text = '';
+            
+            if (this.sourceType.includes('Sale')) {
+                text = `Продажа #${this.sourceId}`;
+            } else if (this.sourceType.includes('Order')) {
+                text = `Заказ #${this.sourceId}`;
+            } else if (this.sourceType.includes('WhReceipt')) {
+                text = `Оприходование #${this.sourceId}`;
+            } else {
+                text = `Связь #${this.sourceId}`;
+            }
+            
+            if (this.searchQuery && this.searchQuery.trim()) {
+                return this.highlightText(text, this.searchQuery);
+            }
+            
+            return text;
+        },
+        defaultText() {
+            return 'Транзакция';
         }
     },
     methods: {
+        highlightText(text, search) {
+            if (!text || !search) return text;
+            const searchStr = String(search).trim();
+            if (!searchStr) return text;
+            
+            const textStr = String(text);
+            const regex = new RegExp(`(${searchStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return textStr.replace(regex, '<mark style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 3px; font-weight: bold;">$1</mark>');
+        },
         async openSourceModal() {
             if (!this.sourceType || !this.sourceId) return;
             
+            console.log('[SourceButtonCell] openSourceModal:', { sourceType: this.sourceType, sourceId: this.sourceId });
+            
+            this.loading = true;
             try {
-                this.modalOpen = true;
-                // Загружаем данные источника
-                await this.loadSourceData();
-            } catch (error) {
-                console.error('Ошибка при открытии источника:', error);
-                this.modalOpen = false;
-            }
-        },
-        
-        async loadSourceData() {
-            try {
-                let data = null;
-                
-                switch (this.sourceType) {
-                    case 'App\\Models\\Sale':
-                        const SaleController = (await import('@/api/SaleController')).default;
-                        data = await SaleController.getItem(this.sourceId);
-                        break;
-                    case 'App\\Models\\Order':
-                        const OrderController = (await import('@/api/OrderController')).default;
-                        data = await OrderController.getItem(this.sourceId);
-                        break;
-                    case 'App\\Models\\WarehouseReceipt':
-                        const WarehouseReceiptController = (await import('@/api/WarehouseReceiptController')).default;
-                        data = await WarehouseReceiptController.getItem(this.sourceId);
-                        break;
+                // Загружаем данные для редактирования
+                if (this.sourceType.includes('Sale')) {
+                    console.log('[SourceButtonCell] Loading Sale...');
+                    const SaleController = (await import('@/api/SaleController')).default;
+                    const saleData = await SaleController.getItem(this.sourceId);
+                    console.log('[SourceButtonCell] Sale data:', saleData);
+                    console.log('[SourceButtonCell] Sale data type:', saleData.constructor.name);
+                    this.editingItem = saleData;
+                } else if (this.sourceType.includes('Order')) {
+                    console.log('[SourceButtonCell] Loading Order...');
+                    const OrderController = (await import('@/api/OrderController')).default;
+                    const orderData = await OrderController.getItem(this.sourceId);
+                    console.log('[SourceButtonCell] Order data:', orderData);
+                    console.log('[SourceButtonCell] Order data type:', orderData.constructor.name);
+                    this.editingItem = orderData;
+                } else if (this.sourceType.includes('WhReceipt')) {
+                    console.log('[SourceButtonCell] Loading WarehouseReceipt...');
+                    const WarehouseReceiptController = (await import('@/api/WarehouseReceiptController')).default;
+                    const receiptData = await WarehouseReceiptController.getItem(this.sourceId);
+                    console.log('[SourceButtonCell] Receipt data:', receiptData);
+                    console.log('[SourceButtonCell] Receipt data type:', receiptData.constructor.name);
+                    this.editingItem = receiptData;
                 }
                 
-                this.sourceData = data;
+                console.log('[SourceButtonCell] Final editingItem:', this.editingItem);
+                this.modalOpen = true;
             } catch (error) {
-                console.error('Ошибка загрузки данных источника:', error);
-                throw error;
+                console.error('[SourceButtonCell] Ошибка загрузки данных:', error);
+                this.$emit('error', error);
+            } finally {
+                this.loading = false;
             }
         },
-        
         handleSaved() {
             this.modalOpen = false;
-            this.$emit('saved');
+            this.editingItem = null;
+            // Вызываем колбэк для обновления данных в родительском компоненте
+            if (this.onUpdated) {
+                this.onUpdated();
+            }
         },
-        
         handleDeleted() {
             this.modalOpen = false;
-            this.$emit('deleted');
+            this.editingItem = null;
+            // Вызываем колбэк для обновления данных в родительском компоненте
+            if (this.onDeleted) {
+                this.onDeleted();
+            }
         }
     }
-}
+};
 </script>

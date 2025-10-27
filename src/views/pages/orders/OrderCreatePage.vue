@@ -128,6 +128,7 @@
                 <template v-if="transactionsTabVisited">
                     <OrderTransactionsTab v-if="editingItemId" :order-id="editingItemId" :client="selectedClient"
                         :project-id="projectId" :cash-id="cashId" :currency-symbol="currencySymbol"
+                        :order-total="totalPrice" :paid-total="paidTotalAmount"
                         @updated-paid="paidTotalAmount = $event" />
                     <div v-else class="p-4 text-gray-500">
                         {{ $t('saveOrderFirst') }}
@@ -148,10 +149,9 @@
         </div>
 
         <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
-            <div>{{ $t('toPay') }}: <span class="font-bold">{{ totalPrice.toFixed(2) }}{{ currencySymbol }}</span></div>
-            <div>{{ $t('paid') }}: <span class="font-bold">{{ paidTotalAmount.toFixed(2) }}{{ currencySymbol }}</span></div>
-            <div>{{ $t('total') }}: <span class="font-bold">{{ (totalPrice - paidTotalAmount).toFixed(2) }}{{ currencySymbol
-            }}</span></div>
+            <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(totalPrice, currencySymbol) }}</span></div>
+            <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol) }}</span></div>
+            <div>{{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{ formatCurrency(totalPrice - paidTotalAmount, currencySymbol) }}</span></div>
         </div>
     </div>
 
@@ -187,6 +187,7 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
+import { formatCurrency } from '@/utils/numberUtils';
 
 
 export default {
@@ -313,9 +314,20 @@ export default {
                 ...tab,
                 label: this.$t(tab.label)
             }));
+        },
+        remainingAmountClass() {
+            const remaining = this.totalPrice - this.paidTotalAmount;
+            if (remaining > 0) {
+                return 'text-red-500'; // Осталось доплатить - красный
+            } else if (remaining < 0) {
+                return 'text-green-500'; // Переплата - зеленый
+            } else {
+                return 'text-gray-700'; // Оплачено полностью - серый
+            }
         }
     },
     methods: {
+        formatCurrency,
         getFormState() {
             const state = {
                 selectedClient: this.selectedClient,

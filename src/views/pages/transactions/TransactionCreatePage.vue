@@ -4,7 +4,7 @@
         <div v-if="isDebt" class="mb-2">
             <label class="required">{{ $t('client') }}</label>
         </div>
-        <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
+        <ClientSearch v-model:selectedClient="selectedClient" :showLabel="false" />
         <div>
             <label>{{ $t('date') }}</label>
             <input type="datetime-local" v-model="date"
@@ -13,7 +13,7 @@
         </div>
         <div class="mt-2">
             <label class="block mb-1 required">{{ $t('type') }}</label>
-            <select v-model="type" :disabled="!!editingItemId" required>
+            <select v-model="type" :disabled="!!editingItemId || !!orderId" required>
                 <option value="">{{ $t('selectType') }}</option>
                 <option value="income">✅ {{ $t('income') }}</option>
                 <option value="outcome">🔺 {{ $t('outcome') }}</option>
@@ -34,6 +34,7 @@
                     type="checkbox" 
                     v-model="isDebt" 
                     @change="handleDebtChange"
+                    :disabled="!!editingItemId || !!orderId"
                 />
                 <span class="ml-2">{{ $t('debtOperation') }}</span>
             </label>
@@ -41,7 +42,8 @@
         <div class="flex items-center space-x-2">
             <div class="w-full mt-2">
                 <label class="required">{{ $t('amountBeforeConversion') }}</label>
-                <input type="number" v-model="origAmount" required min="0.01">
+                <input type="number" v-model="origAmount" required :min="minAmount || 0.01" 
+                       :title="minAmount ? `${$t('minimumAmount')}: ${minAmount}` : ''">
             </div>
             <div class="w-full mt-2">
                 <label class="block mb-1 required">{{ $t('currency') }}</label>
@@ -144,11 +146,13 @@ export default {
         orderId: { type: [String, Number], required: false },
         defaultCashId: { type: Number, default: null, required: false },
         prefillAmount: { type: Number, default: null },
+        minAmount: { type: Number, default: null },
         isPaymentModal: { type: Boolean, default: false }
     },
     data() {
         return {
-            type: this.editingItem ? this.editingItem.typeName() : "income",
+            // Для заказов всегда тип "income" и не долговая
+            type: this.orderId ? "income" : (this.editingItem ? this.editingItem.typeName() : "income"),
             cashId: this.editingItem ? (this.editingItem.cashId || this.defaultCashId || '') : '',
             cashAmount: this.editingItem ? this.editingItem.cashAmount : null,
             cashCurrencyId: this.editingItem ? this.editingItem.cashCurrencyId : null,
@@ -174,7 +178,8 @@ export default {
                 return new Date().toISOString().substring(0, 16);
             })(),
             note: this.editingItem ? this.editingItem.note : '',
-            isDebt: this.editingItem ? this.editingItem.isDebt : false,
+            // Для заказов всегда false (не долговая)
+            isDebt: this.orderId ? false : (this.editingItem ? this.editingItem.isDebt : false),
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? (this.editingItem.client || this.initialClient) : this.initialClient,
             currencies: [],
@@ -289,6 +294,13 @@ export default {
                 return;
             }
 
+            // Валидация минимальной суммы для оплаты заказа
+            if (this.minAmount && this.origAmount < this.minAmount) {
+                this.$emit('saved-error', `Минимальная сумма оплаты: ${this.minAmount}`);
+                this.saveLoading = false;
+                return;
+            }
+
             this.saveLoading = true;
 
             try {
@@ -330,7 +342,13 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
+                // Обработка ошибки недостаточной суммы оплаты
+                if (error.response && error.response.data && error.response.data.error === 'INSUFFICIENT_PAYMENT_AMOUNT') {
+                    const errorData = error.response.data;
+                    this.$emit('saved-error', `Минимальная сумма оплаты: ${errorData.minimum_amount}. Указано: ${errorData.provided_amount}`);
+                } else {
+                    this.$emit('saved-error', this.getApiErrorMessage(error));
+                }
             }
             this.saveLoading = false;
 
@@ -518,6 +536,7 @@ export default {
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
+                    // При редактировании используем реальные значения из транзакции
                     this.type = newEditingItem.typeName() || "income";
                     this.cashId = newEditingItem.cashId || this.defaultCashId || '';
                     this.cashAmount = newEditingItem.cashAmount || null;
@@ -533,7 +552,8 @@ export default {
                     this.isDebt = newEditingItem.isDebt || false;
                 } else {
                     // При создании новой транзакции устанавливаем значения по умолчанию
-                    this.type = "income";
+                    // Для заказов всегда тип "income" и не долговая
+                    this.type = this.orderId ? "income" : "income";
                     this.cashId = this.defaultCashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
                     const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
                     this.cashAmount = null;
@@ -545,7 +565,8 @@ export default {
                     this.date = new Date().toISOString().substring(0, 16);
                     this.selectedClient = this.initialClient || null;
                     this.editingItemId = null;
-                    this.isDebt = false;
+                    // Для заказов всегда false (не долговая)
+                    this.isDebt = this.orderId ? false : false;
                 }
                 this.$nextTick(() => {
                     this.saveInitialState();

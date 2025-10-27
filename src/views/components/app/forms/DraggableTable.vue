@@ -68,7 +68,7 @@
             <img :src="itemMapper(item, column.name)" width="50" class="rounded" />
           </template>
           <template v-else-if="column.html">
-            <span v-html="itemMapper(item, column.name)"></span>
+            <span v-html="itemMapper(item, column.name)" @click="(e) => handleHtmlClick(e, item, column)"></span>
           </template>
           <template v-else>
             <span>{{ itemMapper(item, column.name) }}</span>
@@ -95,6 +95,7 @@ export default {
     tableData: { type: Array, required: true },
     itemMapper: { type: Function, required: true },
     onItemClick: { type: Function },
+    onHtmlCellClick: { type: Function },
   },
   data() {
     return {
@@ -160,7 +161,7 @@ export default {
         this.columns = this.columnsConfig.map((col, index) => ({
           ...col,
           sort_index: index,
-          visible: true,
+          visible: col.visible !== undefined ? col.visible : true,
           size: col.size ?? null,
         }));
       }
@@ -169,7 +170,7 @@ export default {
       this.columns = this.columnsConfig.map((col, index) => ({
         ...col,
         sort_index: index,
-        visible: true,
+        visible: col.visible !== undefined ? col.visible : true,
         size: col.size ?? null,
       }));
       this.saveColumns();
@@ -255,6 +256,19 @@ export default {
         this.selectedIds = [...this.selectedIds, id];
       }
       this.$emit('selectionChange', this.selectedIds.slice());
+    },
+    handleHtmlClick(e, item, column) {
+      // Проверяем клик по элементу с data-атрибутами
+      const target = e.target;
+      if (target && target.hasAttribute('data-source-type') && target.hasAttribute('data-source-id')) {
+        e.stopPropagation(); // Останавливаем всплытие чтобы не открывалась форма редактирования транзакции
+        if (this.onHtmlCellClick) {
+          this.onHtmlCellClick(item, column, {
+            sourceType: target.getAttribute('data-source-type'),
+            sourceId: target.getAttribute('data-source-id')
+          });
+        }
+      }
     },
   },
   watch: {

@@ -128,7 +128,7 @@
                 <tr class="bg-gray-50 font-medium">
                     <td :colspan="showQuantity ? 2 : 1" class="py-2 px-4 text-right">{{ $t('amountWithoutDiscount') }}</td>
                     <td class="py-2 px-4 text-right">
-                        {{ subtotal.toFixed(2) }} <span class="ml-1">{{ currencySymbol }}</span>
+                        {{ formatCurrency(subtotal, currencySymbol) }}
                     </td>
                     <td></td>
                 </tr>
@@ -153,7 +153,7 @@
                 <tr class="bg-gray-100 font-bold">
                     <td :colspan="showQuantity ? 2 : 1" class="py-2 px-4 text-right">{{ $t('total') }}</td>
                     <td class="py-2 px-4 text-right">
-                        {{ totalPrice.toFixed(2) }} <span class="ml-1">{{ currencySymbol }}</span>
+                        {{ formatCurrency(totalPrice, currencySymbol) }}
                     </td>
                     <td></td>
                 </tr>
@@ -177,6 +177,7 @@ import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
+import { formatCurrency } from '@/utils/numberUtils';
 
 export default {
     mixins: [notificationMixin],
@@ -317,6 +318,7 @@ export default {
                 return products;
             }
             
+            // ✅ Если склад не выбран, используем товары из store
             // ✅ Для basement загружаем ВСЕ товары, иначе - последние 10
             let products = this.useAllProducts 
                 ? this.$store.getters.allProducts 
@@ -334,7 +336,10 @@ export default {
         // ✅ Если выбран склад, загружаем товары для этого склада
         if (this.warehouseId) {
             await this.loadWarehouseProducts();
-        } else if (this.useAllProducts) {
+        }
+        
+        // ✅ ВСЕГДА загружаем общие товары в store (для случаев когда склад не выбран)
+        if (this.useAllProducts) {
             // Для basement загружаем ВСЕ товары
             await this.$store.dispatch('loadAllProducts');
         } else {
@@ -343,6 +348,7 @@ export default {
         }
     },
     methods: {
+        formatCurrency,
         async loadWarehouseProducts() {
             // Загружаем товары с учетом выбранного склада
             try {
@@ -498,6 +504,13 @@ export default {
                         // Склад убрали - очищаем товары склада
                         this.warehouseProducts = [];
                         this.warehouseProductsLoaded = false;
+                        
+                        // ✅ Перезагружаем общие товары в store
+                        if (this.useAllProducts) {
+                            await this.$store.dispatch('loadAllProducts');
+                        } else {
+                            await this.$store.dispatch('loadLastProducts');
+                        }
                     }
                     
                     // Перезагружаем поиск если есть текст поиска

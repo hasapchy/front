@@ -162,6 +162,7 @@
             :order-id="editingTransaction.orderId"
             :default-cash-id="editingTransaction.cashId"
             :prefill-amount="editingTransaction.prefillAmount"
+            :min-amount="editingTransaction.minAmount"
             :is-payment-modal="true"
             @saved="handleTransactionSaved"
             @saved-error="handleTransactionSavedError"
@@ -235,7 +236,7 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: "id", label: "№", size: 20 },
-                { name: "statusName", label: 'status', component: markRaw(StatusSelectCell), props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId), }), },
+                { name: "statusName", label: 'status', component: markRaw(StatusSelectCell), props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
                 { name: "cashName", label: 'cashRegister' },
                 { name: "warehouseName", label: 'warehouse' },
                 { name: "dateUser", label: 'dateUser' },
@@ -501,7 +502,8 @@ export default {
                     client: order.client,
                     projectId: order.projectId,
                     cashId: order.cashId,
-                    prefillAmount: paymentData.remaining_amount
+                    prefillAmount: paymentData.remaining_amount,
+                    minAmount: paymentData.remaining_amount // Минимальная сумма для оплаты
                 };
                 this.transactionModal = true;
             }

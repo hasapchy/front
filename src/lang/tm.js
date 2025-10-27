@@ -907,6 +907,8 @@ export default {
   // Новые переводы для фильтров транзакций
   allTransactionTypes: 'Ähli tranzaksiya görnüşleri',
   allTransactions: 'Ähli tranzaksiyalar',
+  nonDebtTransactions: 'Karz däl tranzaksiyalar',
+  debtsOnly: 'Diňe bergidarlyklar',
   allSources: 'Ähli çeşmeler',
   allStatuses: 'Ähli ýagdaýlar',
   debt: 'Karz',
@@ -977,6 +979,7 @@ export default {
   removeImage: 'Suraty aýyryň',
   amount: 'Mukdar',
   enterAmount: 'Mukdary giriziň',
+  minimumAmount: 'Iň az mukdar',
   selectCurrency: 'Walýuta saýlaň',
   update: 'Täzele',
   

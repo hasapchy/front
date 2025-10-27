@@ -92,7 +92,9 @@ export default class TransactionController {
           item.date,
           item.created_at,
           item.updated_at,
-          item.orders || []
+          item.orders || [],
+          item.source_type || null,
+          item.source_id || null
         );
       });
 

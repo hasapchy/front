@@ -4,32 +4,15 @@
             <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
         </div>
         
-        <!-- Статистика баланса -->
-        <div class="mb-4">
-            <div class="flex items-center gap-6">
-                <!-- Кредит клиента (нам платят - зеленый) -->
-                <span class="flex items-center gap-2">
-                    <i class="fas fa-arrow-up text-[#5CB85C]"></i>
-                    <span class="text-sm text-gray-600">{{ $t('debt') }}:</span>
-                    <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b>
-                </span>
-                
-                <!-- Оплаты клиента (мы платим - красный) -->
-                <span class="flex items-center gap-2">
-                    <i class="fas fa-arrow-down text-[#EE4F47]"></i>
-                    <span class="text-sm text-gray-600">{{ $t('income') }}:</span>
-                    <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b>
-                </span>
-                
-                <!-- Итого (баланс клиента) -->
-                <span class="flex items-center gap-2">
-                    <i class="fas fa-wallet text-blue-500"></i>
-                    <span class="text-sm text-gray-600">{{ balanceStatusText }}:</span>
-                    <b :class="{
-                        'text-[#5CB85C]': totalBalance >= 0,
-                        'text-[#EE4F47]': totalBalance < 0
-                    }">{{ formatBalance(totalBalance) }}</b>
-                </span>
+        <!-- Итого (баланс клиента) -->
+        <div v-if="!balanceLoading && editingItem" class="mb-4">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-wallet text-blue-500"></i>
+                <span class="text-sm text-gray-600">{{ balanceStatusText }}:</span>
+                <b :class="{
+                    'text-[#5CB85C]': totalBalance >= 0,
+                    'text-[#EE4F47]': totalBalance < 0
+                }">{{ formatBalance(totalBalance) }}</b>
             </div>
         </div>
 
@@ -105,8 +88,6 @@ export default {
             lastFetchedClientId: null, // Для предотвращения дублирования запросов
             forceRefresh: false,
             totalBalance: 0,
-            totalIncome: 0,
-            totalExpense: 0,
             transactionModalOpen: false,
             editingTransactionItem: null,
             selectedEntity: null,
@@ -118,6 +99,7 @@ export default {
                 { name: "operationType", label: this.$t("type"), size: 150, html: true },
                 { name: "sourceType", label: "Источник", size: 120, html: true },
                 { name: "note", label: this.$t("note"), size: 200 },
+                { name: "debt", label: "Долг", size: 80, html: true },
                 { name: "user_name", label: this.$t("user"), size: 120 },
                 { name: "clientImpact", label: this.$t("impact"), size: 130, html: true },
             ],
@@ -197,6 +179,9 @@ export default {
         isDebtOperation(item) {
             return item.is_debt === 1 || item.is_debt === true || item.is_debt === '1';
         },
+        formatBalance(balance) {
+            return `${this.$formatNumber(balance, 2, true)} ${this.currencyCode}`;
+        },
         async fetchDefaultCurrency() {
             try {
                 // Используем данные из store
@@ -235,56 +220,30 @@ export default {
                         },
                         formatAmountWithColor() {
                             const val = parseFloat(item.amount);
-                            const color = val >= 0 ? "#5CB85C" : "#EE4F47";
+                            // Положительная сумма (долг) - красный, отрицательная (оплата) - зеленый
+                            const color = val >= 0 ? "#EE4F47" : "#5CB85C";
                             const formatted = self.$formatNumber(val, 2, true);
                             return `<span style="color:${color};font-weight:bold">${formatted} ${self.currencyCode}</span>`;
                         },
                         label() {
-                            // Если это кредитная операция
-                            if (self.isDebtOperation(item)) {
-                                return '<i class="fas fa-arrow-up text-red-500 mr-2"></i> Продажа (кредит)';
+                            // Положительная сумма - долг клиента
+                            if (parseFloat(item.amount) > 0) {
+                                return '<i class="fas fa-arrow-up text-red-500 mr-2"></i> Долг клиента';
                             }
                             
-                            // Если это оплата кредита
+                            // Отрицательная сумма - оплата клиента
                             return '<i class="fas fa-arrow-down text-green-500 mr-2"></i> Оплата клиента';
                         }
                     };
                 });
                 
-                // Кредит клиента (дебет - что клиент нам должен)
-                // Используем комбинацию: положительная сумма + is_debt=true
-                const debtItems = this.balanceHistory.filter(item => {
-                    const isPositive = parseFloat(item.amount) > 0;
-                    console.log(`Операция ${item.sourceId}: is_debt=${item.is_debt}, amount=${item.amount}, isDebt=${this.isDebtOperation(item)}, isPositive=${isPositive}`);
-                    return this.isDebtOperation(item) && isPositive;
-                });
-                console.log('Кредит клиента (дебет):', debtItems);
-                this.totalIncome = debtItems.reduce((sum, item) => sum + parseFloat(item.amount), 0);
-
-                // Оплаты клиента (кредит - что клиент нам заплатил)
-                // Все остальные операции (не кредитные)
-                const paymentItems = this.balanceHistory.filter(item => {
-                    const isNotDebt = !this.isDebtOperation(item);
-                    console.log(`Операция ${item.sourceId}: is_debt=${item.is_debt}, amount=${item.amount}, isDebt=${this.isDebtOperation(item)}, isNotDebt=${isNotDebt}`);
-                    return isNotDebt;
-                });
-                console.log('Оплаты клиента (кредит):', paymentItems);
-                this.totalExpense = paymentItems.reduce((sum, item) => sum + Math.abs(parseFloat(item.amount)), 0);
-                
-                console.log('Все операции:', this.balanceHistory);
-                console.log('Итого кредит (дебет):', this.totalIncome);
-                console.log('Итого оплаты (кредит):', this.totalExpense);
-                
-                // Используем реальный баланс клиента из API
-                await this.updateClientBalance();
+                // Подсчитываем итоговый баланс клиента
                 this.totalBalance = parseFloat(this.editingItem.balance || 0);
                 
                 this.lastFetchedClientId = this.editingItem.id;
                 this.forceRefresh = false;
             } catch (e) {
                 this.balanceHistory = [];
-                this.totalIncome = 0;
-                this.totalExpense = 0;
                 this.totalBalance = 0;
             } finally {
                 this.balanceLoading = false;
@@ -321,7 +280,6 @@ export default {
         onEntitySaved() {
             if (this.editingItem && this.editingItem.id) {
                 this.fetchBalanceHistory();
-                this.updateClientBalance();
             }
             this.$emit('balance-updated');
             this.closeEntityModal();
@@ -332,7 +290,6 @@ export default {
         onEntityDeleted() {
             if (this.editingItem && this.editingItem.id) {
                 this.fetchBalanceHistory();
-                this.updateClientBalance();
             }
             this.$emit('balance-updated');
             this.closeEntityModal();
@@ -340,69 +297,70 @@ export default {
         onEntityDeletedError(error) {
             this.closeEntityModal();
         },
-        async updateClientBalance() {
-            if (!this.editingItem || !this.editingItem.id) return;
-            try {
-                const updatedClient = await ClientController.getItem(this.editingItem.id);
-                this.editingItem.balance = updatedClient.balance;
-
-            } catch (error) {
-                console.error('Ошибка при обновлении баланса клиента:', error);
-                // Если клиент не найден (404), не обновляем баланс
-                if (error.response?.status === 404) {
-                    console.warn('Клиент не найден, пропускаем обновление баланса');
-                }
-            }
-        },
-        formatBalance(balance) {
-            return `${this.$formatNumber(balance, 2, true)} ${this.currencyCode}`;
-        },
         itemMapper(i, c) {
             switch (c) {
                 case "id":
                     return i.sourceId || '-';
-                case "operationType":
-                    return this.isDebtOperation(i)
-                        ? '<i class="fas fa-arrow-up text-red-500 mr-2"></i> Продажа (кредит)'
-                        : '<i class="fas fa-arrow-down text-green-500 mr-2"></i> Оплата клиента';
+                case "operationType": {
+                    const amount = parseFloat(i.amount);
+                    const isDebt = i.is_debt === 1 || i.is_debt === true || i.is_debt === '1';
+                    
+                    // Логика: если is_debt=true и положительная сумма - это кредит клиента
+                    // Если is_debt=false и положительная сумма - это оплаченная операция
+                    // Отрицательная сумма - всегда оплата долга
+                    if (amount > 0 && isDebt) {
+                        return '<i class="fas fa-arrow-up text-[#EE4F47] mr-2"></i><span class="text-[#EE4F47]">Кредит клиента</span>';
+                    } else if (amount > 0 && !isDebt) {
+                        return '<i class="fas fa-check text-[#5CB85C] mr-2"></i><span class="text-[#5CB85C]">Оплачено</span>';
+                    } else if (amount < 0) {
+                        return '<i class="fas fa-arrow-down text-[#5CB85C] mr-2"></i><span class="text-[#5CB85C]">Оплата клиента</span>';
+                    } else {
+                        return '<i class="fas fa-exchange-alt text-gray-500 mr-2"></i><span class="text-gray-500">Транзакция</span>';
+                    }
+                }
                 case "sourceType":
                     // Используем короткие названия с иконками вместо полных путей
                     if (i.source === 'sale') {
-                        return '<i class="fas fa-shopping-cart text-blue-500 mr-2"></i>Продажа';
+                        return '<i class="fas fa-shopping-cart text-[#5CB85C] mr-2"></i><span class="text-[#5CB85C]">Продажа</span>';
                     } else if (i.source === 'order') {
-                        return '<i class="fas fa-clipboard-list text-purple-500 mr-2"></i>Заказ';
+                        return '<i class="fas fa-clipboard-list text-[#337AB7] mr-2"></i><span class="text-[#337AB7]">Заказ</span>';
                     } else if (i.source === 'receipt') {
-                        return '<i class="fas fa-box text-orange-500 mr-2"></i>Оприходование';
+                        return '<i class="fas fa-box text-[#FFA500] mr-2"></i><span class="text-[#FFA500]">Оприходование</span>';
                     } else if (i.source === 'transaction') {
-                        return '<i class="fas fa-exchange-alt text-gray-500 mr-2"></i>Транзакция';
+                        return '<i class="fas fa-exchange-alt text-[#6C757D] mr-2"></i><span class="text-[#6C757D]">Транзакция</span>';
                     } else {
-                        return '<i class="fas fa-exchange-alt text-gray-500 mr-2"></i>Транзакция';
+                        return '<i class="fas fa-exchange-alt text-[#6C757D] mr-2"></i><span class="text-[#6C757D]">Транзакция</span>';
                     }
                 case "user_name":
                     return i.user_name || '-';
-                case "clientImpact":
-                    const formattedAmount = this.$formatNumber(Math.abs(parseFloat(i.amount)), 2, true);
+                case "note":
+                    return i.note || '-';
+                case "debt": {
+                    const isDebt = i.is_debt === 1 || i.is_debt === true || i.is_debt === '1';
+                    return isDebt ? '<span class="text-green-500 font-bold">✓</span>' : '<span class="text-gray-400">-</span>';
+                }
+                case "clientImpact": {
+                    const amount = parseFloat(i.amount);
                     const currencySymbol = this.currencyCode || '';
+                    const isDebt = i.is_debt === 1 || i.is_debt === true || i.is_debt === '1';
                     
-                    if (this.isDebtOperation(i)) {
-                        // Кредит: увеличиваем задолженность (+amount) - красный
-                        return `<span class="text-red-500 font-semibold">+${formattedAmount} ${currencySymbol}</span>`;
+                    // Логика на основе is_debt
+                    // is_debt = 1 → Продажа (начисление долга) → +amount (красный)
+                    // is_debt = 0 → Оплата (погашение долга) → -amount (зеленый)
+                    if (isDebt) {
+                        // Долговая операция: всегда показываем положительное значение красным
+                        return `<span class="text-[#EE4F47] font-semibold">+${this.$formatNumber(Math.abs(amount), 2, true)} ${currencySymbol}</span>`;
                     } else {
-                        // Оплата: уменьшаем задолженность (-amount) - зелёный
-                        return `<span class="text-green-500 font-semibold">-${formattedAmount} ${currencySymbol}</span>`;
+                        // Оплата: всегда показываем отрицательное значение зеленым
+                        return `<span class="text-[#5CB85C] font-semibold">-${this.$formatNumber(Math.abs(amount), 2, true)} ${currencySymbol}</span>`;
                     }
+                }
                 default:
                     return i[c];
             }
         },
     },
     computed: {
-        totalIncomeDisplay() {
-            return `${this.$formatNumber(this.totalIncome, 2, true)} ${this.currencyCode}`;
-        },
-        totalExpenseDisplay() {
-            return `${this.$formatNumber(this.totalExpense, 2, true)} ${this.currencyCode}`;
-        },
         balanceStatusText() {
             if (this.totalBalance > 0) {
                 return 'Клиент нам должен';
@@ -425,8 +383,6 @@ export default {
                     this.entityModalOpen = false;
                     this.entityLoading = false;
                     this.totalBalance = 0;
-                    this.totalIncome = 0;
-                    this.totalExpense = 0;
                 }
             },
             immediate: true,
