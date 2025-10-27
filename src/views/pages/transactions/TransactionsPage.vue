@@ -175,6 +175,7 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
+                { name: 'dateUser', label: 'date' },
                 { name: 'type', label: 'type', html: true },
                 {
                     name: 'source',
@@ -189,11 +190,6 @@ export default {
                     })
                 },
                 { name: 'cashName', label: 'cashRegister' },
-                { name: 'cashAmount', label: 'amount', html: true },
-                { name: 'origAmount', label: 'originalAmount', visible: false },
-                { name: 'categoryName', label: 'category' },
-                { name: 'note', label: 'note', html: true, size: 200 },
-                { name: 'projectName', label: 'project' },
                 {
                     name: 'client',
                     label: 'customer',
@@ -203,7 +199,11 @@ export default {
                         searchQuery: this.searchQuery
                     })
                 },
-                { name: 'dateUser', label: 'date' },
+                { name: 'projectName', label: 'project' },
+                { name: 'categoryName', label: 'category' },
+                { name: 'note', label: 'note', html: true, size: 200 },
+                { name: 'cashAmount', label: 'amount', html: true },
+                { name: 'origAmount', label: 'originalAmount', visible: false },
             ],
             sourceOptions: [
                 { value: 'sale', label: this.$t('sale') },

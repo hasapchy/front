@@ -110,23 +110,25 @@ export default {
                 }
                 
                 // Для каждого клиента рассчитываем дебет и кредит
-                this.clientBalances = filteredClients.map(client => {
-                    // Пока используем простую логику - баланс клиента
-                    const balance = parseFloat(client.balance) || 0;
-                    
-                    return {
-                        id: client.id,
-                        firstName: client.firstName || client.first_name,
-                        lastName: client.lastName || client.last_name,
-                        first_name: client.firstName || client.first_name,
-                        last_name: client.lastName || client.last_name,
-                        contactPerson: client.contactPerson || client.contact_person,
-                        contact_person: client.contactPerson || client.contact_person,
-                        currency_symbol: 'TMT', // Можно получить из настроек
-                        debt_amount: balance > 0 ? balance : 0, // Нам должны
-                        credit_amount: balance < 0 ? Math.abs(balance) : 0, // Мы должны
-                    };
-                });
+                this.clientBalances = filteredClients
+                    .map(client => {
+                        // Пока используем простую логику - баланс клиента
+                        const balance = parseFloat(client.balance) || 0;
+                        
+                        return {
+                            id: client.id,
+                            firstName: client.firstName || client.first_name,
+                            lastName: client.lastName || client.last_name,
+                            first_name: client.firstName || client.first_name,
+                            last_name: client.lastName || client.last_name,
+                            contactPerson: client.contactPerson || client.contact_person,
+                            contact_person: client.contactPerson || client.contact_person,
+                            currency_symbol: 'TMT', // Можно получить из настроек
+                            debt_amount: balance > 0 ? balance : 0, // Нам должны
+                            credit_amount: balance < 0 ? Math.abs(balance) : 0, // Мы должны
+                        };
+                    })
+                    .filter(client => client.debt_amount !== 0 || client.credit_amount !== 0); // Показываем только с ненулевым балансом
             } catch (error) {
                 console.error('Ошибка загрузки балансов клиентов:', error);
             } finally {

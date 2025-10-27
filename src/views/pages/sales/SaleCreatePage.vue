@@ -222,7 +222,23 @@ export default {
       // Используем данные из store
       await this.$store.dispatch('loadProjects');
       // Фильтруем только активные проекты
-      this.allProjects = this.$store.getters.activeProjects;
+      const activeProjects = this.$store.getters.activeProjects;
+      
+      // Если редактируем продажу и у неё есть проект, который завершен (его нет в activeProjects),
+      // добавляем его в список опций
+      if (this.editingItem && this.editingItem.projectId && this.editingItem.projectName) {
+        const hasProject = activeProjects.some(p => p.id === this.editingItem.projectId);
+        if (!hasProject) {
+          // Проект завершен, добавляем его вручную
+          this.allProjects = [
+            ...activeProjects,
+            { id: this.editingItem.projectId, name: this.editingItem.projectName }
+          ];
+          return;
+        }
+      }
+      
+      this.allProjects = activeProjects;
     },
         async fetchCurrencies() {
             // Используем данные из store

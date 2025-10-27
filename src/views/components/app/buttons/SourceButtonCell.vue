@@ -23,7 +23,7 @@
     </SideModalDialog>
 
     <!-- Модальное окно для WhReceipt -->
-    <SideModalDialog v-if="sourceType && sourceType.includes('WhReceipt')" :showForm="modalOpen" :onclose="() => modalOpen = false">
+    <SideModalDialog v-if="sourceType && (sourceType.includes('WhReceipt') || sourceType.includes('WarehouseReceipt'))" :showForm="modalOpen" :onclose="() => modalOpen = false">
         <WarehousesReceiptCreatePage v-if="modalOpen && editingItem" :editingItem="editingItem" 
             @saved="handleSaved" @saved-error="() => modalOpen = false" @deleted="handleDeleted" />
     </SideModalDialog>
@@ -66,7 +66,7 @@ export default {
                 return 'fas fa-shopping-cart text-[#5CB85C]';
             } else if (this.sourceType.includes('Order')) {
                 return 'fas fa-file-invoice text-[#337AB7]';
-            } else if (this.sourceType.includes('WhReceipt')) {
+            } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
                 return 'fas fa-box text-[#FFA500]';
             } else {
                 return 'fas fa-link text-[#337AB7]';
@@ -79,7 +79,7 @@ export default {
                 text = `Продажа #${this.sourceId}`;
             } else if (this.sourceType.includes('Order')) {
                 text = `Заказ #${this.sourceId}`;
-            } else if (this.sourceType.includes('WhReceipt')) {
+            } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
                 text = `Оприходование #${this.sourceId}`;
             } else {
                 text = `Связь #${this.sourceId}`;
@@ -127,13 +127,15 @@ export default {
                     console.log('[SourceButtonCell] Order data:', orderData);
                     console.log('[SourceButtonCell] Order data type:', orderData.constructor.name);
                     this.editingItem = orderData;
-                } else if (this.sourceType.includes('WhReceipt')) {
+                } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
                     console.log('[SourceButtonCell] Loading WarehouseReceipt...');
                     const WarehouseReceiptController = (await import('@/api/WarehouseReceiptController')).default;
                     const receiptData = await WarehouseReceiptController.getItem(this.sourceId);
                     console.log('[SourceButtonCell] Receipt data:', receiptData);
                     console.log('[SourceButtonCell] Receipt data type:', receiptData.constructor.name);
                     this.editingItem = receiptData;
+                } else {
+                    console.warn('[SourceButtonCell] Unknown source type:', this.sourceType);
                 }
                 
                 console.log('[SourceButtonCell] Final editingItem:', this.editingItem);

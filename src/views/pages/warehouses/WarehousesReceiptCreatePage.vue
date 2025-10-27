@@ -200,7 +200,23 @@ export default {
         async fetchAllProjects() {
             // Используем данные из store
             await this.$store.dispatch('loadProjects');
-            this.allProjects = this.$store.getters.projects;
+            const allProjectsFromStore = this.$store.getters.projects;
+            
+            // Если редактируем оприходование и у неё есть проект, который завершен (его нет в проектах из store),
+            // добавляем его в список опций
+            if (this.editingItem && this.editingItem.projectId && this.editingItem.projectName) {
+                const hasProject = allProjectsFromStore.some(p => p.id === this.editingItem.projectId);
+                if (!hasProject) {
+                    // Проект завершен, добавляем его вручную
+                    this.allProjects = [
+                        ...allProjectsFromStore,
+                        { id: this.editingItem.projectId, name: this.editingItem.projectName }
+                    ];
+                    return;
+                }
+            }
+            
+            this.allProjects = allProjectsFromStore;
         },
 
         async save() {

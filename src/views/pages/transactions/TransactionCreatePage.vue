@@ -208,7 +208,22 @@ export default {
         },
         allProjects() {
             // ✅ Берем напрямую из Store - автоматически обновляется при изменениях
-            return this.$store.getters.activeProjects || [];
+            const activeProjects = this.$store.getters.activeProjects || [];
+            
+            // Если редактируем транзакцию и у неё есть проект, который завершен (его нет в activeProjects),
+            // добавляем его в список опций
+            if (this.editingItem && this.editingItem.projectId && this.editingItem.projectName) {
+                const hasProject = activeProjects.some(p => p.id === this.editingItem.projectId);
+                if (!hasProject) {
+                    // Проект завершен, добавляем его вручную
+                    return [
+                        ...activeProjects,
+                        { id: this.editingItem.projectId, name: this.editingItem.projectName }
+                    ];
+                }
+            }
+            
+            return activeProjects;
         }
     },
     mounted() {

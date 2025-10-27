@@ -83,11 +83,14 @@ export default class SaleController {
             );
           });
         }
+        // Вычисляем итоговую сумму: price - discount
+        const totalPrice = (parseFloat(item.price || 0) - parseFloat(item.discount || 0));
+        
         return new SaleDto(
           item.id,
           item.price,
           item.discount,
-          item.transactions && item.transactions.length > 0 ? item.transactions.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0) : item.total_price || 0,
+          totalPrice,
           item.cash_register && item.cash_register.currency ? item.cash_register.currency.id : item.currency_id,
           item.cash_register && item.cash_register.currency ? item.cash_register.currency.name : item.currency_name,
           item.cash_register && item.cash_register.currency ? item.cash_register.currency.code : item.currency_code,
@@ -203,11 +206,14 @@ export default class SaleController {
       });
     }
     
+    // Вычисляем итоговую сумму: price - discount
+    const totalPrice = (parseFloat(item.price || 0) - parseFloat(item.discount || 0));
+    
     const saleDto = new SaleDto(
       item.id,
       item.price,
       item.discount,
-      item.transactions && item.transactions.length > 0 ? item.transactions.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0) : item.total_price || 0,
+      totalPrice,
       item.cash_register && item.cash_register.currency ? item.cash_register.currency.id : item.currency_id,
       item.cash_register && item.cash_register.currency ? item.cash_register.currency.name : item.currency_name,
       item.cash_register && item.cash_register.currency ? item.cash_register.currency.code : item.currency_code,
