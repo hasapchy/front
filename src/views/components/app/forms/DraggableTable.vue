@@ -130,33 +130,37 @@ export default {
           // Используем balance_value если есть (взаиморасчеты), иначе balance (клиенты)
           const va = a.balance_value !== undefined ? a.balance_value : a.balance;
           const vb = b.balance_value !== undefined ? b.balance_value : b.balance;
-          if (va !== undefined && vb !== undefined && !isNaN(parseFloat(va)) && !isNaN(parseFloat(vb))) {
-            return (parseFloat(va) - parseFloat(vb)) * this.sortOrder;
+          const na = this.normalizeNumber(va);
+          const nb = this.normalizeNumber(vb);
+          if (na !== null && nb !== null) {
+            return (na - nb) * this.sortOrder;
           }
         }
         
         // Сумма транзакций
         if (this.sortKey === 'cashAmount') {
-          const va = a.cashAmount;
-          const vb = b.cashAmount;
-          if (va !== undefined && vb !== undefined && !isNaN(parseFloat(va)) && !isNaN(parseFloat(vb))) {
-            return (parseFloat(va) - parseFloat(vb)) * this.sortOrder;
+          const na = this.normalizeNumber(a.cashAmount);
+          const nb = this.normalizeNumber(b.cashAmount);
+          if (na !== null && nb !== null) {
+            return (na - nb) * this.sortOrder;
           }
         }
         
         // Оригинальная сумма транзакций
         if (this.sortKey === 'origAmount') {
-          const va = a.origAmount;
-          const vb = b.origAmount;
-          if (va !== undefined && vb !== undefined && !isNaN(parseFloat(va)) && !isNaN(parseFloat(vb))) {
-            return (parseFloat(va) - parseFloat(vb)) * this.sortOrder;
+          const na = this.normalizeNumber(a.origAmount);
+          const nb = this.normalizeNumber(b.origAmount);
+          if (na !== null && nb !== null) {
+            return (na - nb) * this.sortOrder;
           }
         }
         
         const va = this.itemMapper(a, this.sortKey);
         const vb = this.itemMapper(b, this.sortKey);
-        if (!isNaN(parseFloat(va)) && !isNaN(parseFloat(vb))) {
-          return (parseFloat(va) - parseFloat(vb)) * this.sortOrder;
+        const na = this.normalizeNumber(va);
+        const nb = this.normalizeNumber(vb);
+        if (na !== null && nb !== null) {
+          return (na - nb) * this.sortOrder;
         }
 
         return (va ?? '').toString().localeCompare((vb ?? '').toString()) * this.sortOrder;
@@ -300,6 +304,28 @@ export default {
           });
         }
       }
+    },
+    normalizeNumber(value) {
+      if (value === null || value === undefined) return null;
+      // Если уже число
+      if (typeof value === 'number') {
+        if (Number.isNaN(value)) return null;
+        return value;
+      }
+      // Строка с HTML/валютой/пробелами
+      let str = String(value).replace(/<[^>]*>/g, ''); // убрать HTML
+      str = str.replace(/\s+/g, ''); // убрать пробелы
+      // заменить нечисловые валютные символы
+      str = str.replace(/[^0-9+\-.,]/g, '');
+      // если есть и запятая и точка, предполагаем точка — десятичный, запятые — тысячные
+      if (str.includes('.') && str.includes(',')) {
+        str = str.replace(/,/g, '');
+      } else if (str.includes(',') && !str.includes('.')) {
+        // запятая как десятичный разделитель
+        str = str.replace(',', '.');
+      }
+      const num = parseFloat(str);
+      return Number.isNaN(num) ? null : num;
     },
   },
   watch: {
