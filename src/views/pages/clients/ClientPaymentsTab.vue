@@ -5,7 +5,7 @@
             <PrimaryButton 
                 icon="fas fa-plus" 
                 :onclick="openCreatePaymentModal"
-                :is-info="true"
+                :is-success="true"
                 :disabled="!editingItem || !editingItem.id">
                 {{ $t('createPayment') }}
             </PrimaryButton>
@@ -44,9 +44,10 @@
                     :editingItem="editingTransactionItem"
                     :preselectedClientId="editingItem.id"
                     :initialClient="editingItem"
-                    @saved="onEntitySaved"
+                    :forceDebt="false"
+                    @saved="() => { onEntitySaved(); forceRefresh = true; }"
                     @saved-error="onEntitySavedError"
-                    @deleted="onEntityDeleted"
+                    @deleted="() => { onEntityDeleted(); forceRefresh = true; }"
                     @deleted-error="onEntityDeletedError" />
             </template>
         </SideModalDialog>

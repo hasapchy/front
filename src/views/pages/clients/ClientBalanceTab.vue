@@ -5,7 +5,7 @@
             <PrimaryButton 
                 icon="fas fa-adjust" 
                 :onclick="openAdjustmentModal"
-                :is-info="true"
+                :is-success="true"
                 :disabled="!editingItem || !editingItem.id">
                 {{ $t('adjustBalance') }}
             </PrimaryButton>
@@ -51,9 +51,9 @@
                     :adjustmentMode="isAdjustmentMode"
                     :adjustmentType="0"
                     :initialClient="editingItem"
-                    @saved="onEntitySaved"
+                    @saved="() => { onEntitySaved(); forceRefresh = true; }"
                     @saved-error="onEntitySavedError"
-                    @deleted="onEntityDeleted"
+                    @deleted="() => { onEntityDeleted(); forceRefresh = true; }"
                     @deleted-error="onEntityDeletedError" />
             </template>
         </SideModalDialog>
