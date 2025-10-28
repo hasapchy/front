@@ -122,6 +122,37 @@ export default {
             this.sortOrder
           );
         }
+        
+        // Специальная обработка для числовых полей с HTML форматированием
+        
+        // Баланс клиентов и взаиморасчетов
+        if (this.sortKey === 'balance') {
+          // Используем balance_value если есть (взаиморасчеты), иначе balance (клиенты)
+          const va = a.balance_value !== undefined ? a.balance_value : a.balance;
+          const vb = b.balance_value !== undefined ? b.balance_value : b.balance;
+          if (va !== undefined && vb !== undefined && !isNaN(parseFloat(va)) && !isNaN(parseFloat(vb))) {
+            return (parseFloat(va) - parseFloat(vb)) * this.sortOrder;
+          }
+        }
+        
+        // Сумма транзакций
+        if (this.sortKey === 'cashAmount') {
+          const va = a.cashAmount;
+          const vb = b.cashAmount;
+          if (va !== undefined && vb !== undefined && !isNaN(parseFloat(va)) && !isNaN(parseFloat(vb))) {
+            return (parseFloat(va) - parseFloat(vb)) * this.sortOrder;
+          }
+        }
+        
+        // Оригинальная сумма транзакций
+        if (this.sortKey === 'origAmount') {
+          const va = a.origAmount;
+          const vb = b.origAmount;
+          if (va !== undefined && vb !== undefined && !isNaN(parseFloat(va)) && !isNaN(parseFloat(vb))) {
+            return (parseFloat(va) - parseFloat(vb)) * this.sortOrder;
+          }
+        }
+        
         const va = this.itemMapper(a, this.sortKey);
         const vb = this.itemMapper(b, this.sortKey);
         if (!isNaN(parseFloat(va)) && !isNaN(parseFloat(vb))) {

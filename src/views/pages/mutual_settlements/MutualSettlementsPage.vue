@@ -126,6 +126,7 @@ export default {
                             currency_symbol: 'TMT', // Можно получить из настроек
                             debt_amount: balance > 0 ? balance : 0, // Нам должны
                             credit_amount: balance < 0 ? Math.abs(balance) : 0, // Мы должны
+                            balance_value: balance, // Числовое значение для сортировки
                         };
                     })
                     .filter(client => client.debt_amount !== 0 || client.credit_amount !== 0); // Показываем только с ненулевым балансом
