@@ -540,6 +540,10 @@ export default {
   
   // Баланс
   balanceHistory: 'История баланса',
+  paymentsHistory: 'История платежей',
+  adjustBalance: 'Корректировка баланса',
+  createPayment: 'Создать платеж',
+  totalPayments: 'Итого платежей',
   finalBalance: 'Итоговый баланс',
   finalExpense: 'Итоговый расход',
   totalIncome: 'Итоговый приход',

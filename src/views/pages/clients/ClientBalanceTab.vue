@@ -31,6 +31,15 @@
             :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
             :onItemClick="handleBalanceItemClick" />
 
+        <!-- Notification Toast -->
+        <NotificationToast 
+            :title="notificationTitle" 
+            :subtitle="notificationSubtitle" 
+            :show="notification" 
+            :is-danger="notificationIsDanger" 
+            @close="closeNotification" 
+        />
+
         <!-- Модальное окно для транзакций -->
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
@@ -51,9 +60,9 @@
                     :adjustmentMode="isAdjustmentMode"
                     :adjustmentType="0"
                     :initialClient="editingItem"
-                    @saved="() => { onEntitySaved(); forceRefresh = true; }"
+                    @saved="onEntitySaved"
                     @saved-error="onEntitySavedError"
-                    @deleted="() => { onEntityDeleted(); forceRefresh = true; }"
+                    @deleted="onEntityDeleted"
                     @deleted-error="onEntityDeletedError" />
             </template>
         </SideModalDialog>
@@ -64,6 +73,9 @@
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
+import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import notificationMixin from "@/mixins/notificationMixin";
 import { defineAsyncComponent } from 'vue';
 
 const TransactionCreatePage = defineAsyncComponent(() => 
@@ -75,10 +87,12 @@ import ClientDto from "@/dto/client/ClientDto";
 import TransactionDto from "@/dto/transaction/TransactionDto";
 
 export default {
+    mixins: [notificationMixin, getApiErrorMessage],
     components: {
         DraggableTable,
         SideModalDialog,
         PrimaryButton,
+        NotificationToast,
         TransactionCreatePage,
     },
     emits: ['balance-updated'],
@@ -292,24 +306,28 @@ export default {
             this.isAdjustmentMode = false;
         },
         onEntitySaved() {
+            this.entityModalOpen = false;
+            this.isAdjustmentMode = false;
             if (this.editingItem && this.editingItem.id) {
                 this.fetchBalanceHistory();
             }
             this.$emit('balance-updated');
-            this.closeEntityModal();
         },
         onEntitySavedError(error) {
-            this.closeEntityModal();
+            // Показываем уведомление об ошибке
+            this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
         },
         onEntityDeleted() {
+            this.entityModalOpen = false;
+            this.isAdjustmentMode = false;
             if (this.editingItem && this.editingItem.id) {
                 this.fetchBalanceHistory();
             }
             this.$emit('balance-updated');
-            this.closeEntityModal();
         },
         onEntityDeletedError(error) {
-            this.closeEntityModal();
+            // Показываем уведомление об ошибке
+            this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
         },
         openAdjustmentModal() {
             this.isAdjustmentMode = true;
