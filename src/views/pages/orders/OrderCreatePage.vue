@@ -236,6 +236,7 @@ export default {
             removedTempProducts: [],
             // additionalFields: [],
             // additionalFieldValues: {},
+            initialMode: null, // 'client' | 'project' | null
         };
     },
     async created() {
@@ -278,6 +279,11 @@ export default {
         // Сохраняем начальное состояние после полной инициализации формы
         this.$nextTick(() => {
             this.saveInitialState();
+            // Устанавливаем режим в зависимости от начальных значений
+            if (this.editingItem) {
+                if (this.editingItem.clientId || this.editingItem.client) this.initialMode = 'client';
+                else if (this.editingItem.projectId || this.editingItem.project_id) this.initialMode = 'project';
+            }
         });
     },
     computed: {
@@ -508,7 +514,10 @@ export default {
             if (this.discount && !this.discountType) {
                 validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
             }
-            
+            // Требуем хотя бы клиента или проект
+            if (!this.selectedClient && !this.projectId) {
+                validationErrors.push('Укажите клиента или проект');
+            }
             
             if (validationErrors.length > 0) {
                 this.$emit('saved-error', validationErrors.join('\n'));
@@ -519,7 +528,11 @@ export default {
             try {
                 const formData = this.getFormState();
                 // Добавляем недостающие поля
-                formData.client_id = this.selectedClient?.id;
+                formData.client_id = this.selectedClient?.id || null;
+                // Если выбран проект — клиент должен быть null (на всякий случай)
+                if (this.projectId) {
+                    formData.client_id = null;
+                }
                 formData.cash_id = this.cashId || null;
                 formData.products = this.products
                     .filter(p => !p.isTempProduct)
@@ -568,7 +581,10 @@ export default {
             if (this.discount && !this.discountType) {
                 validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
             }
-            
+            // Требуем хотя бы клиента или проект
+            if (!this.selectedClient && !this.projectId) {
+                validationErrors.push('Укажите клиента или проект');
+            }
             
             if (validationErrors.length > 0) {
                 this.$emit('saved-error', validationErrors.join('\n'));
@@ -579,7 +595,10 @@ export default {
             try {
                 const formData = this.getFormState();
                 // Добавляем недостающие поля
-                formData.client_id = this.selectedClient?.id;
+                formData.client_id = this.selectedClient?.id || null;
+                if (this.projectId) {
+                    formData.client_id = null;
+                }
                 formData.cash_id = this.cashId || null;
                 formData.products = this.products
                     .filter(p => !p.isTempProduct)
@@ -772,6 +791,50 @@ export default {
             },
             immediate: true
         },
+        // Взаимоисключение client/project
+        selectedClient(newClient, oldClient) {
+            if (newClient && this.projectId) {
+                // Блокировка если изначально проектный заказ
+                if (this.initialMode === 'project' && this.editingItemId) {
+                    this.$store.dispatch('showNotification', { title: this.$t('error'), subtitle: 'Нельзя менять проектный заказ на клиентский', isDanger: true });
+                    this.selectedClient = null;
+                    return;
+                }
+                this.projectId = '';
+            }
+        },
+        projectId: {
+            handler(newProjectId, oldVal) {
+                // Переключение цен (как было)
+                if (newProjectId && this.products.length > 0) {
+                    this.products.forEach(product => {
+                        if (product.wholesale_price !== undefined && product.wholesale_price > 0) {
+                            product.price = product.wholesale_price;
+                            product.priceType = 'wholesale';
+                        }
+                    });
+                } else if (!newProjectId && this.products.length > 0) {
+                    this.products.forEach(product => {
+                        if (product.retail_price !== undefined) {
+                            product.price = product.retail_price;
+                            product.priceType = 'retail';
+                        }
+                    });
+                }
+                // Если выбран проект и это клиентский заказ — запрещаем
+                if (newProjectId) {
+                    if (this.initialMode === 'client' && this.editingItemId) {
+                        this.$store.dispatch('showNotification', { title: this.$t('error'), subtitle: 'Нельзя менять клиентский заказ на проектный', isDanger: true });
+                        this.projectId = '';
+                        return;
+                    }
+                    if (this.selectedClient) {
+                        this.selectedClient = null;
+                    }
+                }
+            },
+            immediate: false
+        },
         allCashRegisters: {
             handler(newCashRegisters) {
                 if (
@@ -901,25 +964,6 @@ export default {
             },
             immediate: true,
             deep: true
-        },
-        projectId(newProjectId) {
-            // При выборе проекта переключаем все товары на оптовые цены
-            if (newProjectId && this.products.length > 0) {
-                this.products.forEach(product => {
-                    if (product.wholesale_price !== undefined && product.wholesale_price > 0) {
-                        product.price = product.wholesale_price;
-                        product.priceType = 'wholesale';
-                    }
-                });
-            } else if (!newProjectId && this.products.length > 0) {
-                // При отмене выбора проекта возвращаем розничные цены
-                this.products.forEach(product => {
-                    if (product.retail_price !== undefined) {
-                        product.price = product.retail_price;
-                        product.priceType = 'retail';
-                    }
-                });
-            }
         }
     }
 }

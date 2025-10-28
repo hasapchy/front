@@ -7,13 +7,21 @@
           {{ $t('orders') }}
         </h2>
       </div>
-      <div class="mt-4 flex md:mt-0 md:ml-4">
-        <router-link to="/basement/orders/create">
+      <div class="mt-4 flex md:mt-0 md:ml-4 space-x-2">
+        <router-link to="/basement/orders/create?mode=project">
           <PrimaryButton
             icon="fas fa-plus"
             :is-info="true"
           >
-            {{ $t('createOrder') }}
+            Заказ для проекта
+          </PrimaryButton>
+        </router-link>
+        <router-link to="/basement/orders/create?mode=client">
+          <PrimaryButton
+            icon="fas fa-plus"
+            :is-info="true"
+          >
+            Заказ без проекта
           </PrimaryButton>
         </router-link>
       </div>

@@ -38,16 +38,16 @@
             <!-- Клиент и Проект в одной строке -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <!-- Клиент -->
-              <div>
+              <div v-if="createMode !== 'project'">
                 <BasementClientSearch
                   :selected-client="selectedClient"
                   @update:selectedClient="onClientSelected"
-                  :required="true"
+                  :required="createMode === 'client'"
                 />
               </div>
 
               <!-- Проект -->
-              <div>
+              <div v-if="createMode !== 'client'">
                 <label class="block text-sm font-medium text-gray-700">{{ $t('project') }}</label>
                 <select v-model="form.project_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                   <option value="">{{ $t('no') }}</option>
@@ -128,7 +128,7 @@
         <div class="flex flex-col items-end space-y-2">
           <!-- Подсказка, почему кнопка неактивна -->
           <div v-if="!canSave && !loading" class="text-sm text-gray-500 text-right">
-            <div v-if="!form.client_id">• Выберите клиента</div>
+            <div v-if="!form.client_id && !form.project_id">• Укажите клиента или проект</div>
             <div v-if="!form.warehouse_id">• Выберите склад</div>
             <div v-if="!hasValidProducts">• Добавьте товары с количеством больше 0</div>
           </div>
@@ -253,6 +253,8 @@ export default {
         warehouse_id: 1, // Значение по умолчанию
         category_id: null // Категория заказа (определяется по пользователю)
       },
+      createMode: this.$route.query.mode === 'project' ? 'project' : (this.$route.query.mode === 'client' ? 'client' : null),
+      initialMode: null, // 'client' | 'project' | null
       selectedClient: null,
       allProjects: [],
       loading: false,
@@ -288,12 +290,13 @@ export default {
       return hasProductsWithQuantity || hasStockItemsWithQuantity
     },
     canSave() {
-      // Кнопка активна только если:
-      // 1. Есть клиент
+      // Кнопка активна если:
+      // 1. Есть клиент ИЛИ проект
       // 2. Есть склад
       // 3. Есть валидные товары с количеством > 0
       // 4. Не идет загрузка
-      return this.form.client_id && 
+      const hasCounterparty = !!this.form.client_id || !!this.form.project_id
+      return hasCounterparty && 
              this.form.warehouse_id && 
              this.hasValidProducts && 
              !this.loading
@@ -400,11 +403,24 @@ export default {
   async mounted() {
     // Определяем категорию по текущему пользователю
     this.setCategoryByUser();
-    
+    // В зависимости от режима скрываем поле на старте
+    if (!this.isEditing) {
+      if (this.createMode === 'project') {
+        this.form.client_id = ''
+        this.selectedClient = null
+      } else if (this.createMode === 'client') {
+        this.form.project_id = ''
+      }
+    }
     // Загружаем кассы, склады и проекты в фоне, не блокируя загрузку страницы
     this.loadCashRegisters();
     this.loadWarehouses();
     this.loadProjects();
+    // Устанавливаем режим при редактировании
+    if (this.isEditing) {
+      if (this.form.client_id) this.initialMode = 'client';
+      else if (this.form.project_id) this.initialMode = 'project';
+    }
   },
   methods: {
     setCategoryByUser() {
@@ -468,7 +484,17 @@ export default {
     },
     onClientSelected(client) {
       this.selectedClient = client
+      // Блокируем смену на клиента, если изначально проект
+      if (client && this.isEditing && this.initialMode === 'project') {
+        this.$store.dispatch('showNotification', { title: this.$t('error'), subtitle: 'Нельзя менять проектный заказ на клиентский', isDanger: true })
+        this.selectedClient = null
+        return
+      }
       this.form.client_id = client ? client.id : ''
+      // При выборе клиента очищаем проект
+      if (client) {
+        this.form.project_id = ''
+      }
     },
     async createClient() {
       this.clientLoading = true
@@ -491,10 +517,10 @@ export default {
       // Проверяем обязательные поля
       const validationErrors = []
       
-      if (!this.form.client_id) {
-        validationErrors.push('• Выберите клиента')
+      // Требуем клиента или проект
+      if (!this.form.client_id && !this.form.project_id) {
+        validationErrors.push('• Укажите клиента или проект')
       }
-      
       
       if (!this.form.warehouse_id) {
         validationErrors.push('• Выберите склад')
@@ -541,7 +567,7 @@ export default {
           }))
         
         const orderData = {
-          client_id: this.form.client_id,
+          client_id: this.form.project_id ? null : (this.form.client_id || null),
           project_id: this.form.project_id || null,
           cash_id: this.form.cash_id,
           warehouse_id: this.form.warehouse_id,
@@ -576,18 +602,16 @@ export default {
     async updateOrder() {
       this.loading = true
 
-      // Проверяем обязательные поля
       const validationErrors = []
       
-      if (!this.form.client_id) {
-        validationErrors.push('• Выберите клиента')
+      if (!this.form.client_id && !this.form.project_id) {
+        validationErrors.push('• Укажите клиента или проект')
       }
       
       if (!this.form.warehouse_id) {
         validationErrors.push('• Выберите склад')
       }
       
-      // Проверяем, что есть товары с количеством больше 0
       const hasValidProducts = this.hasValidProducts
       
       if (!hasValidProducts) {
@@ -626,7 +650,7 @@ export default {
           }))
         
         const orderData = {
-          client_id: this.form.client_id,
+          client_id: this.form.project_id ? null : (this.form.client_id || null),
           project_id: this.form.project_id || null,
           cash_id: this.form.cash_id,
           warehouse_id: this.form.warehouse_id,
@@ -786,6 +810,18 @@ export default {
         }
       },
       immediate: true
+    },
+    // Взаимоисключение и блокировка при изменении project_id
+    'form.project_id'(newVal, oldVal) {
+      if (newVal) {
+        if (this.isEditing && this.initialMode === 'client') {
+          this.$store.dispatch('showNotification', { title: this.$t('error'), subtitle: 'Нельзя менять клиентский заказ на проектный', isDanger: true })
+          this.form.project_id = ''
+          return
+        }
+        this.selectedClient = null
+        this.form.client_id = ''
+      }
     }
   }
 }
