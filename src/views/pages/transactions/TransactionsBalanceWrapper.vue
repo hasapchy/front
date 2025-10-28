@@ -40,7 +40,7 @@
                                         'text-orange-600': balance.type === 'project_income',
                                         'font-bold text-sm': true
                                     }" class="leading-tight">
-                                        <div class="balance-amount text-base">{{ $formatNumber(balance.value, 0, false) }}</div>
+                                        <div class="balance-amount text-base">{{ $formatNumber(balance.value, 2, false) }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -70,7 +70,7 @@
                                         <i class="fas fa-arrow-down text-green-500 text-xs"></i>
                                     </div>
                                     <div class="text-green-600 font-bold text-sm">
-                                        {{ $formatNumber(clientDebts.positive, 0, false) }}
+                                        {{ $formatNumber(clientDebts.positive, 2, false) }}
                                     </div>
                                 </div>
                                 <div class="text-center balance-item">
@@ -79,7 +79,7 @@
                                         <i class="fas fa-arrow-up text-red-500 text-xs"></i>
                                     </div>
                                     <div class="text-red-600 font-bold text-sm">
-                                        {{ $formatNumber(Math.abs(clientDebts.negative), 0, false) }}
+                                        {{ $formatNumber(Math.abs(clientDebts.negative), 2, false) }}
                                     </div>
                                 </div>
                             </div>
