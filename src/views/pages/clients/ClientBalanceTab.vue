@@ -2,6 +2,13 @@
     <div class="mt-4">
         <div class="flex justify-between items-center mb-2">
             <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
+            <PrimaryButton 
+                icon="fas fa-adjust" 
+                :onclick="openAdjustmentModal"
+                :is-info="true"
+                :disabled="!editingItem || !editingItem.id">
+                {{ $t('adjustBalance') }}
+            </PrimaryButton>
         </div>
         
         <!-- Итого (баланс клиента) -->
@@ -39,6 +46,11 @@
                     v-if="selectedEntity && selectedEntity.type === 'transaction'"
                     :editingItem="editingTransactionItem"
                     :preselectedClientId="editingItem.id"
+                    :forceDebt="isAdjustmentMode"
+                    :requireNote="isAdjustmentMode"
+                    :adjustmentMode="isAdjustmentMode"
+                    :adjustmentType="0"
+                    :initialClient="editingItem"
                     @saved="onEntitySaved"
                     @saved-error="onEntitySavedError"
                     @deleted="onEntityDeleted"
@@ -93,6 +105,7 @@ export default {
             selectedEntity: null,
             entityModalOpen: false,
             entityLoading: false,
+            isAdjustmentMode: false,
             columnsConfig: [
                 { name: "id", label: "№", size: 60 },
                 { name: "dateUser", label: this.$t("date"), size: 120 },
@@ -276,6 +289,7 @@ export default {
             this.entityModalOpen = false;
             this.selectedEntity = null;
             this.entityLoading = false;
+            this.isAdjustmentMode = false;
         },
         onEntitySaved() {
             if (this.editingItem && this.editingItem.id) {
@@ -296,6 +310,12 @@ export default {
         },
         onEntityDeletedError(error) {
             this.closeEntityModal();
+        },
+        openAdjustmentModal() {
+            this.isAdjustmentMode = true;
+            this.entityModalOpen = true;
+            this.selectedEntity = { type: 'transaction' };
+            this.editingTransactionItem = null; // Открываем пустую форму для создания
         },
         itemMapper(i, c) {
             switch (c) {

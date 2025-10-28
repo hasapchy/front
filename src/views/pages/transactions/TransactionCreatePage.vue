@@ -34,9 +34,9 @@
                     type="checkbox" 
                     v-model="isDebt" 
                     @change="handleDebtChange"
-                    :disabled="!!editingItemId || !!orderId"
+                    :disabled="!!editingItemId || !!orderId || forceDebt"
                 />
-                <span class="ml-2">{{ $t('debtOperation') }}</span>
+                <span class="ml-2">{{ $t('credit') }}</span>
             </label>
         </div>
         <div class="flex items-center space-x-2">
@@ -77,7 +77,7 @@
         </div>
         <div class="mt-2">
             <label class="block mb-1 required">{{ $t('category') }}</label>
-            <select v-model="categoryId">
+            <select v-model="categoryId" :disabled="adjustmentMode">
                 <option value="">{{ $t('no') }}</option>
                 <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">
                     {{ cat.type ? '✅' : '🔺' }} {{ cat.name }}
@@ -145,9 +145,13 @@ export default {
         initialProjectId: { type: [String, Number, null], default: null },
         orderId: { type: [String, Number], required: false },
         defaultCashId: { type: Number, default: null, required: false },
-        prefillAmount: { type: Number, default: null },
-        minAmount: { type: Number, default: null },
-        isPaymentModal: { type: Boolean, default: false }
+        // Новые флаги управления режимом долга и обязательностью примечания
+        forceDebt: { type: Boolean, default: false },
+        requireNote: { type: Boolean, default: false },
+        // Режим корректировки баланса - автоматически выбирает категорию "Корректировка остатка"
+        adjustmentMode: { type: Boolean, default: false },
+        // Для корректировки: 0 - уменьшить баланс (расход), 1 - увеличить баланс (приход)
+        adjustmentType: { type: Number, default: 0 }
     },
     data() {
         return {
@@ -179,7 +183,7 @@ export default {
             })(),
             note: this.editingItem ? this.editingItem.note : '',
             // Для заказов всегда false (не долговая)
-            isDebt: this.orderId ? false : (this.editingItem ? this.editingItem.isDebt : false),
+            isDebt: this.orderId ? false : (this.editingItem ? this.editingItem.isDebt : (this.forceDebt ? true : false)),
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? (this.editingItem.client || this.initialClient) : this.initialClient,
             currencies: [],
@@ -303,8 +307,14 @@ export default {
         },
         async save() {
             // Валидация: если "в кредит", то клиент обязателен
-            if (this.isDebt && !this.selectedClient?.id) {
+            if ((this.isDebt || this.forceDebt) && !this.selectedClient?.id) {
                 this.$emit('saved-error', 'При транзакции "в кредит" должен быть выбран клиент');
+                this.saveLoading = false;
+                return;
+            }
+            // Валидация: если требуется примечание
+            if (this.requireNote && (!this.note || String(this.note).trim() === '')) {
+                this.$emit('saved-error', 'Заполните примечание');
                 this.saveLoading = false;
                 return;
             }
@@ -330,7 +340,7 @@ export default {
                             orig_amount: this.origAmount,
                             currency_id: this.currencyIdComputed,
                             note: this.note,
-                            is_debt: this.isDebt
+                            is_debt: (this.forceDebt ? true : this.isDebt)
                         });
                 } else {
                     var resp = await TransactionController.storeItem({
@@ -344,7 +354,8 @@ export default {
                         date: this.date,
                         client_id: this.selectedClient?.id,
                         order_id: this.orderId,
-                        is_debt: this.isDebt
+                        is_debt: (this.forceDebt ? true : this.isDebt),
+                        is_adjustment: this.adjustmentMode
                     });
                 }
                 if (resp.message) {
@@ -539,12 +550,32 @@ export default {
         },
         type(newType) {
             if (!this.editingItemId) {
+                // Если режим корректировки, не меняем категорию автоматически
+                if (this.adjustmentMode) return;
+                
                 if (newType === "income") {
                     this.categoryId = 4; // Устанавливаем id = 4 для типа income
                 } else if (newType === "outcome") {
                     this.categoryId = 14;
                 } else {
                     this.categoryId = "";
+                }
+            }
+        },
+        // Отслеживаем изменение режима корректировки
+        adjustmentMode: {
+            handler(newVal) {
+                if (newVal && !this.editingItemId && this.allCategories.length) {
+                    // Устанавливаем тип транзакции в зависимости от adjustmentType
+                    this.type = this.adjustmentType === 1 ? 'income' : 'outcome';
+                    
+                    // Находим и устанавливаем категорию "Корректировка остатка" нужного типа
+                    const category = this.allCategories.find(cat => 
+                        cat.name === 'Корректировка остатка' && cat.type === this.adjustmentType
+                    );
+                    if (category) {
+                        this.categoryId = category.id;
+                    }
                 }
             }
         },
@@ -629,6 +660,13 @@ export default {
             },
             immediate: true,
             deep: true
+        },
+        // Принудительное включение долга при forceDebt
+        forceDebt: {
+            handler(val) {
+                if (val) this.isDebt = true;
+            },
+            immediate: true
         }
     }
 }
