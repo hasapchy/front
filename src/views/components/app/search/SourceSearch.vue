@@ -17,6 +17,7 @@
             <input 
                 type="text" 
                 v-model="sourceSearch" 
+                @input="handleSearchInput"
                 :placeholder="$t('enterSourceId')"
                 class="w-full p-2 border rounded" 
                 @focus="showDropdown = true" 
@@ -90,10 +91,10 @@
 </template>
 
 <script>
-import OrderController from '@/api/OrderController';
-import SaleController from '@/api/SaleController';
-import WarehouseReceiptController from '@/api/WarehouseReceiptController';
-import debounce from 'lodash.debounce';
+// import OrderController from '@/api/OrderController';
+// import SaleController from '@/api/SaleController';
+// import WarehouseReceiptController from '@/api/WarehouseReceiptController';
+// import debounce from 'lodash.debounce';
 
 export default {
     name: 'SourceSearch',
@@ -178,7 +179,15 @@ export default {
             this.sourceSearch = '';
             this.sourceResults = [];
         },
-        searchSource: debounce(async function () {
+        handleSearchInput(event) {
+            this.sourceSearch = event.target.value;
+            if (this.sourceSearch && this.sourceSearch.length > 0 && this.isNumeric(this.sourceSearch)) {
+                this.searchSource();
+            } else {
+                this.sourceResults = [];
+            }
+        },
+        async searchSource() {
             if (!this.sourceType || !this.isNumeric(this.sourceSearch)) {
                 this.sourceResults = [];
                 return;
@@ -188,6 +197,11 @@ export default {
             try {
                 const id = parseInt(this.sourceSearch);
                 let result = null;
+
+                // Ленивая загрузка контроллеров
+                const OrderController = (await import('@/api/OrderController')).default;
+                const SaleController = (await import('@/api/SaleController')).default;
+                const WarehouseReceiptController = (await import('@/api/WarehouseReceiptController')).default;
 
                 switch (this.sourceType) {
                     case 'order':
@@ -207,7 +221,7 @@ export default {
             } finally {
                 this.sourceSearchLoading = false;
             }
-        }, 300),
+        },
         async selectSource(source) {
             this.showDropdown = false;
             this.sourceSearch = '';
@@ -225,12 +239,12 @@ export default {
             });
         },
     },
-    watch: {
-        sourceSearch: {
-            handler: 'searchSource',
-            immediate: false,
-        },
-    },
+    // watch: {
+    //     sourceSearch: {
+    //         handler: 'searchSource',
+    //         immediate: false,
+    //     },
+    // },
 };
 </script>
 
