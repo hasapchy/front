@@ -41,13 +41,13 @@
                                     {{ $t('client') }}: {{ getClientName(source.client) }}
                                 </div>
                                 <div v-if="source.totalPrice !== undefined" class="text-sm text-gray-600">
-                                    {{ $t('totalPrice') }}: {{ formatAmount(source.totalPrice) }}
+                                    {{ $t('totalPrice') }}: {{ formatAmount(source.totalPrice, source) }}
                                 </div>
                                 <div v-if="source.amount !== undefined" class="text-sm text-gray-600">
-                                    {{ $t('amount') }}: {{ formatAmount(source.amount) }}
+                                    {{ $t('amount') }}: {{ formatAmount(source.amount, source) }}
                                 </div>
                                 <div v-if="source.date" class="text-sm text-gray-500">
-                                    {{ formatDate(source.date) }}
+                                    {{ formatDateSafe(source) }}
                                 </div>
                             </div>
                         </div>
@@ -70,15 +70,15 @@
                         </p>
                         <p v-if="selectedSource.totalPrice !== undefined">
                             <span class="text-xs">{{ $t('totalPrice') }}:</span> 
-                            <span class="font-semibold text-sm">{{ formatAmount(selectedSource.totalPrice) }}</span>
+                            <span class="font-semibold text-sm">{{ formatAmount(selectedSource.totalPrice, selectedSource) }}</span>
                         </p>
                         <p v-if="selectedSource.amount !== undefined">
                             <span class="text-xs">{{ $t('amount') }}:</span> 
-                            <span class="font-semibold text-sm">{{ formatAmount(selectedSource.amount) }}</span>
+                            <span class="font-semibold text-sm">{{ formatAmount(selectedSource.amount, selectedSource) }}</span>
                         </p>
                         <p v-if="selectedSource.date">
                             <span class="text-xs">{{ $t('date') }}:</span> 
-                            <span class="font-semibold text-sm">{{ formatDate(selectedSource.date) }}</span>
+                            <span class="font-semibold text-sm">{{ formatDateSafe(selectedSource) }}</span>
                         </p>
                     </div>
                     <button v-on:click="deselectSource" class="text-red-500 text-2xl cursor-pointer"
@@ -94,7 +94,6 @@ import OrderController from '@/api/OrderController';
 import SaleController from '@/api/SaleController';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import debounce from 'lodash.debounce';
-import { formatDate, cashAmountData } from '@/dto/app/utils';
 
 export default {
     props: {
@@ -159,12 +158,24 @@ export default {
             }
             return `${firstName} ${lastName}`.trim() || this.$t('noName');
         },
-        formatAmount(amount) {
+        formatAmount(amount, src) {
             if (amount === null || amount === undefined) return '0';
-            return cashAmountData(parseFloat(amount));
+            const symbol = (src && (src.currencySymbol || src.cashCurrencySymbol)) || '';
+            const num = parseFloat(amount) || 0;
+            // Используем глобальный форматтер если есть
+            if (this.$formatNumber) {
+                return `${this.$formatNumber(num, 2, true)} ${symbol}`.trim();
+            }
+            return `${num.toFixed(2)} ${symbol}`.trim();
         },
-        formatDate(date) {
-            return formatDate(date);
+        formatDateSafe(src) {
+            if (src && typeof src.formatDate === 'function') {
+                return src.formatDate();
+            }
+            if (src && src.date) {
+                try { return new Date(src.date).toLocaleString(); } catch (_) { return String(src.date); }
+            }
+            return '';
         },
         handleSourceTypeChange() {
             // Сбрасываем выбранный источник при смене типа
