@@ -4,7 +4,7 @@
         
         <!-- Выбор типа источника -->
         <div class="mb-2">
-            <select v-model="internalSourceType" @change="handleSourceTypeChange" :disabled="disabled" class="w-full p-2 border rounded">
+            <select :value="sourceType" @change="handleSourceTypeSelect" :disabled="disabled" class="w-full p-2 border rounded">
                 <option value="">{{ $t('selectSourceType') }}</option>
                 <option value="order">{{ $t('order') }}</option>
                 <option value="sale">{{ $t('sale') }}</option>
@@ -57,7 +57,7 @@
         </div>
 
         <!-- Выбранный источник (показывается если источник уже связан или выбран) -->
-        <div v-if="selectedSource && internalSourceType" class="mt-2">
+        <div v-if="selectedSource && sourceType" class="mt-2">
             <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
                 <div class="flex justify-between items-center">
                     <div>
@@ -93,7 +93,6 @@
 import OrderController from '@/api/OrderController';
 import SaleController from '@/api/SaleController';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
-import debounce from 'lodash.debounce';
 
 export default {
     props: {
@@ -123,21 +122,13 @@ export default {
         };
     },
     computed: {
-        internalSourceType: {
-            get() {
-                return this.sourceType || '';
-            },
-            set(val) {
-                this.$emit('update:sourceType', val);
-            }
-        },
         sourceTypeLabel() {
             const labels = {
                 'order': this.$t('order'),
                 'sale': this.$t('sale'),
                 'warehouse_receipt': this.$t('warehouseReceipt'),
             };
-            return labels[this.internalSourceType] || '';
+            return labels[this.sourceType || ''] || '';
         }
     },
     emits: ['update:selectedSource', 'update:sourceType'],
@@ -177,79 +168,42 @@ export default {
             }
             return '';
         },
-        handleSourceTypeChange() {
+        handleSourceTypeSelect(event) {
+            const newType = event.target.value;
+            this.$emit('update:sourceType', newType);
             // Сбрасываем выбранный источник при смене типа
             this.$emit('update:selectedSource', null);
             this.sourceSearch = '';
             this.sourceResults = [];
         },
         async searchSource() {
-            if (!this.internalSourceType || this.sourceSearch.length === 0) {
+            if (!this.sourceType || !this.isNumeric(this.sourceSearch)) {
                 this.sourceResults = [];
                 return;
             }
 
-            // Если введен только номер (ID), ищем напрямую по ID
-            if (this.isNumeric(this.sourceSearch) && this.sourceSearch.length > 0) {
-                this.sourceSearchLoading = true;
-                try {
-                    const id = parseInt(this.sourceSearch);
-                    let result = null;
+            this.sourceSearchLoading = true;
+            try {
+                const id = parseInt(this.sourceSearch);
+                let result = null;
 
-                    switch (this.internalSourceType) {
-                        case 'order':
-                            result = await OrderController.getItem(id);
-                            break;
-                        case 'sale':
-                            result = await SaleController.getItem(id);
-                            break;
-                        case 'warehouse_receipt':
-                            result = await WarehouseReceiptController.getItem(id);
-                            break;
-                    }
-
-                    if (result) {
-                        this.sourceResults = [result];
-                    } else {
-                        this.sourceResults = [];
-                    }
-                } catch (error) {
-                    // Если не найдено, показываем пустой список
-                    this.sourceResults = [];
-                } finally {
-                    this.sourceSearchLoading = false;
+                switch (this.sourceType) {
+                    case 'order':
+                        result = await OrderController.getItem(id);
+                        break;
+                    case 'sale':
+                        result = await SaleController.getItem(id);
+                        break;
+                    case 'warehouse_receipt':
+                        result = await WarehouseReceiptController.getItem(id);
+                        break;
                 }
-            } else {
-                // Если введен текст, используем обычный поиск через список
-                this.sourceSearchLoading = true;
-                try {
-                    let results = [];
 
-                    switch (this.internalSourceType) {
-                        case 'order':
-                            const orderResponse = await OrderController.getItemsPaginated(1, this.sourceSearch, 'all_time', null, null, '', '', '', 20);
-                            results = orderResponse.items || [];
-                            break;
-                        case 'sale':
-                            const saleResponse = await SaleController.getItemsPaginated(1, this.sourceSearch, 'all_time', null, null, 20);
-                            results = saleResponse.items || [];
-                            break;
-                        case 'warehouse_receipt':
-                            // Для оприходований поиск по ID обычно, но можно добавить общий поиск через список
-                            const receiptResponse = await WarehouseReceiptController.getStocks(1, 20);
-                            results = (receiptResponse.items || []).filter(item => 
-                                String(item.id).includes(this.sourceSearch)
-                            );
-                            break;
-                    }
-
-                    this.sourceResults = results;
-                } catch (error) {
-                    console.error('Ошибка при поиске источника:', error);
-                    this.sourceResults = [];
-                } finally {
-                    this.sourceSearchLoading = false;
-                }
+                this.sourceResults = result ? [result] : [];
+            } catch (error) {
+                this.sourceResults = [];
+            } finally {
+                this.sourceSearchLoading = false;
             }
         },
         async selectSource(source) {
@@ -270,10 +224,12 @@ export default {
         },
     },
     watch: {
-        sourceSearch: {
-            handler: debounce(function () {
+        sourceSearch() {
+            if (this.sourceSearch && this.sourceSearch.length > 0) {
                 this.searchSource();
-            }, 300),
+            } else {
+                this.sourceResults = [];
+            }
         },
     },
 };
