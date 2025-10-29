@@ -90,11 +90,9 @@
 </template>
 
 <script>
-import OrderController from '@/api/OrderController';
-import SaleController from '@/api/SaleController';
-import WarehouseReceiptController from '@/api/WarehouseReceiptController';
-
 export default {
+    name: 'SourceSearch',
+    emits: ['update:selectedSource', 'update:sourceType'],
     props: {
         selectedSource: {
             type: Object,
@@ -119,6 +117,7 @@ export default {
             sourceSearchLoading: false,
             sourceResults: [],
             showDropdown: false,
+            isMounted: false,
         };
     },
     computed: {
@@ -131,7 +130,9 @@ export default {
             return labels[this.sourceType || ''] || '';
         }
     },
-    emits: ['update:selectedSource', 'update:sourceType'],
+    mounted() {
+        this.isMounted = true;
+    },
     methods: {
         isNumeric(str) {
             return /^\d+$/.test(str);
@@ -187,16 +188,23 @@ export default {
                 const id = parseInt(this.sourceSearch);
                 let result = null;
 
+                // Ленивая загрузка контроллеров
                 switch (this.sourceType) {
-                    case 'order':
+                    case 'order': {
+                        const OrderController = (await import('@/api/OrderController')).default;
                         result = await OrderController.getItem(id);
                         break;
-                    case 'sale':
+                    }
+                    case 'sale': {
+                        const SaleController = (await import('@/api/SaleController')).default;
                         result = await SaleController.getItem(id);
                         break;
-                    case 'warehouse_receipt':
+                    }
+                    case 'warehouse_receipt': {
+                        const WarehouseReceiptController = (await import('@/api/WarehouseReceiptController')).default;
                         result = await WarehouseReceiptController.getItem(id);
                         break;
+                    }
                 }
 
                 this.sourceResults = result ? [result] : [];
@@ -224,12 +232,16 @@ export default {
         },
     },
     watch: {
-        sourceSearch() {
-            if (this.sourceSearch && this.sourceSearch.length > 0) {
-                this.searchSource();
-            } else {
-                this.sourceResults = [];
-            }
+        sourceSearch: {
+            handler(newVal) {
+                if (!this.isMounted) return;
+                if (newVal && newVal.length > 0 && this.isNumeric(newVal)) {
+                    this.searchSource();
+                } else {
+                    this.sourceResults = [];
+                }
+            },
+            immediate: false,
         },
     },
 };
