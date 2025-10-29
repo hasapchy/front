@@ -162,16 +162,22 @@ export default {
         // Режим корректировки баланса - автоматически выбирает категорию "Корректировка остатка"
         adjustmentMode: { type: Boolean, default: false },
         // Для корректировки: 0 - уменьшить баланс (расход), 1 - увеличить баланс (приход)
-        adjustmentType: { type: Number, default: 0 }
+        adjustmentType: { type: Number, default: 0 },
+        // Предзаполненная сумма для оплаты заказа
+        prefillAmount: { type: [Number, String], default: null },
+        // Минимальная сумма оплаты
+        minAmount: { type: [Number, String], default: null },
+        // Флаг модалки оплаты заказа
+        isPaymentModal: { type: Boolean, default: false }
     },
     data() {
         return {
             // Для заказов всегда тип "income" и не долговая
             type: this.orderId ? "income" : (this.editingItem ? this.editingItem.typeName() : "income"),
-            cashId: this.editingItem ? (this.editingItem.cashId || this.defaultCashId || '') : '',
+            cashId: this.editingItem ? (this.editingItem.cashId || this.defaultCashId || '') : (this.defaultCashId || ''),
             cashAmount: this.editingItem ? this.editingItem.cashAmount : null,
             cashCurrencyId: this.editingItem ? this.editingItem.cashCurrencyId : null,
-            origAmount: this.editingItem ? this.editingItem.origAmount : (this.prefillAmount || 0),
+            origAmount: this.editingItem ? this.editingItem.origAmount : (this.prefillAmount != null && this.prefillAmount !== '' ? parseFloat(this.prefillAmount) || 0 : 0),
             currencyId: this.editingItem ? this.editingItem.origCurrencyId : '',
             categoryId: this.editingItem ? this.editingItem.categoryId : 4, // По умолчанию id = 4 для типа income
             projectId: this.editingItem ? this.editingItem.projectId : (this.initialProjectId || ''),
@@ -256,20 +262,31 @@ export default {
             await this.$store.dispatch('loadProjects');
 
             if (!this.editingItem) {
+                // Если есть defaultCashId (например, из заказа), устанавливаем валюту из этой кассы
+                if (this.defaultCashId && this.allCashRegisters.length > 0) {
+                    const defaultCash = this.allCashRegisters.find(c => c.id == this.defaultCashId);
+                    if (defaultCash && defaultCash.currency_id && !this.currencyId) {
+                        this.currencyId = defaultCash.currency_id;
+                    }
+                }
+                
                 if (this.allCashRegisters.length > 0 && !this.cashId) {
                     this.cashId = this.allCashRegisters[0].id;
                     this.currencyId = this.allCashRegisters[0].currency_id;
-                } else {
+                } else if (!this.currencyId) {
                     // Если касса не выбрана, используем дефолтную валюту из Store
                     const defaultCurrency = (this.currencies || []).find(c => c.is_default);
-                    if (defaultCurrency && !this.currencyId) {
+                    if (defaultCurrency) {
                         this.currencyId = defaultCurrency.id;
                     }
                 }
                 
                 // Устанавливаем предзаполненную сумму если она есть
-                if (this.prefillAmount && this.prefillAmount > 0) {
-                    this.origAmount = this.prefillAmount;
+                if (this.prefillAmount != null && this.prefillAmount !== '') {
+                    const amount = parseFloat(this.prefillAmount);
+                    if (!isNaN(amount) && amount > 0) {
+                        this.origAmount = amount;
+                    }
                 }
             }
             
@@ -690,8 +707,11 @@ export default {
         prefillAmount: {
             handler(newAmount) {
                 // Обновляем сумму только если это новая транзакция (не редактирование)
-                if (!this.editingItemId && newAmount && newAmount > 0) {
-                    this.origAmount = newAmount;
+                if (!this.editingItemId && newAmount != null && newAmount !== '') {
+                    const amount = parseFloat(newAmount);
+                    if (!isNaN(amount) && amount > 0) {
+                        this.origAmount = amount;
+                    }
                 }
             },
             immediate: true

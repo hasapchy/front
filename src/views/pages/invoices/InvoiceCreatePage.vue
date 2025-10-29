@@ -219,15 +219,24 @@ export default {
             this.$nextTick(() => {
                 if (this.$refs.orderSearch && this.editingItem.products) {
                     const productsFromInvoice = this.editingItem.products.map(product => {
-                        let orderId = 'N/A';
-                        if (this.editingItem.orders) {
+                        let orderId = null;
+                        // Пытаемся найти заказ по order_id из продукта
+                        if (product.orderId || product.order_id) {
+                            orderId = product.orderId || product.order_id;
+                        } else if (this.editingItem.orders && this.editingItem.orders.length > 0) {
+                            // Если order_id нет, ищем по названию товара
                             const matchingOrder = this.editingItem.orders.find(order => 
                                 order.products && order.products.some(op => 
-                                    op.productName === product.productName
+                                    op.productName === product.productName ||
+                                    op.product_id === product.productId ||
+                                    op.id === product.productId
                                 )
                             );
                             if (matchingOrder) {
                                 orderId = matchingOrder.id;
+                            } else if (this.editingItem.orders.length === 1) {
+                                // Если заказ только один, используем его ID
+                                orderId = this.editingItem.orders[0].id;
                             }
                         }
                         
@@ -455,41 +464,66 @@ export default {
             pdfDoc.getBlob((blob) => {
                 const url = URL.createObjectURL(blob);
                 const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
+                iframe.style.position = 'fixed';
+                iframe.style.right = '0';
+                iframe.style.bottom = '0';
+                iframe.style.width = '0';
+                iframe.style.height = '0';
+                iframe.style.border = 'none';
                 iframe.src = url;
                 document.body.appendChild(iframe);
                 
+                // Используем замыкание для хранения состояния
+                const printState = {
+                    printStarted: false,
+                    cleanupTimeout: null,
+                    iframeElement: iframe,
+                    blobUrl: url
+                };
+                
+                const cleanup = () => {
+                    if (document.body.contains(printState.iframeElement)) {
+                        document.body.removeChild(printState.iframeElement);
+                    }
+                    URL.revokeObjectURL(printState.blobUrl);
+                    if (printState.cleanupTimeout) {
+                        clearTimeout(printState.cleanupTimeout);
+                        printState.cleanupTimeout = null;
+                    }
+                };
+                
                 // Ждем загрузки и печатаем
                 iframe.onload = () => {
-                    // Добавляем обработчики событий печати
-                    const printWindow = iframe.contentWindow;
-                    
-                    // Обработчик для завершения печати
-                    const handleAfterPrint = () => {
-                        document.body.removeChild(iframe);
-                        URL.revokeObjectURL(url);
-                        this.showNotification(this.$t('pdfGenerated'), '', false);
-                        printWindow.removeEventListener('afterprint', handleAfterPrint);
-                    };
-                    
-                    // Обработчик для отмены печати
-                    const handleBeforePrint = () => {
-                        printWindow.removeEventListener('beforeprint', handleBeforePrint);
-                    };
-                    
-                    printWindow.addEventListener('afterprint', handleAfterPrint);
-                    printWindow.addEventListener('beforeprint', handleBeforePrint);
-                    
-                    // Запускаем печать
-                    printWindow.print();
-                    
-                    // Fallback - если события не сработают, очищаем через 5 секунд
+                    // Небольшая задержка для полной загрузки PDF (нужна для корректной печати)
                     setTimeout(() => {
-                        if (document.body.contains(iframe)) {
-                            document.body.removeChild(iframe);
-                            URL.revokeObjectURL(url);
-                        }
-                    }, 5000);
+                        const printWindow = iframe.contentWindow;
+                        
+                        // Обработчик для завершения печати
+                        const handleAfterPrint = () => {
+                            // Небольшая задержка, чтобы диалог успел закрыться
+                            setTimeout(() => {
+                                cleanup();
+                                this.showNotification(this.$t('pdfGenerated'), '', false);
+                            }, 500);
+                            
+                            // Удаляем обработчики
+                            printWindow.removeEventListener('afterprint', handleAfterPrint);
+                            window.removeEventListener('afterprint', handleAfterPrint);
+                        };
+                        
+                        // Добавляем обработчики на оба окна
+                        printWindow.addEventListener('afterprint', handleAfterPrint);
+                        window.addEventListener('afterprint', handleAfterPrint);
+                        
+                        // Запускаем печать
+                        printWindow.print();
+                    }, 300);
+                };
+                
+                // Обработка ошибки загрузки
+                iframe.onerror = () => {
+                    cleanup();
+                    this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
                 };
             });
         },

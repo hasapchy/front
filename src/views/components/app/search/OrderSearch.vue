@@ -21,7 +21,7 @@
                                 </div>
                             </div>
                             <div class="text-[#337AB7] text-xs flex flex-col items-end min-w-[90px]">
-                                <div class="font-medium">{{ order.priceInfo() }} {{ currencySymbol }}</div>
+                                <div class="font-medium">{{ order.priceInfo() }}</div>
                                 <div class="text-sm text-gray-500">{{ order.statusName }}</div>
                             </div>
                         </div>
@@ -43,7 +43,7 @@
                             </div>
                         </div>
                         <div class="text-[#337AB7] text-sm">
-                            <div class="font-medium">{{ order.priceInfo() }} {{ currencySymbol }}</div>
+                            <div class="font-medium">{{ order.priceInfo() }}</div>
                             <div class="text-sm text-gray-500">{{ order.statusName }}</div>
                         </div>
                     </div>
@@ -76,10 +76,10 @@
                         {{ order.client?.fullName() || $t('noClient') }}
                     </td>
                     <td class="py-2 px-4 border-x border-gray-300">
-                        {{ order.formatDate() }}
+                        {{ order.date ? order.formatDate() : $t('notSpecified') }}
                     </td>
                     <td class="py-2 px-4 border-x border-gray-300">
-                        {{ order.priceInfo() }} {{ currencySymbol || defaultCurrencySymbol }}
+                        {{ order.priceInfo() }}
                     </td>
                     <td v-if="!readonly" class="px-4 border-x border-gray-300">
                         <button @click="removeSelectedOrder(order.id)"
@@ -128,7 +128,12 @@
                             </div>
                         </td>
                         <td class="py-2 px-4 border-x border-gray-300">
-                            #{{ product.orderId || 'N/A' }}
+                            <template v-if="product.orderId && product.orderId !== 'N/A'">
+                                #{{ product.orderId }}
+                            </template>
+                            <template v-else>
+                                <span class="text-gray-400">{{ $t('notSpecified') || 'Не указан' }}</span>
+                            </template>
                         </td>
                         <td v-if="!readonly" class="px-4 border-x border-gray-300">
                             <button @click="removeProductFromOrder(product.productId, product.orderId)"

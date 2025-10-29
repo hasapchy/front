@@ -35,22 +35,50 @@ export class InvoicePdfGenerator {
     // Пытаемся получить символ валюты из заказов
     let currencySymbol = 'Нет валюты';
     
-    if (this.invoice.orders && this.invoice.orders.length > 0) {
+    // Сначала проверяем наличие метода amountInfo и используем его
+    if (this.invoice.amountInfo && typeof this.invoice.amountInfo === 'function') {
+      try {
+        const amountInfo = this.invoice.amountInfo();
+        if (amountInfo && typeof amountInfo === 'string') {
+          // Пытаемся извлечь валюту из отформатированной строки
+          const match = amountInfo.match(/\d+(?:\.\d+)?\s+(.+)$/);
+          if (match && match[1]) {
+            const extractedSymbol = match[1].trim();
+            // Проверяем, что это не дата в формате ISO
+            if (extractedSymbol !== 'Нет валюты' && !/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}.*)?Z?$/.test(extractedSymbol)) {
+              currencySymbol = extractedSymbol;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Ошибка при получении amountInfo:', e);
+      }
+    }
+    
+    // Если amountInfo не дал результата, пробуем получить из заказов
+    if (currencySymbol === 'Нет валюты' && this.invoice.orders && this.invoice.orders.length > 0) {
       // Берем валюту из первого заказа
       const firstOrder = this.invoice.orders[0];
-      if (firstOrder.currencySymbol) {
-        currencySymbol = firstOrder.currencySymbol;
-      } else if (firstOrder.currencyCode) {
-        currencySymbol = firstOrder.currencyCode;
-      } else if (firstOrder.currencyName) {
-        currencySymbol = firstOrder.currencyName;
-      }
-    } else if (this.invoice.amountInfo) {
-      // Если нет заказов, но есть метод amountInfo, используем его
-      const amountInfo = this.invoice.amountInfo();
-      const match = amountInfo.match(/\d+(?:\.\d+)?\s+(.+)$/);
-      if (match && match[1] && match[1] !== 'Нет валюты') {
-        currencySymbol = match[1];
+      if (firstOrder && typeof firstOrder === 'object') {
+        // Функция для проверки, что значение не является датой в формате ISO
+        const isValidCurrency = (value) => {
+          if (!value || typeof value !== 'string') return false;
+          const trimmed = value.trim();
+          // Исключаем даты в формате ISO (YYYY-MM-DD или с временем)
+          if (/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}.*)?Z?$/.test(trimmed)) {
+            return false;
+          }
+          return trimmed !== '';
+        };
+        
+        // Проверяем, что это действительно строка, а не дата или другой объект
+        if (firstOrder.currencySymbol && isValidCurrency(firstOrder.currencySymbol)) {
+          currencySymbol = firstOrder.currencySymbol.trim();
+        } else if (firstOrder.currencyCode && isValidCurrency(firstOrder.currencyCode)) {
+          currencySymbol = firstOrder.currencyCode.trim();
+        } else if (firstOrder.currencyName && isValidCurrency(firstOrder.currencyName)) {
+          currencySymbol = firstOrder.currencyName.trim();
+        }
       }
     }
     

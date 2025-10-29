@@ -94,7 +94,17 @@ export default class OrderDto {
   }
 
   formatDate() {
-    return dayjsDateTime(this.date);
+    if (!this.date) return '';
+    try {
+      const formatted = dayjsDateTime(this.date);
+      // Проверяем, что dayjs вернул валидную дату, а не "Invalid Date"
+      if (formatted && formatted.toLowerCase().includes('invalid')) {
+        return '';
+      }
+      return formatted;
+    } catch {
+      return '';
+    }
   }
 
   formatCreatedAt() {

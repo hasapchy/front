@@ -54,6 +54,12 @@ export default class InvoiceController {
         var orders = null;
         if (item.orders) {
           orders = item.orders.map((order) => {
+            // Безопасно извлекаем валюту: сначала плоские поля, затем из вложенных cash.currency
+            const currencyId = order.currency_id ?? order.cash?.currency?.id ?? null;
+            const currencyName = order.currency_name ?? order.cash?.currency?.name ?? null;
+            const currencyCode = order.currency_code ?? order.cash?.currency?.code ?? null;
+            const currencySymbol = order.currency_symbol ?? order.cash?.currency?.symbol ?? null;
+
             return new OrderDto(
               order.id,
               order.note ?? "",
@@ -74,10 +80,10 @@ export default class InvoiceController {
               order.price,
               order.discount ?? 0,
               order.total_price,
-              order.currency_id,
-              order.currency_name,
-              order.currency_code,
-              order.currency_symbol,
+              currencyId,
+              currencyName,
+              currencyCode,
+              currencySymbol,
               order.date,
               order.created_at,
               order.updated_at,
@@ -203,6 +209,10 @@ export default class InvoiceController {
     var orders = null;
     if (item.orders) {
       orders = item.orders.map((order) => {
+        const currencyId = order.currency_id ?? order.cash?.currency?.id ?? null;
+        const currencyName = order.currency_name ?? order.cash?.currency?.name ?? null;
+        const currencyCode = order.currency_code ?? order.cash?.currency?.code ?? null;
+        const currencySymbol = order.currency_symbol ?? order.cash?.currency?.symbol ?? null;
         return new OrderDto(
           order.id,
           order.note ?? "",
@@ -223,10 +233,10 @@ export default class InvoiceController {
           order.price,
           order.discount ?? 0,
           order.total_price,
-          order.currency_id,
-          order.currency_name,
-          order.currency_code,
-          order.currency_symbol,
+          currencyId,
+          currencyName,
+          currencyCode,
+          currencySymbol,
           order.date,
           order.created_at,
           order.updated_at,
