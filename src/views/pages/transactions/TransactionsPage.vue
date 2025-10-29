@@ -135,7 +135,7 @@ import CashRegisterController from '@/api/CashRegisterController';
 import ProjectController from '@/api/ProjectController';
 import TransactionsBalanceWrapper from '@/views/pages/transactions/TransactionsBalanceWrapper.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
-import SourceButtonCell from '@/views/components/app/buttons/SourceButtonCell.vue';
+// import SourceButtonCell from '@/views/components/app/buttons/SourceButtonCell.vue';
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -150,7 +150,7 @@ import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin],
-    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, BatchButton },
+    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell /*, SourceButtonCell */, BatchButton },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -177,18 +177,18 @@ export default {
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'dateUser', label: 'date' },
                 { name: 'type', label: 'type', html: true },
-                {
-                    name: 'source',
-                    label: 'source',
-                    component: markRaw(SourceButtonCell),
-                    props: (item) => ({
-                        sourceType: item.sourceType,
-                        sourceId: item.sourceId,
-                        searchQuery: this.searchQuery,
-                        onUpdated: () => this.fetchItems(this.data.current_page, false),
-                        onDeleted: () => this.fetchItems(this.data.current_page, false)
-                    })
-                },
+                // {
+                //     name: 'source',
+                //     label: 'source',
+                //     component: markRaw(SourceButtonCell),
+                //     props: (item) => ({
+                //         sourceType: item.sourceType,
+                //         sourceId: item.sourceId,
+                //         searchQuery: this.searchQuery,
+                //         onUpdated: () => this.fetchItems(this.data.current_page, false),
+                //         onDeleted: () => this.fetchItems(this.data.current_page, false)
+                //     })
+                // },
                 { name: 'cashName', label: 'cashRegister' },
                 {
                     name: 'client',
