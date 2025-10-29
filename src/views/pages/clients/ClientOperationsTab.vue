@@ -101,7 +101,7 @@ const SaleCreatePage = defineAsyncComponent(() =>
     import("@/views/pages/sales/SaleCreatePage.vue")
 );
 const WarehouseReceiptCreatePage = defineAsyncComponent(() => 
-    import("@/views/pages/warehouse_receipts/WarehouseReceiptCreatePage.vue")
+    import("@/views/pages/warehouses/WarehousesReceiptCreatePage.vue")
 );
 
 export default {
