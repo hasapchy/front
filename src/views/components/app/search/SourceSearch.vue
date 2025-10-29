@@ -90,9 +90,13 @@
 </template>
 
 <script>
+import OrderController from '@/api/OrderController';
+import SaleController from '@/api/SaleController';
+import WarehouseReceiptController from '@/api/WarehouseReceiptController';
+import debounce from 'lodash.debounce';
+
 export default {
     name: 'SourceSearch',
-    emits: ['update:selectedSource', 'update:sourceType'],
     props: {
         selectedSource: {
             type: Object,
@@ -117,7 +121,6 @@ export default {
             sourceSearchLoading: false,
             sourceResults: [],
             showDropdown: false,
-            isMounted: false,
         };
     },
     computed: {
@@ -130,9 +133,7 @@ export default {
             return labels[this.sourceType || ''] || '';
         }
     },
-    mounted() {
-        this.isMounted = true;
-    },
+    emits: ['update:selectedSource', 'update:sourceType'],
     methods: {
         isNumeric(str) {
             return /^\d+$/.test(str);
@@ -177,7 +178,7 @@ export default {
             this.sourceSearch = '';
             this.sourceResults = [];
         },
-        async searchSource() {
+        searchSource: debounce(async function () {
             if (!this.sourceType || !this.isNumeric(this.sourceSearch)) {
                 this.sourceResults = [];
                 return;
@@ -188,23 +189,16 @@ export default {
                 const id = parseInt(this.sourceSearch);
                 let result = null;
 
-                // Ленивая загрузка контроллеров
                 switch (this.sourceType) {
-                    case 'order': {
-                        const OrderController = (await import('@/api/OrderController')).default;
+                    case 'order':
                         result = await OrderController.getItem(id);
                         break;
-                    }
-                    case 'sale': {
-                        const SaleController = (await import('@/api/SaleController')).default;
+                    case 'sale':
                         result = await SaleController.getItem(id);
                         break;
-                    }
-                    case 'warehouse_receipt': {
-                        const WarehouseReceiptController = (await import('@/api/WarehouseReceiptController')).default;
+                    case 'warehouse_receipt':
                         result = await WarehouseReceiptController.getItem(id);
                         break;
-                    }
                 }
 
                 this.sourceResults = result ? [result] : [];
@@ -213,7 +207,7 @@ export default {
             } finally {
                 this.sourceSearchLoading = false;
             }
-        },
+        }, 300),
         async selectSource(source) {
             this.showDropdown = false;
             this.sourceSearch = '';
@@ -233,14 +227,7 @@ export default {
     },
     watch: {
         sourceSearch: {
-            handler(newVal) {
-                if (!this.isMounted) return;
-                if (newVal && newVal.length > 0 && this.isNumeric(newVal)) {
-                    this.searchSource();
-                } else {
-                    this.sourceResults = [];
-                }
-            },
+            handler: 'searchSource',
             immediate: false,
         },
     },
