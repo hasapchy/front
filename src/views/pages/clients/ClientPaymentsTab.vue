@@ -54,9 +54,9 @@
                     :preselectedClientId="editingItem.id"
                     :initialClient="editingItem"
                     :forceDebt="false"
-                    @saved="() => { onEntitySaved(); forceRefresh = true; }"
+                    @saved="onEntitySaved"
                     @saved-error="onEntitySavedError"
-                    @deleted="() => { onEntityDeleted(); forceRefresh = true; }"
+                    @deleted="onEntityDeleted"
                     @deleted-error="onEntityDeletedError" />
             </template>
         </SideModalDialog>
@@ -128,6 +128,31 @@ export default {
     },
 
     methods: {
+        // Вспомогательный метод для обновления данных клиента
+        async updateClientData() {
+            if (!this.editingItem || !this.editingItem.id) return;
+            try {
+                const updatedClient = await ClientController.getItem(this.editingItem.id);
+                if (updatedClient && updatedClient.balance !== undefined) {
+                    this.editingItem.balance = updatedClient.balance;
+                }
+            } catch (error) {
+                console.error('Error updating client data:', error);
+            }
+        },
+        // Вспомогательный метод для обработки ошибок
+        handleEntityError(error) {
+            let errorMessage;
+            if (typeof error === 'string') {
+                errorMessage = error;
+            } else {
+                errorMessage = this.getApiErrorMessage(error);
+                if (Array.isArray(errorMessage)) {
+                    errorMessage = errorMessage.join(', ');
+                }
+            }
+            this.showNotification(this.$t('error'), errorMessage, true);
+        },
         formatBalance(balance) {
             return `${this.$formatNumber(balance, 2, true)} ${this.currencyCode}`;
         },
@@ -248,7 +273,9 @@ export default {
                     response.item.date,
                     response.item.created_at,
                     response.item.updated_at,
-                    response.item.orders || []
+                    response.item.orders || [],
+                    response.item.source_type || null,
+                    response.item.source_id || null
                 );
                 this.editingTransactionItem = data;
                 
@@ -269,27 +296,29 @@ export default {
             this.selectedEntity = null;
             this.entityLoading = false;
         },
-        onEntitySaved() {
+        async onEntitySaved() {
             this.entityModalOpen = false;
             if (this.editingItem && this.editingItem.id) {
-                this.fetchPaymentsHistory();
+                await this.updateClientData();
+                this.forceRefresh = true;
+                await this.fetchPaymentsHistory();
             }
             this.$emit('payments-updated');
         },
         onEntitySavedError(error) {
-            // Показываем уведомление об ошибке
-            this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
+            this.handleEntityError(error);
         },
-        onEntityDeleted() {
+        async onEntityDeleted() {
             this.entityModalOpen = false;
             if (this.editingItem && this.editingItem.id) {
-                this.fetchPaymentsHistory();
+                await this.updateClientData();
+                this.forceRefresh = true;
+                await this.fetchPaymentsHistory();
             }
             this.$emit('payments-updated');
         },
         onEntityDeletedError(error) {
-            // Показываем уведомление об ошибке
-            this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
+            this.handleEntityError(error);
         },
         openCreatePaymentModal() {
             this.entityModalOpen = true;

@@ -148,9 +148,6 @@
             @close-request="closeInvoiceModal" 
             :preselectedOrderIds="selectedIds"
         />
-        <div v-if="selectedIds.length > 0" class="p-2 bg-yellow-100 text-xs">
-            Debug: Передаем заказы: {{ selectedIds.join(', ') }}
-        </div>
     </SideModalDialog>
 
     <SideModalDialog :showForm="transactionModal" :onclose="() => transactionModal = false">

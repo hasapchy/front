@@ -1,8 +1,9 @@
 import { dayjsDateTime } from "@/utils/dateUtils";
 export default class ClientBalanceHistoryDto {
-  constructor(source, sourceId, date, amount, description, user_name = null, source_type = null, note = null, is_debt = null) {
+  constructor(source, sourceId, date, amount, description, user_name = null, source_type = null, note = null, is_debt = null, sourceSourceId = null) {
     this.source = source; // тип источника: 'sale', 'receipt', 'transaction', 'order'
-    this.sourceId = sourceId; // ID записи
+    this.sourceId = sourceId; // ID транзакции
+    this.sourceSourceId = sourceSourceId; // ID источника (sale.id, order.id и т.д.)
     this.date = date; // дата
     this.amount = parseFloat(amount) || 0; // сумма со знаком
     this.description = description; // описание

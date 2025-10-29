@@ -223,14 +223,15 @@ export default class ClientController {
       const items = historyArray.map((item) => {
         return new ClientBalanceHistoryDto(
           item.source,
-          item.source_id, // Исправлено: было item.sourceId
+          item.source_id, // ID транзакции
           item.date,
           item.amount,
           item.description,
           item.user_name,
           item.source_type,
           item.note,
-          item.is_debt
+          item.is_debt,
+          item.source_source_id || item.source_sourceId || null // ID источника (sale.id, order.id и т.д.)
         );
       });
       return items;

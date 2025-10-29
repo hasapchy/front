@@ -97,6 +97,14 @@
             <label>{{ $t('note') }}</label>
             <input type="text" v-model="note" />
         </div>
+        <div class="mt-2">
+            <SourceSearch 
+                v-model:selectedSource="selectedSource" 
+                v-model:sourceType="sourceType"
+                :showLabel="true"
+                :disabled="!!editingItemId && !!orderId"
+            />
+        </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
@@ -129,8 +137,11 @@ import TransactionController from '@/api/TransactionController';
 import TransactionCategoryController from '@/api/TransactionCategoryController';
 import ClientController from '@/api/ClientController';
 import OrderController from '@/api/OrderController';
+import SaleController from '@/api/SaleController';
+import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import OrderStatusController from '@/api/OrderStatusController';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
+import SourceSearch from '@/views/components/app/search/SourceSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 
@@ -138,7 +149,7 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request", 'copy-transaction'],
-    components: { PrimaryButton, AlertDialog, ClientSearch },
+    components: { PrimaryButton, AlertDialog, ClientSearch, SourceSearch },
     props: {
         editingItem: { type: TransactionDto, required: false, default: null },
         initialClient: { type: ClientDto, default: null },
@@ -186,6 +197,8 @@ export default {
             isDebt: this.orderId ? false : (this.editingItem ? this.editingItem.isDebt : (this.forceDebt ? true : false)),
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? (this.editingItem.client || this.initialClient) : this.initialClient,
+            selectedSource: null,
+            sourceType: '',
             currencies: [],
             allCategories: [],
             allCashRegisters: [],
@@ -280,8 +293,21 @@ export default {
                 cashId: this.cashId,
                 currencyId: this.currencyIdComputed,
                 projectId: this.projectId,
-                isDebt: this.isDebt
+                isDebt: this.isDebt,
+                sourceType: this.getSourceTypeForBackend(),
+                sourceId: this.selectedSource?.id || null
             };
+        },
+        getSourceTypeForBackend() {
+            if (!this.sourceType || !this.selectedSource) return null;
+            
+            const typeMap = {
+                'order': 'App\\Models\\Order',
+                'sale': 'App\\Models\\Sale',
+                'warehouse_receipt': 'App\\Models\\WhReceipt'
+            };
+            
+            return typeMap[this.sourceType] || null;
         },
         async fetchCurrencies() {
             // Используем данные из store
@@ -340,7 +366,9 @@ export default {
                             orig_amount: this.origAmount,
                             currency_id: this.currencyIdComputed,
                             note: this.note,
-                            is_debt: (this.forceDebt ? true : this.isDebt)
+                            is_debt: (this.forceDebt ? true : this.isDebt),
+                            source_type: this.getSourceTypeForBackend(),
+                            source_id: this.selectedSource?.id || null
                         });
                 } else {
                     var resp = await TransactionController.storeItem({
@@ -355,7 +383,9 @@ export default {
                         client_id: this.selectedClient?.id,
                         order_id: this.orderId,
                         is_debt: (this.forceDebt ? true : this.isDebt),
-                        is_adjustment: this.adjustmentMode
+                        is_adjustment: this.adjustmentMode,
+                        source_type: this.getSourceTypeForBackend(),
+                        source_id: this.selectedSource?.id || null
                     });
                 }
                 if (resp.message) {
@@ -406,6 +436,8 @@ export default {
             this.projectId = this.initialProjectId || '';
             this.date = new Date().toISOString().substring(0, 16);
             this.selectedClient = this.initialClient || null;
+            this.selectedSource = null;
+            this.sourceType = '';
             this.editingItemId = null;
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
@@ -449,7 +481,9 @@ export default {
                 this.editingItem.date,
                 this.editingItem.createdAt,
                 this.editingItem.updatedAt,
-                this.editingItem.orders
+                this.editingItem.orders,
+                this.editingItem.sourceType || null,
+                this.editingItem.sourceId || null
             );
             
             // Эмитим событие для открытия нового модального окна с копированными данными
@@ -467,6 +501,29 @@ export default {
             }
         },
         
+        // Загружаем источник при редактировании
+        async loadSourceForEdit(sourceType, sourceId) {
+            try {
+                // Определяем тип источника
+                if (sourceType.includes('Order')) {
+                    this.sourceType = 'order';
+                    const order = await OrderController.getItem(sourceId);
+                    this.selectedSource = order;
+                } else if (sourceType.includes('Sale')) {
+                    this.sourceType = 'sale';
+                    const sale = await SaleController.getItem(sourceId);
+                    this.selectedSource = sale;
+                } else if (sourceType.includes('WhReceipt')) {
+                    this.sourceType = 'warehouse_receipt';
+                    const receipt = await WarehouseReceiptController.getItem(sourceId);
+                    this.selectedSource = receipt;
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке источника:', error);
+                this.selectedSource = null;
+                this.sourceType = '';
+            }
+        },
         // Проверяем, нужно ли закрыть заказ после создания транзакции
         async checkAndCloseOrder() {
             if (!this.isPaymentModal || !this.orderId || !this.orderInfo) {
@@ -596,6 +653,13 @@ export default {
                     this.selectedClient = newEditingItem.client || this.initialClient || null;
                     this.editingItemId = newEditingItem.id || null;
                     this.isDebt = newEditingItem.isDebt || false;
+                    // Загружаем источник если он есть
+                    if (newEditingItem.sourceType && newEditingItem.sourceId) {
+                        this.loadSourceForEdit(newEditingItem.sourceType, newEditingItem.sourceId);
+                    } else {
+                        this.selectedSource = null;
+                        this.sourceType = '';
+                    }
                 } else {
                     // При создании новой транзакции устанавливаем значения по умолчанию
                     // Для заказов всегда тип "income" и не долговая
@@ -610,6 +674,8 @@ export default {
                     this.projectId = this.initialProjectId || '';
                     this.date = new Date().toISOString().substring(0, 16);
                     this.selectedClient = this.initialClient || null;
+                    this.selectedSource = null;
+                    this.sourceType = '';
                     this.editingItemId = null;
                     // Для заказов всегда false (не долговая)
                     this.isDebt = this.orderId ? false : false;

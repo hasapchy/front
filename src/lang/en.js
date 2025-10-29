@@ -190,6 +190,8 @@ export default {
   
   // Balance
   balanceHistory: 'Balance History',
+  payments: 'Payments',
+  operations: 'Operations',
   finalBalance: 'Final Balance',
   finalExpense: 'Final Expense',
   totalIncome: 'Total Income',

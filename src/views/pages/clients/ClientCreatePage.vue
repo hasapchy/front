@@ -102,6 +102,9 @@
       <div v-show="currentTab === 'payments' && editingItem" class="mt-4">
         <ClientPaymentsTab :editing-item="editingItem" @payments-updated="handlePaymentsUpdated" />
       </div>
+      <div v-show="currentTab === 'operations' && editingItem" class="mt-4">
+        <ClientOperationsTab :editing-item="editingItem" />
+      </div>
     </div>
 
   </div>
@@ -131,6 +134,7 @@ import TabBar from "@/views/components/app/forms/TabBar.vue";
 import Inputmask from "inputmask";
 import ClientBalanceTab from "@/views/pages/clients/ClientBalanceTab.vue";
 import ClientPaymentsTab from "@/views/pages/clients/ClientPaymentsTab.vue";
+import ClientOperationsTab from "@/views/pages/clients/ClientOperationsTab.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import formChangesMixin from "@/mixins/formChangesMixin";
@@ -138,7 +142,7 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 export default {
   mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
   emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
-  components: { PrimaryButton, AlertDialog, NotificationToast, TabBar, ClientBalanceTab, ClientPaymentsTab },
+  components: { PrimaryButton, AlertDialog, NotificationToast, TabBar, ClientBalanceTab, ClientPaymentsTab, ClientOperationsTab },
   props: {
     editingItem: { type: ClientDto, default: null },
     defaultFirstName: { type: String, default: "" },
@@ -171,14 +175,17 @@ export default {
       tabs: [
         { name: "info", label: "info" },
         { name: "balance", label: "balance" },
-        { name: "payments", label: "payments" }
+        { name: "payments", label: "payments" },
+        { name: "operations", label: "operations" }
       ]
     };
   },
   computed: {
     translatedTabs() {
-      // Скрываем вкладки баланса и платежей при создании нового клиента
-      const visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name !== 'balance' && tab.name !== 'payments');
+      // Скрываем вкладки баланса, платежей и операций при создании нового клиента
+      const visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => 
+        tab.name !== 'balance' && tab.name !== 'payments' && tab.name !== 'operations'
+      );
       return visibleTabs.map(tab => ({
         ...tab,
         label: this.$t(tab.label)
@@ -202,8 +209,8 @@ export default {
   },
   methods: {
     changeTab(tabName) {
-      // Предотвращаем переход на вкладку баланса или платежей при создании нового клиента
-      if ((tabName === 'balance' || tabName === 'payments') && !this.editingItem) {
+      // Предотвращаем переход на вкладку баланса, платежей или операций при создании нового клиента
+      if ((tabName === 'balance' || tabName === 'payments' || tabName === 'operations') && !this.editingItem) {
         this.currentTab = 'info';
         return;
       }

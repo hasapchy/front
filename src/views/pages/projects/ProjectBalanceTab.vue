@@ -67,6 +67,14 @@
             </div>
         </SideModalDialog>
 
+        <!-- Notification Toast -->
+        <NotificationToast 
+            :title="notificationTitle" 
+            :subtitle="notificationSubtitle" 
+            :show="notification" 
+            :is-danger="notificationIsDanger" 
+            @close="closeNotification" 
+        />
     </div>
 </template>
 
@@ -74,6 +82,10 @@
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
+import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
+import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
+import notificationMixin from "@/mixins/notificationMixin";
 import { defineAsyncComponent, markRaw } from 'vue';
 
 const TransactionCreatePage = defineAsyncComponent(() => 
@@ -85,10 +97,13 @@ import ClientDto from "@/dto/client/ClientDto";
 import TransactionDto from "@/dto/transaction/TransactionDto";
 
 export default {
+    mixins: [notificationMixin, getApiErrorMessage],
     components: {
         DraggableTable,
         SideModalDialog,
         PrimaryButton,
+        NotificationToast,
+        SourceButtonCell,
         TransactionCreatePage,
     },
     props: {
@@ -112,7 +127,31 @@ export default {
             transactionLoading: false,
             columnsConfig: [
                 { name: "dateUser", label: this.$t("date"), size: 120 },
-                { name: "source", label: this.$t("source"), size: 150, html: true },
+                { 
+                    name: "source", 
+                    label: this.$t("source"), 
+                    size: 150, 
+                    component: markRaw(SourceButtonCell),
+                    props: (item) => {
+                        // Для транзакций (source_type = 'App\Models\Transaction') используем source_id (ID транзакции)
+                        // Для других источников (Sale, Order, WhReceipt) используем source_source_id (ID источника)
+                        const isTransaction = item.source_type && item.source_type.includes('Transaction');
+                        const sourceId = isTransaction ? item.source_id : (item.source_source_id || item.source_id);
+                        
+                        return {
+                            sourceType: item.source_type,
+                            sourceId: sourceId,
+                            onUpdated: () => {
+                                this.forceRefresh = true;
+                                this.fetchBalanceHistory();
+                            },
+                            onDeleted: () => {
+                                this.forceRefresh = true;
+                                this.fetchBalanceHistory();
+                            }
+                        };
+                    }
+                },
                 { name: "note", label: this.$t("note"), size: 200 },
                 { name: "user_name", label: this.$t("user"), size: 120 },
                 { name: "is_debt", label: this.$t("debt"), size: 80, html: true },
@@ -157,7 +196,9 @@ export default {
                             r.item.date,
                             r.item.created_at,
                             r.item.updated_at,
-                            r.item.orders || []
+                            r.item.orders || [],
+                            r.item.source_type || null,
+                            r.item.source_id || null
                         );
                     }),
                     component: markRaw(TransactionCreatePage),
@@ -360,8 +401,7 @@ export default {
             switch (c) {
                 case "dateUser":
                     return i.dateUser;
-                case "source":
-                    return i.label?.() ?? i.source;
+                // case "source" - больше не нужен, используется компонент SourceButtonCell
                 case "note":
                     return i.note || '';
                 case "user_name":
@@ -403,16 +443,24 @@ export default {
             this.transactionModalOpen = false;
             this.editingTransactionItem = null;
         },
-        handleTransactionSaved() {
+        async handleTransactionSaved() {
             this.closeTransactionModal();
-            // Небольшая задержка для обновления кэша на backend
-            this.forceRefresh = true; // Принудительное обновление
-            setTimeout(() => {
-                this.fetchBalanceHistory();
-            }, 100);
+            // Принудительное обновление
+            this.forceRefresh = true;
+            await this.fetchBalanceHistory();
         },
         handleTransactionSavedError(error) {
-            console.error('Ошибка сохранения транзакции:', error);
+            // Обрабатываем как строку (если передана напрямую), так и объект ошибки API
+            let errorMessage;
+            if (typeof error === 'string') {
+                errorMessage = error;
+            } else {
+                errorMessage = this.getApiErrorMessage(error);
+                if (Array.isArray(errorMessage)) {
+                    errorMessage = errorMessage.join(', ');
+                }
+            }
+            this.showNotification(this.$t('error'), errorMessage, true);
         },
     },
     watch: {

@@ -3,7 +3,7 @@
         <div class="flex justify-between items-center mb-2">
             <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
             <PrimaryButton 
-                icon="fas fa-adjust" 
+                icon="fas fa-plus" 
                 :onclick="openAdjustmentModal"
                 :is-success="true"
                 :disabled="!editingItem || !editingItem.id">
@@ -74,9 +74,10 @@ import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
+import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
-import { defineAsyncComponent } from 'vue';
+import { defineAsyncComponent, markRaw } from 'vue';
 
 const TransactionCreatePage = defineAsyncComponent(() => 
     import("@/views/pages/transactions/TransactionCreatePage.vue")
@@ -93,6 +94,7 @@ export default {
         SideModalDialog,
         PrimaryButton,
         NotificationToast,
+        SourceButtonCell,
         TransactionCreatePage,
     },
     emits: ['balance-updated'],
@@ -124,7 +126,31 @@ export default {
                 { name: "id", label: "№", size: 60 },
                 { name: "dateUser", label: this.$t("date"), size: 120 },
                 { name: "operationType", label: this.$t("type"), size: 150, html: true },
-                { name: "sourceType", label: "Источник", size: 120, html: true },
+                {
+                    name: "sourceType", 
+                    label: "Источник", 
+                    size: 120, 
+                    component: markRaw(SourceButtonCell),
+                    props: (item) => {
+                        // Для транзакций (source_type = 'App\Models\Transaction') используем sourceId (ID транзакции)
+                        // Для других источников (Sale, Order, WhReceipt) используем sourceSourceId (ID источника)
+                        const isTransaction = item.source_type && item.source_type.includes('Transaction');
+                        const sourceId = isTransaction ? item.sourceId : (item.sourceSourceId || item.sourceId);
+                        
+                        return {
+                            sourceType: item.source_type,
+                            sourceId: sourceId,
+                            onUpdated: () => {
+                                this.forceRefresh = true;
+                                this.fetchBalanceHistory();
+                            },
+                            onDeleted: () => {
+                                this.forceRefresh = true;
+                                this.fetchBalanceHistory();
+                            }
+                        };
+                    }
+                },
                 { name: "note", label: this.$t("note"), size: 200 },
                 { name: "debt", label: "Долг", size: 80, html: true },
                 { name: "user_name", label: this.$t("user"), size: 120 },
@@ -189,7 +215,9 @@ export default {
                             r.item.date,
                             r.item.created_at,
                             r.item.updated_at,
-                            r.item.orders || []
+                            r.item.orders || [],
+                            r.item.source_type || null,
+                            r.item.source_id || null
                         );
                     }),
                 },
@@ -202,6 +230,31 @@ export default {
     },
 
     methods: {
+        // Вспомогательный метод для обновления данных клиента
+        async updateClientData() {
+            if (!this.editingItem || !this.editingItem.id) return;
+            try {
+                const updatedClient = await ClientController.getItem(this.editingItem.id);
+                if (updatedClient && updatedClient.balance !== undefined) {
+                    this.editingItem.balance = updatedClient.balance;
+                }
+            } catch (error) {
+                console.error('Error updating client data:', error);
+            }
+        },
+        // Вспомогательный метод для обработки ошибок
+        handleEntityError(error) {
+            let errorMessage;
+            if (typeof error === 'string') {
+                errorMessage = error;
+            } else {
+                errorMessage = this.getApiErrorMessage(error);
+                if (Array.isArray(errorMessage)) {
+                    errorMessage = errorMessage.join(', ');
+                }
+            }
+            this.showNotification(this.$t('error'), errorMessage, true);
+        },
         // Helper функция для проверки is_debt
         isDebtOperation(item) {
             return item.is_debt === 1 || item.is_debt === true || item.is_debt === '1';
@@ -305,29 +358,31 @@ export default {
             this.entityLoading = false;
             this.isAdjustmentMode = false;
         },
-        onEntitySaved() {
+        async onEntitySaved() {
             this.entityModalOpen = false;
             this.isAdjustmentMode = false;
             if (this.editingItem && this.editingItem.id) {
-                this.fetchBalanceHistory();
+                await this.updateClientData();
+                this.forceRefresh = true;
+                await this.fetchBalanceHistory();
             }
             this.$emit('balance-updated');
         },
         onEntitySavedError(error) {
-            // Показываем уведомление об ошибке
-            this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
+            this.handleEntityError(error);
         },
-        onEntityDeleted() {
+        async onEntityDeleted() {
             this.entityModalOpen = false;
             this.isAdjustmentMode = false;
             if (this.editingItem && this.editingItem.id) {
-                this.fetchBalanceHistory();
+                await this.updateClientData();
+                this.forceRefresh = true;
+                await this.fetchBalanceHistory();
             }
             this.$emit('balance-updated');
         },
         onEntityDeletedError(error) {
-            // Показываем уведомление об ошибке
-            this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
+            this.handleEntityError(error);
         },
         openAdjustmentModal() {
             this.isAdjustmentMode = true;
@@ -356,19 +411,7 @@ export default {
                         return '<i class="fas fa-exchange-alt text-gray-500 mr-2"></i><span class="text-gray-500">Транзакция</span>';
                     }
                 }
-                case "sourceType":
-                    // Используем короткие названия с иконками вместо полных путей
-                    if (i.source === 'sale') {
-                        return '<i class="fas fa-shopping-cart text-[#5CB85C] mr-2"></i><span class="text-[#5CB85C]">Продажа</span>';
-                    } else if (i.source === 'order') {
-                        return '<i class="fas fa-clipboard-list text-[#337AB7] mr-2"></i><span class="text-[#337AB7]">Заказ</span>';
-                    } else if (i.source === 'receipt') {
-                        return '<i class="fas fa-box text-[#FFA500] mr-2"></i><span class="text-[#FFA500]">Оприходование</span>';
-                    } else if (i.source === 'transaction') {
-                        return '<i class="fas fa-exchange-alt text-[#6C757D] mr-2"></i><span class="text-[#6C757D]">Транзакция</span>';
-                    } else {
-                        return '<i class="fas fa-exchange-alt text-[#6C757D] mr-2"></i><span class="text-[#6C757D]">Транзакция</span>';
-                    }
+                // case "sourceType" - больше не нужен, используется компонент SourceButtonCell
                 case "user_name":
                     return i.user_name || '-';
                 case "note":

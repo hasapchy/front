@@ -453,6 +453,8 @@ export default {
   
   // Баланс
   balanceHistory: 'Balans taryhy',
+  payments: 'Tölegler',
+  operations: 'Amallar',
   finalBalance: 'Jemi balans',
   finalExpense: 'Jemi çykdajy',
   totalIncome: 'Jemi girdejik',

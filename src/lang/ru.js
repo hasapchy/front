@@ -64,6 +64,7 @@ export default {
   products: 'Товары',
   orders: 'Заказы',
   sales: 'Продажи',
+  warehouseReceipt: 'Оприходование',
   warehouses: 'Склады',
   transactions: 'Операции',
   projects: 'Проекты',
@@ -540,7 +541,9 @@ export default {
   
   // Баланс
   balanceHistory: 'История баланса',
+  payments: 'Платежи',
   paymentsHistory: 'История платежей',
+  operations: 'Операции',
   adjustBalance: 'Корректировка баланса',
   createPayment: 'Создать платеж',
   totalPayments: 'Итого платежей',
@@ -844,6 +847,12 @@ export default {
   // Поиск и клиенты
   enterClientNameOrNumber: 'Введите имя или номер клиента',
   minimum3Characters: 'Минимум 3 символа',
+  selectSourceType: 'Выберите тип источника',
+  enterSourceId: 'Введите ID заказа, продажи или оприходования',
+  enterIdToSearch: 'Введите ID для поиска',
+  enterValidId: 'Введите корректный ID',
+  totalPrice: 'Итоговая сумма',
+  id: 'ID',
   notFound: 'Не найдено',
   clientOwesUs: 'Клиент должен нам',
   weOweClient: 'Мы должны клиенту',

@@ -27,6 +27,12 @@
         <WarehousesReceiptCreatePage v-if="modalOpen && editingItem" :editingItem="editingItem" 
             @saved="handleSaved" @saved-error="() => modalOpen = false" @deleted="handleDeleted" />
     </SideModalDialog>
+
+    <!-- Модальное окно для Transaction -->
+    <SideModalDialog v-if="sourceType && sourceType.includes('Transaction')" :showForm="modalOpen" :onclose="() => modalOpen = false">
+        <TransactionCreatePage v-if="modalOpen && editingItem" :editingItem="editingItem" 
+            @saved="handleSaved" @saved-error="() => modalOpen = false" @deleted="handleDeleted" @close-request="() => modalOpen = false" />
+    </SideModalDialog>
 </template>
 
 <script>
@@ -34,6 +40,11 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import SaleCreatePage from '@/views/pages/sales/SaleCreatePage.vue';
 import OrderCreatePage from '@/views/pages/orders/OrderCreatePage.vue';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
+import { defineAsyncComponent } from 'vue';
+
+const TransactionCreatePage = defineAsyncComponent(() => 
+    import('@/views/pages/transactions/TransactionCreatePage.vue')
+);
 
 export default {
     emits: ['updated', 'deleted', 'error'],
@@ -68,6 +79,8 @@ export default {
                 return 'fas fa-file-invoice text-[#337AB7]';
             } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
                 return 'fas fa-box text-[#FFA500]';
+            } else if (this.sourceType.includes('Transaction')) {
+                return 'fas fa-exchange-alt text-[#6C757D]';
             } else {
                 return 'fas fa-link text-[#337AB7]';
             }
@@ -81,6 +94,8 @@ export default {
                 text = `Заказ #${this.sourceId}`;
             } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
                 text = `Оприходование #${this.sourceId}`;
+            } else if (this.sourceType.includes('Transaction')) {
+                text = `Транзакция #${this.sourceId}`;
             } else {
                 text = `Связь #${this.sourceId}`;
             }
@@ -134,6 +149,13 @@ export default {
                     console.log('[SourceButtonCell] Receipt data:', receiptData);
                     console.log('[SourceButtonCell] Receipt data type:', receiptData.constructor.name);
                     this.editingItem = receiptData;
+                } else if (this.sourceType.includes('Transaction')) {
+                    console.log('[SourceButtonCell] Loading Transaction...');
+                    const TransactionController = (await import('@/api/TransactionController')).default;
+                    const transactionData = await TransactionController.getItem(this.sourceId);
+                    console.log('[SourceButtonCell] Transaction data:', transactionData);
+                    console.log('[SourceButtonCell] Transaction data type:', transactionData.constructor.name);
+                    this.editingItem = transactionData;
                 } else {
                     console.warn('[SourceButtonCell] Unknown source type:', this.sourceType);
                 }
