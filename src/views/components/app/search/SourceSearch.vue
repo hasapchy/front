@@ -17,7 +17,6 @@
             <input 
                 type="text" 
                 v-model="sourceSearch" 
-                @input="handleSearchInput"
                 :placeholder="$t('enterSourceId')"
                 class="w-full p-2 border rounded" 
                 @focus="showDropdown = true" 
@@ -91,10 +90,7 @@
 </template>
 
 <script>
-// import OrderController from '@/api/OrderController';
-// import SaleController from '@/api/SaleController';
-// import WarehouseReceiptController from '@/api/WarehouseReceiptController';
-// import debounce from 'lodash.debounce';
+import debounce from 'lodash.debounce';
 
 export default {
     name: 'SourceSearch',
@@ -179,15 +175,7 @@ export default {
             this.sourceSearch = '';
             this.sourceResults = [];
         },
-        handleSearchInput(event) {
-            this.sourceSearch = event.target.value;
-            if (this.sourceSearch && this.sourceSearch.length > 0 && this.isNumeric(this.sourceSearch)) {
-                this.searchSource();
-            } else {
-                this.sourceResults = [];
-            }
-        },
-        async searchSource() {
+        searchSource: debounce(async function () {
             if (!this.sourceType || !this.isNumeric(this.sourceSearch)) {
                 this.sourceResults = [];
                 return;
@@ -198,21 +186,23 @@ export default {
                 const id = parseInt(this.sourceSearch);
                 let result = null;
 
-                // Ленивая загрузка контроллеров
-                const OrderController = (await import('@/api/OrderController')).default;
-                const SaleController = (await import('@/api/SaleController')).default;
-                const WarehouseReceiptController = (await import('@/api/WarehouseReceiptController')).default;
-
+                // Ленивая загрузка контроллеров - только при необходимости
                 switch (this.sourceType) {
-                    case 'order':
+                    case 'order': {
+                        const OrderController = (await import('@/api/OrderController')).default;
                         result = await OrderController.getItem(id);
                         break;
-                    case 'sale':
+                    }
+                    case 'sale': {
+                        const SaleController = (await import('@/api/SaleController')).default;
                         result = await SaleController.getItem(id);
                         break;
-                    case 'warehouse_receipt':
+                    }
+                    case 'warehouse_receipt': {
+                        const WarehouseReceiptController = (await import('@/api/WarehouseReceiptController')).default;
                         result = await WarehouseReceiptController.getItem(id);
                         break;
+                    }
                 }
 
                 this.sourceResults = result ? [result] : [];
@@ -221,7 +211,7 @@ export default {
             } finally {
                 this.sourceSearchLoading = false;
             }
-        },
+        }, 300),
         async selectSource(source) {
             this.showDropdown = false;
             this.sourceSearch = '';
@@ -239,12 +229,12 @@ export default {
             });
         },
     },
-    // watch: {
-    //     sourceSearch: {
-    //         handler: 'searchSource',
-    //         immediate: false,
-    //     },
-    // },
+    watch: {
+        sourceSearch: {
+            handler: 'searchSource',
+            immediate: false,
+        },
+    },
 };
 </script>
 

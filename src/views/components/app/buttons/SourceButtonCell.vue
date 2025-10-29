@@ -1,7 +1,7 @@
 <template>
-    <!-- ВРЕМЕННО ЗАКОММЕНТИРОВАНО ДЛЯ ИСПРАВЛЕНИЯ ОШИБКИ -->
     <div v-if="sourceType && sourceId" 
-        class="w-full h-full flex items-center">
+        class="w-full h-full cursor-pointer text-[#2a6496] hover:underline rounded flex items-center"
+        @dblclick.stop="openSourceModal">
         <i :class="iconClass" class="mr-2"></i>
         <span v-html="displayText"></span>
     </div>
@@ -10,39 +10,25 @@
         <span>{{ defaultText }}</span>
     </div>
 
-    <!-- Модальные окна закомментированы -->
-    <!-- <SideModalDialog v-if="sourceType && sourceType.includes('Sale')" :showForm="modalOpen" :onclose="() => modalOpen = false">
-        <SaleCreatePage v-if="modalOpen && editingItem" :editingItem="editingItem" 
-            @saved="handleSaved" @saved-error="() => modalOpen = false" @deleted="handleDeleted" />
-    </SideModalDialog>
-
-    <SideModalDialog v-if="sourceType && sourceType.includes('Order')" :showForm="modalOpen" :onclose="() => modalOpen = false">
-        <OrderCreatePage v-if="modalOpen && editingItem" :editingItem="editingItem" 
-            @saved="handleSaved" @saved-error="() => modalOpen = false" @deleted="handleDeleted" />
-    </SideModalDialog>
-
-    <SideModalDialog v-if="sourceType && (sourceType.includes('WhReceipt') || sourceType.includes('WarehouseReceipt'))" :showForm="modalOpen" :onclose="() => modalOpen = false">
-        <WarehousesReceiptCreatePage v-if="modalOpen && editingItem" :editingItem="editingItem" 
-            @saved="handleSaved" @saved-error="() => modalOpen = false" @deleted="handleDeleted" />
-    </SideModalDialog>
-
-    <SideModalDialog v-if="sourceType && sourceType.includes('Transaction')" :showForm="modalOpen" :onclose="() => modalOpen = false">
-        <TransactionCreatePage v-if="modalOpen && editingItem" :editingItem="editingItem" 
-            @saved="handleSaved" @saved-error="() => modalOpen = false" @deleted="handleDeleted" @close-request="() => modalOpen = false" />
-    </SideModalDialog> -->
+    <!-- Модальные окна с динамической загрузкой - избегаем циклических зависимостей -->
+    <component 
+        v-if="modalOpen && modalComponent" 
+        :is="modalComponent" 
+        :showForm="modalOpen" 
+        :onclose="() => modalOpen = false">
+        <component 
+            v-if="editingItem"
+            :is="modalContentComponent"
+            :editingItem="editingItem" 
+            @saved="handleSaved" 
+            @saved-error="() => modalOpen = false" 
+            @deleted="handleDeleted" 
+            @close-request="() => modalOpen = false" />
+    </component>
 </template>
 
 <script>
-// ВРЕМЕННО ЗАКОММЕНТИРОВАНО ДЛЯ ИСПРАВЛЕНИЯ ОШИБКИ ЦИКЛИЧЕСКОЙ ЗАВИСИМОСТИ
-// import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
-// import SaleCreatePage from '@/views/pages/sales/SaleCreatePage.vue';
-// import OrderCreatePage from '@/views/pages/orders/OrderCreatePage.vue';
-// import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
-// import { defineAsyncComponent } from 'vue';
-
-// const TransactionCreatePage = defineAsyncComponent(() => 
-//     import('@/views/pages/transactions/TransactionCreatePage.vue')
-// );
+import { defineAsyncComponent } from 'vue';
 
 export default {
     emits: ['updated', 'deleted', 'error'],
@@ -56,17 +42,13 @@ export default {
         onUpdated: Function,
         onDeleted: Function
     },
-    // components: {
-    //     SideModalDialog,
-    //     SaleCreatePage,
-    //     OrderCreatePage,
-    //     WarehousesReceiptCreatePage
-    // },
     data() {
         return {
             modalOpen: false,
             editingItem: null,
-            loading: false
+            loading: false,
+            modalComponent: null,  // Динамический компонент модального окна
+            modalContentComponent: null  // Динамический компонент содержимого
         };
     },
     computed: {
@@ -119,14 +101,53 @@ export default {
             return textStr.replace(regex, '<mark style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 3px; font-weight: bold;">$1</mark>');
         },
         async openSourceModal() {
-            // ВРЕМЕННО ЗАКОММЕНТИРОВАНО
-            // if (!this.sourceType || !this.sourceId) return;
-            // console.log('[SourceButtonCell] openSourceModal - временно отключено');
-            return;
+            if (!this.sourceType || !this.sourceId) return;
+            
+            this.loading = true;
+            try {
+                // Загружаем SideModalDialog динамически
+                const SideModalDialog = (await import('@/views/components/app/dialog/SideModalDialog.vue')).default;
+                this.modalComponent = SideModalDialog;
+                
+                // Загружаем данные и компонент содержимого динамически - избегаем циклических зависимостей
+                if (this.sourceType.includes('Sale')) {
+                    const SaleController = (await import('@/api/SaleController')).default;
+                    const SaleCreatePage = (await import('@/views/pages/sales/SaleCreatePage.vue')).default;
+                    this.editingItem = await SaleController.getItem(this.sourceId);
+                    this.modalContentComponent = SaleCreatePage;
+                } else if (this.sourceType.includes('Order')) {
+                    const OrderController = (await import('@/api/OrderController')).default;
+                    const OrderCreatePage = (await import('@/views/pages/orders/OrderCreatePage.vue')).default;
+                    this.editingItem = await OrderController.getItem(this.sourceId);
+                    this.modalContentComponent = OrderCreatePage;
+                } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
+                    const WarehouseReceiptController = (await import('@/api/WarehouseReceiptController')).default;
+                    const WarehousesReceiptCreatePage = (await import('@/views/pages/warehouses/WarehousesReceiptCreatePage.vue')).default;
+                    this.editingItem = await WarehouseReceiptController.getItem(this.sourceId);
+                    this.modalContentComponent = WarehousesReceiptCreatePage;
+                } else if (this.sourceType.includes('Transaction')) {
+                    const TransactionController = (await import('@/api/TransactionController')).default;
+                    const TransactionCreatePage = (await import('@/views/pages/transactions/TransactionCreatePage.vue')).default;
+                    this.editingItem = await TransactionController.getItem(this.sourceId);
+                    this.modalContentComponent = TransactionCreatePage;
+                } else {
+                    console.warn('[SourceButtonCell] Unknown source type:', this.sourceType);
+                    return;
+                }
+                
+                this.modalOpen = true;
+            } catch (error) {
+                console.error('[SourceButtonCell] Ошибка загрузки данных:', error);
+                this.$emit('error', error);
+            } finally {
+                this.loading = false;
+            }
         },
         handleSaved() {
             this.modalOpen = false;
             this.editingItem = null;
+            this.modalComponent = null;
+            this.modalContentComponent = null;
             // Вызываем колбэк для обновления данных в родительском компоненте
             if (this.onUpdated) {
                 this.onUpdated();
@@ -135,6 +156,8 @@ export default {
         handleDeleted() {
             this.modalOpen = false;
             this.editingItem = null;
+            this.modalComponent = null;
+            this.modalContentComponent = null;
             // Вызываем колбэк для обновления данных в родительском компоненте
             if (this.onDeleted) {
                 this.onDeleted();
