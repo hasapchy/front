@@ -33,7 +33,7 @@ export class InvoicePdfGenerator {
     const amount = parseFloat(this.invoice.totalAmount || 0).toFixed(2);
     
     // Пытаемся получить символ валюты из заказов
-    let currencySymbol = 'Нет валюты';
+    let currencySymbol = 'TMT';
     
     // Сначала проверяем наличие метода amountInfo и используем его
     if (this.invoice.amountInfo && typeof this.invoice.amountInfo === 'function') {
@@ -44,8 +44,9 @@ export class InvoicePdfGenerator {
           const match = amountInfo.match(/\d+(?:\.\d+)?\s+(.+)$/);
           if (match && match[1]) {
             const extractedSymbol = match[1].trim();
-            // Проверяем, что это не дата в формате ISO
-            if (extractedSymbol !== 'Нет валюты' && !/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}.*)?Z?$/.test(extractedSymbol)) {
+            // Проверяем, что это не дата в формате ISO или с пробелом
+            // Форматы: "2025-10-29T17:37:00", "2025-10-29 17:37:00", "2025-10-29"
+            if (extractedSymbol !== 'Нет валюты' && extractedSymbol !== 'TMT' && !/^\d{4}-\d{2}-\d{2}([\sT]\d{2}:\d{2}:\d{2}.*)?Z?$/.test(extractedSymbol)) {
               currencySymbol = extractedSymbol;
             }
           }
@@ -56,16 +57,17 @@ export class InvoicePdfGenerator {
     }
     
     // Если amountInfo не дал результата, пробуем получить из заказов
-    if (currencySymbol === 'Нет валюты' && this.invoice.orders && this.invoice.orders.length > 0) {
+    if (currencySymbol === 'TMT' && this.invoice.orders && this.invoice.orders.length > 0) {
       // Берем валюту из первого заказа
       const firstOrder = this.invoice.orders[0];
       if (firstOrder && typeof firstOrder === 'object') {
-        // Функция для проверки, что значение не является датой в формате ISO
+        // Функция для проверки, что значение не является датой в формате ISO или с пробелом
         const isValidCurrency = (value) => {
           if (!value || typeof value !== 'string') return false;
           const trimmed = value.trim();
-          // Исключаем даты в формате ISO (YYYY-MM-DD или с временем)
-          if (/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}.*)?Z?$/.test(trimmed)) {
+          // Исключаем даты в формате ISO (YYYY-MM-DD) с T или без, с временем или без
+          // Форматы: "2025-10-29T17:37:00", "2025-10-29 17:37:00", "2025-10-29"
+          if (/^\d{4}-\d{2}-\d{2}([\sT]\d{2}:\d{2}:\d{2}.*)?Z?$/.test(trimmed)) {
             return false;
           }
           return trimmed !== '';

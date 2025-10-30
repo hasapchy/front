@@ -37,19 +37,20 @@ export default class InvoiceDto {
 
   amountInfo() {
     // Получаем символ валюты из первого заказа или используем fallback
-    let currencySymbol = 'Нет валюты';
+    let currencySymbol = 'TMT';
     
     if (this.orders && this.orders.length > 0) {
       const firstOrder = this.orders[0];
-      // Функция для проверки, что значение не является датой в формате ISO
+      // Функция для проверки, что значение не является датой в формате ISO или с пробелом
       const isValidCurrency = (value) => {
         if (!value || typeof value !== 'string') return false;
         const trimmed = value.trim();
-        // Исключаем даты в формате ISO (YYYY-MM-DD или с временем)
-        if (/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}.*)?Z?$/.test(trimmed)) {
+        // Исключаем даты в формате ISO (YYYY-MM-DD) с T или без, с временем или без
+        // Форматы: "2025-10-29T17:37:00", "2025-10-29 17:37:00", "2025-10-29"
+        if (/^\d{4}-\d{2}-\d{2}([\sT]\d{2}:\d{2}:\d{2}.*)?Z?$/.test(trimmed)) {
           return false;
         }
-        return trimmed !== '' && trimmed !== 'Нет валюты';
+        return trimmed !== '' && trimmed !== 'Нет валюты' && trimmed !== 'TMT';
       };
       
       if (firstOrder.currencySymbol && isValidCurrency(firstOrder.currencySymbol)) {
