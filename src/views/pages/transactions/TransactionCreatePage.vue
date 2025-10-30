@@ -47,7 +47,7 @@
             </div>
             <div class="w-full mt-2">
                 <label class="block mb-1 required">{{ $t('currency') }}</label>
-                <select v-model="currencyIdComputed" required :disabled="!!editingItemId">
+                <select v-model="currencyIdComputed" required :disabled="!!editingItemId || !$store.getters.hasPermission('settings_currencies_view')">
                     <option value="">{{ $t('no') }}</option>
                     <template v-if="currencies.length">
                         <option v-for="parent in currencies" :key="parent.id" :value="parent.id">
@@ -401,8 +401,8 @@ export default {
                         order_id: this.orderId,
                         is_debt: (this.forceDebt ? true : this.isDebt),
                         is_adjustment: this.adjustmentMode,
-                        source_type: this.getSourceTypeForBackend(),
-                        source_id: this.selectedSource?.id || null
+                        source_type: this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : null),
+                        source_id: this.selectedSource?.id || this.orderId || null
                     });
                 }
                 if (resp.message) {
