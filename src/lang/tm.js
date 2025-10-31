@@ -75,7 +75,7 @@ export default {
     totalBalance: 'Jemi',
     source: 'Çeşme',
   projects: 'Proýektler',
-  users: 'Ulanyjylar',
+  users: 'Işgärler',
   settings: 'Ýörite hukuklar',
   finance: 'Maliýe',
   cashRegisters: 'Kassalar',
@@ -360,7 +360,7 @@ export default {
   leftovers: 'Galdyk',
   unlimited: 'Çäksiz',
   selectedStock: 'Saýlanan galdyklar',
-  user: 'Ulanyjy',
+  user: 'Işgär',
   cashRegister: 'Kassa',
   saveOrderFirst: 'Ilki sargyty saklaň, soňra tranzaksiyalary goşup/görüp bilersiňiz',
   barcode: 'Ştrix kod',
@@ -409,7 +409,7 @@ export default {
   originalAmount: 'Görkezilen mukdar',
   parentCategory: 'Ene kategoriýa',
   creationDate: 'Döredilen sene',
-  dateUser: 'Sene / ulanyjy',
+  dateUser: 'Sene / işgär',
   orderType: 'Sargyt görnüşi',
   orderAmount: 'Sargyt mukdary',
   orderProducts: 'Sargyt önümleri',
@@ -555,8 +555,8 @@ export default {
   movementWarehouseReceiver: 'Göçürmä ammary aljy',
   movementNote: 'Göçürmä bellik',
   
-  // Пользователи
-  userPermissions: 'Ulanyjy giriş hukuklary',
+  // Сотрудники
+  userPermissions: 'Işgär giriş hukuklary',
   lastLogin: 'Soňky giriş',
   password: 'Açarsöz',
   newPassword: 'Täze açarsöz',
@@ -605,7 +605,7 @@ export default {
   warehouse_stocks: 'Ambar — Galyndylar',
   warehouses: 'Amarlar',
   settings_edit: 'Sazlamalar',
-  users: 'Ulanyjylar',
+  users: 'Işgärler',
   categories: 'Kategoriýalar',
   clients: 'Müşderiler',
   products: 'Önümler',
@@ -657,7 +657,7 @@ export default {
   allSubcategories: 'Ähli goşmaça kategoriýalar',
   
   // Склады
-  assignUsers: 'Ulanyjylary belle',
+  assignUsers: 'Işgärleri belle',
   errorGettingWarehouseList: 'Ammar sanawyny almakda ýalňyşlyk',
   errorSavingWarehouse: 'Ammary saklamakda ýalňyşlyk',
   errorDeletingWarehouse: 'Ammary pozmakda ýalňyşlyk',
@@ -703,7 +703,7 @@ export default {
   
   // Общие
   notSpecified: 'Görkezilmedi',
-  users: 'Ulanyjylar',
+  users: 'Işgärler',
   
   // Транзакции
   allCashRegisters: 'Ähli kassalar',
@@ -731,13 +731,13 @@ export default {
   projectSuccessfullyDeleted: 'Proýekt üstünlikli pozuldy',
   errorDeletingProject: 'Proýekti pozmakda ýalňyşlyk',
   
-  // Пользователи
+  // Сотрудники
   created: 'Döredildi',
-  errorLoadingUsers: 'Ulanyjylary ýüklemekde ýalňyşlyk',
-  userSaved: 'Ulanyjy saklandy',
-  errorSavingUser: 'Ulanyjyny saklamakda ýalňyşlyk',
-  userDeleted: 'Ulanyjy pozuldy',
-  errorDeletingUser: 'Ulanyjyny pozmakda ýalňyşlyk',
+  errorLoadingUsers: 'Işgärleri ýüklemekde ýalňyşlyk',
+  userSaved: 'Işgär saklandy',
+  errorSavingUser: 'Işgäri saklamakda ýalňyşlyk',
+  userDeleted: 'Işgär pozuldy',
+  errorDeletingUser: 'Işgäri pozmakda ýalňyşlyk',
   
   // Кассы
   addCashRegister: 'Kassany goşuň',
@@ -767,16 +767,16 @@ export default {
   createClient: 'Müşderi',
   errorCreatingClient: 'Müşderi döretmekde ýalňyşlyk',
   
-  // Фразы для пользователей
-  createUser: 'Ulanyjyny döret',
+  // Фразы для сотрудников
+  createUser: 'Işgäri döret',
   addClient: 'Müşderini goşuň',
-  editUser: 'Ulanyjyny redaktir et',
-  userCreated: 'Ulanyjy döredildi',
-  userAdded: 'Ulanyjy goşuldy',
-  userUpdated: 'Ulanyjy täzelendi',
-  errorCreatingUser: 'Ulanyjyny döretmekde ýalňyşlyk',
-  errorAddingUser: 'Ulanyjyny goşmakda ýalňyşlyk',
-  errorUpdatingUser: 'Ulanyjyny täzelemekde ýalňyşlyk',
+  editUser: 'Işgäri redaktir et',
+  userCreated: 'Işgär döredildi',
+  userAdded: 'Işgär goşuldy',
+  userUpdated: 'Işgär täzelendi',
+  errorCreatingUser: 'Işgäri döretmekde ýalňyşlyk',
+  errorAddingUser: 'Işgäri goşmakda ýalňyşlyk',
+  errorUpdatingUser: 'Işgäri täzelemekde ýalňyşlyk',
   
   // Фразы для категорий
   createCategory: 'Kategoriýany döret',
@@ -862,7 +862,7 @@ export default {
   
   // Фразы для клиентов
   editClient: 'Müşderi',
-  assignUsers: 'Ulanyjylary belläň',
+  assignUsers: 'Işgärleri belläň',
   saveProjectFirstThenAttachFiles: 'Ilki proýekti saklaň, soňra faýllary birikdiriň',
   budget: 'Býudjet',
   allCategories: 'Ähli kategoriýalar',

@@ -79,7 +79,7 @@ export default {
     totalBalance: 'Total',
     source: 'Source',
   projects: 'Projects',
-  users: 'Users',
+  users: 'Employees',
   settings: 'Settings',
   orderAdditionalFields: 'Order Add. Fields',
   generalSettings: 'Settings',

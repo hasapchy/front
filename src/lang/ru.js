@@ -88,7 +88,7 @@ export default {
   warehouses: 'Склады',
   transactions: 'Операции',
   projects: 'Проекты',
-  users: 'Пользователи',
+  users: 'Сотрудники',
   settings: 'Кастомные права',
   
   // Канбан
@@ -453,7 +453,7 @@ export default {
   sale: 'Продажа',
   orderCategory: 'Категория заказа',
   warehouse: 'Склад',
-  user: 'Пользователь',
+  user: 'Сотрудник',
   cashRegister: 'Касса',
   saveOrderFirst: 'Сначала сохраните заказ, чтобы добавить/просматривать операции',
   
@@ -494,7 +494,7 @@ export default {
   originalAmount: 'Указанная сумма',
   parentCategory: 'Родительская категория',
   creationDate: 'Дата создания',
-  dateUser: 'Дата / пользователь',
+  dateUser: 'Дата / сотрудник',
   orderType: 'Тип заказа',
   orderAmount: 'Сумма заказа',
   orderProducts: 'Товары заказа',
@@ -651,7 +651,7 @@ export default {
   movementWarehouseReceiver: 'Склад получатель',
   movementNote: 'Примечание перемещения',
   
-  // Пользователи
+  // Сотрудники
   userPermissions: 'Права доступа',
   lastLogin: 'Последний вход',
   password: 'Пароль',
@@ -702,7 +702,7 @@ export default {
   warehouse_stocks: 'Склад — Остатки',
   warehouses: 'Склады',
   settings_edit: 'Настройки',
-  users: 'Пользователи',
+  users: 'Сотрудники',
   orders: 'Заказы',
   categories: 'Категории',
   clients: 'Контрагенты',
@@ -762,7 +762,7 @@ export default {
   allSubcategories: 'Все подкатегории',
   
   // Склады
-  assignUsers: 'Назначить пользователей',
+  assignUsers: 'Назначить сотрудников',
   errorGettingWarehouseList: 'Ошибка получения списка складов',
   errorSavingWarehouse: 'Ошибка сохранения склада',
   errorDeletingWarehouse: 'Ошибка удаления склада',
@@ -807,7 +807,7 @@ export default {
   
   // Общие
   notSpecified: 'Не указан',
-  users: 'Пользователи',
+  users: 'Сотрудники',
   
   // Транзакции
   addTransaction: 'Добавить транзакцию',
@@ -838,13 +838,13 @@ export default {
   projectSuccessfullyDeleted: 'Проект успешно удален',
   errorDeletingProject: 'Ошибка удаления проекта',
   
-  // Пользователи
+  // Сотрудники
   created: 'Создан',
-  errorLoadingUsers: 'Ошибка загрузки пользователей',
-  userSaved: 'Пользователь сохранён',
-  errorSavingUser: 'Ошибка сохранения пользователя',
-  userDeleted: 'Пользователь удалён',
-  errorDeletingUser: 'Ошибка удаления пользователя',
+  errorLoadingUsers: 'Ошибка загрузки сотрудников',
+  userSaved: 'Сотрудник сохранён',
+  errorSavingUser: 'Ошибка сохранения сотрудника',
+  userDeleted: 'Сотрудник удалён',
+  errorDeletingUser: 'Ошибка удаления сотрудника',
   
   // Кассы
   addCashRegister: 'Добавить кассу',
@@ -880,16 +880,16 @@ export default {
   createClient: 'Клиент',
   errorCreatingClient: 'Ошибка создания клиента',
   
-  // Фразы для пользователей
-  createUser: 'Пользователь',
+  // Фразы для сотрудников
+  createUser: 'Сотрудник',
   addClient: 'Добавить клиента',
-  editUser: 'Редактировать пользователя',
-  userCreated: 'Пользователь создан',
-  userAdded: 'Пользователь добавлен',
-  userUpdated: 'Пользователь обновлен',
-  errorCreatingUser: 'Ошибка создания пользователя',
-  errorAddingUser: 'Ошибка добавления пользователя',
-  errorUpdatingUser: 'Ошибка обновления пользователя',
+  editUser: 'Редактировать сотрудника',
+  userCreated: 'Сотрудник создан',
+  userAdded: 'Сотрудник добавлен',
+  userUpdated: 'Сотрудник обновлен',
+  errorCreatingUser: 'Ошибка создания сотрудника',
+  errorAddingUser: 'Ошибка добавления сотрудника',
+  errorUpdatingUser: 'Ошибка обновления сотрудника',
   
   // Фразы для категорий
   createCategory: 'Категория',
@@ -989,7 +989,7 @@ export default {
   
   // Фразы для клиентов
   editClient: 'Клиент',
-  assignUsers: 'Назначить пользователей',
+  assignUsers: 'Назначить сотрудников',
   saveProjectFirstThenAttachFiles: 'Сначала сохраните проект, затем прикрепляйте файлы',
   budget: 'Бюджет',
   allCategories: 'Все категории',

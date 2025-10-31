@@ -194,7 +194,7 @@ export default {
     users() {
       const allUsers = this.$store.getters.users || [];
 
-      // Если тип клиента не employee/investor, возвращаем всех пользователей
+      // Если тип клиента не employee/investor, возвращаем всех сотрудников
       if (this.clientType !== 'employee' && this.clientType !== 'investor') {
         return allUsers;
       }
@@ -202,7 +202,7 @@ export default {
       // Получаем список клиентов из store
       const clients = this.$store.getters.clients || [];
 
-      // Находим ID пользователей, которые уже используются как employee_id
+      // Находим ID сотрудников, которые уже используются как employee_id
       // в клиентах типа employee или investor (исключаем текущего редактируемого клиента)
       const usedEmployeeIds = new Set();
       clients.forEach(client => {
@@ -215,10 +215,10 @@ export default {
         }
       });
 
-      // Фильтруем пользователей, исключая уже использованных
+      // Фильтруем сотрудников, исключая уже использованных
       let available = allUsers.filter(user => !usedEmployeeIds.has(user.id));
 
-      // Гарантируем, что выбранный ранее пользователь присутствует в списке
+      // Гарантируем, что выбранный ранее сотрудник присутствует в списке
       if (this.employeeId) {
         const selected = allUsers.find(u => u.id === this.employeeId);
         const existsInAvailable = available.some(u => u.id === this.employeeId);
@@ -242,12 +242,12 @@ export default {
     });
     mask.mask(phoneInput);
 
-    // Загружаем пользователей для выбора сотрудника
+    // Загружаем сотрудников для выбора сотрудника
     if (this.$store.getters.users.length === 0) {
       await this.$store.dispatch('loadUsers');
     }
 
-    // Загружаем клиентов для проверки уже выбранных пользователей
+    // Загружаем клиентов для проверки уже выбранных сотрудников
     if (this.$store.getters.clients.length === 0) {
       await this.$store.dispatch('loadClients');
     }
@@ -454,7 +454,7 @@ export default {
             // Автозаполняем имя сотрудника
             this.firstName = selectedUser.name || "";
           } else {
-            // Если выбранный пользователь недоступен (например, уже используется), сбрасываем
+            // Если выбранный сотрудник недоступен (например, уже используется), сбрасываем
             this.employeeId = null;
           }
         }

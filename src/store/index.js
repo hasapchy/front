@@ -96,7 +96,7 @@ const store = createStore({
       categories: false,
       projects: false,
     },
-    users: [], // Пользователи (для модалок создания)
+    users: [], // Сотрудники (для модалок создания)
     warehouses: [], // Склады
     cashRegisters: [], // Кассы
     clients: [], // Клиенты (DTO с методами)
@@ -526,9 +526,9 @@ const store = createStore({
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
         // ✅ ИСПРАВЛЕНИЕ: сохраняем timestamp для TTL проверки
         localStorage.setItem('users_timestamp', Date.now().toString());
-        console.log(`👥 Пользователи (${data.length})`);
+        console.log(`👥 Сотрудники (${data.length})`);
       } catch (error) {
-        console.error('Ошибка загрузки пользователей:', error);
+        console.error('Ошибка загрузки сотрудников:', error);
         commit('SET_USERS', []);
       } finally {
         commit('SET_LOADING_FLAG', { type: 'users', loading: false });
@@ -1564,7 +1564,7 @@ const store = createStore({
         // Глобальные справочники (24 часа)
         'units',
         'currencies',
-        'users',         // ✅ Пользователи (для модалок создания)
+        'users',         // ✅ Сотрудники (для модалок создания)
         'orderStatuses',
         'projectStatuses',
         'transactionCategories',

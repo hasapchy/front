@@ -58,7 +58,7 @@ export default {
                 { name: 'amount', label: 'Сумма', html: true },
                 { name: 'cashName', label: 'Касса' },
                 { name: 'date', label: 'Дата' },
-                { name: 'userName', label: 'Пользователь' },
+                { name: 'userName', label: 'Сотрудник' },
             ]
         }
     },
