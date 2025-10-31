@@ -90,8 +90,6 @@ export default {
             switch (c) {
                 case 'balance':
                     return this.$formatNumber(i.balance || 0, 2, true) + ' ' + (i.currency_symbol || i.currency_code || '');
-                case 'is_rounding':
-                    return i.is_rounding ? this.$t('enabled') : this.$t('disabled');
                 case 'users':
                     return (i.users || '').length + ' ' + this.$t('users');
                 case 'currency':

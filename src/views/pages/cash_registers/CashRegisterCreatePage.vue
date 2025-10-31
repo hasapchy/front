@@ -19,12 +19,6 @@
             <input type="number" v-model="balance" :disabled="!!editingItemId">
             <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span>
         </div>
-        <div class="mt-2">
-            <label class="flex items-center space-x-2">
-                <input type="checkbox" v-model="is_rounding">
-                <span>Включить округление транзакций до целых чисел</span>
-            </label>
-        </div>
         <div class="mt-4">
             <label>{{ $t('assignUsers') }}</label>
             <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
@@ -74,7 +68,6 @@ export default {
             selectedUsers: this.editingItem ? this.editingItem.getUserIds() : [],
             editingItemId: this.editingItem ? this.editingItem.id : null,
             balance: this.editingItem ? this.editingItem.balance : '',
-            is_rounding: this.editingItem ? this.editingItem.is_rounding : false,
             currency_id: this.editingItem ? this.editingItem.currency_id : '',
             users: [],
             currencies: [],
@@ -104,7 +97,6 @@ export default {
                 name: this.name,
                 selectedUsers: [...this.selectedUsers],
                 balance: this.balance,
-                is_rounding: this.is_rounding,
                 currency_id: this.currency_id
             };
         },
@@ -126,14 +118,12 @@ export default {
                         this.editingItemId,
                         {
                             name: this.name,
-                            is_rounding: this.is_rounding,
                             users: this.selectedUsers,
                         });
                 } else {
                     var resp = await CashRegisterController.storeItem({
                         name: this.name,
                         balance: this.balance,
-                        is_rounding: this.is_rounding,
                         currency_id: this.currency_id,
                         users: this.selectedUsers
                     });
@@ -170,7 +160,6 @@ export default {
             this.name = '';
             this.selectedUsers = [];
             this.balance = '0';
-            this.is_rounding = false;
             this.currency_id = '';
             this.editingItemId = null;
             this.fetchCurrencies();
@@ -192,14 +181,12 @@ export default {
                     this.name = newEditingItem.name || '';
                     this.selectedUsers = newEditingItem.getUserIds() || [];
                     this.balance = newEditingItem.balance || '';
-                    this.is_rounding = newEditingItem.is_rounding || false;
                     this.currency_id = newEditingItem.currency_id || '';
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     this.name = '';
                     this.selectedUsers = [];
                     this.balance = '0';
-                    this.is_rounding = false;
                     this.currency_id = '';
                     this.editingItemId = null;
                 }

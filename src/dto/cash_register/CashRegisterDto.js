@@ -5,7 +5,6 @@ export default class CashRegisterDto {
     id,
     name,
     balance,
-    is_rounding = false,
     users = [],
     currency_id,
     currency_name,
@@ -17,7 +16,6 @@ export default class CashRegisterDto {
     this.id = id;
     this.name = name;
     this.balance = balance;
-    this.is_rounding = is_rounding;
     this.users = users;
     this.currency_id = currency_id;
     this.currency_name = currency_name;
@@ -52,10 +50,5 @@ export default class CashRegisterDto {
   // Проверить, есть ли пользователь с указанным ID
   hasUser(userId) {
     return this.users.some(user => user.id == userId);
-  }
-
-  // Проверить, включено ли округление
-  isRoundingEnabled() {
-    return this.is_rounding === true;
   }
 }

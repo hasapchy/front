@@ -529,10 +529,6 @@ export default {
                 const formData = this.getFormState();
                 // Добавляем недостающие поля
                 formData.client_id = this.selectedClient?.id || null;
-                // Если выбран проект — клиент должен быть null (на всякий случай)
-                if (this.projectId) {
-                    formData.client_id = null;
-                }
                 formData.cash_id = this.cashId || null;
                 formData.products = this.products
                     .filter(p => !p.isTempProduct)
@@ -596,9 +592,6 @@ export default {
                 const formData = this.getFormState();
                 // Добавляем недостающие поля
                 formData.client_id = this.selectedClient?.id || null;
-                if (this.projectId) {
-                    formData.client_id = null;
-                }
                 formData.cash_id = this.cashId || null;
                 formData.products = this.products
                     .filter(p => !p.isTempProduct)
@@ -791,17 +784,9 @@ export default {
             },
             immediate: true
         },
-        // Взаимоисключение client/project
+        // Убираем взаимное обнуление client/project, оставляем только переключение цен
         selectedClient(newClient, oldClient) {
-            if (newClient && this.projectId) {
-                // Блокировка если изначально проектный заказ
-                if (this.initialMode === 'project' && this.editingItemId) {
-                    this.$store.dispatch('showNotification', { title: this.$t('error'), subtitle: 'Нельзя менять проектный заказ на клиентский', isDanger: true });
-                    this.selectedClient = null;
-                    return;
-                }
-                this.projectId = '';
-            }
+            // Ничего не обнуляем
         },
         projectId: {
             handler(newProjectId, oldVal) {
@@ -820,17 +805,6 @@ export default {
                             product.priceType = 'retail';
                         }
                     });
-                }
-                // Если выбран проект и это клиентский заказ — запрещаем
-                if (newProjectId) {
-                    if (this.initialMode === 'client' && this.editingItemId) {
-                        this.$store.dispatch('showNotification', { title: this.$t('error'), subtitle: 'Нельзя менять клиентский заказ на проектный', isDanger: true });
-                        this.projectId = '';
-                        return;
-                    }
-                    if (this.selectedClient) {
-                        this.selectedClient = null;
-                    }
                 }
             },
             immediate: false

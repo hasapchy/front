@@ -1,10 +1,18 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <PrimaryButton 
-            :onclick="() => showModal(null)" 
-            icon="fas fa-plus"
-            :disabled="!$store.getters.hasPermission('companies_create')">
-        </PrimaryButton>
+        <div class="flex gap-2">
+            <PrimaryButton 
+                :onclick="() => showModal(null)" 
+                icon="fas fa-plus"
+                :disabled="!$store.getters.hasPermission('companies_create')">
+            </PrimaryButton>
+            <PrimaryButton 
+                :onclick="showRoundingRulesModal" 
+                icon="fas fa-calculator"
+                :is-success="true">
+                {{ $t('roundingRules') }}
+            </PrimaryButton>
+        </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
             @changePage="fetchItems" @perPageChange="handlePerPageChange" />
@@ -23,6 +31,9 @@
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
             :editingItem="editingItem" />
     </SideModalDialog>
+    <SideModalDialog :showForm="roundingRulesModal" :onclose="closeRoundingRulesModal">
+        <CompanyRoundingRulesPage />
+    </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
     <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
@@ -37,6 +48,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import CompaniesCreatePage from './CompaniesCreatePage.vue';
+import CompanyRoundingRulesPage from './CompanyRoundingRulesPage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
@@ -49,7 +61,7 @@ import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, CompaniesCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, CompaniesCreatePage, CompanyRoundingRulesPage, Pagination, DraggableTable, BatchButton, AlertDialog },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -61,6 +73,7 @@ export default {
             deletedSuccessText: this.$t('companyDeleted'),
             deletedErrorText: this.$t('errorDeletingCompany'),
             selectedCompanyId: null,
+            roundingRulesModal: false,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'ID', size: 60 },
@@ -113,6 +126,12 @@ export default {
                 default:
                     return item[column];
             }
+        },
+        showRoundingRulesModal() {
+            this.roundingRulesModal = true;
+        },
+        closeRoundingRulesModal() {
+            this.roundingRulesModal = false;
         },
     },
 };

@@ -98,12 +98,21 @@
             <input type="text" v-model="note" />
         </div>
         <div class="mt-2">
-            <SourceSearch 
-                v-model:selectedSource="selectedSource" 
-                v-model:sourceType="sourceType"
-                :showLabel="true"
-                :disabled="!!editingItemId && !!orderId"
-            />
+            <template v-if="orderId || selectedSource">
+                <label class="block mb-1">{{ $t('source') || 'Источник' }}</label>
+                <div class="p-3 border rounded bg-white">
+                    <div class="text-sm"><span class="font-semibold">Тип:</span> {{ displaySourceTypeLabel() }}</div>
+                    <div class="text-sm mt-1"><span class="font-semibold">ID:</span> {{ `#${selectedSource?.id || orderId}` }}</div>
+                </div>
+            </template>
+            <template v-else>
+                <SourceSearch 
+                    v-model:selectedSource="selectedSource" 
+                    v-model:sourceType="sourceType"
+                    :showLabel="true"
+                    :disabled="!!editingItemId && !!orderId"
+                />
+            </template>
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -325,6 +334,15 @@ export default {
             };
             
             return typeMap[this.sourceType] || null;
+        },
+        displaySourceTypeLabel() {
+            if (this.orderId) return 'Заказ';
+            const labelMap = {
+                'order': 'Заказ',
+                'sale': 'Продажа',
+                'warehouse_receipt': 'Оприходование'
+            };
+            return labelMap[this.sourceType] || (this.$t('source') || 'Источник');
         },
         async fetchCurrencies() {
             // Используем данные из store
