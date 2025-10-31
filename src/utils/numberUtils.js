@@ -14,19 +14,14 @@
 import { getStore } from '@/store/storeManager';
 
 export function formatNumber(value, decimals = null, showDecimals = false) {
-  // Если decimals не передан, пытаемся получить из store
-  let roundingEnabled = true;
-  let roundingDirection = 'standard';
-  let customThreshold = 0.5;
+  // Если decimals не передан, пытаемся получить из настроек компании для отображения
+  // ВАЖНО: formatNumber только форматирует для отображения, не изменяет реальное значение
+  // Реальное округление применяется только через roundValue() при сохранении новых записей
   
   if (decimals === null || decimals === undefined) {
     try {
       const store = getStore && getStore();
       if (store && store.getters) {
-        roundingEnabled = store.getters.roundingEnabled ?? true;
-        roundingDirection = store.getters.roundingDirection || 'standard';
-        customThreshold = store.getters.roundingCustomThreshold ?? 0.5;
-        
         const roundingDecimals = store.getters.roundingDecimals;
         if (typeof roundingDecimals === 'number' && roundingDecimals >= 0 && roundingDecimals <= 5) {
           decimals = roundingDecimals;
@@ -46,7 +41,7 @@ export function formatNumber(value, decimals = null, showDecimals = false) {
     return '0';
   }
 
-  // Преобразуем в число
+  // Преобразуем в число (без реального округления!)
   let num = typeof value === 'string' ? parseFloat(value) : value;
   
   // Проверяем, является ли значение числом
@@ -54,41 +49,37 @@ export function formatNumber(value, decimals = null, showDecimals = false) {
     return '0';
   }
 
-  // Реальное округление в зависимости от настроек (влияет на логику, не только визуально)
-  if (roundingEnabled && decimals >= 0) {
-    const factor = Math.pow(10, decimals);
-    
-    if (roundingDirection === 'up') {
-      // Всегда округляем вверх (в большую сторону)
-      num = Math.ceil(num * factor) / factor;
-    } else if (roundingDirection === 'down') {
-      // Всегда округляем вниз (в меньшую сторону)
-      num = Math.floor(num * factor) / factor;
-    } else if (roundingDirection === 'custom') {
-      // Округление с порогом
-      const floored = Math.floor(num * factor) / factor;
-      const frac = num - floored; // дробная часть на уровне decimals
-      
-      if (frac >= customThreshold) {
-        num = Math.ceil(num * factor) / factor;
-      } else {
-        num = floored;
-      }
-    } else {
-      // Стандартное округление (round)
-      num = Math.round(num * factor) / factor;
-    }
-  }
-
-  // Определяем, есть ли дробная часть
-  const hasDecimals = num % 1 !== 0;
+  // Форматируем число для отображения (только форматирование, без округления значения)
+  // decimals из настроек используется только для ОТОБРАЖЕНИЯ, не для округления
+  // Реальное округление применяется только через roundValue() при сохранении
   
-  // Форматируем число для отображения
+  // Используем toFixed с достаточно большим количеством знаков, чтобы сохранить точность
+  // Затем обрезаем до нужного количества знаков БЕЗ округления (просто отсекаем лишнее)
+  const numStr = num.toString();
+  const decimalIndex = numStr.indexOf('.');
+  
   let result;
-  if (showDecimals || hasDecimals) {
-    result = num.toFixed(decimals);
+  if (decimalIndex !== -1) {
+    // Есть дробная часть
+    const integerPart = numStr.substring(0, decimalIndex);
+    let decimalPart = numStr.substring(decimalIndex + 1);
+    
+    // Ограничиваем количество знаков после запятой (без округления)
+    if (decimals >= 0) {
+      decimalPart = decimalPart.substring(0, decimals);
+    }
+    
+    // Если showDecimals=false и остались только нули, убираем дробную часть
+    if (!showDecimals && decimalPart.match(/^0+$/)) {
+      result = integerPart;
+    } else if (decimalPart.length > 0) {
+      result = `${integerPart}.${decimalPart}`;
+    } else {
+      result = integerPart;
+    }
   } else {
-    result = Math.round(num).toString();
+    // Нет дробной части
+    result = numStr;
   }
 
   // Разделяем на целую и дробную части

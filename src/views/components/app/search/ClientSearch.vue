@@ -132,12 +132,11 @@ export default {
             if (typeof this.selectedClient.fullName === 'function') {
                 return this.selectedClient.fullName();
             }
-            const contactPerson = this.selectedClient.contactPerson || this.selectedClient.contact_person;
+            const contactPerson = this.selectedClient.contactPerson || this.selectedClient.contact_person || '';
             const firstName = this.selectedClient.firstName || this.selectedClient.first_name || '';
             const lastName = this.selectedClient.lastName || this.selectedClient.last_name || '';
-            return contactPerson
-                ? `${firstName} ${lastName} (${contactPerson})`
-                : `${firstName} ${lastName}`;
+            const baseName = [firstName, lastName].filter(Boolean).join(' ');
+            return contactPerson ? [baseName, `(${contactPerson})`].filter(Boolean).join(' ').trim() : baseName.trim();
         },
         clientBalance() {
             if (!this.selectedClient) return 0;
