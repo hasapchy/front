@@ -162,14 +162,6 @@ export default {
         // Загружаем последних клиентов напрямую из API
         this.fetchLastClients();
         
-        // DEBUG: входные данные при открытии формы
-        try {
-            console.log('[ClientSearch] created()', {
-                incomingSelectedClient: this.selectedClient,
-                incomingSelectedClientId: this.selectedClient && this.selectedClient.id,
-            });
-        } catch (_) {}
-        
         // Если клиент уже выбран (при редактировании), обновляем его данные
         if (this.selectedClient && this.selectedClient.id) {
             try {

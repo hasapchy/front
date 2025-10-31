@@ -17,21 +17,36 @@ export function formatNumber(value, decimals = null, showDecimals = false) {
     try {
       const { getStore } = require('../store/storeManager');
       const store = getStore();
+      console.log('[formatNumber] Store:', store);
+      console.log('[formatNumber] Store getters:', store?.getters);
+      console.log('[formatNumber] roundingDecimals:', store?.getters?.roundingDecimals);
+      console.log('[formatNumber] currentCompany:', store?.state?.currentCompany);
+      console.log('[formatNumber] currentCompany rounding_decimals:', store?.state?.currentCompany?.rounding_decimals);
+      
       if (store && store.getters && store.getters.roundingDecimals !== undefined) {
         const roundingDecimals = store.getters.roundingDecimals;
+        console.log('[formatNumber] Got roundingDecimals from getter:', roundingDecimals);
         // Используем значение из store, если оно есть и валидно
         if (typeof roundingDecimals === 'number' && roundingDecimals >= 0 && roundingDecimals <= 5) {
           decimals = roundingDecimals;
+          console.log('[formatNumber] Using decimals from store:', decimals);
         } else {
           decimals = 2;
+          console.log('[formatNumber] roundingDecimals invalid, using default:', decimals);
         }
       } else {
         decimals = 2;
+        console.log('[formatNumber] Store or getters not available, using default:', decimals);
       }
-    } catch {
+    } catch (error) {
       decimals = 2;
+      console.log('[formatNumber] Error getting store, using default:', decimals, error);
     }
+  } else {
+    console.log('[formatNumber] Using provided decimals:', decimals);
   }
+  
+  console.log('[formatNumber] Final values - value:', value, 'decimals:', decimals, 'showDecimals:', showDecimals);
   // Проверяем на пустое значение
   if (value === null || value === undefined || value === '') {
     return '0';
@@ -47,15 +62,18 @@ export function formatNumber(value, decimals = null, showDecimals = false) {
 
   // Определяем, есть ли дробная часть
   const hasDecimals = num % 1 !== 0;
+  console.log('[formatNumber] num:', num, 'hasDecimals:', hasDecimals);
   
   // Форматируем число
   let result;
   if (showDecimals || hasDecimals) {
     // Округляем до нужного количества знаков
     result = num.toFixed(decimals);
+    console.log('[formatNumber] Using toFixed with decimals:', decimals, 'result:', result);
   } else {
     // Целое число без десятичных знаков
     result = Math.round(num).toString();
+    console.log('[formatNumber] Using round, result:', result);
   }
 
   // Разделяем на целую и дробную части
@@ -64,8 +82,11 @@ export function formatNumber(value, decimals = null, showDecimals = false) {
   // Добавляем пробелы в целую часть (разделитель тысяч)
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   
+  const finalResult = parts.join('.');
+  console.log('[formatNumber] Final result:', finalResult);
+  
   // Объединяем обратно
-  return parts.join('.');
+  return finalResult;
 }
 
 /**
