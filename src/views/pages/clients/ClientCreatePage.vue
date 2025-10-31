@@ -183,7 +183,7 @@ export default {
   computed: {
     translatedTabs() {
       // Скрываем вкладки баланса, платежей и операций при создании нового клиента
-      const visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => 
+      const visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab =>
         tab.name !== 'balance' && tab.name !== 'payments' && tab.name !== 'operations'
       );
       return visibleTabs.map(tab => ({
@@ -192,7 +192,42 @@ export default {
       }));
     },
     users() {
-      return this.$store.getters.users || [];
+      const allUsers = this.$store.getters.users || [];
+
+      // Если тип клиента не employee/investor, возвращаем всех пользователей
+      if (this.clientType !== 'employee' && this.clientType !== 'investor') {
+        return allUsers;
+      }
+
+      // Получаем список клиентов из store
+      const clients = this.$store.getters.clients || [];
+
+      // Находим ID пользователей, которые уже используются как employee_id
+      // в клиентах типа employee или investor (исключаем текущего редактируемого клиента)
+      const usedEmployeeIds = new Set();
+      clients.forEach(client => {
+        if (
+          (client.clientType === 'employee' || client.clientType === 'investor') &&
+          client.employeeId &&
+          (!this.editingItem || client.id !== this.editingItem.id)
+        ) {
+          usedEmployeeIds.add(client.employeeId);
+        }
+      });
+
+      // Фильтруем пользователей, исключая уже использованных
+      let available = allUsers.filter(user => !usedEmployeeIds.has(user.id));
+
+      // Гарантируем, что выбранный ранее пользователь присутствует в списке
+      if (this.employeeId) {
+        const selected = allUsers.find(u => u.id === this.employeeId);
+        const existsInAvailable = available.some(u => u.id === this.employeeId);
+        if (selected && !existsInAvailable) {
+          available = [selected, ...available];
+        }
+      }
+
+      return available;
     }
   },
   async mounted() {
@@ -206,10 +241,15 @@ export default {
       keepStatic: true,
     });
     mask.mask(phoneInput);
-    
+
     // Загружаем пользователей для выбора сотрудника
     if (this.$store.getters.users.length === 0) {
       await this.$store.dispatch('loadUsers');
+    }
+
+    // Загружаем клиентов для проверки уже выбранных пользователей
+    if (this.$store.getters.clients.length === 0) {
+      await this.$store.dispatch('loadClients');
     }
   },
   methods: {
@@ -245,7 +285,7 @@ export default {
         discount: this.discount,
       };
     },
-    
+
     addPhone() {
       if (this.newPhone) {
         const cleanedPhone = this.newPhone.replace(/\D/g, "");
@@ -396,6 +436,11 @@ export default {
         } else {
           this.lastName = "";
         }
+
+        // Сбрасываем employeeId если тип клиента не employee/investor
+        if (type !== "employee" && type !== "investor") {
+          this.employeeId = null;
+        }
       },
       deep: true,
       immediate: true,
@@ -408,6 +453,9 @@ export default {
           if (selectedUser) {
             // Автозаполняем имя сотрудника
             this.firstName = selectedUser.name || "";
+          } else {
+            // Если выбранный пользователь недоступен (например, уже используется), сбрасываем
+            this.employeeId = null;
           }
         }
       },

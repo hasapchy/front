@@ -251,13 +251,21 @@ export default {
         async save() {
             this.saveLoading = true;
             try {
+                // Определяем rounding_custom_threshold: null если округление выключено или не custom, иначе значение или null
+                let rounding_custom_threshold = null;
+                if (this.form.rounding_enabled && this.form.rounding_direction === 'custom') {
+                    const value = this.form.rounding_custom_threshold;
+                    // Преобразуем пустую строку в null, иначе используем значение
+                    rounding_custom_threshold = (value === '' || value === null || value === undefined) ? null : value;
+                }
+
                 const item = {
                     name: this.form.name,
                     show_deleted_transactions: this.form.show_deleted_transactions,
                     rounding_decimals: this.form.rounding_decimals,
                     rounding_enabled: this.form.rounding_enabled,
-                    rounding_direction: this.form.rounding_direction,
-                    rounding_custom_threshold: this.form.rounding_direction === 'custom' ? this.form.rounding_custom_threshold : null,
+                    rounding_direction: this.form.rounding_enabled ? this.form.rounding_direction : null,
+                    rounding_custom_threshold: rounding_custom_threshold,
                 };
 
                 // Используем обрезанный файл, если он есть, иначе файл из input
