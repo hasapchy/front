@@ -25,7 +25,7 @@
                 </div>
                 <!-- Общая сумма по колонке -->
                 <div v-if="columnTotal > 0" class="text-xs text-white font-medium">
-                    {{ columnTotal.toFixed(2) }} {{ currencySymbol }}
+                    {{ formatAmount(columnTotal) }} {{ currencySymbol }}
                 </div>
             </div>
         </div>
@@ -124,6 +124,16 @@ export default {
         }
     },
     methods: {
+        formatAmount(amount) {
+            try {
+                const roundingEnabled = this.$store.getters.roundingEnabled;
+                const decimals = roundingEnabled ? this.$store.getters.roundingDecimals : 2;
+                const value = Number(amount || 0);
+                return isNaN(value) ? '0' : value.toFixed(decimals);
+            } catch (e) {
+                return String(amount ?? 0);
+            }
+        },
         handleChange(evt) {
             this.$emit('change', evt);
         },

@@ -119,7 +119,7 @@
         <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
           <div class="flex justify-between items-center">
             <span class="text-lg font-semibold text-gray-900">{{ $t('total') || 'Итого' }}:</span>
-            <span class="text-2xl font-bold text-indigo-600">{{ totalAmount.toFixed(2) }} m</span>
+            <span class="text-2xl font-bold text-indigo-600">{{ formatTotalAmount() }} m</span>
           </div>
         </div>
 
@@ -222,6 +222,7 @@ import BasementServicesRow from '@/views/components/basement/BasementServicesRow
 import BasementProjectController from '@/api/BasementProjectController'
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin'
 import crudEventMixin from '@/mixins/crudEventMixin'
+import { formatNumber } from '@/utils/numberUtils'
 
 export default {
   name: 'BasementOrderCreatePage',
@@ -761,12 +762,15 @@ export default {
         case 'unit':
           return item.unit
         case 'price':
-          return item.price.toFixed(2)
+          return formatNumber(item.price, null, true)
         case 'total':
-          return item.total.toFixed(2)
+          return formatNumber(item.total, null, true)
         default:
           return item[columnName] || '-'
       }
+    },
+    formatTotalAmount() {
+      return formatNumber(this.totalAmount, null, true)
     }
   },
   watch: {

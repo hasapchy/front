@@ -56,7 +56,7 @@
                 </div>
                 <div v-if="totalAmount > 0" class="flex items-center space-x-1">
                     <i class="fas fa-coins"></i>
-                    <span>{{ totalAmount.toFixed(2) }} {{ currencySymbol }}</span>
+                    <span>{{ formatAmount(totalAmount) }} {{ currencySymbol }}</span>
                 </div>
             </div>
         </div>
@@ -169,6 +169,16 @@ export default {
         }
     },
     methods: {
+        formatAmount(amount) {
+            try {
+                const roundingEnabled = this.$store.getters.roundingEnabled;
+                const decimals = roundingEnabled ? this.$store.getters.roundingDecimals : 2;
+                const value = Number(amount || 0);
+                return isNaN(value) ? '0' : value.toFixed(decimals);
+            } catch (e) {
+                return String(amount ?? 0);
+            }
+        },
         getStatusColumns() {
             // Создаем колонки на основе статусов заказов
             return this.statuses.map(status => {

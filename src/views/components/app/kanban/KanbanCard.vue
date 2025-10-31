@@ -82,7 +82,7 @@
                     <span class="text-xs text-gray-500">{{ $t('total') }}:</span>
                 </div>
                 <span class="text-sm font-bold text-green-700">
-                    {{ order.totalPrice }} {{ order.currencySymbol }}
+                    {{ formatTotalPrice() }}
                 </span>
             </div>
         </div>
@@ -138,6 +138,22 @@ export default {
             } catch (error) {
                 console.error('Error getting client name:', error, this.order);
                 return this.$t('notSpecified');
+            }
+        },
+        formatTotalPrice() {
+            try {
+                if (this.order && typeof this.order.priceInfo === 'function') {
+                    return this.order.priceInfo();
+                }
+                const roundingEnabled = this.$store.getters.roundingEnabled;
+                const decimals = roundingEnabled ? this.$store.getters.roundingDecimals : 2;
+                const amount = Number(this.order?.totalPrice ?? 0);
+                const formatted = isNaN(amount) ? '0' : amount.toFixed(decimals);
+                const symbol = this.order?.currencySymbol || '';
+                return `${formatted} ${symbol}`.trim();
+            } catch (e) {
+                const symbol = this.order?.currencySymbol || '';
+                return `${this.order?.totalPrice ?? 0} ${symbol}`.trim();
             }
         }
     }

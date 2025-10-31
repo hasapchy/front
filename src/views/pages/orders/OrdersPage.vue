@@ -215,7 +215,7 @@ export default {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
             // selectedIds - из batchActionsMixin
-            viewMode: 'table', // 'table' или 'kanban'
+            viewMode: 'kanban', // 'table' или 'kanban'
             statuses: [],
             projects: [],
             clients: [],
@@ -743,6 +743,11 @@ export default {
             
             // Если восстанавливаем канбан режим, загружаем больше заказов
             if (savedViewMode === 'kanban') {
+                this.perPage = 1000;
+            }
+        } else {
+            // Нет сохраненного режима и дефолт — канбан: грузим больше заказов
+            if (this.viewMode === 'kanban') {
                 this.perPage = 1000;
             }
         }

@@ -80,6 +80,7 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import ClientDto from '@/dto/client/ClientDto';
 import notificationMixin from '@/mixins/notificationMixin';
+import { formatNumber } from '@/utils/numberUtils';
 
 export default {
     mixins: [notificationMixin],
@@ -143,8 +144,9 @@ export default {
             if (typeof this.selectedClient.balanceFormatted === 'function') {
                 return this.selectedClient.balanceFormatted();
             }
+            // Если нет метода balanceFormatted, используем formatNumber с настройками округления
             const balance = this.selectedClient.balance || 0;
-            return parseFloat(balance).toFixed(2);
+            return formatNumber(balance, null, true);
         },
         clientPhones() {
             if (!this.selectedClient) return [];
