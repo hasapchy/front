@@ -65,16 +65,6 @@
                   <h3 class="text-md font-semibold mb-3">{{ $t('roundingSettings') }}</h3>
                   
                   <div class="mb-3">
-                    <label class="flex items-center space-x-2">
-                      <input 
-                        type="checkbox" 
-                        v-model="form.rounding_enabled"
-                      />
-                      <span>{{ $t('enableRounding') }}</span>
-                    </label>
-                  </div>
-                  
-                  <div v-if="form.rounding_enabled">
                     <label class="block mb-1">{{ $t('decimalPlaces') }}</label>
                     <select v-model.number="form.rounding_decimals">
                       <option :value="0">0</option>
@@ -86,6 +76,42 @@
                     </select>
                     <div class="text-xs text-gray-500 mt-1">
                       {{ $t('decimalPlacesHint') }}
+                    </div>
+                  </div>
+                  
+                  <div class="mb-3">
+                    <label class="flex items-center space-x-2">
+                      <input 
+                        type="checkbox" 
+                        v-model="form.rounding_enabled"
+                      />
+                      <span>{{ $t('enableRounding') }}</span>
+                    </label>
+                  </div>
+                  
+                  <div v-if="form.rounding_enabled">
+                    <div class="mb-3">
+                      <label class="block mb-1">{{ $t('roundingDirection') }}</label>
+                      <select v-model="form.rounding_direction">
+                        <option value="standard">{{ $t('roundingStandard') }}</option>
+                        <option value="up">{{ $t('roundingUp') }}</option>
+                        <option value="down">{{ $t('roundingDown') }}</option>
+                        <option value="custom">{{ $t('roundingCustom') }}</option>
+                      </select>
+                    </div>
+                    
+                    <div v-if="form.rounding_direction === 'custom'">
+                      <label class="block mb-1">{{ $t('roundingThreshold') }}</label>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        min="0" 
+                        max="1"
+                        v-model.number="form.rounding_custom_threshold"
+                      />
+                      <div class="text-xs text-gray-500 mt-1">
+                        {{ $t('roundingThresholdHint') }}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -149,6 +175,8 @@ export default {
                 show_deleted_transactions: false,
                 rounding_decimals: 2,
                 rounding_enabled: true,
+                rounding_direction: 'standard',
+                rounding_custom_threshold: null,
             },
             editingItemId: null,
             saveLoading: false,
@@ -228,6 +256,8 @@ export default {
                     show_deleted_transactions: this.form.show_deleted_transactions,
                     rounding_decimals: this.form.rounding_decimals,
                     rounding_enabled: this.form.rounding_enabled,
+                    rounding_direction: this.form.rounding_direction,
+                    rounding_custom_threshold: this.form.rounding_custom_threshold,
                 };
 
                 // Используем обрезанный файл, если он есть, иначе файл из input
@@ -335,6 +365,8 @@ export default {
             this.form.show_deleted_transactions = company.show_deleted_transactions || false;
             this.form.rounding_decimals = company.rounding_decimals !== undefined ? company.rounding_decimals : 2;
             this.form.rounding_enabled = company.rounding_enabled !== undefined ? company.rounding_enabled : true;
+            this.form.rounding_direction = company.rounding_direction || 'standard';
+            this.form.rounding_custom_threshold = company.rounding_custom_threshold || null;
             this.currentLogo = company.logo || '';
             this.selected_logo = null; // Сбрасываем выбранное изображение при загрузке данных
             if (this.$refs.logoInput) {

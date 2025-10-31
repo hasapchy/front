@@ -6,6 +6,8 @@ export class CompanyDto {
     this.show_deleted_transactions = data.show_deleted_transactions || false;
     this.rounding_decimals = data.rounding_decimals ?? 2;
     this.rounding_enabled = data.rounding_enabled ?? true;
+    this.rounding_direction = data.rounding_direction || 'standard';
+    this.rounding_custom_threshold = data.rounding_custom_threshold;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
   }
