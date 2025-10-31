@@ -11,12 +11,13 @@
  * formatNumber(1234567.89, 2, true) => "1 234 567.89"
  * formatNumber(1234567, 2, false) => "1 234 567"
  */
+import { getStore } from '@/store/storeManager';
+
 export function formatNumber(value, decimals = null, showDecimals = false) {
   // Если decimals не передан, пытаемся получить из store
   if (decimals === null || decimals === undefined) {
     try {
-      const { getStore } = require('../store/storeManager');
-      const store = getStore();
+      const store = getStore && getStore();
       console.log('[formatNumber] Store:', store);
       console.log('[formatNumber] Store getters:', store?.getters);
       console.log('[formatNumber] roundingDecimals:', store?.getters?.roundingDecimals);
