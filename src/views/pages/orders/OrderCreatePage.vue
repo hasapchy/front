@@ -149,9 +149,9 @@
         </div>
 
         <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
-            <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(totalPrice, currencySymbol) }}</span></div>
-            <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol) }}</span></div>
-            <div>{{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{ formatCurrency(totalPrice - paidTotalAmount, currencySymbol) }}</span></div>
+            <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(totalPrice, currencySymbol, null, true) }}</span></div>
+            <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, null, true) }}</span></div>
+            <div>{{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{ formatCurrency(totalPrice - paidTotalAmount, currencySymbol, null, true) }}</span></div>
         </div>
     </div>
 

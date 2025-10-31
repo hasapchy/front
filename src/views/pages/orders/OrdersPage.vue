@@ -203,6 +203,7 @@ import OrderPaymentFilter from "@/views/components/app/forms/OrderPaymentFilter.
 import StatusSelectCell from "@/views/components/app/buttons/StatusSelectCell.vue";
 import debounce from "lodash.debounce";
 import companyChangeMixin from "@/mixins/companyChangeMixin";
+import { formatCurrency } from "@/utils/numberUtils";
 
 const TimelinePanel = defineAsyncComponent(() => 
     import("@/views/components/app/dialog/TimelinePanel.vue")
@@ -356,9 +357,11 @@ export default {
                 case "warehouseName":
                     return i.warehouseName || "-";
                 case "totalPrice":
-                    return i.priceInfo
-                        ? i.priceInfo()
-                        : `${i.totalPrice} ${i.currencySymbol || ""}`;
+                    if (i.priceInfo && typeof i.priceInfo === 'function') {
+                        return i.priceInfo();
+                    }
+                    // Если нет метода priceInfo, используем formatCurrency с настройками округления
+                    return formatCurrency(i.totalPrice || 0, i.currencySymbol || '', null, true);
                 case "note":
                     if (!i.note) return "";
                     return search ? this.highlightText(i.note, search) : i.note;
