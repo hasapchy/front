@@ -134,12 +134,15 @@ export default {
     getCompanyLogo(company) {
       if (!company) return '/logo.jpg';
       if (company.logoUrl && typeof company.logoUrl === 'function') {
-        return company.logoUrl();
+        const url = company.logoUrl();
+        const ver = this.$store.state.logoVersion || 0;
+        return url + `&cv=${ver}`;
       }
       if (company.logo && company.logo.length > 0) {
         // Добавляем timestamp для инвалидации кэша браузера
         const timestamp = company.updatedAt ? new Date(company.updatedAt).getTime() : Date.now();
-        return `${import.meta.env.VITE_APP_BASE_URL}/storage/${company.logo}?v=${timestamp}`;
+        const ver = this.$store.state.logoVersion || 0;
+        return `${import.meta.env.VITE_APP_BASE_URL}/storage/${company.logo}?v=${timestamp}&cv=${ver}`;
       }
       return '/logo.jpg';
     },

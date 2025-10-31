@@ -139,6 +139,8 @@ const store = createStore({
     isChangingCompanyFromThisTab: false,
     // Фильтр по типу клиента для взаиморасчетов/финансов
     clientTypeFilter: 'all',
+    // Версия логотипа для инвалидации кэша изображений
+    logoVersion: 0,
   },
 
   mutations: {
@@ -240,6 +242,9 @@ const store = createStore({
     },
     SET_PROJECT_STATUSES(state, projectStatuses) {
       state.projectStatuses = projectStatuses;
+    },
+    INCREMENT_LOGO_VERSION(state) {
+      state.logoVersion = (state.logoVersion || 0) + 1;
     },
     SET_TRANSACTION_CATEGORIES(state, transactionCategories) {
       state.transactionCategories = transactionCategories;
@@ -1677,16 +1682,35 @@ eventBus.on('company-updated', async () => {
       const response = await api.get('/user/current-company');
       const updatedCompany = new CompanyDto(response.data.company);
       
-      // Обновляем currentCompany с новыми данными с сервера
+      // Обновляем currentCompany с новыми данными с сервера (включая логотип и updatedAt)
       store.commit('SET_CURRENT_COMPANY', updatedCompany);
-      console.log('[Company Updated] Обновлен currentCompany с rounding_decimals:', updatedCompany.rounding_decimals);
+      console.log('[Company Updated] Обновлен currentCompany:', {
+        id: updatedCompany.id,
+        name: updatedCompany.name,
+        logo: updatedCompany.logo,
+        updatedAt: updatedCompany.updatedAt,
+        rounding_decimals: updatedCompany.rounding_decimals
+      });
+      // Бамп версии логотипа для инвалидации кэша изображений
+      store.commit('INCREMENT_LOGO_VERSION');
+      
+      // Отправляем событие об изменении компании, чтобы компоненты обновились
+      eventBus.emit('company-changed', currentCompanyId);
     } catch (error) {
       console.error('[Company Updated] Ошибка при загрузке обновленной компании:', error);
       // Fallback: используем данные из списка компаний
       const updatedCompany = store.state.userCompanies.find(c => c.id === currentCompanyId);
       if (updatedCompany) {
         store.commit('SET_CURRENT_COMPANY', updatedCompany);
-        console.log('[Company Updated] Использованы данные из списка, rounding_decimals:', updatedCompany.rounding_decimals);
+        console.log('[Company Updated] Использованы данные из списка:', {
+          id: updatedCompany.id,
+          logo: updatedCompany.logo,
+          updatedAt: updatedCompany.updatedAt,
+          rounding_decimals: updatedCompany.rounding_decimals
+        });
+        store.commit('INCREMENT_LOGO_VERSION');
+        // Отправляем событие об изменении компании
+        eventBus.emit('company-changed', currentCompanyId);
       }
     }
   }
