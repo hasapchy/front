@@ -1664,8 +1664,32 @@ const store = createStore({
 initializeStorageSync(store);
 
 // Обработчик события обновления компании
-eventBus.on('company-updated', () => {
-  store.dispatch('loadUserCompanies');
+eventBus.on('company-updated', async () => {
+  // Загружаем обновленный список компаний
+  await store.dispatch('loadUserCompanies');
+  
+  // Обновляем currentCompany если обновлялась текущая компания
+  const currentCompanyId = store.state.currentCompany?.id;
+  if (currentCompanyId) {
+    // Перезагружаем текущую компанию с сервера, чтобы получить самые свежие данные
+    // Это аналогично тому, как происходит при смене компании через setCurrentCompany
+    try {
+      const response = await api.get('/user/current-company');
+      const updatedCompany = new CompanyDto(response.data.company);
+      
+      // Обновляем currentCompany с новыми данными с сервера
+      store.commit('SET_CURRENT_COMPANY', updatedCompany);
+      console.log('[Company Updated] Обновлен currentCompany с rounding_decimals:', updatedCompany.rounding_decimals);
+    } catch (error) {
+      console.error('[Company Updated] Ошибка при загрузке обновленной компании:', error);
+      // Fallback: используем данные из списка компаний
+      const updatedCompany = store.state.userCompanies.find(c => c.id === currentCompanyId);
+      if (updatedCompany) {
+        store.commit('SET_CURRENT_COMPANY', updatedCompany);
+        console.log('[Company Updated] Использованы данные из списка, rounding_decimals:', updatedCompany.rounding_decimals);
+      }
+    }
+  }
 });
 
 // Обработчик события инвалидации кэша
