@@ -17,8 +17,14 @@ export function formatNumber(value, decimals = null, showDecimals = false) {
     try {
       const { getStore } = require('../store/storeManager');
       const store = getStore();
-      if (store && store.getters.roundingDecimals !== undefined) {
-        decimals = store.getters.roundingDecimals;
+      if (store && store.getters && store.getters.roundingDecimals !== undefined) {
+        const roundingDecimals = store.getters.roundingDecimals;
+        // Используем значение из store, если оно есть и валидно
+        if (typeof roundingDecimals === 'number' && roundingDecimals >= 0 && roundingDecimals <= 5) {
+          decimals = roundingDecimals;
+        } else {
+          decimals = 2;
+        }
       } else {
         decimals = 2;
       }
