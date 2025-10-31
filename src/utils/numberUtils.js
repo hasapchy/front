@@ -1,7 +1,7 @@
 /**
  * Форматирует число с разделителями пробелами для тысяч
  * @param {number|string} value - Число для форматирования
- * @param {number} decimals - Количество знаков после запятой (по умолчанию 2)
+ * @param {number} decimals - Количество знаков после запятой (по умолчанию из настроек компании или 2)
  * @param {boolean} showDecimals - Показывать ли десятичные знаки (по умолчанию false)
  * @returns {string} - Отформатированное число
  * 
@@ -11,7 +11,21 @@
  * formatNumber(1234567.89, 2, true) => "1 234 567.89"
  * formatNumber(1234567, 2, false) => "1 234 567"
  */
-export function formatNumber(value, decimals = 2, showDecimals = false) {
+export function formatNumber(value, decimals = null, showDecimals = false) {
+  // Если decimals не передан, пытаемся получить из store
+  if (decimals === null || decimals === undefined) {
+    try {
+      const { getStore } = require('../store/storeManager');
+      const store = getStore();
+      if (store && store.getters.roundingDecimals !== undefined) {
+        decimals = store.getters.roundingDecimals;
+      } else {
+        decimals = 2;
+      }
+    } catch {
+      decimals = 2;
+    }
+  }
   // Проверяем на пустое значение
   if (value === null || value === undefined || value === '') {
     return '0';
@@ -56,7 +70,7 @@ export function formatNumber(value, decimals = 2, showDecimals = false) {
  * @param {boolean} showDecimals - Показывать ли десятичные знаки
  * @returns {string} - Отформатированная сумма с валютой
  */
-export function formatCurrency(value, currencySymbol = '', decimals = 2, showDecimals = false) {
+export function formatCurrency(value, currencySymbol = '', decimals = null, showDecimals = false) {
   const formattedNumber = formatNumber(value, decimals, showDecimals);
   return currencySymbol ? `${formattedNumber} ${currencySymbol}` : formattedNumber;
 }
@@ -104,3 +118,20 @@ export function formatQuantity(value) {
   return num.toFixed(2);
 }
 
+/**
+ * Получает шаг (step) для input type="number" на основе количества знаков после запятой
+ * @param {number} decimals - Количество знаков после запятой
+ * @returns {string} - Значение step для атрибута input
+ * 
+ * Примеры:
+ * getStepForDecimals(0) => "1"
+ * getStepForDecimals(1) => "0.1"
+ * getStepForDecimals(2) => "0.01"
+ * getStepForDecimals(5) => "0.00001"
+ */
+export function getStepForDecimals(decimals) {
+  if (decimals === 0) {
+    return '1';
+  }
+  return `0.${'0'.repeat(decimals - 1)}1`;
+}

@@ -154,7 +154,7 @@ export default {
             const num = parseFloat(amount) || 0;
             // Используем глобальный форматтер если есть
             if (this.$formatNumber) {
-                return `${this.$formatNumber(num, 2, true)} ${symbol}`.trim();
+                return `${this.$formatNumber(num, null, true)} ${symbol}`.trim();
             }
             return `${num.toFixed(2)} ${symbol}`.trim();
         },

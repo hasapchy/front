@@ -4,6 +4,8 @@ export class CompanyDto {
     this.name = data.name;
     this.logo = data.logo;
     this.show_deleted_transactions = data.show_deleted_transactions || false;
+    this.rounding_decimals = data.rounding_decimals ?? 2;
+    this.rounding_enabled = data.rounding_enabled ?? true;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
   }

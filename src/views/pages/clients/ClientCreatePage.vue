@@ -24,7 +24,7 @@
             </option>
           </select>
         </div>
-        <div>
+        <div v-if="clientType !== 'employee' && clientType !== 'investor'">
           <label class="required">{{ $t('firstName') }}</label>
           <input type="text" v-model="firstName" required />
         </div>
@@ -32,7 +32,7 @@
           <label>{{ $t('lastName') }}</label>
           <input type="text" v-model="lastName" />
         </div>
-        <div v-else>
+        <div v-if="clientType === 'company'">
           <label>{{ $t('contactPerson') }}</label>
           <input type="text" v-model="contactPerson" />
         </div>
@@ -195,7 +195,7 @@ export default {
       return this.$store.getters.users || [];
     }
   },
-  mounted() {
+  async mounted() {
     const phoneInput = this.$refs.phoneInput;
     const mask = new Inputmask({
       mask: "\\9\\9\\3 99 999999",
@@ -206,6 +206,11 @@ export default {
       keepStatic: true,
     });
     mask.mask(phoneInput);
+    
+    // Загружаем пользователей для выбора сотрудника
+    if (this.$store.getters.users.length === 0) {
+      await this.$store.dispatch('loadUsers');
+    }
   },
   methods: {
     changeTab(tabName) {
@@ -394,6 +399,18 @@ export default {
       },
       deep: true,
       immediate: true,
+    },
+    employeeId: {
+      handler(newEmployeeId) {
+        // Автозаполнение данных сотрудника при выборе
+        if (newEmployeeId && (this.clientType === "employee" || this.clientType === "investor")) {
+          const selectedUser = this.users.find(user => user.id === newEmployeeId);
+          if (selectedUser) {
+            // Автозаполняем имя сотрудника
+            this.firstName = selectedUser.name || "";
+          }
+        }
+      },
     },
   },
 };

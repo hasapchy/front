@@ -19,7 +19,7 @@
                             <i class="fas fa-exclamation-triangle text-orange-500 text-xs"></i>
                         </div>
                         <div class="text-orange-600 font-bold text-sm leading-tight">
-                            <div class="balance-amount text-base">{{ $formatNumber(item.debtValue, 0, false) }}</div>
+                            <div class="balance-amount text-base">{{ $formatNumber(item.debtValue, null, false) }}</div>
                         </div>
                     </div>
                 </div>
@@ -33,16 +33,16 @@
                 <div class="space-y-2">
                     <div class="flex justify-between items-center">
                         <span class="text-xs text-gray-600">{{ $t('oweUs') }}:</span>
-                        <span class="text-green-600 font-bold">{{ $formatNumber(clientDebts.positive, 2) }}</span>
+                        <span class="text-green-600 font-bold">{{ $formatNumber(clientDebts.positive, null) }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-xs text-gray-600">{{ $t('weOwe') }}:</span>
-                        <span class="text-red-600 font-bold">{{ $formatNumber(clientDebts.negative, 2) }}</span>
+                        <span class="text-red-600 font-bold">{{ $formatNumber(clientDebts.negative, null) }}</span>
                     </div>
                     <div class="border-t pt-2 flex justify-between items-center">
                         <span class="text-sm font-semibold">{{ $t('balance') }}:</span>
                         <span class="font-bold text-base" :class="clientDebts.balance >= 0 ? 'text-green-600' : 'text-red-600'">
-                            {{ $formatNumber(clientDebts.balance, 2) }}
+                            {{ $formatNumber(clientDebts.balance, null) }}
                         </span>
                     </div>
                 </div>

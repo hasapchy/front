@@ -4,7 +4,7 @@
         <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
         <div>
             <div v-show="currentTab === 'info'">
-                <ClientSearch v-model:selectedClient="selectedClient" />
+                <ClientSearch v-model:selectedClient="selectedClient" :allowDeselect="false" />
                 <div>
                     <label class="required">{{ $t('productCategory') }}</label>
                     <div class="flex items-center space-x-2">
@@ -236,7 +236,6 @@ export default {
             removedTempProducts: [],
             // additionalFields: [],
             // additionalFieldValues: {},
-            initialMode: null, // 'client' | 'project' | null
         };
     },
     async created() {
@@ -279,11 +278,6 @@ export default {
         // Сохраняем начальное состояние после полной инициализации формы
         this.$nextTick(() => {
             this.saveInitialState();
-            // Устанавливаем режим в зависимости от начальных значений
-            if (this.editingItem) {
-                if (this.editingItem.clientId || this.editingItem.client) this.initialMode = 'client';
-                else if (this.editingItem.projectId || this.editingItem.project_id) this.initialMode = 'project';
-            }
         });
     },
     computed: {
@@ -505,6 +499,9 @@ export default {
 
         async save() {
             const validationErrors = [];
+            if (!this.selectedClient) {
+                validationErrors.push('Поле "Клиент" обязательно для заполнения');
+            }
             if (!this.categoryId) {
                 validationErrors.push('Поле "Категория" обязательно для заполнения');
             }
@@ -513,10 +510,6 @@ export default {
             }
             if (this.discount && !this.discountType) {
                 validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
-            }
-            // Требуем хотя бы клиента или проект
-            if (!this.selectedClient && !this.projectId) {
-                validationErrors.push('Укажите клиента или проект');
             }
             
             if (validationErrors.length > 0) {
@@ -568,6 +561,9 @@ export default {
         async saveWithoutClose() {
             const validationErrors = [];
             
+            if (!this.selectedClient) {
+                validationErrors.push('Поле "Клиент" обязательно для заполнения');
+            }
             if (!this.categoryId) {
                 validationErrors.push('Поле "Категория" обязательно для заполнения');
             }
@@ -576,10 +572,6 @@ export default {
             }
             if (this.discount && !this.discountType) {
                 validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
-            }
-            // Требуем хотя бы клиента или проект
-            if (!this.selectedClient && !this.projectId) {
-                validationErrors.push('Укажите клиента или проект');
             }
             
             if (validationErrors.length > 0) {

@@ -143,11 +143,13 @@ export default class TransactionDto {
     } else {
       res += ' class="text-[#EE4F47] font-semibold"> -';
     }
-    res += `${formatCurrency(this.cashAmount, this.cashCurrencySymbol)}</span>`;
+    // formatCurrency автоматически использует decimals из настроек компании
+    res += `${formatCurrency(this.cashAmount, this.cashCurrencySymbol, null, true)}</span>`;
     return res;
   }
   origAmountData() {
-    return formatCurrency(this.origAmount, this.origCurrencySymbol);
+    // formatCurrency автоматически использует decimals из настроек компании
+    return formatCurrency(this.origAmount, this.origCurrencySymbol, null, true);
   }
 
   formatDate() {

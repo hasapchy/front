@@ -27,7 +27,7 @@ import i18n from "./i18n";
 import AuthController from "./api/AuthController";
 import { setStore } from "./store/storeManager";
 import soundManager from "./utils/soundUtils";
-import { formatNumber, formatCurrency } from "./utils/numberUtils";
+import { formatNumber, formatCurrency, getStepForDecimals } from "./utils/numberUtils";
 
 async function bootstrapApp() {
   const token = localStorage.getItem("token");
@@ -57,8 +57,22 @@ async function bootstrapApp() {
   // Глобальные методы для форматирования чисел
   app.config.globalProperties.$formatNumber = formatNumber;
   app.config.globalProperties.$formatCurrency = formatCurrency;
+  app.config.globalProperties.$getStepForDecimals = getStepForDecimals;
   
-  app.use(router).use(store).use(i18n).mount("#app");
+  app.use(router).use(store).use(i18n);
+  
+  // Добавляем глобальные методы с доступом к store
+  app.config.globalProperties.$formatNumberForCompany = (value, showDecimals = true) => {
+    const decimals = store.getters.roundingDecimals;
+    return formatNumber(value, decimals, showDecimals);
+  };
+  
+  app.config.globalProperties.$formatCurrencyForCompany = (value, currencySymbol = '', showDecimals = true) => {
+    const decimals = store.getters.roundingDecimals;
+    return formatCurrency(value, currencySymbol, decimals, showDecimals);
+  };
+  
+  app.mount("#app");
 }
 
 bootstrapApp();

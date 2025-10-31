@@ -90,7 +90,7 @@ class ProductDto {
     if (typeof price !== "number") {
       price = parseFloat(price);
     }
-    return isNaN(price) ? "" : formatNumber(price, 2, true);
+    return isNaN(price) ? "" : formatNumber(price, null, true);
     // + ' ' + (this.currency_symbol || '')
   }
 

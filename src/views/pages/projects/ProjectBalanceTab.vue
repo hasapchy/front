@@ -211,11 +211,11 @@ export default {
     computed: {
         balanceFormatted() {
             const balance = typeof this.balance === 'number' ? this.balance : 0;
-            return this.$formatNumber(balance, 2, true);
+            return this.$formatNumber(balance, null, true);
         },
         budgetFormatted() {
             const budget = parseFloat(this.budget) || 0;
-            return this.$formatNumber(budget, 2, true);
+            return this.$formatNumber(budget, null, true);
         },
         budgetDisplay() {
             if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
@@ -246,10 +246,10 @@ export default {
                 .reduce((sum, item) => sum + parseFloat(item.amount), 0));
         },
         totalIncomeFormatted() {
-            return this.$formatNumber(this.totalIncome, 2, true);
+            return this.$formatNumber(this.totalIncome, null, true);
         },
         totalExpenseFormatted() {
-            return this.$formatNumber(this.totalExpense, 2, true);
+            return this.$formatNumber(this.totalExpense, null, true);
         },
         totalIncomeDisplay() {
             if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
@@ -274,7 +274,7 @@ export default {
     },
     methods: {
         formatBalance(balance) {
-            const formattedBalance = this.$formatNumber(balance || 0, 2, true);
+            const formattedBalance = this.$formatNumber(balance || 0, null, true);
             if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
                 return `${formattedBalance} ${this.currencyCode}`;
             }
@@ -343,14 +343,14 @@ export default {
                                 
                                 // Если валюта кассы отличается от валюты проекта, показываем исходную сумму в скобках
                                 if (originalSymbol !== projectCurrency) {
-                                    const formattedVal = self.$formatNumber(val, 2, true);
-                                    const formattedOrig = self.$formatNumber(originalAmount, 2, true);
+                                    const formattedVal = self.$formatNumber(val, null, true);
+                                    const formattedOrig = self.$formatNumber(originalAmount, null, true);
                                     return `<span style="color:${color};font-weight:bold">${formattedVal} ${projectCurrency} (${formattedOrig} ${originalSymbol})</span>`;
                                 }
                             }
                             
                             // Для всех случаев показываем сумму в валюте проекта
-                            const formattedVal = self.$formatNumber(val, 2, true);
+                            const formattedVal = self.$formatNumber(val, null, true);
                             return `<span style="color:${color};font-weight:bold">${formattedVal} ${projectCurrency}</span>`;
                         },
                         label() {

@@ -137,6 +137,8 @@ const store = createStore({
     },
     // ✅ Флаг для предотвращения цикла между вкладками
     isChangingCompanyFromThisTab: false,
+    // Фильтр по типу клиента для взаиморасчетов/финансов
+    clientTypeFilter: 'all',
   },
 
   mutations: {
@@ -309,6 +311,9 @@ const store = createStore({
     SET_IS_CHANGING_COMPANY(state, value) {
       state.isChangingCompanyFromThisTab = value;
     },
+    SET_CLIENT_TYPE_FILTER(state, value) {
+      state.clientTypeFilter = value || 'all';
+    },
   },
 
   actions: {
@@ -333,6 +338,9 @@ const store = createStore({
     },
     setSearchQuery({ commit }, query) {
       commit("SET_SEARCH_QUERY", query);
+    },
+    setClientTypeFilter({ commit }, value) {
+      commit('SET_CLIENT_TYPE_FILTER', value || 'all');
     },
     setUser({ commit }, user) {
       commit("SET_USER", user);
@@ -1532,10 +1540,14 @@ const store = createStore({
     userCompanies: (state) => state.userCompanies,
     currentCompanyId: (state) => state.currentCompany?.id || null,
     soundEnabled: (state) => state.soundEnabled,
+    // Настройки округления для текущей компании
+    roundingDecimals: (state) => state.currentCompany?.rounding_decimals ?? 2,
+    roundingEnabled: (state) => state.currentCompany?.rounding_enabled ?? true,
     // Мониторинг кэша
     cacheMonitor: (state) => state.cacheMonitor,
     cacheInfo: () => CacheMonitor.getCacheInfo(),
     cacheStatus: () => CacheMonitor.getCacheStatus(),
+    clientTypeFilter: (state) => state.clientTypeFilter || 'all',
   },
   plugins: [
     createPersistedState({
@@ -1566,6 +1578,8 @@ const store = createStore({
         'lastCompanyId', // ✅ Для отслеживания смены компании
         'userCompanies',
         'soundEnabled',
+        // Пользовательские UI фильтры
+        'clientTypeFilter',
       ],
       
       // Кастомная логика для проверки TTL при восстановлении

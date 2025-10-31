@@ -40,7 +40,7 @@
                                         'text-orange-600': balance.type === 'project_income',
                                         'font-bold text-sm': true
                                     }" class="leading-tight">
-                                        <div class="balance-amount text-base">{{ $formatNumber(balance.value, 2, false) }}</div>
+                                        <div class="balance-amount text-base">{{ $formatNumber(balance.value, null, false) }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -70,7 +70,7 @@
                                         <i class="fas fa-arrow-down text-green-500 text-xs"></i>
                                     </div>
                                     <div class="text-green-600 font-bold text-sm">
-                                        {{ $formatNumber(clientDebts.positive, 2, false) }}
+                                        {{ $formatNumber(clientDebts.positive, null, false) }}
                                     </div>
                                 </div>
                                 <div class="text-center balance-item">
@@ -79,7 +79,7 @@
                                         <i class="fas fa-arrow-up text-red-500 text-xs"></i>
                                     </div>
                                     <div class="text-red-600 font-bold text-sm">
-                                        {{ $formatNumber(Math.abs(clientDebts.negative), 2, false) }}
+                                        {{ $formatNumber(Math.abs(clientDebts.negative), null, false) }}
                                     </div>
                                 </div>
                             </div>
@@ -244,23 +244,30 @@ export default {
                     params
                 );
 
-                // Загружаем балансы клиентов (логика как во взаиморасчетах)
+                // Загружаем балансы клиентов (логика как во взаиморасчетах) с учетом фильтра типа клиента из localStorage
                 try {
                     const ClientController = (await import('@/api/ClientController')).default;
                     const clients = await ClientController.getAllItems();
+                    const clientTypeFilter = (this.$store && this.$store.state && this.$store.state.clientTypeFilter) ? this.$store.state.clientTypeFilter : 'all';
                     
                     // Рассчитываем общий дебет и кредит из балансов клиентов
                     let totalDebt = 0;    // Нам должны (положительный баланс)
                     let totalCredit = 0;  // Мы должны (отрицательный баланс)
                     
-                    clients.forEach(client => {
+                    clients
+                        .filter(client => {
+                            if (!clientTypeFilter || clientTypeFilter === 'all') return true;
+                            const type = client.clientType || client.client_type || 'individual';
+                            return type === clientTypeFilter;
+                        })
+                        .forEach(client => {
                         const balance = parseFloat(client.balance) || 0;
                         if (balance > 0) {
                             totalDebt += balance;
                         } else if (balance < 0) {
                             totalCredit += Math.abs(balance);
                         }
-                    });
+                        });
                     
                     this.clientDebts = {
                         positive: totalDebt,

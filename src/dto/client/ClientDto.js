@@ -56,7 +56,8 @@ export default class ClientDto {
   }
 
   balanceFormatted() {
-    return formatNumber(this.balance, 2, true);
+    // formatNumber теперь автоматически использует decimals из настроек компании
+    return formatNumber(this.balance, null, true);
   }
 
   fullName() {

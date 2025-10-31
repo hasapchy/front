@@ -16,7 +16,7 @@
                                     <i class="fas fa-arrow-up text-green-500 text-xs"></i>
                                 </div>
                                 <div class="text-green-600 font-bold text-sm leading-tight">
-                                    <div class="balance-amount text-base">{{ $formatNumber(totalDebt, 0, false) }}</div>
+                                    <div class="balance-amount text-base">{{ $formatNumber(totalDebt, null, false) }}</div>
                                 </div>
                             </div>
                         </div>
@@ -32,7 +32,7 @@
                                     <i class="fas fa-arrow-down text-red-500 text-xs"></i>
                                 </div>
                                 <div class="text-red-600 font-bold text-sm leading-tight">
-                                    <div class="balance-amount text-base">{{ $formatNumber(totalCredit, 0, false) }}</div>
+                                    <div class="balance-amount text-base">{{ $formatNumber(totalCredit, null, false) }}</div>
                                 </div>
                             </div>
                         </div>
@@ -52,7 +52,7 @@
                                     'text-red-600': totalBalance < 0,
                                     'font-bold text-sm': true
                                 }" class="leading-tight">
-                                    <div class="balance-amount text-base">{{ $formatNumber(totalBalance, 0, false) }}</div>
+                                    <div class="balance-amount text-base">{{ $formatNumber(totalBalance, null, false) }}</div>
                                 </div>
                             </div>
                         </div>

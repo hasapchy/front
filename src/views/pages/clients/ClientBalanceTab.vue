@@ -261,7 +261,7 @@ export default {
             return item.is_debt === 1 || item.is_debt === true || item.is_debt === '1';
         },
         formatBalance(balance) {
-            return `${this.$formatNumber(balance, 2, true)} ${this.currencyCode}`;
+            return `${this.$formatNumber(balance, null, true)} ${this.currencyCode}`;
         },
         async fetchDefaultCurrency() {
             try {
@@ -303,7 +303,7 @@ export default {
                             const val = parseFloat(item.amount);
                             // Положительная сумма (долг) - красный, отрицательная (оплата) - зеленый
                             const color = val >= 0 ? "#EE4F47" : "#5CB85C";
-                            const formatted = self.$formatNumber(val, 2, true);
+                            const formatted = self.$formatNumber(val, null, true);
                             return `<span style="color:${color};font-weight:bold">${formatted} ${self.currencyCode}</span>`;
                         },
                         label() {
@@ -431,10 +431,10 @@ export default {
                     // is_debt = 0 → Оплата (погашение долга) → -amount (зеленый)
                     if (isDebt) {
                         // Долговая операция: всегда показываем положительное значение красным
-                        return `<span class="text-[#EE4F47] font-semibold">+${this.$formatNumber(Math.abs(amount), 2, true)} ${currencySymbol}</span>`;
+                        return `<span class="text-[#EE4F47] font-semibold">+${this.$formatNumber(Math.abs(amount), null, true)} ${currencySymbol}</span>`;
                     } else {
                         // Оплата: всегда показываем отрицательное значение зеленым
-                        return `<span class="text-[#5CB85C] font-semibold">-${this.$formatNumber(Math.abs(amount), 2, true)} ${currencySymbol}</span>`;
+                        return `<span class="text-[#5CB85C] font-semibold">-${this.$formatNumber(Math.abs(amount), null, true)} ${currencySymbol}</span>`;
                     }
                 }
                 default:

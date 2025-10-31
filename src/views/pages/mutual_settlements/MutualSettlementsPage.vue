@@ -12,8 +12,18 @@
                 </select>
             </div>
 
+            <div class="ml-2">
+                <select :value="clientTypeFilter" @change="handleClientTypeChange($event.target.value)">
+                    <option value="all">{{ $t('all') }}</option>
+                    <option value="individual">{{ $t('individual') }}</option>
+                    <option value="company">{{ $t('company') }}</option>
+                    <option value="employee">{{ $t('employee') }}</option>
+                    <option value="investor">{{ $t('investor') }}</option>
+                </select>
+            </div>
+
             <!-- Кнопка сброса фильтров -->
-            <div v-if="clientId !== '' || (searchQuery && searchQuery.trim())" class="ml-2">
+            <div v-if="clientId !== '' || clientTypeFilter !== 'all' || (searchQuery && searchQuery.trim())" class="ml-2">
                 <PrimaryButton 
                     :onclick="resetFilters"
                     icon="fas fa-filter-circle-xmark"
@@ -76,6 +86,7 @@ export default {
             columnsConfig: [
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'clientName', label: 'customer', html: true },
+                { name: 'clientType', label: 'clientType' },
                 { name: 'balance', label: 'balance', html: true },
             ]
         }
@@ -135,6 +146,13 @@ export default {
             if (this.clientId) {
                 filteredClients = this.allClientsRaw.filter(client => client.id == this.clientId);
             }
+            // Фильтр по типу клиента
+            if (this.clientTypeFilter && this.clientTypeFilter !== 'all') {
+                filteredClients = filteredClients.filter(client => {
+                    const type = client.clientType || client.client_type || 'individual';
+                    return type === this.clientTypeFilter;
+                });
+            }
             
             // Фильтруем по поисковому запросу
             const searchQuery = this.$store.state.searchQuery || '';
@@ -177,6 +195,7 @@ export default {
                     
                     return {
                         id: client.id,
+                        clientType: client.clientType || client.client_type || 'individual',
                         firstName: client.firstName || client.first_name,
                         lastName: client.lastName || client.last_name,
                         first_name: client.firstName || client.first_name,
@@ -229,11 +248,18 @@ export default {
                         name += ` (${contactPerson})`;
                     }
                     return name || 'Клиент без имени';
+                case 'clientType':
+                    switch (i.clientType) {
+                        case 'company': return this.$t('company');
+                        case 'employee': return this.$t('employee');
+                        case 'investor': return this.$t('investor');
+                        default: return this.$t('individual');
+                    }
                 case 'balance':
                     if (i.debt_amount > 0) {
-                        return `<span class="text-green-600 font-semibold">${this.$formatNumber(i.debt_amount, 2, true)} ${i.currency_symbol}</span> <span class="text-xs text-gray-500">(Нам должны)</span>`;
+                        return `<span class="text-green-600 font-semibold">${this.$formatNumber(i.debt_amount, null, true)} ${i.currency_symbol}</span> <span class="text-xs text-gray-500">(Нам должны)</span>`;
                     } else if (i.credit_amount > 0) {
-                        return `<span class="text-red-600 font-semibold">${this.$formatNumber(i.credit_amount, 2, true)} ${i.currency_symbol}</span> <span class="text-xs text-gray-500">(Мы должны)</span>`;
+                        return `<span class="text-red-600 font-semibold">${this.$formatNumber(i.credit_amount, null, true)} ${i.currency_symbol}</span> <span class="text-xs text-gray-500">(Мы должны)</span>`;
                     } else {
                         return `<span class="text-gray-500">0.00 ${i.currency_symbol}</span>`;
                     }
@@ -266,8 +292,13 @@ export default {
 
         resetFilters() {
             this.clientId = '';
+            this.$store.dispatch('setClientTypeFilter', 'all');
             // Очищаем поисковый запрос
             this.$store.dispatch('setSearchQuery', '');
+            this.applyFilters();
+        },
+        handleClientTypeChange(value) {
+            this.$store.dispatch('setClientTypeFilter', value);
             this.applyFilters();
         },
 
@@ -296,6 +327,9 @@ export default {
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery || '';
+        },
+        clientTypeFilter() {
+            return this.$store.state.clientTypeFilter || 'all';
         },
     },
 }

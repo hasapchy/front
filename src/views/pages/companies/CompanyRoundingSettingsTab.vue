@@ -24,17 +24,6 @@
             />
         </div>
 
-        <!-- Кнопки сохранения -->
-        <div class="mt-4 p-4 flex space-x-2 bg-gray-50">
-            <PrimaryButton 
-                icon="fas fa-save" 
-                :onclick="saveAllRules" 
-                :is-loading="saveLoading"
-            >
-                {{ $t('save') }}
-            </PrimaryButton>
-        </div>
-
         <!-- Уведомления -->
         <NotificationToast 
             :title="notificationTitle" 
@@ -50,13 +39,12 @@
 import CompanyRoundingRulesController from '@/api/CompanyRoundingRulesController';
 import CompanyRoundingRuleDto from '@/dto/CompanyRoundingRuleDto';
 import RoundingRuleSection from './RoundingRuleSection.vue';
-import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 
 export default {
     mixins: [notificationMixin],
-    components: { RoundingRuleSection, PrimaryButton, NotificationToast },
+    components: { RoundingRuleSection, NotificationToast },
     props: {
         companyId: {
             type: [Number, String],
@@ -66,7 +54,6 @@ export default {
     data() {
         return {
             loading: true,
-            saveLoading: false,
             rules: {},
             contexts: CompanyRoundingRuleDto.contexts,
             directions: CompanyRoundingRuleDto.directions,
@@ -129,7 +116,6 @@ export default {
             }
         },
         async saveAllRules() {
-            this.saveLoading = true;
             try {
                 const promises = Object.keys(this.contexts).map(ctxKey => {
                     const context = this.contexts[ctxKey];
@@ -149,22 +135,23 @@ export default {
                 
                 await Promise.all(promises);
                 
-                this.showNotification(
-                    this.$t('roundingRulesSaved'), 
-                    this.$t('roundingRulesSavedSuccess'), 
-                    false
-                );
+                // Не показываем уведомления здесь, так как метод вызывается из родителя
+                // this.showNotification(
+                //     this.$t('roundingRulesSaved'), 
+                //     this.$t('roundingRulesSavedSuccess'), 
+                //     false
+                // );
                 
                 await this.loadRules();
             } catch (error) {
                 console.error('Ошибка сохранения правил округления:', error);
-                this.showNotification(
-                    this.$t('errorSavingRoundingRules'), 
-                    error.response?.data?.errors || error.message, 
-                    true
-                );
-            } finally {
-                this.saveLoading = false;
+                // Не показываем уведомления здесь, так как метод вызывается из родителя
+                // this.showNotification(
+                //     this.$t('errorSavingRoundingRules'), 
+                //     error.response?.data?.errors || error.message, 
+                //     true
+                // );
+                throw error; // Пробрасываем ошибку родителю
             }
         }
     }

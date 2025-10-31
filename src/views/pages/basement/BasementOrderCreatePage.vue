@@ -38,16 +38,15 @@
             <!-- Клиент и Проект в одной строке -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <!-- Клиент -->
-              <div v-if="createMode !== 'project'">
+              <div>
                 <BasementClientSearch
                   :selected-client="selectedClient"
                   @update:selectedClient="onClientSelected"
-                  :required="createMode === 'client'"
                 />
               </div>
 
               <!-- Проект -->
-              <div v-if="createMode !== 'client'">
+              <div>
                 <label class="block text-sm font-medium text-gray-700">{{ $t('project') }}</label>
                 <select v-model="form.project_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                   <option value="">{{ $t('no') }}</option>
@@ -253,8 +252,6 @@ export default {
         warehouse_id: 1, // Значение по умолчанию
         category_id: null // Категория заказа (определяется по пользователю)
       },
-      createMode: this.$route.query.mode === 'project' ? 'project' : (this.$route.query.mode === 'client' ? 'client' : null),
-      initialMode: null, // 'client' | 'project' | null
       selectedClient: null,
       allProjects: [],
       loading: false,
@@ -403,24 +400,10 @@ export default {
   async mounted() {
     // Определяем категорию по текущему пользователю
     this.setCategoryByUser();
-    // В зависимости от режима скрываем поле на старте
-    if (!this.isEditing) {
-      if (this.createMode === 'project') {
-        this.form.client_id = ''
-        this.selectedClient = null
-      } else if (this.createMode === 'client') {
-        this.form.project_id = ''
-      }
-    }
     // Загружаем кассы, склады и проекты в фоне, не блокируя загрузку страницы
     this.loadCashRegisters();
     this.loadWarehouses();
     this.loadProjects();
-    // Устанавливаем режим при редактировании
-    if (this.isEditing) {
-      if (this.form.client_id) this.initialMode = 'client';
-      else if (this.form.project_id) this.initialMode = 'project';
-    }
   },
   methods: {
     setCategoryByUser() {
@@ -484,17 +467,7 @@ export default {
     },
     onClientSelected(client) {
       this.selectedClient = client
-      // Блокируем смену на клиента, если изначально проект
-      if (client && this.isEditing && this.initialMode === 'project') {
-        this.$store.dispatch('showNotification', { title: this.$t('error'), subtitle: 'Нельзя менять проектный заказ на клиентский', isDanger: true })
-        this.selectedClient = null
-        return
-      }
       this.form.client_id = client ? client.id : ''
-      // При выборе клиента очищаем проект
-      if (client) {
-        this.form.project_id = ''
-      }
     },
     async createClient() {
       this.clientLoading = true
@@ -811,18 +784,6 @@ export default {
       },
       immediate: true
     },
-    // Взаимоисключение и блокировка при изменении project_id
-    'form.project_id'(newVal, oldVal) {
-      if (newVal) {
-        if (this.isEditing && this.initialMode === 'client') {
-          this.$store.dispatch('showNotification', { title: this.$t('error'), subtitle: 'Нельзя менять клиентский заказ на проектный', isDanger: true })
-          this.form.project_id = ''
-          return
-        }
-        this.selectedClient = null
-        this.form.client_id = ''
-      }
-    }
   }
 }
 </script>

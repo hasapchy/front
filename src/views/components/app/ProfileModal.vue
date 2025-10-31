@@ -2,7 +2,12 @@
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">{{ $t('editProfile') }}</h2>
         
-        <form>
+        <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
+            changeTab(t);
+        }" />
+        
+        <div v-show="currentTab === 'info'">
+            <form>
             <!-- Photo Upload -->
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('profilePhoto') }}</label>
@@ -68,8 +73,13 @@
             </div>
 
         </form>
+        </div>
+        
+        <div v-show="currentTab === 'balance'">
+            <UserClientBalanceTab :editingItem="currentClientAccount" />
+        </div>
     </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <div v-show="currentTab === 'info'" class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
         </PrimaryButton>
     </div>
@@ -90,18 +100,29 @@
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
+import TabBar from '@/views/components/app/forms/TabBar.vue';
 import UsersController from '@/api/UsersController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import userPhotoMixin from '@/mixins/userPhotoMixin';
+import { defineAsyncComponent } from 'vue';
+
+const UserClientBalanceTab = defineAsyncComponent(() => 
+    import('@/views/pages/clients/ClientBalanceTab.vue')
+);
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, userPhotoMixin],
     emits: ['saved', 'saved-error', 'close-request'],
-    components: { PrimaryButton, AlertDialog, ImageCropperModal },
+    components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, UserClientBalanceTab },
     data() {
         return {
             saveLoading: false,
+            currentTab: 'info',
+            tabs: [
+                { name: 'info', label: 'profileInfo' },
+                { name: 'balance', label: 'balance' }
+            ],
             form: {
                 name: '',
                 email: '',
@@ -113,6 +134,7 @@ export default {
             showCropperModal: false,
             tempImageSrc: '',
             croppedFile: null,
+            userClientAccount: null,
         };
     },
     computed: {
@@ -121,12 +143,66 @@ export default {
                 return `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.$store.state.user.photo}`;
             }
             return null;
+        },
+        translatedTabs() {
+            // Показываем вкладку баланса только если у пользователя есть клиентский аккаунт
+            if (this.hasClientAccount) {
+                return this.tabs.map(tab => ({
+                    ...tab,
+                    label: this.$t(tab.label)
+                }));
+            }
+            // Если нет клиентского аккаунта, показываем только вкладку информации
+            return [this.tabs[0]].map(tab => ({
+                ...tab,
+                label: this.$t(tab.label)
+            }));
+        },
+        hasClientAccount() {
+            // Проверяем есть ли у пользователя активные клиентские аккаунты
+            return this.$store.state.user?.client_accounts && 
+                   this.$store.state.user.client_accounts.length > 0;
+        },
+        currentClientAccount() {
+            // Получаем клиентский аккаунт для текущей компании
+            if (!this.$store.state.user?.client_accounts) return null;
+            
+            const currentCompanyId = this.$store.getters.currentCompanyId;
+            const clientAccount = this.$store.state.user.client_accounts.find(
+                acc => acc.company_id === currentCompanyId
+            );
+            
+            if (!clientAccount) return null;
+            
+            // Возвращаем данные клиента в формате, который ожидает ClientBalanceTab
+            return {
+                id: clientAccount.id,
+                clientType: clientAccount.client_type || 'employee',
+                balance: clientAccount.balance || '0.00',
+                isSupplier: false,
+                isConflict: false,
+                firstName: clientAccount.first_name || '',
+                lastName: '',
+                contactPerson: '',
+                address: '',
+                note: '',
+                status: clientAccount.status || 'active',
+                discountType: 'none',
+                discount: 0,
+                createdAt: '',
+                updatedAt: '',
+                emails: [],
+                phones: []
+            };
         }
     },
     mounted() {
         this.loadUserData();
     },
     methods: {
+        changeTab(tabName) {
+            this.currentTab = tabName;
+        },
         loadUserData() {
             this.$nextTick(() => {
                 this.saveInitialState();

@@ -62,7 +62,7 @@
                             </span>
                         </p>
                     </div>
-                    <button v-on:click="deselectClient" class="text-red-500 text-2xl cursor-pointer"
+                    <button v-if="allowDeselect" v-on:click="deselectClient" class="text-red-500 text-2xl cursor-pointer"
                         :disabled="disabled">×</button>
                 </div>
             </div>
@@ -106,6 +106,10 @@ export default {
             default: false,
         },
         showLabel: {
+            type: Boolean,
+            default: true,
+        },
+        allowDeselect: {
             type: Boolean,
             default: true,
         },

@@ -154,7 +154,7 @@ export default {
             this.showNotification(this.$t('error'), errorMessage, true);
         },
         formatBalance(balance) {
-            return `${this.$formatNumber(balance, 2, true)} ${this.currencyCode}`;
+            return `${this.$formatNumber(balance, null, true)} ${this.currencyCode}`;
         },
         async fetchDefaultCurrency() {
             try {
@@ -359,7 +359,7 @@ export default {
                     const amount = parseFloat(i.amount);
                     const currencySymbol = this.currencyCode || '';
                     // Показываем сумму зеленым цветом
-                    return `<span class="text-[#5CB85C] font-semibold">${this.$formatNumber(Math.abs(amount), 2, true)} ${currencySymbol}</span>`;
+                    return `<span class="text-[#5CB85C] font-semibold">${this.$formatNumber(Math.abs(amount), null, true)} ${currencySymbol}</span>`;
                 }
                 default:
                     return i[c];

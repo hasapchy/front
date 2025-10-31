@@ -279,7 +279,7 @@ export default {
                 case "amount": {
                     const amount = parseFloat(item.amount || 0);
                     const symbol = item.currencySymbol || this.currencyCode || '';
-                    return `<span class="font-semibold">${this.$formatNumber(amount, 2, true)} ${symbol}</span>`;
+                    return `<span class="font-semibold">${this.$formatNumber(amount, null, true)} ${symbol}</span>`;
                 }
                 default:
                     return item[column] || '-';

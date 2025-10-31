@@ -60,8 +60,35 @@
                   </label>
                 </div>
                 
-                <!-- Правила округления -->
-                <CompanyRoundingSettingsTab :company-id="editingItemId" />
+                <!-- Настройки округления -->
+                <div class="mb-6 p-4 bg-white border rounded">
+                  <h3 class="text-md font-semibold mb-3">{{ $t('roundingSettings') }}</h3>
+                  
+                  <div class="mb-3">
+                    <label class="flex items-center space-x-2">
+                      <input 
+                        type="checkbox" 
+                        v-model="form.rounding_enabled"
+                      />
+                      <span>{{ $t('enableRounding') }}</span>
+                    </label>
+                  </div>
+                  
+                  <div v-if="form.rounding_enabled">
+                    <label class="block mb-1">{{ $t('decimalPlaces') }}</label>
+                    <select v-model.number="form.rounding_decimals">
+                      <option :value="0">0</option>
+                      <option :value="1">1</option>
+                      <option :value="2">2</option>
+                      <option :value="3">3</option>
+                      <option :value="4">4</option>
+                      <option :value="5">5</option>
+                    </select>
+                    <div class="text-xs text-gray-500 mt-1">
+                      {{ $t('decimalPlacesHint') }}
+                    </div>
+                  </div>
+                </div>
       </div>
     </div>
 
@@ -98,7 +125,6 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
-import CompanyRoundingSettingsTab from './CompanyRoundingSettingsTab.vue';
 import CompaniesController from '@/api/CompaniesController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -107,7 +133,7 @@ import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
-    components: { PrimaryButton, AlertDialog, NotificationToast, ImageCropperModal, TabBar, CompanyRoundingSettingsTab },
+    components: { PrimaryButton, AlertDialog, NotificationToast, ImageCropperModal, TabBar },
     props: {
         editingItem: {
             type: Object,
@@ -121,6 +147,8 @@ export default {
                 name: '',
                 logo: null,
                 show_deleted_transactions: false,
+                rounding_decimals: 2,
+                rounding_enabled: true,
             },
             editingItemId: null,
             saveLoading: false,
@@ -198,6 +226,8 @@ export default {
                 const item = {
                     name: this.form.name,
                     show_deleted_transactions: this.form.show_deleted_transactions,
+                    rounding_decimals: this.form.rounding_decimals,
+                    rounding_enabled: this.form.rounding_enabled,
                 };
 
                 // Используем обрезанный файл, если он есть, иначе файл из input
@@ -303,6 +333,8 @@ export default {
         loadCompanyData(company) {
             this.form.name = company.name || '';
             this.form.show_deleted_transactions = company.show_deleted_transactions || false;
+            this.form.rounding_decimals = company.rounding_decimals !== undefined ? company.rounding_decimals : 2;
+            this.form.rounding_enabled = company.rounding_enabled !== undefined ? company.rounding_enabled : true;
             this.currentLogo = company.logo || '';
             this.selected_logo = null; // Сбрасываем выбранное изображение при загрузке данных
             if (this.$refs.logoInput) {
