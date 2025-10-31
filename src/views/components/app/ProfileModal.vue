@@ -108,7 +108,7 @@ import userPhotoMixin from '@/mixins/userPhotoMixin';
 import { defineAsyncComponent } from 'vue';
 
 const UserClientBalanceTab = defineAsyncComponent(() => 
-    import('@/views/pages/clients/ClientBalanceTab.vue')
+    import('@/views/components/app/UserBalanceTab.vue')
 );
 
 export default {
