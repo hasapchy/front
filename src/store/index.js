@@ -1263,9 +1263,12 @@ const store = createStore({
       try {
         // ✅ Проверяем есть ли компания в state (vuex-persistedstate восстановил)
         if (state.currentCompany?.id) {
+          // Нормализуем объект компании через DTO (после восстановления из persisted state он может быть "сырой")
+          const normalized = new CompanyDto(state.currentCompany);
+          commit('SET_CURRENT_COMPANY', normalized);
           // Компания уже в state, загружаем только данные
           await dispatch('loadCompanyData');
-          return state.currentCompany;
+          return normalized;
         }
         
         // ✅ НОВОЕ: Если нет currentCompany, но есть lastCompanyId, восстанавливаем последнюю выбранную
