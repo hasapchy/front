@@ -107,6 +107,7 @@ import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import { roundValue } from '@/utils/numberUtils';
 
 
 export default {
@@ -259,10 +260,12 @@ export default {
 
             this.saveLoading = true;
             try {
+                // Для НОВОГО оприходования округляем цены согласно настройкам компании
+                const shouldRoundPrices = !this.editingItemId;
                 const productsData = this.products.map(product => ({
                     product_id: product.productId,
                     quantity: product.quantity,
-                    price: product.price
+                    price: shouldRoundPrices ? roundValue(product.price) : product.price,
                 }));
                 
                 var formData = {

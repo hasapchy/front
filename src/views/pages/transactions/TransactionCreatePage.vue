@@ -153,6 +153,7 @@ import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import SourceSearch from '@/views/components/app/search/SourceSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import { roundValue } from '@/utils/numberUtils';
 
 
 export default {
@@ -398,7 +399,7 @@ export default {
                             project_id: this.projectId,
                             date: this.date,
                             client_id: this.selectedClient?.id,
-                            orig_amount: this.origAmount,
+                            orig_amount: this.origAmount, // обновления не трогаем
                             currency_id: this.currencyIdComputed,
                             note: this.note,
                             is_debt: (this.forceDebt ? true : this.isDebt),
@@ -406,10 +407,12 @@ export default {
                             source_id: this.selectedSource?.id || null
                         });
                 } else {
+                    // Только для НОВЫХ записей применяем реальное округление согласно настройкам компании
+                    const roundedAmount = roundValue(this.origAmount);
                     var resp = await TransactionController.storeItem({
                         type: this.type == "income" ? 1 : this.type == "outcome" ? 0 : null,
                         cash_id: this.cashId,
-                        orig_amount: this.origAmount,
+                        orig_amount: roundedAmount,
                         currency_id: this.currencyIdComputed,
                         category_id: this.categoryId,
                         note: this.note,

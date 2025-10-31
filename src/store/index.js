@@ -1551,6 +1551,8 @@ const store = createStore({
     // Настройки округления для текущей компании
     roundingDecimals: (state) => state.currentCompany?.rounding_decimals ?? 2,
     roundingEnabled: (state) => state.currentCompany?.rounding_enabled ?? true,
+    roundingDirection: (state) => state.currentCompany?.rounding_direction || 'standard',
+    roundingCustomThreshold: (state) => state.currentCompany?.rounding_custom_threshold ?? 0.5,
     // Мониторинг кэша
     cacheMonitor: (state) => state.cacheMonitor,
     cacheInfo: () => CacheMonitor.getCacheInfo(),

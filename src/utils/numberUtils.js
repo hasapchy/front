@@ -15,79 +15,89 @@ import { getStore } from '@/store/storeManager';
 
 export function formatNumber(value, decimals = null, showDecimals = false) {
   // Если decimals не передан, пытаемся получить из store
+  let roundingEnabled = true;
+  let roundingDirection = 'standard';
+  let customThreshold = 0.5;
+  
   if (decimals === null || decimals === undefined) {
     try {
       const store = getStore && getStore();
-      console.log('[formatNumber] Store:', store);
-      console.log('[formatNumber] Store getters:', store?.getters);
-      console.log('[formatNumber] roundingDecimals:', store?.getters?.roundingDecimals);
-      console.log('[formatNumber] currentCompany:', store?.state?.currentCompany);
-      console.log('[formatNumber] currentCompany rounding_decimals:', store?.state?.currentCompany?.rounding_decimals);
-      
-      if (store && store.getters && store.getters.roundingDecimals !== undefined) {
+      if (store && store.getters) {
+        roundingEnabled = store.getters.roundingEnabled ?? true;
+        roundingDirection = store.getters.roundingDirection || 'standard';
+        customThreshold = store.getters.roundingCustomThreshold ?? 0.5;
+        
         const roundingDecimals = store.getters.roundingDecimals;
-        console.log('[formatNumber] Got roundingDecimals from getter:', roundingDecimals);
-        // Используем значение из store, если оно есть и валидно
         if (typeof roundingDecimals === 'number' && roundingDecimals >= 0 && roundingDecimals <= 5) {
           decimals = roundingDecimals;
-          console.log('[formatNumber] Using decimals from store:', decimals);
         } else {
           decimals = 2;
-          console.log('[formatNumber] roundingDecimals invalid, using default:', decimals);
         }
       } else {
         decimals = 2;
-        console.log('[formatNumber] Store or getters not available, using default:', decimals);
       }
-    } catch (error) {
+    } catch {
       decimals = 2;
-      console.log('[formatNumber] Error getting store, using default:', decimals, error);
     }
-  } else {
-    console.log('[formatNumber] Using provided decimals:', decimals);
   }
   
-  console.log('[formatNumber] Final values - value:', value, 'decimals:', decimals, 'showDecimals:', showDecimals);
   // Проверяем на пустое значение
   if (value === null || value === undefined || value === '') {
     return '0';
   }
 
   // Преобразуем в число
-  const num = typeof value === 'string' ? parseFloat(value) : value;
+  let num = typeof value === 'string' ? parseFloat(value) : value;
   
   // Проверяем, является ли значение числом
   if (isNaN(num)) {
     return '0';
   }
 
+  // Реальное округление в зависимости от настроек (влияет на логику, не только визуально)
+  if (roundingEnabled && decimals >= 0) {
+    const factor = Math.pow(10, decimals);
+    
+    if (roundingDirection === 'up') {
+      // Всегда округляем вверх (в большую сторону)
+      num = Math.ceil(num * factor) / factor;
+    } else if (roundingDirection === 'down') {
+      // Всегда округляем вниз (в меньшую сторону)
+      num = Math.floor(num * factor) / factor;
+    } else if (roundingDirection === 'custom') {
+      // Округление с порогом
+      const floored = Math.floor(num * factor) / factor;
+      const frac = num - floored; // дробная часть на уровне decimals
+      
+      if (frac >= customThreshold) {
+        num = Math.ceil(num * factor) / factor;
+      } else {
+        num = floored;
+      }
+    } else {
+      // Стандартное округление (round)
+      num = Math.round(num * factor) / factor;
+    }
+  }
+
   // Определяем, есть ли дробная часть
   const hasDecimals = num % 1 !== 0;
-  console.log('[formatNumber] num:', num, 'hasDecimals:', hasDecimals);
   
-  // Форматируем число
+  // Форматируем число для отображения
   let result;
   if (showDecimals || hasDecimals) {
-    // Округляем до нужного количества знаков
     result = num.toFixed(decimals);
-    console.log('[formatNumber] Using toFixed with decimals:', decimals, 'result:', result);
   } else {
-    // Целое число без десятичных знаков
     result = Math.round(num).toString();
-    console.log('[formatNumber] Using round, result:', result);
   }
 
   // Разделяем на целую и дробную части
   const parts = result.split('.');
-  
+
   // Добавляем пробелы в целую часть (разделитель тысяч)
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  
-  const finalResult = parts.join('.');
-  console.log('[formatNumber] Final result:', finalResult);
-  
-  // Объединяем обратно
-  return finalResult;
+
+  return parts.join('.');
 }
 
 /**
@@ -100,6 +110,79 @@ export function formatNumber(value, decimals = null, showDecimals = false) {
  */
 export function formatCurrency(value, currencySymbol = '', decimals = null, showDecimals = false) {
   const formattedNumber = formatNumber(value, decimals, showDecimals);
+  return currencySymbol ? `${formattedNumber} ${currencySymbol}` : formattedNumber;
+}
+
+/**
+ * Округление с порогом: если дробная часть (на уровне decimals) >= threshold, округляем вверх,
+ * иначе используем выбранную стратегию (по умолчанию вниз до шага decimals).
+ * Пример: decimals=1, threshold=0.6 → 2.59 → 2.5, 2.60 → 2.6
+ */
+export function roundWithThreshold(value, decimals = 2, threshold = 0.5, fallback = 'down') {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return 0;
+  if (!decimals || decimals < 0) return Math.round(num);
+
+  const factor = Math.pow(10, decimals);
+  const floored = Math.floor(num * factor) / factor;
+  const frac = num - floored; // дробная часть на уровне decimals
+
+  if (frac >= threshold) {
+    return Math.ceil(num * factor) / factor;
+  }
+
+  if (fallback === 'half-up') {
+    return Number(num.toFixed(decimals));
+  }
+  // По умолчанию: вниз до ближайшего шага
+  return floored;
+}
+
+/**
+ * Форматирует число с учётом порога округления
+ */
+export function formatNumberWithThreshold(value, decimals = null, showDecimals = false, threshold = null, fallback = 'down') {
+  // Подхватываем decimals из настроек компании, если не передан
+  if (decimals === null || decimals === undefined) {
+    try {
+      const store = getStore && getStore();
+      if (store && store.getters && store.getters.roundingDecimals !== undefined) {
+        const roundingDecimals = store.getters.roundingDecimals;
+        if (typeof roundingDecimals === 'number' && roundingDecimals >= 0 && roundingDecimals <= 5) {
+          decimals = roundingDecimals;
+        } else {
+          decimals = 2;
+        }
+      } else {
+        decimals = 2;
+      }
+    } catch {
+      decimals = 2;
+    }
+  }
+
+  let rounded = Number(value);
+  if (threshold !== null && threshold !== undefined && decimals > 0) {
+    rounded = roundWithThreshold(value, decimals, threshold, fallback);
+  } else {
+    // Без порога — обычная логика formatNumber
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(num)) return '0';
+    const hasDecimals = num % 1 !== 0;
+    rounded = (showDecimals || hasDecimals) ? Number(num.toFixed(decimals)) : Math.round(num);
+  }
+
+  const result = showDecimals ? rounded.toFixed(decimals) : String(rounded);
+  const parts = result.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return parts.join('.');
+}
+
+/**
+ * Форматирует сумму с символом валюты с учётом порога округления
+ */
+export function formatCurrencyWithThreshold(value, currencySymbol = '', decimals = null, showDecimals = false, threshold = null, fallback = 'down') {
+  const formattedNumber = formatNumberWithThreshold(value, decimals, showDecimals, threshold, fallback);
   return currencySymbol ? `${formattedNumber} ${currencySymbol}` : formattedNumber;
 }
 
@@ -144,6 +227,97 @@ export function formatQuantity(value) {
 
   // Возвращаем число с 2 знаками после запятой
   return num.toFixed(2);
+}
+
+/**
+ * Реально округляет число в зависимости от настроек компании (для логики, не визуально)
+ * @param {number|string} value - Число для округления
+ * @param {number} decimals - Количество знаков после запятой (если null, берется из настроек компании)
+ * @returns {number} - Округленное число
+ * 
+ * Примеры:
+ * roundValue(1.1, 0, 'up') => 2 (всегда вверх до целого)
+ * roundValue(1.99, 0, 'down') => 1 (всегда вниз до целого)
+ * roundValue(2.59, 1, 'custom', 0.6) => 2.5 (порог 0.6)
+ * roundValue(2.60, 1, 'custom', 0.6) => 2.6 (порог 0.6)
+ */
+export function roundValue(value, decimals = null, roundingDirection = null, customThreshold = null) {
+  // Получаем настройки из store, если не переданы явно
+  let roundingEnabled = true;
+  let direction = 'standard';
+  let threshold = 0.5;
+  
+  if (decimals === null || roundingDirection === null) {
+    try {
+      const store = getStore && getStore();
+      if (store && store.getters) {
+        if (decimals === null) {
+          const roundingDecimals = store.getters.roundingDecimals;
+          decimals = (typeof roundingDecimals === 'number' && roundingDecimals >= 0 && roundingDecimals <= 5) 
+            ? roundingDecimals 
+            : 2;
+        }
+        
+        if (roundingDirection === null) {
+          roundingEnabled = store.getters.roundingEnabled ?? true;
+          direction = store.getters.roundingDirection || 'standard';
+          threshold = store.getters.roundingCustomThreshold ?? 0.5;
+        }
+      } else {
+        if (decimals === null) decimals = 2;
+        if (roundingDirection === null) {
+          direction = 'standard';
+        }
+      }
+    } catch {
+      if (decimals === null) decimals = 2;
+      if (roundingDirection === null) {
+        direction = 'standard';
+      }
+    }
+  } else {
+    direction = roundingDirection;
+    if (customThreshold !== null) {
+      threshold = customThreshold;
+    }
+  }
+  
+  // Преобразуем в число
+  let num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return 0;
+  
+  // Если округление отключено, возвращаем как есть (без округления)
+  if (!roundingEnabled) {
+    return num;
+  }
+  
+  // Применяем реальное округление
+  if (decimals >= 0) {
+    const factor = Math.pow(10, decimals);
+    
+    if (direction === 'up') {
+      // Всегда округляем вверх (в большую сторону): 1.1 => 2 (при decimals=0)
+      num = Math.ceil(num * factor) / factor;
+    } else if (direction === 'down') {
+      // Всегда округляем вниз (в меньшую сторону): 1.99 => 1 (при decimals=0)
+      num = Math.floor(num * factor) / factor;
+    } else if (direction === 'custom') {
+      // Округление с порогом
+      const floored = Math.floor(num * factor) / factor;
+      const frac = num - floored; // дробная часть на уровне decimals
+      
+      if (frac >= threshold) {
+        num = Math.ceil(num * factor) / factor;
+      } else {
+        num = floored;
+      }
+    } else {
+      // Стандартное округление (round)
+      num = Math.round(num * factor) / factor;
+    }
+  }
+  
+  return num;
 }
 
 /**

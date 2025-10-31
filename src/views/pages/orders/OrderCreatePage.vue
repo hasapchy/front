@@ -187,7 +187,7 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
-import { formatCurrency } from '@/utils/numberUtils';
+import { formatCurrency, roundValue } from '@/utils/numberUtils';
 
 
 export default {
@@ -523,12 +523,15 @@ export default {
                 // Добавляем недостающие поля
                 formData.client_id = this.selectedClient?.id || null;
                 formData.cash_id = this.cashId || null;
+                // Для новых заказов округляем цены товаров согласно настройкам компании
+                const shouldRoundPrices = !this.editingItemId;
+                
                 formData.products = this.products
                     .filter(p => !p.isTempProduct)
                     .map(p => ({
                         product_id: p.productId,
                         quantity: p.quantity,
-                        price: p.price
+                        price: shouldRoundPrices ? roundValue(p.price) : p.price
                     }));
                 formData.temp_products = this.products
                     .filter(p => p.isTempProduct)
@@ -536,7 +539,7 @@ export default {
                         name: p.name || p.productName,
                         description: p.description || '',
                         quantity: p.quantity,
-                        price: p.price,
+                        price: shouldRoundPrices ? roundValue(p.price) : p.price,
                         unit_id: p.unitId || p.unit_id || null
                     }));
                 formData.remove_temp_products = this.removedTempProducts;
