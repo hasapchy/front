@@ -518,7 +518,8 @@ export default {
                 this.editingItem.updatedAt,
                 this.editingItem.orders,
                 this.editingItem.sourceType || null,
-                this.editingItem.sourceId || null
+                this.editingItem.sourceId || null,
+                false // Копия всегда активная транзакция
             );
             
             // Эмитим событие для открытия нового модального окна с копированными данными

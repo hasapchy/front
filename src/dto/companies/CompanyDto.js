@@ -3,6 +3,7 @@ export class CompanyDto {
     this.id = data.id;
     this.name = data.name;
     this.logo = data.logo;
+    this.show_deleted_transactions = data.show_deleted_transactions || false;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
   }

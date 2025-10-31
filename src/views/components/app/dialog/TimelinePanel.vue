@@ -112,8 +112,7 @@
 <script>
 import { dayjsDateTime } from '@/utils/dateUtils';
 import CommentController from '@/api/CommentController';
-import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import { translateField, formatFieldValue } from '@/utils/fieldTranslations';
+import { translateField } from '@/utils/fieldTranslations';
 import { formatQuantity } from '@/utils/numberUtils';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
@@ -125,9 +124,6 @@ export default {
         type: { type: String, required: true },
         id: { type: [String, Number], required: true },
         isCollapsed: { type: Boolean, default: true },
-    },
-    components: {
-        PrimaryButton
     },
     emits: ['toggle-timeline'],
     data() {
@@ -143,9 +139,17 @@ export default {
         id: 'fetchTimeline',
     },
     mounted() {
-        this.fetchTimeline();
+        this.loadInitialData();
     },
     methods: {
+        async loadInitialData() {
+            // Параллельная загрузка данных для лучшей производительности
+            await Promise.all([
+                this.fetchTimeline(),
+                this.loadStatuses(),
+                this.loadCurrencies()
+            ]);
+        },
         toggleTimeline() {
             this.$emit('toggle-timeline');
         },
@@ -229,15 +233,23 @@ export default {
                 return '—';
             }
 
-            if (key.endsWith('_id') && typeof value === 'number') {
+            // Специальная обработка для статусов заказов
+            if (key === 'status_id' && this.type === 'order') {
+                return this.getStatusName(value);
+            }
+
+            // Обычная обработка ID полей
+            if (key.endsWith('_id')) {
                 return value;
             }
 
+            // Форматирование специальных полей
             switch (key) {
                 case 'total_price':
                 case 'price':
                 case 'amount':
-                    return typeof value === 'number' ? `${value.toLocaleString('ru-RU')} ₽` : value;
+                    const symbol = this.defaultCurrencySymbol || '₽';
+                    return typeof value === 'number' ? `${value.toLocaleString('ru-RU')} ${symbol}` : value;
                 case 'quantity':
                     return typeof value === 'number' ? formatQuantity(value) : value;
                 case 'created_at':
@@ -269,6 +281,18 @@ export default {
         },
         refreshTimeline() {
             this.fetchTimeline();
+        },
+        async loadStatuses() {
+            if (this.type === 'order') {
+                await this.$store.dispatch('loadOrderStatuses');
+            }
+        },
+        async loadCurrencies() {
+            await this.$store.dispatch('loadCurrencies');
+        },
+        getStatusName(statusId) {
+            const status = this.$store.getters.orderStatuses.find(s => s.id === statusId);
+            return status ? status.name : statusId;
         }
     },
     computed: {
@@ -285,6 +309,11 @@ export default {
                 groups[dayKey].push(item);
             });
             return groups;
+        },
+        defaultCurrencySymbol() {
+            const currencies = this.$store.getters.currencies || [];
+            const def = currencies.find(c => c.is_default);
+            return def ? def.symbol : '';
         }
     }
 };

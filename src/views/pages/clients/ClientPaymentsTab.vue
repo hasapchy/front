@@ -275,7 +275,8 @@ export default {
                     response.item.updated_at,
                     response.item.orders || [],
                     response.item.source_type || null,
-                    response.item.source_id || null
+                    response.item.source_id || null,
+                    response.item.is_deleted || false
                 );
                 this.editingTransactionItem = data;
                 

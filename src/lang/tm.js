@@ -58,6 +58,8 @@ export default {
   errorLoadingRoundingRules: 'Döwülme görkezmesini ýükleme ýalňyşlygy',
   errorSavingRoundingRules: 'Döwülme görkezmesini saklamak ýalňyşlygy',
   saved: 'Saklandy',
+  displaySettings: 'Görkezmeleri sazlamak',
+  showDeletedTransactions: 'Pozulan amallary görkez',
   
   // Навигация
   home: 'Baş sahypa',

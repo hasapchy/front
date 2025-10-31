@@ -36,7 +36,8 @@ export default class TransactionDto {
     updatedAt = "",
     orders = [],
     sourceType = null,
-    sourceId = null
+    sourceId = null,
+    isDeleted = false
   ) {
     this.id = id;
     this.type = type;
@@ -73,6 +74,7 @@ export default class TransactionDto {
     this.orders = orders;
     this.sourceType = sourceType;
     this.sourceId = sourceId;
+    this.isDeleted = isDeleted;
   }
 
   typeName() {

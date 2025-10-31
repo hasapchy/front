@@ -62,6 +62,8 @@ export default {
   errorLoadingRoundingRules: 'Error Loading Rounding Rules',
   errorSavingRoundingRules: 'Error Saving Rounding Rules',
   saved: 'Saved',
+  displaySettings: 'Display Settings',
+  showDeletedTransactions: 'Show Deleted Transactions',
   
   // Navigation
   home: 'Home',

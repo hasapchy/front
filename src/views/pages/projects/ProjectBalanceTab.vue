@@ -198,7 +198,8 @@ export default {
                             r.item.updated_at,
                             r.item.orders || [],
                             r.item.source_type || null,
-                            r.item.source_id || null
+                            r.item.source_id || null,
+                            r.item.is_deleted || false
                         );
                     }),
                     component: markRaw(TransactionCreatePage),

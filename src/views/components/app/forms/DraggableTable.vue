@@ -54,7 +54,10 @@
         </td>
       </tr>
       <tr v-for="(item, idx) in sortedData" :key="idx" class="cursor-pointer hover:bg-gray-100 transition-all"
-        :class="{ 'border-b border-gray-300': idx !== sortedData.length - 1 }" @dblclick="(e) => itemClick(item, e)">
+        :class="{ 
+          'border-b border-gray-300': idx !== sortedData.length - 1,
+          'opacity-50': item.isDeleted || item.is_deleted 
+        }" @dblclick="(e) => itemClick(item, e)">
         <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`" class="py-2 px-4 border-x border-gray-300"
           :class="{ hidden: !column.visible }" :style="{ width: column.size ? column.size + 'px' : 'auto' }">
           <template v-if="column.name === 'select'">
@@ -68,10 +71,11 @@
             <img :src="itemMapper(item, column.name)" width="50" class="rounded" />
           </template>
           <template v-else-if="column.html">
-            <span v-html="itemMapper(item, column.name)" @click="(e) => handleHtmlClick(e, item, column)"></span>
+            <span v-html="itemMapper(item, column.name)" @click="(e) => handleHtmlClick(e, item, column)"
+              :class="{ 'line-through': item.isDeleted || item.is_deleted }"></span>
           </template>
           <template v-else>
-            <span>{{ itemMapper(item, column.name) }}</span>
+            <span :class="{ 'line-through': item.isDeleted || item.is_deleted }">{{ itemMapper(item, column.name) }}</span>
           </template>
         </td>
       </tr>

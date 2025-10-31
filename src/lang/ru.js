@@ -77,6 +77,8 @@ export default {
   errorLoadingRoundingRules: 'Ошибка загрузки правил округления',
   errorSavingRoundingRules: 'Ошибка сохранения правил округления',
   saved: 'Сохранено',
+  displaySettings: 'Настройки отображения',
+  showDeletedTransactions: 'Показывать удаленные транзакции',
   
   // Навигация
   home: 'Главная',

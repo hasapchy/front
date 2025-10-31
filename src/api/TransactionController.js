@@ -94,7 +94,8 @@ export default class TransactionController {
           item.updated_at,
           item.orders || [],
           item.source_type || null,
-          item.source_id || null
+          item.source_id || null,
+          item.is_deleted || false
         );
       });
 

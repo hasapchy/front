@@ -48,6 +48,19 @@
                 </div>
       </div>
       <div v-show="currentTab === 'settings' && editingItem" class="mt-4">
+                <!-- Настройка отображения удаленных транзакций -->
+                <div class="mb-6 p-4 bg-white border rounded">
+                  <h3 class="text-md font-semibold mb-3">{{ $t('displaySettings') }}</h3>
+                  <label class="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" 
+                      v-model="form.show_deleted_transactions"
+                    />
+                    <span>{{ $t('showDeletedTransactions') }}</span>
+                  </label>
+                </div>
+                
+                <!-- Правила округления -->
                 <CompanyRoundingSettingsTab :company-id="editingItemId" />
       </div>
     </div>
@@ -107,6 +120,7 @@ export default {
             form: {
                 name: '',
                 logo: null,
+                show_deleted_transactions: false,
             },
             editingItemId: null,
             saveLoading: false,
@@ -156,11 +170,13 @@ export default {
             return {
                 name: this.form.name,
                 logo: this.form.logo,
+                show_deleted_transactions: this.form.show_deleted_transactions,
             };
         },
         clearForm() {
             this.form.name = '';
             this.form.logo = null;
+            this.form.show_deleted_transactions = false;
             this.editingItemId = null;
             this.currentLogo = '';
             this.selected_logo = null;
@@ -181,6 +197,7 @@ export default {
             try {
                 const item = {
                     name: this.form.name,
+                    show_deleted_transactions: this.form.show_deleted_transactions,
                 };
 
                 // Используем обрезанный файл, если он есть, иначе файл из input
@@ -285,6 +302,7 @@ export default {
         
         loadCompanyData(company) {
             this.form.name = company.name || '';
+            this.form.show_deleted_transactions = company.show_deleted_transactions || false;
             this.currentLogo = company.logo || '';
             this.selected_logo = null; // Сбрасываем выбранное изображение при загрузке данных
             if (this.$refs.logoInput) {
