@@ -15,7 +15,10 @@ const CompaniesController = {
     try {
       const formData = new FormData();
       Object.keys(item).forEach((key) => {
-        formData.append(key, item[key]);
+        const value = item[key];
+        // Пропускаем null/undefined, чтобы не отправлять строку "null"
+        if (value === null || value === undefined) return;
+        formData.append(key, value);
       });
       if (logoFile) {
         formData.append("logo", logoFile);
@@ -37,7 +40,10 @@ const CompaniesController = {
     try {
       const formData = new FormData();
       Object.keys(item).forEach((key) => {
-        formData.append(key, item[key]);
+        const value = item[key];
+        // Пропускаем null/undefined, чтобы не отправлять строку "null"
+        if (value === null || value === undefined) return;
+        formData.append(key, value);
       });
       if (logoFile) {
         formData.append("logo", logoFile);
