@@ -140,8 +140,7 @@ export default {
                 this.clientBalances = [];
                 return;
             }
-            
-            // Фильтруем по выбранному клиенту если нужно
+        
             let filteredClients = this.allClientsRaw;
             if (this.clientId) {
                 filteredClients = this.allClientsRaw.filter(client => client.id == this.clientId);
@@ -153,23 +152,17 @@ export default {
                     return type === this.clientTypeFilter;
                 });
             }
-            
-            // Фильтруем по поисковому запросу
+
             const searchQuery = this.$store.state.searchQuery || '';
             if (searchQuery && searchQuery.trim()) {
                 const searchLower = searchQuery.toLowerCase().trim();
                 filteredClients = filteredClients.filter(client => {
-                    // Поиск по имени
                     const firstName = (client.firstName || client.first_name || '').toLowerCase();
-                    // Поиск по фамилии
                     const lastName = (client.lastName || client.last_name || '').toLowerCase();
-                    // Полное имя
                     const fullName = `${firstName} ${lastName}`.trim();
-                    
-                    // Поиск по телефону
+
                     const phones = client.phones || [];
                     const hasMatchingPhone = phones.some(phone => {
-                        // Поддерживаем разные форматы: ClientPhoneDto объект, обычный объект из API, или строка
                         let phoneStr = '';
                         if (typeof phone === 'string') {
                             phoneStr = phone;
@@ -178,8 +171,6 @@ export default {
                         }
                         return phoneStr.toLowerCase().includes(searchLower);
                     });
-                    
-                    // Проверяем совпадение по имени/фамилии или телефону
                     return firstName.includes(searchLower) || 
                            lastName.includes(searchLower) || 
                            fullName.includes(searchLower) || 
@@ -187,7 +178,7 @@ export default {
                 });
             }
             
-            // Для каждого клиента рассчитываем дебет и кредит
+    
             this.clientBalances = filteredClients
                 .map(client => {
                     // Пока используем простую логику - баланс клиента

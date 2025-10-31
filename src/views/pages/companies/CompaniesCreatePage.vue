@@ -257,7 +257,7 @@ export default {
                     rounding_decimals: this.form.rounding_decimals,
                     rounding_enabled: this.form.rounding_enabled,
                     rounding_direction: this.form.rounding_direction,
-                    rounding_custom_threshold: this.form.rounding_custom_threshold,
+                    rounding_custom_threshold: this.form.rounding_direction === 'custom' ? this.form.rounding_custom_threshold : null,
                 };
 
                 // Используем обрезанный файл, если он есть, иначе файл из input
