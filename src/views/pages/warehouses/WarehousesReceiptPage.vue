@@ -105,8 +105,6 @@ export default {
                     return i.productsHtmlList();
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
-                case 'client':
-                    return i.client?.fullName() || 'Не указан';
                 case 'amount':
                     return i.priceInfo();
                 default:

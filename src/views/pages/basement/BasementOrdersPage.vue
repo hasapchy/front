@@ -138,7 +138,7 @@ export default {
       }).join('')
     },
     getClientName(order) {
-      if (!order.client) return this.$t('notSpecified')
+      if (!order.client) return ''
       
       if (order.client.first_name && order.client.last_name) {
         return `${order.client.first_name} ${order.client.last_name}`
@@ -150,7 +150,7 @@ export default {
         return order.client.name
       }
       
-      return this.$t('notSpecified')
+      return ''
     },
     getProjectName(order) {
       if (!order.project) return this.$t('notSpecified')

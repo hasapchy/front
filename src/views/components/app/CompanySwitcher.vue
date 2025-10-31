@@ -43,6 +43,7 @@
             <span class="text-sm font-medium">{{ company.name }}</span>
           </div>
         </button>
+        
       </div>
     </div>
   </div>

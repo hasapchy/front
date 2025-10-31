@@ -57,6 +57,8 @@ export default {
   errorDeletingCompany: 'Ошибка удаления компании',
   logo: 'Логотип',
   created: 'Создано',
+  info: 'Информация',
+  settings: 'Настройки',
   roundingRules: 'Правила округления',
   roundingForOrders: 'Округление для заказов',
   roundingForReceipts: 'Округление для оприходований',

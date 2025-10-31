@@ -6,7 +6,7 @@
             <!-- Количество знаков -->
             <div>
                 <label class="block mb-1">{{ $t('decimalPlaces') }}:</label>
-                <select v-model.number="localDecimals" @change="$emit('update:decimals', localDecimals)">
+                <select :value="decimals" @change="$emit('update:decimals', parseInt($event.target.value))">
                     <option :value="2">2</option>
                     <option :value="3">3</option>
                     <option :value="4">4</option>
@@ -17,7 +17,7 @@
             <!-- Направление округления -->
             <div>
                 <label class="block mb-1">{{ $t('roundingDirection') }}:</label>
-                <select v-model="localDirection" @change="$emit('update:direction', localDirection)">
+                <select :value="direction" @change="$emit('update:direction', $event.target.value)">
                     <option value="standard">{{ $t('standardRounding') }}</option>
                     <option value="up">{{ $t('roundUp') }}</option>
                     <option value="down">{{ $t('roundDown') }}</option>
@@ -26,15 +26,15 @@
             </div>
 
             <!-- Кастомный порог (только для custom) -->
-            <div v-if="localDirection === 'custom'">
+            <div v-if="direction === 'custom'">
                 <label class="block mb-1">{{ $t('threshold') }} (0.0-1.0):</label>
                 <input 
                     type="number" 
-                    v-model.number="localCustomThreshold" 
+                    :value="customThreshold"
                     min="0" 
                     max="1" 
                     step="0.01"
-                    @change="$emit('update:customThreshold', localCustomThreshold)"
+                    @change="$emit('update:customThreshold', parseFloat($event.target.value))"
                 >
                 <div class="text-xs text-gray-500 mt-1">
                     {{ $t('customThresholdHint') }}
@@ -60,34 +60,7 @@ export default {
         direction: String,
         customThreshold: Number
     },
-    emits: ['update:decimals', 'update:direction', 'update:customThreshold'],
-    data() {
-        return {
-            localDecimals: 2,
-            localDirection: 'standard',
-            localCustomThreshold: 0.5
-        };
-    },
-    watch: {
-        decimals: {
-            immediate: true,
-            handler(newVal) {
-                this.localDecimals = newVal;
-            }
-        },
-        direction: {
-            immediate: true,
-            handler(newVal) {
-                this.localDirection = newVal;
-            }
-        },
-        customThreshold: {
-            immediate: true,
-            handler(newVal) {
-                this.localCustomThreshold = newVal;
-            }
-        }
-    }
+    emits: ['update:decimals', 'update:direction', 'update:customThreshold']
 };
 </script>
 

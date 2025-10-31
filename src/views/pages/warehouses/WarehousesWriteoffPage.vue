@@ -89,8 +89,6 @@ export default {
                     return i.productsHtmlList();
                 case 'dateUser':
                     return `${i.formatCreatedAt()} / ${i.userName}`;
-                case 'client':
-                    return i.client?.fullName() || 'Не указан';
                 default:
                     return i[c];
             }

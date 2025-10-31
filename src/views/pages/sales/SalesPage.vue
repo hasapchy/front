@@ -129,7 +129,7 @@ export default {
                 case 'price':
                     return i.priceInfo();
                 case 'client':
-                    if (!i.client) return '<span class="text-gray-500">' + this.$t('notSpecified') + '</span>';
+                    if (!i.client) return '';
                     const name = i.client.fullName();
                     const phone = i.client.phones?.[0]?.phone;
                     return phone

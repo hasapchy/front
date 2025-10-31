@@ -34,7 +34,7 @@ export default {
     },
     computed: {
         displayText() {
-            if (!this.client) return 'Не указан';
+            if (!this.client) return '';
             
             const name = this.client.fullName();
             // Убрали отображение телефона, но поиск по нему работает на бэкенде

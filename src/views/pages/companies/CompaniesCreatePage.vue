@@ -1,57 +1,67 @@
 <template>
-    <div class="flex flex-col h-full">
-        <div class="flex-1 overflow-auto p-4">
+    <div class="flex flex-col overflow-auto h-full p-4">
             <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editCompany') : $t('addCompany') }}</h2>
-            
-            <div class="mb-4">
-                <label class="required">{{ $t('companyName') }}</label>
-                <input 
-                    type="text" 
-                    v-model="form.name" 
-                    :placeholder="$t('enterCompanyName')"
-                    required
-                />
-            </div>
-
-            <div class="mb-4">
-                <label class="block mb-1">{{ $t('companyLogo') }}</label>
-                <input type="file" @change="handleLogoChange" ref="logoInput" class="hidden" accept="image/*">
-
-                <div v-if="selected_logo"
-                    class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
-                    <img :src="selected_logo" alt="Selected Logo"
-                        class="max-w-full max-h-full object-contain rounded">
-                    <button @click="() => { this.selected_logo = null; this.form.logo = null }"
-                        class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
-                        <i class="fas fa-trash"></i>
-                    </button>
+    <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
+      changeTab(t);
+    }" />
+    <div>
+      <div v-show="currentTab === 'info'">
+                <div class="mb-4">
+                    <label class="required">{{ $t('companyName') }}</label>
+                    <input 
+                        type="text" 
+                        v-model="form.name" 
+                        :placeholder="$t('enterCompanyName')"
+                        required
+                    />
                 </div>
-                <div v-else-if="editingItem?.logo"
-                    class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
-                    <img :src="getCompanyLogoSrc(editingItem)" alt="Company Logo"
-                        class="max-w-full max-h-full object-contain rounded">
-                    <button @click="() => { this.editingItem.logo = '' }"
-                        class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-                <div v-else @click="$refs.logoInput.click()"
-                    class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                    <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
-                        <img src="/logo.jpg" alt="Placeholder" class="w-16 h-16 object-contain opacity-50">
-                        <span class="text-xs text-gray-500 mt-2 text-center">{{ $t('clickToUploadImage') }}</span>
+
+                <div class="mb-4">
+                    <label class="block mb-1">{{ $t('companyLogo') }}</label>
+                    <input type="file" @change="handleLogoChange" ref="logoInput" class="hidden" accept="image/*">
+
+                    <div v-if="selected_logo"
+                        class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
+                        <img :src="selected_logo" alt="Selected Logo"
+                            class="max-w-full max-h-full object-contain rounded">
+                        <button @click="() => { this.selected_logo = null; this.form.logo = null }"
+                            class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div v-else-if="editingItem?.logo"
+                        class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
+                        <img :src="getCompanyLogoSrc(editingItem)" alt="Company Logo"
+                            class="max-w-full max-h-full object-contain rounded">
+                        <button @click="() => { this.editingItem.logo = '' }"
+                            class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div v-else @click="$refs.logoInput.click()"
+                        class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                        <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
+                            <img src="/logo.jpg" alt="Placeholder" class="w-16 h-16 object-contain opacity-50">
+                            <span class="text-xs text-gray-500 mt-2 text-center">{{ $t('clickToUploadImage') }}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
+      </div>
+      <div v-show="currentTab === 'settings' && editingItem" class="mt-4">
+                <CompanyRoundingSettingsTab :company-id="editingItemId" />
+      </div>
+    </div>
 
-        <div class="mt-auto p-4 flex space-x-2 bg-[#edf4fb]">
-            <PrimaryButton v-if="editingItem != null" :onclick="deleteItem" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-trash">
-            </PrimaryButton>
-            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
-            </PrimaryButton>
-        </div>
+  </div>
+  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <PrimaryButton v-if="editingItem != null" :onclick="deleteItem" :is-danger="true"
+      :is-loading="deleteLoading" icon="fas fa-trash">
+    </PrimaryButton>
+    <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading"
+      :disabled="(editingItemId != null && !$store.getters.hasPermission('companies_update')) ||
+      (editingItemId == null && !$store.getters.hasPermission('companies_create'))">
+    </PrimaryButton>
+  </div>
 
     <AlertDialog :dialog="deleteDialog" @confirm="confirmDelete" @leave="closeDeleteDialog"
         :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
@@ -67,7 +77,6 @@
             @close="closeCropperModal"
             @cropped="handleCroppedImage"
         />
-    </div>
 </template>
 
 <script>
@@ -75,6 +84,8 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
+import TabBar from '@/views/components/app/forms/TabBar.vue';
+import CompanyRoundingSettingsTab from './CompanyRoundingSettingsTab.vue';
 import CompaniesController from '@/api/CompaniesController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -83,7 +94,7 @@ import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
-    components: { PrimaryButton, AlertDialog, NotificationToast, ImageCropperModal },
+    components: { PrimaryButton, AlertDialog, NotificationToast, ImageCropperModal, TabBar, CompanyRoundingSettingsTab },
     props: {
         editingItem: {
             type: Object,
@@ -106,7 +117,22 @@ export default {
             showCropperModal: false,
             tempImageSrc: '',
             croppedFile: null,
+            currentTab: 'info',
+            tabs: [
+                { name: 'info', label: 'info' },
+                { name: 'settings', label: 'settings' }
+            ]
         };
+    },
+    computed: {
+        translatedTabs() {
+            // Скрываем вкладку настроек при создании новой компании
+            const visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name !== 'settings');
+            return visibleTabs.map(tab => ({
+                ...tab,
+                label: this.$t(tab.label)
+            }));
+        }
     },
     mounted() {
         this.$nextTick(() => {
@@ -118,6 +144,14 @@ export default {
         });
     },
     methods: {
+        changeTab(tabName) {
+            // Предотвращаем переход на вкладку настроек при создании новой компании
+            if (tabName === 'settings' && !this.editingItem) {
+                this.currentTab = 'info';
+                return;
+            }
+            this.currentTab = tabName;
+        },
         getFormState() {
             return {
                 name: this.form.name,
@@ -133,6 +167,7 @@ export default {
             this.croppedFile = null;
             this.showCropperModal = false;
             this.tempImageSrc = '';
+            this.currentTab = 'info';
             if (this.$refs.logoInput) {
                 this.$refs.logoInput.value = null;
             }

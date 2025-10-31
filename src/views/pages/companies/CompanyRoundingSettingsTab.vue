@@ -1,71 +1,31 @@
 <template>
-    <div class="flex flex-col h-full">
-        <div class="flex-1 overflow-auto p-4">
-            <h2 class="text-lg font-bold mb-4">{{ $t('roundingRules') }}</h2>
-            
-            <!-- Загрузка -->
-            <div v-if="loading" class="flex justify-center items-center py-8">
-                <i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i>
-            </div>
+    <div>
+        <h3 class="text-md font-semibold mb-4">{{ $t('roundingRules') }}</h3>
+        
+        <!-- Загрузка -->
+        <div v-if="loading" class="flex justify-center items-center py-8">
+            <i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i>
+        </div>
 
-            <!-- Формы настроек по контекстам -->
-            <div v-else class="space-y-6">
-                <!-- Заказы -->
-                <RoundingRuleSection 
-                    :context="contexts.orders" 
-                    :label="$t('roundingForOrders')"
-                    :rule="rules[contexts.orders]"
-                    :decimals="ruleData[contexts.orders].decimals"
-                    :direction="ruleData[contexts.orders].direction"
-                    :customThreshold="ruleData[contexts.orders].customThreshold"
-                    @update:decimals="ruleData[contexts.orders].decimals = $event"
-                    @update:direction="ruleData[contexts.orders].direction = $event"
-                    @update:customThreshold="ruleData[contexts.orders].customThreshold = $event"
-                />
-
-                <!-- Оприходования -->
-                <RoundingRuleSection 
-                    :context="contexts.receipts" 
-                    :label="$t('roundingForReceipts')"
-                    :rule="rules[contexts.receipts]"
-                    :decimals="ruleData[contexts.receipts].decimals"
-                    :direction="ruleData[contexts.receipts].direction"
-                    :customThreshold="ruleData[contexts.receipts].customThreshold"
-                    @update:decimals="ruleData[contexts.receipts].decimals = $event"
-                    @update:direction="ruleData[contexts.receipts].direction = $event"
-                    @update:customThreshold="ruleData[contexts.receipts].customThreshold = $event"
-                />
-
-                <!-- Продажи -->
-                <RoundingRuleSection 
-                    :context="contexts.sales" 
-                    :label="$t('roundingForSales')"
-                    :rule="rules[contexts.sales]"
-                    :decimals="ruleData[contexts.sales].decimals"
-                    :direction="ruleData[contexts.sales].direction"
-                    :customThreshold="ruleData[contexts.sales].customThreshold"
-                    @update:decimals="ruleData[contexts.sales].decimals = $event"
-                    @update:direction="ruleData[contexts.sales].direction = $event"
-                    @update:customThreshold="ruleData[contexts.sales].customThreshold = $event"
-                />
-
-                <!-- Транзакции -->
-                <RoundingRuleSection 
-                    :context="contexts.transactions" 
-                    :label="$t('roundingForTransactions')"
-                    :rule="rules[contexts.transactions]"
-                    :decimals="ruleData[contexts.transactions].decimals"
-                    :direction="ruleData[contexts.transactions].direction"
-                    :customThreshold="ruleData[contexts.transactions].customThreshold"
-                    @update:decimals="ruleData[contexts.transactions].decimals = $event"
-                    @update:direction="ruleData[contexts.transactions].direction = $event"
-                    @update:customThreshold="ruleData[contexts.transactions].customThreshold = $event"
-                />
-            </div>
+        <!-- Формы настроек по контекстам -->
+        <div v-else class="space-y-6">
+            <RoundingRuleSection 
+                v-for="contextConfig in contextsConfig" 
+                :key="contextConfig.key"
+                :context="contextConfig.context" 
+                :label="contextConfig.label"
+                :rule="rules[contextConfig.context]"
+                :decimals="ruleData[contextConfig.context].decimals"
+                :direction="ruleData[contextConfig.context].direction"
+                :customThreshold="ruleData[contextConfig.context].customThreshold"
+                @update:decimals="updateRuleData(contextConfig.context, 'decimals', $event)"
+                @update:direction="updateRuleData(contextConfig.context, 'direction', $event)"
+                @update:customThreshold="updateRuleData(contextConfig.context, 'customThreshold', $event)"
+            />
         </div>
 
         <!-- Кнопки сохранения -->
-        <div class="mt-auto p-4 flex space-x-2 bg-[#edf4fb]">
+        <div class="mt-4 p-4 flex space-x-2 bg-gray-50">
             <PrimaryButton 
                 icon="fas fa-save" 
                 :onclick="saveAllRules" 
@@ -97,11 +57,17 @@ import notificationMixin from '@/mixins/notificationMixin';
 export default {
     mixins: [notificationMixin],
     components: { RoundingRuleSection, PrimaryButton, NotificationToast },
+    props: {
+        companyId: {
+            type: [Number, String],
+            required: true
+        }
+    },
     data() {
         return {
             loading: true,
             saveLoading: false,
-            rules: {}, // загруженные правила { context: CompanyRoundingRuleDto }
+            rules: {},
             contexts: CompanyRoundingRuleDto.contexts,
             directions: CompanyRoundingRuleDto.directions,
             ruleData: {
@@ -112,24 +78,35 @@ export default {
             }
         };
     },
+    computed: {
+        contextsConfig() {
+            return [
+                { key: 'orders', context: this.contexts.orders, label: this.$t('roundingForOrders') },
+                { key: 'receipts', context: this.contexts.receipts, label: this.$t('roundingForReceipts') },
+                { key: 'sales', context: this.contexts.sales, label: this.$t('roundingForSales') },
+                { key: 'transactions', context: this.contexts.transactions, label: this.$t('roundingForTransactions') }
+            ];
+        }
+    },
     mounted() {
         this.loadRules();
     },
     methods: {
+        updateRuleData(context, field, value) {
+            this.ruleData[context][field] = value;
+        },
         async loadRules() {
             this.loading = true;
             try {
                 const items = await CompanyRoundingRulesController.getItems();
                 const rulesMap = {};
                 
-                // Преобразуем массив в объект по контекстам
                 items.forEach(item => {
                     rulesMap[item.context] = new CompanyRoundingRuleDto(item);
                 });
                 
                 this.rules = rulesMap;
                 
-                // Загружаем существующие значения в форму
                 Object.keys(this.contexts).forEach(ctxKey => {
                     const ctx = this.contexts[ctxKey];
                     if (this.rules[ctx]) {
@@ -178,7 +155,6 @@ export default {
                     false
                 );
                 
-                // Перезагружаем правила
                 await this.loadRules();
             } catch (error) {
                 console.error('Ошибка сохранения правил округления:', error);
