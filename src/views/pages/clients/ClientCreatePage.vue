@@ -75,13 +75,12 @@
             <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" />
           </div>
           <div v-for="(phone, index) in phones" :key="phone" class="flex items-center space-x-2 mt-2">
-            <div class="flex items-center space-x-1 px-2 py-1 border border-gray-300 rounded-l bg-gray-50">
+            <div class="flex items-center justify-center px-2 py-1 border border-gray-300 rounded-l bg-gray-50" style="min-width: 40px;">
               <img
                 :src="getPhoneCountryFlag(phone)"
                 :alt="getPhoneCountryName(phone)"
                 class="w-5 h-4 object-cover rounded"
               />
-              <span class="text-sm font-medium">{{ getPhoneCountryCode(phone) }}</span>
             </div>
             <input type="text" :value="formatPhoneForDisplay(phone)" readonly class="flex-1 px-3 py-1 border border-l-0 border-gray-300 rounded-r bg-gray-50" />
             <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" />
