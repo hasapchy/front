@@ -133,14 +133,15 @@
                     <div class="flex flex-col gap-3 items-end">
                         <!-- Долги клиентов -->
                         <div class="bg-white p-3 rounded-lg shadow-md min-w-[280px]">
-                            <div class="text-center mb-3">
+                            <div class="text-center mb-3 flex items-center justify-center gap-2">
+                                <i class="fas fa-exchange-alt text-blue-500 text-sm"></i>
                                 <span class="text-sm font-semibold">{{ $t('clientDebts') }}</span>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
                                 <div class="text-center balance-item">
                                     <div class="mb-1 flex items-center justify-center space-x-1">
                                         <span class="text-xs font-medium text-gray-700">{{ $t('oweUs') }}</span>
-                                        <i class="fas fa-arrow-down text-green-500 text-xs"></i>
+                                        <i class="fas fa-arrow-trend-down text-green-500 text-xs"></i>
                                     </div>
                                     <div class="text-green-600 font-bold text-sm">
                                         {{ $formatNumberForCompany(clientDebts.positive, true) }}
@@ -149,7 +150,7 @@
                                 <div class="text-center balance-item">
                                     <div class="mb-1 flex items-center justify-center space-x-1">
                                         <span class="text-xs font-medium text-gray-700">{{ $t('weOwe') }}</span>
-                                        <i class="fas fa-arrow-up text-red-500 text-xs"></i>
+                                        <i class="fas fa-arrow-trend-up text-red-500 text-xs"></i>
                                     </div>
                                     <div class="text-red-600 font-bold text-sm">
                                         {{ $formatNumberForCompany(Math.abs(clientDebts.negative), true) }}
