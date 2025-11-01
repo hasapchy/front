@@ -74,15 +74,15 @@
             />
             <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" />
           </div>
-          <div v-for="(phone, index) in phones" :key="phone" class="flex items-center space-x-2 mt-2">
-            <div class="flex items-center justify-center px-2 py-1 border border-gray-300 rounded-l bg-gray-50" style="min-width: 40px;">
+          <div v-for="(phone, index) in phones" :key="phone" class="flex items-stretch space-x-2 mt-2">
+            <div class="flex items-center justify-center" style="min-width: 40px;">
               <img
                 :src="getPhoneCountryFlag(phone)"
                 :alt="getPhoneCountryName(phone)"
                 class="w-5 h-4 object-cover rounded"
               />
             </div>
-            <input type="text" :value="formatPhoneForDisplay(phone)" readonly class="flex-1 px-3 py-1 border border-l-0 border-gray-300 rounded-r bg-gray-50" />
+            <input type="text" :value="phone" readonly class="flex-1 px-3 py-1 border border-gray-300 rounded bg-gray-50" />
             <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" />
           </div>
         </div>
@@ -330,26 +330,6 @@ export default {
         return "Россия";
       }
       return "Туркменистан";
-    },
-    formatPhoneForDisplay(phone) {
-      const cleaned = phone.replace(/\D/g, "");
-      if (cleaned.startsWith("993")) {
-        // Форматируем как 993 12 345678
-        const rest = cleaned.substring(3);
-        if (rest.length >= 2) {
-          return `993 ${rest.substring(0, 2)} ${rest.substring(2)}`;
-        }
-        return `993 ${rest}`;
-      } else if (cleaned.startsWith("7")) {
-        // Форматируем как 7 (999) 999-99-99
-        const rest = cleaned.substring(1);
-        if (rest.length >= 3) {
-          const formatted = `7 (${rest.substring(0, 3)}) ${rest.substring(3, 6)}-${rest.substring(6, 8)}-${rest.substring(8)}`;
-          return formatted.replace(/-+$/, ""); // Удаляем лишние дефисы в конце
-        }
-        return `7 ${rest}`;
-      }
-      return phone;
     },
     addPhone() {
       if (this.newPhone && this.newPhone.trim()) {
