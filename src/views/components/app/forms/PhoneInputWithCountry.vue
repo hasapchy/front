@@ -193,19 +193,21 @@ export default {
 
 .phone-input-wrapper :deep(.iti__flag-container) {
   cursor: pointer;
-  border: 1px solid #d1d5db;
+  border: 1px solid #bbb;
+  border-width: 2px;
   border-right: none;
-  border-radius: 4px 0 0 4px;
+  border-radius: 5px 0 0 5px;
   background: white;
   flex-shrink: 0; /* Не сжимается, сохраняет размер */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .phone-input-wrapper :deep(.iti__selected-flag) {
-  padding: 0.25rem 0.5rem;
-  min-height: 2.25rem;
+  padding: 8px 12px; /* Совпадает с padding input для одинаковой высоты */
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 100%;
 }
 
 .phone-input-wrapper :deep(.iti__selected-flag:hover) {
@@ -218,24 +220,26 @@ export default {
 }
 
 .phone-input-wrapper :deep(.iti input) {
-  border: 1px solid #d1d5db;
+  border: 1px solid #bbb;
+  border-width: 2px;
   border-left: none;
-  border-radius: 0 4px 4px 0;
-  padding: 0.25rem 0.75rem;
-  min-height: 2.25rem;
+  border-radius: 0 5px 5px 0;
+  padding: 8px 12px; /* Совпадает с глобальными стилями input */
   width: 100%;
   flex: 1;
   min-width: 0; /* Позволяет сжиматься в flex-контейнере */
-  font-size: 1rem;
-  line-height: 1.5;
-  color: #111827;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
   background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.2s ease;
 }
 
 .phone-input-wrapper :deep(.iti input:focus) {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 1px #3b82f6;
+  border-color: #337AB7; /* Совпадает с фокусом других полей */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .phone-input-wrapper :deep(.iti__country-list) {

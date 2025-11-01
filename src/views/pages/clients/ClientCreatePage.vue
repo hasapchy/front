@@ -301,7 +301,17 @@ export default {
     },
     handlePhoneBlur() {
       // Добавляем телефон при потере фокуса, только если есть введенный номер
-      if (this.newPhone && this.newPhone.trim()) {
+      // При separateDialCode нужно проверить реальный ввод, а не только v-model
+      const phoneComponent = this.$refs.phoneInputRef;
+      if (phoneComponent && phoneComponent.iti) {
+        const inputValue = phoneComponent.$refs.phoneInput?.value || "";
+        const cleanedInput = inputValue.replace(/\D/g, "");
+        // Добавляем только если введено минимум 3 цифры (чтобы избежать ошибок при случайном клике)
+        if (cleanedInput && cleanedInput.length >= 3) {
+          this.addPhone();
+        }
+      } else if (this.newPhone && this.newPhone.trim()) {
+        // Fallback для случая, когда компонент не готов
         this.addPhone();
       }
     },
@@ -403,22 +413,39 @@ export default {
           // Используем intl-tel-input с встроенной валидацией
           const iti = phoneComponent.iti;
           
+          // Получаем введенный номер (при separateDialCode это только национальный номер без кода)
+          const inputElement = phoneComponent.$refs.phoneInput;
+          const inputValue = inputElement ? inputElement.value : "";
+          const cleanedInput = inputValue.replace(/\D/g, "");
+          
+          // Проверяем, что пользователь ввел хотя бы минимальное количество цифр
+          if (!cleanedInput || cleanedInput.length < 3) {
+            this.showNotification("Ошибка", "Пожалуйста, введите номер телефона", true);
+            return;
+          }
+          
           // Проверяем валидность номера через встроенную валидацию intl-tel-input
           // Библиотека автоматически проверяет правильную длину для каждой страны:
-          // - Туркменистан: 993 + 8 цифр = 11 цифр
-          // - Россия: 7 + 10 цифр = 11 цифр
+          // - Туркменистан: 993 + 8 цифр = 11 цифр (в поле только 8 цифр)
+          // - Россия: 7 + 10 цифр = 11 цифр (в поле только 10 цифр)
           // и т.д. для других стран
           if (!iti.isValidNumber()) {
-            // Получаем более подробную информацию об ошибке, если возможно
+            // Получаем более подробную информацию об ошибке
             const validationError = iti.getValidationError();
             let errorMessage = "Пожалуйста, введите корректный номер телефона";
             
             if (validationError === 1) {
-              errorMessage = "Номер телефона слишком короткий для выбранной страны";
+              const countryData = iti.getSelectedCountryData();
+              errorMessage = `Номер телефона слишком короткий для ${countryData.name}. Введите полный номер`;
             } else if (validationError === 2) {
-              errorMessage = "Номер телефона слишком длинный для выбранной страны";
+              const countryData = iti.getSelectedCountryData();
+              errorMessage = `Номер телефона слишком длинный для ${countryData.name}`;
             } else if (validationError === 3) {
               errorMessage = "Неверный формат номера для выбранной страны";
+            } else {
+              // Если номер еще неполный, показываем более понятное сообщение
+              const countryData = iti.getSelectedCountryData();
+              errorMessage = `Введите полный номер телефона для ${countryData.name}`;
             }
             
             this.showNotification("Ошибка", errorMessage, true);
@@ -428,6 +455,12 @@ export default {
           // Получаем номер в международном формате (E164: +99312345678)
           // isValidNumber() уже проверил валидность, поэтому getNumber() вернет корректный номер
           const fullNumber = iti.getNumber();
+
+          // Проверяем, что getNumber() вернул валидный номер
+          if (!fullNumber || fullNumber.length < 8) {
+            this.showNotification("Ошибка", "Введите полный номер телефона", true);
+            return;
+          }
 
           // Убираем + и сохраняем только цифры (код страны + номер)
           // intl-tel-input уже проверил, что номер имеет правильную длину для страны
