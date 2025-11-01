@@ -179,12 +179,16 @@ export default {
 <style scoped>
 .phone-input-wrapper {
   width: 100%;
+  flex: 1; /* Занимает всю доступную ширину в flex-контейнере */
+  min-width: 0; /* Позволяет сжиматься в flex-контейнере */
 }
 
 /* Переопределяем стили intl-tel-input для интеграции с формой */
 .phone-input-wrapper :deep(.iti) {
   width: 100%;
+  max-width: 100%;
   display: flex;
+  flex: 1;
 }
 
 .phone-input-wrapper :deep(.iti__flag-container) {
@@ -193,6 +197,7 @@ export default {
   border-right: none;
   border-radius: 4px 0 0 4px;
   background: white;
+  flex-shrink: 0; /* Не сжимается, сохраняет размер */
 }
 
 .phone-input-wrapper :deep(.iti__selected-flag) {
@@ -219,6 +224,8 @@ export default {
   padding: 0.25rem 0.75rem;
   min-height: 2.25rem;
   width: 100%;
+  flex: 1;
+  min-width: 0; /* Позволяет сжиматься в flex-контейнере */
   font-size: 1rem;
   line-height: 1.5;
   color: #111827;
