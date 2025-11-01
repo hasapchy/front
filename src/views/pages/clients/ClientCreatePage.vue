@@ -62,11 +62,29 @@
         <div>
           <label class="required">{{ $t('phoneNumber') }}</label>
           <div class="flex items-center space-x-2">
-            <input type="text" v-model="newPhone" ref="phoneInput" @keyup.enter="addPhone" @blur="addPhone" required />
+            <PhoneInputWithCountry
+              v-model="newPhone"
+              :default-country="newPhoneCountry"
+              :preferred-countries="['tm', 'ru']"
+              @country-change="handleCountryChange"
+              @keyup.enter="addPhone"
+              @blur="handlePhoneBlur"
+              class="flex-1"
+              :required="true"
+              ref="phoneInputRef"
+            />
             <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" />
           </div>
           <div v-for="(phone, index) in phones" :key="phone" class="flex items-center space-x-2 mt-2">
-            <input type="text" :value="phone" readonly />
+            <div class="flex items-center space-x-1 px-2 py-1 border border-gray-300 rounded-l bg-gray-50">
+              <img
+                :src="getPhoneCountryFlag(phone)"
+                :alt="getPhoneCountryName(phone)"
+                class="w-5 h-4 object-cover rounded"
+              />
+              <span class="text-sm font-medium">{{ getPhoneCountryCode(phone) }}</span>
+            </div>
+            <input type="text" :value="formatPhoneForDisplay(phone)" readonly class="flex-1 px-3 py-1 border border-l-0 border-gray-300 rounded-r bg-gray-50" />
             <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" />
           </div>
         </div>
@@ -131,7 +149,7 @@ import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import TabBar from "@/views/components/app/forms/TabBar.vue";
-import Inputmask from "inputmask";
+import PhoneInputWithCountry from "@/views/components/app/forms/PhoneInputWithCountry.vue";
 import ClientBalanceTab from "@/views/pages/clients/ClientBalanceTab.vue";
 import ClientPaymentsTab from "@/views/pages/clients/ClientPaymentsTab.vue";
 import ClientOperationsTab from "@/views/pages/clients/ClientOperationsTab.vue";
@@ -142,7 +160,7 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 export default {
   mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
   emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
-  components: { PrimaryButton, AlertDialog, NotificationToast, TabBar, ClientBalanceTab, ClientPaymentsTab, ClientOperationsTab },
+  components: { PrimaryButton, AlertDialog, NotificationToast, TabBar, PhoneInputWithCountry, ClientBalanceTab, ClientPaymentsTab, ClientOperationsTab },
   props: {
     editingItem: { type: ClientDto, default: null },
     defaultFirstName: { type: String, default: "" },
@@ -167,6 +185,8 @@ export default {
       discount: this.editingItem ? this.editingItem.discount : 0,
       editingItemId: this.editingItem?.id || null,
       newPhone: "",
+      newPhoneCountry: "tm", // tm - Туркменистан, ru - Россия
+      currentPhoneCountry: null, // Текущая выбранная страна для нового телефона
       newEmail: "",
       saveLoading: false,
       deleteDialog: false,
@@ -231,17 +251,6 @@ export default {
     }
   },
   async mounted() {
-    const phoneInput = this.$refs.phoneInput;
-    const mask = new Inputmask({
-      mask: "\\9\\9\\3 99 999999",
-      placeholder: "_",
-      showMaskOnHover: false,
-      showMaskOnFocus: true,
-      clearIncomplete: true,
-      keepStatic: true,
-    });
-    mask.mask(phoneInput);
-
     // Загружаем сотрудников для выбора сотрудника
     if (this.$store.getters.users.length === 0) {
       await this.$store.dispatch('loadUsers');
@@ -286,20 +295,156 @@ export default {
       };
     },
 
+    handleCountryChange(country) {
+      this.currentPhoneCountry = country;
+      this.newPhoneCountry = country.id;
+    },
+    handlePhoneBlur() {
+      // Добавляем телефон при потере фокуса, только если есть введенный номер
+      if (this.newPhone && this.newPhone.trim()) {
+        this.addPhone();
+      }
+    },
+    getPhoneCountryCode(phone) {
+      // Определяем код страны по номеру телефона
+      const cleaned = phone.replace(/\D/g, "");
+      if (cleaned.startsWith("993")) {
+        return "+993";
+      } else if (cleaned.startsWith("7")) {
+        return "+7";
+      }
+      // По умолчанию определяем по длине и первым цифрам
+      if (cleaned.length >= 9 && cleaned.startsWith("993")) {
+        return "+993";
+      }
+      return "+993"; // По умолчанию Туркменистан
+    },
+    getPhoneCountryFlag(phone) {
+      const cleaned = phone.replace(/\D/g, "");
+      if (cleaned.startsWith("7")) {
+        return "/flags/640px-Flag_of_Russia.svg.webp";
+      }
+      return "/flags/640px-Flag_of_Turkmenistan.svg.png";
+    },
+    getPhoneCountryName(phone) {
+      const cleaned = phone.replace(/\D/g, "");
+      if (cleaned.startsWith("7")) {
+        return "Россия";
+      }
+      return "Туркменистан";
+    },
+    formatPhoneForDisplay(phone) {
+      const cleaned = phone.replace(/\D/g, "");
+      if (cleaned.startsWith("993")) {
+        // Форматируем как 993 12 345678
+        const rest = cleaned.substring(3);
+        if (rest.length >= 2) {
+          return `993 ${rest.substring(0, 2)} ${rest.substring(2)}`;
+        }
+        return `993 ${rest}`;
+      } else if (cleaned.startsWith("7")) {
+        // Форматируем как 7 (999) 999-99-99
+        const rest = cleaned.substring(1);
+        if (rest.length >= 3) {
+          const formatted = `7 (${rest.substring(0, 3)}) ${rest.substring(3, 6)}-${rest.substring(6, 8)}-${rest.substring(8)}`;
+          return formatted.replace(/-+$/, ""); // Удаляем лишние дефисы в конце
+        }
+        return `7 ${rest}`;
+      }
+      return phone;
+    },
     addPhone() {
-      if (this.newPhone) {
-        const cleanedPhone = this.newPhone.replace(/\D/g, "");
-        if (cleanedPhone.length !== 11) {
-          this.phoneError = "Номер должен содержать ровно 11 цифр";
-          return;
+      if (this.newPhone && this.newPhone.trim()) {
+        // Получаем номер в международном формате через компонент
+        const phoneComponent = this.$refs.phoneInputRef;
+        if (!phoneComponent || !phoneComponent.iti) {
+          // Если компонент не готов, используем базовую валидацию
+          // Это fallback на случай, если библиотека не загрузилась
+          const cleanedPhone = this.newPhone.replace(/\D/g, "");
+          
+          // Базовая проверка: номер должен содержать код страны и номер
+          // Минимум проверяем по международному стандарту (не менее 7 цифр)
+          if (cleanedPhone.length < 7) {
+            this.showNotification("Ошибка", "Номер телефона слишком короткий", true);
+            return;
+          }
+          
+          // Максимум 15 цифр по международному стандарту E.164
+          if (cleanedPhone.length > 15) {
+            this.showNotification("Ошибка", "Номер телефона слишком длинный (максимум 15 цифр)", true);
+            return;
+          }
+          
+          // Примечание: точная валидация длины для конкретной страны
+          // выполняется через intl-tel-input (isValidNumber)
+          
+          // Определяем код страны из выбранной страны
+          let phoneToSave = cleanedPhone;
+          if (this.currentPhoneCountry) {
+            // Если номер не начинается с кода страны, добавляем его
+            if (!cleanedPhone.startsWith(this.currentPhoneCountry.dialCode)) {
+              phoneToSave = this.currentPhoneCountry.dialCode + cleanedPhone;
+            } else {
+              phoneToSave = cleanedPhone;
+            }
+          } else {
+            // По умолчанию добавляем код Туркменистана, если код не указан
+            if (!cleanedPhone.startsWith("993") && !cleanedPhone.startsWith("7")) {
+              phoneToSave = "993" + cleanedPhone;
+            }
+          }
+
+          if (this.phones.includes(phoneToSave)) {
+            this.showNotification("Ошибка", "Этот номер телефона уже добавлен!", true);
+            return;
+          }
+          this.phones.push(phoneToSave);
+        } else {
+          // Используем intl-tel-input с встроенной валидацией
+          const iti = phoneComponent.iti;
+          
+          // Проверяем валидность номера через встроенную валидацию intl-tel-input
+          // Библиотека автоматически проверяет правильную длину для каждой страны:
+          // - Туркменистан: 993 + 8 цифр = 11 цифр
+          // - Россия: 7 + 10 цифр = 11 цифр
+          // и т.д. для других стран
+          if (!iti.isValidNumber()) {
+            // Получаем более подробную информацию об ошибке, если возможно
+            const validationError = iti.getValidationError();
+            let errorMessage = "Пожалуйста, введите корректный номер телефона";
+            
+            if (validationError === 1) {
+              errorMessage = "Номер телефона слишком короткий для выбранной страны";
+            } else if (validationError === 2) {
+              errorMessage = "Номер телефона слишком длинный для выбранной страны";
+            } else if (validationError === 3) {
+              errorMessage = "Неверный формат номера для выбранной страны";
+            }
+            
+            this.showNotification("Ошибка", errorMessage, true);
+            return;
+          }
+
+          // Получаем номер в международном формате (E164: +99312345678)
+          // isValidNumber() уже проверил валидность, поэтому getNumber() вернет корректный номер
+          const fullNumber = iti.getNumber();
+
+          // Убираем + и сохраняем только цифры (код страны + номер)
+          // intl-tel-input уже проверил, что номер имеет правильную длину для страны
+          const cleanedNumber = fullNumber.replace(/[^\d]/g, "");
+          
+          if (this.phones.includes(cleanedNumber)) {
+            this.showNotification("Ошибка", "Этот номер телефона уже добавлен!", true);
+            return;
+          }
+          
+          this.phones.push(cleanedNumber);
         }
-        if (this.phones.includes(cleanedPhone)) {
-          this.showNotification("Ошибка", "Этот номер телефона уже добавлен!", true);
-          return;
-        }
-        this.phones.push(cleanedPhone);
+
+        // Очищаем поле ввода
         this.newPhone = "";
-        this.phoneError = "";
+        this.currentPhoneCountry = null;
+        this.newPhoneCountry = "tm"; // Сбрасываем на Туркменистан
       }
     },
     removePhone(index) {
@@ -380,6 +525,9 @@ export default {
       this.isConflict = false;
       this.isSupplier = false;
       this.phones = [];
+      this.newPhone = "";
+      this.newPhoneCountry = "tm";
+      this.currentPhoneCountry = null;
       this.emails = [];
       this.discountType = "fixed";
       this.discount = 0;
@@ -414,6 +562,9 @@ export default {
           this.isConflict = newEditingItem.isConflict || false;
           this.isSupplier = newEditingItem.isSupplier || false;
           this.phones = newEditingItem.phones.map((phone) => phone.phone) || [];
+          this.newPhone = "";
+          this.newPhoneCountry = "tm";
+          this.currentPhoneCountry = null;
           this.emails = newEditingItem.emails.map((email) => email.email) || [];
           this.discountType = newEditingItem.discountType ?? "fixed";
           this.discount = newEditingItem.discount ?? 0;
