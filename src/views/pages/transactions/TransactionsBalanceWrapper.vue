@@ -133,8 +133,7 @@
                     <div class="flex flex-col gap-3 items-end">
                         <!-- Долги клиентов -->
                         <div class="bg-white p-3 rounded-lg shadow-md min-w-[280px]">
-                            <div class="text-center mb-3 flex items-center justify-center gap-2">
-                                <i class="fas fa-exchange-alt text-blue-500 text-sm"></i>
+                            <div class="text-center mb-3">
                                 <span class="text-sm font-semibold">{{ $t('clientDebts') }}</span>
                             </div>
                             <div class="grid grid-cols-2 gap-2">

@@ -27,8 +27,7 @@
             
             <!-- Долги клиентов -->
             <div v-if="hasClientDebts" class="bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-500 min-w-[250px]">
-                <div class="text-center mb-3 flex items-center justify-center gap-2">
-                    <i class="fas fa-exchange-alt text-blue-500 text-sm"></i>
+                <div class="text-center mb-3">
                     <span class="text-sm font-semibold">{{ $t('clientDebts') }}</span>
                 </div>
                 <div class="space-y-2">
