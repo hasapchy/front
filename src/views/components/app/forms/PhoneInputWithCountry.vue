@@ -1,21 +1,66 @@
 <template>
   <div class="phone-input-wrapper">
-    <input
-      type="tel"
-      :value="phoneValue"
-      @input="handleInput"
-      @keyup.enter="$emit('keyup.enter', $event)"
-      @blur="handleBlur"
-      :placeholder="placeholder"
-      :required="required"
-      ref="phoneInput"
-    />
+    <div class="relative flex items-center">
+      <!-- Флаг и код страны -->
+      <div class="relative">
+        <button
+          type="button"
+          @click="toggleCountryDropdown"
+          class="flex items-center space-x-1 border-2 border-r-0 rounded-l px-3 py-2 bg-white hover:bg-gray-50 focus:outline-none"
+          style="border-color: #bbb; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);"
+        >
+          <img
+            :src="selectedCountry.flag"
+            :alt="selectedCountry.name"
+            class="w-5 h-4 object-cover rounded"
+          />
+          <span class="text-sm font-medium">{{ selectedCountry.code }}</span>
+          <i class="fas fa-chevron-down text-xs ml-1"></i>
+        </button>
+
+        <!-- Dropdown список стран -->
+        <div
+          v-if="showCountryDropdown"
+          class="absolute z-50 mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto"
+          style="min-width: 200px;"
+        >
+          <div
+            v-for="country in countries"
+            :key="country.code"
+            @click="selectCountry(country)"
+            class="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 cursor-pointer"
+            :class="{ 'bg-blue-50': country.code === selectedCountry.code }"
+          >
+            <img
+              :src="country.flag"
+              :alt="country.name"
+              class="w-5 h-4 object-cover rounded"
+            />
+            <span class="text-sm">{{ country.name }}</span>
+            <span class="text-sm text-gray-500 ml-auto">{{ country.code }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Поле ввода телефона -->
+      <input
+        type="text"
+        :value="phoneValue"
+        @input="handleInput"
+        @keyup.enter="$emit('keyup.enter', $event)"
+        @blur="$emit('blur', $event)"
+        :placeholder="selectedCountry.placeholder"
+        :required="required"
+        class="flex-1 border-l-0 rounded-r px-3 py-2 focus:outline-none"
+        style="border: 2px solid #bbb; border-left: none; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); transition: border-color 0.2s ease;"
+        ref="phoneInput"
+      />
+    </div>
   </div>
 </template>
 
 <script>
-import intlTelInput from "intl-tel-input";
-import "intl-tel-input/build/css/intlTelInput.css";
+import Inputmask from "inputmask";
 
 export default {
   name: "PhoneInputWithCountry",
@@ -32,233 +77,122 @@ export default {
       type: String,
       default: "tm", // tm - Туркменистан, ru - Россия
     },
-    preferredCountries: {
-      type: Array,
-      default: () => ["tm", "ru"], // По умолчанию показываем Туркменистан и Россию первыми
-    },
   },
   emits: ["update:modelValue", "country-change", "phone-change"],
   data() {
     return {
+      showCountryDropdown: false,
+      selectedCountryCode: this.defaultCountry,
       phoneValue: this.modelValue || "",
-      iti: null, // Экземпляр intl-tel-input
-      placeholder: "",
+      inputmaskInstance: null,
+      countries: [
+        {
+          code: "+993",
+          name: "Туркменистан",
+          flag: "/flags/640px-Flag_of_Turkmenistan.svg.png",
+          mask: "\\9\\9\\3 99 999999",
+          placeholder: "993 12 345678",
+          dialCode: "993",
+          id: "tm",
+        },
+        {
+          code: "+7",
+          name: "Россия",
+          flag: "/flags/640px-Flag_of_Russia.svg.webp",
+          mask: "\\7 (999) 999-99-99",
+          placeholder: "7 (999) 999-99-99",
+          dialCode: "7",
+          id: "ru",
+        },
+      ],
     };
   },
+  computed: {
+    selectedCountry() {
+      return (
+        this.countries.find((c) => c.id === this.selectedCountryCode) ||
+        this.countries[0]
+      );
+    },
+  },
   mounted() {
-    this.initIntlTelInput();
+    this.applyMask();
+    this.closeDropdownOnClickOutside();
   },
   beforeUnmount() {
-    if (this.iti) {
-      this.iti.destroy();
+    if (this.inputmaskInstance) {
+      this.inputmaskInstance.remove();
     }
+    document.removeEventListener("click", this.handleClickOutside);
   },
   methods: {
-    initIntlTelInput() {
+    toggleCountryDropdown() {
+      this.showCountryDropdown = !this.showCountryDropdown;
+    },
+    selectCountry(country) {
+      this.selectedCountryCode = country.id;
+      this.showCountryDropdown = false;
+      this.applyMask();
+      this.$emit("country-change", country);
+      
+      // Очищаем значение при смене страны, чтобы пользователь ввел новый номер
+      this.phoneValue = "";
+      this.$emit("update:modelValue", "");
+    },
+    applyMask() {
       const phoneInput = this.$refs.phoneInput;
       if (!phoneInput) return;
 
-      // Инициализируем intl-tel-input
-      this.iti = intlTelInput(phoneInput, {
-        initialCountry: this.defaultCountry,
-        preferredCountries: this.preferredCountries,
-        separateDialCode: true, // Раздельно показываем код страны
-        autoHideDialCode: false, // Не скрываем код страны автоматически
-        nationalMode: false, // Используем международный формат
-        autoPlaceholder: "polite", // Автоматически обновляем placeholder при смене страны
-        utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@25.12.3/build/js/utils.js", // Для валидации и форматирования
-        allowDropdown: true, // Разрешаем выбор страны
-      });
-
-      // Обновляем placeholder при загрузке
-      this.updatePlaceholder();
-
-      // Обработчик изменения страны
-      phoneInput.addEventListener("countrychange", () => {
-        const countryData = this.iti.getSelectedCountryData();
-        this.$emit("country-change", {
-          id: countryData.iso2,
-          code: `+${countryData.dialCode}`,
-          name: countryData.name,
-          dialCode: countryData.dialCode,
-        });
-        this.updatePlaceholder();
-        // При смене страны обновляем значение из input (код страны уже отдельно)
-        this.phoneValue = phoneInput.value;
-        this.$emit("update:modelValue", this.phoneValue);
-      });
-
-      // Если есть начальное значение, устанавливаем его
-      if (this.modelValue) {
-        this.iti.setNumber(this.modelValue);
-        this.phoneValue = phoneInput.value;
+      // Удаляем предыдущую маску
+      if (this.inputmaskInstance) {
+        this.inputmaskInstance.remove();
       }
-    },
-    updatePlaceholder() {
-      if (this.iti) {
-        const countryData = this.iti.getSelectedCountryData();
-        if (countryData) {
-          const example = this.iti.getPlaceholder();
-          this.placeholder = example || "";
-        }
-      }
+
+      // Применяем новую маску
+      this.inputmaskInstance = new Inputmask({
+        mask: this.selectedCountry.mask,
+        placeholder: "_",
+        showMaskOnHover: false,
+        showMaskOnFocus: true,
+        clearIncomplete: true,
+        keepStatic: true,
+      });
+      this.inputmaskInstance.mask(phoneInput);
     },
     handleInput(event) {
-      // При separateDialCode: true, в input только номер без кода страны
-      // Код страны отображается отдельно в .iti__selected-dial-code
       this.phoneValue = event.target.value;
-      
-      // Получаем номер в международном формате для сохранения
-      const fullNumber = this.iti ? this.iti.getNumber() : "";
-      
-      // При separateDialCode значение input уже без кода страны
-      const nationalNumber = event.target.value;
-      
-      this.$emit("update:modelValue", nationalNumber);
-      this.$emit("phone-change", {
-        national: nationalNumber,
-        international: fullNumber,
-      });
+      this.$emit("update:modelValue", event.target.value);
+      this.$emit("phone-change", event.target.value);
     },
-    handleBlur(event) {
-      this.$emit("blur", event);
-    },
-    // Публичный метод для получения номера в разных форматах
-    getNumber(format = "national") {
-      if (!this.iti) return "";
-      
-      // Если utils загружены, используем их
-      if (typeof window.intlTelInputUtils !== "undefined") {
-        const formats = {
-          national: window.intlTelInputUtils.numberFormat.NATIONAL,
-          international: window.intlTelInputUtils.numberFormat.INTERNATIONAL,
-          e164: window.intlTelInputUtils.numberFormat.E164,
-        };
-        return this.iti.getNumber(formats[format] || window.intlTelInputUtils.numberFormat.NATIONAL);
-      }
-      
-      // Если utils не загружены, просто возвращаем значение из input
-      return this.$refs.phoneInput ? this.$refs.phoneInput.value : "";
-    },
-    // Публичный метод для получения данных выбранной страны
-    getSelectedCountry() {
-      if (!this.iti) return null;
-      const countryData = this.iti.getSelectedCountryData();
-      return {
-        id: countryData.iso2,
-        code: `+${countryData.dialCode}`,
-        name: countryData.name,
-        dialCode: countryData.dialCode,
+    closeDropdownOnClickOutside() {
+      this.handleClickOutside = (event) => {
+        if (!this.$el.contains(event.target)) {
+          this.showCountryDropdown = false;
+        }
       };
-    },
-    // Публичный метод для валидации номера
-    isValid() {
-      if (!this.iti) return false;
-      return this.iti.isValidNumber();
+      document.addEventListener("click", this.handleClickOutside);
     },
   },
   watch: {
     modelValue(newVal) {
-      if (this.iti && newVal !== this.phoneValue) {
-        this.iti.setNumber(newVal);
-        this.phoneValue = this.$refs.phoneInput ? this.$refs.phoneInput.value : "";
-      }
+      this.phoneValue = newVal || "";
     },
     defaultCountry(newVal) {
-      if (this.iti) {
-        this.iti.setCountry(newVal);
-        this.updatePlaceholder();
-      }
+      this.selectedCountryCode = newVal;
+      this.applyMask();
     },
   },
-  // Expose методы для доступа извне
-  expose: ["iti", "getNumber", "getSelectedCountry", "isValid"],
 };
 </script>
 
 <style scoped>
 .phone-input-wrapper {
   width: 100%;
-  flex: 1; /* Занимает всю доступную ширину в flex-контейнере */
-  min-width: 0; /* Позволяет сжиматься в flex-контейнере */
-}
-
-/* Переопределяем стили intl-tel-input для интеграции с формой */
-.phone-input-wrapper :deep(.iti) {
-  width: 100%;
-  max-width: 100%;
-  display: flex;
   flex: 1;
+  min-width: 0;
 }
 
-.phone-input-wrapper :deep(.iti__flag-container) {
-  cursor: pointer;
-  border: 1px solid #bbb;
-  border-width: 2px;
-  border-right: none;
-  border-radius: 5px 0 0 5px;
-  background: white;
-  flex-shrink: 0; /* Не сжимается, сохраняет размер */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.phone-input-wrapper :deep(input:focus) {
+  border-color: #337AB7 !important;
 }
-
-.phone-input-wrapper :deep(.iti__selected-flag) {
-  padding: 8px 12px; /* Совпадает с padding input для одинаковой высоты */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-}
-
-.phone-input-wrapper :deep(.iti__selected-flag:hover) {
-  background-color: #f9fafb;
-}
-
-.phone-input-wrapper :deep(.iti__selected-dial-code) {
-  padding: 0 0.25rem;
-  font-size: 1rem;
-}
-
-.phone-input-wrapper :deep(.iti input) {
-  border: 1px solid #bbb;
-  border-width: 2px;
-  border-left: none;
-  border-radius: 0 5px 5px 0;
-  padding: 8px 12px; /* Совпадает с глобальными стилями input */
-  width: 100%;
-  flex: 1;
-  min-width: 0; /* Позволяет сжиматься в flex-контейнере */
-  font-size: inherit;
-  line-height: inherit;
-  color: inherit;
-  background-color: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: border-color 0.2s ease;
-}
-
-.phone-input-wrapper :deep(.iti input:focus) {
-  outline: none;
-  border-color: #337AB7; /* Совпадает с фокусом других полей */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.phone-input-wrapper :deep(.iti__country-list) {
-  z-index: 1000;
-  max-height: 300px;
-  overflow-y: auto;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.phone-input-wrapper :deep(.iti__country) {
-  padding: 8px 12px;
-}
-
-.phone-input-wrapper :deep(.iti__country:hover) {
-  background-color: #f3f4f6;
-}
-
-.phone-input-wrapper :deep(.iti__country.iti__highlight) {
-  background-color: #dbeafe;
-}
-
 </style>

@@ -65,7 +65,6 @@
             <PhoneInputWithCountry
               v-model="newPhone"
               :default-country="newPhoneCountry"
-              :preferred-countries="['tm', 'ru']"
               @country-change="handleCountryChange"
               @keyup.enter="addPhone"
               @blur="handlePhoneBlur"
@@ -301,17 +300,7 @@ export default {
     },
     handlePhoneBlur() {
       // Добавляем телефон при потере фокуса, только если есть введенный номер
-      // При separateDialCode нужно проверить реальный ввод, а не только v-model
-      const phoneComponent = this.$refs.phoneInputRef;
-      if (phoneComponent && phoneComponent.iti) {
-        const inputValue = phoneComponent.$refs.phoneInput?.value || "";
-        const cleanedInput = inputValue.replace(/\D/g, "");
-        // Добавляем только если введено минимум 3 цифры (чтобы избежать ошибок при случайном клике)
-        if (cleanedInput && cleanedInput.length >= 3) {
-          this.addPhone();
-        }
-      } else if (this.newPhone && this.newPhone.trim()) {
-        // Fallback для случая, когда компонент не готов
+      if (this.newPhone && this.newPhone.trim()) {
         this.addPhone();
       }
     },
@@ -365,116 +354,54 @@ export default {
     },
     addPhone() {
       if (this.newPhone && this.newPhone.trim()) {
-        // Получаем номер в международном формате через компонент
-        const phoneComponent = this.$refs.phoneInputRef;
-        if (!phoneComponent || !phoneComponent.iti) {
-          // Если компонент не готов, используем базовую валидацию
-          // Это fallback на случай, если библиотека не загрузилась
-          const cleanedPhone = this.newPhone.replace(/\D/g, "");
-          
-          // Базовая проверка: номер должен содержать код страны и номер
-          // Минимум проверяем по международному стандарту (не менее 7 цифр)
-          if (cleanedPhone.length < 7) {
-            this.showNotification("Ошибка", "Номер телефона слишком короткий", true);
-            return;
-          }
-          
-          // Максимум 15 цифр по международному стандарту E.164
-          if (cleanedPhone.length > 15) {
-            this.showNotification("Ошибка", "Номер телефона слишком длинный (максимум 15 цифр)", true);
-            return;
-          }
-          
-          // Примечание: точная валидация длины для конкретной страны
-          // выполняется через intl-tel-input (isValidNumber)
-          
-          // Определяем код страны из выбранной страны
-          let phoneToSave = cleanedPhone;
-          if (this.currentPhoneCountry) {
-            // Если номер не начинается с кода страны, добавляем его
-            if (!cleanedPhone.startsWith(this.currentPhoneCountry.dialCode)) {
-              phoneToSave = this.currentPhoneCountry.dialCode + cleanedPhone;
-            } else {
-              phoneToSave = cleanedPhone;
-            }
-          } else {
-            // По умолчанию добавляем код Туркменистана, если код не указан
-            if (!cleanedPhone.startsWith("993") && !cleanedPhone.startsWith("7")) {
-              phoneToSave = "993" + cleanedPhone;
-            }
-          }
-
-          if (this.phones.includes(phoneToSave)) {
-            this.showNotification("Ошибка", "Этот номер телефона уже добавлен!", true);
-            return;
-          }
-          this.phones.push(phoneToSave);
-        } else {
-          // Используем intl-tel-input с встроенной валидацией
-          const iti = phoneComponent.iti;
-          
-          // Получаем введенный номер (при separateDialCode это только национальный номер без кода)
-          const inputElement = phoneComponent.$refs.phoneInput;
-          const inputValue = inputElement ? inputElement.value : "";
-          const cleanedInput = inputValue.replace(/\D/g, "");
-          
-          // Проверяем, что пользователь ввел хотя бы минимальное количество цифр
-          if (!cleanedInput || cleanedInput.length < 3) {
-            this.showNotification("Ошибка", "Пожалуйста, введите номер телефона", true);
-            return;
-          }
-          
-          // Проверяем валидность номера через встроенную валидацию intl-tel-input
-          // Библиотека автоматически проверяет правильную длину для каждой страны:
-          // - Туркменистан: 993 + 8 цифр = 11 цифр (в поле только 8 цифр)
-          // - Россия: 7 + 10 цифр = 11 цифр (в поле только 10 цифр)
-          // и т.д. для других стран
-          if (!iti.isValidNumber()) {
-            // Получаем более подробную информацию об ошибке
-            const validationError = iti.getValidationError();
-            let errorMessage = "Пожалуйста, введите корректный номер телефона";
-            
-            if (validationError === 1) {
-              const countryData = iti.getSelectedCountryData();
-              errorMessage = `Номер телефона слишком короткий для ${countryData.name}. Введите полный номер`;
-            } else if (validationError === 2) {
-              const countryData = iti.getSelectedCountryData();
-              errorMessage = `Номер телефона слишком длинный для ${countryData.name}`;
-            } else if (validationError === 3) {
-              errorMessage = "Неверный формат номера для выбранной страны";
-            } else {
-              // Если номер еще неполный, показываем более понятное сообщение
-              const countryData = iti.getSelectedCountryData();
-              errorMessage = `Введите полный номер телефона для ${countryData.name}`;
-            }
-            
-            this.showNotification("Ошибка", errorMessage, true);
-            return;
-          }
-
-          // Получаем номер в международном формате (E164: +99312345678)
-          // isValidNumber() уже проверил валидность, поэтому getNumber() вернет корректный номер
-          const fullNumber = iti.getNumber();
-
-          // Проверяем, что getNumber() вернул валидный номер
-          if (!fullNumber || fullNumber.length < 8) {
-            this.showNotification("Ошибка", "Введите полный номер телефона", true);
-            return;
-          }
-
-          // Убираем + и сохраняем только цифры (код страны + номер)
-          // intl-tel-input уже проверил, что номер имеет правильную длину для страны
-          const cleanedNumber = fullNumber.replace(/[^\d]/g, "");
-          
-          if (this.phones.includes(cleanedNumber)) {
-            this.showNotification("Ошибка", "Этот номер телефона уже добавлен!", true);
-            return;
-          }
-          
-          this.phones.push(cleanedNumber);
+        const cleanedPhone = this.newPhone.replace(/\D/g, "");
+        
+        // Проверка длины номера в зависимости от страны
+        // Для России: 7 + 10 цифр = 11 цифр всего
+        // Для Туркменистана: 993 + 8 цифр = 11 цифр всего
+        const expectedLength = 11;
+        
+        if (cleanedPhone.length < expectedLength) {
+          this.showNotification("Ошибка", `Номер должен содержать ${expectedLength} цифр (код страны + номер)`, true);
+          return;
         }
 
-        // Очищаем поле ввода
+        // Маска Inputmask уже включает код страны в номер
+        // Поэтому cleanedPhone уже содержит код страны
+        let phoneToSave = cleanedPhone;
+        
+        // Проверяем, что номер начинается с правильного кода страны
+        if (this.currentPhoneCountry) {
+          // Если номер не начинается с кода выбранной страны, добавляем код
+          if (!cleanedPhone.startsWith(this.currentPhoneCountry.dialCode)) {
+            // Убираем возможные другие коды и добавляем правильный
+            let phoneWithoutCode = cleanedPhone;
+            if (cleanedPhone.startsWith("993")) {
+              phoneWithoutCode = cleanedPhone.substring(3);
+            } else if (cleanedPhone.startsWith("7")) {
+              phoneWithoutCode = cleanedPhone.substring(1);
+            }
+            phoneToSave = this.currentPhoneCountry.dialCode + phoneWithoutCode;
+          }
+        } else {
+          // Если страна не выбрана, проверяем начало номера
+          if (!cleanedPhone.startsWith("993") && !cleanedPhone.startsWith("7")) {
+            // По умолчанию добавляем код Туркменистана
+            phoneToSave = "993" + cleanedPhone;
+          }
+        }
+
+        // Проверяем, что итоговый номер имеет правильную длину
+        if (phoneToSave.length !== expectedLength) {
+          this.showNotification("Ошибка", `Номер должен содержать ${expectedLength} цифр`, true);
+          return;
+        }
+
+        if (this.phones.includes(phoneToSave)) {
+          this.showNotification("Ошибка", "Этот номер телефона уже добавлен!", true);
+          return;
+        }
+        this.phones.push(phoneToSave);
         this.newPhone = "";
         this.currentPhoneCountry = null;
         this.newPhoneCountry = "tm"; // Сбрасываем на Туркменистан
