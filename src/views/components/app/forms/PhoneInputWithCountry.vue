@@ -8,7 +8,6 @@
       @blur="handleBlur"
       :placeholder="placeholder"
       :required="required"
-      class="flex-1 px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
       ref="phoneInput"
     />
   </div>
@@ -63,8 +62,8 @@ export default {
       this.iti = intlTelInput(phoneInput, {
         initialCountry: this.defaultCountry,
         preferredCountries: this.preferredCountries,
-        separateDialCode: false,
-        autoHideDialCode: false,
+        separateDialCode: true, // Раздельно показываем код страны
+        autoHideDialCode: false, // Не скрываем код страны автоматически
         nationalMode: false, // Используем международный формат
         autoPlaceholder: "polite", // Автоматически обновляем placeholder при смене страны
         utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@25.12.3/build/js/utils.js", // Для валидации и форматирования
@@ -84,7 +83,7 @@ export default {
           dialCode: countryData.dialCode,
         });
         this.updatePlaceholder();
-        // Обновляем значение при смене страны (без utils, просто берем из input)
+        // При смене страны обновляем значение из input (код страны уже отдельно)
         this.phoneValue = phoneInput.value;
         this.$emit("update:modelValue", this.phoneValue);
       });
@@ -105,10 +104,14 @@ export default {
       }
     },
     handleInput(event) {
+      // При separateDialCode: true, в input только номер без кода страны
+      // Код страны отображается отдельно в .iti__selected-dial-code
       this.phoneValue = event.target.value;
       
       // Получаем номер в международном формате для сохранения
       const fullNumber = this.iti ? this.iti.getNumber() : "";
+      
+      // При separateDialCode значение input уже без кода страны
       const nationalNumber = event.target.value;
       
       this.$emit("update:modelValue", nationalNumber);
@@ -178,23 +181,54 @@ export default {
   width: 100%;
 }
 
-/* Переопределяем стили intl-tel-input для лучшей интеграции */
+/* Переопределяем стили intl-tel-input для интеграции с формой */
 .phone-input-wrapper :deep(.iti) {
   width: 100%;
+  display: flex;
 }
 
 .phone-input-wrapper :deep(.iti__flag-container) {
   cursor: pointer;
+  border: 1px solid #d1d5db;
+  border-right: none;
+  border-radius: 4px 0 0 4px;
+  background: white;
 }
 
 .phone-input-wrapper :deep(.iti__selected-flag) {
-  padding: 0 8px;
-  border-right: 1px solid #d1d5db;
-  border-radius: 4px 0 0 4px;
+  padding: 0.25rem 0.5rem;
+  min-height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .phone-input-wrapper :deep(.iti__selected-flag:hover) {
   background-color: #f9fafb;
+}
+
+.phone-input-wrapper :deep(.iti__selected-dial-code) {
+  padding: 0 0.25rem;
+  font-size: 1rem;
+}
+
+.phone-input-wrapper :deep(.iti input) {
+  border: 1px solid #d1d5db;
+  border-left: none;
+  border-radius: 0 4px 4px 0;
+  padding: 0.25rem 0.75rem;
+  min-height: 2.25rem;
+  width: 100%;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #111827;
+  background-color: white;
+}
+
+.phone-input-wrapper :deep(.iti input:focus) {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
 }
 
 .phone-input-wrapper :deep(.iti__country-list) {
@@ -214,12 +248,6 @@ export default {
 
 .phone-input-wrapper :deep(.iti__country.iti__highlight) {
   background-color: #dbeafe;
-}
-
-/* Интеграция с Tailwind - убираем стандартный padding, так как intl-tel-input сам управляет */
-.phone-input-wrapper :deep(.iti input) {
-  border-left: none;
-  border-radius: 0 4px 4px 0;
 }
 
 </style>
