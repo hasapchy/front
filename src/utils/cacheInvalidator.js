@@ -233,7 +233,6 @@ export default class CacheInvalidator {
     const dependentTypes = this.dependencies[type] || [];
     
     dependentTypes.forEach(dependentType => {
-      console.log(`[CacheInvalidator] Инвалидация зависимого типа "${dependentType}" из-за изменения "${type}"`);
       this.invalidateByType(dependentType);
       if (companyId) {
         this.invalidateByCompany(companyId);

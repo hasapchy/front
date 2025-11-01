@@ -1741,7 +1741,6 @@ eventBus.on('cache:invalidate', ({ type }) => {
 
   const mutation = stateMapping[type];
   if (mutation) {
-    console.log(`[Store] Очистка state "${type}" из-за инвалидации кэша`);
     store.commit(mutation, []);
     
     // Для clients также очищаем clientsData

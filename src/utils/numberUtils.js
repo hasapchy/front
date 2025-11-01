@@ -49,12 +49,10 @@ export function formatNumber(value, decimals = null, showDecimals = false) {
     return '0';
   }
 
-  // Форматируем число для отображения (только форматирование, без округления значения)
-  // decimals из настроек используется только для ОТОБРАЖЕНИЯ, не для округления
-  // Реальное округление применяется только через roundValue() при сохранении
+  // ТОЛЬКО форматирование для отображения, БЕЗ округления
+  // decimals из настроек используется только для ограничения количества знаков при отображении
+  // Реальное округление применяется только через roundValue() при сохранении новых записей
   
-  // Используем toFixed с достаточно большим количеством знаков, чтобы сохранить точность
-  // Затем обрезаем до нужного количества знаков БЕЗ округления (просто отсекаем лишнее)
   const numStr = num.toString();
   const decimalIndex = numStr.indexOf('.');
   
@@ -64,7 +62,7 @@ export function formatNumber(value, decimals = null, showDecimals = false) {
     const integerPart = numStr.substring(0, decimalIndex);
     let decimalPart = numStr.substring(decimalIndex + 1);
     
-    // Ограничиваем количество знаков после запятой (без округления)
+    // Ограничиваем количество знаков после запятой (без округления, просто отсекаем лишнее)
     if (decimals >= 0) {
       decimalPart = decimalPart.substring(0, decimals);
     }

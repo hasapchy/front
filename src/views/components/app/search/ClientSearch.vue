@@ -166,12 +166,7 @@ export default {
         // Если клиент уже выбран (при редактировании), обновляем его данные
         if (this.selectedClient && this.selectedClient.id) {
             try {
-                console.log('[ClientSearch] fetching client by id on mount:', this.selectedClient.id);
                 const updatedClient = await ClientController.getItem(this.selectedClient.id);
-                console.log('[ClientSearch] fetched client on mount:', {
-                    id: updatedClient?.id,
-                    balance: updatedClient?.balance,
-                });
                 this.$emit('update:selectedClient', updatedClient);
             } catch (error) {
                 console.error('Ошибка при обновлении данных клиента:', error);
@@ -224,12 +219,7 @@ export default {
             this.clientResults = [];
             
             try {
-                console.log('[ClientSearch] selectClient -> fetching by id:', client?.id);
                 const updatedClient = await ClientController.getItem(client.id);
-                console.log('[ClientSearch] selectClient -> fetched:', {
-                    id: updatedClient?.id,
-                    balance: updatedClient?.balance,
-                });
                 this.$emit('update:selectedClient', updatedClient);
             } catch (error) {
                 this.$emit('update:selectedClient', client);
@@ -264,15 +254,9 @@ export default {
          },
     },
     watch: {
-        // DEBUG: отслеживаем изменения выбранного клиента
         selectedClient: {
             handler(newVal) {
-                try {
-                    console.log('[ClientSearch] watch selectedClient:', {
-                        id: newVal?.id,
-                        balance: newVal?.balance,
-                    });
-                } catch (_) {}
+                // Отслеживаем изменения выбранного клиента
             },
             deep: true,
         },

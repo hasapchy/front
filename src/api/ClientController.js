@@ -7,11 +7,8 @@ import ClientBalanceHistoryDto from "@/dto/client/ClientBalanceHistoryDto";
 export default class ClientController {
   static async getItem(id) {
     try {
-      console.log('[ClientController] getItem called with id:', id);
       const response = await api.get(`/clients/${id}`);
-      console.log('[ClientController] Raw response:', response.data);
       const item = response.data.item || response.data;
-      console.log('[ClientController] Parsed item:', item);
       
       // Получаем данные телефонов и email'ов из Eloquent relationships
       let phones = item.phones || [];
@@ -38,10 +35,6 @@ export default class ClientController {
         item.user_id,
         item.user?.name
       );
-      
-      console.log('[ClientController] Created ClientDto:', clientDto);
-      console.log('[ClientController] ClientDto firstName:', clientDto.firstName);
-      console.log('[ClientController] ClientDto lastName:', clientDto.lastName);
       
       return clientDto;
     } catch (error) {
