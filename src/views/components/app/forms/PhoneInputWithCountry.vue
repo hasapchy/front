@@ -1,13 +1,13 @@
 <template>
   <div class="phone-input-wrapper">
-    <div class="relative flex items-center">
+    <div class="relative flex items-stretch gap-0">
       <!-- Флаг и код страны -->
       <div class="relative">
         <button
           type="button"
           @click="toggleCountryDropdown"
-          class="flex items-center space-x-1 border-2 border-r-0 rounded-l px-3 py-2 bg-white hover:bg-gray-50 focus:outline-none"
-          style="border-color: #bbb; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);"
+          class="flex items-center space-x-1 rounded-l bg-white hover:bg-gray-50 focus:outline-none"
+          style="border: 2px solid #bbb; border-right: none; border-radius: 5px 0 0 5px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); padding: 8px 12px; display: flex; align-items: center; justify-content: center;"
         >
           <img
             :src="selectedCountry.flag"
@@ -51,8 +51,8 @@
         @blur="$emit('blur', $event)"
         :placeholder="selectedCountry.placeholder"
         :required="required"
-        class="flex-1 border-l-0 rounded-r px-3 py-2 focus:outline-none"
-        style="border: 2px solid #bbb; border-left: none; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); transition: border-color 0.2s ease;"
+        class="flex-1 rounded-r focus:outline-none"
+        style="border: 2px solid #bbb; border-left: none; border-radius: 0 5px 5px 0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); transition: border-color 0.2s ease; padding: 8px 12px; margin-left: 0;"
         ref="phoneInput"
       />
     </div>
@@ -190,6 +190,22 @@ export default {
   width: 100%;
   flex: 1;
   min-width: 0;
+}
+
+.phone-input-wrapper > div {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.phone-input-wrapper button {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.phone-input-wrapper input {
+  min-height: 100%;
 }
 
 .phone-input-wrapper :deep(input:focus) {
