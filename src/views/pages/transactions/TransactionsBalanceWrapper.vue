@@ -4,7 +4,80 @@
         <div class="flex-1">
             <transition name="fade" mode="out-in">
                 <div v-if="data != null && !loading && data.length > 0" key="table">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
+                    <!-- Slider для касс, если их больше 3 -->
+                    <div v-if="data.length > 3" class="relative">
+                        <div class="cash-register-slider-container overflow-hidden">
+                            <div 
+                                class="cash-register-slider flex gap-4 transition-transform duration-300 ease-in-out"
+                                :style="{ transform: `translateX(-${currentSlide * (100 / 3)}%)` }"
+                            >
+                                <div 
+                                    v-for="item in data" 
+                                    :key="item.id" 
+                                    class="cash-register-slide flex-shrink-0 bg-white p-3 rounded-lg shadow-md"
+                                    style="width: calc((100% - 2rem) / 3)"
+                                >
+                                    <div class="text-center mb-3">
+                                        <span class="text-sm font-semibold">
+                                            {{ translateCashRegisterName(item.name) }}
+                                            <span class="text-sm font-bold text-black ml-1">({{ item.currency_symbol || item.currency_code || '' }})</span>
+                                        </span>
+                                    </div>
+                                    <div :class="getGridClass(item.balance)">
+                                        <div v-for="balance in getVisibleBalanceItems(item.balance)" :key="balance.title" 
+                                             class="text-center balance-item"
+                                             :class="{
+                                                 'clickable-balance': balance.type === 'income' || balance.type === 'outcome',
+                                                 'hover-income': balance.type === 'income',
+                                                 'hover-outcome': balance.type === 'outcome'
+                                             }"
+                                             :title="(balance.type === 'income' || balance.type === 'outcome') ? $t('clickToFilterTransactions') : ''"
+                                             @click="handleBalanceClick(item, balance)">
+                                            <div class="mb-1 flex items-center justify-center space-x-1">
+                                                <span class="text-xs font-medium text-gray-700">{{ translateBalanceTitle(balance.title) }}</span>
+                                                <i :class="{
+                                                    'fas fa-arrow-up text-green-500': balance.type === 'income',
+                                                    'fas fa-arrow-down text-red-500': balance.type === 'outcome',
+                                                    'fas fa-exclamation-triangle text-orange-500': balance.type === 'debt',
+                                                    'fas fa-calculator text-blue-500': balance.type === 'default',
+                                                    'fas fa-chart-line text-orange-500': balance.type === 'project_income'
+                                                }" class="text-xs"></i>
+                                            </div>
+                                            <div :class="{
+                                                'text-green-600': balance.type === 'income',
+                                                'text-red-600': balance.type === 'outcome',
+                                                'text-orange-600': balance.type === 'debt',
+                                                'text-blue-600': balance.type === 'default',
+                                                'text-orange-600': balance.type === 'project_income',
+                                                'font-bold text-sm': true
+                                            }" class="leading-tight">
+                                                <div class="balance-amount text-base">{{ $formatNumberForCompany(balance.value, true) }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Кнопки навигации -->
+                        <button 
+                            v-if="currentSlide > 0"
+                            @click="prevSlide"
+                            class="absolute left-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors z-10"
+                            :disabled="currentSlide === 0"
+                        >
+                            <i class="fas fa-chevron-left text-gray-700"></i>
+                        </button>
+                        <button 
+                            v-if="currentSlide < maxSlide"
+                            @click="nextSlide"
+                            class="absolute right-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors z-10"
+                            :disabled="currentSlide >= maxSlide"
+                        >
+                            <i class="fas fa-chevron-right text-gray-700"></i>
+                        </button>
+                    </div>
+                    <!-- Обычный grid для 3 касс и меньше -->
+                    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
                         <div v-for="item in data" :key="item.id" class="bg-white p-3 rounded-lg shadow-md">
                             <div class="text-center mb-3">
                                 <span class="text-sm font-semibold">
@@ -119,7 +192,8 @@ export default {
                 positive: 0,
                 negative: 0,
                 balance: 0
-            }
+            },
+            currentSlide: 0
         };
     },
     computed: {
@@ -133,6 +207,11 @@ export default {
                 transactionTypeFilter: this.transactionTypeFilter,
                 sourceFilter: this.sourceFilter
             };
+        },
+        // Максимальный слайд для слайдера
+        maxSlide() {
+            if (!this.data || this.data.length <= 3) return 0;
+            return Math.ceil(this.data.length / 3) - 1;
         }
     },
     methods: {
@@ -186,8 +265,19 @@ export default {
             
             return name;
         },
+        nextSlide() {
+            if (this.currentSlide < this.maxSlide) {
+                this.currentSlide++;
+            }
+        },
+        prevSlide() {
+            if (this.currentSlide > 0) {
+                this.currentSlide--;
+            }
+        },
         async fetchItems() {
             this.loading = true;
+            this.currentSlide = 0; // Сбрасываем слайдер при обновлении данных
             try {
                 let start = null, end = null;
                 switch (this.dateFilter) {
@@ -363,6 +453,27 @@ export default {
     padding: 0.5rem !important;
     border-radius: 0.5rem !important;
     border: 1px solid transparent !important;
+}
+
+/* Стили для слайдера касс */
+.cash-register-slider-container {
+    position: relative;
+    width: 100%;
+}
+
+.cash-register-slider {
+    display: flex;
+    gap: 1rem;
+}
+
+.cash-register-slide {
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .cash-register-slide {
+        width: 100% !important;
+    }
 }
 </style>
 

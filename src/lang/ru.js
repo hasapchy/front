@@ -14,7 +14,7 @@ export default {
   realBalance: 'Реальный баланс',
   debtBalance: 'Кредитный баланс',
   debt: 'Кредит',
-  clientDebts: 'Кредиты клиентов',
+  clientDebts: 'Кредиты',
   oweUs: 'Должны нам',
   weOwe: 'Мы должны',
   source: 'Источник',
