@@ -30,27 +30,32 @@ async function retryWithExponentialBackoff(fn, maxRetries = 3, initialDelay = 10
 // ✅ Listener для синхронизации между вкладками
 function initializeStorageSync(_store) {
   let lastEmittedCompanyId = null;
-  
+  let debounceTimer = null;
+
   window.addEventListener('storage', (e) => {
     // ✅ Слушаем ТОЛЬКО события от ДРУГИХ вкладок (не от этой вкладки)
-    // storage event НЕ срабатывает в той же вкладке, которая пишет
-    if (e.key === 'birhasap_vuex_cache') {
-      try {
-        const newState = JSON.parse(e.newValue || '{}');
-        const oldState = JSON.parse(e.oldValue || '{}');
-        
-        const newCompanyId = newState.currentCompany?.id;
-        const oldCompanyId = oldState.currentCompany?.id;
-        
-        // ✅ Проверяем, изменилась ли компания И не эмитили ли мы уже это событие
-        if (newCompanyId !== oldCompanyId && newCompanyId !== lastEmittedCompanyId) {
-          console.log('📡 Синхронизация: компания изменилась в другой вкладке');
-          lastEmittedCompanyId = newCompanyId;
-          eventBus.emit('company-changed', newCompanyId);
-        }
-      } catch (error) {
-        console.error('Ошибка синхронизации между вкладками:', error);
-      }
+    if (e.key !== 'birhasap_vuex_cache') return;
+
+    try {
+      const newState = JSON.parse(e.newValue || '{}');
+      const newCompanyId = newState.currentCompany?.id;
+
+      // ✅ Базируемся на ТЕКУЩЕМ store, а не на oldValue из события
+      const currentTabCompanyId = _store.state.currentCompany?.id || null;
+
+      // ✅ Эмитим только если в ДРУГОЙ вкладке установлена иная компания
+      if (!newCompanyId || newCompanyId === currentTabCompanyId) return;
+      if (newCompanyId === lastEmittedCompanyId) return;
+
+      // ✅ Небольшой debounce, чтобы не сыпать событиями при серии записей
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        console.log('📡 Синхронизация: компания изменилась в другой вкладке');
+        lastEmittedCompanyId = newCompanyId;
+        eventBus.emit('company-changed', newCompanyId);
+      }, 50);
+    } catch (error) {
+      console.error('Ошибка синхронизации между вкладками:', error);
     }
   });
 }
