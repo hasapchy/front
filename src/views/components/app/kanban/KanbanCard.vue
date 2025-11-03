@@ -78,10 +78,10 @@
         <div v-if="isProjectMode && $store.getters.hasPermission('settings_project_budget_view') && order.budget" class="mt-3 pt-3 border-t border-gray-100">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-1">
-                    <i class="fas fa-money-bill-wave text-purple-600 text-xs"></i>
+                    <i class="fas fa-money-bill-wave text-gray-700 text-xs"></i>
                     <span class="text-xs text-gray-500">{{ $t('projectBudget') }}:</span>
                 </div>
-                <span class="text-sm font-bold text-purple-700">
+                <span class="text-sm font-bold text-black">
                     {{ formatBudget() }}
                 </span>
             </div>
@@ -171,23 +171,18 @@ export default {
         },
         formatBudget() {
             try {
-                // Используем метод getBudgetDisplay из ProjectDto, если он есть
-                if (this.order && typeof this.order.getBudgetDisplay === 'function') {
-                    return this.order.getBudgetDisplay();
-                }
-                
-                // Иначе форматируем вручную
+                // Всегда показываем только исходную сумму бюджета в валюте проекта без эквивалента
                 const roundingEnabled = this.$store.getters.roundingEnabled;
                 const decimals = roundingEnabled ? this.$store.getters.roundingDecimals : 2;
                 const amount = Number(this.order?.budget ?? 0);
                 const formatted = isNaN(amount) ? '0' : amount.toFixed(decimals);
-                
+
                 // Если есть валюта проекта, используем её символ
                 if (this.order?.currency?.symbol) {
                     return `${formatted} ${this.order.currency.symbol}`;
                 }
-                
-                // Иначе используем currencySymbol из заказа (если есть)
+
+                // Иначе используем запасной символ, если есть
                 const symbol = this.order?.currencySymbol || '';
                 return `${formatted} ${symbol}`.trim();
             } catch (e) {
