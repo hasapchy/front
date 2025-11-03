@@ -64,13 +64,23 @@
                     </div>
                 </li>
                 <li class="p-2 border-t border-gray-300 bg-gray-50 sticky bottom-0">
-                    <PrimaryButton 
-                        :is-info="true" 
-                        :is-full="true"
-                        icon="fas fa-plus"
-                        @mousedown.prevent="openCreateProductModal">
-                        {{ $t('createProductOrService') }}{{ productSearch ? ` "${productSearch}"` : '' }}
-                    </PrimaryButton>
+                    <div class="flex space-x-2">
+                        <PrimaryButton 
+                            :is-info="true" 
+                            :is-full="true"
+                            icon="fas fa-plus"
+                            @mousedown.prevent="openCreateProductModal">
+                            {{ $t('createProductOrService') }}{{ productSearch ? ` "${productSearch}"` : '' }}
+                        </PrimaryButton>
+                        <PrimaryButton
+                            :is-light="true"
+                            icon="fas fa-bolt"
+                            @mousedown.prevent="createTempProductQuick"
+                            :disabled="!productSearch.trim() || disabled"
+                        >
+                            {{ $t('createTempProduct') }}
+                        </PrimaryButton>
+                    </div>
                 </li>
             </ul>
         </transition>
@@ -464,6 +474,27 @@ export default {
             this.$emit('update:discountType', this.discountType);
             this.$emit('update:subtotal', this.subtotal);
             this.$emit('update:totalPrice', this.totalPrice);
+        },
+        createTempProductQuick() {
+            const name = (this.productSearch || '').trim();
+            if (!name) return;
+            this.showDropdown = false;
+            const tempItem = {
+                name,
+                productName: name,
+                description: '',
+                quantity: 1,
+                price: 0,
+                unitId: null,
+                productId: this.generateTempId ? this.generateTempId() : (Date.now() + Math.floor(Math.random() * 1000)),
+                isTempProduct: true,
+                icons() { return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>'; }
+            };
+            this.products = [...this.products, tempItem];
+            this.productSearch = '';
+            this.productResults = [];
+            this.updateTotals();
+            if (this.$refs.productInput) this.$refs.productInput.blur();
         },
         openCreateProductModal() {
             this.defaultProductType = this.onlyProducts ? 'product' : 'service';

@@ -135,7 +135,7 @@
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
 
         <template #timeline>
-            <TimelinePanel v-if="editingItem && !timelineCollapsed" ref="timelinePanel" :type="'order'" :id="editingItem.id" @toggle-timeline="toggleTimeline" />
+            <TimelinePanel v-if="editingItem && !timelineCollapsed" ref="timelinePanel" :type="'order'" :id="editingItem.id" @toggle-timeline="toggleTimeline" @open-transaction="openTransactionFromTimeline" />
         </template>
     </SideModalDialog>
 
@@ -147,6 +147,19 @@
             @saved-error="handleInvoiceSavedError"
             @close-request="closeInvoiceModal" 
             :preselectedOrderIds="selectedIds"
+        />
+    </SideModalDialog>
+
+    <!-- Просмотр/редактирование транзакции из таймлайна -->
+    <SideModalDialog :showForm="viewTransactionModal" :onclose="() => { viewTransactionModal = false; editingTransactionItem = null; }">
+        <TransactionCreatePage 
+            v-if="viewTransactionModal"
+            :editingItem="editingTransactionItem"
+            @saved="handleTransactionViewSaved"
+            @saved-error="handleTransactionSavedError"
+            @deleted="handleTransactionViewDeleted"
+            @deleted-error="handleTransactionSavedError"
+            @close-request="() => { viewTransactionModal = false; editingTransactionItem = null; }"
         />
     </SideModalDialog>
 
@@ -184,6 +197,9 @@ import OrderController from "@/api/OrderController";
 import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
 import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
+import TransactionController from "@/api/TransactionController";
+import ClientDto from "@/dto/client/ClientDto";
+import TransactionDto from "@/dto/transaction/TransactionDto";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
 import OrderStatusController from "@/api/OrderStatusController";
 import ProjectController from "@/api/ProjectController";
@@ -254,6 +270,8 @@ export default {
             paidOrdersFilter: false,
             transactionModal: false,
             editingTransaction: null,
+        viewTransactionModal: false,
+        editingTransactionItem: null,
             savedCurrencySymbol: '',
             pendingStatusUpdates: new Map(), // Для debounce обновлений статусов
             batchStatusId: '', // Для массового изменения статуса в канбане
@@ -597,6 +615,75 @@ export default {
             this.transactionModal = false;
             this.editingTransaction = null;
             // Обновляем список заказов
+            this.fetchItems(this.data.currentPage, true);
+        },
+
+        async openTransactionFromTimeline(transactionId) {
+            try {
+                const r = await TransactionController.getItem(transactionId);
+                let client = null;
+                if (r.item.client) {
+                    client = ClientDto.fromApi(r.item.client);
+                }
+                this.editingTransactionItem = new TransactionDto(
+                    r.item.id,
+                    r.item.type,
+                    r.item.is_transfer,
+                    r.item.is_sale || 0,
+                    r.item.is_receipt || 0,
+                    r.item.is_debt || 0,
+                    r.item.cash_id,
+                    r.item.cash_name,
+                    r.item.cash_amount,
+                    r.item.cash_currency_id,
+                    r.item.cash_currency_name,
+                    r.item.cash_currency_code,
+                    r.item.cash_currency_symbol,
+                    r.item.orig_amount,
+                    r.item.orig_currency_id,
+                    r.item.orig_currency_name,
+                    r.item.orig_currency_code,
+                    r.item.orig_currency_symbol,
+                    r.item.user_id,
+                    r.item.user_name,
+                    r.item.category_id,
+                    r.item.category_name,
+                    r.item.category_type,
+                    r.item.project_id,
+                    r.item.project_name,
+                    r.item.client_id,
+                    client,
+                    r.item.note,
+                    r.item.date,
+                    r.item.created_at,
+                    r.item.updated_at,
+                    r.item.orders || [],
+                    r.item.source_type || null,
+                    r.item.source_id || null,
+                    r.item.is_deleted || false
+                );
+                this.viewTransactionModal = true;
+            } catch (error) {
+                const errors = this.getApiErrorMessage(error);
+                this.showNotification(this.$t('error'), errors.join("\n"), true);
+            }
+        },
+
+        handleTransactionViewSaved() {
+            this.viewTransactionModal = false;
+            this.editingTransactionItem = null;
+            if (this.$refs.timelinePanel && !this.timelineCollapsed) {
+                this.$refs.timelinePanel.refreshTimeline();
+            }
+            this.fetchItems(this.data.currentPage, true);
+        },
+
+        handleTransactionViewDeleted() {
+            this.viewTransactionModal = false;
+            this.editingTransactionItem = null;
+            if (this.$refs.timelinePanel && !this.timelineCollapsed) {
+                this.$refs.timelinePanel.refreshTimeline();
+            }
             this.fetchItems(this.data.currentPage, true);
         },
 

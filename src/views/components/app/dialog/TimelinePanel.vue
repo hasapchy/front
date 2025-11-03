@@ -60,7 +60,16 @@
                                             <div class="flex items-start">
                                                 <i class="fas fa-edit text-green-500 mr-2 mt-0.5 text-xs"></i>
                                                 <div class="flex-1">
-                                                    <div>{{ formatLogDescription(item.description) }}</div>
+                                                    <div>
+                                                        <span v-if="item.meta && item.meta.transaction_id"
+                                                              class="text-blue-600 underline cursor-pointer hover:text-blue-700"
+                                                              @click="openTransaction(item.meta.transaction_id)">
+                                                            {{ formatLogDescription(item.description) }}
+                                                        </span>
+                                                        <span v-else>
+                                                            {{ formatLogDescription(item.description) }}
+                                                        </span>
+                                                    </div>
                                                     
 
                                                     <div v-if="item.changes?.attributes && shouldShowChanges(item)" 
@@ -152,6 +161,9 @@ export default {
         },
         toggleTimeline() {
             this.$emit('toggle-timeline');
+        },
+        openTransaction(id) {
+            this.$emit('open-transaction', id);
         },
         async fetchTimeline() {
             this.loading = true;
