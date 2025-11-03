@@ -38,13 +38,16 @@ function initializeStorageSync(_store) {
 
     try {
       const newState = JSON.parse(e.newValue || '{}');
+      const oldState = JSON.parse(e.oldValue || '{}');
       const newCompanyId = newState.currentCompany?.id;
+      const oldCompanyId = oldState.currentCompany?.id;
 
       // ✅ Базируемся на ТЕКУЩЕМ store, а не на oldValue из события
       const currentTabCompanyId = _store.state.currentCompany?.id || null;
 
-      // ✅ Эмитим только если в ДРУГОЙ вкладке установлена иная компания
+      // ✅ Эмитим только если в ДРУГОЙ вкладке действительно сменилась компания
       if (!newCompanyId || newCompanyId === currentTabCompanyId) return;
+      if (!oldCompanyId || newCompanyId === oldCompanyId) return;
       if (newCompanyId === lastEmittedCompanyId) return;
 
       // Если уже синхронизируемся — выходим
@@ -56,18 +59,17 @@ function initializeStorageSync(_store) {
         try {
           _store.commit('SET_IS_SYNCING_COMPANY_FROM_OTHER_TAB', true);
 
-          // Подтягиваем актуальную компанию с сервера и ставим в store
-          const response = await api.get('/user/current-company');
-          const updatedCompany = new CompanyDto(response.data.company);
-          _store.commit('SET_CURRENT_COMPANY', updatedCompany);
-          _store.commit('SET_LAST_COMPANY_ID', updatedCompany.id);
-
-          // Загружаем данные компании под новым контекстом
-          await _store.dispatch('loadCompanyData');
-
-          console.log('📡 Синхронизация: компания изменилась в другой вкладке');
-          lastEmittedCompanyId = updatedCompany.id;
-          eventBus.emit('company-changed', updatedCompany.id);
+          // ⚡ Не дергаем сервер: берем компанию из newState другой вкладки
+          if (newState.currentCompany) {
+            const updatedCompany = new CompanyDto(newState.currentCompany);
+            _store.commit('SET_CURRENT_COMPANY', updatedCompany);
+            _store.commit('SET_LAST_COMPANY_ID', updatedCompany.id);
+            // Загружаем данные компании под новым контекстом
+            await _store.dispatch('loadCompanyData');
+            console.log('📡 Синхронизация: компания изменилась в другой вкладке');
+            lastEmittedCompanyId = updatedCompany.id;
+            eventBus.emit('company-changed', updatedCompany.id);
+          }
         } catch (err) {
           console.error('Ошибка синхронизации текущей компании:', err);
         } finally {
