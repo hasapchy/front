@@ -545,6 +545,16 @@ export default {
           temp_products: tempProducts
         }
 
+        console.log('[Basement] createOrder payload', {
+          client_id: this.form.client_id,
+          client_id_typeof: typeof this.form.client_id,
+          project_id: this.form.project_id,
+          has_products: validProducts.length,
+          has_temp_products: tempProducts.length,
+          warehouse_id: this.form.warehouse_id,
+          category_id: this.form.category_id
+        })
+
         const { data } = await basementApi.post('/orders', orderData)
         
         // Уведомление об успехе
@@ -557,6 +567,7 @@ export default {
       } catch (error) {
         // Уведомление об ошибке
         const errorMessage = this.getApiErrorMessage(error)
+        console.error('[Basement] createOrder error raw', error?.response?.data || error)
         this.$store.dispatch('showNotification', { 
           title: this.savedErrorText, 
           subtitle: errorMessage, 
@@ -629,6 +640,17 @@ export default {
           temp_products: tempProducts
         }
 
+        console.log('[Basement] updateOrder payload', {
+          order_id: this.editingItem?.id || (this.orderId ? parseInt(this.orderId) : null),
+          client_id: this.form.client_id,
+          client_id_typeof: typeof this.form.client_id,
+          project_id: this.form.project_id,
+          has_products: validProducts.length,
+          has_temp_products: tempProducts.length,
+          warehouse_id: this.form.warehouse_id,
+          category_id: this.form.category_id
+        })
+
         const orderId = this.editingItem?.id || (this.orderId ? parseInt(this.orderId) : null)
         
         if (!orderId) {
@@ -654,6 +676,7 @@ export default {
       } catch (error) {
         // Уведомление об ошибке
         const errorMessage = this.getApiErrorMessage(error)
+        console.error('[Basement] updateOrder error raw', error?.response?.data || error)
         this.$store.dispatch('showNotification', { 
           title: 'Ошибка обновления заказа', 
           subtitle: errorMessage, 
