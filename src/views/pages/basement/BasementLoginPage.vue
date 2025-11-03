@@ -5,8 +5,8 @@
       <div class="text-center mb-8 animate-fade-in">
         <div class="inline-flex items-center justify-center mb-4">
           <img 
-            src="/logo.jpg" 
-            alt="Lebizli Tehnologiya Merkezi" 
+            :src="logoUrl" 
+            alt="Hasapchy" 
             class="h-20 w-auto object-contain"
           >
         </div>
@@ -169,6 +169,13 @@ export default {
       loading: false,
       error: null,
       showPassword: false
+    }
+  },
+  computed: {
+    logoUrl() {
+      const ver = this.$store?.state?.logoVersion || 0
+      const ts = Date.now()
+      return `/logo.jpg?v=${ts}&cv=${ver}`
     }
   },
   methods: {

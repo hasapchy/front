@@ -127,7 +127,7 @@
         <div class="flex flex-col items-end space-y-2">
           <!-- Подсказка, почему кнопка неактивна -->
           <div v-if="!canSave && !loading" class="text-sm text-gray-500 text-right">
-            <div v-if="!form.client_id && !form.project_id">• Укажите клиента или проект</div>
+            <div v-if="!form.client_id">• Укажите клиента</div>
             <div v-if="!form.warehouse_id">• Выберите склад</div>
             <div v-if="!hasValidProducts">• Добавьте товары с количеством больше 0</div>
           </div>
@@ -287,13 +287,7 @@ export default {
       return hasProductsWithQuantity || hasStockItemsWithQuantity
     },
     canSave() {
-      // Кнопка активна если:
-      // 1. Есть клиент ИЛИ проект
-      // 2. Есть склад
-      // 3. Есть валидные товары с количеством > 0
-      // 4. Не идет загрузка
-      const hasCounterparty = !!this.form.client_id || !!this.form.project_id
-      return hasCounterparty && 
+      return this.form.client_id && 
              this.form.warehouse_id && 
              this.hasValidProducts && 
              !this.loading
@@ -467,7 +461,7 @@ export default {
     },
     onClientSelected(client) {
       this.selectedClient = client
-      this.form.client_id = client ? client.id : ''
+      this.form.client_id = client ? client.id : null
     },
     async createClient() {
       this.clientLoading = true
@@ -475,7 +469,7 @@ export default {
         const { data } = await basementApi.post('/clients', this.clientForm)
         
         this.selectedClient = data
-        this.form.client_id = data.id
+        this.form.client_id = data.id || null
         this.showClientForm = false
         this.clientForm = { name: '', phone: '' }
       } catch (error) {
@@ -490,9 +484,9 @@ export default {
       // Проверяем обязательные поля
       const validationErrors = []
       
-      // Требуем клиента или проект
-      if (!this.form.client_id && !this.form.project_id) {
-        validationErrors.push('• Укажите клиента или проект')
+      // Требуем клиента всегда
+      if (!this.form.client_id) {
+        validationErrors.push('• Укажите клиента')
       }
       
       if (!this.form.warehouse_id) {
@@ -540,7 +534,7 @@ export default {
           }))
         
         const orderData = {
-          client_id: this.form.project_id ? null : (this.form.client_id || null),
+          client_id: this.form.client_id || null,
           project_id: this.form.project_id || null,
           cash_id: this.form.cash_id,
           warehouse_id: this.form.warehouse_id,
@@ -577,8 +571,9 @@ export default {
 
       const validationErrors = []
       
-      if (!this.form.client_id && !this.form.project_id) {
-        validationErrors.push('• Укажите клиента или проект')
+      // Требуем клиента всегда
+      if (!this.form.client_id) {
+        validationErrors.push('• Укажите клиента')
       }
       
       if (!this.form.warehouse_id) {
@@ -623,7 +618,7 @@ export default {
           }))
         
         const orderData = {
-          client_id: this.form.project_id ? null : (this.form.client_id || null),
+          client_id: this.form.client_id || null,
           project_id: this.form.project_id || null,
           cash_id: this.form.cash_id,
           warehouse_id: this.form.warehouse_id,

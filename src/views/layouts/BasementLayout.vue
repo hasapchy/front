@@ -8,7 +8,7 @@
             <div class="flex">
               <div class="flex-shrink-0 flex items-center">
                 <div class="flex items-center gap-3">
-                  <img src="/logo.jpg" alt="Birhasap" class="h-8 w-8 object-contain" />
+                  <img :src="getLogo()" alt="Hasapchy" class="h-8 w-8 object-contain" />
                   <h1 class="text-xl font-bold text-gray-900">{{ $t('accountingSystem') }}</h1>
                 </div>
               </div>
@@ -126,6 +126,11 @@ export default {
     }
   },
   methods: {
+    getLogo() {
+      const ver = this.$store?.state?.logoVersion || 0
+      const ts = Date.now()
+      return `/logo.jpg?v=${ts}&cv=${ver}`
+    },
     logout() {
       BasementAuthController.logout()
       this.$store.dispatch('setUser', null)
