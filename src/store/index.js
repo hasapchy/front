@@ -63,8 +63,7 @@ function initializeStorageSync(_store) {
           if (newState.currentCompany) {
             const updatedCompany = new CompanyDto(newState.currentCompany);
             _store.commit('SET_CURRENT_COMPANY', updatedCompany);
-            _store.commit('SET_LAST_COMPANY_ID', updatedCompany.id);
-            // Загружаем данные компании под новым контекстом
+            // Не обновляем lastCompanyId здесь, чтобы loadCompanyData увидел смену и очистил кэш
             await _store.dispatch('loadCompanyData');
             console.log('📡 Синхронизация: компания изменилась в другой вкладке');
             lastEmittedCompanyId = updatedCompany.id;
@@ -1335,7 +1334,6 @@ const store = createStore({
         const response = await api.get('/user/current-company');
         const company = new CompanyDto(response.data.company);
         commit('SET_CURRENT_COMPANY', company);
-        commit('SET_LAST_COMPANY_ID', company.id);
         
         // Загружаем данные компании
         if (company?.id) {
@@ -1356,7 +1354,6 @@ const store = createStore({
         const company = new CompanyDto(response.data.company);
         
         commit('SET_CURRENT_COMPANY', company);
-        commit('SET_LAST_COMPANY_ID', companyId);
         
         // ✅ Инвалидируем кэш старой компании в localStorage
         if (oldCompanyId && oldCompanyId !== companyId) {

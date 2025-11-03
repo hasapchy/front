@@ -28,10 +28,6 @@ export default {
   
   methods: {
     async onCompanyChanged(companyId) {
-      // ✅ Если пришло событие с той же компанией — ничего не делаем
-      if (companyId === this.currentCompanyId) {
-        return;
-      }
       // ✅ Если компонент имеет специфичный обработчик handleCompanyChanged, используем его
       if (this.handleCompanyChanged) {
         await this.handleCompanyChanged(companyId);
