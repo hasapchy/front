@@ -462,6 +462,7 @@ export default {
     onClientSelected(client) {
       this.selectedClient = client
       this.form.client_id = client ? client.id : null
+      console.log('[Basement] selectedClient:', client, 'form.client_id:', this.form.client_id, 'typeof:', typeof this.form.client_id)
     },
     async createClient() {
       this.clientLoading = true

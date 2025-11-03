@@ -22,7 +22,7 @@
         <!-- Клиент -->
         <div v-if="!isProjectMode" class="mb-2">
             <div class="flex items-center space-x-1 text-sm">
-                <i class="fas fa-user text-blue-500 text-xs"></i>
+                <i :class="getClientIconClass()"></i>
                 <span class="font-medium text-gray-800 truncate">
                     {{ getClientName() }}
                 </span>
@@ -69,7 +69,7 @@
         <!-- Клиент (только для проектов) -->
         <div v-if="isProjectMode && order.client" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <i class="fas fa-user text-blue-500 text-xs"></i>
+                <i :class="getClientIconClass()"></i>
                 <span class="truncate">{{ getClientName() }}</span>
             </div>
         </div>
@@ -133,6 +133,18 @@ export default {
         },
         formatDate(date) {
             return dayjsDateTime(date);
+        },
+        getClientIconClass() {
+            try {
+                const type = this.order?.client?.clientType || this.order?.client?.client_type;
+                const base = 'text-xs mr-0.5';
+                if (type === 'company') {
+                    return `fas fa-building text-blue-500 ${base}`;
+                }
+                return `fas fa-user text-blue-500 ${base}`;
+            } catch (e) {
+                return 'fas fa-user text-blue-500 text-xs';
+            }
         },
         getClientName() {
             try {
