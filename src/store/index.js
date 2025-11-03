@@ -47,12 +47,32 @@ function initializeStorageSync(_store) {
       if (!newCompanyId || newCompanyId === currentTabCompanyId) return;
       if (newCompanyId === lastEmittedCompanyId) return;
 
+      // Если уже синхронизируемся — выходим
+      if (_store.state.isSyncingCompanyFromOtherTab) return;
+
       // ✅ Небольшой debounce, чтобы не сыпать событиями при серии записей
       if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        console.log('📡 Синхронизация: компания изменилась в другой вкладке');
-        lastEmittedCompanyId = newCompanyId;
-        eventBus.emit('company-changed', newCompanyId);
+      debounceTimer = setTimeout(async () => {
+        try {
+          _store.commit('SET_IS_SYNCING_COMPANY_FROM_OTHER_TAB', true);
+
+          // Подтягиваем актуальную компанию с сервера и ставим в store
+          const response = await api.get('/user/current-company');
+          const updatedCompany = new CompanyDto(response.data.company);
+          _store.commit('SET_CURRENT_COMPANY', updatedCompany);
+          _store.commit('SET_LAST_COMPANY_ID', updatedCompany.id);
+
+          // Загружаем данные компании под новым контекстом
+          await _store.dispatch('loadCompanyData');
+
+          console.log('📡 Синхронизация: компания изменилась в другой вкладке');
+          lastEmittedCompanyId = updatedCompany.id;
+          eventBus.emit('company-changed', updatedCompany.id);
+        } catch (err) {
+          console.error('Ошибка синхронизации текущей компании:', err);
+        } finally {
+          _store.commit('SET_IS_SYNCING_COMPANY_FROM_OTHER_TAB', false);
+        }
       }, 50);
     } catch (error) {
       console.error('Ошибка синхронизации между вкладками:', error);
@@ -142,6 +162,8 @@ const store = createStore({
     },
     // ✅ Флаг для предотвращения цикла между вкладками
     isChangingCompanyFromThisTab: false,
+    // ✅ Флаг синхронизации компании, пришедшей из другой вкладки
+    isSyncingCompanyFromOtherTab: false,
     // Фильтр по типу клиента для взаиморасчетов/финансов
     clientTypeFilter: 'all',
     // Версия логотипа для инвалидации кэша изображений
@@ -320,6 +342,9 @@ const store = createStore({
     },
     SET_IS_CHANGING_COMPANY(state, value) {
       state.isChangingCompanyFromThisTab = value;
+    },
+    SET_IS_SYNCING_COMPANY_FROM_OTHER_TAB(state, value) {
+      state.isSyncingCompanyFromOtherTab = value;
     },
     SET_CLIENT_TYPE_FILTER(state, value) {
       state.clientTypeFilter = value || 'all';
