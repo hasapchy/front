@@ -135,6 +135,7 @@ const store = createStore({
     categories: [], // Категории
     projects: [], // Проекты (DTO с методами)
     projectsData: [], // Plain data для кэширования
+    projectsDataCompanyId: null, // ✅ Для кого сохранены projectsData
     orderStatuses: [], // Статусы заказов
     projectStatuses: [], // Статусы проектов
     transactionCategories: [], // Категории транзакций
@@ -263,6 +264,7 @@ const store = createStore({
     },
     SET_PROJECTS_DATA(state, projectsData) {
       state.projectsData = projectsData;
+      state.projectsDataCompanyId = state.currentCompany?.id || null;
     },
     SET_ORDER_STATUSES(state, orderStatuses) {
       state.orderStatuses = orderStatuses;
@@ -301,6 +303,7 @@ const store = createStore({
       state.categories = [];
       state.projects = [];
       state.projectsData = [];
+      state.projectsDataCompanyId = null;
       // ✅ Сбрасываем флаги логирования при смене компании
       state.loggedDataFlags = {
         warehouses: false,
@@ -881,12 +884,21 @@ const store = createStore({
       }
 
       // ✅ СНАЧАЛА проверяем есть ли кэшированные plain data (vuex-persistedstate восстановил)
-      if (state.projectsData.length > 0 && state.projects.length === 0) {
+      if (
+        state.projectsData.length > 0 &&
+        state.projects.length === 0 &&
+        state.projectsDataCompanyId === companyId
+      ) {
         // Конвертируем plain data в DTO
         const ProjectDto = (await import('@/dto/project/ProjectDto')).default;
         const projects = ProjectDto.fromArray(state.projectsData);
         commit('SET_PROJECTS', projects);
         return;
+      }
+
+      // Если projectsData есть, но принадлежит другой компании — очищаем
+      if (state.projectsData.length > 0 && state.projectsDataCompanyId !== companyId) {
+        commit('SET_PROJECTS_DATA', []);
       }
 
       // Если DTO уже в state - возвращаем
@@ -1626,6 +1638,7 @@ const store = createStore({
         'clientsData',   // ✅ Кэшируем plain data (без методов DTO)
         'categories',   // ← Нужно для фильтров
         'projectsData',  // ✅ Кэшируем plain data (без методов DTO)
+        'projectsDataCompanyId', // ✅ Для проверки соответствия компании
         'lastProductsData',  // ✅ Последние товары - plain data (5 минут)
         'allProductsData',  // ✅ ВСЕ товары - plain data (30 дней!)
         // 'products',  // ← НЕ кэшируем глобально - каждая страница загружает свои данные
