@@ -463,6 +463,15 @@ export default {
       this.selectedClient = client
       this.form.client_id = client ? client.id : null
       console.log('[Basement] selectedClient:', client, 'form.client_id:', this.form.client_id, 'typeof:', typeof this.form.client_id)
+      const clientType = client?.client_type || client?.clientType || 'unknown'
+      const clientName = client?.fullName ? client.fullName() : `${client?.first_name || client?.firstName || ''} ${client?.last_name || client?.lastName || ''}`.trim()
+      console.log('[Basement] client debug →', { id: client?.id, name: clientName || '(no name)', type: clientType })
+      console.table([
+        { field: 'id', value: client?.id },
+        { field: 'name', value: clientName || '(no name)' },
+        { field: 'client_type', value: client?.client_type },
+        { field: 'clientType', value: client?.clientType },
+      ])
     },
     async createClient() {
       this.clientLoading = true
