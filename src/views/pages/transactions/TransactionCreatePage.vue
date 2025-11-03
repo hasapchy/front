@@ -4,7 +4,12 @@
         <div v-if="isDebt" class="mb-2">
             <label class="required">{{ $t('client') }}</label>
         </div>
-        <ClientSearch v-model:selectedClient="selectedClient" :showLabel="false" />
+        <ClientSearch 
+            v-model:selectedClient="selectedClient" 
+            :showLabel="false"
+            :disabled="!!initialProjectId" 
+            :allowDeselect="!initialProjectId"
+        />
         <div>
             <label>{{ $t('date') }}</label>
             <input type="datetime-local" v-model="date"
@@ -368,6 +373,14 @@ export default {
             }
         },
         async save() {
+            // Если выбран проект — клиент должен соответствовать клиенту проекта
+            if (this.initialProjectId) {
+                const project = this.allProjects.find(p => p.id === this.projectId) || null;
+                if (project && project.client) {
+                    // Форсируем клиента проекта перед сохранением
+                    this.selectedClient = project.client;
+                }
+            }
             // Валидация: если "в кредит", то клиент обязателен
             if ((this.isDebt || this.forceDebt) && !this.selectedClient?.id) {
                 this.$emit('saved-error', 'При транзакции "в кредит" должен быть выбран клиент');
@@ -396,9 +409,9 @@ export default {
                         this.editingItemId,
                         {
                             category_id: this.categoryId,
-                            project_id: this.projectId,
+                        project_id: this.projectId,
                             date: this.date,
-                            client_id: this.selectedClient?.id,
+                        client_id: this.selectedClient?.id,
                             orig_amount: this.origAmount, // обновления не трогаем
                             currency_id: this.currencyIdComputed,
                             note: this.note,
@@ -601,6 +614,25 @@ export default {
         }
     },
     watch: {
+        // Когда выбирают проект — автоматически подставляем клиента проекта (только если зашли из проекта)
+        projectId: {
+            async handler(newProjectId) {
+                if (!newProjectId || !this.initialProjectId) return;
+                // Ищем проект в store (activeProjects может не содержать завершённых — в таком случае подгрузим)
+                let project = (this.allProjects || []).find(p => p.id === newProjectId) || null;
+                if (!project) {
+                    try {
+                        project = await ProjectController.getItem(newProjectId);
+                    } catch (e) {
+                        project = null;
+                    }
+                }
+                if (project && project.client) {
+                    this.selectedClient = project.client;
+                }
+            },
+            immediate: true
+        },
         defaultCashId: {
             handler(i) {
                 this.cashId = this.defaultCashId;
