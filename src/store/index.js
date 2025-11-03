@@ -511,7 +511,14 @@ const store = createStore({
 
       // Если уже в state - возвращаем (vuex-persistedstate восстановил!)
       if (state.currencies.length > 0) {
-        return;
+        // Если сейчас есть доступ к другим валютам, но в кэше только дефолтная — принудительно перезагрузим
+        const hasAccessToOtherCurrencies = typeof getters.hasPermission === 'function' && getters.hasPermission('settings_currencies_view');
+        const onlyDefaultInCache = state.currencies.length > 0 && state.currencies.every(c => c.is_default === true);
+        if (hasAccessToOtherCurrencies && onlyDefaultInCache) {
+          commit('SET_CURRENCIES', []);
+        } else {
+          return;
+        }
       }
 
       commit('SET_LOADING_FLAG', { type: 'currencies', loading: true });
