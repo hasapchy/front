@@ -41,7 +41,7 @@
               <div>
                 <BasementClientSearch
                   :selected-client="selectedClient"
-                  @update:selectedClient="onClientSelected"
+                  @update:selected-client="onClientSelected"
                 />
               </div>
 
@@ -211,7 +211,6 @@
 </template>
 
 <script>
-import { BasementAuthController } from '@/api/BasementAuthController'
 import basementApi from '@/api/basementAxiosInstance'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'

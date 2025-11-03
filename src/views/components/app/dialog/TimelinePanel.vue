@@ -60,7 +60,7 @@
                                             <div class="flex items-start">
                                                 <i class="fas fa-edit text-green-500 mr-2 mt-0.5 text-xs"></i>
                                                 <div class="flex-1">
-                                                    <div>
+                                                    <div class="flex items-center flex-wrap gap-2">
                                                         <span v-if="item.meta && item.meta.transaction_id"
                                                               class="text-blue-600 underline cursor-pointer hover:text-blue-700"
                                                               @click="openTransaction(item.meta.transaction_id)">
@@ -68,6 +68,15 @@
                                                         </span>
                                                         <span v-else>
                                                             {{ formatLogDescription(item.description) }}
+                                                        </span>
+                                                        <span v-if="item.meta && (item.meta.product_quantity != null || item.meta.product_price != null)" class="text-xs text-gray-600">
+                                                            <template v-if="item.meta.product_quantity != null">
+                                                                {{ $t('quantity') }}: {{ formatQuantity(item.meta.product_quantity) }}
+                                                            </template>
+                                                            <template v-if="item.meta.product_price != null">
+                                                                <span class="mx-1">/</span>
+                                                                {{ $t('price') }}: {{ formatCurrency(item.meta.product_price, defaultCurrencySymbol) }}
+                                                            </template>
                                                         </span>
                                                     </div>
                                                     
