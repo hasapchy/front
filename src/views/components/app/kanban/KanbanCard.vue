@@ -171,20 +171,11 @@ export default {
         },
         formatBudget() {
             try {
-                // Всегда показываем только исходную сумму бюджета в валюте проекта без эквивалента
-                const roundingEnabled = this.$store.getters.roundingEnabled;
-                const decimals = roundingEnabled ? this.$store.getters.roundingDecimals : 2;
+                // Форматируем отображение через глобальный утилс $formatNumber (с учетом настроек компании)
                 const amount = Number(this.order?.budget ?? 0);
-                const formatted = isNaN(amount) ? '0' : amount.toFixed(decimals);
-
-                // Если есть валюта проекта, используем её символ
-                if (this.order?.currency?.symbol) {
-                    return `${formatted} ${this.order.currency.symbol}`;
-                }
-
-                // Иначе используем запасной символ, если есть
-                const symbol = this.order?.currencySymbol || '';
-                return `${formatted} ${symbol}`.trim();
+                const symbol = this.order?.currency?.symbol || this.order?.currencySymbol || '';
+                const formatted = this.$formatNumber ? this.$formatNumber(amount, null, true) : String(amount);
+                return symbol ? `${formatted} ${symbol}` : formatted;
             } catch (e) {
                 const symbol = this.order?.currency?.symbol || this.order?.currencySymbol || '';
                 return `${this.order?.budget ?? 0} ${symbol}`.trim();
