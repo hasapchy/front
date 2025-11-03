@@ -210,9 +210,10 @@ export default {
       }));
     },
     users() {
-      const allUsers = this.$store.getters.users || [];
+      // ✅ Используем геттер usersForCurrentCompany - автоматически фильтрует по текущей компании
+      const allUsers = this.$store.getters.usersForCurrentCompany || [];
 
-      // Если тип клиента не employee/investor, возвращаем всех сотрудников
+      // Если тип клиента не employee/investor, возвращаем всех сотрудников текущей компании
       if (this.clientType !== 'employee' && this.clientType !== 'investor') {
         return allUsers;
       }
@@ -250,6 +251,7 @@ export default {
   },
   async mounted() {
     // Загружаем сотрудников для выбора сотрудника
+    // ✅ Проверяем, загружены ли пользователи (usersForCurrentCompany зависит от users)
     if (this.$store.getters.users.length === 0) {
       await this.$store.dispatch('loadUsers');
     }

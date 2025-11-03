@@ -104,7 +104,8 @@ export default {
         async fetchUsers() {
             // ✅ Используем данные из store (кэш!)
             await this.$store.dispatch('loadUsers');
-            this.users = this.$store.getters.users;
+            // ✅ Используем геттер usersForCurrentCompany - автоматически фильтрует по текущей компании
+            this.users = this.$store.getters.usersForCurrentCompany;
         },
         async fetchAllCategories() {
             // ✅ Используем данные из store (кэш!)

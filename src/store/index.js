@@ -1547,6 +1547,24 @@ const store = createStore({
     currentCompany: (state) => state.currentCompany,
     userCompanies: (state) => state.userCompanies,
     currentCompanyId: (state) => state.currentCompany?.id || null,
+    // ✅ Пользователи, отфильтрованные по текущей компании
+    // Показываем только тех, у кого есть доступ к текущей компании (т.е. они являются сотрудниками этой компании)
+    usersForCurrentCompany: (state) => {
+      const currentCompanyId = state.currentCompany?.id;
+      if (!currentCompanyId) {
+        // Если нет текущей компании - возвращаем всех (на случай, если это глобальный режим)
+        return state.users;
+      }
+      // Фильтруем: показываем пользователей, у которых текущая компания есть в списке компаний
+      return state.users.filter(user => {
+        if (!user.companies || user.companies.length === 0) {
+          return false; // Если у пользователя нет компаний - не показываем
+        }
+        // Проверяем, есть ли у пользователя текущая компания (т.е. он сотрудник этой компании)
+        // Используем сравнение с приведением типов для надежности
+        return user.companies.some(company => Number(company.id) === Number(currentCompanyId));
+      });
+    },
     soundEnabled: (state) => state.soundEnabled,
     // Настройки округления для текущей компании
     roundingDecimals: (state) => state.currentCompany?.rounding_decimals ?? 2,

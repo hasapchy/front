@@ -107,6 +107,7 @@ import ProjectController from '@/api/ProjectController';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import companyChangeMixin from '@/mixins/companyChangeMixin';
 import AppController from '@/api/AppController';
 
 import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
@@ -114,7 +115,7 @@ import ProjectContractsTab from '@/views/pages/projects/ProjectContractsTab.vue'
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, companyChangeMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, FileUploader },
     props: {
@@ -270,13 +271,17 @@ export default {
         async fetchUsers() {
             // ✅ Используем данные из store (кэшированные!)
             await this.$store.dispatch('loadUsers');
-            this.users = this.$store.getters.users;
+            
+            // ✅ Используем геттер usersForCurrentCompany - автоматически фильтрует по текущей компании
+            this.users = this.$store.getters.usersForCurrentCompany;
 
             if (this.editingItem && Array.isArray(this.editingItem.users)) {
                 // При редактировании существующего проекта - загружаем выбранных пользователей
-                this.selectedUsers = this.editingItem.getUserIds();
+                // Фильтруем выбранных пользователей, оставляя только тех, кто доступен в текущей компании
+                const availableUserIds = this.users.map(u => u.id.toString());
+                this.selectedUsers = this.editingItem.getUserIds().filter(id => availableUserIds.includes(id));
             } else if (!this.editingItem) {
-                // При создании нового проекта - выбираем всех пользователей по умолчанию
+                // При создании нового проекта - выбираем всех доступных пользователей по умолчанию
                 this.selectAllUsers();
             }
         },
@@ -486,6 +491,13 @@ export default {
                 this.closeDeleteFileDialog();
             }
         },
+        // ✅ Обработчик смены компании - перезагружаем пользователей с фильтрацией по новой компании
+        async handleCompanyChanged(companyId) {
+            // Очищаем выбранных пользователей, так как они могут быть из другой компании
+            this.selectedUsers = [];
+            // Перезагружаем пользователей с новой фильтрацией
+            await this.fetchUsers();
+        },
     },
 
     beforeUnmount() {
@@ -518,10 +530,14 @@ export default {
                     this.clearForm();
                     this.currentTab = 'info'; // Сбрасываем вкладку и при закрытии
                 }
-                this.$nextTick(() => {
+                this.$nextTick(async () => {
                     this.saveInitialState();
-                    // Дополнительная проверка: если это создание нового проекта и пользователи загружены, выбираем всех
-                    if (!newEditingItem && this.users && this.users.length > 0 && this.selectedUsers.length === 0) {
+                    // ✅ Если открываем проект для редактирования, перезагружаем пользователей
+                    // чтобы отфильтровать их по текущей компании
+                    if (newEditingItem) {
+                        await this.fetchUsers();
+                    } else if (this.users && this.users.length > 0 && this.selectedUsers.length === 0) {
+                        // Дополнительная проверка: если это создание нового проекта и пользователи загружены, выбираем всех
                         this.selectedUsers = this.users.map(user => user.id.toString());
                     }
                 });

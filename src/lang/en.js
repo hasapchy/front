@@ -222,6 +222,7 @@ export default {
   noHistory: 'No history',
   projectIncome: 'Project Income',
   budget: 'Budget',
+  projectBudget: 'Project Budget',
   
   // Virtualization and lazy loading
   loadingMore: 'Loading more items...',
