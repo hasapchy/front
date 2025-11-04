@@ -102,7 +102,10 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                this.data = await OrderStatusController.getItems(page, this.perPage);
+                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
+                const perPage = this.perPage || 10;
+                
+                this.data = await OrderStatusController.getItems(page, perPage);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingStatuses'), error.message, true);
             }

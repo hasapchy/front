@@ -217,7 +217,10 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                const newData = await InvoiceController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, null, this.statusFilter, this.perPage);
+                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
+                const perPage = this.perPage || 10;
+                
+                const newData = await InvoiceController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, null, this.statusFilter, perPage);
                 this.data = newData;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingInvoiceList'), error.message, true);

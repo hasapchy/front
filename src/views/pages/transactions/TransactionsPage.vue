@@ -277,6 +277,9 @@ export default {
                 this.loading = true;
             }
             try {
+                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
+                const perPage = this.perPage || 10;
+                
                 const new_data = await TransactionController.getItems(
                     page,
                     this.cashRegisterId,
@@ -286,7 +289,7 @@ export default {
                     this.transactionTypeFilter,
                     this.sourceFilter,
                     this.projectId,
-                    this.perPage,
+                    perPage,
                     this.startDate,
                     this.endDate,
                     this.debtFilter // Фильтр по долгам (false/true)

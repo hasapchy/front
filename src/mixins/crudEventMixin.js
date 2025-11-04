@@ -4,7 +4,14 @@ export default {
   data() {
     // ✅ Синхронно загружаем perPage из localStorage ДО первого рендера
     const savedPerPage = localStorage.getItem('perPage');
-    const perPage = savedPerPage ? parseInt(savedPerPage, 10) : 10;
+    let perPage = 10; // Значение по умолчанию
+    if (savedPerPage) {
+      const parsed = parseInt(savedPerPage, 10);
+      // ✅ Проверяем, что распарсенное значение является валидным числом
+      if (!isNaN(parsed) && parsed > 0) {
+        perPage = parsed;
+      }
+    }
     
     return {
       data: null,

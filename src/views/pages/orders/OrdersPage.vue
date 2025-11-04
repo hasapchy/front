@@ -430,7 +430,10 @@ export default {
                     currentStatusFilter = '4'; // Статус "Оплачен"
                 }
                 
-                const newData = await OrderController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, currentStatusFilter, this.projectFilter, this.clientFilter, this.perPage);
+                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
+                const perPage = this.perPage || 10;
+                
+                const newData = await OrderController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, currentStatusFilter, this.projectFilter, this.clientFilter, perPage);
                 this.data = newData;
                 
                 // Сохраняем символ валюты из первого заказа, если он есть

@@ -109,7 +109,10 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                const newData = await OrderAfController.getItemsPaginated(page, this.perPage);
+                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
+                const perPage = this.perPage || 10;
+                
+                const newData = await OrderAfController.getItemsPaginated(page, perPage);
                 this.data = newData;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingAdditionalFieldsList'), error.message, true);

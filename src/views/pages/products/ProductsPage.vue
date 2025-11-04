@@ -175,7 +175,10 @@ export default {
                     params.search = this.searchQuery;
                 }
                 
-                const new_data = await ProductController.getItems(page, true, params, this.perPage);
+                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
+                const perPage = this.perPage || 10;
+                
+                const new_data = await ProductController.getItems(page, true, params, perPage);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProductList'), error.message, true);

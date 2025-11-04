@@ -88,7 +88,10 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                this.data = await CompaniesController.getItems(page, this.perPage);
+                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
+                const perPage = this.perPage || 10;
+                
+                this.data = await CompaniesController.getItems(page, perPage);
             } catch (error) {
                 this.showNotification(this.$t('errorLoadingCompanies'), error.message, true);
             }

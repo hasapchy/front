@@ -104,7 +104,10 @@ export default {
                 this.loading = true;
             }
             try {
-                const new_data = await WarehouseMovementController.getItems(page, this.perPage);
+                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
+                const perPage = this.perPage || 10;
+                
+                const new_data = await WarehouseMovementController.getItems(page, perPage);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification('Ошибка получения списка перемещений', error.message, true);

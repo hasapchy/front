@@ -168,7 +168,10 @@ export default {
                 this.loading = true;
             }
             try {
-                const new_data = await SaleController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, this.perPage);
+                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
+                const perPage = this.perPage || 10;
+                
+                const new_data = await SaleController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, perPage);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingSaleList'), error.message, true);

@@ -255,11 +255,14 @@ export default {
                 this.loading = true;
             }
             try {
+                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
+                const perPage = this.perPage || 10;
+                
                 const filters = {};
                 if (this.statusFilter) filters.status_id = this.statusFilter;
                 if (this.clientFilter) filters.client_id = this.clientFilter;
                 
-                const new_data = await ProjectController.getItems(page, filters, this.perPage);
+                const new_data = await ProjectController.getItems(page, filters, perPage);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProjectList'), error.message, true);

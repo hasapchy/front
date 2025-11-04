@@ -167,8 +167,11 @@ export default {
                 this.loading = true;
             }
             try {
+                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
+                const perPage = this.perPage || 10;
+                
                 const includeInactive = this.statusFilter === '' || this.statusFilter === 'inactive';
-                const new_data = await ClientController.getItems(page, this.searchQuery, includeInactive, this.statusFilter, this.typeFilter, this.perPage);
+                const new_data = await ClientController.getItems(page, this.searchQuery, includeInactive, this.statusFilter, this.typeFilter, perPage);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingClientList'), error.message, true);

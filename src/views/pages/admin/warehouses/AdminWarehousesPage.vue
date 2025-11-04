@@ -91,7 +91,10 @@ export default {
                 this.loading = true;
             }
             try {
-                const new_data = await WarehouseController.getWarehouses(page, this.perPage);
+                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
+                const perPage = this.perPage || 10;
+                
+                const new_data = await WarehouseController.getWarehouses(page, perPage);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingWarehouseList'), error.message, true);

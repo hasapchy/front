@@ -170,7 +170,10 @@ export default {
             var category_id = this.categoryId != '' ? this.categoryId : null;
             var warehouse_id = this.warehouseId != '' ? this.warehouseId : null;
             try {
-                const new_data = await WarehouseStockController.getStocks(page, warehouse_id, category_id, this.perPage, this.searchQuery);
+                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
+                const perPage = this.perPage || 10;
+                
+                const new_data = await WarehouseStockController.getStocks(page, warehouse_id, category_id, perPage, this.searchQuery);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification('Ошибка получения списка товаров на складе', error.message, true);
