@@ -377,6 +377,11 @@ export default {
   cannotEditTransfer: 'Transferi redaktir etmek bolmaýar',
   transferTransaction: 'Transfer tranzaksiyasy',
   
+  // Exchange rate
+  exchangeRate: 'Walýuta kursy',
+  exchangeRateHelp: 'Kurs 1 birlik başlangyç walýutadan näçe birlik maksat walýutanyň alynjakdygyny görkezýär',
+  receiverAmount: 'Alyjy mukdary',
+  
   // Удаление
   deleteCategory: 'Kategoriýany poz',
   deleteOrderCategory: 'Sargyt kategoriýasyny poz',
