@@ -250,8 +250,53 @@ export default {
                 const fromRateData = await AppController.getCurrencyExchangeRate(fromCurrency.id);
                 const toRateData = await AppController.getCurrencyExchangeRate(toCurrency.id);
                 
-                const fromRate = fromRateData.exchange_rate;
-                const toRate = toRateData.exchange_rate;
+                // Проверяем, что данные получены
+                if (!fromRateData || !toRateData || !fromRateData.exchange_rate || !toRateData.exchange_rate) {
+                    console.error('Exchange rate data is missing:', { fromRateData, toRateData });
+                    this.exchangeRate = null;
+                    return;
+                }
+                
+                // Преобразуем в числа, убеждаясь что это валидные числа
+                // Используем Number() вместо parseFloat для более строгого преобразования
+                let fromRate = Number(fromRateData.exchange_rate);
+                let toRate = Number(toRateData.exchange_rate);
+                
+                // Если Number() вернул NaN, пробуем parseFloat
+                if (isNaN(fromRate)) {
+                    fromRate = parseFloat(fromRateData.exchange_rate);
+                }
+                if (isNaN(toRate)) {
+                    toRate = parseFloat(toRateData.exchange_rate);
+                }
+                
+                // Проверяем, что курсы валидны
+                if (isNaN(fromRate) || isNaN(toRate) || fromRate <= 0 || toRate <= 0) {
+                    console.error('Invalid exchange rates:', { 
+                        fromRate, 
+                        toRate, 
+                        fromRateOriginal: fromRateData.exchange_rate,
+                        toRateOriginal: toRateData.exchange_rate,
+                        fromRateType: typeof fromRateData.exchange_rate,
+                        toRateType: typeof toRateData.exchange_rate,
+                        fromRateData, 
+                        toRateData 
+                    });
+                    this.exchangeRate = null;
+                    return;
+                }
+                
+                // Убеждаемся, что это действительно числа (не строки)
+                if (typeof fromRate !== 'number' || typeof toRate !== 'number') {
+                    console.error('Exchange rates are not numbers:', { 
+                        fromRate, 
+                        toRate, 
+                        fromRateType: typeof fromRate,
+                        toRateType: typeof toRate
+                    });
+                    this.exchangeRate = null;
+                    return;
+                }
                 
                 // Расчет курса конвертации соответствует логике CurrencyConverter::convert
                 // Курс показывает, сколько единиц целевой валюты за 1 единицу исходной
@@ -277,6 +322,7 @@ export default {
                     // Целевая валюта - базовая (манат)
                     // CurrencyConverter: amount * fromCurrency->exchange_rate
                     // Для 1 единицы: fromRate = курс
+                    // fromRate уже проверено выше и является числом
                     calculatedRate = fromRate.toFixed(6);
                     console.log('To base currency:', { fromCurrency: fromCurrency.name, toCurrency: toCurrency.name, fromRate, calculatedRate });
                 } else {
@@ -426,12 +472,11 @@ export default {
             console.log('showExchangeRate watcher:', { newVal, oldVal, exchangeRate: this.exchangeRate });
             if (newVal) {
                 // Если курс еще не установлен или валюты изменились, сбрасываем флаг ручного изменения
+                // Но не вызываем calculateExchangeRate здесь, т.к. он уже вызывается в handleCashRegisterChange
                 if (!this.exchangeRate || oldVal !== newVal) {
                     this.isExchangeRateManual = false;
-                    this.$nextTick(() => {
-                        console.log('Calculating exchange rate after showExchangeRate change');
-                        this.calculateExchangeRate();
-                    });
+                    // Не вызываем calculateExchangeRate здесь, чтобы избежать дублирования
+                    // handleCashRegisterChange уже вызовет его
                 }
             } else {
                 this.exchangeRate = null;
