@@ -779,13 +779,25 @@ export default {
         }))
       }
     },
+    // Форматирование количества - убирает лишние нули в конце, но сохраняет все значащие цифры
+    formatQuantity(quantity) {
+      if (quantity === null || quantity === undefined || quantity === '') {
+        return '0';
+      }
+      const num = Number(quantity);
+      if (isNaN(num)) {
+        return String(quantity);
+      }
+      // Преобразуем в строку с максимальной точностью, затем убираем лишние нули
+      return String(num).replace(/\.?0+$/, '');
+    },
     // Обработчик для DraggableTable
     productItemMapper(item, columnName) {
       switch (columnName) {
         case 'name':
           return item.name
         case 'quantity':
-          return item.quantity
+          return this.formatQuantity(item.quantity)
         case 'unit':
           return item.unit
         case 'price':

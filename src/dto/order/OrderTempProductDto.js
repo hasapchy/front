@@ -28,7 +28,16 @@ export default class OrderTempProductDto {
     }
 
     getQuantityFormatted() {
-        return this.quantity.toFixed(2);
+        // Форматирование количества - убирает лишние нули в конце, но сохраняет все значащие цифры
+        if (this.quantity === null || this.quantity === undefined || this.quantity === '') {
+            return '0';
+        }
+        const num = Number(this.quantity);
+        if (isNaN(num)) {
+            return String(this.quantity);
+        }
+        // Преобразуем в строку с максимальной точностью, затем убираем лишние нули
+        return String(num).replace(/\.?0+$/, '');
     }
 
     // Метод для создания DTO из обычного объекта товара

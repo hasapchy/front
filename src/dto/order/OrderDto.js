@@ -74,23 +74,36 @@ export default class OrderDto {
     return formatCurrency(this.totalPrice, this.currencySymbol, null, true);
   }
 
+  // Форматирование количества - убирает лишние нули в конце, но сохраняет все значащие цифры
+  formatQuantity(quantity) {
+    if (quantity === null || quantity === undefined || quantity === '') {
+      return '0';
+    }
+    const num = Number(quantity);
+    if (isNaN(num)) {
+      return String(quantity);
+    }
+    // Преобразуем в строку с максимальной точностью, затем убираем лишние нули
+    return String(num).replace(/\.?0+$/, '');
+  }
+
   productsHtmlList() {
     if (this.products === null || this.products.length === 0) {
       return "";
     }
     if (this.products.length === 1) {
       const product = this.products[0];
-      return `<span>${product.productName} - ${product.quantity}${product.unitShortName}</span>`;
+      return `<span>${product.productName} - ${this.formatQuantity(product.quantity)}${product.unitShortName}</span>`;
     }
     // Формируем строку для тултипа
     const tooltip = this.products
       .map(
-        (product) => `${product.productName} - ${product.quantity}${product.unitShortName}`
+        (product) => `${product.productName} - ${this.formatQuantity(product.quantity)}${product.unitShortName}`
       )
       .join('\n');
     // Показываем первый товар и троеточие, остальное в тултипе
     const first = this.products[0];
-    return `<span title="${tooltip}">${first.productName} - ${first.quantity}${first.unitShortName} ...</span>`;
+    return `<span title="${tooltip}">${first.productName} - ${this.formatQuantity(first.quantity)}${first.unitShortName} ...</span>`;
   }
 
   formatDate() {
