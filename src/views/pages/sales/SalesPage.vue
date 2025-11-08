@@ -36,7 +36,7 @@
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
-            <i class="fas fa-spinner fa-spin text-2xl"></i><br>
+            <SpinnerIcon />
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">

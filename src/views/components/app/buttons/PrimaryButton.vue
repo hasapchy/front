@@ -7,7 +7,7 @@
         }
     ]" @click="handleClick">
         <transition name="fade">
-            <i v-if="isLoading" class="fas fa-spinner fa-spin"></i>
+            <SpinnerIcon v-if="isLoading" size-class="" />
             <i v-else-if="icon" :class="icon"></i>
         </transition>
         <div :class="{ 'ml-2': (isLoading || icon) && $slots.default, 'inline-block': true }"></div>

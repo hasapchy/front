@@ -5,7 +5,10 @@
     class="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     :title="$t('clearCache')"
   >
-    <i :class="isClearing ? 'fas fa-spinner fa-spin' : 'fas fa-broom'" class="text-sm"></i>
+    <span class="text-sm">
+      <SpinnerIcon v-if="isClearing" size-class="text-sm" />
+      <i v-else class="fas fa-broom"></i>
+    </span>
     <span class="text-sm hidden md:inline">{{ $t('clearCache') }}</span>
   </button>
 </template>

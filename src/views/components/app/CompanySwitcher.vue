@@ -11,7 +11,7 @@
       </div>
       <span class="company-name">
         <span v-if="isLoading" class="flex items-center gap-1">
-          <i class="fas fa-spinner fa-spin text-xs"></i>
+          <SpinnerIcon size-class="text-xs" />
           {{ currentCompanyName }}
         </span>
         <span v-else>{{ currentCompanyName }}</span>

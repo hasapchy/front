@@ -27,6 +27,7 @@ import i18n from "./i18n";
 import AuthController from "./api/AuthController";
 import { setStore } from "./store/storeManager";
 import soundManager from "./utils/soundUtils";
+import SpinnerIcon from "./views/components/app/SpinnerIcon.vue";
 import { formatNumber, formatCurrency, getStepForDecimals, formatNumberWithRounding, formatCurrencyWithRounding } from "./utils/numberUtils";
 
 async function bootstrapApp() {
@@ -50,6 +51,7 @@ async function bootstrapApp() {
   soundManager.setStore(store);
 
   const app = createApp(App);
+  app.component("SpinnerIcon", SpinnerIcon);
   
   // Глобальные методы для форматирования чисел
   app.config.globalProperties.$formatNumber = formatNumber;

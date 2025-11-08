@@ -1455,10 +1455,18 @@ const store = createStore({
           localStorage.setItem(persistKey, JSON.stringify(stored));
           
           // ✅ Очищаем кэш транзакций (все ключи связанные с транзакциями)
+          const keysToPreservePrefixes = ['tableColumns_', 'tableSort_'];
+          const shouldPreserve = key => keysToPreservePrefixes.some(prefix => key?.startsWith(prefix));
           const keysToDelete = [];
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && (key.includes('transaction') || key.includes('balance'))) {
+            if (!key) {
+              continue;
+            }
+            if (shouldPreserve(key)) {
+              continue;
+            }
+            if (key.includes('transaction') || key.includes('balance')) {
               keysToDelete.push(key);
             }
           }

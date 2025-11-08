@@ -98,7 +98,7 @@
 
         <!-- Индикатор загрузки -->
         <div v-if="loading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg z-10">
-            <i class="fas fa-spinner fa-spin text-3xl text-blue-500"></i>
+            <SpinnerIcon />
         </div>
     </div>
 </template>
@@ -107,6 +107,7 @@
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanColumn from './KanbanColumn.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 import debounce from 'lodash.debounce';
 
 export default {
@@ -114,7 +115,8 @@ export default {
     components: {
         draggable: VueDraggableNext,
         KanbanColumn,
-        PrimaryButton
+        PrimaryButton,
+        SpinnerIcon
     },
     props: {
         orders: {

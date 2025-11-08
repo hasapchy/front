@@ -15,7 +15,7 @@
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
-            <i class="fas fa-spinner fa-spin text-2xl"></i><br>
+            <SpinnerIcon />
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
@@ -44,6 +44,7 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
+import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 
 export default {
     mixins: [modalMixin, notificationMixin, batchActionsMixin, crudEventMixin, getApiErrorMessageMixin, companyChangeMixin],
@@ -55,7 +56,8 @@ export default {
         DraggableTable,
         CashRegisterCreatePage,
         BatchButton,
-        AlertDialog
+        AlertDialog,
+        SpinnerIcon
     },
     data() {
         return {

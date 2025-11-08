@@ -4,7 +4,7 @@
 
         <!-- Загрузка -->
         <div v-if="loading" class="flex justify-center items-center py-8">
-            <i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i>
+            <SpinnerIcon size-class="text-2xl" additional-class="text-gray-400" />
         </div>
 
         <!-- Формы настроек по контекстам -->

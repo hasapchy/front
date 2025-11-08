@@ -121,7 +121,7 @@
                     </div>
                 </div>
                 <div v-else-if="loading" key="loader" class="flex justify-center items-center h-20">
-                    <i class="fas fa-spinner fa-spin text-2xl"></i><br>
+                    <SpinnerIcon />
                 </div>
             </transition>
         </div>
@@ -173,7 +173,7 @@
                     </div>
                 </div>
                 <div v-else key="loader" class="flex justify-center items-center h-20">
-                    <i class="fas fa-spinner fa-spin text-2xl"></i><br>
+                    <SpinnerIcon />
                 </div>
             </transition>
         </div>

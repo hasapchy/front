@@ -60,7 +60,7 @@
       />
     </div>
     <div v-else key="loader" class="h-screen flex items-center justify-center">
-      <i class="fas fa-spinner fa-spin text-2xl"></i>
+      <SpinnerIcon />
     </div>
   </transition>
 </template>

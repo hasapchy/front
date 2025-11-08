@@ -14,7 +14,7 @@
                 :item-mapper="itemMapper" :onItemClick="(i) => showModal(i)" @selectionChange="selectedIds = $event" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
-            <i class="fas fa-spinner fa-spin text-2xl"></i>
+            <SpinnerIcon />
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="true" 
