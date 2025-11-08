@@ -1,4 +1,6 @@
-import { dayjsDateTime } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
+import { createFromApiArray } from "@/utils/dtoUtils";
+import OrderStatusCategoryDto from "./OrderStatusCategoryDto";
 export default class OrderStatusDto {
   constructor(
     id,
@@ -19,15 +21,26 @@ export default class OrderStatusDto {
     return this.category ? this.category.name : '-';
   }
 
-  formatDate() {
-    return dayjsDateTime(this.date);
-  }
-
   formatCreatedAt() {
-    return dayjsDateTime(this.createdAt);
+    return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
 
   formatUpdatedAt() {
-    return dayjsDateTime(this.updatedAt);
+    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
+  }
+
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, data => {
+      const category = data.category ? OrderStatusCategoryDto.fromApiArray([data.category])[0] || null : null;
+      
+      return new OrderStatusDto(
+        data.id,
+        data.name,
+        data.category_id,
+        category,
+        data.created_at,
+        data.updated_at
+      );
+    }).filter(Boolean);
   }
 }

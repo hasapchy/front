@@ -1,7 +1,8 @@
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import api from "./axiosInstance";
-import ClientDto from "@/dto/client/ClientDto";
 import TransactionDto from "@/dto/transaction/TransactionDto";
+import queryCache from "@/utils/queryCache";
+import CacheInvalidator from "@/utils/cacheInvalidator";
 
 export default class TransactionController {
   static async getItems(
@@ -13,12 +14,21 @@ export default class TransactionController {
     transaction_type = null,
     source = null,
     project_id = null,
-    per_page = 10,
+    per_page = 20,
     start_date = null,
     end_date = null,
     is_debt = null
   ) {
     try {
+      const cacheKey = 'transactions_list';
+      const cacheParams = { page, cash_id, date_filter_type, order_id, search, transaction_type, source, project_id, per_page, start_date, end_date, is_debt };
+      const cached = queryCache.get(cacheKey, cacheParams);
+      
+      if (cached) {
+        console.log('📦 Загружено из кэша: transactions', cacheParams);
+        return cached;
+      }
+
       const response = await api.get("/transactions", {
         params: {
           page: page,
@@ -36,68 +46,7 @@ export default class TransactionController {
         },
       });
       const data = response.data;
-      // Преобразуем полученные данные в DTO
-      const items = data.items.map((item) => {
-        var client = null;
-        if (item.client) {
-          client = new ClientDto(
-            item.client.id,
-            item.client.client_type,
-            item.client.balance,
-            item.client.is_supplier,
-            item.client.is_conflict,
-            item.client.first_name,
-            item.client.last_name,
-            item.client.contact_person,
-            item.client.address,
-            item.client.note,
-            item.client.status,
-            item.client.discount_type,
-            item.client.discount,
-            item.client.created_at,
-            item.client.updated_at,
-            item.client.emails,
-            item.client.phones
-          );
-        }
-        return new TransactionDto(
-          item.id,
-          item.type,
-          item.is_transfer,
-          item.is_sale,
-          item.is_receipt,
-          item.is_debt,
-          item.cash_id,
-          item.cash_name,
-          item.cash_amount,
-          item.cash_currency_id,
-          item.cash_currency_name,
-          item.cash_currency_code,
-          item.cash_currency_symbol,
-          item.orig_amount,
-          item.orig_currency_id,
-          item.orig_currency_name,
-          item.orig_currency_code,
-          item.orig_currency_symbol,
-          item.user_id,
-          item.user_name,
-          item.category_id,
-          item.category_name,
-          item.category_type,
-          item.project_id,
-          item.project_name,
-          item.client_id,
-          client,
-          item.note,
-          item.date,
-          item.created_at,
-          item.updated_at,
-          item.orders || [],
-          item.source_type || null,
-          item.source_id || null,
-          item.is_deleted || false
-        );
-      });
+      const items = TransactionDto.fromApiArray(data.items);
 
       const paginatedResponse = new PaginatedResponse(
         items,
@@ -107,6 +56,7 @@ export default class TransactionController {
         data.total
       );
 
+      queryCache.set(cacheKey, cacheParams, paginatedResponse);
       return paginatedResponse;
     } catch (error) {
       console.error("Ошибка при получении транзакций:", error);
@@ -114,10 +64,15 @@ export default class TransactionController {
     }
   }
   static async getItem(id) {
-    const { data } = await api.get(`/transactions/${id}`);
-    // Возвращаем RAW данные для обратной совместимости
-    // Места где нужен DTO, преобразуют данные сами
-    return data;
+    try {
+      const { data } = await api.get(`/transactions/${id}`);
+      const item = data.item;
+      
+      return TransactionDto.fromApiArray([item])[0] || null;
+    } catch (error) {
+      console.error("Ошибка при получении транзакции:", error);
+      throw error;
+    }
   }
 
   static async getTotalPaidByOrderId(orderId) {
@@ -135,6 +90,8 @@ export default class TransactionController {
   static async storeItem(item) {
     try {
       const { data } = await api.post("/transactions", item);
+      queryCache.invalidate('transactions_list');
+      CacheInvalidator.onCreate('transactions');
       return data;
     } catch (error) {
       console.error("Ошибка при создании транзакции:", error);
@@ -143,21 +100,19 @@ export default class TransactionController {
   }
 
   static async createTransactionForOrder(orderId, transactionData) {
-    try {
-      const { data } = await api.post("/transactions", {
-        ...transactionData,
-        order_id: orderId
-      });
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании транзакции для заказа:", error);
-      throw error;
-    }
+    const item = {
+      ...transactionData,
+      order_id: orderId
+    };
+    const result = await this.storeItem(item);
+    queryCache.invalidate('orders_list');
+    return result;
   }
 
   static async updateItem(id, item) {
     try {
       const { data } = await api.put(`/transactions/${id}`, item);
+      queryCache.invalidate('transactions_list');
       return data;
     } catch (error) {
       console.error("Ошибка при обновлении транзакции:", error);
@@ -168,6 +123,7 @@ export default class TransactionController {
   static async deleteItem(id) {
     try {
       const { data } = await api.delete(`/transactions/${id}`);
+      queryCache.invalidate('transactions_list');
       return data;
     } catch (error) {
       console.error("Ошибка при удалении транзакции:", error);
@@ -175,16 +131,7 @@ export default class TransactionController {
     }
   }
 
-  // Получить общую сумму оплат по заказу
   static async getTotalByOrderId(orderId) {
-    try {
-      const { data } = await api.get(`/transactions/total?order_id=${orderId}`);
-      return data;
-    } catch (error) {
-      console.error('Ошибка при получении суммы оплат по заказу:', error);
-      throw error;
-    }
+    return this.getTotalPaidByOrderId(orderId);
   }
-
-
 }

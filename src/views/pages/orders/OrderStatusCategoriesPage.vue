@@ -61,8 +61,6 @@ export default {
     },
     data() {
         return {
-            // data, loading, perPage, perPageOptions - из crudEventMixin
-            // selectedIds - из batchActionsMixin
             controller: OrderStatusCategoryController,
             cacheInvalidationType: 'orderStatusCategories',
             savedSuccessText: this.$t('orderStatusCategorySuccessfullyAdded'),
@@ -108,10 +106,9 @@ export default {
                 this.loading = true;
             }
             try {
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
+                const per_page = this.perPage || 10;
                 
-                const new_data = await OrderStatusCategoryController.getItems(page, perPage);
+                const new_data = await OrderStatusCategoryController.getItems(page, per_page);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingOrderStatusCategories'), error.message, true);

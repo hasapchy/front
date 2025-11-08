@@ -1,59 +1,50 @@
+import { formatNumber } from "@/utils/numberUtils";
+
 export default class OrderTempProductDto {
     constructor(data = {}) {
         this.id = data.id || null;
-        this.orderId = data.order_id || data.orderId || null;
+        this.orderId = data.order_id || null;
         this.name = data.name || '';
         this.description = data.description || '';
         this.quantity = data.quantity || 0;
         this.price = data.price || 0;
-        this.unitId = data.unit_id || data.unitId || null;
-        this.unitName = data.unit_name || data.unitName || '';
-        this.unitShortName = data.unit_short_name || data.unitShortName || '';
-        this.createdAt = data.created_at || data.createdAt || null;
-        this.updatedAt = data.updated_at || data.updatedAt || null;
-        this.productType = 'temp'; // Для различения от обычных товаров
+        this.unitId = data.unit_id || null;
+        this.unitName = data.unit_name || '';
+        this.unitShortName = data.unit_short_name || '';
+        this.createdAt = data.created_at || null;
+        this.updatedAt = data.updated_at || null;
+        this.productType = 'temp';
     }
 
-    // Методы для работы с данными
     getTotalPrice() {
         return this.quantity * this.price;
     }
 
     getTotalPriceFormatted() {
-        return this.getTotalPrice().toFixed(2);
+        return formatNumber(this.getTotalPrice(), null, true);
     }
 
     getPriceFormatted() {
-        return this.price.toFixed(2);
+        return formatNumber(this.price, null, true);
     }
 
     getQuantityFormatted() {
-        // Форматирование количества - убирает лишние нули в конце, но сохраняет все значащие цифры
-        if (this.quantity === null || this.quantity === undefined || this.quantity === '') {
-            return '0';
-        }
         const num = Number(this.quantity);
-        if (isNaN(num)) {
-            return String(this.quantity);
-        }
-        // Преобразуем в строку с максимальной точностью, затем убираем лишние нули
-        return String(num).replace(/\.?0+$/, '');
+        return isNaN(num) || !this.quantity ? '0.00' : formatNumber(this.quantity, 2, true);
     }
 
-    // Метод для создания DTO из обычного объекта товара
     static fromProductDto(product, quantity = 1, price = 0) {
         return new OrderTempProductDto({
             name: product.name,
             description: product.description || '',
             quantity: quantity,
-            price: price || product.retail_price || 0,
-            unitId: product.unit_id,
-            unitName: product.unit_name,
-            unitShortName: product.unit_short_name,
+            price: price || product.retailPrice || 0,
+            unitId: product.unitId,
+            unitName: product.unitName,
+            unitShortName: product.unitShortName,
         });
     }
 
-    // Метод для преобразования в объект для API
     toApiObject() {
         return {
             name: this.name,
@@ -64,7 +55,6 @@ export default class OrderTempProductDto {
         };
     }
 
-    // Метод для клонирования
     clone() {
         return new OrderTempProductDto({
             id: this.id,
@@ -81,7 +71,6 @@ export default class OrderTempProductDto {
         });
     }
 
-    // Иконка для отображения в заказе
     icons() {
         return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>';
     }

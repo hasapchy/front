@@ -48,8 +48,6 @@ export default {
     components: { NotificationToast, PrimaryButton, SideModalDialog, OrderCategoryCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog },
     data() {
         return {
-            // data, loading, perPage, perPageOptions - из crudEventMixin
-            // selectedIds - из batchActionsMixin
             controller: OrderCategoryController,
             cacheInvalidationType: 'orderCategories',
             savedSuccessText: this.$t('orderCategorySuccessfullyAdded'),
@@ -83,10 +81,9 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
+                const per_page = this.perPage || 20;
                 
-                this.data = await OrderCategoryController.getItems(page, perPage);
+                this.data = await OrderCategoryController.getItems(page, per_page);
             } catch (error) {
                 this.showNotification('Ошибка получения списка категорий заказов', error.message, true);
             }

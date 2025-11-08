@@ -153,7 +153,7 @@ export default {
             try {
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
-                const defaultCurrency = currencies.find(c => c.is_default);
+                const defaultCurrency = currencies.find(c => c.isDefault);
                 this.currencyCode = defaultCurrency ? defaultCurrency.symbol : '';
             } catch (error) {
                 this.currencyCode = '';

@@ -1,6 +1,9 @@
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
-import { formatCurrency } from "@/utils/numberUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
+import { formatCurrency, formatNumber } from "@/utils/numberUtils";
 import OrderAfValueDto from "./OrderAfValueDto";
+import { createProductsTooltipList, createFromApiArray } from "@/utils/dtoUtils";
+import ClientDto from "@/dto/client/ClientDto";
+import OrderProductDto from "./OrderProductDto";
 
 export default class OrderDto {
   constructor(
@@ -68,64 +71,31 @@ export default class OrderDto {
   }
 
   priceInfo() {
-    if (this.discount && this.discount > 0) {
-      return `${formatCurrency(this.totalPrice, this.currencySymbol, null, true)} (из ${formatCurrency(this.price, this.currencySymbol, null, true)}, скидка ${formatCurrency(this.discount, this.currencySymbol, null, true)})`;
+    if (!this.discount || this.discount <= 0) {
+      return formatCurrency(this.totalPrice, this.currencySymbol, null, true);
     }
-    return formatCurrency(this.totalPrice, this.currencySymbol, null, true);
+    return `${formatCurrency(this.totalPrice, this.currencySymbol, null, true)} (из ${formatCurrency(this.price, this.currencySymbol, null, true)}, скидка ${formatCurrency(this.discount, this.currencySymbol, null, true)})`;
   }
 
-  // Форматирование количества - убирает лишние нули в конце, но сохраняет все значащие цифры
   formatQuantity(quantity) {
-    if (quantity === null || quantity === undefined || quantity === '') {
-      return '0';
-    }
     const num = Number(quantity);
-    if (isNaN(num)) {
-      return String(quantity);
-    }
-    // Преобразуем в строку с максимальной точностью, затем убираем лишние нули
-    return String(num).replace(/\.?0+$/, '');
+    return isNaN(num) || !quantity ? '0.00' : formatNumber(quantity, 2, true);
   }
 
   productsHtmlList() {
-    if (this.products === null || this.products.length === 0) {
-      return "";
-    }
-    if (this.products.length === 1) {
-      const product = this.products[0];
-      return `<span>${product.productName} - ${this.formatQuantity(product.quantity)}${product.unitShortName}</span>`;
-    }
-    // Формируем строку для тултипа
-    const tooltip = this.products
-      .map(
-        (product) => `${product.productName} - ${this.formatQuantity(product.quantity)}${product.unitShortName}`
-      )
-      .join('\n');
-    // Показываем первый товар и троеточие, остальное в тултипе
-    const first = this.products[0];
-    return `<span title="${tooltip}">${first.productName} - ${this.formatQuantity(first.quantity)}${first.unitShortName} ...</span>`;
+    return createProductsTooltipList(this.products, (qty) => this.formatQuantity(qty), (product) => product.unitShortName);
   }
 
   formatDate() {
-    if (!this.date) return '';
-    try {
-      const formatted = dayjsDateTime(this.date);
-      // Проверяем, что dayjs вернул валидную дату, а не "Invalid Date"
-      if (formatted && formatted.toLowerCase().includes('invalid')) {
-        return '';
-      }
-      return formatted;
-    } catch {
-      return '';
-    }
+    return dtoDateFormatters.formatDate(this.date);
   }
 
   formatCreatedAt() {
-    return dayjsDate(this.createdAt);
+    return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
 
   formatUpdatedAt() {
-    return dayjsDate(this.updatedAt);
+    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
 
@@ -133,9 +103,7 @@ export default class OrderDto {
     if (!this.additionalFields) {
       return [];
     }
-    return this.additionalFields.map(field => 
-      OrderAfValueDto.fromApi(field)
-    );
+    return OrderAfValueDto.fromApiArray(this.additionalFields);
   }
 
   getAdditionalFieldsHtml() {
@@ -162,5 +130,45 @@ export default class OrderDto {
   areRequiredFieldsFilled() {
     const requiredFields = this.getRequiredFields();
     return requiredFields.every(field => field.value && field.value.trim() !== '');
+  }
+
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, data => {
+      const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;
+      const products = data.products ? OrderProductDto.fromApiArray(data.products) : null;
+      
+      return new OrderDto(
+        data.id,
+        data.note ?? "",
+        data.description ?? "",
+        data.status_id,
+        data.status_name,
+        data.category_id ?? data.product_category_id,
+        data.category_name ?? data.product_category_name,
+        data.client_id,
+        data.user_id,
+        data.user_name,
+        data.user_photo,
+        data.cash_id ?? null,
+        data.cash_name ?? null,
+        data.warehouse_id,
+        data.warehouse_name,
+        data.project_id,
+        data.project_name,
+        data.price,
+        data.discount ?? 0,
+        data.total_price,
+        data.currency_id,
+        data.currency_name,
+        data.currency_code,
+        data.currency_symbol,
+        data.date,
+        data.created_at,
+        data.updated_at,
+        client,
+        products,
+        data.additional_fields || null
+      );
+    }).filter(Boolean);
   }
 }

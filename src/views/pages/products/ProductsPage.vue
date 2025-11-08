@@ -62,9 +62,11 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
+import searchMixin from '@/mixins/searchMixin';
+import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin, searchMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog },
     data() {
         return {
@@ -122,10 +124,6 @@ export default {
             this.fetchItems(1);
         },
 
-        handleSearch(query) {
-            this.$store.dispatch('setSearchQuery', query);
-            this.fetchItems(1, false);
-        },
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
@@ -146,6 +144,7 @@ export default {
             });
         },
         itemMapper(i, c) {
+            const search = this.searchQuery;
             switch (c) {
                 case 'retail_price':
                     return i.retailPriceFormatted();
@@ -155,9 +154,15 @@ export default {
                     return i.image ? i.imgUrl() : null;
                 case 'category_name':
                     // Показываем основную категорию или все категории
-                    return i.getCategoryDisplayName();
+                    return search ? highlightMatches(i.getCategoryDisplayName() || '', search) : i.getCategoryDisplayName();
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.creator?.name || this.$t('notSpecified')}`;
+                case 'name':
+                    return search ? highlightMatches(i.name || '', search) : (i.name || '');
+                case 'sku':
+                    return search ? highlightMatches(i.sku || '', search) : (i.sku || '');
+                case 'barcode':
+                    return search ? highlightMatches(i.barcode || '', search) : (i.barcode || '');
                 default:
                     return i[c];
             }
@@ -175,10 +180,10 @@ export default {
                     params.search = this.searchQuery;
                 }
                 
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
+               
+                const per_page = this.perPage || 20;
                 
-                const new_data = await ProductController.getItems(page, true, params, perPage);
+                const new_data = await ProductController.getItems(page, true, params, per_page);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProductList'), error.message, true);

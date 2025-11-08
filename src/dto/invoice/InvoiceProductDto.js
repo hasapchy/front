@@ -1,3 +1,6 @@
+import { formatCurrency } from '@/utils/numberUtils';
+import { createFromApiArray } from '@/utils/dtoUtils';
+
 export default class InvoiceProductDto {
   constructor(
     id,
@@ -30,28 +33,38 @@ export default class InvoiceProductDto {
   }
 
   getQuantityWithUnit(store = null) {
-    if (!this.unitId || !store) {
-      return `${this.quantity}`;
-    }
+    if (!this.unitId || !store) return `${this.quantity}`;
     const unitName = store.getters.getUnitShortName(this.unitId);
     return `${this.quantity}${unitName ? ' ' + unitName : ''}`;
   }
 
   getUnitName() {
-    if (this.unit && this.unit.short_name) {
-      return this.unit.short_name;
-    }
-    if (this.unit && this.unit.name) {
-      return this.unit.name;
-    }
-    return 'шт.';
+    return this.unit?.short_name || this.unit?.name || 'шт.';
   }
 
   getPriceFormatted() {
-    return `${this.price} руб.`;
+    return formatCurrency(this.price, 'руб.', null, true);
   }
 
   getTotalPriceFormatted() {
-    return `${this.totalPrice} руб.`;
+    return formatCurrency(this.totalPrice, 'руб.', null, true);
+  }
+
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, data => {
+      return new InvoiceProductDto(
+        data.id,
+        data.invoice_id,
+        data.order_id,
+        data.product_id,
+        data.product_name,
+        data.product_description,
+        data.quantity,
+        data.price,
+        data.total_price,
+        data.unit_id,
+        data.unit
+      );
+    }).filter(Boolean);
   }
 }

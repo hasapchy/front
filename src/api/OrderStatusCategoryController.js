@@ -1,30 +1,20 @@
 import OrderStatusCategoryDto from "@/dto/order/OrderStatusCategoryDto";
+import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import api from "./axiosInstance";
 
 export default class OrderStatusCategoryController {
-  static async getItems(page = 1, perPage = 20) {
+  static async getItems(page = 1, per_page = 20) {
     try {
-      const response = await api.get(`/order_status_categories?page=${page}&per_page=${perPage}`);
+      const response = await api.get(`/order_status_categories?page=${page}&per_page=${per_page}`);
       const data = response.data;
-      const items = data.items.map(
-        (item) =>
-          new OrderStatusCategoryDto(
-            item.id,
-            item.name,
-            item.color,
-            item.user_id,
-            item.created_at,
-            item.updated_at
-          )
-      );
-      // Примени свой PaginatedResponse если используешь пагинацию
-      return {
+      const items = OrderStatusCategoryDto.fromApiArray(data.items);
+      return new PaginatedResponse(
         items,
-        currentPage: data.current_page,
-        nextPage: data.next_page,
-        lastPage: data.last_page,
-        total: data.total,
-      };
+        data.current_page,
+        data.next_page,
+        data.last_page,
+        data.total
+      );
     } catch (error) {
       console.error("Ошибка при получении категорий статусов:", error);
       throw error;
@@ -35,17 +25,7 @@ export default class OrderStatusCategoryController {
     try {
       const response = await api.get(`/order_status_categories/all`);
       const data = response.data;
-      return data.map(
-        (item) =>
-          new OrderStatusCategoryDto(
-            item.id,
-            item.name,
-            item.color,
-            item.user_id,
-            item.created_at,
-            item.updated_at
-          )
-      );
+      return OrderStatusCategoryDto.fromApiArray(data);
     } catch (error) {
       console.error("Ошибка при получении всех категорий статусов:", error);
       throw error;

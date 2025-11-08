@@ -1,4 +1,5 @@
-import { dayjsDate } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
+import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
 import WarehouseWriteoffProductDto from "./WarehouseWriteoffProductDto";
 
 export default class WarehouseWriteoffDto {
@@ -26,28 +27,32 @@ export default class WarehouseWriteoffDto {
   }
 
   productsHtmlList() {
-    if (this.products === null) {
-      return "";
-    }
-    var res = "<ul>";
-    this.products.forEach((product) => {
-      res += `<li style="display: flex; align-items: center; gap: 10px;">`;
-      if (product.productImage !== null) {
-        res += `<img src="${product.imgUrl()}" alt="" width="20px" class="rounded">`;
-      }
-      res += `${product.productName} - ${product.quantity}${product.unitShortName}</li>`;
-    });
-    res += "</ul>";
-    return res;
+    return createProductsHtmlList(this.products);
   }
 
-  
-
   formatCreatedAt() {
-    return dayjsDate(this.createdAt);
+    return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
 
   formatUpdatedAt() {
-    return dayjsDate(this.updatedAt);
+    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
+  }
+
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, data => {
+      const products = data.products ? WarehouseWriteoffProductDto.fromApiArray(data.products) : null;
+      
+      return new WarehouseWriteoffDto(
+        data.id,
+        data.warehouse_id,
+        data.warehouse_name,
+        products,
+        data.note,
+        data.user_id,
+        data.user_name,
+        data.created_at,
+        data.updated_at
+      );
+    }).filter(Boolean);
   }
 }

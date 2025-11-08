@@ -99,7 +99,6 @@ export default {
     methods: {
         async fetchAllUnits() {
             try {
-                // Используем данные из store
                 await this.$store.dispatch('loadUnits');
                 this.allUnits = this.$store.getters.units;
             } catch (error) {

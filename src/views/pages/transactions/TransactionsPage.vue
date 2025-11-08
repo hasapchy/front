@@ -11,7 +11,7 @@
                     <option value="">{{ $t('allCashRegisters') }}</option>
                     <template v-if="allCashRegisters.length">
                         <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
-                            {{ parent.name }} ({{ parent.currency_symbol || parent.currency_code || '' }})
+                            {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
                         </option>
                     </template>
                 </select>
@@ -147,9 +147,11 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { eventBus } from '@/eventBus';
+import searchMixin from '@/mixins/searchMixin';
+import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin, searchMixin],
     components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, BatchButton },
     data() {
         return {
@@ -234,15 +236,6 @@ export default {
                 this.$refs.balanceWrapper.fetchItems();
             }
         },
-        highlightText(text, search) {
-            if (!text || !search) return text;
-            const searchStr = String(search).trim();
-            if (!searchStr) return text;
-            
-            const textStr = String(text);
-            const regex = new RegExp(`(${searchStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-            return textStr.replace(regex, '<mark style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 3px; font-weight: bold;">$1</mark>');
-        },
         itemMapper(i, c) {
             const search = this.searchQuery;
             
@@ -257,16 +250,12 @@ export default {
                     return i.origAmountData();
                 case 'note':
                     if (!i.note) return '';
-                    return search ? this.highlightText(i.note, search) : i.note;
+                    return search ? highlightMatches(i.note, search) : i.note;
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
                 default:
                     return i[c];
             }
-        },
-        handleSearch(query) {
-            this.$store.dispatch('setSearchQuery', query);
-            this.fetchItems(1, false);
         },
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
@@ -277,8 +266,8 @@ export default {
                 this.loading = true;
             }
             try {
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
+               
+                const per_page = this.perPage || 20;
                 
                 const new_data = await TransactionController.getItems(
                     page,
@@ -289,7 +278,7 @@ export default {
                     this.transactionTypeFilter,
                     this.sourceFilter,
                     this.projectId,
-                    perPage,
+                    per_page,
                     this.startDate,
                     this.endDate,
                     this.debtFilter // Фильтр по долгам (false/true)

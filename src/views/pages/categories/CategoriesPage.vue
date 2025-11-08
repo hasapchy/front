@@ -116,10 +116,10 @@ export default {
                 this.loading = true;
             }
             try {
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
+               
+                const per_page = this.perPage || 20;
                 
-                const new_data = await CategoryController.getItems(page, perPage);
+                const new_data = await CategoryController.getItems(page, per_page);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingCategoryList'), error.message, true);

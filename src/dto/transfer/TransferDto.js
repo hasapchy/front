@@ -1,5 +1,6 @@
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrency } from "@/utils/numberUtils";
+import { createFromApiArray } from "@/utils/dtoUtils";
 
 export default class TransferDto {
     constructor(id, cashFromId, cashFromName, currencyFromId, currencyFromName, currencyFromCode, currencyFromSymbol, cashToId, cashToName, currencyToId, currencyToName, currencyToCode, currencyToSymbol, amount, userId, userName, date = null, note = null) {
@@ -24,13 +25,35 @@ export default class TransferDto {
     }
 
     amountDescription() {
-        var res = '<i class="fas fa-right-long text-[#EE4F47] mr-2"></i>';
-        res += `<span class="font-semibold">${formatCurrency(this.amount, this.currencyFromSymbol)}</span>`;
-        res += '<i class="fas fa-right-long text-[#5CB85C] ml-2"></i>';
-        return res;
+        return `<i class="fas fa-right-long text-[#EE4F47] mr-2"></i><span class="font-semibold">${formatCurrency(this.amount, this.currencyFromSymbol)}</span><i class="fas fa-right-long text-[#5CB85C] ml-2"></i>`;
     }
 
     formatDate() {
-     return dayjsDateTime(this.date);
+     return dtoDateFormatters.formatDate(this.date);
+   }
+
+   static fromApiArray(dataArray) {
+     return createFromApiArray(dataArray, data => {
+       return new TransferDto(
+         data.id,
+         data.cash_from_id,
+         data.cash_from_name,
+         data.currency_from_id,
+         data.currency_from_name,
+         data.currency_from_code,
+         data.currency_from_symbol,
+         data.cash_to_id,
+         data.cash_to_name,
+         data.currency_to_id,
+         data.currency_to_name,
+         data.currency_to_code,
+         data.currency_to_symbol,
+         data.amount,
+         data.user_id,
+         data.user_name,
+         data.date,
+         data.note
+       );
+     }).filter(Boolean);
    }
 }

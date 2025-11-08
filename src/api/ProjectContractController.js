@@ -1,19 +1,22 @@
 import api from './axiosInstance';
 import ProjectContractDto from '../dto/project/ProjectContractDto';
+import PaginatedResponse from '@/dto/app/PaginatedResponseDto';
 
 class ProjectContractController {
     async getItems(projectId, params = {}) {
         try {
             const response = await api.get(`/projects/${projectId}/contracts`, { params });
+            const items = ProjectContractDto.fromApiArray(response.data.items);
+            const paginatedResponse = new PaginatedResponse(
+                items,
+                response.data.current_page,
+                response.data.next_page,
+                response.data.last_page,
+                response.data.total
+            );
             return {
                 success: true,
-                data: {
-                    items: response.data.data.items.map(item => ProjectContractDto.fromApi(item)),
-                    currentPage: response.data.data.current_page,
-                    lastPage: response.data.data.last_page,
-                    perPage: response.data.data.per_page,
-                    total: response.data.data.total
-                }
+                data: paginatedResponse
             };
         } catch (error) {
             console.error('Error fetching project contracts:', error);
@@ -29,7 +32,7 @@ class ProjectContractController {
             const response = await api.get(`/projects/${projectId}/contracts/all`);
             return {
                 success: true,
-                items: response.data.data.map(item => ProjectContractDto.fromApi(item))
+                items: ProjectContractDto.fromApiArray(response.data)
             };
         } catch (error) {
             console.error('Error fetching all project contracts:', error);
@@ -45,7 +48,7 @@ class ProjectContractController {
             const response = await api.get(`/contracts/${id}`);
             return {
                 success: true,
-                item: ProjectContractDto.fromApi(response.data.data)
+                item: ProjectContractDto.fromApiArray([response.data.item])[0] || null
             };
         } catch (error) {
             console.error('Error fetching contract:', error);
@@ -56,27 +59,19 @@ class ProjectContractController {
         }
     }
 
-    async createItem(projectId, data) {
+    async storeItem(projectId, item) {
         try {
-            const contractDto = new ProjectContractDto(
-                null,
-                projectId,
-                data.number,
-                data.amount,
-                data.currencyId,
-                data.currencyName,
-                data.currencyCode,
-                data.currencySymbol,
-                data.date,
-                data.returned,
-                data.files,
-                data.note
-            );
+            const contractData = {
+                ...item,
+                projectId: projectId,
+                id: null
+            };
+            const contractDto = ProjectContractDto.fromApiArray([contractData])[0];
 
             const response = await api.post(`/projects/${projectId}/contracts`, contractDto.toApi());
             return {
                 success: true,
-                item: ProjectContractDto.fromApi(response.data.data),
+                item: ProjectContractDto.fromApiArray([response.data.item])[0] || null,
                 message: response.data.message
             };
         } catch (error) {
@@ -88,27 +83,18 @@ class ProjectContractController {
         }
     }
 
-    async updateItem(id, data) {
+    async updateItem(id, item) {
         try {
-            const contractDto = new ProjectContractDto(
-                id,
-                data.projectId,
-                data.number,
-                data.amount,
-                data.currencyId,
-                data.currencyName,
-                data.currencyCode,
-                data.currencySymbol,
-                data.date,
-                data.returned,
-                data.files,
-                data.note
-            );
+            const contractData = {
+                ...item,
+                id: id
+            };
+            const contractDto = ProjectContractDto.fromApiArray([contractData])[0];
 
             const response = await api.put(`/contracts/${id}`, contractDto.toApi());
             return {
                 success: true,
-                item: ProjectContractDto.fromApi(response.data.data),
+                item: ProjectContractDto.fromApiArray([response.data.item])[0] || null,
                 message: response.data.message
             };
         } catch (error) {

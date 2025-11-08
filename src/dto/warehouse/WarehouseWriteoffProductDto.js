@@ -1,3 +1,5 @@
+import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
+
 export default class WarehouseWriteoffProductDto {
     constructor(id,
         writeOffId,
@@ -20,26 +22,44 @@ export default class WarehouseWriteoffProductDto {
         this.unitShortName = unitShortName;
         this.quantity = quantity;
         this.snId = snId;
-        this.stock_quantity = stockQuantity;
+        this.stockQuantity = stockQuantity;
     }
 
     static fromProductDto(productDto, def = false) {
         return new WarehouseWriteoffProductDto(
-            null, // id
+            null,
             null,
             productDto.id,
             productDto.name,
             productDto.image,
-            productDto.unit_id,
-            productDto.unit_name,
-            productDto.unit_short_name,
+            productDto.unitId,
+            productDto.unitName,
+            productDto.unitShortName,
             def ? 1 : 0,
             '',
-            productDto.stock_quantity || 0
+            productDto.stockQuantity || 0
         );
     }
 
     imgUrl() {
-        return this.productImage && this.productImage.length > 0 ? `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.productImage}` : null
+        return getImageUrl(this.productImage);
+    }
+
+    static fromApiArray(dataArray) {
+        return createFromApiArray(dataArray, data => {
+            return new WarehouseWriteoffProductDto(
+                data.id,
+                data.writeoff_id,
+                data.product_id,
+                data.product_name,
+                data.product_image,
+                data.unit_id,
+                data.unit_name,
+                data.unit_short_name,
+                data.quantity,
+                data.sn_id,
+                data.stock_quantity
+            );
+        }).filter(Boolean);
     }
 }

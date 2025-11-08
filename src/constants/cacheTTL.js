@@ -1,6 +1,5 @@
 /**
  * Централизованные константы TTL для кэширования
- * Используются в Store, CacheMonitor, CacheChecker
  */
 
 export const CACHE_TTL = {

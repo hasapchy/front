@@ -1,4 +1,3 @@
-// Утилита для воспроизведения звуковых уведомлений
 import successSound from '@/assets/success.mp3';
 import errorSound from '@/assets/error.mp3';
 
@@ -7,21 +6,16 @@ class SoundManager {
     this.successSound = null;
     this.errorSound = null;
     this.isEnabled = true;
-    this.store = null; // Будет установлен позже
+    this.store = null;
     this.initSounds();
   }
 
   initSounds() {
     try {
-      // Создаем аудио объекты
       this.successSound = new Audio(successSound);
       this.errorSound = new Audio(errorSound);
-      
-      // Предзагружаем звуки
       this.successSound.load();
       this.errorSound.load();
-      
-      // Устанавливаем громкость
       this.successSound.volume = 0.5;
       this.errorSound.volume = 0.5;
     } catch (error) {
@@ -33,7 +27,7 @@ class SoundManager {
     const isEnabled = this.store ? this.store.getters.soundEnabled : this.isEnabled;
     if (isEnabled && this.successSound) {
       try {
-        this.successSound.currentTime = 0; // Сбрасываем время воспроизведения
+        this.successSound.currentTime = 0;
         this.successSound.play().catch(error => {
           console.warn('Не удалось воспроизвести звук успеха:', error);
         });
@@ -47,7 +41,7 @@ class SoundManager {
     const isEnabled = this.store ? this.store.getters.soundEnabled : this.isEnabled;
     if (isEnabled && this.errorSound) {
       try {
-        this.errorSound.currentTime = 0; // Сбрасываем время воспроизведения
+        this.errorSound.currentTime = 0;
         this.errorSound.play().catch(error => {
           console.warn('Не удалось воспроизвести звук ошибки:', error);
         });
@@ -72,7 +66,6 @@ class SoundManager {
   }
 }
 
-// Создаем единственный экземпляр
 const soundManager = new SoundManager();
 
 export default soundManager; 

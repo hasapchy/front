@@ -8,7 +8,7 @@
                 <template v-if="allCashRegisters.length">
                     <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id"
                         :disabled="parent.id === cashIdTo">
-                        {{ parent.name }} ({{ parent.currency_symbol || parent.currency_code || '' }})
+                        {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
                     </option>
                 </template>
             </select>
@@ -20,7 +20,7 @@
                 <template v-if="allCashRegisters.length">
                     <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id"
                         :disabled="parent.id === cashIdFrom">
-                        {{ parent.name }} ({{ parent.currency_symbol || parent.currency_code || '' }})
+                        {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
                     </option>
                 </template>
             </select>
@@ -123,7 +123,6 @@ export default {
                 }
             }
             
-            // Рассчитываем курс после загрузки данных
             await this.calculateExchangeRate();
             
             this.saveInitialState();
@@ -133,62 +132,19 @@ export default {
         cashFromCurrency() {
             if (!this.cashIdFrom || !this.allCashRegisters.length) return null;
             const cashRegister = this.allCashRegisters.find(cr => cr.id === this.cashIdFrom);
-            if (!cashRegister) return null;
-            const currency = this.currencies.find(c => c.id === cashRegister.currency_id) || null;
-            if (!currency && cashRegister.currency_id) {
-                console.warn('Currency not found for cash register:', { 
-                    cashRegister: cashRegister.id, 
-                    currencyId: cashRegister.currency_id,
-                    availableCurrencies: this.currencies.map(c => ({ id: c.id, name: c.name }))
-                });
-            }
-            return currency;
+            return cashRegister ? this.currencies.find(c => c.id === cashRegister.currency_id) || null : null;
         },
         cashToCurrency() {
             if (!this.cashIdTo || !this.allCashRegisters.length) return null;
             const cashRegister = this.allCashRegisters.find(cr => cr.id === this.cashIdTo);
-            if (!cashRegister) return null;
-            const currency = this.currencies.find(c => c.id === cashRegister.currency_id) || null;
-            if (!currency && cashRegister.currency_id) {
-                console.warn('Currency not found for cash register:', { 
-                    cashRegister: cashRegister.id, 
-                    currencyId: cashRegister.currency_id,
-                    availableCurrencies: this.currencies.map(c => ({ id: c.id, name: c.name }))
-                });
-            }
-            return currency;
+            return cashRegister ? this.currencies.find(c => c.id === cashRegister.currency_id) || null : null;
         },
         showExchangeRate() {
-            const hasFrom = this.cashFromCurrency !== null;
-            const hasTo = this.cashToCurrency !== null;
-            
-            if (!hasFrom || !hasTo) {
-                return false;
-            }
-            
-            const different = this.cashFromCurrency.id !== this.cashToCurrency.id;
-            
-            if (!different) {
-                // Валюты одинаковые, поле курса не показываем
-                return false;
-            }
-            
-            // Логируем для отладки
-            if (different) {
-                console.log('showExchangeRate: true', {
-                    fromCurrency: this.cashFromCurrency?.name,
-                    toCurrency: this.cashToCurrency?.name,
-                    fromId: this.cashFromCurrency?.id,
-                    toId: this.cashToCurrency?.id
-                });
-            }
-            
-            return different;
+            if (!this.cashFromCurrency || !this.cashToCurrency) return false;
+            return this.cashFromCurrency.id !== this.cashToCurrency.id;
         },
         calculatedAmount() {
             if (!this.showExchangeRate || !this.exchangeRate || !this.origAmount) return null;
-            // Расчет суммы получателя: amount * exchange_rate
-            // exchange_rate показывает, сколько единиц целевой валюты за 1 единицу исходной
             return parseFloat(this.origAmount) * parseFloat(this.exchangeRate);
         }
     },
@@ -206,106 +162,49 @@ export default {
             };
         },
         handleCashRegisterChange() {
-            console.log('handleCashRegisterChange called', {
-                cashIdFrom: this.cashIdFrom,
-                cashIdTo: this.cashIdTo,
-                showExchangeRate: this.showExchangeRate,
-                cashFromCurrency: this.cashFromCurrency?.name,
-                cashToCurrency: this.cashToCurrency?.name
-            });
-            // Сбрасываем флаг ручного изменения при изменении касс
             this.isExchangeRateManual = false;
             this.$nextTick(() => {
-                // Проверяем, что валюты действительно разные
                 if (this.showExchangeRate) {
-                    console.log('Calculating exchange rate after cash register change');
                     this.calculateExchangeRate();
                 } else {
-                    // Если валюты одинаковые, очищаем курс
                     this.exchangeRate = null;
                 }
             });
         },
         async calculateExchangeRate() {
-            if (!this.showExchangeRate) {
-                this.exchangeRate = null;
+            if (!this.showExchangeRate || this.isExchangeRateManual) {
+                if (!this.showExchangeRate) this.exchangeRate = null;
                 return;
             }
             
-            // Если курс был изменен вручную, не пересчитываем автоматически
-            if (this.isExchangeRateManual) return;
-            
             try {
-                // Получаем курсы валют
                 const fromCurrency = this.cashFromCurrency;
                 const toCurrency = this.cashToCurrency;
                 
                 if (!fromCurrency || !toCurrency) {
-                    console.warn('Currency not found:', { fromCurrency, toCurrency, cashIdFrom: this.cashIdFrom, cashIdTo: this.cashIdTo });
                     this.exchangeRate = null;
                     return;
                 }
                 
-                // Получаем курсы валют к базовой валюте (манат)
                 const fromRateData = await AppController.getCurrencyExchangeRate(fromCurrency.id);
                 const toRateData = await AppController.getCurrencyExchangeRate(toCurrency.id);
                 
-                // Проверяем, что данные получены
-                if (!fromRateData || !toRateData || !fromRateData.exchange_rate || !toRateData.exchange_rate) {
-                    console.error('Exchange rate data is missing:', { fromRateData, toRateData });
+                if (!fromRateData?.exchange_rate || !toRateData?.exchange_rate) {
                     this.exchangeRate = null;
                     return;
                 }
                 
-                // Преобразуем в числа, убеждаясь что это валидные числа
-                // Используем Number() вместо parseFloat для более строгого преобразования
-                let fromRate = Number(fromRateData.exchange_rate);
-                let toRate = Number(toRateData.exchange_rate);
+                let fromRate = parseFloat(fromRateData.exchange_rate);
+                let toRate = parseFloat(toRateData.exchange_rate);
                 
-                // Если Number() вернул NaN, пробуем parseFloat
-                if (isNaN(fromRate)) {
-                    fromRate = parseFloat(fromRateData.exchange_rate);
-                }
-                if (isNaN(toRate)) {
-                    toRate = parseFloat(toRateData.exchange_rate);
-                }
-                
-                // Проверяем, что курсы валидны
                 if (isNaN(fromRate) || isNaN(toRate) || fromRate <= 0 || toRate <= 0) {
-                    console.error('Invalid exchange rates:', { 
-                        fromRate, 
-                        toRate, 
-                        fromRateOriginal: fromRateData.exchange_rate,
-                        toRateOriginal: toRateData.exchange_rate,
-                        fromRateType: typeof fromRateData.exchange_rate,
-                        toRateType: typeof toRateData.exchange_rate,
-                        fromRateData, 
-                        toRateData 
-                    });
                     this.exchangeRate = null;
                     return;
                 }
                 
-                // Убеждаемся, что это действительно числа (не строки)
-                if (typeof fromRate !== 'number' || typeof toRate !== 'number') {
-                    console.error('Exchange rates are not numbers:', { 
-                        fromRate, 
-                        toRate, 
-                        fromRateType: typeof fromRate,
-                        toRateType: typeof toRate
-                    });
-                    this.exchangeRate = null;
-                    return;
-                }
-                
-                // Расчет курса конвертации соответствует логике CurrencyConverter::convert
-                // Курс показывает, сколько единиц целевой валюты за 1 единицу исходной
-                // Это соответствует: amountInTargetCurrency = amount * exchange_rate
-                
-                const defaultCurrency = this.currencies.find(c => c.is_default);
+                const defaultCurrency = this.currencies.find(c => c.isDefault);
                 
                 if (!defaultCurrency) {
-                    console.error('Default currency not found!');
                     this.exchangeRate = null;
                     return;
                 }
@@ -313,34 +212,19 @@ export default {
                 let calculatedRate;
                 
                 if (fromCurrency.id === defaultCurrency.id) {
-                    // Исходная валюта - базовая (манат)
-                    // CurrencyConverter: amount / toCurrency->exchange_rate
-                    // Для 1 единицы: 1 / toRate = курс
                     calculatedRate = (1 / toRate).toFixed(6);
-                    console.log('From base currency:', { fromCurrency: fromCurrency.name, toCurrency: toCurrency.name, toRate, calculatedRate });
                 } else if (toCurrency.id === defaultCurrency.id) {
-                    // Целевая валюта - базовая (манат)
-                    // CurrencyConverter: amount * fromCurrency->exchange_rate
-                    // Для 1 единицы: fromRate = курс
-                    // fromRate уже проверено выше и является числом
                     calculatedRate = fromRate.toFixed(6);
-                    console.log('To base currency:', { fromCurrency: fromCurrency.name, toCurrency: toCurrency.name, fromRate, calculatedRate });
                 } else {
-                    // Обе валюты не базовые
-                    // CurrencyConverter: (amount * fromRate) / toRate
-                    // Для 1 единицы: fromRate / toRate = курс
                     calculatedRate = (fromRate / toRate).toFixed(6);
-                    console.log('Both non-base currencies:', { fromCurrency: fromCurrency.name, toCurrency: toCurrency.name, fromRate, toRate, calculatedRate });
                 }
                 
-                // Устанавливаем флаг, чтобы watcher не сработал
                 this.isSettingExchangeRate = true;
                 this.exchangeRate = calculatedRate;
                 this.$nextTick(() => {
                     this.isSettingExchangeRate = false;
                 });
             } catch (error) {
-                console.error('Error calculating exchange rate:', error);
                 this.isSettingExchangeRate = true;
                 this.exchangeRate = null;
                 this.$nextTick(() => {
@@ -349,12 +233,10 @@ export default {
             }
         },
         async fetchCurrencies() {
-            // Используем данные из store
             await this.$store.dispatch('loadCurrencies');
             this.currencies = this.$store.getters.currencies;
         },
         async fetchAllCashRegisters() {
-            // Используем данные из store
             await this.$store.dispatch('loadCashRegisters');
             this.allCashRegisters = this.$store.getters.cashRegisters;
         },
@@ -368,7 +250,6 @@ export default {
                     note: this.note
                 };
                 
-                // Если валюты разные, передаем курс
                 if (this.showExchangeRate && this.exchangeRate) {
                     data.exchange_rate = parseFloat(this.exchangeRate);
                 }
@@ -443,40 +324,28 @@ export default {
             deep: true,
             immediate: true
         },
-        // Отслеживаем изменения в store
         '$store.state.cashRegisters'(newVal) {
             this.allCashRegisters = newVal;
         },
         '$store.state.currencies'(newVal) {
             this.currencies = newVal;
         },
-        // Автоматически рассчитываем курс при изменении касс
         cashIdFrom() {
             this.handleCashRegisterChange();
         },
         cashIdTo() {
             this.handleCashRegisterChange();
         },
-        // Отслеживаем ручное изменение курса
         exchangeRate(newVal, oldVal) {
-            // Если курс был изменен программно (через calculateExchangeRate), не помечаем как ручной
             if (this.isSettingExchangeRate) return;
-            
-            // Если курс был изменен вручную пользователем, помечаем как ручной
             if (newVal && oldVal && Math.abs(parseFloat(newVal) - parseFloat(oldVal)) > 0.000001) {
                 this.isExchangeRateManual = true;
             }
         },
-        // Сбрасываем флаг ручного изменения при изменении касс
         showExchangeRate(newVal, oldVal) {
-            console.log('showExchangeRate watcher:', { newVal, oldVal, exchangeRate: this.exchangeRate });
             if (newVal) {
-                // Если курс еще не установлен или валюты изменились, сбрасываем флаг ручного изменения
-                // Но не вызываем calculateExchangeRate здесь, т.к. он уже вызывается в handleCashRegisterChange
                 if (!this.exchangeRate || oldVal !== newVal) {
                     this.isExchangeRateManual = false;
-                    // Не вызываем calculateExchangeRate здесь, чтобы избежать дублирования
-                    // handleCashRegisterChange уже вызовет его
                 }
             } else {
                 this.exchangeRate = null;

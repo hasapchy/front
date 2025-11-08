@@ -3,7 +3,7 @@
         <h2 class="text-lg font-bold mb-4">
             {{ editingItem ? $t('editExchangeRate') : $t('addExchangeRate') }}
         </h2>
-        
+
         <div v-if="currency" class="mb-4 p-3 bg-blue-50 rounded-lg">
             <p class="text-sm text-blue-700">
                 <strong>{{ $t('currency') }}:</strong> {{ currency.symbol }} - {{ currency.name }}
@@ -25,48 +25,28 @@
                     {{ $t('newRateWillClosePrevious') }}
                 </p>
             </div>
-            
+
             <div>
                 <label class="required">{{ $t('exchangeRate') }}</label>
-                <input 
-                    type="number" 
-                    v-model="exchangeRate" 
-                    step="0.000001" 
-                    min="0.000001" 
-                    required
-                    :placeholder="$t('enterExchangeRate')"
-                />
+                <input type="number" v-model="exchangeRate" step="0.000001" min="0.000001" required
+                    :placeholder="$t('enterExchangeRate')" />
                 <small class="text-gray-500">{{ $t('exchangeRateHelp') }}</small>
             </div>
 
             <div>
                 <label class="required">{{ $t('startDate') }}</label>
-                <input 
-                    type="date" 
-                    v-model="startDate" 
-                    required
-                    :max="endDate || new Date().toISOString().split('T')[0]"
-                />
+                <input type="date" v-model="startDate" required
+                    :max="endDate || new Date().toISOString().split('T')[0]" />
             </div>
 
             <div>
                 <label>{{ $t('endDate') }}</label>
-                <input 
-                    type="date" 
-                    v-model="endDate" 
-                    :min="startDate"
-                />
+                <input type="date" v-model="endDate" :min="startDate" />
                 <small class="text-gray-500">{{ $t('endDateHelp') }}</small>
             </div>
 
             <div class="flex items-center">
-                <input 
-                    type="checkbox" 
-                    id="isCurrent" 
-                    v-model="isCurrent"
-                    @change="onCurrentChange"
-                    class="mr-2"
-                />
+                <input type="checkbox" id="isCurrent" v-model="isCurrent" @change="onCurrentChange" class="mr-2" />
                 <label for="isCurrent" class="text-sm">{{ $t('setAsCurrentRate') }}</label>
             </div>
 
@@ -77,50 +57,25 @@
             </div>
         </div>
     </div>
-    
+
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton 
-            v-if="editingItem != null" 
-            :onclick="showDeleteDialog" 
-            :is-danger="true" 
-            :is-loading="deleteLoading"
-            icon="fas fa-trash" 
+        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
+            :is-loading="deleteLoading" icon="fas fa-trash"
             :disabled="!$store.getters.hasPermission('currency_history_delete')">
         </PrimaryButton>
-        <PrimaryButton 
-            icon="fas fa-save" 
-            :onclick="save" 
-            :is-loading="saveLoading"
-            :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('currency_history_update')) ||
-                (editingItemId == null && !$store.getters.hasPermission('currency_history_create'))">
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('currency_history_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('currency_history_create'))">
         </PrimaryButton>
     </div>
-    
-    <AlertDialog 
-        :dialog="deleteDialog" 
-        @confirm="deleteItem" 
-        @leave="closeDeleteDialog"
-        :descr="$t('confirmDeleteExchangeRate')" 
-        :confirm-text="$t('delete')" 
-        :leave-text="$t('cancel')" 
-    />
-    
-    <AlertDialog 
-        :dialog="closeConfirmDialog" 
-        @confirm="confirmClose" 
-        @leave="cancelClose"
-        :descr="$t('unsavedChanges')" 
-        :confirm-text="$t('closeWithoutSaving')" 
-        :leave-text="$t('stay')" 
-    />
-    
-    <NotificationToast 
-        :title="notificationTitle" 
-        :subtitle="notificationSubtitle" 
-        :show="notification"
-        :is-danger="notificationIsDanger" 
-        @close="closeNotification" 
-    />
+
+    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
+        :descr="$t('confirmDeleteExchangeRate')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
+
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
+        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+
+    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
+        :is-danger="notificationIsDanger" @close="closeNotification" />
 </template>
 
 <script>
@@ -171,41 +126,41 @@ export default {
                 isCurrent: this.isCurrent,
             };
         },
-        
+
         onCurrentChange() {
             if (this.isCurrent) {
                 this.endDate = '';
             }
         },
-        
+
         async save() {
             if (!this.isFormValid) {
                 return;
             }
-            
+
             this.saveLoading = true;
-            
+
             try {
                 const data = {
                     exchangeRate: parseFloat(this.exchangeRate),
                     startDate: this.startDate,
                     endDate: this.isCurrent ? null : this.endDate
                 };
-                
+
                 let resp;
                 if (this.editingItem) {
-                    resp = await CurrencyHistoryController.updateHistoryItem(
-                        this.currency.id, 
-                        this.editingItem.id, 
+                    resp = await CurrencyHistoryController.updateItem(
+                        this.currency.id,
+                        this.editingItem.id,
                         data
                     );
                 } else {
-                    resp = await CurrencyHistoryController.createHistoryItem(
-                        this.currency.id, 
+                    resp = await CurrencyHistoryController.storeItem(
+                        this.currency.id,
                         data
                     );
                 }
-                
+
                 if (resp.message) {
                     this.$emit("saved", resp.history || data);
                     this.clearForm();
@@ -216,7 +171,7 @@ export default {
             }
             this.saveLoading = false;
         },
-        
+
         async deleteItem() {
             this.closeDeleteDialog();
             if (!this.editingItem) {
@@ -224,8 +179,8 @@ export default {
             }
             this.deleteLoading = true;
             try {
-                const resp = await CurrencyHistoryController.deleteHistoryItem(
-                    this.currency.id, 
+                const resp = await CurrencyHistoryController.deleteItem(
+                    this.currency.id,
                     this.editingItem.id
                 );
                 if (resp.message) {
@@ -237,7 +192,7 @@ export default {
             }
             this.deleteLoading = false;
         },
-        
+
         clearForm() {
             this.exchangeRate = '';
             this.startDate = new Date().toISOString().split('T')[0];
@@ -245,15 +200,15 @@ export default {
             this.isCurrent = true;
             this.resetFormChanges();
         },
-        
+
         showDeleteDialog() {
             this.deleteDialog = true;
         },
-        
+
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
-        
+
         handleCloseRequest() {
             if (this.hasFormChanges()) {
                 this.closeConfirmDialog = true;
@@ -261,16 +216,16 @@ export default {
                 this.closeModal();
             }
         },
-        
+
         confirmClose() {
             this.closeConfirmDialog = false;
             this.closeModal();
         },
-        
+
         cancelClose() {
             this.closeConfirmDialog = false;
         },
-        
+
         closeModal() {
             this.$emit('close-request');
         }

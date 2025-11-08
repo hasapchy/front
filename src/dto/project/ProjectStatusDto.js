@@ -1,4 +1,5 @@
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
+import { createFromApiArray } from "@/utils/dtoUtils";
 
 export default class ProjectStatusDto {
   constructor(
@@ -19,15 +20,25 @@ export default class ProjectStatusDto {
     this.updatedAt = updatedAt;
   }
 
-  formatDate() {
-    return dayjsDateTime(this.date);
-  }
-
   formatCreatedAt() {
-    return dayjsDateTime(this.createdAt);
+    return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
 
   formatUpdatedAt() {
-    return dayjsDateTime(this.updatedAt);
+    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
+  }
+
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, data => {
+      return new ProjectStatusDto(
+        data.id,
+        data.name,
+        data.color,
+        data.user_id,
+        data.user,
+        data.created_at,
+        data.updated_at
+      );
+    }).filter(Boolean);
   }
 }

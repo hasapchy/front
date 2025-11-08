@@ -71,9 +71,11 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import MutualSettlementsBalanceWrapper from './MutualSettlementsBalanceWrapper.vue';
 import { eventBus } from '@/eventBus';
+import searchMixin from '@/mixins/searchMixin';
+import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
-    mixins: [notificationMixin, modalMixin, companyChangeMixin, tableTranslationMixin],
+    mixins: [notificationMixin, modalMixin, companyChangeMixin, tableTranslationMixin, searchMixin],
     components: { NotificationToast, SideModalDialog, PrimaryButton, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper },
     data() {
         return {
@@ -202,12 +204,6 @@ export default {
                 .filter(client => client.debt_amount !== 0 || client.credit_amount !== 0); // Показываем только с ненулевым балансом
         },
         
-        handleSearch(query) {
-            // Сохраняем поисковый запрос в store
-            this.$store.dispatch('setSearchQuery', query);
-            // Применяем фильтры заново
-            this.applyFilters();
-        },
 
         async handleRowClick(item) {
             // Загружаем полные данные клиента для редактирования
@@ -228,6 +224,7 @@ export default {
         },
         
         itemMapper(i, c) {
+            const search = this.searchQuery;
             switch (c) {
                 case 'clientName':
                     // Поддерживаем оба формата: camelCase и snake_case
@@ -238,7 +235,8 @@ export default {
                     if (contactPerson) {
                         name += ` (${contactPerson})`;
                     }
-                    return name || 'Клиент без имени';
+                    const displayName = name || 'Клиент без имени';
+                    return search ? highlightMatches(displayName, search) : displayName;
                 case 'clientType':
                     switch (i.clientType) {
                         case 'company': return this.$t('company');

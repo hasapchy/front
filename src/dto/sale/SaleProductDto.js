@@ -1,3 +1,5 @@
+import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
+
 export default class SaleProductDto {
     constructor(id,
         saleId,
@@ -19,12 +21,12 @@ export default class SaleProductDto {
         this.unitShortName = unitShortName;
         this.quantity = quantity;
         this.price = price;
-        this.type = null; // 1=товар, 0=услуга (заполняется при наличии)
+        this.type = null;
     }
 
     static fromProductDto(productDto, def = false) {
         const dto = new SaleProductDto(
-            null, // id
+            null,
             null,
             productDto.id,
             productDto.name,
@@ -33,22 +35,40 @@ export default class SaleProductDto {
             productDto.unit_name,
             productDto.unit_short_name,
             def ? 1 : 0,
-            def ? productDto.sale_price :0,
+            def ? productDto.sale_price :0
         );
         dto.type = productDto.type;
         return dto;
     }
 
     imgUrl() {
-        if (!this.productImage) return null;
-        if (typeof this.productImage !== 'string') return null;
-        return this.productImage.length > 0 ? `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.productImage}` : null;
+        return getImageUrl(this.productImage);
     }
 
     icons() {
-        const isProduct = this.type == 1 || this.type === '1' || this.type === true;
-        return isProduct
+        return this.type == 1
             ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
             : '<i class="fas fa-concierge-bell text-[#3571A4]" title="Услуга"></i>';
+    }
+
+    static fromApiArray(dataArray) {
+        return createFromApiArray(dataArray, data => {
+            const product = data.product || {};
+            const unit = product.unit || {};
+            const dto = new SaleProductDto(
+                data.id,
+                data.sale_id,
+                data.product_id,
+                data.product_name || product.name,
+                data.product_image || product.image,
+                data.unit_id || product.unit_id,
+                data.unit_name || unit.name,
+                data.unit_short_name || unit.short_name,
+                data.quantity,
+                data.price
+            );
+            dto.type = data.type || product.type;
+            return dto;
+        }).filter(Boolean);
     }
 }

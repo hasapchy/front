@@ -6,13 +6,14 @@ const CacheController = {
    */
   async clearAllCache() {
     try {
-      // Очищаем Laravel кэш
-      const { data } = await api.post("/performance/cache/clear");
+      // Модуль производительности отключен
+      // Очищаем только frontend localStorage
+      localStorage.clear();
       
       return {
         success: true,
-        message: data.message,
-        backend_cleared: true
+        message: 'Frontend кэш очищен',
+        backend_cleared: false
       };
     } catch (error) {
       console.error("Ошибка при очистке кэша:", error);

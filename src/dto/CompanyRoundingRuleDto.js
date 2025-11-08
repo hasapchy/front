@@ -1,20 +1,19 @@
+import { createFromApiArray } from "@/utils/dtoUtils";
+
 export default class CompanyRoundingRuleDto {
   constructor(data) {
     this.id = data.id;
-    this.company_id = data.company_id;
-    this.context = data.context; // orders, receipts, sales, transactions
-    this.decimals = data.decimals; // 2-5
-    this.direction = data.direction; // standard, up, down, custom
-    this.custom_threshold = data.custom_threshold || null; // 0.0-1.0, только для custom
+    this.companyId = data.company_id;
+    this.context = data.context;
+    this.decimals = data.decimals;
+    this.direction = data.direction;
+    this.customThreshold = data.custom_threshold || null;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
   }
 
-  static fromArray(rules) {
-    if (!rules || !Array.isArray(rules)) {
-      return [];
-    }
-    return rules.map((rule) => new CompanyRoundingRuleDto(rule));
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, (data) => new CompanyRoundingRuleDto(data));
   }
 
   static contexts = {

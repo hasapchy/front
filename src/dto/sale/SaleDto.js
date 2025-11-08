@@ -1,5 +1,8 @@
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrency } from "@/utils/numberUtils";
+import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
+import ClientDto from "@/dto/client/ClientDto";
+import SaleProductDto from "./SaleProductDto";
 
 export default class SaleDto {
   constructor(
@@ -59,29 +62,14 @@ export default class SaleDto {
 
   priceInfo() {
     const symbol = this.currencySymbol || "Нет валюты";
-    const isDiscount = this.discount > 0;
-
-    if (!isDiscount) {
+    if (!this.discount || this.discount <= 0) {
       return formatCurrency(this.totalPrice, symbol);
     }
-
     return `${formatCurrency(this.totalPrice, symbol)} (скидка: ${formatCurrency(this.discount, symbol)})`;
   }
 
   productsHtmlList() {
-    if (this.products === null) {
-      return "";
-    }
-    var res = "<ul>";
-    this.products.forEach((product) => {
-      res += `<li style="display: flex; align-items: center; gap: 10px;">`;
-      if (product.productImage !== null) {
-        res += `<img src="${product.imgUrl()}" alt="" width="20px" class="rounded">`;
-      }
-      res += `${product.productName} - ${product.quantity}${product.unitShortName}</li>`;
-    });
-    res += "</ul>";
-    return res;
+    return createProductsHtmlList(this.products);
   }
 
   cashNameDisplay() {
@@ -89,18 +77,54 @@ export default class SaleDto {
   }
 
   warehouseNameDisplay() {
-    return this.warehouseName ? this.warehouseName : "Склад не указан";
+    return this.warehouseName || "Склад не указан";
   }
 
   formatDate() {
-    return dayjsDateTime(this.date);
+    return dtoDateFormatters.formatDate(this.date);
   }
 
   formatCreatedAt() {
-    return dayjsDate(this.createdAt);
+    return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
 
   formatUpdatedAt() {
-    return dayjsDate(this.updatedAt);
+    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
+  }
+
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, data => {
+      const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;
+      const products = data.products ? SaleProductDto.fromApiArray(data.products) : null;
+      const totalPrice = (parseFloat(data.price || 0) - parseFloat(data.discount || 0));
+      
+      return new SaleDto(
+        data.id,
+        data.price,
+        data.discount,
+        totalPrice,
+        data.cash_register && data.cash_register.currency ? data.cash_register.currency.id : data.currency_id,
+        data.cash_register && data.cash_register.currency ? data.cash_register.currency.name : data.currency_name,
+        data.cash_register && data.cash_register.currency ? data.cash_register.currency.code : data.currency_code,
+        data.cash_register && data.cash_register.currency ? data.cash_register.currency.symbol : data.currency_symbol,
+        data.cash_id,
+        data.cash_register ? data.cash_register.name : null,
+        data.warehouse_id,
+        data.warehouse ? data.warehouse.name : null,
+        data.user_id,
+        data.user ? data.user.name : null,
+        data.project_id,
+        data.project ? data.project.name : null,
+        data.transaction_id,
+        client,
+        products,
+        data.note,
+        data.date,
+        data.created_at,
+        data.updated_at,
+        null,
+        data.discount_type || "fixed"
+      );
+    }).filter(Boolean);
   }
 }

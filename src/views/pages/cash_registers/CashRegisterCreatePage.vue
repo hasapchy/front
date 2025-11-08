@@ -68,7 +68,7 @@ export default {
             selectedUsers: this.editingItem ? this.editingItem.getUserIds() : [],
             editingItemId: this.editingItem ? this.editingItem.id : null,
             balance: this.editingItem ? this.editingItem.balance : '',
-            currency_id: this.editingItem ? this.editingItem.currency_id : '',
+            currency_id: this.editingItem ? this.editingItem.currencyId : '',
             users: [],
             currencies: [],
             saveLoading: false,
@@ -182,7 +182,7 @@ export default {
                     this.name = newEditingItem.name || '';
                     this.selectedUsers = newEditingItem.getUserIds() || [];
                     this.balance = newEditingItem.balance || '';
-                    this.currency_id = newEditingItem.currency_id || '';
+                    this.currency_id = newEditingItem.currencyId || '';
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     this.name = '';

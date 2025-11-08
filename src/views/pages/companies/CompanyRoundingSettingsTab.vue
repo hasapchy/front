@@ -1,7 +1,7 @@
 <template>
     <div>
         <h3 class="text-md font-semibold mb-4">{{ $t('roundingRules') }}</h3>
-        
+
         <!-- Загрузка -->
         <div v-if="loading" class="flex justify-center items-center py-8">
             <i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i>
@@ -9,29 +9,19 @@
 
         <!-- Формы настроек по контекстам -->
         <div v-else class="space-y-6">
-            <RoundingRuleSection 
-                v-for="contextConfig in contextsConfig" 
-                :key="contextConfig.key"
-                :context="contextConfig.context" 
-                :label="contextConfig.label"
-                :rule="rules[contextConfig.context]"
+            <RoundingRuleSection v-for="contextConfig in contextsConfig" :key="contextConfig.key"
+                :context="contextConfig.context" :label="contextConfig.label" :rule="rules[contextConfig.context]"
                 :decimals="ruleData[contextConfig.context].decimals"
                 :direction="ruleData[contextConfig.context].direction"
                 :customThreshold="ruleData[contextConfig.context].customThreshold"
                 @update:decimals="updateRuleData(contextConfig.context, 'decimals', $event)"
                 @update:direction="updateRuleData(contextConfig.context, 'direction', $event)"
-                @update:customThreshold="updateRuleData(contextConfig.context, 'customThreshold', $event)"
-            />
+                @update:customThreshold="updateRuleData(contextConfig.context, 'customThreshold', $event)" />
         </div>
 
         <!-- Уведомления -->
-        <NotificationToast 
-            :title="notificationTitle" 
-            :subtitle="notificationSubtitle" 
-            :show="notification" 
-            :is-danger="notificationIsDanger" 
-            @close="closeNotification" 
-        />
+        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
+            :is-danger="notificationIsDanger" @close="closeNotification" />
     </div>
 </template>
 
@@ -88,12 +78,13 @@ export default {
                 const items = await CompanyRoundingRulesController.getItems();
                 const rulesMap = {};
                 
-                items.forEach(item => {
-                    rulesMap[item.context] = new CompanyRoundingRuleDto(item);
+                const rules = CompanyRoundingRuleDto.fromApiArray(items);
+                rules.forEach(rule => {
+                    rulesMap[rule.context] = rule;
                 });
-                
+
                 this.rules = rulesMap;
-                
+
                 Object.keys(this.contexts).forEach(ctxKey => {
                     const ctx = this.contexts[ctxKey];
                     if (this.rules[ctx]) {
@@ -107,8 +98,8 @@ export default {
             } catch (error) {
                 console.error('Ошибка загрузки правил округления:', error);
                 this.showNotification(
-                    this.$t('errorLoadingRoundingRules'), 
-                    error.message || 'Unknown error', 
+                    this.$t('errorLoadingRoundingRules'),
+                    error.message || 'Unknown error',
                     true
                 );
             } finally {
@@ -120,41 +111,27 @@ export default {
                 const promises = Object.keys(this.contexts).map(ctxKey => {
                     const context = this.contexts[ctxKey];
                     const data = this.ruleData[context];
-                    
+
                     const payload = {
                         context: context,
                         decimals: parseInt(data.decimals),
                         direction: data.direction,
-                        custom_threshold: data.direction === this.directions.custom 
-                            ? parseFloat(data.customThreshold) 
+                        custom_threshold: data.direction === this.directions.custom
+                            ? parseFloat(data.customThreshold)
                             : null
                     };
-                    
-                    return CompanyRoundingRulesController.upsertItem(payload);
+
+                    return CompanyRoundingRulesController.storeItem(payload);
                 });
-                
+
                 await Promise.all(promises);
-                
-                // Не показываем уведомления здесь, так как метод вызывается из родителя
-                // this.showNotification(
-                //     this.$t('roundingRulesSaved'), 
-                //     this.$t('roundingRulesSavedSuccess'), 
-                //     false
-                // );
-                
+
                 await this.loadRules();
             } catch (error) {
                 console.error('Ошибка сохранения правил округления:', error);
-                // Не показываем уведомления здесь, так как метод вызывается из родителя
-                // this.showNotification(
-                //     this.$t('errorSavingRoundingRules'), 
-                //     error.response?.data?.errors || error.message, 
-                //     true
-                // );
-                throw error; // Пробрасываем ошибку родителю
+                throw error;
             }
         }
     }
 };
 </script>
-

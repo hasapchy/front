@@ -1,3 +1,5 @@
+import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
+
 export default class WarehouseReceiptProductDto {
     constructor(id,
         receiptId,
@@ -25,7 +27,7 @@ export default class WarehouseReceiptProductDto {
 
     static fromProductDto(productDto, def = false) {
         return new WarehouseReceiptProductDto(
-            null, // id
+            null,
             null,
             productDto.id,
             productDto.name,
@@ -40,6 +42,26 @@ export default class WarehouseReceiptProductDto {
     }
 
     imgUrl() {
-        return this.productImage && this.productImage.length > 0 ? `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.productImage}` : null
+        return getImageUrl(this.productImage);
+    }
+
+    static fromApiArray(dataArray) {
+        return createFromApiArray(dataArray, data => {
+            const product = data.product || {};
+            const unit = product.unit || {};
+            return new WarehouseReceiptProductDto(
+                data.id,
+                data.receipt_id,
+                data.product_id,
+                data.product_name || product.name,
+                data.product_image || product.image,
+                data.unit_id || product.unit_id,
+                data.unit_name || unit.name,
+                data.unit_short_name || unit.short_name,
+                data.quantity,
+                data.price,
+                data.sn_id
+            );
+        }).filter(Boolean);
     }
 }

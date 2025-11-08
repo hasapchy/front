@@ -1,14 +1,17 @@
-import soundManager from '@/utils/soundUtils.js';
-
 export default {
-  data() {
-    return {
-      notification: false,
-      notificationTitle: "",
-      notificationSubtitle: "",
-      notificationIsDanger: false,
-      notificationTimeoutId: null, 
-    };
+  computed: {
+    notification() {
+      return this.$store.getters.notification;
+    },
+    notificationTitle() {
+      return this.$store.getters.notificationTitle;
+    },
+    notificationSubtitle() {
+      return this.$store.getters.notificationSubtitle;
+    },
+    notificationIsDanger() {
+      return this.$store.getters.notificationIsDanger;
+    },
   },
   methods: {
     showNotification(title, subtitle = "", isDanger = false, duration = 10000) {

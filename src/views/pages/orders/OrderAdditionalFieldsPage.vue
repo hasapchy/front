@@ -58,8 +58,6 @@ export default {
     },
     data() {
         return {
-            // data, loading, perPage, perPageOptions - из crudEventMixin
-            // selectedIds - из batchActionsMixin
             editingItem: null,
             loadingDelete: false,
             controller: OrderAfController,
@@ -109,10 +107,8 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
-                
-                const newData = await OrderAfController.getItemsPaginated(page, perPage);
+                const per_page = this.perPage || 20;
+                const newData = await OrderAfController.getItems(page, per_page);
                 this.data = newData;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingAdditionalFieldsList'), error.message, true);
@@ -128,7 +124,7 @@ export default {
         async showModal(item) {
             if (item) {
                 try {
-                    this.editingItem = await OrderAfController.getItemById(item.id);
+                    this.editingItem = await OrderAfController.getItem(item.id);
                 } catch (error) {
                     this.editingItem = item;
                 }

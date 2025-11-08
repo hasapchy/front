@@ -51,64 +51,8 @@
                     <label>{{ $t('note') }}</label>
                     <input type="text" v-model="note">
                 </div>
-                
-                <!-- <div class="space-y-4 mt-6">
-                    <label class="block text-sm font-medium text-gray-700">{{ $t('additionalFields') }}</label>
-                    <div v-if="additionalFields.length > 0" class="space-y-4">
-
-                        <div v-for="field in additionalFields" :key="field.id" class="space-y-2">
-                            <label :class="{ 'required': field.required }" class="block text-sm font-medium">
-                                {{ field.name }}
-                            </label>
-                            
-                            <select v-if="field.type === 'select'" v-model="additionalFieldValues[field.id]" 
-                                    :required="field.required" 
-                                    class="w-full border rounded p-2">
-                                <option value="">{{ $t('selectOption') }}</option>
-                                <option v-for="option in field.options" :key="option" :value="option">{{ option }}</option>
-                            </select>
-                            
-                            <input v-else-if="field.type === 'date'" type="date" 
-                                   v-model="additionalFieldValues[field.id]" 
-                                   :required="field.required"
-                                   :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                                   :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 10) : null" 
-                                   class="w-full border rounded p-2">
-                            
-                            <input v-else-if="field.type === 'datetime'" type="datetime-local" 
-                                   v-model="additionalFieldValues[field.id]" 
-                                   :required="field.required"
-                                   :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                                   :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null"
-                                   class="w-full border rounded p-2">
-                            
-                            <input v-else-if="field.type === 'int'" type="number" 
-                                   v-model="additionalFieldValues[field.id]" 
-                                   :required="field.required" 
-                                   class="w-full border rounded p-2">
-                            
-                            <div v-else-if="field.type === 'boolean'" class="flex items-center space-x-2">
-                                <input type="checkbox" 
-                                       v-model="additionalFieldValues[field.id]" 
-                                       :required="field.required">
-                            </div>
-                            
-                            <input v-else type="text" 
-                                   v-model="additionalFieldValues[field.id]" 
-                                   :required="field.required" 
-                                   class="w-full border rounded p-2">
-                        </div>
-                    </div>
-                    <div v-else-if="categoryId" class="text-sm text-gray-500">
-                        Для выбранной категории нет дополнительных полей
-                    </div>
-                    <div v-else class="text-sm text-gray-500">
-                        Выберите категорию заказа для отображения дополнительных полей
-                    </div>
-                </div> -->
             </div>
             <div v-show="currentTab === 'products'">
-                <!-- ✅ Ленивая загрузка: компонент рендерится только после первого посещения вкладки -->
                 <template v-if="productsTabVisited">
                     <div>
                         <label class="required">{{ $t('warehouse') }}</label>
@@ -124,11 +68,10 @@
                 </template>
             </div>
             <div v-show="currentTab === 'transactions'">
-                <!-- ✅ Ленивая загрузка: компонент рендерится только после первого посещения вкладки -->
                 <template v-if="transactionsTabVisited">
                     <OrderTransactionsTab v-if="editingItemId" :order-id="editingItemId" :client="selectedClient"
                         :project-id="projectId" :cash-id="cashId" :currency-symbol="currencySymbol"
-                        :order-total="totalPrice" :paid-total="paidTotalAmount"
+                        :order-total="roundedTotalPrice" :paid-total="paidTotalAmount"
                         @updated-paid="paidTotalAmount = $event" />
                     <div v-else class="p-4 text-gray-500">
                         {{ $t('saveOrderFirst') }}
@@ -149,9 +92,9 @@
         </div>
 
         <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
-            <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(totalPrice, currencySymbol, null, true) }}</span></div>
-            <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, null, true) }}</span></div>
-            <div>{{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{ formatCurrency(totalPrice - paidTotalAmount, currencySymbol, null, true) }}</span></div>
+            <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(roundedTotalPrice, currencySymbol, 2, true) }}</span></div>
+            <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, 2, true) }}</span></div>
+            <div>{{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{ formatCurrency(remainingAmount, currencySymbol, 2, true) }}</span></div>
         </div>
     </div>
 
@@ -180,7 +123,6 @@ import AppController from '@/api/AppController';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import OrderStatusController from '@/api/OrderStatusController';
 import CategoriesController from '@/api/CategoriesController';
-// import OrderAfController from '@/api/OrderAfController';
 import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
@@ -200,8 +142,8 @@ export default {
     data() {
         return {
             currentTab: 'info',
-            productsTabVisited: false, // ✅ Флаг для ленивой загрузки вкладки "Товары"
-            transactionsTabVisited: false, // ✅ Флаг для ленивой загрузки вкладки "Транзакции"
+            productsTabVisited: false,
+            transactionsTabVisited: false,
             tabs: [
                 { name: 'info', label: 'info' },
                 { name: 'products', label: 'products' },
@@ -210,10 +152,10 @@ export default {
             selectedClient: this.editingItem?.client || null,
             projectId: this.editingItem?.projectId || '',
             cashId: this.editingItem ? this.editingItem.cashId : '',
-            currencyId: this.editingItem?.currency_id || null,
+            currencyId: this.editingItem?.currencyId || null,
             warehouseId: this.editingItem?.warehouseId || '',
             statusId: this.editingItem?.statusId || 1,
-            categoryId: this.editingItem?.categoryId || this.editingItem?.category_id || '',
+            categoryId: this.editingItem?.categoryId || '',
             date: this.editingItem?.date ? this.editingItem.date.substring(0, 16) : new Date().toISOString().substring(0, 16),
             note: this.editingItem?.note || '',
             description: this.editingItem?.description || '',
@@ -234,12 +176,9 @@ export default {
             projectModalDialog: false,
             productCategoryModalDialog: false,
             removedTempProducts: [],
-            // additionalFields: [],
-            // additionalFieldValues: {},
         };
     },
     async created() {
-        // ✅ Загружаем данные один раз при создании компонента
         await Promise.all([
             this.fetchAllWarehouses(),
             this.fetchAllCashRegisters(),
@@ -249,7 +188,6 @@ export default {
             this.fetchOrderStatuses()
         ]);
         
-        // Устанавливаем дефолтные значения для нового заказа
         if (!this.editingItem) {
             if (this.allWarehouses.length > 0 && !this.warehouseId) {
                 this.warehouseId = this.allWarehouses[0].id;
@@ -257,8 +195,7 @@ export default {
             if (this.allCashRegisters.length > 0 && !this.cashId) {
                 this.cashId = this.allCashRegisters[0].id;
             }
-            // Если касса не выбрана, берем дефолтную валюту из Store
-            const defaultCurrency = (this.currencies || []).find((c) => c.is_default);
+            const defaultCurrency = (this.currencies || []).find((c) => c.isDefault);
             if (!this.currencyId && defaultCurrency) {
                 this.currencyId = defaultCurrency.id;
             }
@@ -275,7 +212,6 @@ export default {
             this.handleEditingItemChange(this.editingItem);
         }
         
-        // Сохраняем начальное состояние после полной инициализации формы
         this.$nextTick(() => {
             this.saveInitialState();
         });
@@ -288,26 +224,42 @@ export default {
             return this.allCashRegisters.find(c => c.id == this.cashId);
         },
         defaultCurrencySymbol() {
-            const def = this.currencies.find(c => c.is_default);
+            const def = this.currencies.find(c => c.isDefault);
             return def ? def.symbol : '';
         },
         subtotal() {
-            return this.products.reduce((sum, p) => {
-                const price = Number(p.price) || 0;
-                const qty = Number(p.quantity) || 0;
+            const rawSubtotal = this.products.reduce((sum, p) => {
+                const price = parseFloat(p.price) || 0;
+                const qty = parseFloat(p.quantity) || 0;
                 return sum + price * qty;
             }, 0);
+            return rawSubtotal;
         },
         discountAmount() {
             const disc = Number(this.discount) || 0;
             if (!disc) return 0;
+            let amount = 0;
             if (this.discountType === 'percent') {
-                return this.subtotal * disc / 100;
+                amount = this.subtotal * disc / 100;
+            } else {
+                amount = Math.min(disc, this.subtotal);
             }
-            return Math.min(disc, this.subtotal);
+            return amount;
         },
         totalPrice() {
             return this.subtotal - this.discountAmount;
+        },
+        roundedSubtotal() {
+            return roundValue(this.subtotal);
+        },
+        roundedDiscountAmount() {
+            return roundValue(this.discountAmount);
+        },
+        roundedTotalPrice() {
+            return roundValue(this.totalPrice);
+        },
+        remainingAmount() {
+            return roundValue(this.roundedTotalPrice - this.paidTotalAmount);
         },
         translatedTabs() {
             return this.tabs.map(tab => ({
@@ -316,13 +268,13 @@ export default {
             }));
         },
         remainingAmountClass() {
-            const remaining = this.totalPrice - this.paidTotalAmount;
+            const remaining = this.remainingAmount;
             if (remaining > 0) {
-                return 'text-red-500'; // Осталось доплатить - красный
+                return 'text-red-500';
             } else if (remaining < 0) {
-                return 'text-green-500'; // Переплата - зеленый
+                return 'text-green-500';
             } else {
-                return 'text-gray-700'; // Оплачено полностью - серый
+                return 'text-gray-700';
             }
         }
     },
@@ -343,33 +295,12 @@ export default {
                 discount_type: this.discountType,
                 status_id: this.statusId,
                 currency_id: this.currencyId,
-                // additional_fields: Object.keys(this.additionalFieldValues).map(fieldId => {
-                //     const rawValue = this.additionalFieldValues[fieldId];
-                //     let stringValue = '';
-                //     
-                //     if (rawValue === null || rawValue === undefined) {
-                //         stringValue = '';
-                //     } else if (typeof rawValue === 'boolean') {
-                //         stringValue = rawValue ? 'true' : 'false';
-                //     } else if (typeof rawValue === 'number') {
-                //         stringValue = rawValue.toString();
-                //     } else {
-                //         stringValue = String(rawValue);
-                //     }
-                //     
-                //     return {
-                //         field_id: parseInt(fieldId),
-                //         value: stringValue
-                //     };
-                // }).filter(field => field.value !== '' && field.value !== 'null' && field.value !== 'false')
             };
             return state;
         },
         async fetchAllWarehouses() {
-            // Всегда загружаем данные заново и ждем их появления в store
             await this.$store.dispatch('loadWarehouses');
             
-            // Ждем пока данные появятся в store (максимум 3 секунды)
             let attempts = 0;
             while (this.$store.getters.warehouses.length === 0 && attempts < 30) {
                 await new Promise(resolve => setTimeout(resolve, 100));
@@ -379,17 +310,14 @@ export default {
             this.allWarehouses = this.$store.getters.warehouses;
         },
     async fetchAllProjects() {
-      if (this.allProjects.length > 0) return; // Уже загружены
+      if (this.allProjects.length > 0) return;
       
       await this.$store.dispatch('loadProjects');
       const allProjectsFromStore = this.$store.getters.projects;
       
-      // Если редактируем заказ и у неё есть проект, который завершен (его нет в проектах из store),
-      // добавляем его в список опций
       if (this.editingItem && this.editingItem.projectId && this.editingItem.projectName) {
         const hasProject = allProjectsFromStore.some(p => p.id === this.editingItem.projectId);
         if (!hasProject) {
-          // Проект завершен, добавляем его вручную
           this.allProjects = [
             ...allProjectsFromStore,
             { id: this.editingItem.projectId, name: this.editingItem.projectName }
@@ -402,33 +330,21 @@ export default {
     },
         async fetchAllProductCategories() {
             try {
-                // Загружаем категории из store
                 await this.$store.dispatch('loadCategories');
                 const allCategories = this.$store.getters.categories;
                 
-                // Фильтруем только родительские
                 this.allProductCategories = allCategories.filter(c => !c.parentId);
             } catch (error) {
                 this.allProductCategories = [];
             }
         },
-        // async fetchAllCategories() {
-        //     try {
-        //         this.allCategories = await OrderCategoryController.getAllItems();
-        //     } catch (error) {
-        //         this.allCategories = [];
-        //     }
-        // },
         async fetchCurrencies() {
-            // Всегда загружаем данные заново
             await this.$store.dispatch('loadCurrencies');
             this.currencies = this.$store.getters.currencies;
         },
         async fetchAllCashRegisters() {
-            // Всегда загружаем данные заново и ждем их появления в store
             await this.$store.dispatch('loadCashRegisters');
             
-            // Ждем пока данные появятся в store (максимум 3 секунды)
             let attempts = 0;
             while (this.$store.getters.cashRegisters.length === 0 && attempts < 30) {
                 await new Promise(resolve => setTimeout(resolve, 100));
@@ -438,14 +354,12 @@ export default {
             this.allCashRegisters = this.$store.getters.cashRegisters;
         },
         async fetchOrderStatuses() {
-            // Используем данные из store
             await this.$store.dispatch('loadOrderStatuses');
             this.statuses = this.$store.getters.orderStatuses;
         },
         changeTab(tabName) {
             this.currentTab = tabName;
             
-            // ✅ Устанавливаем флаги при первом посещении вкладки (ленивая загрузка)
             if (tabName === 'products' && !this.productsTabVisited) {
                 this.productsTabVisited = true;
             }
@@ -453,50 +367,6 @@ export default {
                 this.transactionsTabVisited = true;
             }
         },
-        // async loadAdditionalFields(categoryId, preserveValues = true) {
-        //     try {
-        //         if (!categoryId) {
-        //             this.additionalFields = [];
-        //             if (!preserveValues) {
-        //                 this.additionalFieldValues = {};
-        //             }
-        //             return;
-        //         }
-        //         
-        //         const response = await OrderController.getAdditionalFields(categoryId);
-        //         
-        //         let fields = [];
-        //         if (response.fields && Array.isArray(response.fields)) {
-        //             fields = response.fields;
-        //         } else if (Array.isArray(response)) {
-        //             fields = response;
-        //         } else if (response.data && Array.isArray(response.data)) {
-        //             fields = response.data;
-        //         }
-        //         
-        //         this.additionalFields = fields;
-        //         
-        //         this.additionalFields.forEach(field => {
-        //             let defaultValue = field.default_value || field.default || field.defaultValue || '';
-        //             
-        //             if (!this.additionalFieldValues.hasOwnProperty(field.id)) {
-        //                 if (field.type === 'boolean') {
-        //                     this.additionalFieldValues[field.id] = defaultValue === 'true' || defaultValue === true;
-        //                 } else if (field.type === 'int' || field.type === 'number') {
-        //                     this.additionalFieldValues[field.id] = defaultValue || '';
-        //                 } else {
-        //                     this.additionalFieldValues[field.id] = defaultValue || '';
-        //                 }
-        //             }
-        //         });
-        //     } catch (error) {
-        //         this.additionalFields = [];
-        //         if (!preserveValues) {
-        //             this.additionalFieldValues = {};
-        //         }
-        //     }
-        // },
-
         async save() {
             const validationErrors = [];
             if (!this.selectedClient) {
@@ -511,6 +381,12 @@ export default {
             if (this.discount && !this.discountType) {
                 validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
             }
+
+            // Проверяем, что скидка не превышает сумму заказа
+            const calculatedDiscount = this.discountAmount;
+            if (calculatedDiscount > this.subtotal) {
+                validationErrors.push('Скидка не может превышать сумму заказа');
+            }
             
             if (validationErrors.length > 0) {
                 this.$emit('saved-error', validationErrors.join('\n'));
@@ -520,18 +396,15 @@ export default {
             this.saveLoading = true;
             try {
                 const formData = this.getFormState();
-                // Добавляем недостающие поля
                 formData.client_id = this.selectedClient?.id || null;
                 formData.cash_id = this.cashId || null;
-                // Для новых заказов округляем цены товаров согласно настройкам компании
-                const shouldRoundPrices = !this.editingItemId;
                 
                 formData.products = this.products
                     .filter(p => !p.isTempProduct)
                     .map(p => ({
                         product_id: p.productId,
                         quantity: p.quantity,
-                        price: shouldRoundPrices ? roundValue(p.price) : p.price
+                        price: p.price
                     }));
                 formData.temp_products = this.products
                     .filter(p => p.isTempProduct)
@@ -539,8 +412,8 @@ export default {
                         name: p.name || p.productName,
                         description: p.description || '',
                         quantity: p.quantity,
-                        price: shouldRoundPrices ? roundValue(p.price) : p.price,
-                        unit_id: p.unitId || p.unit_id || null
+                        price: p.price,
+                        unit_id: p.unitId || null
                     }));
                 formData.remove_temp_products = this.removedTempProducts;
                 let resp;
@@ -551,6 +424,7 @@ export default {
                     this.editingItemId = resp?.id || null;
                 }
                 if (resp.message) {
+                    await this.refreshSelectedClientData();
                     this.$emit('saved');
                     this.resetFormChanges();
                     this.removedTempProducts = [];
@@ -576,6 +450,12 @@ export default {
             if (this.discount && !this.discountType) {
                 validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
             }
+
+            // Проверяем, что скидка не превышает сумму продажи
+            const calculatedDiscount = this.discountAmount;
+            if (calculatedDiscount > this.subtotal) {
+                validationErrors.push('Скидка не может превышать сумму заказа');
+            }
             
             if (validationErrors.length > 0) {
                 this.$emit('saved-error', validationErrors.join('\n'));
@@ -585,7 +465,6 @@ export default {
             this.saveLoading = true;
             try {
                 const formData = this.getFormState();
-                // Добавляем недостающие поля
                 formData.client_id = this.selectedClient?.id || null;
                 formData.cash_id = this.cashId || null;
                 formData.products = this.products
@@ -602,7 +481,7 @@ export default {
                         description: p.description || '',
                         quantity: p.quantity,
                         price: p.price,
-                        unit_id: p.unitId || p.unit_id || null
+                        unit_id: p.unitId || null
                     }));
                 formData.remove_temp_products = this.removedTempProducts;
                 
@@ -615,6 +494,7 @@ export default {
                 }
                 
                 if (resp.message) {
+                    await this.refreshSelectedClientData();
                     this.$emit('saved-silent');
                     this.resetFormChanges();
                     this.removedTempProducts = [];
@@ -659,11 +539,8 @@ export default {
             this.statusId = 1;
             this.paidTotalAmount = 0;
             this.removedTempProducts = [];
-            // Сбрасываем флаги ленивой загрузки для нового заказа
             this.productsTabVisited = false;
             this.transactionsTabVisited = false;
-            // this.additionalFields = [];
-            // this.additionalFieldValues = {};
             this.resetFormInitialization();
             this.resetFormChanges();
         },
@@ -695,9 +572,7 @@ export default {
             this.productCategoryModalDialog = false;
         },
         handleProductCategorySaved(category) {
-            // ✅ Сначала очищаем state категорий в store для принудительной перезагрузки
             this.$store.commit('SET_CATEGORIES', []);
-            // Затем перезагружаем категории
             this.fetchAllProductCategories();
             if (category && category.id) {
                 this.categoryId = category.id;
@@ -706,66 +581,27 @@ export default {
         },
         handleProductCategorySavedError(error) {
         },
-        // showCategoryModal() {
-        //     this.categoryModalDialog = true;
-        // },
-        // closeCategoryModal() {
-        //     this.categoryModalDialog = false;
-        // },
-        // handleCategorySaved(category) {
-        //     this.fetchAllCategories();
-        //     if (category && category.id) {
-        //         this.categoryId = category.id;
-        //     }
-        //     this.closeCategoryModal();
-        // },
-        // handleCategorySavedError(error) {
-        // },
-        // onCategoryChange(event) {
-        //     if (this.categoryId) {
-        //         const currentValues = { ...this.additionalFieldValues };
-        //         
-        //         this.loadAdditionalFields(this.categoryId, false);
-        //         
-        //         this.$nextTick(() => {
-        //             Object.keys(currentValues).forEach(fieldId => {
-        //                 if (this.additionalFieldValues.hasOwnProperty(fieldId)) {
-        //                     this.additionalFieldValues[fieldId] = currentValues[fieldId];
-        //                 }
-        //             });
-        //         });
-        //     } else {
-        //         this.additionalFields = [];
-        //         this.additionalFieldValues = {};
-        //     }
-        // },
         generateTempProductId() {
             return Date.now() + Math.floor(Math.random() * 1000);
         },
 
         async handleEditingItemChange(newItem) {
             if (!newItem) {
-                // this.additionalFieldValues = {};
-                // this.additionalFields = [];
                 return;
             }
-            
-            // const additionalFields = newItem?.additionalFields || newItem?.additional_fields;
-            
-            // if (additionalFields && additionalFields.length > 0) {
-            //     additionalFields.forEach(field => {
-            //         let value = field.value;
-            //         
-            //         if (typeof value === 'string') {
-            //             if (value === 'true') value = true;
-            //             else if (value === 'false') value = false;
-            //             else if (value === 'null' || value === '') value = '';
-            //             else if (!isNaN(value) && value !== '') value = value;
-            //         }
-            //         
-            //         this.additionalFieldValues[field.field_id] = value;
-            //     });
-            // }
+        },
+        async refreshSelectedClientData() {
+            const clientId = this.selectedClient?.id;
+            if (!clientId) {
+                return;
+            }
+            this.$store.commit('SET_CLIENTS', []);
+            this.$store.commit('SET_CLIENTS_DATA', []);
+            await this.$store.dispatch('loadClients');
+            const updatedClient = this.$store.getters.clients.find(c => c.id === clientId);
+            if (updatedClient) {
+                this.selectedClient = updatedClient;
+            }
         },
     },
     watch: {
@@ -779,24 +615,21 @@ export default {
             },
             immediate: true
         },
-        // Убираем взаимное обнуление client/project, оставляем только переключение цен
         selectedClient(newClient, oldClient) {
-            // Ничего не обнуляем
         },
         projectId: {
             handler(newProjectId, oldVal) {
-                // Переключение цен (как было)
                 if (newProjectId && this.products.length > 0) {
                     this.products.forEach(product => {
-                        if (product.wholesale_price !== undefined && product.wholesale_price > 0) {
-                            product.price = product.wholesale_price;
+                        if (product.wholesalePrice !== undefined && product.wholesalePrice > 0) {
+                            product.price = product.wholesalePrice;
                             product.priceType = 'wholesale';
                         }
                     });
                 } else if (!newProjectId && this.products.length > 0) {
                     this.products.forEach(product => {
-                        if (product.retail_price !== undefined) {
-                            product.price = product.retail_price;
+                        if (product.retailPrice !== undefined) {
+                            product.price = product.retailPrice;
                             product.priceType = 'retail';
                         }
                     });
@@ -836,45 +669,43 @@ export default {
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
-                    // ✅ Для существующего заказа сразу помечаем вкладки как посещенные
-                    // чтобы компоненты загрузились (там уже есть данные)
                     if (newEditingItem.id) {
                         this.productsTabVisited = true;
                         this.transactionsTabVisited = true;
                     }
                     
                     this.selectedClient = newEditingItem.client || null;
-                    this.projectId = newEditingItem.projectId || newEditingItem.project_id || '';
+                    this.projectId = newEditingItem.projectId || '';
                     this.warehouseId = newEditingItem.warehouseId || (this.allWarehouses.length ? this.allWarehouses[0].id : '');
                     this.cashId = newEditingItem.cashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
                     this.statusId = newEditingItem.statusId || '';
-                    this.categoryId = newEditingItem.categoryId || newEditingItem.category_id || '';
+                    this.categoryId = newEditingItem.categoryId || '';
                     this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
                     this.note = newEditingItem.note || '';
                     this.description = newEditingItem.description || '';
                     const rawProducts = newEditingItem.products || [];
                     this.products = rawProducts.map(p => {
-                        const isTemp = p.isTempProduct || ((p.product_id == null) && (p.productId == null));
+                        const isTemp = p.isTempProduct || (p.productId == null);
                         if (isTemp) {
                             return {
-                                name: p.product_name || p.productName || p.name,
-                                productName: p.product_name || p.productName || p.name,
+                                name: p.productName || p.name,
+                                productName: p.productName || p.name,
                                 description: p.description || '',
                                 quantity: Number(p.quantity) || 0,
                                 price: Number(p.price) || 0,
-                                unitId: (p.unit_id ?? p.unitId) ?? null,
-                                productId: p.productId || p.product_id || this.generateTempProductId(),
+                                unitId: p.unitId ?? null,
+                                productId: p.productId || this.generateTempProductId(),
                                 isTempProduct: true,
                                 icons() { return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>'; },
                             };
                         }
                         return {
-                            productId: p.product_id ?? p.productId,
-                            productName: p.product_name || p.productName || p.name,
-                            name: p.product_name || p.productName || p.name,
+                            productId: p.productId,
+                            productName: p.productName || p.name,
+                            name: p.productName || p.name,
                             quantity: Number(p.quantity) || 0,
                             price: Number(p.price) || 0,
-                            unitId: (p.unit_id ?? p.unitId) ?? null,
+                                unitId: p.unitId ?? null,
                             icons() {
                                 const isProduct = p.product_type == 1 || p.product_type === '1' || p.type == 1 || p.type === '1';
                                 return isProduct
@@ -886,15 +717,6 @@ export default {
                     this.discount = newEditingItem.discount || 0;
                     this.discountType = newEditingItem.discount_type || 'fixed';
                     this.editingItemId = newEditingItem.id || null;
-                    
-                    // if (newEditingItem.categoryId || newEditingItem.category_id) {
-                    //     this.loadAdditionalFields(newEditingItem.categoryId || newEditingItem.category_id);
-                    // }
-                    // if (newEditingItem.additional_fields && newEditingItem.additional_fields.length > 0) {
-                    //     newEditingItem.additional_fields.forEach(field => {
-                    //         this.additionalFieldValues[field.field_id] = field.value;
-                    //     });
-                    // }
                 } else {
                     this.clearForm();
                 }
@@ -905,7 +727,6 @@ export default {
             deep: true,
             immediate: true
         },
-        // Отслеживаем изменения в store
         '$store.state.warehouses'(newVal) {
             this.allWarehouses = newVal;
         },
@@ -923,7 +744,6 @@ export default {
         },
         '$store.state.clients': {
             handler(newClients) {
-                // Автоматически обновляем selectedClient из Store если он есть
                 if (this.selectedClient?.id && newClients.length) {
                     const updated = newClients.find(c => c.id === this.selectedClient.id);
                     if (updated) {

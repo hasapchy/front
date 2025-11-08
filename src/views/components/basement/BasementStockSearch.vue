@@ -114,6 +114,7 @@
                             <!-- Для остальных единиц - просто количество -->
                             <div v-else>
                                 <input type="number" v-model.number="item.quantity" 
+                                    @blur="roundQuantity(item)"
                                     class="w-full p-1 text-right border border-gray-300 rounded"
                                     :disabled="disabled" min="0" step="0.01"
                                     :placeholder="'0 ' + (item.unit_short_name || '')" />
@@ -143,6 +144,7 @@
 <script>
 import BasementProductController from '@/api/BasementProductController';
 import debounce from 'lodash.debounce';
+import { roundQuantityValue } from '@/utils/numberUtils';
 
 export default {
     emits: ['update:modelValue'],
@@ -317,8 +319,18 @@ export default {
             }
             
             // Для м² - площадь (ширина × высота)
-            // Не округляем количество (округляется только сумма)
-            item.quantity = width * height;
+            // Применяем правила округления компании для количества товара
+            const rawQuantity = width * height;
+            item.quantity = roundQuantityValue(rawQuantity);
+        },
+        // Округляет количество по правилам округления компании для количества товара
+        roundQuantity(item) {
+            if (item && item.quantity !== null && item.quantity !== undefined) {
+                const num = Number(item.quantity);
+                if (!isNaN(num)) {
+                    item.quantity = roundQuantityValue(num);
+                }
+            }
         },
     },
     watch: {

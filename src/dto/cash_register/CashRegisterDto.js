@@ -1,4 +1,5 @@
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
+import { getUserIdsFromArray, createFromApiArray } from "@/utils/dtoUtils";
 
 export default class CashRegisterDto {
   constructor(
@@ -17,38 +18,40 @@ export default class CashRegisterDto {
     this.name = name;
     this.balance = balance;
     this.users = users;
-    this.currency_id = currency_id;
-    this.currency_name = currency_name;
-    this.currency_code = currency_code;
-    this.currency_symbol = currency_symbol;
+    this.currencyId = currency_id;
+    this.currencyName = currency_name;
+    this.currencyCode = currency_code;
+    this.currencySymbol = currency_symbol;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
 
-  formatDate() {
-    return dayjsDateTime(this.date);
-  }
-
   formatCreatedAt() {
-    return dayjsDate(this.createdAt);
+    return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
 
   formatUpdatedAt() {
-    return dayjsDate(this.updatedAt);
+    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
-  // Получить список ID пользователей
   getUserIds() {
-    return this.users.map(user => user.id.toString());
+    return getUserIdsFromArray(this.users);
   }
 
-  // Получить список имен пользователей
-  getUserNames() {
-    return this.users.map(user => user.name).join(', ');
-  }
-
-  // Проверить, есть ли пользователь с указанным ID
-  hasUser(userId) {
-    return this.users.some(user => user.id == userId);
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, data => {
+      return new CashRegisterDto(
+        data.id,
+        data.name,
+        data.balance,
+        data.users || [],
+        data.currency_id,
+        data.currency?.name,
+        data.currency?.code,
+        data.currency?.symbol,
+        data.created_at,
+        data.updated_at
+      );
+    }).filter(Boolean);
   }
 }

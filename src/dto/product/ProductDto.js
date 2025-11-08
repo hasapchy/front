@@ -1,5 +1,6 @@
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatNumber } from "@/utils/numberUtils";
+import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
 class ProductDto {
   constructor({
     id,
@@ -24,11 +25,7 @@ class ProductDto {
     updated_at,
     retail_price,
     wholesale_price,
-    purchase_price,
-    // currency_id,
-    // currency_name,
-    // currency_code,
-    // currency_symbol
+    purchase_price
   }) {
     this.id = id;
     this.type = type;
@@ -36,34 +33,30 @@ class ProductDto {
     this.description = description;
     this.sku = sku;
     this.image = image;
-    this.category_id = category_id; // Для обратной совместимости
-    this.category_name = category_name; // Для обратной совместимости
-    this.categories = categories; // Массив категорий
-    this.stock_quantity = stock_quantity;
-    this.unit_id = unit_id;
-    this.unit_name = unit_name;
-    this.unit_short_name = unit_short_name;
-    this.unit_calc_area = unit_calc_area;
+    this.categoryId = category_id;
+    this.categoryName = category_name;
+    this.categories = categories;
+    this.stockQuantity = stock_quantity;
+    this.unitId = unit_id;
+    this.unitName = unit_name;
+    this.unitShortName = unit_short_name;
+    this.unitCalcArea = unit_calc_area;
     this.barcode = barcode;
-    this.is_serialized = is_serialized;
+    this.isSerialized = is_serialized;
     this.date = date;
     this.creator = creator;
-    this.created_at = created_at;
-    this.updated_at = updated_at;
-    this.retail_price = retail_price;
-    this.wholesale_price = wholesale_price;
-    this.purchase_price = purchase_price;
-    // this.currency_id = currency_id;
-    // this.currency_name = currency_name;
-    // this.currency_code = currency_code;
-    // this.currency_symbol = currency_symbol;
+    this.createdAt = created_at;
+    this.updatedAt = updated_at;
+    this.retailPrice = retail_price;
+    this.wholesalePrice = wholesale_price;
+    this.purchasePrice = purchase_price;
   }
 
   typeName() {
-    return Boolean(this.type) ? "product" : "service";
+    return this.type == 1 ? "product" : "service";
   }
   formatDate() {
-    return dayjsDateTime(this.date);
+    return dtoDateFormatters.formatDate(this.date);
   }
 
   icons() {
@@ -77,12 +70,12 @@ class ProductDto {
 
 
   retailPriceFormatted() {
-    let price = this.retail_price;
+    let price = this.retailPrice;
     return this.priceFormatted(price);
   }
 
   wholesalePriceFormatted() {
-    let price = this.wholesale_price;
+    let price = this.wholesalePrice;
     return this.priceFormatted(price);
   }
 
@@ -91,24 +84,17 @@ class ProductDto {
       price = parseFloat(price);
     }
     return isNaN(price) ? "" : formatNumber(price, null, true);
-    // + ' ' + (this.currency_symbol || '')
   }
 
   imgUrl() {
-    if (this.image && this.image.length > 0) {
-      return `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.image}`;
-    }
-    return null;
+    return getImageUrl(this.image);
   }
 
-  // Методы для работы с множественными категориями
   getPrimaryCategory() {
-    // Первая категория считается основной
     return this.categories[0] || null;
   }
 
   getSecondaryCategories() {
-    // Все категории кроме первой считаются дополнительными
     return this.categories.slice(1);
   }
 
@@ -121,39 +107,49 @@ class ProductDto {
   }
 
   getCategoryDisplayName() {
-    // Для обратной совместимости возвращаем основную категорию или первую
     const primary = this.getPrimaryCategory();
-    return primary ? primary.name : (this.category_name || '');
+    return primary ? primary.name : (this.categoryName || '');
   }
 
-  static fromApi(data) {
-    if (!data) return null;
-    
-    return new ProductDto({
-      id: data.id,
-      type: data.type,
-      name: data.name,
-      description: data.description,
-      sku: data.sku,
-      image: data.image,
-      category_id: data.category_id,
-      category_name: data.category_name,
-      categories: data.categories || [],
-      stock_quantity: data.stock_quantity,
-      unit_id: data.unit_id,
-      unit_name: data.unit_name,
-      unit_short_name: data.unit_short_name,
-      unit_calc_area: data.unit_calc_area,
-      barcode: data.barcode,
-      is_serialized: data.is_serialized,
-      date: data.date,
-      creator: data.creator,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
-      retail_price: data.retail_price,
-      wholesale_price: data.wholesale_price,
-      purchase_price: data.purchase_price,
-    });
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, data => {
+      let stock_quantity = data.stock_quantity;
+      if (stock_quantity === undefined || stock_quantity === null) {
+        stock_quantity = data.warehouse_quantity || 
+                        data.quantity_on_warehouse || 
+                        data.warehouse_stock || 
+                        data.warehouse_stock_quantity ||
+                        data.current_stock || 
+                        data.stock_on_warehouse ||
+                        data.quantity || 0;
+      }
+      
+      return new ProductDto({
+        id: data.id,
+        type: data.type,
+        name: data.name,
+        description: data.description,
+        sku: data.sku,
+        image: data.image,
+        category_id: data.category_id,
+        category_name: data.category_name,
+        categories: data.categories || [],
+        stock_quantity: stock_quantity,
+        unit_id: data.unit_id,
+        unit_name: data.unit_name,
+        unit_short_name: data.unit_short_name,
+        unit_calc_area: data.unit_calc_area,
+        barcode: data.barcode,
+        is_serialized: data.is_serialized,
+        date: data.date,
+        creator: data.creator,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        retail_price: data.retail_price,
+        wholesale_price: data.wholesale_price,
+        purchase_price: data.purchase_price,
+      });
+    }).filter(Boolean);
   }
 }
 export default ProductDto;

@@ -3,56 +3,61 @@ import OrderCategoryDto from "@/dto/order/OrderCategoryDto";
 import api from "./axiosInstance";
 
 export default class OrderCategoryController {
-  static async getItems(page = 1, per_page = 10) {
-    const response = await api.get(`/order_categories?page=${page}&per_page=${per_page}`);
-    const data = response.data;
-    const items = data.items.map(
-      (item) =>
-        new OrderCategoryDto(
-          item.id,
-          item.name,
-          item.user_id,
-          item.user_name,
-          item.created_at,
-          item.updated_at
-        )
-    );
-    return new PaginatedResponse(
-      items,
-      data.current_page,
-      data.next_page,
-      data.last_page,
-      data.total
-    );
+  static async getItems(page = 1, per_page = 20) {
+    try {
+      const response = await api.get(`/order_categories?page=${page}&per_page=${per_page}`);
+      const data = response.data;
+      const items = OrderCategoryDto.fromApiArray(data.items);
+      return new PaginatedResponse(
+        items,
+        data.current_page,
+        data.next_page,
+        data.last_page,
+        data.total
+      );
+    } catch (error) {
+      console.error("Ошибка при получении категорий заказов:", error);
+      throw error;
+    }
   }
 
   static async getAllItems() {
-    const response = await api.get(`/order_categories/all`);
-    return response.data.map(
-      (item) =>
-        new OrderCategoryDto(
-          item.id,
-          item.name,
-          item.user_id,
-          item.user_name,
-          item.created_at,
-          item.updated_at
-        )
-    );
+    try {
+      const response = await api.get(`/order_categories/all`);
+      return OrderCategoryDto.fromApiArray(response.data);
+    } catch (error) {
+      console.error("Ошибка при получении категорий заказов:", error);
+      throw error;
+    }
   }
 
   static async storeItem(item) {
-    const { data } = await api.post("/order_categories", item);
-    return data;
+    try {
+      const { data } = await api.post("/order_categories", item);
+      return data;
+    } catch (error) {
+      console.error("Ошибка при создании категории заказа:", error);
+      throw error;
+    }
   }
 
   static async updateItem(id, item) {
-    const { data } = await api.put(`/order_categories/${id}`, item);
-    return data;
+    try {
+      const { data } = await api.put(`/order_categories/${id}`, item);
+      return data;
+    } catch (error) {
+      console.error("Ошибка при обновлении категории заказа:", error);
+      throw error;
+    }
   }
 
   static async deleteItem(id) {
-    const { data } = await api.delete(`/order_categories/${id}`);
-    return data;
+    try {
+      const { data } = await api.delete(`/order_categories/${id}`);
+      return data;
+    } catch (error) {
+      console.error("Ошибка при удалении категории заказа:", error);
+      throw error;
+    }
   }
 }

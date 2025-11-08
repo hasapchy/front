@@ -89,11 +89,11 @@ export default {
         itemMapper(i, c) {
             switch (c) {
                 case 'balance':
-                    return this.$formatNumber(i.balance || 0, null, true) + ' ' + (i.currency_symbol || i.currency_code || '');
+                    return this.$formatNumber(i.balance || 0, null, true) + ' ' + (i.currencySymbol || i.currencyCode || '');
                 case 'users':
                     return (i.users || '').length + ' ' + this.$t('users');
                 case 'currency':
-                    return (i.currency_code || '') + (i.currency_symbol ? ' (' + i.currency_symbol + ')' : '');
+                    return (i.currencyCode || '') + (i.currencySymbol ? ' (' + i.currencySymbol + ')' : '');
                 case 'createdAt':
                     return i.formatCreatedAt();
                 case 'dateUser':
@@ -124,10 +124,10 @@ export default {
                 this.loading = true;
             }
             try {
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
+               
+                const per_page = this.perPage || 20;
                 
-                const new_data = await CashRegisterController.getItems(page, perPage);
+                const new_data = await CashRegisterController.getItems(page, per_page);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingCashRegisterList'), error.message, true);

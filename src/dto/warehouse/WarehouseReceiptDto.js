@@ -1,6 +1,7 @@
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrency } from "@/utils/numberUtils";
-import ClientDto from "../client/ClientDto";
+import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
+import ClientDto from "@/dto/client/ClientDto";
 import WarehouseReceiptProductDto from "./WarehouseReceiptProductDto";
 
 export default class WarehouseReceiptDto {
@@ -39,54 +40,62 @@ export default class WarehouseReceiptDto {
     this.cashName = cashName;
     this.projectId = projectId;
     this.currencySymbol = currencySymbol;
-    
-    // Вычисляемое поле: если есть cashId, то тип "cash", иначе "balance"
     this.type = this.cashId ? 'cash' : 'balance';
   }
 
   productsHtmlList() {
-    if (this.products === null) {
-      return "";
-    }
-    var res = "<ul>";
-    this.products.forEach((product) => {
-      res += `<li style="display: flex; align-items: center; gap: 10px;">`;
-      if (product.productImage !== null) {
-        res += `<img src="${product.imgUrl()}" alt="" width="20px" class="rounded">`;
-      }
-      res += `${product.productName} - ${product.quantity}${product.unitShortName}</li>`;
-    });
-    res += "</ul>";
-    return res;
+    return createProductsHtmlList(this.products);
   }
   cashNameDisplay() {
-    // Согласно новой архитектуре, касса всегда указывается
-    // Тип операции (кредит или нет) определяется полем is_debt в транзакции
     return this.cashName || "Не указана";
   }
   
   paymentTypeDisplay() {
-    // Вычисляем тип оплаты на основе того, как было создано
-    // Согласно новой архитектуре: cash_id всегда заполнен, type определяет is_debt
     return this.type === 'cash' ? 'В кассу' : 'В кредит';
   }
 
   priceInfo() {
-    const symbol = this.currencySymbol || "m"; // По умолчанию "m" (манат)
-
+    const symbol = this.currencySymbol || "m";
     const total = this.totalPrice ?? this.amount ?? this.price ?? 0;
     return formatCurrency(total, symbol);
   }
 
   formatDate() {
-    return dayjsDateTime(this.date);
+    return dtoDateFormatters.formatDate(this.date);
   }
 
   formatCreatedAt() {
-    return dayjsDate(this.createdAt);
+    return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
 
   formatUpdatedAt() {
-    return dayjsDate(this.updatedAt);
+    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
+  }
+
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, data => {
+      const client = data.supplier ? ClientDto.fromApiArray([data.supplier])[0] || null : null;
+      const products = data.products ? WarehouseReceiptProductDto.fromApiArray(data.products) : null;
+      const currencySymbol = data.cash_register?.currency?.symbol || 'm';
+      
+      return new WarehouseReceiptDto(
+        data.id,
+        data.warehouse_id,
+        data.warehouse?.name || '',
+        data.amount,
+        client,
+        products,
+        data.note,
+        data.user_id,
+        data.user?.name || '',
+        data.date,
+        data.created_at,
+        data.updated_at,
+        data.cash_id,
+        data.cash_register?.name || '',
+        data.project_id,
+        currencySymbol
+      );
+    }).filter(Boolean);
   }
 }

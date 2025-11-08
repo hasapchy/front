@@ -1,4 +1,6 @@
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
+import { formatNumber } from "@/utils/numberUtils";
+import { createFromApiArray } from "@/utils/dtoUtils";
 
 export default class CurrencyHistoryDto {
   constructor(
@@ -22,23 +24,23 @@ export default class CurrencyHistoryDto {
   }
 
   formatStartDate() {
-    return dayjsDate(this.startDate);
+    return dtoDateFormatters.formatCreatedAt(this.startDate);
   }
 
   formatEndDate() {
-    return this.endDate ? dayjsDate(this.endDate) : 'Текущий';
+    return this.endDate ? dtoDateFormatters.formatCreatedAt(this.endDate) : 'Текущий';
   }
 
   formatCreatedAt() {
-    return dayjsDate(this.createdAt);
+    return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
 
   formatUpdatedAt() {
-    return dayjsDate(this.updatedAt);
+    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
   formatExchangeRate() {
-    return Number(this.exchangeRate).toFixed(6);
+    return formatNumber(this.exchangeRate, 6, true);
   }
 
   isActive() {
@@ -63,16 +65,18 @@ export default class CurrencyHistoryDto {
     return `${diffDays} дней`;
   }
 
-  static fromApi(data) {
-    return new CurrencyHistoryDto(
-      data.id,
-      data.currency_id,
-      data.exchange_rate,
-      data.start_date,
-      data.end_date,
-      data.created_at,
-      data.updated_at,
-      data.currency
-    );
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, data => {
+      return new CurrencyHistoryDto(
+        data.id,
+        data.currency_id,
+        data.exchange_rate,
+        data.start_date,
+        data.end_date,
+        data.created_at,
+        data.updated_at,
+        data.currency
+      );
+    }).filter(Boolean);
   }
 }

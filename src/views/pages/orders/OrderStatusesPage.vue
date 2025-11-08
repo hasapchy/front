@@ -50,14 +50,13 @@ export default {
     },
     data() {
         return {
-            // selectedIds, deleteDialog - из batchActionsMixin
             controller: OrderStatusController,
             cacheInvalidationType: 'orderStatuses',
             savedSuccessText: this.$t('statusSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingStatus'),
             deletedSuccessText: this.$t('statusSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingStatus'),
-            showStatusSelect: false, // не показываем смену статуса для статусов
+            showStatusSelect: false,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: '№', size: 60 },
@@ -74,7 +73,6 @@ export default {
         getBatchActions() {
             const actions = [];
             
-            // Добавляем кнопку удаления только если у пользователя есть права
             if (this.$store?.getters?.hasPermission?.('order_statuses_delete')) {
                 actions.push({
                     label: "",
@@ -102,10 +100,9 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
+                const per_page = this.perPage || 20;
                 
-                this.data = await OrderStatusController.getItems(page, perPage);
+                this.data = await OrderStatusController.getItems(page, per_page);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingStatuses'), error.message, true);
             }

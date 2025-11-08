@@ -4,16 +4,16 @@ export default class CompanyRoundingRulesController {
   static async getItems() {
     try {
       const response = await api.get("/company-rounding-rules");
-      return response.data.data || [];
+      return response.data;
     } catch (error) {
       console.error("Ошибка при получении правил округления:", error);
       throw error;
     }
   }
 
-  static async upsertItem(rule) {
+  static async storeItem(item) {
     try {
-      const response = await api.post("/company-rounding-rules", rule);
+      const response = await api.post("/company-rounding-rules", item);
       return response.data.rule;
     } catch (error) {
       console.error("Ошибка при сохранении правил округления:", error);

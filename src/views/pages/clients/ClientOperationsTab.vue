@@ -48,7 +48,6 @@
             :item-mapper="itemMapper"
             :onItemClick="handleItemClick" />
 
-        <!-- Модальное окно для детального просмотра -->
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
                 <div class="p-8 flex justify-center items-center min-h-[200px]">
@@ -123,7 +122,7 @@ export default {
     },
     data() {
         return {
-            selectedFilter: 'orders', // По умолчанию заказы
+            selectedFilter: 'orders',
             loading: false,
             tableData: [],
             lastFetchedClientId: null,
@@ -167,7 +166,6 @@ export default {
                 { name: "name", label: this.$t("name"), size: 200 },
             ];
             
-            // Для заказов добавляем колонку статуса
             if (this.selectedFilter === 'orders') {
                 this.columnsConfig = [
                     ...baseColumns,
@@ -176,7 +174,6 @@ export default {
                     { name: "amount", label: this.$t("amount"), size: 130, html: true },
                 ];
             } else {
-                // Для продаж и оприходований без статуса
                 this.columnsConfig = [
                     ...baseColumns,
                     { name: "date", label: this.$t("date"), size: 150 },
@@ -188,7 +185,7 @@ export default {
             try {
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
-                const defaultCurrency = currencies.find(c => c.is_default);
+                const defaultCurrency = currencies.find(c => c.isDefault);
                 this.currencyCode = defaultCurrency ? defaultCurrency.symbol : '';
             } catch (error) {
                 this.currencyCode = '';
@@ -207,7 +204,7 @@ export default {
                 let response;
                 
                 if (this.selectedFilter === 'orders') {
-                    response = await OrderController.getItemsPaginated(
+                    response = await OrderController.getItems(
                         1, 
                         null, 
                         'all_time', 
@@ -228,8 +225,7 @@ export default {
                         originalData: order,
                     }));
                 } else if (this.selectedFilter === 'sales') {
-                    response = await SaleController.getItemsPaginated(1, null, 'all_time', null, null, 1000);
-                    // Фильтруем продажи по клиенту на клиенте
+                    response = await SaleController.getItems(1, null, 'all_time', null, null, 1000);
                     const sales = response.items.filter(sale => 
                         sale.client && sale.client.id === this.editingItem.id
                     );
@@ -242,8 +238,7 @@ export default {
                         originalData: sale,
                     }));
                 } else if (this.selectedFilter === 'receipts') {
-                    response = await WarehouseReceiptController.getStocks(1, 1000);
-                    // Фильтруем оприходования по клиенту (supplier) на клиенте
+                    response = await WarehouseReceiptController.getItems(1, 1000);
                     const receipts = response.items.filter(receipt => 
                         receipt.client && receipt.client.id === this.editingItem.id
                     );
@@ -318,7 +313,7 @@ export default {
         onEntitySaved() {
             this.closeEntityModal();
             if (this.editingItem && this.editingItem.id) {
-                this.lastFetchedFilter = null; // Сбрасываем фильтр для перезагрузки данных
+                this.lastFetchedFilter = null;
                 this.fetchData();
             }
         },
@@ -328,7 +323,7 @@ export default {
         onEntityDeleted() {
             this.closeEntityModal();
             if (this.editingItem && this.editingItem.id) {
-                this.lastFetchedFilter = null; // Сбрасываем фильтр для перезагрузки данных
+                this.lastFetchedFilter = null;
                 this.fetchData();
             }
         },

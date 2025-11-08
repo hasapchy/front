@@ -1,3 +1,7 @@
+import { dtoDateFormatters } from '@/utils/dateUtils';
+import { formatCurrency } from '@/utils/numberUtils';
+import { createFromApiArray } from '@/utils/dtoUtils';
+
 class ProjectContractDto {
     constructor(
         id,
@@ -31,33 +35,13 @@ class ProjectContractDto {
         this.updatedAt = updatedAt;
     }
 
-    static fromApi(data) {
-        return new ProjectContractDto(
-            data.id,
-            data.project_id,
-            data.number,
-            data.amount,
-            data.currency_id,
-            data.currency_name,
-            data.currency_code,
-            data.currency_symbol,
-            data.date,
-            data.returned,
-            data.files,
-            data.note,
-            data.created_at,
-            data.updated_at
-        );
-    }
 
     formatAmount() {
-        const symbol = this.currencySymbol || '';
-        return `${parseFloat(this.amount).toFixed(2)} ${symbol}`;
+        return formatCurrency(this.amount || 0, this.currencySymbol || '', null, true);
     }
 
     formatDate() {
-        if (!this.date) return '';
-        return new Date(this.date).toLocaleDateString();
+        return dtoDateFormatters.formatDate(this.date);
     }
 
     getReturnedStatus() {
@@ -75,6 +59,27 @@ class ProjectContractDto {
             files: this.files,
             note: this.note
         };
+    }
+
+    static fromApiArray(dataArray) {
+        return createFromApiArray(dataArray, data => {
+            return new ProjectContractDto(
+                data.id,
+                data.project_id || data.projectId,
+                data.number,
+                data.amount,
+                data.currency_id || data.currencyId,
+                data.currency_name || data.currencyName,
+                data.currency_code || data.currencyCode,
+                data.currency_symbol || data.currencySymbol,
+                data.date,
+                data.returned,
+                data.files,
+                data.note,
+                data.created_at || data.createdAt,
+                data.updated_at || data.updatedAt
+            );
+        }).filter(Boolean);
     }
 }
 

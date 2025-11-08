@@ -40,13 +40,13 @@ export const BasementAuthController = {
       
       // Проверяем, что данные пользователя есть
       if (!data.user) {
-        this.logout()
+        BasementAuthController.logout()
         return null
       }
       
       // Проверяем роль пользователя
       if (!data.user.roles || !data.user.roles.includes('basement_worker')) {
-        this.logout()
+        BasementAuthController.logout()
         return null
       }
       
@@ -57,7 +57,7 @@ export const BasementAuthController = {
     } catch (error) {
       console.error('BasementAuth: Error getting user data:', error)
       // Если токен недействителен, удаляем его
-      this.logout()
+      BasementAuthController.logout()
       return null
     }
   },

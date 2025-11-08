@@ -4,7 +4,6 @@
             <PrimaryButton :onclick="() => { showModal(null) }" :disabled="!$store.getters.hasPermission('clients_create')"
                 icon="fas fa-plus"></PrimaryButton>
             
-            <!-- Фильтр по статусу -->
             <div class="ml-2">
                 <select v-model="statusFilter" @change="() => fetchItems(1)">
                     <option value="">{{ $t('allStatuses') }}</option>
@@ -13,7 +12,6 @@
                 </select>
             </div>
 
-            <!-- Фильтр по типу клиента -->
             <div class="ml-2">
                 <select v-model="typeFilter" @change="() => fetchItems(1)">
                     <option value="">{{ $t('allTypes') }}</option>
@@ -24,7 +22,6 @@
                 </select>
             </div>
 
-            <!-- Кнопка сброса фильтров -->
             <div v-if="hasActiveFilters" class="ml-2">
                 <PrimaryButton 
                     :onclick="resetFilters"
@@ -75,9 +72,11 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { eventBus } from '@/eventBus';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
+import { highlightMatches } from '@/utils/searchUtils';
+import searchMixin from '@/mixins/searchMixin';
 
 export default {
-    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, tableTranslationMixin],
+    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, tableTranslationMixin, searchMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog },
     data() {
         return {
@@ -119,13 +118,24 @@ export default {
 
     methods: {
         itemMapper(i, c) {
+            const search = this.searchQuery;
             switch (c) {
                 case 'firstName':
-                    return i.icons() + i.firstName + ' ' + i.lastName + (i.contactPerson ? ' (' + i.contactPerson + ')' : '');
+                    const parts = [];
+                    if (i.firstName) parts.push(i.firstName);
+                    if (i.lastName) parts.push(i.lastName);
+                    let name = parts.join(' ');
+                    if (i.contactPerson) {
+                        name += ` (${i.contactPerson})`;
+                    }
+                    const highlightedName = search ? highlightMatches(name.trim(), search) : name.trim();
+                    return i.icons() + highlightedName;
                 case 'phones':
-                    return i.phonesHtmlList();
+                    const phonesHtml = i.phonesHtmlList();
+                    return search ? highlightMatches(phonesHtml, search) : phonesHtml;
                 case 'emails':
-                    return i.emailsHtmlList();
+                    const emailsHtml = i.emailsHtmlList();
+                    return search ? highlightMatches(emailsHtml, search) : emailsHtml;
                 case 'discount':
                     return i.discountFormatted();
                 case 'balance':
@@ -139,24 +149,17 @@ export default {
                     return i[c];
             }
         },
-        handleSearch(query) {
-            this.$store.dispatch('setSearchQuery', query);
-            this.fetchItems(1, false);
-        },
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
         async handleCompanyChanged(companyId) {
-            // ✅ Очищаем фильтры при смене компании
             this.statusFilter = '';
             this.typeFilter = '';
             this.selectedIds = [];
             
-            // Перезагружаем данные со страницы 1
             await this.fetchItems(1, false);
             
-            // Уведомляем пользователя о смене компании
             this.$store.dispatch('showNotification', {
               title: 'Компания изменена',
               isDanger: false
@@ -167,11 +170,10 @@ export default {
                 this.loading = true;
             }
             try {
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
+                const per_page = this.perPage || 20;
                 
-                const includeInactive = this.statusFilter === '' || this.statusFilter === 'inactive';
-                const new_data = await ClientController.getItems(page, this.searchQuery, includeInactive, this.statusFilter, this.typeFilter, perPage);
+                const includeInactive = this.statusFilter === 'inactive';
+                const new_data = await ClientController.getItems(page, this.searchQuery, includeInactive, this.statusFilter, this.typeFilter, per_page);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingClientList'), error.message, true);

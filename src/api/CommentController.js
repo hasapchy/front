@@ -13,12 +13,12 @@ const CommentController = {
     }
   },
 
-  async create(type, id, body) {
+  async storeItem(item) {
     try {
       const { data } = await api.post("/comments", {
-        type,
-        id,
-        body,
+        type: item.type,
+        id: item.id,
+        body: item.body,
       });
       return data;
     } catch (error) {
@@ -27,9 +27,13 @@ const CommentController = {
     }
   },
 
-  async update(id, body) {
+  async create(type, id, body) {
+    return this.storeItem({ type, id, body });
+  },
+
+  async updateItem(id, item) {
     try {
-      const { data } = await api.put(`/comments/${id}`, { body });
+      const { data } = await api.put(`/comments/${id}`, { body: item.body || item });
       return data;
     } catch (error) {
       console.error("Ошибка обновления комментария:", error);
@@ -37,7 +41,11 @@ const CommentController = {
     }
   },
 
-  async delete(id) {
+  async update(id, body) {
+    return this.updateItem(id, body);
+  },
+
+  async deleteItem(id) {
     try {
       const { data } = await api.delete(`/comments/${id}`);
       return data;
@@ -45,6 +53,10 @@ const CommentController = {
       console.error("Ошибка удаления комментария:", error);
       throw error;
     }
+  },
+
+  async delete(id) {
+    return this.deleteItem(id);
   },
 };
 

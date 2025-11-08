@@ -3,33 +3,11 @@ import api from "./axiosInstance";
 import TransferDto from "@/dto/transfer/TransferDto";
 
 export default class TransferController {
-  static async getItems(page = 1, per_page = 10) {
+  static async getItems(page = 1, per_page = 20) {
     try {
       const response = await api.get(`/transfers?page=${page}&per_page=${per_page}`);
       const data = response.data;
-      // Преобразуем полученные данные в DTO
-      const items = data.items.map((item) => {
-        return new TransferDto(
-          item.id,
-          item.cash_from_id,
-          item.cash_from_name,
-          item.currency_from_id,
-          item.currency_from_name,
-          item.currency_from_code,
-          item.currency_from_symbol,
-          item.cash_to_id,
-          item.cash_to_name,
-          item.currency_to_id,
-          item.currency_to_name,
-          item.currency_to_code,
-          item.currency_to_symbol,
-          item.amount,
-          item.user_id,
-          item.user_name,
-          item.date,
-          item.note
-        );
-      });
+      const items = TransferDto.fromApiArray(data.items);
 
       const paginatedResponse = new PaginatedResponse(
         items,
@@ -45,31 +23,6 @@ export default class TransferController {
       throw error;
     }
   }
-
-  // static async getAllItems() {
-  //     try {
-  //         const response = await api.get(`/categories/all`);
-  //         const data = response.data;
-  //         // Преобразуем полученные данные в DTO
-  //         const items = data.map(item => {
-  //             return new CategoryDto(
-  //                 item.id,
-  //                 item.name,
-  //                 item.parent_id,
-  //                 item.parent_name,
-  //                 item.user_id,
-  //                 item.user_name,
-  //                 item.users,
-  //                 item.created_at,
-  //                 item.updated_at,
-  //             );
-  //         });
-  //         return items;
-  //     } catch (error) {
-  //         console.error('Ошибка при получении категорий:', error);
-  //         throw error;
-  //     }
-  // }
 
   static async storeItem(item) {
     try {

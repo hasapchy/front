@@ -1,13 +1,20 @@
 import api from "./axiosInstance";
 import InvoiceDto from "@/dto/invoice/InvoiceDto";
-import InvoiceProductDto from "@/dto/invoice/InvoiceProductDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
-import ClientDto from "@/dto/client/ClientDto";
-import OrderDto from "@/dto/order/OrderDto";
+import queryCache from "@/utils/queryCache";
 
 export default class InvoiceController {
-  static async getItemsPaginated(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, typeFilter = null, statusFilter = null, per_page = 10) {
+  static async getItems(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, typeFilter = null, statusFilter = null, per_page = 20) {
     try {
+      const cacheKey = 'invoices_list';
+      const cacheParams = { page, per_page, search, dateFilter, startDate, endDate, typeFilter, statusFilter };
+      const cached = queryCache.get(cacheKey, cacheParams);
+      
+      if (cached) {
+        console.log('📦 Загружено из кэша: invoices', cacheParams);
+        return cached;
+      }
+
       const params = { page: page, per_page: per_page };
       if (search) {
         params.search = search;
@@ -27,108 +34,7 @@ export default class InvoiceController {
       }
       const response = await api.get("/invoices", { params });
       const data = response.data;
-      const items = (data.items || []).map((item) => {
-        var client = null;
-        if (item.client) {
-          client = new ClientDto(
-            item.client.id,
-            item.client.client_type,
-            item.client.balance,
-            item.client.is_supplier,
-            item.client.is_conflict,
-            item.client.first_name,
-            item.client.last_name,
-            item.client.contact_person,
-            item.client.address,
-            item.client.note,
-            item.client.status,
-            item.client.discount_type,
-            item.client.discount,
-            item.client.created_at,
-            item.client.updated_at,
-            item.client.emails,
-            item.client.phones
-          );
-        }
-        
-        var orders = null;
-        if (item.orders) {
-          orders = item.orders.map((order) => {
-            // Безопасно извлекаем валюту: сначала плоские поля, затем из вложенных cash.currency
-            const currencyId = order.currency_id ?? order.cash?.currency?.id ?? null;
-            const currencyName = order.currency_name ?? order.cash?.currency?.name ?? null;
-            const currencyCode = order.currency_code ?? order.cash?.currency?.code ?? null;
-            const currencySymbol = order.currency_symbol ?? order.cash?.currency?.symbol ?? null;
-
-            return new OrderDto(
-              order.id,
-              order.note ?? "",
-              order.description ?? "",
-              order.status_id,
-              order.status_name,
-              // order.category_id,
-              // order.category_name,
-              order.client_id,
-              order.user_id,
-              order.user_name,
-              order.cash_id ?? null,
-              order.cash_name ?? null,
-              order.warehouse_id,
-              order.warehouse_name,
-              order.project_id,
-              order.project_name,
-              order.price,
-              order.discount ?? 0,
-              order.total_price,
-              currencyId,
-              currencyName,
-              currencyCode,
-              currencySymbol,
-              order.date,
-              order.created_at,
-              order.updated_at,
-              client,
-              order.products || null
-            );
-          });
-        }
-        
-        var products = null;
-        if (item.products) {
-          products = item.products.map((product) => {
-                    return new InvoiceProductDto(
-          product.id,
-          product.invoice_id,
-          product.order_id,
-          product.product_id,
-          product.product_name,
-          product.product_description,
-          product.quantity,
-          product.price,
-          product.total_price,
-          product.unit_id,
-          product.unit
-        );
-          });
-        }
-        
-        return new InvoiceDto(
-          item.id,
-          item.client_id,
-          item.user_id,
-          item.user_name,
-          item.invoice_date,
-          item.note,
-          item.total_amount,
-          item.invoice_number,
-          item.status || 'new',
-          item.created_at,
-          item.updated_at,
-          client,
-          orders,
-          products
-        );
-      });
+      const items = InvoiceDto.fromApiArray(data.items);
       const paginatedResponse = new PaginatedResponse(
         items,
         data.current_page,
@@ -136,6 +42,8 @@ export default class InvoiceController {
         data.last_page,
         data.total
       );
+
+      queryCache.set(cacheKey, cacheParams, paginatedResponse);
       return paginatedResponse;
     } catch (error) {
       console.error("Ошибка при получении списка счетов:", error);
@@ -148,6 +56,7 @@ export default class InvoiceController {
       const { data } = await api.post("/invoices", {
         ...item,
       });
+      queryCache.invalidate('invoices_list');
       return data;
     } catch (error) {
       console.error("Ошибка при создании счета:", error);
@@ -160,6 +69,7 @@ export default class InvoiceController {
       const { data } = await api.put(`/invoices/${id}`, {
         ...item,
       });
+      queryCache.invalidate('invoices_list');
       return data;
     } catch (error) {
       console.error("Ошибка при обновлении счета:", error);
@@ -170,6 +80,7 @@ export default class InvoiceController {
   static async deleteItem(id) {
     try {
       const { data } = await api.delete(`/invoices/${id}`);
+      queryCache.invalidate('invoices_list');
       return data;
     } catch (error) {
       console.error("Ошибка при удалении счета:", error);
@@ -179,108 +90,9 @@ export default class InvoiceController {
 
   static async getItem(id) {
     const { data } = await api.get(`/invoices/${id}`);
-    const item = data.item || data;
+    const item = data.item;
     
-    // Преобразуем клиента в DTO если он есть
-    var client = null;
-    if (item.client) {
-      client = new ClientDto(
-        item.client.id,
-        item.client.client_type,
-        item.client.balance,
-        item.client.is_supplier,
-        item.client.is_conflict,
-        item.client.first_name,
-        item.client.last_name,
-        item.client.contact_person,
-        item.client.address,
-        item.client.note,
-        item.client.status,
-        item.client.discount_type,
-        item.client.discount,
-        item.client.created_at,
-        item.client.updated_at,
-        item.client.emails,
-        item.client.phones
-      );
-    }
-    
-    // Преобразуем заказы в DTO если они есть
-    var orders = null;
-    if (item.orders) {
-      orders = item.orders.map((order) => {
-        const currencyId = order.currency_id ?? order.cash?.currency?.id ?? null;
-        const currencyName = order.currency_name ?? order.cash?.currency?.name ?? null;
-        const currencyCode = order.currency_code ?? order.cash?.currency?.code ?? null;
-        const currencySymbol = order.currency_symbol ?? order.cash?.currency?.symbol ?? null;
-        return new OrderDto(
-          order.id,
-          order.note ?? "",
-          order.description ?? "",
-          order.status_id,
-          order.status_name,
-          // order.category_id,
-          // order.category_name,
-          order.client_id,
-          order.user_id,
-          order.user_name,
-          order.cash_id ?? null,
-          order.cash_name ?? null,
-          order.warehouse_id,
-          order.warehouse_name,
-          order.project_id,
-          order.project_name,
-          order.price,
-          order.discount ?? 0,
-          order.total_price,
-          currencyId,
-          currencyName,
-          currencyCode,
-          currencySymbol,
-          order.date,
-          order.created_at,
-          order.updated_at,
-          client,
-          order.products || null
-        );
-      });
-    }
-    
-    // Преобразуем продукты в DTO если они есть
-    var products = null;
-    if (item.products) {
-      products = item.products.map((product) => {
-        return new InvoiceProductDto(
-          product.id,
-          product.invoice_id,
-          product.product_id,
-          product.product_name,
-          product.product_description,
-          product.quantity,
-          product.price,
-          product.total_price,
-          product.unit_id,
-          product.unit
-        );
-      });
-    }
-    
-    return new InvoiceDto(
-      item.id,
-      item.client_id,
-      item.user_id,
-      item.user_name,
-      item.invoice_date,
-      item.note,
-      item.total_amount,
-      item.invoice_number,
-      item.status || 'new',
-      item.created_at,
-      item.updated_at,
-      client,
-      orders,
-      products
-    );
+    return InvoiceDto.fromApiArray([item])[0] || null;
   }
 
   static async getOrdersForInvoice(orderIds) {

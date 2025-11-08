@@ -227,14 +227,14 @@ export default {
         closeCropperModal() {
             this.showCropperModal = false;
             this.tempImageSrc = '';
-            // Очищаем input file
+            
             if (this.$refs.imageInput) {
                 this.$refs.imageInput.value = '';
             }
         },
         
         handleCroppedImage(blob) {
-            // Создаем File объект из blob
+            
             const fileName = `cropped_profile_${Date.now()}.jpg`;
             const file = new File([blob], fileName, { type: 'image/jpeg' });
             
@@ -242,7 +242,7 @@ export default {
             this.croppedFile = file;
             this.selected_image = URL.createObjectURL(blob);
             
-            // Закрываем модальное окно
+            
             this.closeCropperModal();
         },
 

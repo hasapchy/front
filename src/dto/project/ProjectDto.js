@@ -1,5 +1,8 @@
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatNumber, formatCurrency } from "@/utils/numberUtils";
+import { createFromApiArray, getUserIdsFromArray } from "@/utils/dtoUtils";
+import ClientDto from "@/dto/client/ClientDto";
+import CurrencyDto from "@/dto/app/CurrencyDto";
 import "dayjs/locale/ru";
 
 export default class ProjectDto {
@@ -53,37 +56,25 @@ export default class ProjectDto {
   }
 
   set statusName(value) {
-    // Сеттер для совместимости с канбаном
     if (this.status) {
       this.status.name = value;
     }
   }
 
   formatDate() {
-    return dayjsDateTime(this.date);
+    return dtoDateFormatters.formatDate(this.date);
   }
 
   formatCreatedAt() {
-    return dayjsDate(this.createdAt);
+    return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
 
   formatUpdatedAt() {
-    return dayjsDate(this.updatedAt);
+    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
-  // Получить список ID пользователей
   getUserIds() {
-    return this.users.map(user => user.id.toString());
-  }
-
-  // Получить список имен пользователей
-  getUserNames() {
-    return this.users.map(user => user.name).join(', ');
-  }
-
-  // Проверить, есть ли пользователь с указанным ID
-  hasUser(userId) {
-    return this.users.some(user => user.id == userId);
+    return getUserIdsFromArray(this.users);
   }
 
   getFileUrl(file) {
@@ -112,7 +103,7 @@ export default class ProjectDto {
       mimeType: file.mime_type,
       uploadedAt: file.uploaded_at,
       formattedSize: this.formatFileSize(file.size),
-      formattedUploadDate: file.uploaded_at ? dayjsDate(file.uploaded_at) : ''
+      formattedUploadDate: file.uploaded_at ? dtoDateFormatters.formatCreatedAt(file.uploaded_at) : ''
     }));
   }
 
@@ -133,65 +124,70 @@ export default class ProjectDto {
   }
 
   getExchangeRateDisplay() {
-    return this.exchangeRate ? this.exchangeRate.toFixed(6) : '1.000000';
+    return this.exchangeRate ? formatNumber(this.exchangeRate, 6, true) : '1.000000';
   }
 
-  // Получить бюджет в манатах (дефолтная валюта)
   getBudgetInManat() {
     if (!this.currencyId) {
-      return this.budget; // Если валюта не выбрана, возвращаем как есть
-    }
-    
-    // Если валюта дефолтная (манат), возвращаем бюджет как есть
-    if (this.currency && this.currency.is_default) {
       return this.budget;
     }
     
-    // Для не-дефолтной валюты используем курс для конвертации в манаты
-    const rate = this.exchangeRate || 1;
-    return (this.budget * rate).toFixed(2);
-  }
-
-  // Получить отображение бюджета с двумя валютами
-  getBudgetDisplay() {
-    if (!this.currencyId || !this.currency) {
-      return formatNumber(this.budget); // Если валюта не выбрана, возвращаем только бюджет
+    if (this.currency && this.currency.isDefault) {
+      return this.budget;
     }
     
-    // Если валюта дефолтная (манат), показываем только бюджет
-    if (this.currency.is_default) {
+    const rate = this.exchangeRate || 1;
+    return this.budget * rate;
+  }
+
+  getBudgetDisplay() {
+    if (!this.currencyId || !this.currency) {
+      return formatNumber(this.budget);
+    }
+    
+    if (this.currency.isDefault) {
       return formatCurrency(this.budget, this.currency.symbol);
     }
     
-    // Для не-дефолтной валюты показываем бюджет в валюте и эквивалент в манатах
     const budgetInManat = this.getBudgetInManat();
     return `${formatCurrency(this.budget, this.currency.symbol)} (${formatNumber(budgetInManat)} TMT)`;
   }
 
-  static fromArray(dataArray) {
-    if (!Array.isArray(dataArray)) return [];
-    
-    return dataArray.map(data => new ProjectDto(
-      data.id,
-      data.name,
-      data.budget,
-      data.currencyId || data.currency_id,
-      data.exchangeRate || data.exchange_rate,
-      data.date,
-      data.clientId || data.client_id,
-      data.client,
-      data.userId || data.user_id,
-      data.userName || data.user_name,
-      data.userPhoto || data.user_photo,
-      data.users || [],
-      data.createdAt || data.created_at,
-      data.updatedAt || data.updated_at,
-      data.files || [],
-      data.currency,
-      data.description,
-      data.creator,
-      data.statusId || data.status_id,
-      data.status
-    ));
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, data => {
+      const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;
+      const currency = data.currency ? new CurrencyDto({
+        id: data.currency.id,
+        code: data.currency.code,
+        name: data.currency.name,
+        symbol: data.currency.symbol,
+        is_default: data.currency.is_default,
+        is_report: data.currency.is_report,
+        status: data.currency.status
+      }) : null;
+      
+      return new ProjectDto(
+        data.id,
+        data.name,
+        data.budget,
+        data.currency_id,
+        data.exchange_rate,
+        data.date,
+        data.client_id,
+        client,
+        data.user_id,
+        data.user_name,
+        data.user_photo,
+        data.users || [],
+        data.created_at,
+        data.updated_at,
+        data.files || [],
+        currency,
+        data.description,
+        data.creator,
+        data.status_id,
+        data.status
+      );
+    }).filter(Boolean);
   }
 }

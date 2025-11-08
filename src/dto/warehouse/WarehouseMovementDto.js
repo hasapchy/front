@@ -1,4 +1,5 @@
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
+import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
 import WarehouseMovementProductDto from "./WarehouseMovementProductDto";
 
 export default class WarehouseMovementDto {
@@ -36,29 +37,38 @@ export default class WarehouseMovementDto {
   }
 
   productsHtmlList() {
-    if (this.products === null) {
-      return "";
-    }
-    var res = "<ul>";
-    this.products.forEach((product) => {
-      res += `<li style="display: flex; align-items: center; gap: 10px;">`;
-      if (product.productImage !== null) {
-        res += `<img src="${product.imgUrl()}" alt="" width="20px" class="rounded">`;
-      }
-      res += `${product.productName} - ${product.quantity}${product.unitShortName}</li>`;
-    });
-    res += "</ul>";
-    return res;
+    return createProductsHtmlList(this.products);
   }
   formatDate() {
-    return dayjsDateTime(this.date);
+    return dtoDateFormatters.formatDate(this.date);
   }
 
   formatCreatedAt() {
-    return dayjsDate(this.createdAt);
+    return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
 
   formatUpdatedAt() {
-    return dayjsDate(this.updatedAt);
+    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
+  }
+
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, data => {
+      const products = data.products ? WarehouseMovementProductDto.fromApiArray(data.products) : null;
+      
+      return new WarehouseMovementDto(
+        data.id,
+        data.warehouse_from_id,
+        data.warehouse_from_name,
+        data.warehouse_to_id,
+        data.warehouse_to_name,
+        products,
+        data.note,
+        data.user_id,
+        data.user_name,
+        data.date,
+        data.created_at,
+        data.updated_at
+      );
+    }).filter(Boolean);
   }
 }

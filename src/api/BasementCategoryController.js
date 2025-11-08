@@ -7,19 +7,7 @@ export default class BasementCategoryController {
       const response = await basementApi.get("/categories/all");
       const data = response.data;
       
-      const items = data.map((item) => {
-        return new CategoryDto(
-          item.id,
-          item.name,
-          item.parent_id,
-          null, // parentName
-          null, // userId
-          null, // userName
-          [], // users
-          item.created_at,
-          item.updated_at
-        );
-      });
+      const items = CategoryDto.fromApiArray(data);
 
       return items;
     } catch (error) {

@@ -1,34 +1,50 @@
-/**
- * Инвалидация кэша при изменении данных
- */
-
 import { eventBus } from '@/eventBus';
 
+export const CACHE_KEY_PREFIXES = [
+  'warehouses_',
+  'cashRegisters_',
+  'clients_',
+  'clientCategories_',
+  'products_',
+  'services_',
+  'categories_',
+  'projects_',
+  'users_',
+  'companies_',
+  'orders_',
+  'sales_',
+  'transactions_',
+  'invoices_',
+  'transfers_',
+  'orderFields_',
+  'orderCategories_',
+  'receipts_',
+  'writeoffs_',
+  'movements_',
+  'stocks_'
+];
+
+export const CACHE_PLAIN_KEYS = [
+  'clientsData',
+  'projectsData',
+  'lastProductsData',
+  'allProductsData'
+];
+
 export default class CacheInvalidator {
-  /**
-   * Зависимости между типами кэша
-   * Когда инвалидируется тип из ключа, автоматически инвалидируются типы из значения
-   * Согласно BALANCE_LOGIC_TZ.md: все операции (sales, orders, transactions, receipts) 
-   * влияют на баланс клиента через таблицу transactions
-   */
   static dependencies = {
-    // При изменении продаж/заказов/транзакций/оприходований -> инвалидировать клиентов
     sales: ['clients', 'projects'],
     orders: ['clients', 'projects'],
     transactions: ['clients', 'projects', 'cashRegisters'],
-    receipts: ['clients'], // поставщики тоже клиенты
+    receipts: ['clients'],
     writeoffs: [],
     movements: [],
-    transfers: ['cashRegisters'], // переводы между кассами
-    invoices: [], // счета не влияют на баланс напрямую
+    transfers: ['cashRegisters'],
+    invoices: [],
   };
 
-  /**
-   * Инвалидировать кэш по типу данных
-   */
   static invalidateByType(type) {
     const patterns = {
-      // Глобальные кэши
       currencies: ['currencies_cache'],
       units: ['units_cache'],
       orderStatuses: ['orderStatuses_cache', 'order_status_categories_cache'],
@@ -36,8 +52,6 @@ export default class CacheInvalidator {
       projectStatuses: ['projectStatuses_cache'],
       transactionCategories: ['transactionCategories_cache'],
       productStatuses: ['productStatuses_cache'],
-      
-      // Данные компании (справочники)
       warehouses: ['warehouses_'],
       cashRegisters: ['cashRegisters_'],
       clients: ['clients_', 'clientsData'],
@@ -48,8 +62,6 @@ export default class CacheInvalidator {
       projects: ['projects_', 'projectsData'],
       users: ['users_'],
       companies: ['companies_'],
-      
-      // Данные компании (транзакционные)
       orders: ['orders_'],
       sales: ['sales_'],
       transactions: ['transactions_'],
@@ -57,8 +69,6 @@ export default class CacheInvalidator {
       transfers: ['transfers_'],
       orderFields: ['orderFields_'],
       orderCategories: ['orderCategories_'],
-      
-      // Складские операции
       receipts: ['receipts_'],
       writeoffs: ['writeoffs_'],
       movements: ['movements_'],
@@ -78,52 +88,21 @@ export default class CacheInvalidator {
         }
       });
       
-      // ✅ Также удаляем timestamp для справочников без суффикса компании
-      // Например: categories_timestamp, warehouses_timestamp и т.д.
       if (pattern.endsWith('_')) {
-        const timestampKey = pattern.slice(0, -1) + '_timestamp'; // categories_ -> categories_timestamp
+        const timestampKey = pattern.slice(0, -1) + '_timestamp';
         localStorage.removeItem(timestampKey);
       } else {
         localStorage.removeItem(`${pattern}_timestamp`);
       }
     });
 
-    // ✅ Отправляем событие об инвалидации кэша для очистки Vuex Store
     eventBus.emit('cache:invalidate', { type });
 
     return removedCount;
   }
 
-  /**
-   * Инвалидировать кэш для конкретной компании
-   */
   static invalidateByCompany(companyId) {
-    const patterns = [
-      // Справочники
-      'warehouses_',
-      'cashRegisters_',
-      'clients_',
-      'clientCategories_',
-      'products_',
-      'services_',
-      'categories_',
-      'projects_',
-      'users_',
-      'companies_',
-      // Транзакционные данные
-      'orders_',
-      'sales_',
-      'transactions_',
-      'invoices_',
-      'transfers_',
-      'orderFields_',
-      'orderCategories_',
-      // Складские операции
-      'receipts_',
-      'writeoffs_',
-      'movements_',
-      'stocks_'
-    ];
+    const patterns = CACHE_KEY_PREFIXES;
 
     let removedCount = 0;
 
@@ -145,93 +124,53 @@ export default class CacheInvalidator {
     return removedCount;
   }
 
-  /**
-   * Инвалидировать все кэши
-   */
   static invalidateAll() {
-    const cacheKeys = Object.keys(localStorage).filter(key => 
-      key.includes('_cache') || 
-      key.includes('_timestamp') ||
-      // Справочники
-      key.startsWith('warehouses_') ||
-      key.startsWith('cashRegisters_') ||
-      key.startsWith('clients_') ||
-      key.startsWith('products_') ||
-      key.startsWith('services_') ||
-      key.startsWith('categories_') ||
-      key.startsWith('projects_') ||
-      key.startsWith('users_') ||
-      key.startsWith('companies_') ||
-      // Транзакционные данные
-      key.startsWith('orders_') ||
-      key.startsWith('sales_') ||
-      key.startsWith('transactions_') ||
-      key.startsWith('invoices_') ||
-      key.startsWith('transfers_') ||
-      key.startsWith('orderFields_') ||
-      key.startsWith('orderCategories_') ||
-      // Складские операции
-      key.startsWith('receipts_') ||
-      key.startsWith('writeoffs_') ||
-      key.startsWith('movements_') ||
-      key.startsWith('stocks_') ||
-      // Plain data для кэширования (Store)
-      key === 'clientsData' ||
-      key === 'projectsData' ||
-      key === 'lastProductsData' ||
-      key === 'allProductsData'
-    );
-
+    const cacheKeys = this.getCacheKeys();
     cacheKeys.forEach(key => localStorage.removeItem(key));
-    
     return cacheKeys.length;
   }
 
-  /**
-   * Инвалидировать кэш при создании записи
-   */
+  static getCacheKeys() {
+    return Object.keys(localStorage).filter(key => {
+      if (key.includes('_cache') || key.includes('_timestamp')) {
+        return true;
+      }
+      if (CACHE_KEY_PREFIXES.some(prefix => key.startsWith(prefix))) {
+        return true;
+      }
+      if (CACHE_PLAIN_KEYS.includes(key)) {
+        return true;
+      }
+      return false;
+    });
+  }
+
   static onCreate(type, companyId = null) {
     this.invalidateByType(type);
     if (companyId) {
       this.invalidateByCompany(companyId);
     }
-    
-    // Инвалидировать зависимые типы
     this.invalidateDependencies(type, companyId);
   }
 
-  /**
-   * Инвалидировать кэш при обновлении записи
-   */
   static onUpdate(type, companyId = null) {
     this.invalidateByType(type);
     if (companyId) {
       this.invalidateByCompany(companyId);
     }
-    
-    // Инвалидировать зависимые типы
     this.invalidateDependencies(type, companyId);
   }
 
-  /**
-   * Инвалидировать кэш при удалении записи
-   */
   static onDelete(type, companyId = null) {
     this.invalidateByType(type);
     if (companyId) {
       this.invalidateByCompany(companyId);
     }
-    
-    // Инвалидировать зависимые типы
     this.invalidateDependencies(type, companyId);
   }
 
-  /**
-   * Инвалидировать зависимые типы кэша
-   */
   static invalidateDependencies(type, companyId = null) {
     const dependentTypes = this.dependencies[type] || [];
-    
     dependentTypes.forEach(dependentType => {
       this.invalidateByType(dependentType);
       if (companyId) {
@@ -240,19 +179,53 @@ export default class CacheInvalidator {
     });
   }
 
-  /**
-   * Инвалидировать кэш при смене компании
-   */
   static onCompanyChange(_oldCompanyId, _newCompanyId) {
-    // Очищаем данные старой компании из store
-    // (это делается в store, здесь только логируем)
   }
 
-  /**
-   * Инвалидировать кэш при изменении пользователя
-   */
   static onUserChange() {
-    // При смене пользователя очищаем все кэши
     this.invalidateAll();
   }
+}
+
+export function companyScopedKey(prefix, companyId) {
+  if (!prefix) throw new Error('companyScopedKey: prefix is required');
+  if (!companyId) throw new Error('companyScopedKey: companyId is required');
+  return `${prefix}_${companyId}`;
+}
+
+export function timestampKey(key) {
+  return `${key}_timestamp`;
+}
+
+export function isFreshByKey(key, ttlMs) {
+  const tsKey = timestampKey(key);
+  const tsStr = localStorage.getItem(tsKey);
+  if (!tsStr) return false;
+  const ts = parseInt(tsStr);
+  if (Number.isNaN(ts)) return false;
+  return Date.now() - ts <= ttlMs;
+}
+
+export function touchKey(key) {
+  localStorage.setItem(timestampKey(key), Date.now().toString());
+}
+
+export function clearKey(key) {
+  localStorage.removeItem(key);
+  localStorage.removeItem(timestampKey(key));
+}
+
+export function isCompanyCacheFresh(prefix, companyId, ttlMs) {
+  const key = companyScopedKey(prefix, companyId);
+  return isFreshByKey(key, ttlMs);
+}
+
+export function touchCompanyCache(prefix, companyId) {
+  const key = companyScopedKey(prefix, companyId);
+  touchKey(key);
+}
+
+export function clearCompanyCache(prefix, companyId) {
+  const key = companyScopedKey(prefix, companyId);
+  clearKey(key);
 }

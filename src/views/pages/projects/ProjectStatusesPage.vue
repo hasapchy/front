@@ -107,10 +107,10 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
+               
+                const per_page = this.perPage || 20;
                 
-                this.data = await ProjectStatusController.getItems(page, perPage);
+                this.data = await ProjectStatusController.getItems(page, per_page);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProjectStatuses'), error.message, true);
             }

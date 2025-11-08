@@ -5,25 +5,11 @@ import CashRegisterBalanceItemDto from "@/dto/cash_register/CashRegisterBalanceI
 import CashRegisterDto from "@/dto/cash_register/CashRegisterDto";
 
 export default class CashRegisterController {
-  static async getItems(page = 1, per_page = 10) {
+  static async getItems(page = 1, per_page = 20) {
     try {
       const response = await api.get(`/cash_registers?page=${page}&per_page=${per_page}`);
       const data = response.data;
-      // Преобразуем полученные данные в DTO
-      const items = (data.items || []).map((item) => {
-        return new CashRegisterDto(
-          item.id,
-          item.name,
-          item.balance,
-          item.users || [],
-          item.currency_id,
-          item.currency?.name,
-          item.currency?.code,
-          item.currency?.symbol,
-          item.created_at,
-          item.updated_at
-        );
-      });
+      const items = CashRegisterDto.fromApiArray(data.items);
 
       const paginatedResponse = new PaginatedResponse(
         items,
@@ -44,21 +30,7 @@ export default class CashRegisterController {
     try {
       const response = await api.get(`/cash_registers/all`);
       const data = response.data;
-      // Преобразуем полученные данные в DTO
-      const items = (data || []).map((item) => {
-        return new CashRegisterDto(
-          item.id,
-          item.name,
-          item.balance,
-          item.users || [],
-          item.currency_id,
-          item.currency?.name,
-          item.currency?.code,
-          item.currency?.symbol,
-          item.created_at,
-          item.updated_at
-        );
-      });
+      const items = CashRegisterDto.fromApiArray(data);
       return items;
     } catch (error) {
       console.error("Ошибка при получении касс:", error);
@@ -66,12 +38,6 @@ export default class CashRegisterController {
     }
   }
 
-  /**
-   * @param {number[]} cashIds — массив id касс (пустой для всех)
-   * @param {string|null} startDate — 'DD.MM.YYYY'
-   * @param {string|null} endDate   — 'DD.MM.YYYY'
-   * @param {Object} additionalParams — дополнительные параметры фильтрации
-   */
   static async getCashBalance(cashIds = [], startDate = null, endDate = null, additionalParams = {}) {
     try {
       const params = {};
@@ -95,18 +61,7 @@ export default class CashRegisterController {
 
       const response = await api.get("/cash_registers/balance", { params });
       const data = response.data;
-      return data.map(
-        (item) =>
-          new CashRegisterBalanceDto(
-            item.id,
-            item.name,
-            item.balance.map(
-              (b) => new CashRegisterBalanceItemDto(b.value, b.title, b.type)
-            ),
-            item.currency_symbol,
-            item.currency_code
-          )
-      );
+      return CashRegisterBalanceDto.fromApiArray(data);
     } catch (error) {
       console.error("Ошибка при получении баланса касс:", error);
       throw error;
@@ -138,7 +93,7 @@ export default class CashRegisterController {
       const { data } = await api.delete(`/cash_registers/${id}`);
       return data;
     } catch (error) {
-      console.error("Ошибка при удалении категории:", error);
+      console.error("Ошибка при удалении кассы:", error);
       throw error;
     }
   }

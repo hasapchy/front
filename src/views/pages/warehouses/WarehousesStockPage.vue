@@ -27,6 +27,13 @@
                     </template>
                 </select>
             </div>
+            <div class="ml-2">
+                <select v-model="availabilityFilter" @change="fetchItems" class="p-2 border rounded">
+                    <option value="all">Все товары</option>
+                    <option value="in_stock">В наличии</option>
+                    <option value="out_of_stock">Нет в наличии</option>
+                </select>
+            </div>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
@@ -74,9 +81,11 @@ import ProductController from '@/api/ProductController';
 import { eventBus } from '@/eventBus';
 import { formatQuantity } from '@/utils/numberUtils';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
+import searchMixin from '@/mixins/searchMixin';
+import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
-    mixins: [modalMixin, notificationMixin, tableTranslationMixin, companyChangeMixin],
+    mixins: [modalMixin, notificationMixin, tableTranslationMixin, companyChangeMixin, searchMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, AdminWarehouseCreatePage },
     data() {
         return {
@@ -87,6 +96,7 @@ export default {
             allCategories: [],
             warehouseId: '',
             categoryId: '',
+            availabilityFilter: 'all',
             modalCreateWarehouse: false,
             modalCreateProduct: false,
             editingItem: null,
@@ -94,11 +104,11 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
-                { name: 'warehouseName', label: 'warehouse' },
+                { name: 'warehouseName', label: 'warehouse', html: true },
                 { name: 'image', label: 'image', image: true },
-                { name: 'productName', label: 'product' },
+                { name: 'productName', label: 'product', html: true },
                 { name: 'quantity', label: 'quantity' },
-                { name: 'categoryName', label: 'category' },
+                { name: 'categoryName', label: 'category', html: true },
                 { name: 'createdAt', label: 'createdAt' }
             ],
             perPage: 10,
@@ -129,6 +139,12 @@ export default {
         },
         itemMapper(i, c) {
             switch (c) {
+                case 'warehouseName':
+                    return this.searchQuery ? highlightMatches(i.warehouseName || '', this.searchQuery) : (i.warehouseName || '');
+                case 'productName':
+                    return this.searchQuery ? highlightMatches(i.productName || '', this.searchQuery) : (i.productName || '');
+                case 'categoryName':
+                    return this.searchQuery ? highlightMatches(i.categoryName || '', this.searchQuery) : (i.categoryName || '');
                 case 'image':
                     return i.productImage ? i.imgUrl() : null;
                 case 'quantity':
@@ -147,6 +163,7 @@ export default {
             // ✅ Очищаем фильтры при смене компании
             this.warehouseId = '';
             this.categoryId = '';
+            this.availabilityFilter = 'all';
             this.modalCreateWarehouse = false;
             this.modalCreateProduct = false;
             this.editingItem = null;
@@ -170,10 +187,10 @@ export default {
             var category_id = this.categoryId != '' ? this.categoryId : null;
             var warehouse_id = this.warehouseId != '' ? this.warehouseId : null;
             try {
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
+               
+                const per_page = this.perPage || 20;
                 
-                const new_data = await WarehouseStockController.getStocks(page, warehouse_id, category_id, perPage, this.searchQuery);
+                const new_data = await WarehouseStockController.getItems(page, warehouse_id, category_id, per_page, this.searchQuery, this.availabilityFilter);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification('Ошибка получения списка товаров на складе', error.message, true);
@@ -181,10 +198,6 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
-        },
-        handleSearch(query) {
-            this.$store.dispatch('setSearchQuery', query);
-            this.fetchItems(1, false);
         },
         openCreateWarehouse() {
             this.modalCreateWarehouse = true;

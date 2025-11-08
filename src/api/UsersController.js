@@ -1,20 +1,36 @@
 import { UserDto } from "@/dto/users/UserDto";
 import api from "./axiosInstance";
 
+import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
+
 const UsersController = {
-  async getItems(page = 1, per_page = 10) {
-    const { data } = await api.get(`/users?page=${page}&per_page=${per_page}`);
-    return {
-      items: UserDto.fromArray(data.data),
-      currentPage: data.current_page,
-      lastPage: data.last_page,
-    };
+  async getItems(page = 1, per_page = 20) {
+    try {
+      const { data } = await api.get(`/users?page=${page}&per_page=${per_page}`);
+      const items = UserDto.fromApiArray(data.items);
+      return new PaginatedResponse(
+        items,
+        data.current_page,
+        data.next_page,
+        data.last_page,
+        data.total
+      );
+    } catch (error) {
+      console.error("Ошибка при получении пользователей:", error);
+      throw error;
+    }
   },
 
-  async getAllUsers() {
-    const { data } = await api.get(`/users/all`);
-    return UserDto.fromArray(data);
+  async getAllItems() {
+    try {
+      const { data } = await api.get(`/users/all`);
+      return UserDto.fromApiArray(data);
+    } catch (error) {
+      console.error("Ошибка при получении всех пользователей:", error);
+      throw error;
+    }
   },
+
 
   async storeItem(payload, file = null) {
     try {
@@ -83,18 +99,33 @@ const UsersController = {
   },
 
   async deleteItem(id) {
-    const { data } = await api.delete(`/users/${id}`);
-    return data;
+    try {
+      const { data } = await api.delete(`/users/${id}`);
+      return data;
+    } catch (error) {
+      console.error("Ошибка при удалении пользователя:", error);
+      throw error;
+    }
   },
 
   async getAllPermissions() {
-    const { data } = await api.get(`/permissions`);
-    return data;
+    try {
+      const { data } = await api.get(`/permissions`);
+      return data;
+    } catch (error) {
+      console.error("Ошибка при получении разрешений:", error);
+      throw error;
+    }
   },
 
   async getCurrentUser() {
-    const { data } = await api.get(`/user/current`);
-    return data;
+    try {
+      const { data } = await api.get(`/user/current`);
+      return data;
+    } catch (error) {
+      console.error("Ошибка при получении текущего пользователя:", error);
+      throw error;
+    }
   },
 
   async updateProfile(payload, file = null) {

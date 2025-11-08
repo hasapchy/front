@@ -384,4 +384,7 @@ export default {
     exchangeRate: 'Exchange Rate',
     exchangeRateHelp: 'Rate shows how many units of target currency you get for 1 unit of source currency',
     receiverAmount: 'Receiver Amount',
+    
+    // Company settings
+    skipProjectOrderBalance: 'Skip project order balance',
 }

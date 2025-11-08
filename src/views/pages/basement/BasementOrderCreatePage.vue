@@ -779,17 +779,17 @@ export default {
         }))
       }
     },
-    // Форматирование количества - убирает лишние нули в конце, но сохраняет все значащие цифры
+    // Форматирование количества - всегда 2 знака после запятой
     formatQuantity(quantity) {
       if (quantity === null || quantity === undefined || quantity === '') {
-        return '0';
+        return '0.00';
       }
       const num = Number(quantity);
       if (isNaN(num)) {
-        return String(quantity);
+        return '0.00';
       }
-      // Преобразуем в строку с максимальной точностью, затем убираем лишние нули
-      return String(num).replace(/\.?0+$/, '');
+      // Округляем до 2 знаков после запятой и форматируем
+      return num.toFixed(2);
     },
     // Обработчик для DraggableTable
     productItemMapper(item, columnName) {

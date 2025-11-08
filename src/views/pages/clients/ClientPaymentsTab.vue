@@ -11,7 +11,6 @@
             </PrimaryButton>
         </div>
 
-        <!-- Итого платежей -->
         <div v-if="!paymentsLoading && editingItem && totalPayments > 0" class="mb-4">
             <div class="flex items-center gap-2">
                 <i class="fas fa-money-bill text-green-500"></i>
@@ -28,7 +27,6 @@
             :columns-config="columnsConfig" :table-data="paymentsHistory" :item-mapper="itemMapper"
             :onItemClick="handlePaymentItemClick" />
 
-        <!-- Notification Toast -->
         <NotificationToast 
             :title="notificationTitle" 
             :subtitle="notificationSubtitle" 
@@ -37,7 +35,6 @@
             @close="closeNotification" 
         />
 
-        <!-- Модальное окно для транзакций -->
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
                 <div class="p-8 flex justify-center items-center min-h-[200px]">
@@ -102,7 +99,6 @@ export default {
     data() {
         return {
             currencyCode: '',
-
             paymentsLoading: false,
             paymentsHistory: [],
             lastFetchedClientId: null,
@@ -128,7 +124,6 @@ export default {
     },
 
     methods: {
-        // Вспомогательный метод для обновления данных клиента
         async updateClientData() {
             if (!this.editingItem || !this.editingItem.id) return;
             try {
@@ -140,7 +135,6 @@ export default {
                 console.error('Error updating client data:', error);
             }
         },
-        // Вспомогательный метод для обработки ошибок
         handleEntityError(error) {
             let errorMessage;
             if (typeof error === 'string') {
@@ -160,7 +154,7 @@ export default {
             try {
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
-                const defaultCurrency = currencies.find(c => c.is_default);
+                const defaultCurrency = currencies.find(c => c.isDefault);
                 this.currencyCode = defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
             } catch (error) {
                 this.currencyCode = 'Нет валюты';
@@ -178,25 +172,12 @@ export default {
                 const data = await ClientController.getBalanceHistory(
                     this.editingItem.id
                 );
-                const self = this;
                 
-                // Фильтруем только не кредитные транзакции (is_debt = 0)
-                const filteredData = (data || []).filter(item => 
+                this.paymentsHistory = (data || []).filter(item => 
                     item.is_debt !== 1 && item.is_debt !== true && item.is_debt !== '1'
                 );
                 
-                // Маппим данные для отображения
-                this.paymentsHistory = filteredData.map(item => {
-                    return {
-                        ...item,
-                        get dateUser() {
-                            return item.date ? new Date(item.date).toLocaleString() : "";
-                        },
-                    };
-                });
-                
-                // Подсчитываем итоговую сумму платежей
-                this.totalPayments = filteredData.reduce((sum, item) => {
+                this.totalPayments = this.paymentsHistory.reduce((sum, item) => {
                     const amount = parseFloat(item.amount || 0);
                     return sum + Math.abs(amount);
                 }, 0);
@@ -216,74 +197,12 @@ export default {
             
             try {
                 this.entityLoading = true;
-                const response = await TransactionController.getItem(item.sourceId);
-                let client = null;
-                if (response.item.client) {
-                    client = ClientDto.fromApi(response.item.client);
-                } else if (response.item.client_id && this.editingItem && this.editingItem.id) {
-                    client = ClientDto.fromApi({
-                        id: response.item.client_id,
-                        client_type: this.editingItem.clientType || 'individual',
-                        balance: this.editingItem.balance || '0.00',
-                        is_supplier: this.editingItem.isSupplier || false,
-                        is_conflict: this.editingItem.isConflict || false,
-                        first_name: this.editingItem.firstName || 'Неизвестный',
-                        last_name: this.editingItem.lastName || 'Клиент',
-                        contact_person: this.editingItem.contactPerson || '',
-                        address: this.editingItem.address || '',
-                        note: this.editingItem.note || '',
-                        status: this.editingItem.status || 'active',
-                        discount_type: this.editingItem.discountType || 'none',
-                        discount: this.editingItem.discount || 0,
-                        created_at: this.editingItem.createdAt || new Date().toISOString(),
-                        updated_at: this.editingItem.updatedAt || new Date().toISOString(),
-                        emails: this.editingItem.emails || [],
-                        phones: this.editingItem.phones || []
-                    });
-                }
-                const data = new TransactionDto(
-                    response.item.id,
-                    response.item.type,
-                    response.item.is_transfer,
-                    response.item.is_sale || 0,
-                    response.item.is_receipt || 0,
-                    response.item.is_debt || 0,
-                    response.item.cash_id,
-                    response.item.cash_name,
-                    response.item.cash_amount,
-                    response.item.cash_currency_id,
-                    response.item.cash_currency_name,
-                    response.item.cash_currency_code,
-                    response.item.cash_currency_symbol,
-                    response.item.orig_amount,
-                    response.item.orig_currency_id,
-                    response.item.orig_currency_name,
-                    response.item.orig_currency_code,
-                    response.item.orig_currency_symbol,
-                    response.item.user_id,
-                    response.item.user_name,
-                    response.item.category_id,
-                    response.item.category_name,
-                    response.item.category_type,
-                    response.item.project_id,
-                    response.item.project_name,
-                    response.item.client_id,
-                    client,
-                    response.item.note,
-                    response.item.date,
-                    response.item.created_at,
-                    response.item.updated_at,
-                    response.item.orders || [],
-                    response.item.source_type || null,
-                    response.item.source_id || null,
-                    response.item.is_deleted || false
-                );
-                this.editingTransactionItem = data;
+                this.editingTransactionItem = await TransactionController.getItem(item.sourceId);
                 
                 this.entityModalOpen = true;
                 this.selectedEntity = {
                     type: 'transaction',
-                    data,
+                    data: this.editingTransactionItem,
                 };
             } catch (error) {
                 console.error('Error loading transaction:', error);
@@ -324,43 +243,24 @@ export default {
         openCreatePaymentModal() {
             this.entityModalOpen = true;
             this.selectedEntity = { type: 'transaction' };
-            this.editingTransactionItem = null; // Открываем пустую форму для создания
+            this.editingTransactionItem = null;
         },
         itemMapper(i, c) {
             switch (c) {
                 case "id":
                     return i.sourceId || '-';
-                case "operationType": {
-                    const amount = parseFloat(i.amount);
-                    // Все платежи в этой вкладке - не кредитные (is_debt = 0)
-                    if (amount > 0) {
-                        return '<i class="fas fa-check text-[#5CB85C] mr-2"></i><span class="text-[#5CB85C]">Оплата получена</span>';
-                    } else {
-                        return '<i class="fas fa-exchange-alt text-gray-500 mr-2"></i><span class="text-gray-500">Оплата</span>';
-                    }
-                }
+                case "operationType":
+                    return i.getPaymentOperationTypeHtml ? i.getPaymentOperationTypeHtml() : '-';
                 case "sourceType":
-                    if (i.source === 'sale') {
-                        return '<i class="fas fa-shopping-cart text-[#5CB85C] mr-2"></i><span class="text-[#5CB85C]">Продажа</span>';
-                    } else if (i.source === 'order') {
-                        return '<i class="fas fa-clipboard-list text-[#337AB7] mr-2"></i><span class="text-[#337AB7]">Заказ</span>';
-                    } else if (i.source === 'receipt') {
-                        return '<i class="fas fa-box text-[#FFA500] mr-2"></i><span class="text-[#FFA500]">Оприходование</span>';
-                    } else if (i.source === 'transaction') {
-                        return '<i class="fas fa-exchange-alt text-[#6C757D] mr-2"></i><span class="text-[#6C757D]">Транзакция</span>';
-                    } else {
-                        return '<i class="fas fa-exchange-alt text-[#6C757D] mr-2"></i><span class="text-[#6C757D]">Транзакция</span>';
-                    }
+                    return i.getSourceTypeHtml ? i.getSourceTypeHtml() : '-';
+                case "dateUser":
+                    return i.dateUser || (i.formatDate ? i.formatDate() : '');
                 case "user_name":
                     return i.user_name || '-';
                 case "note":
                     return i.note || '-';
-                case "clientImpact": {
-                    const amount = parseFloat(i.amount);
-                    const currencySymbol = this.currencyCode || '';
-                    // Показываем сумму зеленым цветом
-                    return `<span class="text-[#5CB85C] font-semibold">${this.$formatNumber(Math.abs(amount), null, true)} ${currencySymbol}</span>`;
-                }
+                case "clientImpact":
+                    return i.getPaymentImpactHtml ? i.getPaymentImpactHtml(this.currencyCode, this.$formatNumber) : '-';
                 default:
                     return i[c];
             }

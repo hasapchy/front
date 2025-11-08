@@ -1,12 +1,10 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editTransaction') : $t('createTransaction') }}</h2>
-        <div v-if="isDebt" class="mb-2">
-            <label class="required">{{ $t('client') }}</label>
-        </div>
         <ClientSearch 
             v-model:selectedClient="selectedClient" 
-            :showLabel="false"
+            :showLabel="true"
+            :required="isDebt"
             :disabled="!!initialProjectId" 
             :allowDeselect="!initialProjectId"
         />
@@ -29,7 +27,7 @@
                           <select v-model="cashId" :disabled="!!editingItemId" required>
                   <option value="">{{ $t('no') }}</option>
                 <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
-                    {{ parent.name }} ({{ parent.currency_symbol || parent.currency_code || '' }})
+                    {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
                 </option>
             </select>
         </div>
@@ -110,14 +108,6 @@
                     <div class="text-sm mt-1"><span class="font-semibold">ID:</span> {{ `#${selectedSource?.id || orderId}` }}</div>
                 </div>
             </template>
-            <template v-else>
-                <SourceSearch 
-                    v-model:selectedSource="selectedSource" 
-                    v-model:sourceType="sourceType"
-                    :showLabel="true"
-                    :disabled="!!editingItemId && !!orderId"
-                />
-            </template>
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -155,7 +145,6 @@ import SaleController from '@/api/SaleController';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import OrderStatusController from '@/api/OrderStatusController';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
-import SourceSearch from '@/views/components/app/search/SourceSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import { roundValue } from '@/utils/numberUtils';
@@ -164,7 +153,7 @@ import { roundValue } from '@/utils/numberUtils';
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request", 'copy-transaction'],
-    components: { PrimaryButton, AlertDialog, ClientSearch, SourceSearch },
+    components: { PrimaryButton, AlertDialog, ClientSearch },
     props: {
         editingItem: { type: TransactionDto, required: false, default: null },
         initialClient: { type: ClientDto, default: null },
@@ -273,11 +262,9 @@ export default {
                 this.loadOrderInfo()
             ]);
             
-            // ✅ Загружаем проекты в Store если их там нет
             await this.$store.dispatch('loadProjects');
 
             if (!this.editingItem) {
-                // Если есть defaultCashId (например, из заказа), устанавливаем валюту из этой кассы
                 if (this.defaultCashId && this.allCashRegisters.length > 0) {
                     const defaultCash = this.allCashRegisters.find(c => c.id == this.defaultCashId);
                     if (defaultCash && defaultCash.currency_id && !this.currencyId) {
@@ -289,8 +276,7 @@ export default {
                     this.cashId = this.allCashRegisters[0].id;
                     this.currencyId = this.allCashRegisters[0].currency_id;
                 } else if (!this.currencyId) {
-                    // Если касса не выбрана, используем дефолтную валюту из Store
-                    const defaultCurrency = (this.currencies || []).find(c => c.is_default);
+                    const defaultCurrency = (this.currencies || []).find(c => c.isDefault);
                     if (defaultCurrency) {
                         this.currencyId = defaultCurrency.id;
                     }
@@ -499,44 +485,8 @@ export default {
             this.deleteDialog = false;
         },
         copyTransaction() {
-            // Создаем новый экземпляр TransactionDto из текущей транзакции
-            const copiedTransaction = new TransactionDto(
-                null, // id - убираем ID, чтобы создать новую запись
-                this.editingItem.type,
-                this.editingItem.isTransfer,
-                this.editingItem.isSale,
-                this.editingItem.isReceipt,
-                this.editingItem.isDebt,
-                this.editingItem.cashId,
-                this.editingItem.cashName,
-                this.editingItem.cashAmount,
-                this.editingItem.cashCurrencyId,
-                this.editingItem.cashCurrencyName,
-                this.editingItem.cashCurrencyCode,
-                this.editingItem.cashCurrencySymbol,
-                this.editingItem.origAmount,
-                this.editingItem.origCurrencyId,
-                this.editingItem.origCurrencyName,
-                this.editingItem.origCurrencyCode,
-                this.editingItem.origCurrencySymbol,
-                this.editingItem.userId,
-                this.editingItem.userName,
-                this.editingItem.categoryId,
-                this.editingItem.categoryName,
-                this.editingItem.categoryType,
-                this.editingItem.projectId,
-                this.editingItem.projectName,
-                this.editingItem.clientId,
-                this.editingItem.client,
-                this.editingItem.note,
-                this.editingItem.date,
-                this.editingItem.createdAt,
-                this.editingItem.updatedAt,
-                this.editingItem.orders,
-                this.editingItem.sourceType || null,
-                this.editingItem.sourceId || null,
-                false // Копия всегда активная транзакция
-            );
+            // DRY: используем метод clone() из TransactionDto
+            const copiedTransaction = this.editingItem.clone();
             
             // Эмитим событие для открытия нового модального окна с копированными данными
             this.$emit('copy-transaction', copiedTransaction);
@@ -662,14 +612,12 @@ export default {
             immediate: true
         },
         cashId(newCashId) {
-            // При создании новой транзакции автоматически выбираем валюту кассы
             if (!this.editingItemId && newCashId) {
                 const cash = this.allCashRegisters.find(c => c.id === newCashId);
                 if (cash?.currency_id) {
                     this.currencyId = cash.currency_id;
                 } else {
-                    // Если у кассы нет валюты — подставляем дефолтную валюту из Store
-                    const defaultCurrency = (this.currencies || []).find(c => c.is_default);
+                    const defaultCurrency = (this.currencies || []).find(c => c.isDefault);
                     if (defaultCurrency) {
                         this.currencyId = defaultCurrency.id;
                     }
@@ -741,7 +689,7 @@ export default {
                     this.cashCurrencyId = null;
                     this.origAmount = 0;
                     this.currencyId = selectedCash?.currency_id || '';
-                    this.categoryId = 4; // Устанавливаем id = 4 для типа income по умолчанию
+                    this.categoryId = 4;
                     this.projectId = this.initialProjectId || '';
                     this.date = new Date().toISOString().substring(0, 16);
                     this.selectedClient = this.initialClient || null;
@@ -779,7 +727,7 @@ export default {
             this.currencies = newVal;
             // Если валюта не выбрана и касса не выбрана/не определяет валюту — берём дефолтную валюту из Store
             if (!this.currencyId) {
-                const defaultCurrency = (this.currencies || []).find(c => c.is_default);
+                const defaultCurrency = (this.currencies || []).find(c => c.isDefault);
                 if (defaultCurrency && (!this.cashId || !this.allCashRegisters.find(c => c.id == this.cashId)?.currency_id)) {
                     this.currencyId = defaultCurrency.id;
                 }

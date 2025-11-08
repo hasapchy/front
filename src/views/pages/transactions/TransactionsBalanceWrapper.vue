@@ -20,7 +20,7 @@
                                     <div class="text-center mb-3">
                                         <span class="text-sm font-semibold">
                                             {{ translateCashRegisterName(item.name) }}
-                                            <span class="text-sm font-bold text-black ml-1">({{ item.currency_symbol || item.currency_code || '' }})</span>
+                                            <span class="text-sm font-bold text-black ml-1">({{ item.currencySymbol || item.currencyCode || '' }})</span>
                                         </span>
                                     </div>
                                     <div :class="getGridClass(item.balance)">
@@ -51,7 +51,7 @@
                                                 'text-orange-600': balance.type === 'project_income',
                                                 'font-bold text-sm': true
                                             }" class="leading-tight">
-                                                <div class="balance-amount text-base">{{ $formatNumberForCompany(balance.value, true) }}</div>
+                                                <div class="balance-amount text-base">{{ formatBalanceValue(balance) }}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -82,7 +82,7 @@
                             <div class="text-center mb-3">
                                 <span class="text-sm font-semibold">
                                     {{ translateCashRegisterName(item.name) }}
-                                    <span class="text-sm font-bold text-black ml-1">({{ item.currency_symbol || item.currency_code || '' }})</span>
+                                    <span class="text-sm font-bold text-black ml-1">({{ item.currencySymbol || item.currencyCode || '' }})</span>
                                 </span>
                             </div>
                             <div :class="getGridClass(item.balance)">
@@ -113,7 +113,7 @@
                                         'text-orange-600': balance.type === 'project_income',
                                         'font-bold text-sm': true
                                     }" class="leading-tight">
-                                        <div class="balance-amount text-base">{{ $formatNumberForCompany(balance.value, true) }}</div>
+                                        <div class="balance-amount text-base">{{ formatBalanceValue(balance) }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -130,30 +130,43 @@
         <div class="w-auto ml-auto">
             <transition name="fade" mode="out-in">
                 <div v-if="data != null && !loading" key="table">
-                    <div class="flex flex-col gap-3 items-end">
-                        <!-- Долги клиентов -->
-                        <div class="bg-white p-3 rounded-lg shadow-md min-w-[280px]">
-                            <div class="text-center mb-3">
-                                <span class="text-sm font-semibold">{{ $t('clientDebts') }}</span>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div class="text-center balance-item">
-                                    <div class="mb-1 flex items-center justify-center space-x-1">
-                                        <span class="text-xs font-medium text-gray-700">{{ $t('oweUs') }}</span>
-                                        <i class="fas fa-arrow-trend-down text-green-500 text-xs"></i>
-                                    </div>
-                                    <div class="text-green-600 font-bold text-sm">
-                                        {{ $formatNumberForCompany(clientDebts.positive, true) }}
-                                    </div>
+                    <div class="bg-white p-3 rounded-lg shadow-md">
+                        <div class="text-center mb-3">
+                            <span class="text-sm font-semibold">{{ $t('clientDebts') }}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="text-center balance-item"
+                                 :class="{
+                                     'clickable-balance': false,
+                                     'hover-income': false,
+                                     'hover-outcome': false
+                                 }">
+                                <div class="mb-1 flex items-center justify-center space-x-1">
+                                    <span class="text-xs font-medium text-gray-700">{{ $t('oweUs') }}</span>
+                                    <i class="fas fa-arrow-trend-down text-green-500 text-xs"></i>
                                 </div>
-                                <div class="text-center balance-item">
-                                    <div class="mb-1 flex items-center justify-center space-x-1">
-                                        <span class="text-xs font-medium text-gray-700">{{ $t('weOwe') }}</span>
-                                        <i class="fas fa-arrow-trend-up text-red-500 text-xs"></i>
-                                    </div>
-                                    <div class="text-red-600 font-bold text-sm">
-                                        {{ $formatNumberForCompany(Math.abs(clientDebts.negative), true) }}
-                                    </div>
+                                <div :class="{
+                                    'text-green-600': true,
+                                    'font-bold text-sm': true
+                                }" class="leading-tight">
+                                    <div class="balance-amount text-base">{{ formatBalanceValue({ value: clientDebts.positive, type: 'debt' }) }}</div>
+                                </div>
+                            </div>
+                            <div class="text-center balance-item"
+                                 :class="{
+                                     'clickable-balance': false,
+                                     'hover-income': false,
+                                     'hover-outcome': false
+                                 }">
+                                <div class="mb-1 flex items-center justify-center space-x-1">
+                                    <span class="text-xs font-medium text-gray-700">{{ $t('weOwe') }}</span>
+                                    <i class="fas fa-arrow-trend-up text-red-500 text-xs"></i>
+                                </div>
+                                <div :class="{
+                                    'text-red-600': true,
+                                    'font-bold text-sm': true
+                                }" class="leading-tight">
+                                    <div class="balance-amount text-base">{{ formatBalanceValue({ value: Math.abs(clientDebts.negative), type: 'debt' }) }}</div>
                                 </div>
                             </div>
                         </div>
@@ -215,6 +228,9 @@ export default {
         }
     },
     methods: {
+        formatBalanceValue(balance) {
+            return this.$formatNumberForCompany(balance.value, true);
+        },
         handleBalanceClick(cashRegister, balance) {
             // Только для прихода и расхода
             if (balance.type === 'income' || balance.type === 'outcome') {
@@ -326,7 +342,6 @@ export default {
                     }
                 });
 
-                // ✅ ОДИН запрос вместо двух!
                 this.data = await CashRegisterController.getCashBalance(
                     cashIds,
                     start,
@@ -347,7 +362,7 @@ export default {
                     clients
                         .filter(client => {
                             if (!clientTypeFilter || clientTypeFilter === 'all') return true;
-                            const type = client.clientType || client.client_type || 'individual';
+                            const type = client.clientType || 'individual';
                             return type === clientTypeFilter;
                         })
                         .forEach(client => {
@@ -423,6 +438,31 @@ export default {
     transition: all 0.2s ease !important;
 }
 
+.balance-amount {
+    white-space: nowrap;
+    font-weight: 700;
+    font-size: 1.1rem;
+    line-height: 1.2;
+}
+
+@media (max-width: 768px) {
+    .balance-amount {
+        font-size: 0.9rem;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .balance-amount {
+        font-size: 1rem;
+    }
+}
+
+@media (min-width: 1025px) {
+    .balance-amount {
+        font-size: 1.2rem;
+    }
+}
+
 /* Стили для кликабельных элементов баланса */
 .clickable-balance {
     cursor: pointer !important;
@@ -440,19 +480,8 @@ export default {
 
 /* Debt clickable styling */
 .clickable-debt:hover {
-    background-color: rgba(249, 115, 22, 0.05); /* orange-500 with very light opacity */
+    background-color: rgba(249, 115, 22, 0.05);
     border-left-width: 6px;
-}
-
-/* Styles for debt balance items */
-.balance-item {
-    min-height: 50px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    padding: 0.5rem !important;
-    border-radius: 0.5rem !important;
-    border: 1px solid transparent !important;
 }
 
 /* Стили для слайдера касс */

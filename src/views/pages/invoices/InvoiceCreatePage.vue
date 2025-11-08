@@ -170,7 +170,7 @@ export default {
     computed: {
         defaultCurrencySymbol() {
             const currencies = this.$store.state.currencies || [];
-            const defaultCurrency = currencies.find(c => c.is_default);
+            const defaultCurrency = currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
         },
     },

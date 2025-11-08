@@ -1,4 +1,5 @@
-import { dayjsDate } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
+import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
 
 export default class WarehouseStockDto {
     constructor(id,
@@ -30,11 +31,31 @@ export default class WarehouseStockDto {
     }
 
     imgUrl() {
-        return this.productImage.length > 0 ? `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.productImage}` : null
+        return getImageUrl(this.productImage);
     }
 
 
     formatCreatedAt() {
-        return dayjsDate(this.createdAt);
+        return dtoDateFormatters.formatCreatedAt(this.createdAt);
+    }
+
+    static fromApiArray(dataArray) {
+        return createFromApiArray(dataArray, data => {
+            return new WarehouseStockDto(
+                data.id,
+                data.warehouse_id,
+                data.warehouse_name,
+                data.product_id,
+                data.product_name,
+                data.product_image,
+                data.unit_id,
+                data.unit_name,
+                data.unit_short_name,
+                data.category_id,
+                data.category_name,
+                data.quantity,
+                data.created_at
+            );
+        }).filter(Boolean);
     }
 }

@@ -1,5 +1,9 @@
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrency } from "@/utils/numberUtils";
+import { createProductsTooltipList, createFromApiArray } from "@/utils/dtoUtils";
+import ClientDto from "@/dto/client/ClientDto";
+import InvoiceProductDto from "./InvoiceProductDto";
+import OrderDto from "@/dto/order/OrderDto";
 
 export default class InvoiceDto {
   constructor(
@@ -36,23 +40,16 @@ export default class InvoiceDto {
 
 
   amountInfo() {
-    // Получаем символ валюты из первого заказа или используем fallback
-    let currencySymbol = 'TMT';
+    const isValidCurrency = (value) => {
+      if (typeof value !== 'string' || !value) return false;
+      const trimmed = value.trim();
+      if (/^\d{4}-\d{2}-\d{2}([\sT]\d{2}:\d{2}:\d{2}.*)?Z?$/.test(trimmed)) return false;
+      return trimmed && trimmed !== 'Нет валюты' && trimmed !== 'TMT';
+    };
     
-    if (this.orders && this.orders.length > 0) {
+    let currencySymbol = 'TMT';
+    if (this.orders?.length > 0) {
       const firstOrder = this.orders[0];
-      // Функция для проверки, что значение не является датой в формате ISO или с пробелом
-      const isValidCurrency = (value) => {
-        if (!value || typeof value !== 'string') return false;
-        const trimmed = value.trim();
-        // Исключаем даты в формате ISO (YYYY-MM-DD) с T или без, с временем или без
-        // Форматы: "2025-10-29T17:37:00", "2025-10-29 17:37:00", "2025-10-29"
-        if (/^\d{4}-\d{2}-\d{2}([\sT]\d{2}:\d{2}:\d{2}.*)?Z?$/.test(trimmed)) {
-          return false;
-        }
-        return trimmed !== '' && trimmed !== 'Нет валюты' && trimmed !== 'TMT';
-      };
-      
       if (firstOrder.currencySymbol && isValidCurrency(firstOrder.currencySymbol)) {
         currencySymbol = firstOrder.currencySymbol.trim();
       } else if (firstOrder.currencyCode && isValidCurrency(firstOrder.currencyCode)) {
@@ -66,34 +63,19 @@ export default class InvoiceDto {
   }
 
   productsHtmlList() {
-    if (this.products === null || this.products.length === 0) {
-      return "";
-    }
-    if (this.products.length === 1) {
-      const product = this.products[0];
-      return `<span>${product.productName} - ${product.quantity}${product.unitName || ''}</span>`;
-    }
-    // Формируем строку для тултипа
-    const tooltip = this.products
-      .map(
-        (product) => `${product.productName} - ${product.quantity}${product.unitName || ''}`
-      )
-      .join('\n');
-    // Показываем первый товар и троеточие, остальное в тултипе
-    const first = this.products[0];
-    return `<span title="${tooltip}">${first.productName} - ${first.quantity}${first.unitName || ''} ...</span>`;
+    return createProductsTooltipList(this.products, null, (product) => product.unitName || '');
   }
 
   formatDate() {
-    return dayjsDateTime(this.invoiceDate);
+    return dtoDateFormatters.formatDate(this.invoiceDate);
   }
 
   formatCreatedAt() {
-    return dayjsDate(this.createdAt);
+    return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
 
   formatUpdatedAt() {
-    return dayjsDate(this.updatedAt);
+    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
   getOrdersCount() {
@@ -132,5 +114,41 @@ export default class InvoiceDto {
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  }
+
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, data => {
+      const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;
+      
+      const orders = data.orders ? OrderDto.fromApiArray(data.orders.map(order => ({
+        ...order,
+        currency_id: order.currency_id ?? order.cash?.currency?.id ?? null,
+        currency_name: order.currency_name ?? order.cash?.currency?.name ?? null,
+        currency_code: order.currency_code ?? order.cash?.currency?.code ?? null,
+        currency_symbol: order.currency_symbol ?? order.cash?.currency?.symbol ?? null,
+        client: data.client,
+        category_id: null,
+        category_name: null
+      }))) : null;
+      
+      const products = data.products ? InvoiceProductDto.fromApiArray(data.products) : null;
+      
+      return new InvoiceDto(
+        data.id,
+        data.client_id,
+        data.user_id,
+        data.user_name,
+        data.invoice_date,
+        data.note,
+        data.total_amount,
+        data.invoice_number,
+        data.status || 'new',
+        data.created_at,
+        data.updated_at,
+        client,
+        orders,
+        products
+      );
+    }).filter(Boolean);
   }
 }

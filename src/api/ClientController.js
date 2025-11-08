@@ -3,48 +3,32 @@ import api from "./axiosInstance";
 import ClientDto from "@/dto/client/ClientDto";
 import ClientSearchDto from "@/dto/client/ClientSearchDto";
 import ClientBalanceHistoryDto from "@/dto/client/ClientBalanceHistoryDto";
+import queryCache from "@/utils/queryCache";
 
 export default class ClientController {
+
   static async getItem(id) {
     try {
       const response = await api.get(`/clients/${id}`);
-      const item = response.data.item || response.data;
-      
-      // Получаем данные телефонов и email'ов из Eloquent relationships
-      let phones = item.phones || [];
-      let emails = item.emails || [];
-
-      const clientDto = new ClientDto(
-        item.id,
-        item.client_type,
-        item.balance || 0,
-        item.is_supplier,
-        item.is_conflict,
-        item.first_name,
-        item.last_name,
-        item.contact_person,
-        item.address,
-        item.note,
-        item.status,
-        item.discount_type,
-        item.discount,
-        item.created_at,
-        item.updated_at,
-        emails,
-        phones,
-        item.user_id,
-        item.user?.name
-      );
-      
-      return clientDto;
+      const item = response.data.item;
+      return ClientDto.fromApiArray([item])[0] || null;
     } catch (error) {
       console.error("Ошибка при получении клиента:", error);
       throw error;
     }
   }
 
-  static async getItems(page = 1, search = null, includeInactive = false, statusFilter = null, typeFilter = null, per_page = 10) {
+  static async getItems(page = 1, search = null, includeInactive = false, statusFilter = null, typeFilter = null, per_page = 20) {
     try {
+      const cacheKey = 'clients_list';
+      const cacheParams = { page, per_page, search, includeInactive, statusFilter, typeFilter };
+      const cached = queryCache.get(cacheKey, cacheParams);
+      
+      if (cached) {
+        console.log('📦 Загружено из кэша: clients', cacheParams);
+        return cached;
+      }
+
       const params = { page: page, per_page: per_page };
       if (search) {
         params.search = search;
@@ -61,34 +45,7 @@ export default class ClientController {
       const response = await api.get("/clients", { params });
       const data = response.data;
       
-      // Преобразуем полученные данные в DTO
-      const items = (data.items || []).map((item) => {
-        // Получаем данные телефонов и email'ов из Eloquent relationships
-        let phones = item.phones || [];
-        let emails = item.emails || [];
-
-        return new ClientDto(
-          item.id,
-          item.client_type,
-          item.balance || 0,
-          item.is_supplier,
-          item.is_conflict,
-          item.first_name,
-          item.last_name,
-          item.contact_person,
-          item.address,
-          item.note,
-          item.status,
-          item.discount_type,
-          item.discount,
-          item.created_at,
-          item.updated_at,
-          emails,
-          phones,
-          item.user_id,
-          item.user?.name
-        );
-      });
+      const items = ClientDto.fromApiArray(data.items);
 
       const paginatedResponse = new PaginatedResponse(
         items,
@@ -98,6 +55,7 @@ export default class ClientController {
         data.total
       );
 
+      queryCache.set(cacheKey, cacheParams, paginatedResponse);
       return paginatedResponse;
     } catch (error) {
       console.error("Ошибка при получении клиентов:", error);
@@ -108,26 +66,9 @@ export default class ClientController {
   static async search(term) {
     try {
       const response = await api.get(`/clients/search?search_request=${term}`);
-      const data = response.data;
+      const data = Array.isArray(response.data) ? response.data : [];
       
-      // Преобразуем полученные данные в DTO для поиска (только необходимые поля)
-      const items = data.map((item) => {
-        // Получаем данные телефонов из Eloquent relationships
-        let phones = item.phones || [];
-
-        return new ClientSearchDto(
-          item.id,
-          item.client_type,
-          item.balance || 0,
-          item.is_supplier,
-          item.is_conflict,
-          item.first_name,
-          item.last_name,
-          item.contact_person,
-          item.status,
-          phones
-        );
-      });
+      const items = ClientSearchDto.fromApiArray(data);
       return items;
     } catch (summary) {
       console.error("Ошибка при поиске клиентов:", summary);
@@ -139,34 +80,7 @@ export default class ClientController {
     try {
       const response = await api.get(`/clients/all`);
       const data = response.data;
-      // Преобразуем полученные данные в DTO
-      const items = data.map((item) => {
-        // Получаем данные телефонов и email'ов из Eloquent relationships
-        let phones = item.phones || [];
-        let emails = item.emails || [];
-
-        return new ClientDto(
-          item.id,
-          item.client_type,
-          item.balance || 0,
-          item.is_supplier,
-          item.is_conflict,
-          item.first_name,
-          item.last_name,
-          item.contact_person,
-          item.address,
-          item.note,
-          item.status,
-          item.discount_type,
-          item.discount,
-          item.created_at,
-          item.updated_at,
-          emails,
-          phones,
-          item.user_id,
-          item.user?.name
-        );
-      });
+      const items = ClientDto.fromApiArray(data);
       return items;
     } catch (error) {
       console.error('Ошибка при получении всех клиентов:', error);
@@ -176,8 +90,10 @@ export default class ClientController {
 
   static async storeItem(item) {
     try {
-      const { data } = await api.post("/clients", item);
-      return data;
+      const response = await api.post("/clients", item);
+      queryCache.invalidate('clients_list');
+      const data = response.data;
+      return { item: data.item, message: data.message || 'Client created successfully' };
     } catch (error) {
       console.error("Ошибка при создании клиента:", error);
       throw error;
@@ -187,6 +103,7 @@ export default class ClientController {
   static async updateItem(id, item) {
     try {
       const { data } = await api.put(`/clients/${id}`, item);
+      queryCache.invalidate('clients_list');
       return data;
     } catch (error) {
       console.error("Ошибка при обновлении клиента:", error);
@@ -197,6 +114,7 @@ export default class ClientController {
   static async deleteItem(id) {
     try {
       const { data } = await api.delete(`/clients/${id}`);
+      queryCache.invalidate('clients_list');
       return data;
     } catch (error) {
       const serverMessage = error?.response?.data?.message;
@@ -211,22 +129,8 @@ export default class ClientController {
     try {
       const response = await api.get(`/clients/${id}/balance-history`);
       const data = response.data;
-      // Если data — объект с history, используем его, иначе предполагаем массив
-      const historyArray = Array.isArray(data) ? data : (data.history || []);
-      const items = historyArray.map((item) => {
-        return new ClientBalanceHistoryDto(
-          item.source,
-          item.source_id, // ID транзакции
-          item.date,
-          item.amount,
-          item.description,
-          item.user_name,
-          item.source_type,
-          item.note,
-          item.is_debt,
-          item.source_source_id || item.source_sourceId || null // ID источника (sale.id, order.id и т.д.)
-        );
-      });
+      const historyArray = data.history;
+      const items = ClientBalanceHistoryDto.fromApiArray(historyArray);
       return items;
     } catch (error) {
       console.error("Ошибка при получении истории баланса клиента:", error);

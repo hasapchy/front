@@ -26,6 +26,10 @@ export default {
         }
 
         // Если нет детальных ошибок, добавляем общее сообщение
+        if (messages.length === 0 && typeof data.error === "string") {
+          messages.push(data.error);
+        }
+        
         if (messages.length === 0 && typeof data.message === "string") {
           messages.push(data.message);
         }

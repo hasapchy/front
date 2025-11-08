@@ -8,42 +8,18 @@ export default class BasementClientController {
   static async getItem(id) {
     try {
       const response = await basementApi.get(`/clients/${id}`);
-      const item = response.data.item || response.data;
+      const item = response.data.item;
       
-      // Получаем данные телефонов и email'ов из Eloquent relationships
-      let phones = item.phones || [];
-      let emails = item.emails || [];
-
-      return new ClientDto(
-        item.id,
-        item.client_type,
-        item.balance || 0,
-        item.is_supplier,
-        item.is_conflict,
-        item.first_name,
-        item.last_name,
-        item.contact_person,
-        item.address,
-        item.note,
-        item.status,
-        item.discount_type,
-        item.discount,
-        item.created_at,
-        item.updated_at,
-        emails,
-        phones,
-        item.user_id,
-        item.user?.name
-      );
+      return ClientDto.fromApiArray([item])[0] || null;
     } catch (error) {
       console.error("Ошибка при получении клиента:", error);
       throw error;
     }
   }
 
-  static async getItems(page = 1, search = null, includeInactive = false) {
+  static async getItems(page = 1, search = null, includeInactive = false, per_page = 20) {
     try {
-      const params = { page: page };
+      const params = { page: page, per_page: per_page };
       if (search) {
         params.search = search;
       }
@@ -53,34 +29,7 @@ export default class BasementClientController {
       const response = await basementApi.get("/clients", { params });
       const data = response.data;
       
-      // Преобразуем полученные данные в DTO
-      const items = data.items.map((item) => {
-        // Получаем данные телефонов и email'ов из Eloquent relationships
-        let phones = item.phones || [];
-        let emails = item.emails || [];
-
-        return new ClientDto(
-          item.id,
-          item.client_type,
-          item.balance || 0,
-          item.is_supplier,
-          item.is_conflict,
-          item.first_name,
-          item.last_name,
-          item.contact_person,
-          item.address,
-          item.note,
-          item.status,
-          item.discount_type,
-          item.discount,
-          item.created_at,
-          item.updated_at,
-          emails,
-          phones,
-          item.user_id,
-          item.user?.name
-        );
-      });
+      const items = ClientDto.fromApiArray(data.items);
 
       const paginatedResponse = new PaginatedResponse(
         items,
@@ -102,24 +51,7 @@ export default class BasementClientController {
       const response = await basementApi.get(`/clients/search?search_request=${term}`);
       const data = response.data;
       
-      // Преобразуем полученные данные в DTO для поиска (только необходимые поля)
-      const items = data.map((item) => {
-        // Получаем данные телефонов из Eloquent relationships
-        let phones = item.phones || [];
-
-        return new ClientSearchDto(
-          item.id,
-          item.client_type,
-          item.balance || 0,
-          item.is_supplier,
-          item.is_conflict,
-          item.first_name,
-          item.last_name,
-          item.contact_person,
-          item.status,
-          phones
-        );
-      });
+      const items = ClientSearchDto.fromApiArray(data);
       return items;
     } catch (summary) {
       console.error("Ошибка при поиске клиентов:", summary);
@@ -131,34 +63,7 @@ export default class BasementClientController {
     try {
       const response = await basementApi.get(`/clients/all`);
       const data = response.data;
-      // Преобразуем полученные данные в DTO
-      const items = data.map((item) => {
-        // Получаем данные телефонов и email'ов из Eloquent relationships
-        let phones = item.phones || [];
-        let emails = item.emails || [];
-
-        return new ClientDto(
-          item.id,
-          item.client_type,
-          item.balance || 0,
-          item.is_supplier,
-          item.is_conflict,
-          item.first_name,
-          item.last_name,
-          item.contact_person,
-          item.address,
-          item.note,
-          item.status,
-          item.discount_type,
-          item.discount,
-          item.created_at,
-          item.updated_at,
-          emails,
-          phones,
-          item.user_id,
-          item.user?.name
-        );
-      });
+      const items = ClientDto.fromApiArray(data);
       return items;
     } catch (error) {
       console.error('Ошибка при получении всех клиентов:', error);
@@ -203,17 +108,8 @@ export default class BasementClientController {
     try {
       const response = await basementApi.get(`/clients/${id}/balance-history`);
       const data = response.data;
-      // Если data — объект с history, используем его, иначе предполагаем массив
-      const historyArray = Array.isArray(data) ? data : (data.history || []);
-      const items = historyArray.map((item) => {
-        return new ClientBalanceHistoryDto(
-          item.source,
-          item.source_id, // Исправлено: было item.sourceId
-          item.date,
-          item.amount,
-          item.description
-        );
-      });
+      const historyArray = data.history;
+      const items = ClientBalanceHistoryDto.fromApiArray(historyArray);
       return items;
     } catch (error) {
       console.error("Ошибка при получении истории баланса клиента:", error);

@@ -9,7 +9,7 @@
                     <div class="text-center mb-3">
                         <span class="text-sm font-semibold">
                             {{ translateCashRegisterName(item.name) }}
-                            <span class="text-sm font-bold text-black ml-1">({{ item.currency_symbol || item.currency_code || '' }})</span>
+                            <span class="text-sm font-bold text-black ml-1">({{ item.currencySymbol || item.currencyCode || '' }})</span>
                         </span>
                     </div>
                     <div :class="getGridClass(item.balance)">

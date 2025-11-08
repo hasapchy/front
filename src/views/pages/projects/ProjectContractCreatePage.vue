@@ -223,7 +223,7 @@ export default {
                 if (this.editingItem) {
                     response = await ProjectContractController.updateItem(this.editingItem.id, formData);
                 } else {
-                    response = await ProjectContractController.createItem(this.projectId, formData);
+                    response = await ProjectContractController.storeItem(this.projectId, formData);
                 }
 
         if (response.success) {

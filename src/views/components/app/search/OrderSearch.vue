@@ -202,7 +202,7 @@ export default {
         },
         defaultCurrencySymbol() {
             const currencies = this.$store.state.currencies || [];
-            const defaultCurrency = currencies.find(c => c.is_default);
+            const defaultCurrency = currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
         }
     },
@@ -234,7 +234,7 @@ export default {
     methods: {
         async fetchLastOrders() {
             try {
-                const response = await OrderController.getItemsPaginated(1, '', 'all_time');
+                const response = await OrderController.getItems(1, '', 'all_time', null, null, '', '', '', 20);
                 this.lastOrders = response.items.slice(0, 10);
             } catch (error) {
                 console.error('Ошибка при загрузке последних заказов:', error);
@@ -246,7 +246,7 @@ export default {
             if (this.orderSearch.length >= 3) {
                 this.orderSearchLoading = true;
                 try {
-                    const response = await OrderController.getItemsPaginated(1, this.orderSearch, 'all_time');
+                    const response = await OrderController.getItems(1, this.orderSearch, 'all_time', null, null, '', '', '', 20);
                     this.orderResults = response.items;
                     this.orderSearchLoading = false;
                 } catch (error) {

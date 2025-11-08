@@ -12,126 +12,97 @@
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('profilePhoto') }}</label>
                     <div>
-                        <input 
-                            type="file" 
-                            @change="onFileChange" 
-                            ref="imageInput"
-                        >
+                        <input type="file" @change="onFileChange" ref="imageInput">
                     </div>
                     <div v-if="selected_image" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
                         <img :src="selected_image" alt="Selected Image" class="w-32 h-32 object-cover rounded-full">
                         <button @click="() => { this.selected_image = null; this.image = null }"
                             class="mt-2 text-red-500 text-sm">{{ $t('removeImage') }}</button>
                     </div>
-                    <div v-else-if="editingItem?.photo && editingItem.photo !== ''" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
-                        <img :src="getUserPhotoSrc(editingItem)" alt="Current Photo" class="w-32 h-32 object-cover rounded-full">
-                        <button @click="() => { this.editingItem.photo = '' }"
-                            class="mt-2 text-red-500 text-sm">{{ $t('removeImage') }}</button>
+                    <div v-else-if="editingItem?.photo && editingItem.photo !== ''"
+                        class="mt-2 ml-3 p-3 bg-gray-100 rounded">
+                        <img :src="getUserPhotoSrc(editingItem)" alt="Current Photo"
+                            class="w-32 h-32 object-cover rounded-full">
+                        <button @click="() => { this.editingItem.photo = '' }" class="mt-2 text-red-500 text-sm">{{
+                            $t('removeImage') }}</button>
                     </div>
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('name') }}</label>
-                    <input 
-                        type="text" 
-                        v-model="form.name" 
+                    <input type="text" v-model="form.name"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                    />
+                        required />
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('email') }}</label>
-                    <input 
-                        type="email" 
-                        v-model="form.email" 
+                    <input type="email" v-model="form.email"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                    />
+                        required />
                 </div>
 
                 <div class="mb-4" v-if="!editingItem">
                     <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('password') }}</label>
                     <div class="flex items-center space-x-2">
-                        <input 
-                            :type="showPassword ? 'text' : 'password'" 
-                            v-model="form.password" 
-                            :placeholder="$t('enterPassword')" 
+                        <input :type="showPassword ? 'text' : 'password'" v-model="form.password"
+                            :placeholder="$t('enterPassword')"
                             class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required
-                        />
-                        <PrimaryButton :onclick="togglePasswordVisibility" :icon="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
+                            required />
+                        <PrimaryButton :onclick="togglePasswordVisibility"
+                            :icon="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
                         <PrimaryButton :onclick="generatePassword" :icon="'fas fa-dice'" class="px-2 py-1" />
                     </div>
                 </div>
 
                 <div class="mb-4" v-if="!editingItem">
-                    <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('confirmPassword') }}</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('confirmPassword')
+                        }}</label>
                     <div class="flex items-center space-x-2">
-                        <input 
-                            :type="showConfirmPassword ? 'text' : 'password'" 
-                            v-model="form.confirmPassword" 
-                            :placeholder="$t('confirmPassword')" 
+                        <input :type="showConfirmPassword ? 'text' : 'password'" v-model="form.confirmPassword"
+                            :placeholder="$t('confirmPassword')"
                             class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required
-                        />
-                        <PrimaryButton :onclick="toggleConfirmPasswordVisibility" :icon="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
+                            required />
+                        <PrimaryButton :onclick="toggleConfirmPasswordVisibility"
+                            :icon="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
                     </div>
                 </div>
 
                 <div class="mb-4" v-if="editingItem">
                     <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('newPassword') }}</label>
                     <div class="flex items-center space-x-2">
-                        <input 
-                            :type="showNewPassword ? 'text' : 'password'" 
-                            v-model="form.newPassword" 
-                            :placeholder="$t('enterNewPassword')" 
-                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <PrimaryButton :onclick="toggleNewPasswordVisibility" :icon="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
+                        <input :type="showNewPassword ? 'text' : 'password'" v-model="form.newPassword"
+                            :placeholder="$t('enterNewPassword')"
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        <PrimaryButton :onclick="toggleNewPasswordVisibility"
+                            :icon="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
                         <PrimaryButton :onclick="generateNewPassword" :icon="'fas fa-dice'" class="px-2 py-1" />
                     </div>
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('position') }}</label>
-                    <input 
-                        type="text" 
-                        v-model="form.position" 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <input type="text" v-model="form.position"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('hireDate') }}</label>
-                    <input 
-                        type="date" 
-                        v-model="form.hire_date" 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <input type="date" v-model="form.hire_date"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('characteristics') }}</label>
                     <div class="flex items-center space-x-6">
                         <label class="flex items-center space-x-2">
-                            <input 
-                                type="checkbox" 
-                                v-model="form.is_active" 
-                                :true-value="true" 
-                                :false-value="false"
-                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
+                            <input type="checkbox" v-model="form.is_active" :true-value="true" :false-value="false"
+                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                             <span class="text-sm text-gray-700">{{ $t('userStatus') }}</span>
                         </label>
                         <label class="flex items-center space-x-2">
-                            <input 
-                                type="checkbox" 
-                                v-model="form.is_admin" 
-                                :true-value="true" 
-                                :false-value="false"
-                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
+                            <input type="checkbox" v-model="form.is_admin" :true-value="true" :false-value="false"
+                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                             <span class="text-sm text-gray-700">{{ $t('isAdmin') }}</span>
                         </label>
                     </div>
@@ -141,14 +112,11 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('companies') }}</label>
                     <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
                         <div v-for="company in companies" :key="company.id" class="flex items-center space-x-2 mb-2">
-                            <input 
-                                type="checkbox" 
-                                :id="`company-${company.id}`"
-                                :value="company.id" 
+                            <input type="checkbox" :id="`company-${company.id}`" :value="company.id"
                                 v-model="form.companies"
-                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <label :for="`company-${company.id}`" class="text-sm text-gray-700 cursor-pointer">{{ company.name }}</label>
+                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                            <label :for="`company-${company.id}`" class="text-sm text-gray-700 cursor-pointer">{{
+                                company.name }}</label>
                         </div>
                     </div>
                 </div>
@@ -201,18 +169,14 @@
         </PrimaryButton>
     </div>
 
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-        
+    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
+        :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
+        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+
     <!-- Image Cropper Modal -->
-    <ImageCropperModal
-        :show="showCropperModal"
-        :imageSrc="tempImageSrc"
-        @close="closeCropperModal"
-        @cropped="handleCroppedImage"
-    />
+    <ImageCropperModal :show="showCropperModal" :imageSrc="tempImageSrc" @close="closeCropperModal"
+        @cropped="handleCroppedImage" />
 </template>
 
 <script>
@@ -252,10 +216,10 @@ export default {
                 newPassword: '',
                 position: '',
                 hire_date: '',
-            is_active: true,
-            is_admin: false,
-            companies: [],
-            permissions: [],
+                is_active: true,
+                is_admin: false,
+                companies: [],
+                permissions: [],
             },
             editingItemId: null,
             allPermissions: [],
@@ -290,7 +254,7 @@ export default {
             const groups = {};
             this.allPermissions.forEach((p) => {
                 let groupKey;
-                
+
                 // Специальная обработка для settings permissions
                 if (p.name.startsWith('settings_')) {
                     groupKey = 'settings';
@@ -298,7 +262,7 @@ export default {
                     const parts = p.name.split('_');
                     groupKey = parts.length >= 3 ? `${parts[0]}_${parts[1]}` : parts[0];
                 }
-                
+
                 if (!groups[groupKey]) groups[groupKey] = [];
                 groups[groupKey].push(p);
             });
@@ -324,17 +288,17 @@ export default {
         if (typeof window !== 'undefined') {
             window.i18n = this.$i18n;
         }
-        
+
         this.$nextTick(async () => {
             await Promise.all([
                 this.fetchPermissions(),
                 this.fetchCompanies()
             ]);
-            
+
             if (!this.editingItem) {
                 this.clearForm();
             }
-            
+
             this.saveInitialState();
         });
     },
@@ -372,40 +336,39 @@ export default {
                 this.hasNewFile = false;
             }
         },
-        
+
         closeCropperModal() {
             this.showCropperModal = false;
             this.tempImageSrc = '';
-            // Очищаем input file
+
             if (this.$refs.imageInput) {
                 this.$refs.imageInput.value = '';
             }
         },
-        
+
         handleCroppedImage(blob) {
-            // Создаем File объект из blob
+
             const fileName = `cropped_user_${Date.now()}.jpg`;
             const file = new File([blob], fileName, { type: 'image/jpeg' });
-            
+
             // Сохраняем обрезанный файл
             this.croppedFile = file;
             this.selected_image = URL.createObjectURL(blob);
             this.hasNewFile = true;
-            
-            // Закрываем модальное окно
+
+
             this.closeCropperModal();
         },
         async fetchPermissions() {
             const allPermissions = await UsersController.getAllPermissions();
-            // Filter out system_settings permissions
-            this.allPermissions = allPermissions.filter(permission => 
+            this.allPermissions = allPermissions.filter(permission =>
                 !permission.name.startsWith('system_settings_')
             );
         },
         async fetchCompanies() {
             try {
-                const result = await CompaniesController.getItems();
-                this.companies = result.items || result;
+                const result = await CompaniesController.getItems(1, 1000);
+                this.companies = result.items || [];
             } catch (error) {
                 console.error('Error fetching companies:', error);
                 this.companies = [];
@@ -441,7 +404,7 @@ export default {
         },
         isGroupChecked(group) {
             let groupPermissions;
-            
+
             // Специальная обработка для settings группы
             if (group === 'settings') {
                 groupPermissions = this.allPermissions
@@ -450,12 +413,12 @@ export default {
                 groupPermissions = this.allPermissions
                     .filter((p) => p.name.startsWith(`${group}_`));
             }
-            
+
             return groupPermissions.every((p) => this.form.permissions.includes(p.name));
         },
         toggleGroup(group) {
             let groupPermissions;
-            
+
             // Специальная обработка для settings группы
             if (group === 'settings') {
                 groupPermissions = this.allPermissions
@@ -466,7 +429,7 @@ export default {
                     .filter((p) => p.name.startsWith(`${group}_`))
                     .map((p) => p.name);
             }
-            
+
             const allChecked = this.isGroupChecked(group);
             if (allChecked) {
                 this.form.permissions = this.form.permissions.filter(
@@ -500,7 +463,7 @@ export default {
                 this.$emit('saved-error', this.$t('passwordsDoNotMatch'));
                 return;
             }
-            
+
             this.saveLoading = true;
             try {
                 let savedUser;
@@ -516,16 +479,16 @@ export default {
                         permissions: Array.isArray(this.form.permissions) ? this.form.permissions : this.form.permissions.split(','),
                         companies: Array.isArray(this.form.companies) ? this.form.companies : this.form.companies.split(',').filter(c => c.trim() !== '')
                     };
-                    
-                    
+
+
                     if (this.form.newPassword) {
                         updateData.password = this.form.newPassword;
                     }
-                    
+
                     if (this.editingItem && this.editingItem.photo === '') {
                         updateData.photo = '';
                     }
-                    
+
                     // Используем обрезанный файл, если он есть, иначе файл из input
                     const fileToUpload = this.hasNewFile ? (this.croppedFile || this.$refs.imageInput?.files[0]) : null;
                     savedUser = await UsersController.updateItem(this.editingItemId, updateData, fileToUpload);
@@ -541,7 +504,7 @@ export default {
                         permissions: Array.isArray(this.form.permissions) ? this.form.permissions : this.form.permissions.split(','),
                         companies: Array.isArray(this.form.companies) ? this.form.companies : this.form.companies.split(',').filter(c => c.trim() !== '')
                     };
-                    
+
                     // Используем обрезанный файл, если он есть, иначе файл из input
                     const fileToUpload = this.hasNewFile ? (this.croppedFile || this.$refs.imageInput?.files[0]) : null;
                     savedUser = await UsersController.storeItem(createData, fileToUpload);
@@ -563,7 +526,7 @@ export default {
                     this.selected_image = null;
                     this.image = '';
                 }
-                
+
                 this.hasNewFile = false;
 
                 this.$emit('saved');
@@ -601,7 +564,7 @@ export default {
         changeTab(tab) {
             this.currentTab = tab;
         },
-        
+
         async deleteItem() {
             this.closeDeleteDialog();
             if (!this.editingItemId) return;
@@ -635,7 +598,7 @@ export default {
                     this.form.permissions = newEditingItem.permissions || [];
                     this.editingItemId = newEditingItem.id || null;
                     this.currentTab = 'info'; // Всегда открываем первую вкладку
-                    
+
                     if (newEditingItem.photo) {
                         this.selected_image = this.getUserPhotoSrc(newEditingItem);
                     } else {

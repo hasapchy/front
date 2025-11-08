@@ -22,15 +22,15 @@
                             <div class="text-[#337AB7] text-xs flex flex-col items-end min-w-[90px]">
                                 <template v-if="product.typeName() === 'product'">
                                     <div>
-                                        {{ product.stock_quantity }}
-                                        {{ product.unit_short_name ||
-                                            product.unit_name || '' }}
+                                        {{ product.stockQuantity }}
+                                        {{ product.unitShortName ||
+                                            product.unitName || '' }}
                                         {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
                                     </div>
                                 </template>
                                 <template v-else>
-                                    <div>∞{{ product.unit_short_name ||
-                                        product.unit_name || '' }} | {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}</div>
+                                    <div>∞{{ product.unitShortName ||
+                                        product.unitName || '' }} | {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}</div>
                                 </template>
                             </div>
 
@@ -53,12 +53,12 @@
                         </div>
                         <div class="text-[#337AB7] text-sm">
                             <template v-if="product.typeName && product.typeName() === 'product'">
-                                {{ product.stock_quantity }}
-                                {{ product.unit_short_name || product.unit_name || '' }}
+                                {{ product.stockQuantity }}
+                                {{ product.unitShortName || product.unitName || '' }}
                                 {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
                             </template>
                             <template v-else>
-                                ∞{{ product.unit_short_name || product.unit_name || '' }} | {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
+                                ∞{{ product.unitShortName || product.unitName || '' }} | {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
                             </template>
                         </div>
                     </div>
@@ -73,6 +73,7 @@
                             {{ $t('createProductOrService') }}{{ productSearch ? ` "${productSearch}"` : '' }}
                         </PrimaryButton>
                         <PrimaryButton
+                            v-if="!isSale && !isReceipt"
                             :is-light="true"
                             icon="fas fa-bolt"
                             @mousedown.prevent="createTempProductQuick"
@@ -95,6 +96,9 @@
                     <th v-if="showPrice" class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
                         {{ isReceipt ? $t('purchasePrice') : $t('price') }}
                     </th>
+                    <th v-if="isReceipt && showPrice && showAmount" class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
+                        {{ $t('amount') }}
+                    </th>
                     <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
                 </tr>
             </thead>
@@ -112,13 +116,17 @@
                     </td>
                     <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
                         <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right"
-                            :disabled="disabled" min="0.01" step="0.01" @input="updateTotals" />
+                            :disabled="disabled" min="0.01" step="0.01" @blur="roundQuantity(product)" @input="onQuantityChange(product)" />
                     </td>
                     <td v-if="showPrice" class="py-2 px-4 border-x border-gray-300">
                         <div class="flex items-center space-x-2">
                             <input type="number" v-model.number="product.price" class="w-full p-1 text-right"
-                                :disabled="disabled" min="0.01" @input="updateTotals" />
+                                :disabled="disabled" min="0.01" @input="onPriceChange(product)" />
                         </div>
+                    </td>
+                    <td v-if="isReceipt && showPrice && showAmount" class="py-2 px-4 border-x border-gray-300">
+                        <input type="number" v-model.number="product.amount" class="w-full p-1 text-right"
+                            :disabled="disabled" min="0.01" @input="onAmountChange(product)" />
                     </td>
                     <td v-if="showPriceType && !isReceipt && !isSale" class="py-2 px-4 border-x border-gray-300">
                         <select v-model="product.priceType" class="w-full p-1" :disabled="disabled">
@@ -138,7 +146,7 @@
                 <tr class="bg-gray-50 font-medium">
                     <td :colspan="showQuantity ? 2 : 1" class="py-2 px-4 text-right">{{ $t('amountWithoutDiscount') }}</td>
                     <td class="py-2 px-4 text-right">
-                        {{ formatCurrency(subtotal, currencySymbol) }}
+                        {{ formatCurrency(subtotal, currencySymbol, 2, true) }}
                     </td>
                     <td></td>
                 </tr>
@@ -163,7 +171,7 @@
                 <tr class="bg-gray-100 font-bold">
                     <td :colspan="showQuantity ? 2 : 1" class="py-2 px-4 text-right">{{ $t('total') }}</td>
                     <td class="py-2 px-4 text-right">
-                        {{ formatCurrency(totalPrice, currencySymbol) }}
+                        {{ formatCurrency(totalPrice, currencySymbol, 2, true) }}
                     </td>
                     <td></td>
                 </tr>
@@ -187,7 +195,7 @@ import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
-import { formatCurrency } from '@/utils/numberUtils';
+import { formatCurrency, roundQuantityValue, roundValue } from '@/utils/numberUtils';
 
 export default {
     mixins: [notificationMixin],
@@ -213,6 +221,10 @@ export default {
         showPrice: {
             type: Boolean,
             default: false,
+        },
+        showAmount: {
+            type: Boolean,
+            default: true,
         },
         showPriceType: {
             type: Boolean,
@@ -255,7 +267,7 @@ export default {
         },
         useAllProducts: {
             type: Boolean,
-            default: false // Для basement - загружать ВСЕ товары
+            default: false
         }
     },
     data() {
@@ -267,7 +279,7 @@ export default {
             modalCreateProduct: false,
             defaultProductType: 'product',
             defaultProductName: '',
-            warehouseProducts: [], // Товары с учетом выбранного склада
+            warehouseProducts: [],
             warehouseProductsLoaded: false,
         };
     },
@@ -281,22 +293,33 @@ export default {
             },
         },
         subtotal() {
-            return this.products.reduce((sum, p) => sum + (Number(p.price) || 0) * (Number(p.quantity) || 0), 0);
+            const rawSubtotal = this.products.reduce((sum, p) => {
+                if (this.isReceipt && p.amount !== null && p.amount !== undefined) {
+                    return sum + (parseFloat(p.amount) || 0);
+                }
+                const price = parseFloat(p.price) || 0;
+                const qty = parseFloat(p.quantity) || 0;
+                return sum + price * qty;
+            }, 0);
+            return roundValue(rawSubtotal);
         },
         discountAmount() {
             const disc = Number(this.discount) || 0;
             if (!disc) return 0;
+            let amount = 0;
             if (this.discountType === 'percent') {
-                return this.subtotal * disc / 100;
+                amount = this.subtotal * disc / 100;
+            } else {
+                amount = disc;
             }
-            return Math.min(disc, this.subtotal);
+            return roundValue(amount);
         },
         totalPrice() {
             return this.subtotal - this.discountAmount;
         },
         defaultCurrencySymbol() {
             const currencies = this.$store.state.currencies || [];
-            const defaultCurrency = currencies.find(c => c.is_default);
+            const defaultCurrency = currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
         },
         discountLocal: {
@@ -316,11 +339,9 @@ export default {
             }
         },
         lastProducts() {
-            // ✅ Если выбран склад, используем товары загруженные для этого склада
             if (this.warehouseId && this.warehouseProductsLoaded) {
                 let products = this.warehouseProducts;
                 
-                // Фильтруем только товары (исключаем услуги), если onlyProducts === true
                 if (this.onlyProducts) {
                     products = products.filter(p => Boolean(p.type));
                 }
@@ -328,13 +349,10 @@ export default {
                 return products;
             }
             
-            // ✅ Если склад не выбран, используем товары из store
-            // ✅ Для basement загружаем ВСЕ товары, иначе - последние 10
             let products = this.useAllProducts 
                 ? this.$store.getters.allProducts 
                 : this.$store.getters.lastProducts;
             
-            // ✅ Фильтруем только товары (исключаем услуги), если onlyProducts === true
             if (this.onlyProducts) {
                 products = products.filter(p => Boolean(p.type));
             }
@@ -343,26 +361,21 @@ export default {
         }
     },
     async created() {
-        // ✅ Если выбран склад, загружаем товары для этого склада
         if (this.warehouseId) {
             await this.loadWarehouseProducts();
         }
         
-        // ✅ ВСЕГДА загружаем общие товары в store (для случаев когда склад не выбран)
         if (this.useAllProducts) {
-            // Для basement загружаем ВСЕ товары
             await this.$store.dispatch('loadAllProducts');
         } else {
-            // Иначе загружаем последние 10 товаров
             await this.$store.dispatch('loadLastProducts');
         }
     },
     methods: {
         formatCurrency,
         async loadWarehouseProducts() {
-            // Загружаем товары с учетом выбранного склада
             try {
-                const results = await ProductController.getItems(1, null, { warehouse_id: this.warehouseId }, 50);
+                const results = await ProductController.getItems(1, true, { warehouse_id: this.warehouseId }, 50);
                 this.warehouseProducts = results.items || [];
                 this.warehouseProductsLoaded = true;
             } catch (error) {
@@ -372,7 +385,6 @@ export default {
             }
         },
         async fetchLastProducts() {
-            // ✅ Перезагружаем данные
             if (this.warehouseId) {
                 await this.loadWarehouseProducts();
             } else if (this.useAllProducts) {
@@ -390,9 +402,8 @@ export default {
                 this.productSearchLoading = true;
                 try {
                     const results = await ProductController.searchItems(this.productSearch, this.onlyProducts ? true : null, this.warehouseId);
-                    let products = results.map(item => ProductSearchDto.fromApi(item));
+                    let products = ProductSearchDto.fromApiArray(results);
                     
-                    // ✅ Дополнительная фильтрация на фронтенде: только товары, если onlyProducts === true
                     if (this.onlyProducts) {
                         products = products.filter(p => Boolean(p.type));
                     }
@@ -423,15 +434,14 @@ export default {
                         productDto = WarehouseReceiptProductDto.fromProductDto(product, true);
                     } else if (this.isSale) {
                         productDto = SaleProductDto.fromProductDto(product, true);
-                        productDto.retail_price = product.retail_price || 0;
-                        productDto.wholesale_price = product.wholesale_price || 0;
-                        // Если выбран проект, используем оптовую цену
-                        if (this.projectId && productDto.wholesale_price > 0) {
+                        productDto.retailPrice = product.retailPrice || 0;
+                        productDto.wholesalePrice = product.wholesalePrice || 0;
+                        if (this.projectId && productDto.wholesalePrice > 0) {
                             productDto.priceType = 'wholesale';
-                            productDto.price = productDto.wholesale_price;
+                            productDto.price = productDto.wholesalePrice;
                         } else {
                             productDto.priceType = 'retail';
-                            productDto.price = productDto.retail_price;
+                            productDto.price = productDto.retailPrice;
                         }
                     } else {
                         productDto = WarehouseWriteoffProductDto.fromProductDto(product, true);
@@ -442,6 +452,9 @@ export default {
                     if (productDto && product.id) {
                         productDto.productId = product.id;
                     }
+                    if (this.isReceipt && productDto.quantity && productDto.price) {
+                        productDto.amount = (Number(productDto.quantity) || 0) * (Number(productDto.price) || 0);
+                    }
                     this.products = [...this.products, productDto];
                 }
                 this.updateTotals();
@@ -449,11 +462,30 @@ export default {
             } catch (error) {
             }
         },
+        calculateAmountFromPrice(product) {
+            if (this.isReceipt && product.quantity && product.quantity > 0 && product.price) {
+                product.amount = (Number(product.price) || 0) * (Number(product.quantity) || 0);
+            }
+        },
         onPriceTypeChange(product) {
             if (this.isSale) {
-                product.price = product.priceType === 'retail' ? product.retail_price : product.wholesale_price;
+                product.price = product.priceType === 'retail' ? product.retailPrice : product.wholesalePrice;
                 this.updateTotals();
             }
+        },
+        onPriceChange(product) {
+            this.calculateAmountFromPrice(product);
+            this.updateTotals();
+        },
+        onAmountChange(product) {
+            if ((this.isReceipt || this.isSale) && product.quantity && product.quantity > 0) {
+                product.price = (Number(product.amount) || 0) / (Number(product.quantity) || 1);
+            }
+            this.updateTotals();
+        },
+        onQuantityChange(product) {
+            this.calculateAmountFromPrice(product);
+            this.updateTotals();
         },
         removeSelectedProduct(id) {
             const removedProduct = this.products.find(p => p.productId === id);
@@ -474,6 +506,15 @@ export default {
             this.$emit('update:discountType', this.discountType);
             this.$emit('update:subtotal', this.subtotal);
             this.$emit('update:totalPrice', this.totalPrice);
+        },
+        roundQuantity(product) {
+            if (product && product.quantity !== null && product.quantity !== undefined) {
+                const num = Number(product.quantity);
+                if (!isNaN(num)) {
+                    product.quantity = roundQuantityValue(num);
+                    this.updateTotals();
+                }
+            }
         },
         createTempProductQuick() {
             const name = (this.productSearch || '').trim();
@@ -528,15 +569,12 @@ export default {
         warehouseId: {
             async handler(newWarehouseId, oldWarehouseId) {
                 if (newWarehouseId !== oldWarehouseId) {
-                    // ✅ Если склад выбран, загружаем товары для этого склада
                     if (newWarehouseId) {
                         await this.loadWarehouseProducts();
                     } else {
-                        // Склад убрали - очищаем товары склада
                         this.warehouseProducts = [];
                         this.warehouseProductsLoaded = false;
                         
-                        // ✅ Перезагружаем общие товары в store
                         if (this.useAllProducts) {
                             await this.$store.dispatch('loadAllProducts');
                         } else {
@@ -544,7 +582,6 @@ export default {
                         }
                     }
                     
-                    // Перезагружаем поиск если есть текст поиска
                     if (this.productSearch.length >= 3) {
                         this.searchProducts();
                     }

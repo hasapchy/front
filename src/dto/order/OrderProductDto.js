@@ -1,3 +1,5 @@
+import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
+
 export default class OrderProductDto {
   constructor(
     id,
@@ -39,8 +41,23 @@ export default class OrderProductDto {
   }
 
   imgUrl() {
-    return this.productImage?.length
-      ? `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.productImage}`
-      : null;
+    return getImageUrl(this.productImage);
+  }
+
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, data => {
+      return new OrderProductDto(
+        data.id,
+        data.order_id,
+        data.product_id,
+        data.product_name,
+        data.product_image,
+        data.unit_id,
+        data.unit_name,
+        data.unit_short_name,
+        data.quantity,
+        data.price
+      );
+    }).filter(Boolean);
   }
 }

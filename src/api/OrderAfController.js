@@ -4,14 +4,14 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 
 export default class OrderAfController {
 
-  static async getItemsPaginated(page = 1, perPage = 10) {
+  static async getItems(page = 1, per_page = 20) {
     try {
-      const params = { page: page, per_page: perPage };
+      const params = { page: page, per_page: per_page };
       
       const response = await api.get("/order-af", { params });
       const data = response.data;
       
-      const items = data.items.map((item) => OrderAfDto.fromApi(item));
+      const items = OrderAfDto.fromApiArray(data.items);
       
       const paginatedResponse = new PaginatedResponse(
         items,
@@ -29,22 +29,22 @@ export default class OrderAfController {
   }
 
 
-  static async getItemById(id) {
+  static async getItem(id) {
     try {
       const response = await api.get(`/order-af/${id}`);
-      return OrderAfDto.fromApi(response.data);
+      return OrderAfDto.fromApiArray([response.data])[0] || null;
     } catch (error) {
       console.error("Ошибка при получении дополнительного поля:", error);
       throw error;
     }
   }
 
-  static async createItem(data) {
+  static async storeItem(item) {
     try {
-      const response = await api.post("/order-af", data);
+      const response = await api.post("/order-af", item);
       return {
         message: response.data.message,
-        field: OrderAfDto.fromApi(response.data.field)
+        field: OrderAfDto.fromApiArray([response.data.field])[0] || null
       };
     } catch (error) {
       console.error("Ошибка при создании дополнительного поля:", error);
@@ -52,12 +52,12 @@ export default class OrderAfController {
     }
   }
 
-  static async updateItem(id, data) {
+  static async updateItem(id, item) {
     try {
-      const response = await api.put(`/order-af/${id}`, data);
+      const response = await api.put(`/order-af/${id}`, item);
       return {
         message: response.data.message,
-        field: OrderAfDto.fromApi(response.data.field)
+        field: OrderAfDto.fromApiArray([response.data.field])[0] || null
       };
     } catch (error) {
       console.error("Ошибка при обновлении дополнительного поля:", error);
@@ -82,7 +82,7 @@ export default class OrderAfController {
   static async getFieldsByCategory(categoryId) {
     try {
       const response = await api.get(`/order-af/category/${categoryId}`);
-      return response.data.fields.map((field) => OrderAfDto.fromApi(field));
+      return OrderAfDto.fromApiArray(response.data.fields);
     } catch (error) {
       console.error("Ошибка при получении полей для категории:", error);
       throw error;
@@ -94,7 +94,7 @@ export default class OrderAfController {
       const response = await api.post("/order-af/categories", {
         category_ids: categoryIds
       });
-      return response.data.fields.map((field) => OrderAfDto.fromApi(field));
+      return OrderAfDto.fromApiArray(response.data.fields);
     } catch (error) {
       console.error("Ошибка при получении полей для категорий:", error);
       throw error;
@@ -119,7 +119,7 @@ export default class OrderAfController {
       const order = response.data.item;
       
       if (order.additional_fields) {
-        return order.additional_fields.map((field) => OrderAfDto.fromApi(field));
+        return OrderAfDto.fromApiArray(order.additional_fields);
       }
       
       return [];

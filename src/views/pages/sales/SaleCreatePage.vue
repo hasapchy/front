@@ -13,7 +13,7 @@
             <select v-model="cashId" :disabled="!!editingItemId">
                 <option value="">{{ $t('no') }}</option>
                 <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
-                    {{ parent.name }} ({{ parent.currency_symbol || parent.currency_code || '' }})
+                    {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
                 </option>
             </select>
         </div>
@@ -96,7 +96,6 @@ import ClientSearch from "@/views/components/app/search/ClientSearch.vue";
 import ProductSearch from "@/views/components/app/search/ProductSearch.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import formChangesMixin from "@/mixins/formChangesMixin";
-import { roundValue } from '@/utils/numberUtils';
 
 
 export default {
@@ -143,7 +142,7 @@ export default {
             // (allWarehouses, allCashRegisters автоматически установят первые значения)
             if (!this.editingItem) {
                 // Инициализируем currencyId для типа balance
-                const defaultCurrency = this.currencies.find((c) => c.is_default);
+                const defaultCurrency = this.currencies.find((c) => c.isDefault);
                 if (defaultCurrency && !this.currencyId) {
                     this.currencyId = defaultCurrency.id;
                 }
@@ -160,10 +159,9 @@ export default {
             return this.allCashRegisters.find((c) => c.id == this.cashId);
         },
         subtotal() {
-            return this.products.reduce(
-                (sum, p) => sum + (Number(p.price) || 0) * (Number(p.quantity) || 0),
-                0
-            );
+            return this.products.reduce((sum, p) => {
+                return sum + (Number(p.price) || 0) * (Number(p.quantity) || 0);
+            }, 0);
         },
         discountAmount() {
             const disc = Number(this.discount) || 0;
@@ -171,17 +169,17 @@ export default {
             if (this.discountType === "percent") {
                 return (this.subtotal * disc) / 100;
             }
-            return Math.min(disc, this.subtotal);
+            return disc;
         },
         totalPrice() {
             return this.subtotal - this.discountAmount;
         },
         defaultCurrency() {
-            return this.currencies.find((c) => c.is_default);
+            return this.currencies.find((c) => c.isDefault);
         },
         currencySymbol() {
             if (this.type === "cash") {
-                return this.selectedCash?.currency_symbol || "";
+                return this.selectedCash?.currencySymbol || "";
             } else {
                 return this.defaultCurrency?.symbol || "";
             }
@@ -281,6 +279,12 @@ export default {
                     throw new Error('Необходимо добавить товары');
                 }
 
+                // Проверяем, что скидка не превышает сумму продажи
+                const calculatedDiscount = this.discountAmount;
+                if (calculatedDiscount > this.subtotal) {
+                    throw new Error('Скидка не может превышать сумму продажи');
+                }
+
                 var formData = {
                     client_id: this.selectedClient?.id,
                     project_id: this.projectId || null,
@@ -296,8 +300,7 @@ export default {
                     products: this.products.map((p) => ({
                         product_id: p.productId,
                         quantity: p.quantity,
-                        // Для новых продаж округляем цены товаров согласно настройкам компании
-                        price: !this.editingItemId ? roundValue(p.price) : p.price,
+                        price: p.price,
                     })),
                 };
 
@@ -313,22 +316,7 @@ export default {
                     this.clearForm();
                 }
             } catch (error) {
-                console.error('Ошибка при сохранении продажи:', error);
-                console.error('Детали ошибки:', error.response?.data);
-                
-                let errorMessage = this.getApiErrorMessage(error);
-                
-                // Если это ошибка валидации, показываем более понятное сообщение
-                if (error.response?.status === 400) {
-                    const validationErrors = error.response?.data?.errors;
-                    if (validationErrors) {
-                        console.error('Ошибки валидации:', validationErrors);
-                        const firstError = Object.values(validationErrors)[0];
-                        errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
-                    }
-                }
-                
-                this.$emit('saved-error', errorMessage);
+                this.$emit('saved-error', this.getApiErrorMessage(error));
             }
             this.saveLoading = false;
         },
@@ -374,7 +362,7 @@ export default {
             handler(newType, oldType) {
                 if (newType === "balance") {
                     // Не сбрасываем cashId, сохраняем выбранное значение
-                    const defaultCurrency = this.currencies.find((c) => c.is_default);
+                    const defaultCurrency = this.currencies.find((c) => c.isDefault);
                     if (defaultCurrency) {
                         this.currencyId = defaultCurrency.id;
                     }
@@ -455,7 +443,7 @@ export default {
                 // Автоматически обновляем selectedClient из Store если он есть
                 if (this.selectedClient?.id && newClients.length) {
                     const updated = newClients.find(c => c.id === this.selectedClient.id);
-                    if (updated) {
+                    if (updated && typeof updated.fullName === 'function') {
                         this.selectedClient = updated;
                     }
                 }

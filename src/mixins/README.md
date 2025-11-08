@@ -41,8 +41,11 @@
 - `loadingBatch` - состояние загрузки массовых операций
 - `deleteDialog` - диалог удаления
 - `idsToDelete` - ID элементов для удаления
+- `selectedIds` - выбранные элементы для batch операций
+- `showStatusSelect` - флаг показа смены статуса
 
 **Methods:**
+- `invalidateCache(action)` - инвалидация кэша (onCreate/onUpdate/onDelete)
 - `deleteItems(ids)` - удаление элементов по ID
 - `confirmDeleteItems()` - подтверждение удаления элементов
 - `getBatchActions()` - получение списка массовых действий
@@ -50,7 +53,18 @@
 ### 4. `crudEventMixin.js`
 **Назначение:** Обработка событий CRUD операций
 
+**Data:**
+- `data` - данные списка
+- `loading` - состояние загрузки
+- `perPage` - количество элементов на странице
+- `perPageOptions` - опции для выбора количества элементов
+
+**Watch:**
+- `perPage` - сохранение в localStorage при изменении
+
 **Methods:**
+- `invalidateCache(action)` - инвалидация кэша (onCreate/onUpdate/onDelete)
+- `refreshDataAfterOperation()` - обновление данных и восстановление скролла после операции
 - `handleSaved()` - обработка успешного сохранения
 - `handleSavedError(m)` - обработка ошибки сохранения
 - `handleDeleted()` - обработка успешного удаления
@@ -83,6 +97,15 @@
 
 **Computed:**
 - `translatedColumnsConfig` - конфигурация колонок с переводами
+
+### 8. `companyChangeMixin.js`
+**Назначение:** Обработка смены компании
+
+**Computed:**
+- `currentCompanyId` - текущий ID компании
+
+**Methods:**
+- `onCompanyChanged(companyId)` - обработчик смены компании
 
 ## 🔄 Конфликты и дублирование методов
 
@@ -150,3 +173,51 @@
 - Единообразную обработку событий
 - Легкость поддержки
 - Отсутствие дублирования кода
+
+## 🔄 Рефакторинг (2024)
+
+### ✅ Выполненные улучшения
+
+1. **Устранено дублирование инвалидации кэша:**
+   - Вынесен метод `invalidateCache(action)` в `crudEventMixin.js` и `batchActionsMixin.js`
+   - Убрано дублирование кода для работы с `CacheInvalidator`
+
+2. **Унифицирована логика обновления данных:**
+   - Вынесен метод `refreshDataAfterOperation()` в `crudEventMixin.js`
+   - Объединена логика обновления данных и восстановления скролла после операций
+
+3. **Исправлено использование уведомлений:**
+   - `companyChangeMixin.js` теперь использует `showNotification` из `notificationMixin` вместо прямого обращения к store
+   - Обеспечена согласованность использования уведомлений во всех миксинах
+
+4. **Удалены избыточные комментарии:**
+   - Убраны комментарии, не несущие смысловой нагрузки
+   - Код стал более читаемым и компактным
+
+### 📊 Архитектура миксинов
+
+```
+┌─────────────────────────────────────┐
+│   notificationMixin                 │
+│   - showNotification()              │
+└─────────────────────────────────────┘
+           ▲
+           │ используется
+           │
+┌──────────┴──────────────────────────┐
+│  crudEventMixin                      │
+│  - invalidateCache()                 │
+│  - refreshDataAfterOperation()       │
+│  - handleSaved()                     │
+│  - handleDeleted()                   │
+└──────────────────────────────────────┘
+           ▲
+           │ используется
+           │
+┌──────────┴──────────────────────────┐
+│  batchActionsMixin                  │
+│  - invalidateCache()                 │
+│  - deleteItems()                     │
+│  - confirmDeleteItems()              │
+└──────────────────────────────────────┘
+```

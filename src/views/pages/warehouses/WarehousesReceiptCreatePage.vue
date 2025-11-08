@@ -31,7 +31,7 @@
             <select v-model="cashId" :disabled="!!editingItemId">
                 <option value="">{{ $t('no') }}</option>
                 <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">
-                    {{ c.name }} ({{ c.currency_symbol || c.currency_code || '' }})
+                    {{ c.name }} ({{ c.currencySymbol || c.currencyCode || '' }})
                 </option>
             </select>
         </div>
@@ -68,7 +68,7 @@
         </div>
 
         <ProductSearch ref="productSearch" v-model="products" :disabled="!!editingItemId" :show-quantity="true" :show-price="true"
-            :is-receipt="true" :only-products="true" :warehouse-id="warehouseId" required />
+            :is-receipt="true" :show-amount="editingItemId == null" :only-products="true" :warehouse-id="warehouseId" required />
     </div>
     
     <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
@@ -107,7 +107,6 @@ import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
-import { roundValue } from '@/utils/numberUtils';
 
 
 export default {
@@ -141,13 +140,16 @@ export default {
         totalAmount() {
             if (!this.products || this.products.length === 0) return 0;
             return this.products.reduce((sum, product) => {
+                if (product.amount !== null && product.amount !== undefined) {
+                    return sum + (Number(product.amount) || 0);
+                }
                 const quantity = Number(product.quantity) || 0;
                 const price = Number(product.price) || 0;
                 return sum + (quantity * price);
             }, 0);
         },
         defaultCurrencySymbol() {
-            const defaultCurrency = this.currencies.find(c => c.is_default);
+            const defaultCurrency = this.currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.symbol : '';
         }
     },
@@ -260,12 +262,10 @@ export default {
 
             this.saveLoading = true;
             try {
-                // Для НОВОГО оприходования округляем цены согласно настройкам компании
-                const shouldRoundPrices = !this.editingItemId;
                 const productsData = this.products.map(product => ({
                     product_id: product.productId,
                     quantity: product.quantity,
-                    price: shouldRoundPrices ? roundValue(product.price) : product.price,
+                    price: product.price,
                 }));
                 
                 var formData = {
@@ -280,11 +280,11 @@ export default {
                 };
 
                 if (this.editingItemId != null) {
-                    var resp = await WarehouseReceiptController.updateReceipt(
+                    var resp = await WarehouseReceiptController.updateItem(
                         this.editingItemId,
                         formData);
                 } else {
-                    var resp = await WarehouseReceiptController.storeReceipt(formData);
+                    var resp = await WarehouseReceiptController.storeItem(formData);
                 }
                 if (resp.message) {
                     // Инвалидируем кэш товаров, т.к. остатки изменились
@@ -318,7 +318,7 @@ export default {
             }
             this.deleteLoading = true;
             try {
-                var resp = await WarehouseReceiptController.deleteReceipt(
+                var resp = await WarehouseReceiptController.deleteItem(
                     this.editingItemId);
                 if (resp.message) {
                     this.$emit('deleted');

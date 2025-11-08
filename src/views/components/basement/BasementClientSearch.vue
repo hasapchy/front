@@ -123,7 +123,7 @@ export default {
     methods: {
     async fetchLastClients() {
         try {
-            const paginated = await BasementClientController.getItems(1);
+            const paginated = await BasementClientController.getItems(1, null, false, 20);
             this.lastClients = paginated.items
                 .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
                 .slice(0, 10);

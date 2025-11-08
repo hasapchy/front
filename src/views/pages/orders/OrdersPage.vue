@@ -7,7 +7,6 @@
                 :disabled="!$store.getters.hasPermission('orders_create')">
             </PrimaryButton>
 
-            <!-- Переключатель вида -->
             <div class="flex items-center border border-gray-300 rounded overflow-hidden">
                 <button 
                     @click="viewMode = 'table'"
@@ -98,16 +97,14 @@
         :handle-change-status="handleChangeStatus" :show-status-select="true" />
     
     <transition name="fade" mode="out-in">
-        <!-- Табличный вид -->
         <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.orders" :columns-config="translatedColumnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => showModal(i)" @selectionChange="selectedIds = $event" />
+                :item-mapper="itemMapper"                 :onItemClick="(i) => showModal(i)" @selectionChange="selectedIds = $event" />
         </div>
 
-        <!-- Канбан вид -->
-        <div v-else-if="data && !loading && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
+        <div v-else-if="data && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
             <KanbanBoard
-                :orders="data.items"
+                :orders="allKanbanItems"
                 :statuses="statuses"
                 :projects="projects"
                 :selected-ids="selectedIds"
@@ -124,7 +121,6 @@
             />
         </div>
 
-        <!-- Загрузка -->
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <i class="fas fa-spinner fa-spin text-2xl"></i>
         </div>
@@ -150,7 +146,6 @@
         />
     </SideModalDialog>
 
-    <!-- Просмотр/редактирование транзакции из таймлайна -->
     <SideModalDialog :showForm="viewTransactionModal" :onclose="() => { viewTransactionModal = false; editingTransactionItem = null; }">
         <TransactionCreatePage 
             v-if="viewTransactionModal"
@@ -198,8 +193,6 @@ import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
 import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import TransactionController from "@/api/TransactionController";
-import ClientDto from "@/dto/client/ClientDto";
-import TransactionDto from "@/dto/transaction/TransactionDto";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
 import OrderStatusController from "@/api/OrderStatusController";
 import ProjectController from "@/api/ProjectController";
@@ -219,20 +212,20 @@ import OrderPaymentFilter from "@/views/components/app/forms/OrderPaymentFilter.
 import StatusSelectCell from "@/views/components/app/buttons/StatusSelectCell.vue";
 import debounce from "lodash.debounce";
 import companyChangeMixin from "@/mixins/companyChangeMixin";
+import searchMixin from "@/mixins/searchMixin";
 import { formatCurrency } from "@/utils/numberUtils";
+import { highlightMatches } from "@/utils/searchUtils";
 
 const TimelinePanel = defineAsyncComponent(() => 
     import("@/views/components/app/dialog/TimelinePanel.vue")
 );
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin, companyChangeMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin, companyChangeMixin, searchMixin],
     components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell },
     data() {
         return {
-            // data, loading, perPage, perPageOptions - из crudEventMixin
-            // selectedIds - из batchActionsMixin
-            viewMode: 'kanban', // 'table' или 'kanban'
+            viewMode: 'kanban',
             statuses: [],
             projects: [],
             clients: [],
@@ -273,21 +266,18 @@ export default {
         viewTransactionModal: false,
         editingTransactionItem: null,
             savedCurrencySymbol: '',
-            pendingStatusUpdates: new Map(), // Для debounce обновлений статусов
-            batchStatusId: '', // Для массового изменения статуса в канбане
+            pendingStatusUpdates: new Map(),
+            batchStatusId: '',
+            allKanbanItems: [],
         };
     },
     created() {
         this.fetchItems();
         this.fetchStatuses();
-        
-        // Projects и Clients уже загружаются глобально в App.vue через loadCompanyData
-        // Просто берем их из store
         this.projects = this.$store.getters.projects || [];
         this.clients = this.$store.getters.clients || [];
 
         this.$store.commit("SET_SETTINGS_OPEN", false);
-        
         eventBus.on('global-search', this.handleSearch);
     },
 
@@ -300,11 +290,9 @@ export default {
             return this.$store.state.searchQuery;
         },
         currencySymbol() {
-            // Получаем символ валюты из первого заказа (если есть)
             if (this.data && this.data.items && this.data.items.length > 0) {
                 return this.data.items[0].currencySymbol || '';
             }
-            // Если нет заказов в текущем результате, используем сохраненный символ
             return this.savedCurrencySymbol || '';
         },
         hasActiveFilters() {
@@ -318,7 +306,6 @@ export default {
         }
     },
     watch: {
-        // Обновляем clients и projects когда они загружаются в store
         '$store.state.clients'(newClients) {
             if (newClients && newClients.length > 0) {
                 this.clients = newClients;
@@ -328,33 +315,9 @@ export default {
             if (newProjects && newProjects.length > 0) {
                 this.projects = newProjects;
             }
-        },
-        viewMode(newMode) {
-            // Сохраняем режим просмотра в localStorage
-            localStorage.setItem('orders_viewMode', newMode);
-            
-            // В режиме канбана загружаем все заказы (без пагинации)
-            if (newMode === 'kanban') {
-                this.perPage = 1000; // Большое число для загрузки всех заказов
-                this.fetchItems(1, false);
-            } else {
-                // Возвращаем обычную пагинацию для таблицы
-                const savedPerPage = localStorage.getItem('ordersPerPage');
-                this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
-                this.fetchItems(1, false);
-            }
         }
     },
     methods: {
-        highlightText(text, search) {
-            if (!text || !search) return text;
-            const searchStr = String(search).trim();
-            if (!searchStr) return text;
-            
-            const textStr = String(text);
-            const regex = new RegExp(`(${searchStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-            return textStr.replace(regex, '<mark style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 3px; font-weight: bold;">$1</mark>');
-        },
         itemMapper(i, c) {
             const search = this.searchQuery;
             
@@ -378,11 +341,10 @@ export default {
                     if (i.priceInfo && typeof i.priceInfo === 'function') {
                         return i.priceInfo();
                     }
-                    // Если нет метода priceInfo, используем formatCurrency с настройками округления
                     return formatCurrency(i.totalPrice || 0, i.currencySymbol || '', null, true);
                 case "note":
                     if (!i.note) return "";
-                    return search ? this.highlightText(i.note, search) : i.note;
+                    return search ? highlightMatches(i.note, search) : i.note;
                 case "description":
                     return i.description || "";
                 case "projectName":
@@ -393,16 +355,11 @@ export default {
             }
         },
 
-        handleSearch(query) {
-            this.$store.dispatch('setSearchQuery', query);
-            this.fetchItems(1, false);
-        },
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
         async handleCompanyChanged(companyId) {
-            // ✅ Очищаем фильтры и данные при смене компании
             this.dateFilter = 'all_time';
             this.startDate = null;
             this.endDate = null;
@@ -412,11 +369,11 @@ export default {
             this.selectedIds = [];
             this.batchStatusId = '';
             this.paidOrdersFilter = false;
+            this.allKanbanItems = [];
+            this.kanbanFetchPerPage = 50;
             
-            // Перезагружаем данные со страницы 1
             await this.fetchItems(1, false);
             
-            // Уведомляем пользователя о смене компании
             this.$store.dispatch('showNotification', {
               title: 'Компания изменена',
               isDanger: false
@@ -427,25 +384,34 @@ export default {
             try {
                 let currentStatusFilter = this.statusFilter;
                 if (this.paidOrdersFilter) {
-                    currentStatusFilter = '4'; // Статус "Оплачен"
+                    currentStatusFilter = '4';
                 }
-                
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
-                
-                const newData = await OrderController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, currentStatusFilter, this.projectFilter, this.clientFilter, perPage);
-                this.data = newData;
-                
-                // Сохраняем символ валюты из первого заказа, если он есть
-                if (newData && newData.items && newData.items.length > 0 && newData.items[0].currencySymbol) {
-                    this.savedCurrencySymbol = newData.items[0].currencySymbol;
+
+                const perPage = this.viewMode === 'kanban' ? 1000 : (this.perPage || 20);
+
+                const response = await OrderController.getItems(
+                    page,
+                    this.searchQuery,
+                    this.dateFilter,
+                    this.startDate,
+                    this.endDate,
+                    currentStatusFilter,
+                    this.projectFilter,
+                    this.clientFilter,
+                    perPage
+                );
+
+                this.data = response;
+                this.allKanbanItems = [...response.items];
+
+                if (response.items && response.items.length > 0 && response.items[0].currencySymbol) {
+                    this.savedCurrencySymbol = response.items[0].currencySymbol;
                 }
             } catch (error) {
                 this.showNotification(this.$t('errorGettingOrderList'), error.message, true);
             }
             if (!silent) this.loading = false;
         },
-
         handleSavedSilent() {
             this.showNotification(this.$t('orderSaved'), "", false);
             this.fetchItems(this.data.currentPage, true);
@@ -454,11 +420,8 @@ export default {
             }
         },
 
-        // Переопределяем метод из crudEventMixin для обновления timeline
         handleSaved() {
-            // Вызываем метод из миксина
             this.$options.mixins.find(m => m.methods?.handleSaved)?.methods.handleSaved.call(this);
-            // Добавляем специфическую логику - обновление timeline
             if (this.$refs.timelinePanel && !this.timelineCollapsed) {
                 this.$refs.timelinePanel.refreshTimeline();
             }
@@ -466,12 +429,9 @@ export default {
 
         
         async fetchStatuses() {
-            // Используем данные из store
             await this.$store.dispatch('loadOrderStatuses');
             this.statuses = this.$store.getters.orderStatuses;
         },
-
-        // fetchProjects и fetchClients удалены - данные берутся из store через watch
 
         async handleChangeStatus(ids, statusId) {
             if (!ids.length) return;
@@ -479,7 +439,6 @@ export default {
             try {
                 const result = await OrderController.batchUpdateStatus({ ids, status_id: statusId });
                 
-                // Проверяем, если это ответ о недостающей оплате
                 if (result && result.needs_payment) {
                     this.showPaymentModal(result);
                     this.loading = false;
@@ -493,7 +452,6 @@ export default {
                     this.$refs.timelinePanel.refreshTimeline();
                 }
             } catch (e) {
-                // Проверяем, если это ошибка 422 с информацией о недостающей оплате
                 if (e.response && e.response.status === 422 && e.response.data && e.response.data.needs_payment) {
                     this.showPaymentModal(e.response.data);
                 } else {
@@ -507,24 +465,22 @@ export default {
         },
 
         showPaymentModal(paymentData) {
-            // Находим заказ, который нужно оплатить
-            const order = this.data.items.find(item => item.id === paymentData.order_id);
+            const items = this.viewMode === 'kanban' ? this.allKanbanItems : this.data.items;
+            const order = items.find(item => item.id === paymentData.order_id);
             if (order) {
-                // Показываем уведомление с информацией о недостающей сумме
                 this.showNotification(
                     this.$t('orderNeedsPayment'), 
                     `${this.$t('remainingAmount')}: ${paymentData.remaining_amount} ${order.currencySymbol || ''}`, 
                     true
                 );
                 
-                // Открываем модалку создания транзакции напрямую
                 this.editingTransaction = {
                     orderId: order.id,
                     client: order.client,
                     projectId: order.projectId,
                     cashId: order.cashId,
                     prefillAmount: paymentData.remaining_amount,
-                    minAmount: paymentData.remaining_amount // Минимальная сумма для оплаты
+                    minAmount: paymentData.remaining_amount
                 };
                 this.transactionModal = true;
             }
@@ -617,54 +573,12 @@ export default {
             this.showNotification(this.$t('success'), this.$t('transactionSaved'), false);
             this.transactionModal = false;
             this.editingTransaction = null;
-            // Обновляем список заказов
             this.fetchItems(this.data.currentPage, true);
         },
 
         async openTransactionFromTimeline(transactionId) {
             try {
-                const r = await TransactionController.getItem(transactionId);
-                let client = null;
-                if (r.item.client) {
-                    client = ClientDto.fromApi(r.item.client);
-                }
-                this.editingTransactionItem = new TransactionDto(
-                    r.item.id,
-                    r.item.type,
-                    r.item.is_transfer,
-                    r.item.is_sale || 0,
-                    r.item.is_receipt || 0,
-                    r.item.is_debt || 0,
-                    r.item.cash_id,
-                    r.item.cash_name,
-                    r.item.cash_amount,
-                    r.item.cash_currency_id,
-                    r.item.cash_currency_name,
-                    r.item.cash_currency_code,
-                    r.item.cash_currency_symbol,
-                    r.item.orig_amount,
-                    r.item.orig_currency_id,
-                    r.item.orig_currency_name,
-                    r.item.orig_currency_code,
-                    r.item.orig_currency_symbol,
-                    r.item.user_id,
-                    r.item.user_name,
-                    r.item.category_id,
-                    r.item.category_name,
-                    r.item.category_type,
-                    r.item.project_id,
-                    r.item.project_name,
-                    r.item.client_id,
-                    client,
-                    r.item.note,
-                    r.item.date,
-                    r.item.created_at,
-                    r.item.updated_at,
-                    r.item.orders || [],
-                    r.item.source_type || null,
-                    r.item.source_id || null,
-                    r.item.is_deleted || false
-                );
+                this.editingTransactionItem = await TransactionController.getItem(transactionId);
                 this.viewTransactionModal = true;
             } catch (error) {
                 const errors = this.getApiErrorMessage(error);
@@ -694,12 +608,11 @@ export default {
             this.showNotification(this.$t('error'), error, true);
         },
 
-        // Обработчик перемещения заказа в канбане
         handleOrderMoved(updateData) {
             try {
                 if (updateData.type === 'status') {
-                    // Сначала обновляем локально для плавности
-                    const order = this.data.items.find(o => o.id === updateData.orderId);
+                    const items = this.viewMode === 'kanban' ? this.allKanbanItems : this.data.items;
+                    const order = items.find(o => o.id === updateData.orderId);
                     if (order) {
                         order.statusId = updateData.statusId;
                         const status = this.statuses.find(s => s.id === updateData.statusId);
@@ -708,15 +621,13 @@ export default {
                         }
                     }
                     
-                    // Сохраняем в очередь для debounce
                     this.pendingStatusUpdates.set(updateData.orderId, updateData.statusId);
                     
-                    // Вызываем debounced функцию
                     this.debouncedStatusUpdate();
                     
                 } else if (updateData.type === 'project') {
-                    // Сначала обновляем локально
-                    const order = this.data.items.find(o => o.id === updateData.orderId);
+                    const items = this.viewMode === 'kanban' ? this.allKanbanItems : this.data.items;
+                    const order = items.find(o => o.id === updateData.orderId);
                     if (order) {
                         order.projectId = updateData.projectId;
                         const project = this.projects.find(p => p.id === updateData.projectId);
@@ -725,7 +636,6 @@ export default {
                         }
                     }
                     
-                    // Отправляем на сервер в фоне
                     OrderController.updateItem(updateData.orderId, {
                         project_id: updateData.projectId
                     }).then(() => {
@@ -743,11 +653,9 @@ export default {
             }
         },
 
-        // Debounced функция для отправки обновлений статусов
         debouncedStatusUpdate: debounce(function() {
             if (this.pendingStatusUpdates.size === 0) return;
             
-            // Группируем обновления по статусам
             const updatesByStatus = new Map();
             this.pendingStatusUpdates.forEach((statusId, orderId) => {
                 if (!updatesByStatus.has(statusId)) {
@@ -756,17 +664,14 @@ export default {
                 updatesByStatus.get(statusId).push(orderId);
             });
             
-            // Очищаем очередь
             this.pendingStatusUpdates.clear();
             
-            // Отправляем батч-запросы для каждого статуса
             const promises = [];
             updatesByStatus.forEach((orderIds, statusId) => {
                 const promise = OrderController.batchUpdateStatus({ 
                     ids: orderIds, 
                     status_id: statusId 
                 }).then(() => {
-                    // Обновляем timeline если открыт один из обновленных заказов
                     if (this.editingItem && orderIds.includes(this.editingItem.id) && this.$refs.timelinePanel && !this.timelineCollapsed) {
                         this.$refs.timelinePanel.refreshTimeline();
                     }
@@ -778,13 +683,11 @@ export default {
                 promises.push(promise);
             });
             
-            // Показываем уведомление после всех обновлений
             Promise.all(promises).then(() => {
                 this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
             });
         }, 500),
 
-        // Переключение выбора строки (для канбана)
         toggleSelectRow(id) {
             if (this.selectedIds.includes(id)) {
                 this.selectedIds = this.selectedIds.filter(x => x !== id);
@@ -793,10 +696,8 @@ export default {
             }
         },
 
-        // Обработка выбора всех карточек в колонке
         handleColumnSelectToggle(orderIds, select) {
             if (select) {
-                // Добавляем все ID колонки к выбранным
                 const newSelectedIds = [...this.selectedIds];
                 orderIds.forEach(id => {
                     if (!newSelectedIds.includes(id)) {
@@ -805,12 +706,10 @@ export default {
                 });
                 this.selectedIds = newSelectedIds;
             } else {
-                // Убираем все ID колонки из выбранных
                 this.selectedIds = this.selectedIds.filter(id => !orderIds.includes(id));
             }
         },
 
-        // Массовое изменение статуса в канбане
         handleBatchStatusChange() {
             if (!this.batchStatusId || this.selectedIds.length === 0) return;
             
@@ -819,7 +718,6 @@ export default {
             this.selectedIds = [];
         },
 
-        // Обработка смены статуса из toolbar канбана
         handleBatchStatusChangeFromToolbar(statusId) {
             if (!statusId || this.selectedIds.length === 0) return;
             
@@ -829,19 +727,20 @@ export default {
         }
     },
     mounted() {
-        // Восстанавливаем режим просмотра из localStorage
         const savedViewMode = localStorage.getItem('orders_viewMode');
         if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
             this.viewMode = savedViewMode;
             
-            // Если восстанавливаем канбан режим, загружаем больше заказов
             if (savedViewMode === 'kanban') {
-                this.perPage = 1000;
+                this.kanbanFetchPerPage = 50;
+                this.allKanbanItems = [];
+                this.kanbanCurrentPage = 1;
             }
         } else {
-            // Нет сохраненного режима и дефолт — канбан: грузим больше заказов
             if (this.viewMode === 'kanban') {
-                this.perPage = 1000;
+                this.kanbanFetchPerPage = 50;
+                this.allKanbanItems = [];
+                this.kanbanCurrentPage = 1;
             }
         }
     }
@@ -849,9 +748,7 @@ export default {
 </script>
 
 <style scoped>
-/* Контейнер для канбана - изолируем канбан */
 .kanban-view-container {
     width: 100%;
-    /* Не добавляем overflow здесь - канбан сам управляет своим скроллом */
 }
 </style>

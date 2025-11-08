@@ -58,6 +58,13 @@
                     />
                     <span>{{ $t('showDeletedTransactions') }}</span>
                   </label>
+                  <label class="flex items-center space-x-2 mt-3">
+                    <input 
+                      type="checkbox" 
+                      v-model="form.skip_project_order_balance"
+                    />
+                    <span>{{ $t('skipProjectOrderBalance') || 'Пропускать баланс заказов проекта' }}</span>
+                  </label>
                 </div>
                 
                 <!-- Настройки округления -->
@@ -108,6 +115,62 @@
                         min="0" 
                         max="1"
                         v-model.number="form.rounding_custom_threshold"
+                      />
+                      <div class="text-xs text-gray-500 mt-1">
+                        {{ $t('roundingThresholdHint') }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Настройки округления количества товара -->
+                <div class="mb-6 p-4 bg-white border rounded">
+                  <h3 class="text-md font-semibold mb-3">{{ $t('quantityRoundingSettings') || 'Округление количества товара' }}</h3>
+                  
+                  <div class="mb-3">
+                    <label class="block mb-1">{{ $t('decimalPlaces') }} ({{ $t('forQuantity') || 'для количества' }})</label>
+                    <select v-model.number="form.rounding_quantity_decimals">
+                      <option :value="0">0</option>
+                      <option :value="1">1</option>
+                      <option :value="2">2</option>
+                      <option :value="3">3</option>
+                      <option :value="4">4</option>
+                      <option :value="5">5</option>
+                    </select>
+                    <div class="text-xs text-gray-500 mt-1">
+                      {{ $t('decimalPlacesHint') }}
+                    </div>
+                  </div>
+                  
+                  <div class="mb-3">
+                    <label class="flex items-center space-x-2">
+                      <input 
+                        type="checkbox" 
+                        v-model="form.rounding_quantity_enabled"
+                      />
+                      <span>{{ $t('enableRounding') }} ({{ $t('forQuantity') || 'для количества' }})</span>
+                    </label>
+                  </div>
+                  
+                  <div v-if="form.rounding_quantity_enabled">
+                    <div class="mb-3">
+                      <label class="block mb-1">{{ $t('roundingDirection') }} ({{ $t('forQuantity') || 'для количества' }})</label>
+                      <select v-model="form.rounding_quantity_direction">
+                        <option value="standard">{{ $t('roundingStandard') }}</option>
+                        <option value="up">{{ $t('roundingUp') }}</option>
+                        <option value="down">{{ $t('roundingDown') }}</option>
+                        <option value="custom">{{ $t('roundingCustom') }}</option>
+                      </select>
+                    </div>
+                    
+                    <div v-if="form.rounding_quantity_direction === 'custom'">
+                      <label class="block mb-1">{{ $t('roundingThreshold') }} ({{ $t('forQuantity') || 'для количества' }})</label>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        min="0" 
+                        max="1"
+                        v-model.number="form.rounding_quantity_custom_threshold"
                       />
                       <div class="text-xs text-gray-500 mt-1">
                         {{ $t('roundingThresholdHint') }}
@@ -177,6 +240,11 @@ export default {
                 rounding_enabled: true,
                 rounding_direction: 'standard',
                 rounding_custom_threshold: null,
+                rounding_quantity_decimals: 2,
+                rounding_quantity_enabled: true,
+                rounding_quantity_direction: 'standard',
+                rounding_quantity_custom_threshold: null,
+                skip_project_order_balance: true,
             },
             editingItemId: null,
             saveLoading: false,
@@ -233,6 +301,15 @@ export default {
             this.form.name = '';
             this.form.logo = null;
             this.form.show_deleted_transactions = false;
+            this.form.rounding_decimals = 2;
+            this.form.rounding_enabled = true;
+            this.form.rounding_direction = 'standard';
+            this.form.rounding_custom_threshold = null;
+            this.form.rounding_quantity_decimals = 2;
+            this.form.rounding_quantity_enabled = true;
+            this.form.rounding_quantity_direction = 'standard';
+            this.form.rounding_quantity_custom_threshold = null;
+            this.form.skip_project_order_balance = true;
             this.editingItemId = null;
             this.currentLogo = '';
             this.selected_logo = null;
@@ -259,6 +336,14 @@ export default {
                     rounding_custom_threshold = (value === '' || value === null || value === undefined) ? null : value;
                 }
 
+                // Определяем rounding_quantity_custom_threshold: null если округление выключено или не custom, иначе значение или null
+                let rounding_quantity_custom_threshold = null;
+                if (this.form.rounding_quantity_enabled && this.form.rounding_quantity_direction === 'custom') {
+                    const value = this.form.rounding_quantity_custom_threshold;
+                    // Преобразуем пустую строку в null, иначе используем значение
+                    rounding_quantity_custom_threshold = (value === '' || value === null || value === undefined) ? null : value;
+                }
+
                 const item = {
                     name: this.form.name,
                     show_deleted_transactions: this.form.show_deleted_transactions,
@@ -266,6 +351,11 @@ export default {
                     rounding_enabled: this.form.rounding_enabled,
                     rounding_direction: this.form.rounding_enabled ? this.form.rounding_direction : null,
                     rounding_custom_threshold: rounding_custom_threshold,
+                    rounding_quantity_decimals: this.form.rounding_quantity_decimals,
+                    rounding_quantity_enabled: this.form.rounding_quantity_enabled,
+                    rounding_quantity_direction: this.form.rounding_quantity_enabled ? this.form.rounding_quantity_direction : null,
+                    rounding_quantity_custom_threshold: rounding_quantity_custom_threshold,
+                    skip_project_order_balance: Boolean(this.form.skip_project_order_balance),
                 };
 
                 // Используем обрезанный файл, если он есть, иначе файл из input
@@ -335,14 +425,14 @@ export default {
         closeCropperModal() {
             this.showCropperModal = false;
             this.tempImageSrc = '';
-            // Очищаем input file
+            
             if (this.$refs.logoInput) {
                 this.$refs.logoInput.value = '';
             }
         },
         
         handleCroppedImage(blob) {
-            // Создаем File объект из blob
+            
             const fileName = `cropped_logo_${Date.now()}.jpg`;
             const file = new File([blob], fileName, { type: 'image/jpeg' });
             
@@ -351,7 +441,7 @@ export default {
             this.selected_logo = URL.createObjectURL(blob);
             this.form.logo = file;
             
-            // Закрываем модальное окно
+            
             this.closeCropperModal();
         },
         
@@ -375,6 +465,11 @@ export default {
             this.form.rounding_enabled = company.rounding_enabled !== undefined ? company.rounding_enabled : true;
             this.form.rounding_direction = company.rounding_direction || 'standard';
             this.form.rounding_custom_threshold = company.rounding_custom_threshold || null;
+            this.form.rounding_quantity_decimals = company.rounding_quantity_decimals !== undefined ? company.rounding_quantity_decimals : 2;
+            this.form.rounding_quantity_enabled = company.rounding_quantity_enabled !== undefined ? company.rounding_quantity_enabled : true;
+            this.form.rounding_quantity_direction = company.rounding_quantity_direction || 'standard';
+            this.form.rounding_quantity_custom_threshold = company.rounding_quantity_custom_threshold || null;
+            this.form.skip_project_order_balance = company.skip_project_order_balance !== undefined ? company.skip_project_order_balance : true;
             this.currentLogo = company.logo || '';
             this.selected_logo = null; // Сбрасываем выбранное изображение при загрузке данных
             if (this.$refs.logoInput) {

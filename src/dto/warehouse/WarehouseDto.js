@@ -1,31 +1,32 @@
-import { dayjsDate } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
+import { getUserIdsFromArray, createFromApiArray } from "@/utils/dtoUtils";
 
-// WarehouseDto описывает структуру склада
 export default class WarehouseDto {
     constructor(id, name, users = [], createdAt = '', updatedAt = '') {
-        this.id = id; // Идентификатор склада
-        this.name = name; // Название склада
-        this.users = users; // Список пользователей (объекты User)
-        this.createdAt = createdAt; // Дата создания склада
-        this.updatedAt = updatedAt; // Дата обновления склада
+        this.id = id;
+        this.name = name;
+        this.users = users;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     formatCreatedAt() {
-        return dayjsDate(this.createdAt);
+        return dtoDateFormatters.formatCreatedAt(this.createdAt);
     }
 
-    // Получить список ID пользователей
     getUserIds() {
-        return this.users.map(user => user.id);
+        return getUserIdsFromArray(this.users);
     }
 
-    // Получить список имен пользователей
-    getUserNames() {
-        return this.users.map(user => user.name).join(', ');
-    }
-
-    // Проверить, есть ли пользователь с указанным ID
-    hasUser(userId) {
-        return this.users.some(user => user.id == userId);
+    static fromApiArray(dataArray) {
+        return createFromApiArray(dataArray, data => {
+            return new WarehouseDto(
+                data.id,
+                data.name,
+                data.users || [],
+                data.created_at,
+                data.updated_at
+            );
+        }).filter(Boolean);
     }
 }

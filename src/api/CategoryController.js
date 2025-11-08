@@ -3,23 +3,11 @@ import CategoryDto from "@/dto/category/CategoryDto";
 import api from "./axiosInstance";
 
 export default class CategoryController {
-  static async getItems(page = 1, per_page = 10) {
+  static async getItems(page = 1, per_page = 20) {
     try {
       const response = await api.get(`/categories?page=${page}&per_page=${per_page}`);
       const data = response.data;
-      const items = (data.items || []).map((item) => {
-        return new CategoryDto(
-          item.id,
-          item.name,
-          item.parent_id,
-          item.parent_name,
-          item.user_id,
-          item.user_name,
-          item.users || [],
-          item.created_at,
-          item.updated_at
-        );
-      });
+      const items = CategoryDto.fromApiArray(data.items);
 
       const paginatedResponse = new PaginatedResponse(
         items,
@@ -40,19 +28,7 @@ export default class CategoryController {
     try {
       const response = await api.get(`/categories/all`);
       const data = response.data;
-      const items = (data || []).map((item) => {
-        return new CategoryDto(
-          item.id,
-          item.name,
-          item.parent_id,
-          item.parent_name,
-          item.user_id,
-          item.user_name,
-          item.users || [],
-          item.created_at,
-          item.updated_at
-        );
-      });
+      const items = CategoryDto.fromApiArray(data);
       return items;
     } catch (error) {
       console.error("Ошибка при получении категорий:", error);

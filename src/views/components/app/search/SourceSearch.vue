@@ -2,7 +2,6 @@
     <div>
         <label v-if="showLabel" class="block mb-1">{{ $t('source') }}</label>
         
-        <!-- Выбор типа источника -->
         <div class="mb-2">
             <select :value="sourceType" @change="handleSourceTypeSelect" :disabled="disabled" class="w-full p-2 border rounded">
                 <option value="">{{ $t('selectSourceType') }}</option>
@@ -12,7 +11,6 @@
             </select>
         </div>
 
-        <!-- Поле поиска (только если выбран тип) -->
         <div v-if="sourceType && selectedSource == null" class="relative">
             <input 
                 type="text" 
@@ -56,7 +54,6 @@
             </transition>
         </div>
 
-        <!-- Выбранный источник (показывается если источник уже связан или выбран) -->
         <div v-if="selectedSource && sourceType" class="mt-2">
             <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
                 <div class="flex justify-between items-center">
@@ -140,9 +137,9 @@ export default {
             if (typeof client.fullName === 'function') {
                 return client.fullName();
             }
-            const firstName = client.firstName || client.first_name || '';
-            const lastName = client.lastName || client.last_name || '';
-            const contactPerson = client.contactPerson || client.contact_person;
+            const firstName = client.firstName || '';
+            const lastName = client.lastName || '';
+            const contactPerson = client.contactPerson;
             if (contactPerson) {
                 return `${firstName} ${lastName} (${contactPerson})`;
             }
@@ -152,7 +149,6 @@ export default {
             if (amount === null || amount === undefined) return '0';
             const symbol = (src && (src.currencySymbol || src.cashCurrencySymbol)) || '';
             const num = parseFloat(amount) || 0;
-            // Используем глобальный форматтер если есть
             if (this.$formatNumber) {
                 return `${this.$formatNumber(num, null, true)} ${symbol}`.trim();
             }
@@ -170,7 +166,6 @@ export default {
         handleSourceTypeSelect(event) {
             const newType = event.target.value;
             this.$emit('update:sourceType', newType);
-            // Сбрасываем выбранный источник при смене типа
             this.$emit('update:selectedSource', null);
             this.sourceSearch = '';
             this.sourceResults = [];
@@ -186,7 +181,6 @@ export default {
                 const id = parseInt(this.sourceSearch);
                 let result = null;
 
-                // Ленивая загрузка контроллеров - только при необходимости
                 switch (this.sourceType) {
                     case 'order': {
                         const OrderController = (await import('@/api/OrderController')).default;

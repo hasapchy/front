@@ -1,13 +1,22 @@
+import { createFromApiArray } from "@/utils/dtoUtils";
+
 class UnitDto {
-    constructor(id, name, short_name, calc_area) {
+    constructor(id, name, shortName, calcArea) {
         this.id = id;
         this.name = name;
-        this.short_name = short_name;
-        this.calc_area = calc_area;
+        this.shortName = shortName;
+        this.calcArea = calcArea;
     }
     
-    static fromJsonArray(jsonArray) {
-        return (jsonArray || []).map(json => UnitDto.fromJson(json));
+    static fromApiArray(dataArray) {
+        return createFromApiArray(dataArray, data => {
+            return new UnitDto(
+                data.id,
+                data.name,
+                data.short_name,
+                data.calc_area
+            );
+        }).filter(Boolean);
     }
 }
 

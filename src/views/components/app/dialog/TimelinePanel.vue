@@ -130,7 +130,7 @@
 <script>
 import { dayjsDateTime } from '@/utils/dateUtils';
 import CommentController from '@/api/CommentController';
-import { translateField } from '@/utils/fieldTranslations';
+import { translateField, formatFieldValue as formatFieldValueUtil } from '@/utils/fieldTranslations';
 import { formatQuantity } from '@/utils/numberUtils';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
@@ -333,7 +333,7 @@ export default {
         },
         defaultCurrencySymbol() {
             const currencies = this.$store.getters.currencies || [];
-            const def = currencies.find(c => c.is_default);
+            const def = currencies.find(c => c.isDefault);
             return def ? def.symbol : '';
         }
     }

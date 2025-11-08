@@ -3,35 +3,19 @@ import PaginatedResponse from '@/dto/app/PaginatedResponseDto';
 import WarehouseStockDto from '@/dto/warehouse/WarehouseStockDto';
 
 export default class WarehouseStockController {
-    static async getStocks(page = 1, warehouse_id = null, category_id = null, per_page = 10, search = null) {
+    static async getItems(page = 1, warehouse_id = null, category_id = null, per_page = 20, search = null, availability = 'all') {
         try {
             const response = await api.get(`/warehouse_stocks?page=${page}`, {
                 params: {
                     warehouse_id: warehouse_id,
                     per_page: per_page,
-                    // category_id больше не поддерживается
+                    category_id: category_id,
+                    availability: availability,
                     ...(search ? { search } : {})
                 }
             });
             const data = response.data;
-            // Преобразуем полученные данные в DTO
-            const items = data.items.map(item => {
-                return new WarehouseStockDto(
-                    item.id,
-                    item.warehouse_id,
-                    item.warehouse_name,
-                    item.product_id,
-                    item.product_name,
-                    item.product_image,
-                    item.unit_id,
-                    item.unit_name,
-                    item.unit_short_name,
-                    item.category_id,
-                    item.category_name,
-                    item.quantity,
-                    item.created_at
-                );
-            });
+            const items = WarehouseStockDto.fromApiArray(data.items);
 
             const paginatedResponse = new PaginatedResponse(items, data.current_page, data.next_page, data.last_page, data.total);
 
@@ -42,33 +26,7 @@ export default class WarehouseStockController {
         }
     }
 
-    // static async storeWarehouse(warehouse) {
-    //     try {
-    //         const { data } = await api.post('/warehouses', warehouse);
-    //         return data;
-    //     } catch (error) {
-    //         console.error('Ошибка при создании склада:', error);
-    //         throw error;
-    //     }
-    // }
-
-    // static async updateWarehouse(id, warehouse){
-    //     try {
-    //         const { data } = await api.put(`/warehouses/${id}`, warehouse);
-    //         return data;
-    //     } catch (error) {
-    //         console.error('Ошибка при обновлении склада:', error);
-    //         throw error;
-    //     }
-    // }
-
-    // static async deleteWarehouse(id){
-    //     try {
-    //         const { data } = await api.delete(`/warehouses/${id}`);
-    //         return data;
-    //     } catch (error) {
-    //         console.error('Ошибка при удалении склада:', error);
-    //         throw error;
-    //     }
-    // }
+    static async getStocks(page = 1, warehouse_id = null, category_id = null, per_page = 20, search = null, availability = 'all') {
+        return this.getItems(page, warehouse_id, category_id, per_page, search, availability);
+    }
 }

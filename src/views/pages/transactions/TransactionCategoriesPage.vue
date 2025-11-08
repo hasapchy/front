@@ -90,10 +90,10 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
+               
+                const per_page = this.perPage || 20;
                 
-                this.data = await TransactionCategoryController.getItems(page, perPage);
+                this.data = await TransactionCategoryController.getItems(page, per_page);
             } catch (error) {
                 this.showNotification('Ошибка получения списка категорий транзакций', error.message, true);
             }

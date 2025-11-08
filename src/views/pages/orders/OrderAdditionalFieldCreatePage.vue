@@ -17,18 +17,6 @@
                         </option>
                     </select>
                 </div>
-                <!-- <div>
-                    <label class="required">{{ $t('categories') }}</label>
-                    <div v-if="allCategories.length > 0" class="flex flex-wrap gap-2">
-                        <label v-for="category in allCategories" :key="category.id" class="flex items-center space-x-2">
-                            <input type="checkbox" :value="category.id" v-model="categoryIds">
-                            <span>{{ category.name }}</span>
-                        </label>
-                    </div>
-                    <div v-else class="text-gray-500 italic">
-                        {{ $t('noOrderCategories') }}
-                    </div>
-                </div> -->
                 <div v-if="type === 'select'">
                     <label class="required">{{ $t('options') }}</label>
                     <div class="space-y-2">
@@ -88,7 +76,6 @@
         </div>
     </div>
     <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
-        <!-- Кнопки -->
         <div class="flex items-center space-x-2">
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
             </PrimaryButton>
@@ -129,12 +116,10 @@ export default {
             ],
             name: '',
             type: '',
-            // categoryIds: [],
             options: [],
             required: false,
             defaultValue: '',
             editingItemId: null,
-            // allCategories: [],
             fieldTypes: [
                 { value: 'string', label: 'fieldTypeText' },
                 { value: 'int', label: 'fieldTypeNumber' },
@@ -152,12 +137,7 @@ export default {
         this.loadEditingData();
     },
     mounted() {
-        // Сохраняем начальное состояние после загрузки всех данных
         this.$nextTick(async () => {
-            // Ждем загрузки всех необходимых данных
-            // await this.fetchAllCategories();
-            
-            // Теперь сохраняем начальное состояние
             this.saveInitialState();
         });
     },
@@ -167,12 +147,10 @@ export default {
                     if (newEditingItem) {
                         this.loadEditingData();
                     } else {
-                        // Очищаем форму только если это не первая загрузка компонента
                         if (oldEditingItem !== undefined) {
                             this.clearForm();
                         }
                     }
-                    // Сохраняем новое начальное состояние
                     this.$nextTick(() => {
                         this.saveInitialState();
                     });
@@ -208,18 +186,6 @@ export default {
                 this.name = this.editingItem.name || '';
                 this.type = this.editingItem.type || '';
                 
-                // // Правильно обрабатываем категории - проверяем все возможные варианты
-                // if (this.editingItem.category_ids && Array.isArray(this.editingItem.category_ids)) {
-                //     this.categoryIds = this.editingItem.category_ids;
-                // } else if (this.editingItem.categoryIds && Array.isArray(this.editingItem.categoryIds)) {
-                //     this.categoryIds = this.editingItem.categoryIds;
-                // } else if (this.editingItem.categories && Array.isArray(this.editingItem.categories)) {
-                //     // Если категории приходят как объекты с id, извлекаем только id
-                //     this.categoryIds = this.editingItem.categories.map(cat => cat.id || cat);
-                // } else {
-                //     this.categoryIds = [];
-                // }
-                
                 this.options = this.editingItem.options || [];
                 this.required = this.editingItem.required || false;
                 this.defaultValue = this.editingItem.default_value || this.editingItem.defaultValue || '';
@@ -230,7 +196,6 @@ export default {
         resetForm() {
             this.name = '';
             this.type = '';
-            // this.categoryIds = [];
             this.options = [];
             this.required = false;
             this.defaultValue = '';
@@ -240,7 +205,7 @@ export default {
 
         clearForm() {
             this.resetForm();
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.resetFormChanges();
         },
 
         changeTab(tab) {
@@ -255,15 +220,6 @@ export default {
             this.options.splice(index, 1);
         },
 
-        // async fetchAllCategories() {
-        //     try {
-        //         this.allCategories = await OrderCategoryController.getAllItems();
-        //     } catch (error) {
-        //         console.error('Ошибка при получении категорий:', error);
-        //         this.allCategories = [];
-        //     }
-        // },
-
         async save() {
             if (!this.validateForm()) return;
             
@@ -272,7 +228,6 @@ export default {
                 const data = OrderAfController.prepareFieldData({
                     name: this.name,
                     type: this.type,
-                    // category_ids: this.categoryIds,
                     options: this.type === 'select' ? this.options.filter(opt => opt.trim()) : null,
                     required: this.required,
                     default: this.defaultValue
@@ -281,7 +236,7 @@ export default {
                 if (this.editingItemId) {
                     await OrderAfController.updateItem(this.editingItemId, data);
                 } else {
-                    await OrderAfController.createItem(data);
+                    await OrderAfController.storeItem(data);
                 }
 
                 this.$emit('saved');
@@ -302,7 +257,6 @@ export default {
                 const data = OrderAfController.prepareFieldData({
                     name: this.name,
                     type: this.type,
-                    // category_ids: this.categoryIds,
                     options: this.type === 'select' ? this.options.filter(opt => opt.trim()) : null,
                     required: this.required,
                     default: this.defaultValue
@@ -311,7 +265,7 @@ export default {
                 if (this.editingItemId) {
                     await OrderAfController.updateItem(this.editingItemId, data);
                 } else {
-                    await OrderAfController.createItem(data);
+                    await OrderAfController.storeItem(data);
                 }
 
                 this.$emit('saved-silent');
@@ -332,10 +286,6 @@ export default {
                 this.$emit('saved-error', this.$t('fieldTypeRequired'));
                 return false;
             }
-            // if (this.categoryIds.length === 0) {
-            //     this.$emit('saved-error', this.$t('categoriesRequired'));
-            //     return false;
-            // }
             if (this.type === 'select' && this.options.filter(opt => opt.trim()).length === 0) {
                 this.$emit('saved-error', this.$t('selectOptionsRequired'));
                 return false;
@@ -370,12 +320,10 @@ export default {
             this.closeForm();
         },
 
-        // Переопределяем метод getFormState из миксина
         getFormState() {
             return {
                 name: this.name,
                 type: this.type,
-                // categoryIds: this.categoryIds,
                 options: this.options,
                 required: this.required,
                 defaultValue: this.defaultValue

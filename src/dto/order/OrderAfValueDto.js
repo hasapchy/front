@@ -1,4 +1,6 @@
 import OrderAfDto from './OrderAfDto';
+import { createFromApiArray } from "@/utils/dtoUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
 
 export default class OrderAfValueDto {
   constructor(
@@ -36,7 +38,7 @@ export default class OrderAfValueDto {
       case 'datetime':
         return this.formatDateTime(this.value);
       case 'boolean':
-        return this.value === '1' || this.value === true ? 'Да' : 'Нет';
+        return this.value == 1 ? 'Да' : 'Нет';
       case 'select':
         return this.value;
       default:
@@ -56,12 +58,7 @@ export default class OrderAfValueDto {
 
   formatDateTime(dateTimeString) {
     if (!dateTimeString) return '';
-    try {
-      const date = new Date(dateTimeString);
-      return date.toLocaleString('ru-RU');
-    } catch (e) {
-      return dateTimeString;
-    }
+    return dtoDateFormatters.formatDate(dateTimeString);
   }
 
   getFieldName() {
@@ -112,21 +109,21 @@ export default class OrderAfValueDto {
     `;
   }
 
-  static fromApi(data) {
-    return new OrderAfValueDto(
-      data.id,
-      data.order_id,
-      data.order_af_id,
-      data.value,
-      data.field ? OrderAfDto.fromApi(data.field) : null,
-      data.formatted_value || data.value,
-      data.created_at,
-      data.updated_at
-    );
-  }
-
   static fromApiArray(dataArray) {
-    return (dataArray || []).map(item => OrderAfValueDto.fromApi(item));
+    return createFromApiArray(dataArray, data => {
+      const field = data.field ? OrderAfDto.fromApiArray([data.field])[0] || null : null;
+      
+      return new OrderAfValueDto(
+        data.id,
+        data.order_id,
+        data.order_af_id,
+        data.value,
+        field,
+        data.formatted_value || data.value,
+        data.created_at,
+        data.updated_at
+      );
+    }).filter(Boolean);
   }
 
   static fromFormData(fieldId, value) {

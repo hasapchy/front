@@ -1,3 +1,7 @@
+import { dtoDateFormatters } from '@/utils/dateUtils';
+import { formatAmountWithColor } from '@/utils/dtoUtils';
+import { formatNumber } from '@/utils/numberUtils';
+
 export default class ProjectTransactionDto {
     constructor(
         id,
@@ -35,14 +39,14 @@ export default class ProjectTransactionDto {
         return new ProjectTransactionDto(
             data.id,
             data.user_id,
-            data.user?.name || data.user_name,
+            data.user_name || data.user?.name || null,
             data.project_id,
-            data.project?.name || data.project_name,
+            data.project_name || data.project?.name || null,
             data.amount,
             data.currency_id,
-            data.currency?.name || data.currency_name,
-            data.currency?.code || data.currency_code,
-            data.currency?.symbol || data.currency_symbol,
+            data.currency_name || data.currency?.name || null,
+            data.currency_code || data.currency?.code || null,
+            data.currency_symbol || data.currency?.symbol || null,
             data.note,
             data.date,
             data.created_at,
@@ -51,7 +55,7 @@ export default class ProjectTransactionDto {
     }
 
     formatAmount() {
-        return Number(this.amount).toFixed(2);
+        return formatNumber(this.amount || 0, null, true);
     }
 
     formatAmountWithCurrency() {
@@ -59,28 +63,12 @@ export default class ProjectTransactionDto {
     }
 
     formatDate() {
-        if (!this.date) return '';
-        const date = new Date(this.date);
-        return date.toLocaleDateString('ru-RU', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return dtoDateFormatters.formatDate(this.date);
     }
 
     formatDateTime() {
         if (!this.date) return '';
-        const date = new Date(this.date);
-        return date.toLocaleString('ru-RU', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
+        return dtoDateFormatters.formatDate(this.date);
     }
 
     getDescription() {
@@ -100,6 +88,11 @@ export default class ProjectTransactionDto {
     }
 
     formatAmountWithColor() {
-        return `<span class="text-green-600 font-semibold">+${this.formatAmountWithCurrency()}</span>`;
+        return formatAmountWithColor(this.amount, {
+            positiveColor: "text-green-600",
+            showSign: true,
+            formatFn: () => this.formatAmountWithCurrency(),
+            className: "font-semibold"
+        });
     }
 }

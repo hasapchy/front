@@ -3,20 +3,11 @@ import WarehouseDto from '@/dto/warehouse/WarehouseDto';
 import api from './axiosInstance';
 
 export default class WarehouseController {
-    static async getWarehouses(page = 1, per_page = 10) {
+    static async getItems(page = 1, per_page = 20) {
         try {
             const response = await api.get(`/warehouses?page=${page}&per_page=${per_page}`);
             const data = response.data;
-            // Преобразуем полученные данные в DTO
-            const items = (data.items || []).map(item => {
-                return new WarehouseDto(
-                    item.id,
-                    item.name,
-                    item.users || [],
-                    item.created_at,
-                    item.updated_at
-                );
-            });
+            const items = WarehouseDto.fromApiArray(data.items);
 
             const paginatedResponse = new PaginatedResponse(items, data.current_page, data.next_page, data.last_page, data.total);
 
@@ -31,16 +22,7 @@ export default class WarehouseController {
         try {
             const response = await api.get(`/warehouses/all`);
             const data = response.data;
-            // Преобразуем полученные данные в DTO
-            const items = (data || []).map(item => {
-                return new WarehouseDto(
-                    item.id,
-                    item.name,
-                    item.users || [],
-                    item.created_at,
-                    item.updated_at
-                );
-            });
+            const items = WarehouseDto.fromApiArray(data);
             return items;
         } catch (error) {
             console.error('Ошибка при получении всех складов:', error);
@@ -48,27 +30,27 @@ export default class WarehouseController {
         }
     }
 
-    static async storeWarehouse(warehouse) {
+    static async storeItem(item) {
         try {
-            const { data } = await api.post('/warehouses', warehouse);
-            return data;
+            const { data } = await api.post('/warehouses', item);
+            return { item: data.warehouse, message: data.message };
         } catch (error) {
             console.error('Ошибка при создании склада:', error);
             throw error;
         }
     }
 
-    static async updateWarehouse(id, warehouse) {
+    static async updateItem(id, item) {
         try {
-            const { data } = await api.put(`/warehouses/${id}`, warehouse);
-            return data;
+            const { data } = await api.put(`/warehouses/${id}`, item);
+            return { item: data.warehouse, message: data.message };
         } catch (error) {
             console.error('Ошибка при обновлении склада:', error);
             throw error;
         }
     }
 
-    static async deleteWarehouse(id) {
+    static async deleteItem(id) {
         try {
             const { data } = await api.delete(`/warehouses/${id}`);
             return data;

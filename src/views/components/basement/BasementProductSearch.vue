@@ -34,8 +34,8 @@
                                 </div>
                                 <div class="text-[#337AB7] text-xs flex flex-col items-end min-w-[90px]">
                                     <div>
-                                        {{ product.stock_quantity }}
-                                        {{ product.unit_short_name || product.unit_name || '' }}
+                                        {{ product.stockQuantity }}
+                                        {{ product.unitShortName || product.unitName || '' }}
                                     </div>
                                 </div>
                             </div>
@@ -57,8 +57,8 @@
                                 {{ product.name }}
                             </div>
                             <div class="text-[#337AB7] text-sm">
-                                {{ product.stock_quantity }}
-                                {{ product.unit_short_name || product.unit_name || '' }}
+                                {{ product.stockQuantity }}
+                                {{ product.unitShortName || product.unitName || '' }}
                             </div>
                         </div>
                     </li>
@@ -140,20 +140,21 @@
                                     <span class="text-xs text-gray-600">м</span>
                                 </div>
                                 <div class="text-right text-sm font-medium bg-gray-100 p-1 rounded">
-                                    = {{ product.quantity || 0 }} {{ product.unitShortName || product.unit_short_name || '' }}
+                                    = {{ product.quantity || 0 }} {{ product.unitShortName || product.unitName || '' }}
                                 </div>
                                 <div v-if="!isService(product)" class="text-xs text-right mt-1" :class="getStockQuantityClass(product)">
-                                    Остаток: {{ product.stock_quantity || 0 }}
+                                    Остаток: {{ product.stockQuantity || 0 }}
                                 </div>
                             </div>
                             <!-- Для остальных единиц - просто количество -->
                             <div v-else>
                                 <input type="number" v-model.number="product.quantity" 
+                                    @blur="roundQuantity(product)"
                                     class="w-full p-1 text-right border border-gray-300 rounded"
                                     :disabled="disabled" min="0" step="0.01"
-                                    :placeholder="'0 ' + (product.unitShortName || product.unit_short_name || '')" />
+                                    :placeholder="'0 ' + (product.unitShortName || product.unitName || '')" />
                                 <div v-if="!isService(product)" class="text-xs mt-1 text-right" :class="getStockQuantityClass(product)">
-                                    Остаток: {{ product.stock_quantity || 0 }}
+                                    Остаток: {{ product.stockQuantity || 0 }}
                                 </div>
                             </div>
                         </td>
@@ -194,8 +195,8 @@ import BasementProductController from '@/api/BasementProductController';
 import debounce from 'lodash.debounce';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import ServiceCard from './ServiceCard.vue';
+import { roundQuantityValue } from '@/utils/numberUtils';
 
-// Vue 3 compatibility - $set and $delete removed
 export default {
     components: {
         ServiceCard
@@ -235,7 +236,7 @@ export default {
             showProductDropdown: false,
             services: [],
             servicesLoading: false,
-            productDimensions: {} // Локальное хранилище размеров для каждого товара
+            productDimensions: {}
         };
     },
     computed: {
@@ -244,7 +245,6 @@ export default {
                 return this.modelValue;
             },
             set(value) {
-                // Инициализируем размеры для новых товаров
                 value.forEach(product => {
                     if (product.productId && !this.productDimensions[product.productId]) {
                         this.productDimensions[product.productId] = { 
@@ -267,24 +267,21 @@ export default {
         
         hasExceededStock() {
             return this.products.some(product => {
-                // Для услуг не проверяем превышение остатка
                 if (this.isService(product)) {
                     return false;
                 }
                 
-                const stockQuantity = product.stock_quantity || 0;
+                const stockQuantity = product.stockQuantity || 0;
                 const orderQuantity = product.quantity || 0;
                 return orderQuantity > stockQuantity && stockQuantity > 0;
             });
         },
         
         lastProducts() {
-            // ✅ Берем ВСЕ товары из store (кэш на 30 дней!)
             return this.$store.getters.allProducts;
         }
     },
     async created() {
-        // ✅ Загружаем ВСЕ товары из store (кэш на 30 дней!)
         await this.$store.dispatch('loadAllProducts');
         await this.loadServices();
     },
@@ -292,14 +289,13 @@ export default {
         async onFocus() {
             this.showProductDropdown = true;
             if (!this.lastProducts || this.lastProducts.length === 0) {
-                // ✅ Загружаем из store если пусто
                 await this.$store.dispatch('loadAllProducts');
             }
         },
         async loadServices() {
             this.servicesLoading = true;
             try {
-                const servicesData = await BasementProductController.getItems(1, false);
+                const servicesData = await BasementProductController.getItems(1, false, {}, 20);
                 this.services = servicesData.items || [];
             } catch (error) {
                 console.error('Error loading services:', error);
@@ -313,7 +309,6 @@ export default {
                 this.productSearchLoading = true;
                 try {
                     const results = await BasementProductController.searchItems(this.productSearch);
-                    // Фильтруем только товары (type === 1 или type === true)
                     const productsOnly = results.filter(item => item.type === 1 || item.type === true || item.type === '1');
                     this.productResults = productsOnly;
                     this.productSearchLoading = false;
@@ -331,34 +326,27 @@ export default {
                 this.productSearch = '';
                 this.productResults = [];
 
-                // Всегда создаем новую строку для товара
                 const productDto = WarehouseWriteoffProductDto.fromProductDto(product, true);
                 if (productDto && product.id) {
                     productDto.productId = product.id;
-                    // Если выбран проект, используем оптовую цену, иначе розничную
-                    if (this.projectId && product.wholesale_price > 0) {
-                        productDto.price = product.wholesale_price || 0;
+                    if (this.projectId && product.wholesalePrice > 0) {
+                        productDto.price = product.wholesalePrice || 0;
                     } else {
-                        productDto.price = product.retail_price || 0;
+                        productDto.price = product.retailPrice || 0;
                     }
-                    // Сохраняем тип товара
                     productDto.type = product.type || 1;
-                    // Сохраняем остаток на складе
-                    productDto.stock_quantity = product.stock_quantity || 0;
+                    productDto.stockQuantity = product.stockQuantity || 0;
                     
-                    // Проверяем единицу измерения
-                    const unitShortName = productDto.unitShortName || productDto.unit_short_name || '';
-                    const unitName = productDto.unitName || productDto.unit_name || '';
+                    const unitShortName = productDto.unitShortName || '';
+                    const unitName = productDto.unitName || '';
                     const isSquareMeter = unitShortName === 'м²' || unitName === 'Квадратный метр';
                     
                     if (isSquareMeter) {
-                        // Для м² инициализируем ширину и длину
                         this.productDimensions[product.id] = { width: 0, length: 0 };
                         productDto.width = 0;
                         productDto.height = 0;
                         productDto.quantity = 0;
                     } else {
-                        // Для остальных единиц просто устанавливаем количество
                         productDto.quantity = 0;
                         productDto.width = 0;
                         productDto.height = 0;
@@ -373,34 +361,27 @@ export default {
         },
         selectService(service) {
             try {
-                // Всегда создаем новую строку для услуги
                 const productDto = WarehouseWriteoffProductDto.fromProductDto(service, false);
                 if (productDto && service.id) {
-                    productDto.productId = service.id; // Услуги тоже имеют productId
-                    // Если выбран проект, используем оптовую цену, иначе розничную
-                    if (this.projectId && service.wholesale_price > 0) {
-                        productDto.price = service.wholesale_price || 0;
+                    productDto.productId = service.id;
+                    if (this.projectId && service.wholesalePrice > 0) {
+                        productDto.price = service.wholesalePrice || 0;
                     } else {
-                        productDto.price = service.retail_price || 0;
+                        productDto.price = service.retailPrice || 0;
                     }
-                    // Сохраняем тип (услуги имеют type = 0)
                     productDto.type = service.type || 0;
-                    // Для услуг остаток не нужен, но на всякий случай сохраняем
-                    productDto.stock_quantity = service.stock_quantity || 0;
+                    productDto.stockQuantity = service.stockQuantity || 0;
                     
-                    // Проверяем единицу измерения
-                    const unitShortName = productDto.unitShortName || productDto.unit_short_name || '';
-                    const unitName = productDto.unitName || productDto.unit_name || '';
+                    const unitShortName = productDto.unitShortName || '';
+                    const unitName = productDto.unitName || '';
                     const isSquareMeter = unitShortName === 'м²' || unitName === 'Квадратный метр';
                     
                     if (isSquareMeter) {
-                        // Для м² инициализируем ширину и длину
                         this.productDimensions[service.id] = { width: 0, length: 0 };
                         productDto.width = 0;
                         productDto.height = 0;
                         productDto.quantity = 0;
                     } else {
-                        // Для остальных единиц просто устанавливаем количество
                         productDto.quantity = 0;
                         productDto.width = 0;
                         productDto.height = 0;
@@ -415,7 +396,6 @@ export default {
         removeSelectedProduct(index) {
             const productToRemove = this.products[index];
             if (productToRemove) {
-                // Удаляем размеры для товара, если это была последняя запись с таким productId
                 const remainingProductsWithSameId = this.products.filter((p, i) => 
                     i !== index && p.productId === productToRemove.productId
                 );
@@ -424,7 +404,6 @@ export default {
                 }
             }
             
-            // Удаляем товар по индексу
             this.products = this.products.filter((_, i) => i !== index);
             this.updateTotals();
         },
@@ -434,7 +413,14 @@ export default {
             });
         },
         updateTotals() {
-            // Для подвальных работников не нужно обновлять суммы
+        },
+        roundQuantity(product) {
+            if (product && product.quantity !== null && product.quantity !== undefined) {
+                const num = Number(product.quantity);
+                if (!isNaN(num)) {
+                    product.quantity = roundQuantityValue(num);
+                }
+            }
         },
         getDefaultIcon(product) {
             const isProduct = product.type === 1 || product.type === '1' || product.type === true;
@@ -444,7 +430,6 @@ export default {
         },
         
         getProductWidth(product) {
-            // Сначала проверяем значение в самом продукте
             if (product.width !== undefined && product.width !== null) {
                 return product.width;
             }
@@ -460,12 +445,10 @@ export default {
                 this.productDimensions[product.productId] = { width: 0, length: 0 };
             }
             this.productDimensions[product.productId].width = value;
-            // Сохраняем width в самом продукте
             product.width = value;
         },
         
         getProductLength(product) {
-            // Сначала проверяем значение в самом продукте
             if (product.height !== undefined && product.height !== null) {
                 return product.height;
             }
@@ -481,7 +464,6 @@ export default {
                 this.productDimensions[product.productId] = { width: 0, length: 0 };
             }
             this.productDimensions[product.productId].length = value;
-            // Сохраняем height в самом продукте
             product.height = value;
         },
         
@@ -514,8 +496,9 @@ export default {
             }
             
             // Для м² - площадь (ширина × длина)
-            // Не округляем количество (округляется только сумма)
-            product.quantity = width * length;
+            // Применяем правила округления компании для количества товара
+            const rawQuantity = width * length;
+            product.quantity = roundQuantityValue(rawQuantity);
             
             this.updateTotals();
         },
@@ -536,50 +519,42 @@ export default {
         },
         
         isService(product) {
-            // Проверяем, является ли продукт услугой
-            // Услуги имеют type = 0, товары имеют type = 1
             const isServiceType = product.type === 0 || product.type === '0' || product.type === false;
             
-            // Дополнительная проверка: если у товара нет информации о stock_quantity
-            // (undefined, null или пустая строка), то это услуга
-            const hasNoStockInfo = product.stock_quantity === undefined || 
-                                  product.stock_quantity === null || 
-                                  product.stock_quantity === '';
+            const hasNoStockInfo = product.stockQuantity === undefined || 
+                                  product.stockQuantity === null || 
+                                  product.stockQuantity === '';
             
-            // Если явно указан тип услуги, или если нет информации о типе и остатке
             return isServiceType || (!product.type && hasNoStockInfo);
         },
         
         isSquareMeter(product) {
-            // Проверяем, является ли единица измерения квадратным метром
-            const unitShortName = product.unitShortName || product.unit_short_name || '';
-            const unitName = product.unitName || product.unit_name || '';
+            const unitShortName = product.unitShortName || '';
+            const unitName = product.unitName || '';
             return unitShortName === 'м²' || unitName === 'Квадратный метр';
         },
         
         getStockDisplayValue(product) {
-            // Для услуг (type = 0) показываем бесконечный остаток
             if (this.isService(product)) {
                 return '∞';
             }
-            return product.stock_quantity || 0;
+            return product.stockQuantity || 0;
         },
         
         getStockQuantityClass(product) {
-            // Для услуг не показываем остаток
             if (this.isService(product)) {
-                return 'text-gray-400'; // Серый цвет для услуг
+                return 'text-gray-400';
             }
             
-            const stockQuantity = product.stock_quantity || 0;
+            const stockQuantity = product.stockQuantity || 0;
             const orderQuantity = product.quantity || 0;
             
             if (stockQuantity === 0) {
-                return 'text-red-600 font-medium'; // Нет в наличии
+                return 'text-red-600 font-medium';
             } else if (orderQuantity > stockQuantity) {
-                return 'text-orange-600 font-medium'; // Превышение остатка
+                return 'text-orange-600 font-medium';
             } else if (stockQuantity <= 5) {
-                return 'text-yellow-600 font-medium'; // Мало остатка
+                return 'text-yellow-600 font-medium';
             } else {
                 return 'text-gray-600'; // Нормальный остаток
             }

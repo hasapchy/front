@@ -1,3 +1,5 @@
+import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
+
 export class UserDto {
   constructor(data) {
     this.id = data.id;
@@ -17,15 +19,11 @@ export class UserDto {
     this.companies = data.companies?.map((c) => ({ id: c.id, name: c.name })) || [];
   }
 
-  // Метод для получения URL фото (как в ProductDto)
   photoUrl() {
-    if (this.photo && this.photo.length > 0) {
-      return `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.photo}`;
-    }
-    return null;
+    return getImageUrl(this.photo);
   }
 
-  static fromArray(users) {
-    return (users || []).map((user) => new UserDto(user));
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, (data) => new UserDto(data));
   }
 }

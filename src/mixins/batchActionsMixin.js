@@ -1,13 +1,11 @@
-import CacheInvalidator from '@/utils/cacheInvalidator';
-
 export default {
   data() {
     return {
-      selectedIds: [], // Выбранные элементы для batch операций
+      selectedIds: [],
       loadingBatch: false,
       deleteDialog: false,
       idsToDelete: [],
-      showStatusSelect: true, // по умолчанию показываем смену статуса
+      showStatusSelect: true,
     };
   },
   methods: {
@@ -39,11 +37,8 @@ export default {
 
       if (deletedCount > 0) {
         this.showNotification?.(`Удалено ${deletedCount} элементов`);
-        
-        // Инвалидируем кэш при массовом удалении
-        if (this.cacheInvalidationType) {
-          const companyId = this.$store.state.currentCompany?.id;
-          CacheInvalidator.onDelete(this.cacheInvalidationType, companyId);
+        if (this.invalidateCache) {
+          this.invalidateCache('onDelete');
         }
       }
 
@@ -59,8 +54,6 @@ export default {
     getBatchActions() {
       const actions = [];
       
-      // Добавляем кнопку удаления только если у пользователя есть права
-      // Проверяем разные права в зависимости от типа сущности
       const hasDeletePermission = this.$store?.getters?.hasPermission?.('orders_delete') || 
                                  this.$store?.getters?.hasPermission?.('projects_delete') ||
                                  this.$store?.getters?.hasPermission?.('clients_delete');
@@ -75,7 +68,6 @@ export default {
         });
       }
       
-      // Добавляем кнопку смены статуса только если компонент явно это разрешает
       if (this.showStatusSelect !== false) {
         actions.push({
           label: 'Сменить статус', 

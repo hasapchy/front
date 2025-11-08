@@ -64,9 +64,9 @@
         </div>
 
         <!-- Канбан вид -->
-        <div v-else-if="data && !loading && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
+        <div v-else-if="data && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
             <KanbanBoard
-                :orders="data.items"
+                :orders="allKanbanItems"
                 :statuses="statuses"
                 :projects="[]"
                 :selected-ids="selectedIds"
@@ -143,8 +143,9 @@ export default {
             deletedSuccessText: this.$t('projectSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingProject'),
             debounceTimer: null,
-            pendingStatusUpdates: new Map(), // Для debounce обновлений статусов
-            batchStatusId: '', // Для массового изменения статуса в канбане
+            pendingStatusUpdates: new Map(),
+            batchStatusId: '',
+            allKanbanItems: [],
         }
     },
     created() {
@@ -160,21 +161,32 @@ export default {
         
         // Восстанавливаем режим просмотра из localStorage
         const savedViewMode = localStorage.getItem('projects_viewMode');
+        let shouldFetch = true;
+        
         if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
+            // Если режим изменяется, watch вызовет fetchItems, поэтому не нужно вызывать здесь
+            if (this.viewMode !== savedViewMode) {
+                shouldFetch = false;
+            }
             this.viewMode = savedViewMode;
             
-            // Если восстанавливаем канбан режим, загружаем больше проектов
             if (savedViewMode === 'kanban') {
-                this.perPage = 1000;
+                this.perPage = 50;
+                this.allKanbanItems = [];
+                this.kanbanCurrentPage = 1;
             }
         } else {
-            // Нет сохраненного режима и дефолт — канбан: грузим больше проектов
             if (this.viewMode === 'kanban') {
-                this.perPage = 1000;
+                this.perPage = 50;
+                this.allKanbanItems = [];
+                this.kanbanCurrentPage = 1;
             }
         }
         
-        this.fetchItems();
+        // Вызываем fetchItems только если viewMode не изменился (чтобы не было двойного вызова)
+        if (shouldFetch) {
+            this.fetchItems();
+        }
         
         // Слушаем события инвалидации кэша
         eventBus.on('cache:invalidate', this.handleCacheInvalidate);
@@ -204,14 +216,13 @@ export default {
             }
         },
         async handleCompanyChanged(companyId) {
-            // ✅ Очищаем фильтры и данные при смене компании
             this.statusFilter = '';
             this.clientFilter = '';
             this.selectedIds = [];
             this.batchStatusId = '';
             this.pendingStatusUpdates.clear();
+            this.allKanbanItems = [];
             
-            // Перезагружаем данные со страницы 1
             await this.fetchItems(1, false);
             
             // Уведомляем пользователя о смене компании (из базового миксина)
@@ -247,7 +258,12 @@ export default {
             }
             // Устанавливаем новый таймер на 300ms
             this.debounceTimer = setTimeout(() => {
-                this.fetchItems();
+                // В канбане обновляем без размонтирования
+                if (this.viewMode === 'kanban') {
+                    this.fetchItems(1, true);
+                } else {
+                    this.fetchItems();
+                }
             }, 300);
         },
         async fetchItems(page = 1, silent = false) {
@@ -255,21 +271,29 @@ export default {
                 this.loading = true;
             }
             try {
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
+                const per_page = this.viewMode === 'kanban' ? 1000 : (this.perPage || 20);
                 
                 const filters = {};
                 if (this.statusFilter) filters.status_id = this.statusFilter;
                 if (this.clientFilter) filters.client_id = this.clientFilter;
                 
-                const new_data = await ProjectController.getItems(page, filters, perPage);
-                this.data = new_data;
+                const new_data = await ProjectController.getItems(page, filters, per_page);
+                
+                if (this.viewMode === 'kanban') {
+                    this.allKanbanItems = [...new_data.items];
+                    this.data = { ...new_data, items: this.allKanbanItems, currentPage: 1, nextPage: null, lastPage: 1 };
+                } else {
+                    this.data = new_data;
+                }
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProjectList'), error.message, true);
             }
             if (!silent) {
                 this.loading = false;
             }
+        },
+        async loadMoreItems() {
+            return;
         },
         async handleChangeStatus(ids, statusId) {
             if (!ids.length) return;
@@ -302,8 +326,8 @@ export default {
         handleProjectMoved(updateData) {
             try {
                 if (updateData.type === 'status') {
-                    // Сначала обновляем локально для плавности
-                    const project = this.data.items.find(p => p.id === updateData.orderId);
+                    const items = this.viewMode === 'kanban' ? this.allKanbanItems : this.data.items;
+                    const project = items.find(p => p.id === updateData.orderId);
                     if (project) {
                         project.statusId = updateData.statusId;
                         const status = this.statuses.find(s => s.id === updateData.statusId);
@@ -406,20 +430,24 @@ export default {
         }
     },
     watch: {
-        viewMode(newMode) {
-            // Сохраняем режим просмотра в localStorage
-            localStorage.setItem('projects_viewMode', newMode);
-            
-            // В режиме канбана загружаем все проекты (без пагинации)
-            if (newMode === 'kanban') {
-                this.perPage = 1000; // Большое число для загрузки всех проектов
-                this.fetchItems(1, false);
-            } else {
-                // Возвращаем обычную пагинацию для таблицы
-                const savedPerPage = localStorage.getItem('projectsPerPage');
-                this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
-                this.fetchItems(1, false);
-            }
+        viewMode: {
+            handler(newMode) {
+                // Сохраняем режим просмотра в localStorage
+                localStorage.setItem('projects_viewMode', newMode);
+                
+                if (newMode === 'kanban') {
+                    this.perPage = 50;
+                    this.allKanbanItems = [];
+                    this.kanbanCurrentPage = 1;
+                    this.fetchItems(1, false);
+                } else {
+                    const savedPerPage = localStorage.getItem('projectsPerPage');
+                    this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
+                    this.allKanbanItems = [];
+                    this.fetchItems(1, false);
+                }
+            },
+            immediate: false // Не вызывать при инициализации, только при изменениях
         }
     },
     computed: {

@@ -53,6 +53,8 @@ export function formatNumber(value, decimals = null, showDecimals = false) {
   // decimals из настроек используется только для ограничения количества знаков при отображении
   // Реальное округление применяется только через roundValue() при сохранении новых записей
   
+  // Всегда обрезаем без округления (для отображения старых значений)
+  // Округление применяется только при сохранении через roundValue()
   const numStr = num.toString();
   const decimalIndex = numStr.indexOf('.');
   
@@ -67,24 +69,54 @@ export function formatNumber(value, decimals = null, showDecimals = false) {
       decimalPart = decimalPart.substring(0, decimals);
     }
     
-    // Если showDecimals=false и остались только нули, убираем дробную часть
-    if (!showDecimals && decimalPart.match(/^0+$/)) {
+    // Если decimals=0, всегда не показываем дробную часть (независимо от showDecimals)
+    if (decimals === 0) {
       result = integerPart;
-    } else if (decimalPart.length > 0) {
+    } else if (showDecimals && decimals > 0) {
+      // Если showDecimals=true и decimals>0, всегда показываем decimals знаков после запятой (добавляем нули если нужно)
+      while (decimalPart.length < decimals) {
+        decimalPart += '0';
+      }
       result = `${integerPart}.${decimalPart}`;
     } else {
-      result = integerPart;
+      // Если showDecimals=false, показываем только если есть значащие цифры
+      if (decimalPart.match(/^0+$/)) {
+        result = integerPart;
+      } else if (decimalPart.length > 0) {
+        result = `${integerPart}.${decimalPart}`;
+      } else {
+        result = integerPart;
+      }
     }
   } else {
     // Нет дробной части
-    result = numStr;
+    // Если decimals=0, никогда не добавляем .00
+    if (decimals === 0) {
+      result = numStr;
+    } else if (showDecimals && decimals > 0) {
+      // Если showDecimals=true и decimals>0, добавляем .00
+      result = `${numStr}.${'0'.repeat(decimals)}`;
+    } else {
+      result = numStr;
+    }
   }
 
   // Разделяем на целую и дробную части
   const parts = result.split('.');
+  
+  // Обрабатываем отрицательные числа
+  const isNegative = parts[0].startsWith('-');
+  if (isNegative) {
+    parts[0] = parts[0].substring(1);
+  }
 
   // Добавляем пробелы в целую часть (разделитель тысяч)
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  
+  // Возвращаем знак минуса, если был
+  if (isNegative) {
+    parts[0] = '-' + parts[0];
+  }
 
   return parts.join('.');
 }
@@ -219,56 +251,31 @@ export function formatQuantity(value) {
 }
 
 /**
- * Реально округляет число в зависимости от настроек компании (для логики, не визуально)
- * @param {number|string} value - Число для округления
- * @param {number} decimals - Количество знаков после запятой (если null, берется из настроек компании)
- * @returns {number} - Округленное число
- * 
- * Примеры:
- * roundValue(1.1, 0, 'up') => 2 (всегда вверх до целого)
- * roundValue(1.99, 0, 'down') => 1 (всегда вниз до целого)
- * roundValue(2.59, 1, 'custom', 0.6) => 2.5 (порог 0.6)
- * roundValue(2.60, 1, 'custom', 0.6) => 2.6 (порог 0.6)
+ * Внутренняя функция для округления с настройками из store
  */
-export function roundValue(value, decimals = null, roundingDirection = null, customThreshold = null) {
-  // Получаем настройки из store, если не переданы явно
+function roundWithSettings(value, getters, decimalsKey, enabledKey, directionKey, thresholdKey, defaultDecimals = 2) {
+  // Получаем настройки из store
   let roundingEnabled = true;
   let direction = 'standard';
   let threshold = 0.5;
+  let decimals = defaultDecimals;
   
-  if (decimals === null || roundingDirection === null) {
-    try {
-      const store = getStore && getStore();
-      if (store && store.getters) {
-        if (decimals === null) {
-          const roundingDecimals = store.getters.roundingDecimals;
-          decimals = (typeof roundingDecimals === 'number' && roundingDecimals >= 0 && roundingDecimals <= 5) 
-            ? roundingDecimals 
-            : 2;
-        }
-        
-        if (roundingDirection === null) {
-          roundingEnabled = store.getters.roundingEnabled ?? true;
-          direction = store.getters.roundingDirection || 'standard';
-          threshold = store.getters.roundingCustomThreshold ?? 0.5;
-        }
-      } else {
-        if (decimals === null) decimals = 2;
-        if (roundingDirection === null) {
-          direction = 'standard';
-        }
-      }
-    } catch {
-      if (decimals === null) decimals = 2;
-      if (roundingDirection === null) {
-        direction = 'standard';
-      }
+  try {
+    const store = getStore && getStore();
+    if (store && store.getters) {
+      const roundingDecimals = store.getters[decimalsKey];
+      decimals = (typeof roundingDecimals === 'number' && roundingDecimals >= 0 && roundingDecimals <= 5) 
+        ? roundingDecimals 
+        : defaultDecimals;
+      
+      roundingEnabled = store.getters[enabledKey] ?? true;
+      direction = store.getters[directionKey] || 'standard';
+      threshold = store.getters[thresholdKey] ?? 0.5;
+      
+      // Используем настройки из store
     }
-  } else {
-    direction = roundingDirection;
-    if (customThreshold !== null) {
-      threshold = customThreshold;
-    }
+  } catch (error) {
+    // Используем значения по умолчанию
   }
   
   // Преобразуем в число
@@ -285,15 +292,12 @@ export function roundValue(value, decimals = null, roundingDirection = null, cus
     const factor = Math.pow(10, decimals);
     
     if (direction === 'up') {
-      // Всегда округляем вверх (в большую сторону): 1.1 => 2 (при decimals=0)
       num = Math.ceil(num * factor) / factor;
     } else if (direction === 'down') {
-      // Всегда округляем вниз (в меньшую сторону): 1.99 => 1 (при decimals=0)
       num = Math.floor(num * factor) / factor;
     } else if (direction === 'custom') {
-      // Округление с порогом
       const floored = Math.floor(num * factor) / factor;
-      const frac = num - floored; // дробная часть на уровне decimals
+      const frac = num - floored;
       
       if (frac >= threshold) {
         num = Math.ceil(num * factor) / factor;
@@ -301,12 +305,81 @@ export function roundValue(value, decimals = null, roundingDirection = null, cus
         num = floored;
       }
     } else {
-      // Стандартное округление (round)
       num = Math.round(num * factor) / factor;
     }
   }
   
   return num;
+}
+
+/**
+ * Реально округляет число для сумм в зависимости от настроек компании
+ * @param {number|string} value - Число для округления
+ * @returns {number} - Округленное число
+ */
+export function roundValue(value) {
+  return roundWithSettings(
+    value,
+    null,
+    'roundingDecimals',
+    'roundingEnabled',
+    'roundingDirection',
+    'roundingCustomThreshold',
+    2
+  );
+}
+
+/**
+ * Реально округляет число для количества товара в зависимости от настроек компании
+ * @param {number|string} value - Число для округления
+ * @returns {number} - Округленное число
+ */
+export function roundQuantityValue(value) {
+  return roundWithSettings(
+    value,
+    null,
+    'roundingQuantityDecimals',
+    'roundingQuantityEnabled',
+    'roundingQuantityDirection',
+    'roundingQuantityCustomThreshold',
+    2
+  );
+}
+
+/**
+ * Форматирует число для отображения с учетом настроек округления компании
+ * НЕ округляет значения, только обрезает до нужного количества знаков после запятой
+ * Округление применяется только при сохранении через roundValue()
+ * @param {number|string} value - Число для форматирования
+ * @param {boolean} showDecimals - Показывать ли десятичные знаки
+ * @returns {string} - Отформатированное число
+ */
+export function formatNumberWithRounding(value, showDecimals = false) {
+  try {
+    const store = getStore && getStore();
+    if (store && store.getters) {
+      const roundingDecimals = store.getters.roundingDecimals;
+      
+      // Просто форматируем с обрезкой до нужного количества знаков (без округления)
+      return formatNumber(value, roundingDecimals, showDecimals);
+    }
+  } catch (error) {
+    // Если ошибка, используем обычное форматирование
+  }
+  
+  return formatNumber(value, null, showDecimals);
+}
+
+/**
+ * Форматирует сумму с символом валюты с применением реального округления для отображения
+ * @param {number|string} value - Сумма для форматирования
+ * @param {string} currencySymbol - Символ валюты
+ * @param {boolean} showDecimals - Показывать ли десятичные знаки
+ * @returns {string} - Отформатированная сумма с валютой
+ */
+export function formatCurrencyWithRounding(value, currencySymbol = '', showDecimals = false) {
+  const formattedNumber = formatNumberWithRounding(value, showDecimals);
+  return currencySymbol ? `${formattedNumber} ${currencySymbol}` : formattedNumber;
 }
 
 /**

@@ -1,4 +1,5 @@
-import { dayjsDate, dayjsDateTime } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
+import { createFromApiArray } from "@/utils/dtoUtils";
 export default class OrderCategoryDto {
   constructor(
     id,
@@ -16,15 +17,24 @@ export default class OrderCategoryDto {
     this.updatedAt = updatedAt;
   }
 
-  formatDate() {
-    return dayjsDateTime(this.date);
-  }
-
   formatCreatedAt() {
-    return dayjsDateTime(this.createdAt);
+    return dtoDateFormatters.formatCreatedAt(this.createdAt);
   }
 
   formatUpdatedAt() {
-    return dayjsDateTime(this.updatedAt);
+    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
+  }
+
+  static fromApiArray(dataArray) {
+    return createFromApiArray(dataArray, data => {
+      return new OrderCategoryDto(
+        data.id,
+        data.name,
+        data.user_id,
+        data.user_name,
+        data.created_at,
+        data.updated_at
+      );
+    }).filter(Boolean);
   }
 }

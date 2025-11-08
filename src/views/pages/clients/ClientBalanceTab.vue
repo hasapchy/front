@@ -11,7 +11,6 @@
             </PrimaryButton>
         </div>
         
-        <!-- Итого (баланс клиента) -->
         <div v-if="!balanceLoading && editingItem" class="mb-4">
             <div class="flex items-center gap-2">
                 <i class="fas fa-wallet text-blue-500"></i>
@@ -31,7 +30,6 @@
             :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
             :onItemClick="handleBalanceItemClick" />
 
-        <!-- Notification Toast -->
         <NotificationToast 
             :title="notificationTitle" 
             :subtitle="notificationSubtitle" 
@@ -40,7 +38,6 @@
             @close="closeNotification" 
         />
 
-        <!-- Модальное окно для транзакций -->
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
                 <div class="p-8 flex justify-center items-center min-h-[200px]">
@@ -110,10 +107,9 @@ export default {
     data() {
         return {
             currencyCode: '',
-
             balanceLoading: false,
             balanceHistory: [],
-            lastFetchedClientId: null, // Для предотвращения дублирования запросов
+            lastFetchedClientId: null,
             forceRefresh: false,
             totalBalance: 0,
             transactionModalOpen: false,
@@ -132,13 +128,12 @@ export default {
                     size: 120, 
                     component: markRaw(SourceButtonCell),
                     props: (item) => {
-                        // Для транзакций (source_type = 'App\Models\Transaction') используем sourceId (ID транзакции)
-                        // Для других источников (Sale, Order, WhReceipt) используем sourceSourceId (ID источника)
-                        const isTransaction = item.source_type && item.source_type.includes('Transaction');
+                        const sourceType = item.sourceType || null;
+                        const isTransaction = sourceType && sourceType.includes('Transaction');
                         const sourceId = isTransaction ? item.sourceId : (item.sourceSourceId || item.sourceId);
                         
                         return {
-                            sourceType: item.source_type,
+                            sourceType: sourceType,
                             sourceId: sourceId,
                             onUpdated: () => {
                                 this.forceRefresh = true;
@@ -153,85 +148,21 @@ export default {
                 },
                 { name: "note", label: this.$t("note"), size: 200 },
                 { name: "debt", label: "Долг", size: 80, html: true },
-                { name: "user_name", label: this.$t("user"), size: 120 },
+                { name: "userName", label: this.$t("user"), size: 120 },
                 { name: "clientImpact", label: this.$t("impact"), size: 130, html: true },
             ],
             ENTITY_CONFIG: {
                 transaction: {
-                    fetch: id => TransactionController.getItem(id).then(r => {
-                        let client = null;
-                        if (r.item.client) {
-                            client = ClientDto.fromApi(r.item.client);
-                        } else if (r.item.client_id && this.editingItem && this.editingItem.id) {
-                            client = ClientDto.fromApi({
-                                id: r.item.client_id,
-                                client_type: this.editingItem.clientType || 'individual',
-                                balance: this.editingItem.balance || '0.00',
-                                is_supplier: this.editingItem.isSupplier || false,
-                                is_conflict: this.editingItem.isConflict || false,
-                                first_name: this.editingItem.firstName || 'Неизвестный',
-                                last_name: this.editingItem.lastName || 'Клиент',
-                                contact_person: this.editingItem.contactPerson || '',
-                                address: this.editingItem.address || '',
-                                note: this.editingItem.note || '',
-                                status: this.editingItem.status || 'active',
-                                discount_type: this.editingItem.discountType || 'none',
-                                discount: this.editingItem.discount || 0,
-                                created_at: this.editingItem.createdAt || new Date().toISOString(),
-                                updated_at: this.editingItem.updatedAt || new Date().toISOString(),
-                                emails: this.editingItem.emails || [],
-                                phones: this.editingItem.phones || []
-                            });
-                        }
-                        return new TransactionDto(
-                            r.item.id,
-                            r.item.type,
-                            r.item.is_transfer,
-                            r.item.is_sale || 0,
-                            r.item.is_receipt || 0,
-                            r.item.is_debt || 0,
-                            r.item.cash_id,
-                            r.item.cash_name,
-                            r.item.cash_amount,
-                            r.item.cash_currency_id,
-                            r.item.cash_currency_name,
-                            r.item.cash_currency_code,
-                            r.item.cash_currency_symbol,
-                            r.item.orig_amount,
-                            r.item.orig_currency_id,
-                            r.item.orig_currency_name,
-                            r.item.orig_currency_code,
-                            r.item.orig_currency_symbol,
-                            r.item.user_id,
-                            r.item.user_name,
-                            r.item.category_id,
-                            r.item.category_name,
-                            r.item.category_type,
-                            r.item.project_id,
-                            r.item.project_name,
-                            r.item.client_id,
-                            client,
-                            r.item.note,
-                            r.item.date,
-                            r.item.created_at,
-                            r.item.updated_at,
-                            r.item.orders || [],
-                            r.item.source_type || null,
-                            r.item.source_id || null,
-                            r.item.is_deleted || false
-                        );
-                    }),
+                    fetch: id => TransactionController.getItem(id),
                 },
             },
         };
     },
     async mounted() {
         await this.fetchDefaultCurrency();
-        // fetchBalanceHistory вызывается через watch
     },
 
     methods: {
-        // Вспомогательный метод для обновления данных клиента
         async updateClientData() {
             if (!this.editingItem || !this.editingItem.id) return;
             try {
@@ -243,7 +174,6 @@ export default {
                 console.error('Error updating client data:', error);
             }
         },
-        // Вспомогательный метод для обработки ошибок
         handleEntityError(error) {
             let errorMessage;
             if (typeof error === 'string') {
@@ -256,7 +186,6 @@ export default {
             }
             this.showNotification(this.$t('error'), errorMessage, true);
         },
-        // Helper функция для проверки is_debt
         isDebtOperation(item) {
             return item.is_debt === 1 || item.is_debt === true || item.is_debt === '1';
         },
@@ -265,10 +194,9 @@ export default {
         },
         async fetchDefaultCurrency() {
             try {
-                // Используем данные из store
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
-                const defaultCurrency = currencies.find(c => c.is_default);
+                const defaultCurrency = currencies.find(c => c.isDefault);
                 this.currencyCode = defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
             } catch (error) {
                 this.currencyCode = 'Нет валюты';
@@ -277,48 +205,16 @@ export default {
         async fetchBalanceHistory() {
             if (!this.editingItem || !this.editingItem.id) return;
             
-            // Предотвращаем повторные запросы для того же клиента
             if (this.lastFetchedClientId === this.editingItem.id && !this.forceRefresh) {
                 return;
             }
             
             this.balanceLoading = true;
             try {
-                const data = await ClientController.getBalanceHistory(
+                this.balanceHistory = await ClientController.getBalanceHistory(
                     this.editingItem.id
                 );
-                const self = this; // Сохраняем ссылку на компонент
                 
-                // Маппим данные для отображения, добавляя методы форматирования
-                this.balanceHistory = (data || []).map(item => {
-                    return {
-                        ...item,
-                        get dateUser() {
-                            return item.date ? new Date(item.date).toLocaleString() : "";
-                        },
-                        formatDate() {
-                            return item.date ? new Date(item.date).toLocaleString() : "";
-                        },
-                        formatAmountWithColor() {
-                            const val = parseFloat(item.amount);
-                            // Положительная сумма (долг) - красный, отрицательная (оплата) - зеленый
-                            const color = val >= 0 ? "#EE4F47" : "#5CB85C";
-                            const formatted = self.$formatNumber(val, null, true);
-                            return `<span style="color:${color};font-weight:bold">${formatted} ${self.currencyCode}</span>`;
-                        },
-                        label() {
-                            // Положительная сумма - долг клиента
-                            if (parseFloat(item.amount) > 0) {
-                                return '<i class="fas fa-arrow-up text-red-500 mr-2"></i> Долг клиента';
-                            }
-                            
-                            // Отрицательная сумма - оплата клиента
-                            return '<i class="fas fa-arrow-down text-green-500 mr-2"></i> Оплата клиента';
-                        }
-                    };
-                });
-                
-                // Подсчитываем итоговый баланс клиента
                 this.totalBalance = parseFloat(this.editingItem.balance || 0);
                 
                 this.lastFetchedClientId = this.editingItem.id;
@@ -334,10 +230,8 @@ export default {
         async handleBalanceItemClick(item) {
             if (!this.editingItem || !this.editingItem.id) return;
             
-            // Всегда открываем транзакцию, поскольку именно в ней содержится финансовая информация
             try {
                 this.entityLoading = true;
-                // sourceId содержит ID транзакции
                 const data = await this.ENTITY_CONFIG.transaction.fetch(item.sourceId);
                 this.editingTransactionItem = data;
                 
@@ -389,54 +283,24 @@ export default {
             this.isAdjustmentMode = true;
             this.entityModalOpen = true;
             this.selectedEntity = { type: 'transaction' };
-            this.editingTransactionItem = null; // Открываем пустую форму для создания
+            this.editingTransactionItem = null;
         },
         itemMapper(i, c) {
             switch (c) {
                 case "id":
                     return i.sourceId || '-';
-                case "operationType": {
-                    const amount = parseFloat(i.amount);
-                    const isDebt = i.is_debt === 1 || i.is_debt === true || i.is_debt === '1';
-                    
-                    // Логика: если is_debt=true и положительная сумма - это кредит клиента
-                    // Если is_debt=false и положительная сумма - это оплаченная операция
-                    // Отрицательная сумма - всегда оплата долга
-                    if (amount > 0 && isDebt) {
-                        return '<i class="fas fa-arrow-up text-[#EE4F47] mr-2"></i><span class="text-[#EE4F47]">Кредит клиента</span>';
-                    } else if (amount > 0 && !isDebt) {
-                        return '<i class="fas fa-check text-[#5CB85C] mr-2"></i><span class="text-[#5CB85C]">Оплачено</span>';
-                    } else if (amount < 0) {
-                        return '<i class="fas fa-arrow-down text-[#5CB85C] mr-2"></i><span class="text-[#5CB85C]">Оплата клиента</span>';
-                    } else {
-                        return '<i class="fas fa-exchange-alt text-gray-500 mr-2"></i><span class="text-gray-500">Транзакция</span>';
-                    }
-                }
-                // case "sourceType" - больше не нужен, используется компонент SourceButtonCell
-                case "user_name":
-                    return i.user_name || '-';
+                case "operationType":
+                    return i.getOperationTypeHtml ? i.getOperationTypeHtml() : '-';
+                case "dateUser":
+                    return i.dateUser || (i.formatDate ? i.formatDate() : '');
+                case "userName":
+                    return i.userName || i.user_name || '-';
                 case "note":
                     return i.note || '-';
-                case "debt": {
-                    const isDebt = i.is_debt === 1 || i.is_debt === true || i.is_debt === '1';
-                    return isDebt ? '<span class="text-green-500 font-bold">✓</span>' : '<span class="text-gray-400">-</span>';
-                }
-                case "clientImpact": {
-                    const amount = parseFloat(i.amount);
-                    const currencySymbol = this.currencyCode || '';
-                    const isDebt = i.is_debt === 1 || i.is_debt === true || i.is_debt === '1';
-                    
-                    // Логика на основе is_debt
-                    // is_debt = 1 → Продажа (начисление долга) → +amount (красный)
-                    // is_debt = 0 → Оплата (погашение долга) → -amount (зеленый)
-                    if (isDebt) {
-                        // Долговая операция: всегда показываем положительное значение красным
-                        return `<span class="text-[#EE4F47] font-semibold">+${this.$formatNumber(Math.abs(amount), null, true)} ${currencySymbol}</span>`;
-                    } else {
-                        // Оплата: всегда показываем отрицательное значение зеленым
-                        return `<span class="text-[#5CB85C] font-semibold">-${this.$formatNumber(Math.abs(amount), null, true)} ${currencySymbol}</span>`;
-                    }
-                }
+                case "debt":
+                    return i.getDebtHtml ? i.getDebtHtml() : '-';
+                case "clientImpact":
+                    return i.getClientImpactHtml ? i.getClientImpactHtml(this.currencyCode, this.$formatNumber) : '-';
                 default:
                     return i[c];
             }

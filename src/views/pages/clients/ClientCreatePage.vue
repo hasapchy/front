@@ -1,13 +1,13 @@
 <template>
   <div class="flex flex-col overflow-auto h-full p-4">
-            <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editClient') : $t('createClient') }}</h2>
+    <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editClient') : $t('createClient') }}</h2>
     <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
       changeTab(t);
     }" />
     <div>
       <div v-if="currentTab === 'info'" class="mb-4">
         <div>
-                      <label class="required">{{ $t('clientType') }}</label>
+          <label class="required">{{ $t('clientType') }}</label>
           <select v-model="clientType">
             <option value="individual">{{ $t('individual') }}</option>
             <option value="company">{{ $t('company') }}</option>
@@ -48,41 +48,32 @@
         <div class="flex flex-wrap gap-2">
           <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
             <input type="checkbox" v-model="status" />
-                            <span>{{ $t('active') }}</span>
+            <span>{{ $t('active') }}</span>
           </label>
           <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
             <input type="checkbox" v-model="isSupplier" />
-                            <span>{{ $t('supplier') }}</span>
+            <span>{{ $t('supplier') }}</span>
           </label>
           <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
             <input type="checkbox" v-model="isConflict" />
-                            <span>{{ $t('problemClient') }}</span>
+            <span>{{ $t('problemClient') }}</span>
           </label>
         </div>
         <div>
           <label class="required">{{ $t('phoneNumber') }}</label>
           <div class="flex items-center space-x-2">
-            <PhoneInputWithCountry
-              v-model="newPhone"
-              :default-country="newPhoneCountry"
-              @country-change="handleCountryChange"
-              @keyup.enter="addPhone"
-              @blur="handlePhoneBlur"
-              class="flex-1"
-              :required="true"
-              ref="phoneInputRef"
-            />
+            <PhoneInputWithCountry v-model="newPhone" :default-country="newPhoneCountry"
+              @country-change="handleCountryChange" @keyup.enter="addPhone" @blur="handlePhoneBlur" class="flex-1"
+              :required="true" ref="phoneInputRef" />
             <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" />
           </div>
           <div v-for="(phone, index) in phones" :key="phone" class="flex items-stretch space-x-2 mt-2">
             <div class="flex items-center justify-center" style="min-width: 40px;">
-              <img
-                :src="getPhoneCountryFlag(phone)"
-                :alt="getPhoneCountryName(phone)"
-                class="w-5 h-4 object-cover rounded"
-              />
+              <img :src="getPhoneCountryFlag(phone)" :alt="getPhoneCountryName(phone)"
+                class="w-5 h-4 object-cover rounded" />
             </div>
-            <input type="text" :value="phone" readonly class="flex-1 px-3 py-1 border border-gray-300 rounded bg-gray-50" />
+            <input type="text" :value="phone" readonly
+              class="flex-1 px-3 py-1 border border-gray-300 rounded bg-gray-50" />
             <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" />
           </div>
         </div>
@@ -102,8 +93,8 @@
             <label>{{ $t('discountType') }}</label>
             <select v-model="discountType" class="w-full">
               <option value="">{{ $t('selectDiscountType') }}</option>
-                              <option value="percent">{{ $t('percent') }}</option>
-                <option value="fixed">{{ $t('fixed') }}</option>
+              <option value="percent">{{ $t('percent') }}</option>
+              <option value="fixed">{{ $t('fixed') }}</option>
             </select>
           </div>
           <div class="flex flex-col w-full">
@@ -132,10 +123,10 @@
       (editingItemId == null && !$store.getters.hasPermission('clients_create'))">
     </PrimaryButton>
   </div>
-  <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-            :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-  <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-            :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+  <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
+    :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
+  <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
+    :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
   <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
     :is-danger="notificationIsDanger" @close="closeNotification" />
 </template>
@@ -183,8 +174,8 @@ export default {
       discount: this.editingItem ? this.editingItem.discount : 0,
       editingItemId: this.editingItem?.id || null,
       newPhone: "",
-      newPhoneCountry: "tm", // tm - Туркменистан, ru - Россия
-      currentPhoneCountry: null, // Текущая выбранная страна для нового телефона
+      newPhoneCountry: "tm",
+      currentPhoneCountry: null,
       newEmail: "",
       saveLoading: false,
       deleteDialog: false,
@@ -200,7 +191,6 @@ export default {
   },
   computed: {
     translatedTabs() {
-      // Скрываем вкладки баланса, платежей и операций при создании нового клиента
       const visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab =>
         tab.name !== 'balance' && tab.name !== 'payments' && tab.name !== 'operations'
       );
@@ -210,19 +200,14 @@ export default {
       }));
     },
     users() {
-      // ✅ Используем геттер usersForCurrentCompany - автоматически фильтрует по текущей компании
       const allUsers = this.$store.getters.usersForCurrentCompany || [];
 
-      // Если тип клиента не employee/investor, возвращаем всех сотрудников текущей компании
       if (this.clientType !== 'employee' && this.clientType !== 'investor') {
         return allUsers;
       }
 
-      // Получаем список клиентов из store
       const clients = this.$store.getters.clients || [];
 
-      // Находим ID сотрудников, которые уже используются как employee_id
-      // в клиентах типа employee или investor (исключаем текущего редактируемого клиента)
       const usedEmployeeIds = new Set();
       clients.forEach(client => {
         if (
@@ -234,10 +219,8 @@ export default {
         }
       });
 
-      // Фильтруем сотрудников, исключая уже использованных
       let available = allUsers.filter(user => !usedEmployeeIds.has(user.id));
 
-      // Гарантируем, что выбранный ранее сотрудник присутствует в списке
       if (this.employeeId) {
         const selected = allUsers.find(u => u.id === this.employeeId);
         const existsInAvailable = available.some(u => u.id === this.employeeId);
@@ -250,20 +233,16 @@ export default {
     }
   },
   async mounted() {
-    // Загружаем сотрудников для выбора сотрудника
-    // ✅ Проверяем, загружены ли пользователи (usersForCurrentCompany зависит от users)
     if (this.$store.getters.users.length === 0) {
       await this.$store.dispatch('loadUsers');
     }
 
-    // Загружаем клиентов для проверки уже выбранных сотрудников
     if (this.$store.getters.clients.length === 0) {
       await this.$store.dispatch('loadClients');
     }
   },
   methods: {
     changeTab(tabName) {
-      // Предотвращаем переход на вкладку баланса, платежей или операций при создании нового клиента
       if ((tabName === 'balance' || tabName === 'payments' || tabName === 'operations') && !this.editingItem) {
         this.currentTab = 'info';
         return;
@@ -271,9 +250,7 @@ export default {
       this.currentTab = tabName;
     },
     handlePaymentsUpdated() {
-      // Обновляем данные клиента после изменения платежей
       if (this.editingItem && this.editingItem.id) {
-        // Можно добавить перезагрузку данных клиента если нужно
       }
     },
     getFormState() {
@@ -300,24 +277,21 @@ export default {
       this.newPhoneCountry = country.id;
     },
     handlePhoneBlur() {
-      // Добавляем телефон при потере фокуса, только если есть введенный номер
       if (this.newPhone && this.newPhone.trim()) {
         this.addPhone();
       }
     },
     getPhoneCountryCode(phone) {
-      // Определяем код страны по номеру телефона
       const cleaned = phone.replace(/\D/g, "");
       if (cleaned.startsWith("993")) {
         return "+993";
       } else if (cleaned.startsWith("7")) {
         return "+7";
       }
-      // По умолчанию определяем по длине и первым цифрам
       if (cleaned.length >= 9 && cleaned.startsWith("993")) {
         return "+993";
       }
-      return "+993"; // По умолчанию Туркменистан
+      return "+993";
     },
     getPhoneCountryFlag(phone) {
       const cleaned = phone.replace(/\D/g, "");
@@ -336,26 +310,18 @@ export default {
     addPhone() {
       if (this.newPhone && this.newPhone.trim()) {
         const cleanedPhone = this.newPhone.replace(/\D/g, "");
-        
-        // Проверка длины номера в зависимости от страны
-        // Для России: 7 + 10 цифр = 11 цифр всего
-        // Для Туркменистана: 993 + 8 цифр = 11 цифр всего
+
         const expectedLength = 11;
-        
+
         if (cleanedPhone.length < expectedLength) {
           this.showNotification("Ошибка", `Номер должен содержать ${expectedLength} цифр (код страны + номер)`, true);
           return;
         }
 
-        // Маска Inputmask уже включает код страны в номер
-        // Поэтому cleanedPhone уже содержит код страны
         let phoneToSave = cleanedPhone;
-        
-        // Проверяем, что номер начинается с правильного кода страны
+
         if (this.currentPhoneCountry) {
-          // Если номер не начинается с кода выбранной страны, добавляем код
           if (!cleanedPhone.startsWith(this.currentPhoneCountry.dialCode)) {
-            // Убираем возможные другие коды и добавляем правильный
             let phoneWithoutCode = cleanedPhone;
             if (cleanedPhone.startsWith("993")) {
               phoneWithoutCode = cleanedPhone.substring(3);
@@ -365,14 +331,11 @@ export default {
             phoneToSave = this.currentPhoneCountry.dialCode + phoneWithoutCode;
           }
         } else {
-          // Если страна не выбрана, проверяем начало номера
           if (!cleanedPhone.startsWith("993") && !cleanedPhone.startsWith("7")) {
-            // По умолчанию добавляем код Туркменистана
             phoneToSave = "993" + cleanedPhone;
           }
         }
 
-        // Проверяем, что итоговый номер имеет правильную длину
         if (phoneToSave.length !== expectedLength) {
           this.showNotification("Ошибка", `Номер должен содержать ${expectedLength} цифр`, true);
           return;
@@ -385,7 +348,7 @@ export default {
         this.phones.push(phoneToSave);
         this.newPhone = "";
         this.currentPhoneCountry = null;
-        this.newPhoneCountry = "tm"; // Сбрасываем на Туркменистан
+        this.newPhoneCountry = "tm";
       }
     },
     removePhone(index) {
@@ -472,7 +435,6 @@ export default {
       this.emails = [];
       this.discountType = "fixed";
       this.discount = 0;
-      // Всегда возвращаемся на вкладку "info" при создании нового клиента
       this.currentTab = "info";
       this.resetFormChanges();
     },
@@ -529,7 +491,6 @@ export default {
           this.lastName = "";
         }
 
-        // Сбрасываем employeeId если тип клиента не employee/investor
         if (type !== "employee" && type !== "investor") {
           this.employeeId = null;
         }
@@ -539,14 +500,11 @@ export default {
     },
     employeeId: {
       handler(newEmployeeId) {
-        // Автозаполнение данных сотрудника при выборе
         if (newEmployeeId && (this.clientType === "employee" || this.clientType === "investor")) {
           const selectedUser = this.users.find(user => user.id === newEmployeeId);
           if (selectedUser) {
-            // Автозаполняем имя сотрудника
             this.firstName = selectedUser.name || "";
           } else {
-            // Если выбранный сотрудник недоступен (например, уже используется), сбрасываем
             this.employeeId = null;
           }
         }

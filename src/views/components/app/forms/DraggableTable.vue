@@ -27,7 +27,7 @@
         <th v-for="(element, index) in columns" :key="element.name"
           :class="{ hidden: !element.visible, relative: true }"
           class="text-left border border-gray-300 py-2 px-4 font-medium cursor-pointer select-none"
-          :style="{ width: element.size ? element.size + 'px' : 'auto' }" @dblclick.prevent="sortBy(element.name)"
+          :style="getColumnStyle(element)" @dblclick.prevent="sortBy(element.name)"
           :title="$t('doubleClickToSort') + ' ' + element.label">
           <template v-if="element.name === 'select'">
             <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" style="cursor:pointer;" />
@@ -58,8 +58,14 @@
           'border-b border-gray-300': idx !== sortedData.length - 1,
           'opacity-50': item.isDeleted || item.is_deleted 
         }" @dblclick="(e) => itemClick(item, e)">
-        <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`" class="py-2 px-4 border-x border-gray-300"
-          :class="{ hidden: !column.visible }" :style="{ width: column.size ? column.size + 'px' : 'auto' }">
+        <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`" 
+          class="py-2 px-4 border-x border-gray-300"
+          :class="{ 
+            hidden: !column.visible,
+            'note-cell': column.name === 'note'
+          }" 
+          :style="getColumnStyle(column)"
+          :title="column.name === 'note' ? getNoteTitle(item, column) : null">
           <template v-if="column.name === 'select'">
             <input type="checkbox" :checked="selectedIds.includes(item.id)" @change.stop="toggleSelectRow(item.id)"
               style="cursor:pointer;" />
@@ -178,18 +184,27 @@ export default {
     },
   },
   methods: {
+    getStorageKey() {
+      const companyId = this.$store.state.currentCompany?.id || 'default';
+      return `tableColumns_${this.tableKey}_${companyId}`;
+    },
     loadColumns() {
-      const saved = localStorage.getItem(`tableColumns_${this.tableKey}`);
+      const saved = localStorage.getItem(this.getStorageKey());
       if (saved) {
         try {
           const savedColumns = JSON.parse(saved);
           this.columns = savedColumns.map((savedCol) => {
             const original = this.columnsConfig.find(c => c.name === savedCol.name) || {};
+            let size = savedCol.size ?? null;
+            if (savedCol.name === 'note' && size !== null && size > 200) {
+              size = 200;
+            }
             return {
               ...savedCol,
               label: original.label || savedCol.label,
               component: original.component,
               props: original.props,
+              size: size,
             };
           });
         } catch (error) {
@@ -206,12 +221,18 @@ export default {
       }
     },
     resetColumns() {
-      this.columns = this.columnsConfig.map((col, index) => ({
-        ...col,
-        sort_index: index,
-        visible: col.visible !== undefined ? col.visible : true,
-        size: col.size ?? null,
-      }));
+      this.columns = this.columnsConfig.map((col, index) => {
+        let size = col.size ?? null;
+        if (col.name === 'note' && size !== null && size > 200) {
+          size = 200;
+        }
+        return {
+          ...col,
+          sort_index: index,
+          visible: col.visible !== undefined ? col.visible : true,
+          size: size,
+        };
+      });
       this.saveColumns();
     },
     saveColumns() {
@@ -219,7 +240,7 @@ export default {
         const { component, props, ...serializableCol } = col;
         return serializableCol;
       });
-      localStorage.setItem(`tableColumns_${this.tableKey}`, JSON.stringify(serializableColumns));
+      localStorage.setItem(this.getStorageKey(), JSON.stringify(serializableColumns));
     },
     toggleVisible(index) {
       this.columns[index].visible = !this.columns[index].visible;
@@ -244,9 +265,13 @@ export default {
       }
       this.onItemClick?.(i);
     },
+    getSortStorageKey() {
+      const companyId = this.$store.state.currentCompany?.id || 'default';
+      return `tableSort_${this.tableKey}_${companyId}`;
+    },
     saveSort() {
       localStorage.setItem(
-        `tableSort_${this.tableKey}`,
+        this.getSortStorageKey(),
         JSON.stringify({ key: this.sortKey, order: this.sortOrder })
       );
     },
@@ -270,7 +295,14 @@ export default {
     onMouseMove(e) {
       if (!this.resizing) return;
       const dx = e.clientX - this.startX;
-      const newWidth = Math.max(50, this.startWidth + dx);
+      const column = this.columns[this.resizingColumn];
+      let newWidth = Math.max(50, this.startWidth + dx);
+      
+      // Для колонок с примечаниями ограничиваем максимальную ширину 200px
+      if (column && column.name === 'note') {
+        newWidth = Math.min(newWidth, 200);
+      }
+      
       this.columns[this.resizingColumn].size = newWidth;
     },
     stopResize() {
@@ -331,6 +363,34 @@ export default {
       const num = parseFloat(str);
       return Number.isNaN(num) ? null : num;
     },
+    getColumnStyle(column) {
+      const style = {
+        width: column.size ? column.size + 'px' : 'auto'
+      };
+      
+      // Для колонок с примечаниями всегда устанавливаем ограничение максимальной ширины
+      // Это предотвращает растягивание колонки из-за длинного текста
+      if (column.name === 'note') {
+        // Всегда ограничиваем максимальную ширину 200px
+        // Пользователь может изменить размер через resize-handle, но не более 200px
+        style.maxWidth = '200px';
+      }
+      
+      return style;
+    },
+    getNoteTitle(item, column) {
+      const noteValue = this.itemMapper(item, column.name);
+      if (!noteValue) return null;
+      
+      // Если это HTML, извлекаем чистый текст
+      if (column.html) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = noteValue;
+        return tempDiv.textContent || tempDiv.innerText || '';
+      }
+      
+      return String(noteValue);
+    },
   },
   watch: {
     columnsConfig: {
@@ -344,12 +404,30 @@ export default {
         this.loadColumns();
       },
       immediate: false
+    },
+    '$store.state.currentCompany.id': {
+      handler() {
+        this.loadColumns();
+        const saved = localStorage.getItem(this.getSortStorageKey());
+        if (saved) {
+          try {
+            const { key, order } = JSON.parse(saved);
+            this.sortKey = key;
+            this.sortOrder = order;
+          } catch (e) {
+          }
+        } else {
+          this.sortKey = null;
+          this.sortOrder = 1;
+        }
+      },
+      immediate: false
     }
   },
   mounted() {
     this.loadColumns();
 
-    const saved = localStorage.getItem(`tableSort_${this.tableKey}`);
+    const saved = localStorage.getItem(this.getSortStorageKey());
     if (saved) {
       try {
         const { key, order } = JSON.parse(saved);
@@ -366,3 +444,20 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.note-cell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-cell > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+</style>

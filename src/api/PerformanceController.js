@@ -1,65 +1,58 @@
-import api from "./axiosInstance";
+// Заглушка для PerformanceController
+// Модуль производительности отключен
 
 export default class PerformanceController {
   static async getDatabaseMetrics() {
-    try {
-      const response = await api.get("/performance/metrics");
-      return response.data;
-    } catch (error) {
-      console.error("Ошибка при получении метрик производительности:", error);
-      throw error;
-    }
+    return Promise.resolve({
+      message: 'Модуль производительности отключен',
+      database_info: {},
+      server_info: {},
+      sales_performance: {},
+      clients_performance: {},
+      products_performance: {},
+      transactions_performance: {},
+      projects_performance: {},
+      users_performance: {},
+      comments_performance: {},
+      cash_registers_performance: {},
+      invoices_performance: {},
+      warehouses_performance: {},
+      warehouse_receipts_performance: {},
+      warehouse_writeoffs_performance: {},
+      warehouse_transfers_performance: {},
+      orders_performance: {},
+      timeline_performance: {},
+      table_sizes: [],
+      cache_stats: {},
+      cache_size: {}
+    });
   }
 
   static async runPerformanceTest(testType = 'all') {
-    try {
-      const response = await api.post("/performance/test", { test_type: testType });
-      return response.data;
-    } catch (error) {
-      console.error("Ошибка при запуске теста производительности:", error);
-      throw error;
-    }
+    return Promise.resolve({
+      message: 'Модуль производительности отключен'
+    });
   }
 
   static async getCacheStats() {
-    try {
-      const response = await api.get("/performance/cache/stats");
-      return response.data;
-    } catch (error) {
-      console.error("Ошибка при получении статистики кэша:", error);
-      throw error;
-    }
+    return Promise.resolve({
+      message: 'Модуль производительности отключен'
+    });
   }
 
   static async clearCache() {
-    try {
-      const response = await api.post("/performance/cache/clear");
-      return response.data;
-    } catch (error) {
-      console.error("Ошибка при очистке кэша:", error);
-      throw error;
-    }
+    return Promise.resolve({
+      message: 'Модуль производительности отключен'
+    });
   }
 
-
   static async getTableSizes() {
-    try {
-      const response = await api.get("/performance/table-sizes");
-      return response.data;
-    } catch (error) {
-      console.error("Ошибка при получении размеров таблиц:", error);
-      throw error;
-    }
+    return Promise.resolve([]);
   }
 
   static async getServerLogs() {
-    try {
-      const response = await api.get("/performance/server-logs");
-      return response.data;
-    } catch (error) {
-      console.error("Ошибка при получении логов сервера:", error);
-      throw error;
-    }
+    return Promise.resolve({
+      message: 'Модуль производительности отключен'
+    });
   }
-
 }

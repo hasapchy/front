@@ -51,6 +51,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
+import { createProductsHtmlList } from '@/utils/dtoUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin],
@@ -102,7 +103,7 @@ export default {
                 case 'cashName':
                     return i.cashNameDisplay();
                 case 'products':
-                    return i.productsHtmlList();
+                    return createProductsHtmlList(i.products, null, 3);
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
                 case 'amount':
@@ -120,10 +121,10 @@ export default {
                 this.loading = true;
             }
             try {
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
+               
+                const per_page = this.perPage || 20;
                 
-                const new_data = await WarehouseReceiptController.getStocks(page, perPage);
+                const new_data = await WarehouseReceiptController.getItems(page, per_page);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification('Ошибка получения списка оприходований', error.message, true);

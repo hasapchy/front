@@ -68,7 +68,7 @@ export default {
                 this.fetchTransactions();
                 this.fetchPaidTotal();
             },
-            immediate: true  // ← Вызывается при монтировании, mounted не нужен
+            immediate: true
         }
     },
     methods: {
@@ -78,8 +78,7 @@ export default {
                 return;
             }
             try {
-                const response = await TransactionController.getItems(1, null, "all_time", this.orderId);
-                // Фильтруем: показываем только реальные платежи (не долговые транзакции)
+                const response = await TransactionController.getItems(1, null, "all_time", this.orderId, null, null, null, null, 20);
                 this.transactions = response.items.filter(item => {
                     return !(item.isDebt === 1 || item.isDebt === true || item.isDebt === '1');
                 });
@@ -114,15 +113,24 @@ export default {
             this.editingTransaction = transaction;
             this.transactionModal = true;
         },
-        handleTransactionSaved() {
+        async handleTransactionSaved() {
             this.transactionModal = false;
             this.fetchTransactions();
             this.fetchPaidTotal();
+            // Кэш клиентов инвалидируется автоматически через CacheInvalidator.onCreate('transactions')
+            // Перезагружаем клиентов в store для обновления баланса
+            if (this.client?.id) {
+                await this.$store.dispatch('loadClients');
+            }
         },
-        handleTransactionDeleted() {
+        async handleTransactionDeleted() {
             this.transactionModal = false;
             this.fetchTransactions();
             this.fetchPaidTotal();
+            // Перезагружаем клиентов в store для обновления баланса
+            if (this.client?.id) {
+                await this.$store.dispatch('loadClients');
+            }
         },
         itemMapper(i, c) {
             switch (c) {

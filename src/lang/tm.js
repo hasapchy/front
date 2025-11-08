@@ -1082,4 +1082,7 @@ export default {
   // Selection
   selectAll: 'Ählisini saýla',
   deselectAll: 'Saýlamagy ýatyryň',
+  
+  // Company settings
+  skipProjectOrderBalance: 'Proýekt sargyt balansyny geçir',
 }

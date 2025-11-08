@@ -1,39 +1,44 @@
-import { dayjsDate } from "@/utils/dateUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
+import { getUserIdsFromArray, createFromApiArray } from "@/utils/dtoUtils";
 
-// CategoryDto описывает структуру категории
 export default class CategoryDto {
     constructor(id, name, parentId = null, parentName = null, userId = null, userName = null, users = [], createdAt = '', updatedAt = '') {
-        this.id = id; // Идентификатор категории
-        this.name = name; // Название категории
-        this.parentId = parentId; // Идентификатор родительской категории
-        this.parentName = parentName; // Название родительской категории
-        this.userId = userId; // Идентификатор пользователя
-        this.userName = userName; // Имя пользователя
-        this.users = users; // Список пользователей (объекты User)
-        this.createdAt = createdAt; // Дата создания категории
-        this.updatedAt = updatedAt; // Дата обновления категории
+        this.id = id;
+        this.name = name;
+        this.parentId = parentId;
+        this.parentName = parentName;
+        this.userId = userId;
+        this.userName = userName;
+        this.users = users;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     formatCreatedAt() {
-        return dayjsDate(this.createdAt);
+        return dtoDateFormatters.formatCreatedAt(this.createdAt);
     }
 
     formatUpdatedAt() {
-        return dayjsDate(this.updatedAt);
+        return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
     }
 
-    // Получить список ID пользователей
     getUserIds() {
-        return this.users.map(user => user.id.toString());
+        return getUserIdsFromArray(this.users);
     }
 
-    // Получить список имен пользователей
-    getUserNames() {
-        return this.users.map(user => user.name).join(', ');
-    }
-
-    // Проверить, есть ли пользователь с указанным ID
-    hasUser($userId) {
-        return this.users.some(user => user.id == userId);
+    static fromApiArray(dataArray) {
+        return createFromApiArray(dataArray, data => {
+            return new CategoryDto(
+                data.id,
+                data.name,
+                data.parent_id,
+                data.parent_name,
+                data.user_id,
+                data.user_name,
+                data.users || [],
+                data.created_at,
+                data.updated_at
+            );
+        }).filter(Boolean);
     }
 }

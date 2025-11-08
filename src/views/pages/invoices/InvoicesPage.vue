@@ -94,10 +94,11 @@ import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import { defineAsyncComponent } from "vue";
 import { eventBus } from "@/eventBus";
 import companyChangeMixin from "@/mixins/companyChangeMixin";
+import searchMixin from "@/mixins/searchMixin";
 
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin, companyChangeMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin, companyChangeMixin, searchMixin],
     components: { 
         NotificationToast, 
         SideModalDialog, 
@@ -195,10 +196,6 @@ export default {
             }
         },
 
-        handleSearch(query) {
-            this.$store.dispatch('setSearchQuery', query);
-            this.fetchItems(1, false);
-        },
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
@@ -217,10 +214,10 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
+               
+                const per_page = this.perPage || 20;
                 
-                const newData = await InvoiceController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, null, this.statusFilter, perPage);
+                const newData = await InvoiceController.getItems(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, null, this.statusFilter, per_page);
                 this.data = newData;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingInvoiceList'), error.message, true);

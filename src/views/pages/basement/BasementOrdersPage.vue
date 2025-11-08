@@ -44,6 +44,7 @@ import { BasementAuthController } from '@/api/BasementAuthController'
 import basementApi from '@/api/basementAxiosInstance'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'
+import { formatOrderDate } from '@/utils/dateUtils'
 
 export default {
   name: 'BasementOrdersPage',
@@ -152,16 +153,7 @@ export default {
     editOrder(order) {
       this.$router.push(`/basement/orders/${order.id}/edit`)
     },
-    formatOrderDate(date) {
-      if (!date) return ''
-      return new Date(date).toLocaleString('ru-RU', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    }
+    formatOrderDate
   }
 }
 </script>

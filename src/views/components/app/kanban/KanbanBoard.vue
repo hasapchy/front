@@ -62,7 +62,7 @@
         </div>
 
         <!-- Канбан доска - контейнер со скроллом -->
-        <div class="kanban-board-container">
+        <div class="kanban-board-container" ref="boardContainer" @scroll="handleScroll">
             <div class="kanban-board">
                 <draggable
                     :list="sortedColumns"
@@ -84,10 +84,13 @@
                         :disabled="loading"
                         :currency-symbol="currencySymbol"
                         :is-project-mode="isProjectMode"
+                        :has-more="hasMore"
+                        :loading="loading"
                         @change="handleOrderMove($event, column.id)"
                         @card-dblclick="handleCardDoubleClick"
                         @card-select-toggle="handleCardSelectToggle"
                         @column-select-toggle="handleColumnSelectToggle"
+                        @load-more="$emit('load-more')"
                     />
                 </draggable>
             </div>
@@ -104,6 +107,7 @@
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanColumn from './KanbanColumn.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import debounce from 'lodash.debounce';
 
 export default {
     name: 'KanbanBoard',
@@ -144,14 +148,18 @@ export default {
         batchStatusId: {
             type: String,
             default: ''
+        },
+        hasMore: {
+            type: Boolean,
+            default: false
         }
     },
-    emits: ['order-moved', 'card-dblclick', 'card-select-toggle', 'column-select-toggle', 'batch-status-change', 'batch-delete', 'clear-selection'],
+    emits: ['order-moved', 'card-dblclick', 'card-select-toggle', 'column-select-toggle', 'batch-status-change', 'batch-delete', 'clear-selection', 'load-more'],
     data() {
         return {
             compactView: false,
-            columnOrder: [], // Массив ID колонок в пользовательском порядке
-            sortedColumns: [] // Отсортированные колонки для отображения
+            columnOrder: [],
+            sortedColumns: []
         };
     },
     computed: {
@@ -232,20 +240,16 @@ export default {
             }
         },
         updateSortedColumns() {
-            // Получаем колонки по статусам
             const statusColumns = this.getStatusColumns();
             
-            // Если нет сохраненного порядка, используем как есть
             if (!this.columnOrder || this.columnOrder.length === 0) {
                 this.sortedColumns = statusColumns;
                 return;
             }
             
-            // Сортируем колонки согласно сохраненному порядку
             const orderedColumns = [];
             const columnMap = new Map(statusColumns.map(col => [col.id, col]));
             
-            // Сначала добавляем колонки в сохраненном порядке
             this.columnOrder.forEach(id => {
                 if (columnMap.has(id)) {
                     orderedColumns.push(columnMap.get(id));
@@ -253,20 +257,32 @@ export default {
                 }
             });
             
-            // Затем добавляем новые колонки, которых не было в сохраненном порядке
             columnMap.forEach(col => {
                 orderedColumns.push(col);
             });
             
             this.sortedColumns = orderedColumns;
-        }
+        },
+        handleScroll: debounce(function() {
+            if (!this.hasMore || this.loading) return;
+            
+            const container = this.$refs.boardContainer;
+            if (!container) return;
+            
+            const scrollLeft = container.scrollLeft;
+            const scrollWidth = container.scrollWidth;
+            const clientWidth = container.clientWidth;
+            
+            if (scrollLeft + clientWidth >= scrollWidth - 200) {
+                this.$emit('load-more');
+            }
+        }, 200)
     },
     watch: {
         compactView(newValue) {
             localStorage.setItem('kanban_compactView', newValue);
         },
         isProjectMode() {
-            // При переключении режима загружаем соответствующий порядок
             this.loadColumnOrder();
             this.updateSortedColumns();
         },

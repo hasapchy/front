@@ -93,8 +93,6 @@ const TransactionCreatePage = defineAsyncComponent(() =>
 );
 import TransactionController from "@/api/TransactionController";
 import ProjectController from "@/api/ProjectController";
-import ClientDto from "@/dto/client/ClientDto";
-import TransactionDto from "@/dto/transaction/TransactionDto";
 
 export default {
     mixins: [notificationMixin, getApiErrorMessage],
@@ -133,13 +131,11 @@ export default {
                     size: 150, 
                     component: markRaw(SourceButtonCell),
                     props: (item) => {
-                        // Для транзакций (source_type = 'App\Models\Transaction') используем source_id (ID транзакции)
-                        // Для других источников (Sale, Order, WhReceipt) используем source_source_id (ID источника)
-                        const isTransaction = item.source_type && item.source_type.includes('Transaction');
-                        const sourceId = isTransaction ? item.source_id : (item.source_source_id || item.source_id);
+                        const isTransaction = item.sourceType && item.sourceType.includes('Transaction');
+                        const sourceId = isTransaction ? item.sourceId : (item.sourceSourceId || item.sourceId);
                         
                         return {
-                            sourceType: item.source_type,
+                            sourceType: item.sourceType,
                             sourceId: sourceId,
                             onUpdated: () => {
                                 this.forceRefresh = true;
@@ -159,49 +155,7 @@ export default {
             ],
             ENTITY_CONFIG: {
                 transaction: {
-                    fetch: id => TransactionController.getItem(id).then(r => {
-                        let client = null;
-                        if (r.item.client) {
-                            client = ClientDto.fromApi(r.item.client);
-                        }
-                        return new TransactionDto(
-                            r.item.id,
-                            r.item.type,
-                            r.item.is_transfer,
-                            r.item.is_sale || 0,
-                            r.item.is_receipt || 0,
-                            r.item.is_debt || 0,
-                            r.item.cash_id,
-                            r.item.cash_name,
-                            r.item.cash_amount,
-                            r.item.cash_currency_id,
-                            r.item.cash_currency_name,
-                            r.item.cash_currency_code,
-                            r.item.cash_currency_symbol,
-                            r.item.orig_amount,
-                            r.item.orig_currency_id,
-                            r.item.orig_currency_name,
-                            r.item.orig_currency_code,
-                            r.item.orig_currency_symbol,
-                            r.item.user_id,
-                            r.item.user_name,
-                            r.item.category_id,
-                            r.item.category_name,
-                            r.item.category_type,
-                            r.item.project_id,
-                            r.item.project_name,
-                            r.item.client_id,
-                            client,
-                            r.item.note,
-                            r.item.date,
-                            r.item.created_at,
-                            r.item.updated_at,
-                            r.item.orders || [],
-                            r.item.source_type || null,
-                            r.item.source_id || null,
-                            r.item.is_deleted || false
-                        );
-                    }),
+                    fetch: id => TransactionController.getItem(id),
                     component: markRaw(TransactionCreatePage),
                     prop: 'editingItem',
                 },
@@ -285,7 +239,7 @@ export default {
                 // Используем данные из store
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
-                const defaultCurrency = currencies.find(c => c.is_default);
+                const defaultCurrency = currencies.find(c => c.isDefault);
                 this.currencyCode = defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
             } catch (error) {
                 this.currencyCode = 'Нет валюты';
@@ -301,74 +255,24 @@ export default {
             
             this.balanceLoading = true;
             try {
-                // НЕ используем timestamp - позволяем Backend кэшировать!
+                // DRY: ProjectController.getBalanceHistory() уже возвращает DTO
                 const data = await ProjectController.getBalanceHistory(this.editingItem.id);
-                const self = this; // Сохраняем ссылку на компонент
                 
-                // Получаем информацию о валютах
-                // Используем данные из store
+                // Получаем информацию о валютах из store
                 await this.$store.dispatch('loadCurrencies');
-                const currencies = this.$store.getters.currencies;
-                const currencyMap = {};
-                currencies.forEach(currency => {
-                    currencyMap[currency.id] = currency;
-                });
                 
+                // Определяем валюту проекта
+                const projectCurrency = this.editingItem?.currency?.symbol || this.currencyCode || 'Нет валюты';
+                
+                // DRY: используем методы DTO для форматирования
                 this.balanceHistory = (data.history || [])
                     .filter(item => item.source !== 'project_income') // Исключаем project_income записи
-                    .map(
-                    (item) => ({
-                        ...item,
-                        get dateUser() {
-                            return item.date ? new Date(item.date).toLocaleString() : "";
-                        },
-                        formatDate() {
-                            return item.date ? new Date(item.date).toLocaleString() : "";
-                        },
-                        formatAmountWithColor() {
-                            const val = parseFloat(item.amount);
-                            const color = val >= 0 ? "#5CB85C" : "#EE4F47";
-                            
-                            // Определяем валюту проекта
-                            let projectCurrency = self.currencyCode || 'Нет валюты';
-                            if (self.editingItem && self.editingItem.currency && self.editingItem.currency.symbol) {
-                                projectCurrency = self.editingItem.currency.symbol;
-                            }
-                            
-                            // Сумма уже конвертирована в валюту проекта на бэкенде
-                            // Если есть информация о валюте кассы и исходной сумме, показываем исходную сумму в скобках
-                            if (item.cash_currency_symbol && item.orig_amount) {
-                                const originalAmount = parseFloat(item.orig_amount);
-                                const originalSymbol = item.cash_currency_symbol;
-                                
-                                // Если валюта кассы отличается от валюты проекта, показываем исходную сумму в скобках
-                                if (originalSymbol !== projectCurrency) {
-                                    const formattedVal = self.$formatNumber(val, null, true);
-                                    const formattedOrig = self.$formatNumber(originalAmount, null, true);
-                                    return `<span style="color:${color};font-weight:bold">${formattedVal} ${projectCurrency} (${formattedOrig} ${originalSymbol})</span>`;
-                                }
-                            }
-                            
-                            // Для всех случаев показываем сумму в валюте проекта
-                            const formattedVal = self.$formatNumber(val, null, true);
-                            return `<span style="color:${color};font-weight:bold">${formattedVal} ${projectCurrency}</span>`;
-                        },
-                        label() {
-                            switch (item.source) {
-                                case "transaction": 
-                                    return '<i class="fas fa-circle text-[#6C757D] mr-2"></i> Прочее';
-                                case "sale": 
-                                    return '<i class="fas fa-shopping-cart text-[#5CB85C] mr-2"></i> Продажа';
-                                case "order": 
-                                    return '<i class="fas fa-file-invoice text-[#337AB7] mr-2"></i> Заказ';
-                                case "receipt": 
-                                    return '<i class="fas fa-box text-[#FFA500] mr-2"></i> Оприходование';
-                                default: 
-                                    return item.source;
-                            }
-                        }
-                    })
-                );
+                    .map(item => {
+                        // Привязываем метод форматирования с валютой проекта
+                        const originalFormatAmount = item.formatAmountWithColor.bind(item);
+                        item.formatAmountWithColor = () => originalFormatAmount(projectCurrency, this.$formatNumber);
+                        return item;
+                    });
                 this.balance = data.balance;
                 this.budget = data.budget;
                 
@@ -401,20 +305,16 @@ export default {
         itemMapper(i, c) {
             switch (c) {
                 case "dateUser":
-                    return i.dateUser;
-                // case "source" - больше не нужен, используется компонент SourceButtonCell
+                    return i.dateUser || (i.formatDate ? i.formatDate() : '');
+                // case "source" - больше не нужен, используется компонент SourceButtonCel
                 case "note":
                     return i.note || '';
                 case "user_name":
-                    return i.user_name;
+                    return i.userName || '-';
                 case "is_debt":
-                    if (i.is_debt === 1 || i.is_debt === true || i.is_debt === '1') {
-                        return '<i class="fas fa-check text-green-500"></i>';
-                    } else {
-                        return '<i class="fas fa-times text-red-500"></i>';
-                    }
+                    return i.getDebtHtml ? i.getDebtHtml() : '-';
                 case "amount":
-                    return i.formatAmountWithColor?.();
+                    return i.formatAmountWithColor ? i.formatAmountWithColor() : '-';
                 default:
                     return i[c];
             }

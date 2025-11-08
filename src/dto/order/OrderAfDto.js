@@ -1,3 +1,5 @@
+import { createFromApiArray } from "@/utils/dtoUtils";
+
 export default class OrderAfDto {
   constructor(
     id,
@@ -64,24 +66,17 @@ export default class OrderAfDto {
   }
 
   getCategoryNames() {
-    if (!this.categories || this.categories.length === 0) {
-      return 'Все категории';
-    }
-    return this.categories.map(cat => cat.name).join(', ');
+    return this.categories?.length > 0 
+      ? this.categories.map(cat => cat.name).join(', ')
+      : 'Все категории';
   }
 
   isAvailableForCategory(categoryId) {
-    if (!this.categories || this.categories.length === 0) {
-      return true;
-    }
-    return this.categories.some(cat => cat.id === categoryId);
+    return !this.categories?.length || this.categories.some(cat => cat.id === categoryId);
   }
 
   getDefaultValue() {
-    if (this.type === 'boolean') {
-      return this.defaultValue === '1' || this.defaultValue === true;
-    }
-    return this.defaultValue;
+    return this.type === 'boolean' ? (this.defaultValue == 1) : this.defaultValue;
   }
 
   getFormHtml() {
@@ -99,7 +94,7 @@ export default class OrderAfDto {
         return `<input type="datetime-local" class="form-control" name="additional_field_${this.id}" value="${this.defaultValue || ''}" ${this.required ? 'required' : ''} />`;
       
       case 'boolean':
-        const checked = this.defaultValue === '1' || this.defaultValue === true ? 'checked' : '';
+        const checked = this.defaultValue == 1 ? 'checked' : '';
         return `<input type="checkbox" class="form-check-input" name="additional_field_${this.id}" value="1" ${checked} ${this.required ? 'required' : ''} />`;
       
       case 'select':
@@ -115,23 +110,21 @@ export default class OrderAfDto {
     }
   }
 
-  static fromApi(data) {
-    return new OrderAfDto(
-      data.id,
-      data.name,
-      data.type,
-      data.options || [],
-      data.required || false,
-      data.default || null,
-      data.user_id,
-      data.categories || [],
-      data.created_at,
-      data.updated_at
-    );
-  }
-
   static fromApiArray(dataArray) {
-    return (dataArray || []).map(item => OrderAfDto.fromApi(item));
+    return createFromApiArray(dataArray, data => {
+      return new OrderAfDto(
+        data.id,
+        data.name,
+        data.type,
+        data.options || [],
+        data.required || false,
+        data.default ?? null,
+        data.user_id,
+        data.categories || [],
+        data.created_at,
+        data.updated_at
+      );
+    }).filter(Boolean);
   }
 }
 

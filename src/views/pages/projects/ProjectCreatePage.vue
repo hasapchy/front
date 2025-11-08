@@ -173,7 +173,7 @@ export default {
             if (!currency) return '1.000000';
 
             // Если валюта не дефолтная (не манат), показываем 1/курс
-            if (!currency.is_default && currency.exchange_rate) {
+            if (!currency.isDefault && currency.exchange_rate) {
                 return (1 / currency.exchange_rate).toFixed(6);
             }
 
@@ -238,7 +238,7 @@ export default {
             
             // ✅ При создании нового проекта устанавливаем дефолтную валюту
             if (!this.editingItem && !this.currencyId) {
-                const defaultCurrency = this.currencies.find(c => c.is_default);
+                const defaultCurrency = this.currencies.find(c => c.isDefault);
                 if (defaultCurrency) {
                     this.currencyId = defaultCurrency.id;
                     // Для дефолтной валюты курс всегда 1
@@ -253,7 +253,7 @@ export default {
                     // Если выбранная валюта не является дефолтной (манат), 
                     // то курс должен быть 1/курс_валюты для конвертации в манаты
                     const selectedCurrency = this.currencies.find(c => c.id === this.currencyId);
-                    if (selectedCurrency && !selectedCurrency.is_default) {
+                    if (selectedCurrency && !selectedCurrency.isDefault) {
                         // Для не-дефолтной валюты курс = 1/курс_валюты (сколько манат за 1 единицу валюты)
                         this.exchangeRate = 1 / rateData.exchange_rate;
                     } else {

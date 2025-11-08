@@ -105,7 +105,7 @@ export default {
         async loadServices() {
             this.servicesLoading = true;
             try {
-                const servicesData = await BasementProductController.getItems(1, false);
+                const servicesData = await BasementProductController.getItems(1, false, {}, 20);
                 this.services = servicesData.items || [];
             } catch (error) {
                 console.error('Error loading services:', error);
@@ -119,26 +119,22 @@ export default {
                 const productDto = WarehouseWriteoffProductDto.fromProductDto(service, false);
                 if (productDto && service.id) {
                     productDto.productId = service.id;
-                    // Если выбран проект, используем оптовую цену, иначе розничную
-                    if (this.projectId && service.wholesale_price > 0) {
-                        productDto.price = service.wholesale_price || 0;
+                    if (this.projectId && service.wholesalePrice > 0) {
+                        productDto.price = service.wholesalePrice || 0;
                     } else {
-                        productDto.price = service.retail_price || 0;
+                        productDto.price = service.retailPrice || 0;
                     }
-                    productDto.type = service.type || 0; // Услуги имеют type = 0
+                    productDto.type = service.type || 0;
                     
-                    // Проверяем единицу измерения
-                    const unitShortName = productDto.unitShortName || productDto.unit_short_name || '';
-                    const unitName = productDto.unitName || productDto.unit_name || '';
+                    const unitShortName = productDto.unitShortName || '';
+                    const unitName = productDto.unitName || '';
                     const isSquareMeter = unitShortName === 'м²' || unitName === 'Квадратный метр';
                     
                     if (isSquareMeter) {
-                        // Для м² инициализируем ширину и длину
                         productDto.width = 0;
                         productDto.height = 0;
                         productDto.quantity = 0;
                     } else {
-                        // Для остальных единиц просто устанавливаем количество
                         productDto.quantity = 0;
                         productDto.width = 0;
                         productDto.height = 0;

@@ -14,6 +14,7 @@
 <script>
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import ClientCreatePage from '@/views/pages/clients/ClientCreatePage.vue';
+import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
     props: {
@@ -41,22 +42,13 @@ export default {
             const text = name;
             
             if (this.searchQuery && this.searchQuery.trim()) {
-                return this.highlightText(text, this.searchQuery);
+                return highlightMatches(text, this.searchQuery);
             }
-            
+
             return text;
         }
     },
     methods: {
-        highlightText(text, search) {
-            if (!text || !search) return text;
-            const searchStr = String(search).trim();
-            if (!searchStr) return text;
-            
-            const textStr = String(text);
-            const regex = new RegExp(`(${searchStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-            return textStr.replace(regex, '<mark style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 3px; font-weight: bold;">$1</mark>');
-        },
         openClientModal() {
             if (this.client) {
                 this.modalOpen = true;

@@ -43,6 +43,7 @@ export default {
   currentPassword: 'Текущий пароль',
   newPassword: 'Новый пароль',
   editProfile: 'Редактировать профиль',
+  profileInfo: 'Информация профиля',
   
   // Компании
   myCompany: 'Моя компания',
@@ -77,6 +78,8 @@ export default {
   roundingForReceipts: 'Округление для оприходований',
   roundingForSales: 'Округление для продаж',
   roundingForTransactions: 'Округление для транзакций',
+  quantityRoundingSettings: 'Округление количества товара',
+  forQuantity: 'для количества',
   
   // Навигация
   home: 'Главная',
@@ -1266,4 +1269,7 @@ export default {
   // Selection
   selectAll: 'Выбрать все',
   deselectAll: 'Отменить выбор',
+  
+  // Company settings
+  skipProjectOrderBalance: 'Пропускать баланс заказов проекта',
 }

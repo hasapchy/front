@@ -96,14 +96,14 @@ export default {
             this.saveLoading = true;
             try {
                 if (this.editingItem?.id != null) {
-                    var resp = await WarehouseController.updateWarehouse(
+                    var resp = await WarehouseController.updateItem(
                         this.editingItem.id,
                         {
                             name: this.name,
                             users: this.selectedUsers
                         });
                 } else {
-                    var resp = await WarehouseController.storeWarehouse({
+                    var resp = await WarehouseController.storeItem({
                         name: this.name,
                         users: this.selectedUsers
                     });
@@ -125,7 +125,7 @@ export default {
             }
             this.deleteLoading = true;
             try {
-                var resp = await WarehouseController.deleteWarehouse(
+                var resp = await WarehouseController.deleteItem(
                     this.editingItem.id);
                 if (resp.message) {
                     this.$emit('deleted');

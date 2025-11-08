@@ -1,12 +1,69 @@
 import { createStore } from "vuex";
 import api from "@/api/axiosInstance";
 import basementApi from "@/api/basementAxiosInstance";
-import CacheMonitor from "@/utils/cacheMonitor";
-import CacheInvalidator from "@/utils/cacheInvalidator";
+import CacheInvalidator, { companyScopedKey, isFreshByKey, touchKey } from "@/utils/cacheInvalidator";
 import { CompanyDto } from "@/dto/companies/CompanyDto";
+import CurrencyDto from "@/dto/app/CurrencyDto";
 import CACHE_TTL from "@/constants/cacheTTL";
 import createPersistedState from "vuex-persistedstate";
 import { eventBus } from "@/eventBus";
+
+// DRY: единый маппинг для очистки state по типу данных
+const CLEAR_MUTATIONS_MAPPING = {
+  currencies: 'SET_CURRENCIES',
+  units: 'SET_UNITS',
+  orderStatuses: 'SET_ORDER_STATUSES',
+  projectStatuses: 'SET_PROJECT_STATUSES',
+  transactionCategories: 'SET_TRANSACTION_CATEGORIES',
+  productStatuses: 'SET_PRODUCT_STATUSES',
+  warehouses: 'SET_WAREHOUSES',
+  cashRegisters: 'SET_CASH_REGISTERS',
+  clients: 'SET_CLIENTS',
+  products: 'SET_PRODUCTS',
+  services: 'SET_SERVICES',
+  categories: 'SET_CATEGORIES',
+  projects: 'SET_PROJECTS'
+};
+
+// DRY: глобальные справочники (не зависят от компании)
+const GLOBAL_REFERENCE_FIELDS = [
+  'units',
+  'currencies',
+  'users',
+  'orderStatuses',
+  'projectStatuses',
+  'transactionCategories',
+  'productStatuses'
+];
+
+// DRY: поля данных компании, которые нужно очищать при смене компании/очистке кэша
+const COMPANY_DATA_FIELDS = [
+  'warehouses',
+  'cashRegisters',
+  'clients',
+  'clientsData',
+  'products',
+  'services',
+  'lastProducts',
+  'allProducts',
+  'lastProductsData',
+  'allProductsData',
+  'categories',
+  'projects',
+  'projectsData'
+];
+
+// DRY: поля с timestamp для persistedState (включает глобальные и данные компании)
+const FIELDS_WITH_TIMESTAMP = [
+  ...GLOBAL_REFERENCE_FIELDS,
+  'warehouses',
+  'cashRegisters',
+  'clientsData',
+  'categories',
+  'projectsData',
+  'lastProductsData',
+  'allProductsData'
+];
 
 // ✅ Utility для retry с exponential backoff
 async function retryWithExponentialBackoff(fn, maxRetries = 3, initialDelay = 1000) {
@@ -146,22 +203,13 @@ const store = createStore({
     userCompanies: [], // Список компаний пользователя
     // Кэш данных по компаниям (удаляем, используем только localStorage)
     // companyDataCache: {}, // { companyId: { warehouses: [], clients: [], ... } }
-    soundEnabled: (() => {
-      // Синхронно загружаем настройку звука из localStorage при инициализации store
-      const soundEnabled = localStorage.getItem('soundEnabled');
-      return soundEnabled !== null ? soundEnabled === 'true' : true;
-    })(), // Включен ли звук
+    soundEnabled: true,
     tokenInfo: {
       accessTokenExpiresAt: null,
       refreshTokenExpiresAt: null,
       needsRefresh: false
     },
-    // Мониторинг кэша
-    cacheMonitor: {
-      enabled: true,
-      intervalId: null,
-      lastCheck: null
-    },
+    orderStatusesCustomOrder: null,
     // ✅ Флаг для предотвращения цикла между вкладками
     isChangingCompanyFromThisTab: false,
     // ✅ Флаг синхронизации компании, пришедшей из другой вкладки
@@ -290,20 +338,8 @@ const store = createStore({
     //   state.companyDataCache[companyId][dataType] = data;
     // },
     CLEAR_COMPANY_DATA(state) {
-      state.warehouses = [];
-      state.cashRegisters = [];
-      state.clients = [];
-      state.clientsData = [];
-      state.products = [];
-      state.services = [];
-      state.lastProducts = []; // ✅ Очищаем DTO
-      state.allProducts = []; // ✅ Очищаем DTO
-      // ⚠️ ИСПРАВЛЕНИЕ: теперь также очищаем plain data для другой компании!
-      state.lastProductsData = []; // ✅ Очищаем plain data
-      state.allProductsData = []; // ✅ Очищаем plain data
-      state.categories = [];
-      state.projects = [];
-      state.projectsData = [];
+      // Очищаем все поля данных компании
+      COMPANY_DATA_FIELDS.forEach(f => { state[f] = []; });
       state.projectsDataCompanyId = null;
       // ✅ Сбрасываем флаги логирования при смене компании
       state.loggedDataFlags = {
@@ -334,12 +370,6 @@ const store = createStore({
     SET_LOADING_FLAG(state, { type, loading }) {
       state.loadingFlags[type] = loading;
     },
-    SET_CACHE_MONITOR_INTERVAL(state, intervalId) {
-      state.cacheMonitor.intervalId = intervalId;
-    },
-    SET_CACHE_MONITOR_LAST_CHECK(state, timestamp) {
-      state.cacheMonitor.lastCheck = timestamp;
-    },
     // ✅ Управление флагами залогированных данных
     SET_LOGGED_DATA_FLAG(state, { type, logged }) {
       state.loggedDataFlags[type] = logged;
@@ -352,6 +382,9 @@ const store = createStore({
     },
     SET_CLIENT_TYPE_FILTER(state, value) {
       state.clientTypeFilter = value || 'all';
+    },
+    SET_ORDER_STATUSES_CUSTOM_ORDER(state, order) {
+      state.orderStatusesCustomOrder = order;
     },
   },
 
@@ -440,18 +473,13 @@ const store = createStore({
     updateTokenExpiration({ commit }, { accessTokenExpiresAt, refreshTokenExpiresAt }) {
       commit('UPDATE_TOKEN_EXPIRATION', { accessTokenExpiresAt, refreshTokenExpiresAt });
     },
-    checkTokenStatus({ commit }) {
-      const accessTokenExpiresAt = localStorage.getItem('token_expires_at');
-      const refreshTokenExpiresAt = localStorage.getItem('refresh_token_expires_at');
-      
-      if (accessTokenExpiresAt && refreshTokenExpiresAt) {
+    checkTokenStatus({ commit, state }) {
+      if (state.tokenInfo.accessTokenExpiresAt && state.tokenInfo.refreshTokenExpiresAt) {
         const now = Date.now();
-        const accessExpired = now > parseInt(accessTokenExpiresAt);
-        const refreshExpired = now > parseInt(refreshTokenExpiresAt);
+        const accessExpired = now > state.tokenInfo.accessTokenExpiresAt;
+        const refreshExpired = now > state.tokenInfo.refreshTokenExpiresAt;
         
         commit('SET_TOKEN_INFO', {
-          accessTokenExpiresAt: parseInt(accessTokenExpiresAt),
-          refreshTokenExpiresAt: parseInt(refreshTokenExpiresAt),
           needsRefresh: accessExpired && !refreshExpired
         });
       }
@@ -463,12 +491,11 @@ const store = createStore({
       }
 
       // ✅ Проверяем не истек ли кэш единиц
-      const timestamp = localStorage.getItem('units_timestamp');
-      const now = Date.now();
+      const cacheKey = 'units';
       const ttl = CACHE_TTL.units;
       
       // Если timestamp отсутствует или истек - очищаем state
-      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+      if (!isFreshByKey(cacheKey, ttl)) {
         commit('SET_UNITS', []);
       }
 
@@ -485,7 +512,7 @@ const store = createStore({
         const data = response.data;
         commit('SET_UNITS', data);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
-        localStorage.setItem('units_timestamp', Date.now().toString());
+        touchKey(cacheKey);
         console.log(`⚙️ Единицы (${data.length})`);
       } catch (error) {
         console.error('Ошибка загрузки единиц измерения:', error);
@@ -500,12 +527,11 @@ const store = createStore({
       }
 
       // ✅ Проверяем не истек ли кэш валют
-      const timestamp = localStorage.getItem('currencies_timestamp');
-      const now = Date.now();
+      const cacheKey = 'currencies';
       const ttl = CACHE_TTL.currencies;
       
       // Если timestamp отсутствует или истек - очищаем state
-      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+      if (!isFreshByKey(cacheKey, ttl)) {
         commit('SET_CURRENCIES', []);
       }
 
@@ -513,10 +539,15 @@ const store = createStore({
       if (state.currencies.length > 0) {
         // Если сейчас есть доступ к другим валютам, но в кэше только дефолтная — принудительно перезагрузим
         const hasAccessToOtherCurrencies = typeof getters.hasPermission === 'function' && getters.hasPermission('settings_currencies_view');
-        const onlyDefaultInCache = state.currencies.length > 0 && state.currencies.every(c => c.is_default === true);
+        const onlyDefaultInCache = state.currencies.length > 0 && state.currencies.every(c => (c.isDefault || c.is_default) === true);
         if (hasAccessToOtherCurrencies && onlyDefaultInCache) {
           commit('SET_CURRENCIES', []);
         } else {
+          if (state.currencies.length > 0 && state.currencies[0].is_default && !state.currencies[0].isDefault) {
+            const CurrencyDto = (await import('@/dto/app/CurrencyDto')).default;
+            const converted = CurrencyDto.fromApiArray(state.currencies);
+            commit('SET_CURRENCIES', converted);
+          }
           return;
         }
       }
@@ -527,10 +558,12 @@ const store = createStore({
         const apiInstance = getters.isBasementMode ? basementApi : api;
         const response = await apiInstance.get('/app/currency');
         const data = response.data;
-        commit('SET_CURRENCIES', data);
+        const CurrencyDto = (await import('@/dto/app/CurrencyDto')).default;
+        const converted = CurrencyDto.fromApiArray(data);
+        commit('SET_CURRENCIES', converted);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
-        localStorage.setItem('currencies_timestamp', Date.now().toString());
-        console.log(`💱 Валюты (${data.length})`);
+        touchKey(cacheKey);
+        console.log(`💱 Валюты (${converted.length})`);
       } catch (error) {
         console.error('Ошибка загрузки валют:', error);
       } finally {
@@ -544,12 +577,11 @@ const store = createStore({
       }
 
       // ✅ Проверяем не истек ли кэш пользователей
-      const timestamp = localStorage.getItem('users_timestamp');
-      const now = Date.now();
+      const cacheKey = 'users';
       const ttl = 24 * 60 * 60 * 1000; // 24 часа (глобальный справочник)
       
       // Если timestamp отсутствует или истек - очищаем state
-      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+      if (!isFreshByKey(cacheKey, ttl)) {
         commit('SET_USERS', []);
       }
 
@@ -562,11 +594,11 @@ const store = createStore({
       
       try {
         const UsersController = (await import('@/api/UsersController')).default;
-        const data = await UsersController.getAllUsers();
+        const data = await UsersController.getAllItems();
         commit('SET_USERS', data);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
-        // ✅ ИСПРАВЛЕНИЕ: сохраняем timestamp для TTL проверки
-        localStorage.setItem('users_timestamp', Date.now().toString());
+        // ✅ Сохраняем timestamp для TTL проверки
+        touchKey(cacheKey);
         console.log(`👥 Сотрудники (${data.length})`);
       } catch (error) {
         console.error('Ошибка загрузки сотрудников:', error);
@@ -590,14 +622,11 @@ const store = createStore({
       }
 
       // ✅ Ключ кэша привязан к компании
-      const cacheKey = `warehouses_${companyId}`;
-      const timestampKey = `${cacheKey}_timestamp`;
-      const timestamp = localStorage.getItem(timestampKey);
-      const now = Date.now();
+      const cacheKey = companyScopedKey('warehouses', companyId);
       const ttl = CACHE_TTL.warehouses;
       
       // Если timestamp отсутствует или истек - очищаем state
-      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+      if (!isFreshByKey(cacheKey, ttl)) {
         commit('SET_WAREHOUSES', []);
       }
 
@@ -624,7 +653,7 @@ const store = createStore({
         console.log(`  📦 Склады (${data.length})`);
         
         // ✅ Явно сохраняем timestamp с привязкой к компании
-        localStorage.setItem(timestampKey, Date.now().toString());
+        touchKey(cacheKey);
       } catch (error) {
         console.error('❌ Ошибка загрузки складов после всех попыток:', error);
         commit('SET_WAREHOUSES', []);
@@ -653,14 +682,11 @@ const store = createStore({
       }
 
       // ✅ Ключ кэша привязан к компании
-      const cacheKey = `cashRegisters_${companyId}`;
-      const timestampKey = `${cacheKey}_timestamp`;
-      const timestamp = localStorage.getItem(timestampKey);
-      const now = Date.now();
+      const cacheKey = companyScopedKey('cashRegisters', companyId);
       const ttl = CACHE_TTL.cashRegisters;
       
       // Если timestamp отсутствует или истек - очищаем state
-      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+      if (!isFreshByKey(cacheKey, ttl)) {
         commit('SET_CASH_REGISTERS', []);
       }
 
@@ -687,7 +713,7 @@ const store = createStore({
         console.log(`  💰 Кассы (${data.length})`);
         
         // ✅ Явно сохраняем timestamp с привязкой к компании
-        localStorage.setItem(timestampKey, Date.now().toString());
+        touchKey(cacheKey);
       } catch (error) {
         console.error('❌ Ошибка загрузки касс после всех попыток:', error);
         commit('SET_CASH_REGISTERS', []);
@@ -703,7 +729,6 @@ const store = createStore({
     async loadClients({ commit, state, dispatch }) {
       // Если уже загружаются, ждем завершения
       if (state.loadingFlags.clients) {
-        console.log(`👤 Клиенты - уже загружаются...`);
         return dispatch('waitForLoading', 'clients');
       }
 
@@ -716,25 +741,32 @@ const store = createStore({
       }
 
       // ✅ Ключ кэша привязан к компании
-      const cacheKey = `clients_${companyId}`;
-      const timestampKey = `${cacheKey}_timestamp`;
-      const timestamp = localStorage.getItem(timestampKey);
-      const now = Date.now();
+      const cacheKey = companyScopedKey('clients', companyId);
       const ttl = CACHE_TTL.clients;
       
       // Если timestamp отсутствует или истек - очищаем state
-      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+      if (!isFreshByKey(cacheKey, ttl)) {
         commit('SET_CLIENTS', []);
         commit('SET_CLIENTS_DATA', []);
       }
 
       // ✅ СНАЧАЛА проверяем есть ли кэшированные plain data (vuex-persistedstate восстановил)
       if (state.clientsData.length > 0 && state.clients.length === 0) {
-        // Конвертируем plain data в DTO
-        const ClientDto = (await import('@/dto/client/ClientDto')).default;
-        const clients = ClientDto.fromArray(state.clientsData);
-        commit('SET_CLIENTS', clients);
-        return;
+        // Проверяем формат данных - если это camelCase (старые данные), очищаем
+        const firstClient = state.clientsData[0];
+        const hasSnakeCase = firstClient && (firstClient.first_name !== undefined || firstClient.last_name !== undefined);
+        const hasCamelCase = firstClient && (firstClient.firstName !== undefined || firstClient.lastName !== undefined);
+        
+        if (hasCamelCase && !hasSnakeCase) {
+          commit('SET_CLIENTS_DATA', []);
+          commit('SET_CLIENTS', []);
+        } else {
+          // Конвертируем plain data в DTO (ожидаем snake_case)
+          const ClientDto = (await import('@/dto/client/ClientDto')).default;
+          const clients = ClientDto.fromApiArray(state.clientsData);
+          commit('SET_CLIENTS', clients);
+          return;
+        }
       }
 
       // Если DTO уже в state - возвращаем
@@ -751,25 +783,29 @@ const store = createStore({
       
       try {
         const ClientController = (await import('@/api/ClientController')).default;
-        const ClientDto = (await import('@/dto/client/ClientDto')).default;  // ✅ Импортируем!
+        const ClientDto = (await import('@/dto/client/ClientDto')).default;
+        const api = (await import('@/api/axiosInstance')).default;
         
-        // ✅ Используем retry с exponential backoff
-        const data = await retryWithExponentialBackoff(
-          () => ClientController.getAllItems(),
+        // ✅ Получаем plain data напрямую из API (не через DTO)
+        const response = await retryWithExponentialBackoff(
+          async () => {
+            const res = await api.get(`/clients/all`);
+            return res.data;
+          },
           3
         );
         
-        // Сохраняем plain data для кэширования в localStorage
-        const plainData = data.map(client => ({ ...client }));
+        // Сохраняем plain data для кэширования в localStorage (snake_case)
+        const plainData = Array.isArray(response) ? response : [];
         commit('SET_CLIENTS_DATA', plainData);
         
         // ✅ Конвертируем в DTO и сохраняем
-        const clients = ClientDto.fromArray(plainData);
+        const clients = ClientDto.fromApiArray(plainData);
         commit('SET_CLIENTS', clients);
         
         // ✅ Явно сохраняем timestamp с привязкой к компании
-        localStorage.setItem(timestampKey, Date.now().toString());
-        console.log(`  👤 Клиенты (${data.length})`);
+        touchKey(cacheKey);
+        console.log(`  👤 Клиенты (${plainData.length})`);
       } catch (error) {
         console.error('❌ Ошибка загрузки клиентов после всех попыток:', error);
         commit('SET_CLIENTS', []);
@@ -824,14 +860,11 @@ const store = createStore({
       }
 
       // ✅ Ключ кэша привязан к компании
-      const cacheKey = `categories_${companyId}`;
-      const timestampKey = `${cacheKey}_timestamp`;
-      const timestamp = localStorage.getItem(timestampKey);
-      const now = Date.now();
+      const cacheKey = companyScopedKey('categories', companyId);
       const ttl = CACHE_TTL.categories; // 10 минут
       
       // Если timestamp отсутствует или истек - очищаем state
-      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+      if (!isFreshByKey(cacheKey, ttl)) {
         commit('SET_CATEGORIES', []);
       }
       
@@ -855,7 +888,7 @@ const store = createStore({
         commit('SET_CATEGORIES', data);
         
         // ✅ Явно сохраняем timestamp с привязкой к компании
-        localStorage.setItem(timestampKey, Date.now().toString());
+        touchKey(cacheKey);
         console.log(`  ✅ Категории (${data.length})`);
       } catch (error) {
         console.error('❌ Ошибка загрузки категорий после всех попыток:', error);
@@ -879,14 +912,11 @@ const store = createStore({
       }
 
       // ✅ Ключ кэша привязан к компании
-      const cacheKey = `projects_${companyId}`;
-      const timestampKey = `${cacheKey}_timestamp`;
-      const timestamp = localStorage.getItem(timestampKey);
-      const now = Date.now();
+      const cacheKey = companyScopedKey('projects', companyId);
       const ttl = CACHE_TTL.projects;
       
       // Если timestamp отсутствует или истек - очищаем state
-      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+      if (!isFreshByKey(cacheKey, ttl)) {
         commit('SET_PROJECTS', []);
         commit('SET_PROJECTS_DATA', []);
       }
@@ -899,7 +929,7 @@ const store = createStore({
       ) {
         // Конвертируем plain data в DTO
         const ProjectDto = (await import('@/dto/project/ProjectDto')).default;
-        const projects = ProjectDto.fromArray(state.projectsData);
+        const projects = ProjectDto.fromApiArray(state.projectsData);
         commit('SET_PROJECTS', projects);
         return;
       }
@@ -931,10 +961,10 @@ const store = createStore({
         // Сохраняем plain data для кэширования в localStorage
         const plainData = data.map(project => ({ ...project }));
         commit('SET_PROJECTS_DATA', plainData);
-        commit('SET_PROJECTS', ProjectDto.fromArray(plainData));
+        commit('SET_PROJECTS', ProjectDto.fromApiArray(plainData));
         
         // ✅ Явно сохраняем timestamp с привязкой к компании
-        localStorage.setItem(timestampKey, Date.now().toString());
+        touchKey(cacheKey);
         console.log(`  📋 Проекты (${data.length})`);
       } catch (error) {
         console.error('❌ Ошибка загрузки проектов после всех попыток:', error);
@@ -954,7 +984,7 @@ const store = createStore({
       if (state.lastProductsData.length > 0 && state.lastProducts.length === 0) {
         // Конвертируем plain data в DTO
         const ProductSearchDto = (await import('@/dto/product/ProductSearchDto')).default;
-        const lastProducts = state.lastProductsData.map(item => ProductSearchDto.fromApi(item));
+        const lastProducts = ProductSearchDto.fromApiArray(state.lastProductsData);
         commit('SET_LAST_PRODUCTS', lastProducts);
         return;
       }
@@ -992,7 +1022,7 @@ const store = createStore({
         
         // Преобразуем в DTO для поиска
         const ProductSearchDto = (await import('@/dto/product/ProductSearchDto')).default;
-        const lastProducts = (results.items || []).map(item => ProductSearchDto.fromApi(item));
+        const lastProducts = ProductSearchDto.fromApiArray(results.items || []);
         
         commit('SET_LAST_PRODUCTS', lastProducts);
         
@@ -1010,7 +1040,7 @@ const store = createStore({
       if (state.allProductsData.length > 0 && state.allProducts.length === 0) {
         // Конвертируем plain data в DTO
         const ProductSearchDto = (await import('@/dto/product/ProductSearchDto')).default;
-        const allProducts = state.allProductsData.map(item => ProductSearchDto.fromApi(item));
+        const allProducts = ProductSearchDto.fromApiArray(state.allProductsData);
         commit('SET_ALL_PRODUCTS', allProducts);
         return;
       }
@@ -1048,7 +1078,7 @@ const store = createStore({
         
         // Преобразуем в DTO для поиска
         const ProductSearchDto = (await import('@/dto/product/ProductSearchDto')).default;
-        const allProducts = (results.items || []).map(item => ProductSearchDto.fromApi(item));
+        const allProducts = ProductSearchDto.fromApiArray(results.items || []);
         
         commit('SET_ALL_PRODUCTS', allProducts);
         
@@ -1070,12 +1100,11 @@ const store = createStore({
       }
 
       // ✅ Проверяем не истек ли кэш статусов заказов
-      const timestamp = localStorage.getItem('orderStatuses_timestamp');
-      const now = Date.now();
+      const cacheKey = 'orderStatuses';
       const ttl = CACHE_TTL.orderStatuses;
       
       // Если timestamp отсутствует или истек - очищаем state
-      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+      if (!isFreshByKey(cacheKey, ttl)) {
         commit('SET_ORDER_STATUSES', []);
       }
 
@@ -1090,11 +1119,8 @@ const store = createStore({
         const OrderStatusController = (await import('@/api/OrderStatusController')).default;
         const data = await OrderStatusController.getAllItems();
         
-        // Загружаем пользовательский порядок из localStorage
-        const customOrder = localStorage.getItem('orderStatuses_customOrder');
-        if (customOrder) {
-          const orderArray = JSON.parse(customOrder);
-          // Сортируем массив согласно пользовательскому порядку
+        if (state.orderStatusesCustomOrder) {
+          const orderArray = state.orderStatusesCustomOrder;
           const orderedData = orderArray
             .map(id => data.find(status => status.id === id))
             .filter(Boolean)
@@ -1104,8 +1130,8 @@ const store = createStore({
           commit('SET_ORDER_STATUSES', data);
         }
         
-        // ✅ vuex-persistedstate автоматически сохранит в localStorage!
-        localStorage.setItem('orderStatuses_timestamp', Date.now().toString());
+        // ✅ д автоматически сохранит в localStorage!
+        touchKey(cacheKey);
         console.log(`📊 Статусы заказов (${data.length})`);
       } catch (error) {
         console.error('Ошибка загрузки статусов заказов:', error);
@@ -1120,12 +1146,11 @@ const store = createStore({
       }
 
       // ✅ Проверяем не истек ли кэш статусов проектов
-      const timestamp = localStorage.getItem('projectStatuses_timestamp');
-      const now = Date.now();
+      const cacheKey = 'projectStatuses';
       const ttl = CACHE_TTL.projectStatuses;
       
       // Если timestamp отсутствует или истек - очищаем state
-      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+      if (!isFreshByKey(cacheKey, ttl)) {
         commit('SET_PROJECT_STATUSES', []);
       }
 
@@ -1142,7 +1167,7 @@ const store = createStore({
         const data = await ProjectStatusController.getAllItems();
         commit('SET_PROJECT_STATUSES', data);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
-        localStorage.setItem('projectStatuses_timestamp', Date.now().toString());
+        touchKey(cacheKey);
         console.log(`🎯 Статусы проектов (${data.length})`);
       } catch (error) {
         console.error('Ошибка загрузки статусов проектов:', error);
@@ -1157,12 +1182,11 @@ const store = createStore({
       }
 
       // ✅ Проверяем не истек ли кэш категорий транзакций
-      const timestamp = localStorage.getItem('transactionCategories_timestamp');
-      const now = Date.now();
+      const cacheKey = 'transactionCategories';
       const ttl = CACHE_TTL.transactionCategories;
       
       // Если timestamp отсутствует или истек - очищаем state
-      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+      if (!isFreshByKey(cacheKey, ttl)) {
         commit('SET_TRANSACTION_CATEGORIES', []);
       }
 
@@ -1178,7 +1202,7 @@ const store = createStore({
         const data = await TransactionCategoryController.getAllItems();
         commit('SET_TRANSACTION_CATEGORIES', data);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
-        localStorage.setItem('transactionCategories_timestamp', Date.now().toString());
+        touchKey(cacheKey);
         console.log(`💳 Категории транзакций (${data.length})`);
       } catch (error) {
         console.error('Ошибка загрузки категорий транзакций:', error);
@@ -1193,12 +1217,11 @@ const store = createStore({
       }
 
       // ✅ Проверяем не истек ли кэш статусов товаров
-      const timestamp = localStorage.getItem('productStatuses_timestamp');
-      const now = Date.now();
+      const cacheKey = 'productStatuses';
       const ttl = CACHE_TTL.productStatuses;
       
       // Если timestamp отсутствует или истек - очищаем state
-      if (!timestamp || (now - parseInt(timestamp)) > ttl) {
+      if (!isFreshByKey(cacheKey, ttl)) {
         commit('SET_PRODUCT_STATUSES', []);
       }
 
@@ -1218,7 +1241,7 @@ const store = createStore({
         );
         commit('SET_PRODUCT_STATUSES', data);
         // ✅ vuex-persistedstate автоматически сохранит в localStorage!
-        localStorage.setItem('productStatuses_timestamp', Date.now().toString());
+        touchKey(cacheKey);
         console.log(`🏷️ Статусы товаров (${data.length})`);
       } catch (error) {
         console.error('❌ Ошибка загрузки статусов товаров после всех попыток:', error);
@@ -1266,47 +1289,27 @@ const store = createStore({
     },
     // Очистка кэша
     async clearCache({ commit }) {
-      // Очищаем глобальный кэш (валюты, единицы, статусы)
-      localStorage.removeItem('currencies_cache');
-      localStorage.removeItem('currencies_cache_timestamp');
-      localStorage.removeItem('units_cache');
-      localStorage.removeItem('units_cache_timestamp');
-      localStorage.removeItem('orderStatuses_cache');
-      localStorage.removeItem('orderStatuses_cache_timestamp');
-      localStorage.removeItem('projectStatuses_cache');
-      localStorage.removeItem('projectStatuses_cache_timestamp');
-      localStorage.removeItem('transactionCategories_cache');
-      localStorage.removeItem('transactionCategories_cache_timestamp');
-      localStorage.removeItem('productStatuses_cache');
-      localStorage.removeItem('productStatuses_cache_timestamp');
-    
-      const keys = Object.keys(localStorage);
+      // Удаляем все ключи кэша централизованно
+      const keys = CacheInvalidator.getCacheKeys();
       keys.forEach(key => {
-        if (key.includes('_timestamp') || 
-            key.startsWith('warehouses_') || 
-            key.startsWith('cashRegisters_') ||
-            key.startsWith('clients_') ||
-            key.startsWith('products_') ||
-            key.startsWith('services_') ||
-            key.startsWith('categories_') ||
-            key.startsWith('projects_')) {
-          localStorage.removeItem(key);
-        }
+        localStorage.removeItem(key);
+        localStorage.removeItem(`${key}_timestamp`);
       });
       
       // Очищаем store
       commit('CLEAR_COMPANY_DATA');
-      commit('SET_CURRENCIES', []);
-      commit('SET_UNITS', []);
-      commit('SET_ORDER_STATUSES', []);
-      commit('SET_PROJECT_STATUSES', []);
-      commit('SET_TRANSACTION_CATEGORIES', []);
-      commit('SET_PRODUCT_STATUSES', []);
+      // Очищаем глобальные справочники
+      ['currencies','units','orderStatuses','projectStatuses','transactionCategories','productStatuses']
+        .forEach(type => {
+          if (CLEAR_MUTATIONS_MAPPING[type]) {
+            commit(CLEAR_MUTATIONS_MAPPING[type], []);
+          }
+        });
     },
     async loadUserCompanies({ commit }) {
       try {
         const response = await api.get('/user/companies');
-        const companies = CompanyDto.fromArray(response.data);
+        const companies = CompanyDto.fromApiArray(response.data);
         commit('SET_USER_COMPANIES', companies);
         return companies;
       } catch (error) {
@@ -1321,6 +1324,23 @@ const store = createStore({
           // Нормализуем объект компании через DTO (после восстановления из persisted state он может быть "сырой")
           const normalized = new CompanyDto(state.currentCompany);
           commit('SET_CURRENT_COMPANY', normalized);
+          
+          // Логируем правила округления компании
+          if (normalized?.id) {
+            console.log('🔢 Правила округления компании:', {
+              company: normalized.name,
+              rounding_decimals: normalized.rounding_decimals,
+              rounding_decimals_raw: state.currentCompany?.rounding_decimals,
+              rounding_enabled: normalized.rounding_enabled ?? true,
+              rounding_direction: normalized.rounding_direction || 'standard',
+              rounding_custom_threshold: normalized.rounding_custom_threshold ?? null,
+              rounding_quantity_decimals: normalized.rounding_quantity_decimals ,
+              rounding_quantity_enabled: normalized.rounding_quantity_enabled ?? true,
+              rounding_quantity_direction: normalized.rounding_quantity_direction || 'standard',
+              rounding_quantity_custom_threshold: normalized.rounding_quantity_custom_threshold ?? null
+            });
+          }
+          
           // Компания уже в state, загружаем только данные
           await dispatch('loadCompanyData');
           return normalized;
@@ -1332,6 +1352,24 @@ const store = createStore({
           if (lastCompany) {
             // Восстанавливаем последнюю выбранную компанию
             commit('SET_CURRENT_COMPANY', lastCompany);
+            
+            // Логируем правила округления компании
+            if (lastCompany?.id) {
+              console.log('🔢 Правила округления компании:', {
+                company: lastCompany.name,
+                companyId: lastCompany.id,
+                rounding_decimals: lastCompany.rounding_decimals ?? 2,
+                rounding_enabled: lastCompany.rounding_enabled ?? true,
+                rounding_direction: lastCompany.rounding_direction || 'standard',
+                rounding_custom_threshold: lastCompany.rounding_custom_threshold ?? null,
+                rounding_quantity_decimals: lastCompany.rounding_quantity_decimals ?? 2,
+                rounding_quantity_enabled: lastCompany.rounding_quantity_enabled ?? true,
+                rounding_quantity_direction: lastCompany.rounding_quantity_direction || 'standard',
+                rounding_quantity_custom_threshold: lastCompany.rounding_quantity_custom_threshold ?? null,
+                skip_project_order_balance: lastCompany.skip_project_order_balance ?? true
+              });
+            }
+            
             await dispatch('loadCompanyData');
             return lastCompany;
           }
@@ -1341,6 +1379,23 @@ const store = createStore({
         const response = await api.get('/user/current-company');
         const company = new CompanyDto(response.data.company);
         commit('SET_CURRENT_COMPANY', company);
+        
+        // Логируем правила округления компании
+        if (company?.id) {
+          console.log('🔢 Правила округления компании:', {
+            company: company.name,
+            companyId: company.id,
+            rounding_decimals: company.rounding_decimals ?? 2,
+            rounding_enabled: company.rounding_enabled ?? true,
+            rounding_direction: company.rounding_direction || 'standard',
+            rounding_custom_threshold: company.rounding_custom_threshold ?? null,
+            rounding_quantity_decimals: company.rounding_quantity_decimals ?? 2,
+            rounding_quantity_enabled: company.rounding_quantity_enabled ?? true,
+            rounding_quantity_direction: company.rounding_quantity_direction || 'standard',
+            rounding_quantity_custom_threshold: company.rounding_quantity_custom_threshold ?? null,
+            skip_project_order_balance: company.skip_project_order_balance ?? true
+          });
+        }
         
         // Загружаем данные компании
         if (company?.id) {
@@ -1362,6 +1417,23 @@ const store = createStore({
         
         commit('SET_CURRENT_COMPANY', company);
         
+        // Логируем правила округления компании
+        if (company?.id) {
+          console.log('🔢 Правила округления компании:', {
+            company: company.name,
+            companyId: company.id,
+            rounding_decimals: company.rounding_decimals ?? 2,
+            rounding_enabled: company.rounding_enabled ?? true,
+            rounding_direction: company.rounding_direction || 'standard',
+            rounding_custom_threshold: company.rounding_custom_threshold ?? null,
+            rounding_quantity_decimals: company.rounding_quantity_decimals ?? 2,
+            rounding_quantity_enabled: company.rounding_quantity_enabled ?? true,
+            rounding_quantity_direction: company.rounding_quantity_direction || 'standard',
+            rounding_quantity_custom_threshold: company.rounding_quantity_custom_threshold ?? null,
+            skip_project_order_balance: company.skip_project_order_balance ?? true
+          });
+        }
+        
         // ✅ Инвалидируем кэш старой компании в localStorage
         if (oldCompanyId && oldCompanyId !== companyId) {
           // Инвалидируем кэш старой компании
@@ -1374,19 +1446,10 @@ const store = createStore({
           // Очищаем данные vuex-persistedstate
           const persistKey = 'birhasap_vuex_cache';
           const stored = JSON.parse(localStorage.getItem(persistKey) || '{}');
-          delete stored.warehouses;
-          delete stored.cashRegisters;
-          delete stored.clients;
-          delete stored.clientsData;
-          delete stored.products;
-          delete stored.services;
-          delete stored.lastProducts;
-          delete stored.lastProductsData;
-          delete stored.allProducts;
-          delete stored.allProductsData;
-          delete stored.categories;
-          delete stored.projects;
-          delete stored.projectsData;
+          // DRY: используем константу вместо ручного списка
+          COMPANY_DATA_FIELDS.forEach(field => {
+            delete stored[field];
+          });
           
           // Сохраняем обновленное состояние
           localStorage.setItem(persistKey, JSON.stringify(stored));
@@ -1428,33 +1491,6 @@ const store = createStore({
         throw error;
       }
     },
-    // Мониторинг кэша
-    startCacheMonitoring({ commit, state }) {
-      if (state.cacheMonitor.enabled && !state.cacheMonitor.intervalId) {
-        const intervalId = CacheMonitor.startMonitoring(60000); // каждую минуту
-        commit('SET_CACHE_MONITOR_INTERVAL', intervalId);
-      }
-    },
-    stopCacheMonitoring({ commit, state }) {
-      if (state.cacheMonitor.intervalId) {
-        clearInterval(state.cacheMonitor.intervalId);
-        commit('SET_CACHE_MONITOR_INTERVAL', null);
-      }
-    },
-    checkCacheStatus({ commit }) {
-      const info = CacheMonitor.getCacheInfo();
-      commit('SET_CACHE_MONITOR_LAST_CHECK', Date.now());
-      
-      if (info.status.level === 'error') {
-        console.error('🚨 Критический размер кэша:', info.status.message);
-        // Автоматическая очистка
-        CacheMonitor.autoCleanup();
-      } else if (info.status.level === 'warning') {
-        console.warn('⚠️ Предупреждение о размере кэша:', info.status.message);
-      }
-      
-      return info;
-    },
     // Инвалидация кэша
     invalidateCache({ commit }, { type, companyId = null }) {
       const removedCount = CacheInvalidator.invalidateByType(type);
@@ -1463,24 +1499,8 @@ const store = createStore({
       }
       
       // Очищаем соответствующие данные из store
-      const clearMutations = {
-        currencies: 'SET_CURRENCIES',
-        units: 'SET_UNITS',
-        orderStatuses: 'SET_ORDER_STATUSES',
-        projectStatuses: 'SET_PROJECT_STATUSES',
-        transactionCategories: 'SET_TRANSACTION_CATEGORIES',
-        productStatuses: 'SET_PRODUCT_STATUSES',
-        warehouses: 'SET_WAREHOUSES',
-        cashRegisters: 'SET_CASH_REGISTERS',
-        clients: 'SET_CLIENTS',
-        products: 'SET_PRODUCTS',
-        services: 'SET_SERVICES',
-        categories: 'SET_CATEGORIES',
-        projects: 'SET_PROJECTS'
-      };
-      
-      if (clearMutations[type]) {
-        commit(clearMutations[type], []);
+      if (CLEAR_MUTATIONS_MAPPING[type]) {
+        commit(CLEAR_MUTATIONS_MAPPING[type], []);
       }
       
       // ✅ При изменении products/services - очищаем lastProducts и allProducts
@@ -1514,22 +1534,13 @@ const store = createStore({
       CacheInvalidator.onUserChange();
       // Очищаем все данные
       commit('CLEAR_COMPANY_DATA');
-      commit('SET_CURRENCIES', []);
-      commit('SET_UNITS', []);
-      commit('SET_ORDER_STATUSES', []);
-      commit('SET_PROJECT_STATUSES', []);
-      commit('SET_TRANSACTION_CATEGORIES', []);
-      commit('SET_PRODUCT_STATUSES', []);
-      // Очищаем текущую компанию из localStorage
-      localStorage.removeItem('current_company');
-    },
-    // Инициализация всех систем кэширования
-    initCacheSystems({ dispatch }) {
-      dispatch('startCacheMonitoring');
-    },
-    // Остановка всех систем кэширования
-    stopCacheSystems({ dispatch }) {
-      dispatch('stopCacheMonitoring');
+      // DRY: используем существующий CLEAR_MUTATIONS_MAPPING для глобальных справочников
+      GLOBAL_REFERENCE_FIELDS.forEach(field => {
+        if (CLEAR_MUTATIONS_MAPPING[field]) {
+          commit(CLEAR_MUTATIONS_MAPPING[field], []);
+        }
+      });
+      commit('SET_USERS', []);
     },
   },
 
@@ -1614,29 +1625,87 @@ const store = createStore({
       });
     },
     soundEnabled: (state) => state.soundEnabled,
-    // Настройки округления для текущей компании
-    roundingDecimals: (state) => state.currentCompany?.rounding_decimals ?? 2,
-    roundingEnabled: (state) => state.currentCompany?.rounding_enabled ?? true,
-    roundingDirection: (state) => state.currentCompany?.rounding_direction || 'standard',
+    // Настройки округления для сумм текущей компании
+    roundingDecimals: (state) => {
+      const rawValue = state.currentCompany?.rounding_decimals;
+      const decimals = rawValue;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Store] Rounding decimals:', {
+          companyId: state.currentCompany?.id,
+          companyName: state.currentCompany?.name,
+          decimals
+        });
+      }
+      return decimals;
+    },
+    roundingEnabled: (state) => {
+      const enabled = state.currentCompany?.rounding_enabled ?? true;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Store] Rounding enabled:', {
+          companyId: state.currentCompany?.id,
+          companyName: state.currentCompany?.name,
+          enabled
+        });
+      }
+      return enabled;
+    },
+    roundingDirection: (state) => {
+      const direction = state.currentCompany?.rounding_direction || 'standard';
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Store] Rounding direction:', {
+          companyId: state.currentCompany?.id,
+          companyName: state.currentCompany?.name,
+          direction,
+          customThreshold: state.currentCompany?.rounding_custom_threshold
+        });
+      }
+      return direction;
+    },
     roundingCustomThreshold: (state) => state.currentCompany?.rounding_custom_threshold ?? 0.5,
-    // Мониторинг кэша
-    cacheMonitor: (state) => state.cacheMonitor,
-    cacheInfo: () => CacheMonitor.getCacheInfo(),
-    cacheStatus: () => CacheMonitor.getCacheStatus(),
+    // Настройки округления для количества товара текущей компании
+    roundingQuantityDecimals: (state) => {
+      const decimals = state.currentCompany?.rounding_quantity_decimals ?? 2;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Store] Rounding quantity decimals:', {
+          companyId: state.currentCompany?.id,
+          companyName: state.currentCompany?.name,
+          decimals
+        });
+      }
+      return decimals;
+    },
+    roundingQuantityEnabled: (state) => {
+      const enabled = state.currentCompany?.rounding_quantity_enabled ?? true;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Store] Rounding quantity enabled:', {
+          companyId: state.currentCompany?.id,
+          companyName: state.currentCompany?.name,
+          enabled
+        });
+      }
+      return enabled;
+    },
+    roundingQuantityDirection: (state) => {
+      const direction = state.currentCompany?.rounding_quantity_direction || 'standard';
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Store] Rounding quantity direction:', {
+          companyId: state.currentCompany?.id,
+          companyName: state.currentCompany?.name,
+          direction,
+          customThreshold: state.currentCompany?.rounding_quantity_custom_threshold
+        });
+      }
+      return direction;
+    },
+    roundingQuantityCustomThreshold: (state) => state.currentCompany?.rounding_quantity_custom_threshold ?? 0.5,
     clientTypeFilter: (state) => state.clientTypeFilter || 'all',
   },
   plugins: [
     createPersistedState({
       key: 'birhasap_vuex_cache',
       paths: [
-        // Глобальные справочники (24 часа)
-        'units',
-        'currencies',
-        'users',         // ✅ Сотрудники (для модалок создания)
-        'orderStatuses',
-        'projectStatuses',
-        'transactionCategories',
-        'productStatuses',
+        // DRY: глобальные справочники (используем константу)
+        ...GLOBAL_REFERENCE_FIELDS,
         
         // Данные компании (10 минут)
         'warehouses',
@@ -1652,9 +1721,11 @@ const store = createStore({
         
         // Текущая компания и настройки
         'currentCompany',
-        'lastCompanyId', // ✅ Для отслеживания смены компании
+        'lastCompanyId',
         'userCompanies',
         'soundEnabled',
+        'tokenInfo',
+        'orderStatusesCustomOrder',
         // Пользовательские UI фильтры
         'clientTypeFilter',
       ],
@@ -1669,26 +1740,23 @@ const store = createStore({
           
           // Проверяем TTL для каждого кэшируемого поля
           const now = Date.now();
-          const fieldsToCheck = {
-            // Глобальные
-            units: CACHE_TTL.units,
-            currencies: CACHE_TTL.currencies,
-            users: 24 * 60 * 60 * 1000, // 24 часа (как глобальный справочник)
-            orderStatuses: CACHE_TTL.orderStatuses,
-            projectStatuses: CACHE_TTL.projectStatuses,
-            transactionCategories: CACHE_TTL.transactionCategories,
-            productStatuses: CACHE_TTL.productStatuses,
-            
-            // Данные компании
-            warehouses: CACHE_TTL.warehouses,
-            cashRegisters: CACHE_TTL.cashRegisters,
-            clientsData: CACHE_TTL.clients, // Plain data версия
-            categories: CACHE_TTL.categories,
-            projectsData: CACHE_TTL.projects, // Plain data версия
-            lastProductsData: 5 * 60 * 1000, // 5 минут (часто меняющиеся данные)
-            allProductsData: CACHE_TTL.products, // 30 дней (ВСЕ товары для поиска)
-            // products, services НЕ кэшируем глобально (загружаются на своих страницах)
-          };
+          // DRY: собираем fieldsToCheck из констант
+          const fieldsToCheck = {};
+          
+          // Глобальные справочники
+          GLOBAL_REFERENCE_FIELDS.forEach(field => {
+            fieldsToCheck[field] = CACHE_TTL[field] || CACHE_TTL.default;
+          });
+          
+          // Данные компании
+          fieldsToCheck.warehouses = CACHE_TTL.warehouses;
+          fieldsToCheck.cashRegisters = CACHE_TTL.cashRegisters;
+          fieldsToCheck.clientsData = CACHE_TTL.clients; // Plain data версия
+          fieldsToCheck.categories = CACHE_TTL.categories;
+          fieldsToCheck.projectsData = CACHE_TTL.projects; // Plain data версия
+          fieldsToCheck.lastProductsData = 5 * 60 * 1000; // 5 минут (часто меняющиеся данные)
+          fieldsToCheck.allProductsData = CACHE_TTL.products; // 30 дней (ВСЕ товары для поиска)
+          // products, services НЕ кэшируем глобально (загружаются на своих страницах)
           
           // Проверяем timestamp для каждого поля
           Object.keys(fieldsToCheck).forEach(field => {
@@ -1717,14 +1785,9 @@ const store = createStore({
         
         // Сохраняем timestamp для каждого массива данных
         const now = Date.now().toString();
-        const fieldsWithTimestamp = [
-          'units', 'currencies', 'users', 'orderStatuses', 'projectStatuses',
-          'transactionCategories', 'productStatuses', 'warehouses',
-          'cashRegisters', 'clientsData', 'categories', 'projectsData', 'lastProductsData', 'allProductsData'
-          // products, services НЕ кэшируем глобально (загружаются на своих страницах)
-        ];
+        // DRY: используем константу вместо ручного списка
         
-        fieldsWithTimestamp.forEach(field => {
+        FIELDS_WITH_TIMESTAMP.forEach(field => {
           if (state[field] && Array.isArray(state[field]) && state[field].length > 0) {
             storage.setItem(`${field}_timestamp`, now);
           }
@@ -1787,26 +1850,8 @@ eventBus.on('company-updated', async () => {
 
 // Обработчик события инвалидации кэша
 eventBus.on('cache:invalidate', ({ type }) => {
-  // Очищаем соответствующие данные в state при инвалидации кэша
-  const stateMapping = {
-    projectStatuses: 'SET_PROJECT_STATUSES',
-    orderStatuses: 'SET_ORDER_STATUSES',
-    orderStatusCategories: 'SET_ORDER_STATUSES', // также инвалидируем orderStatuses
-    transactionCategories: 'SET_TRANSACTION_CATEGORIES',
-    productStatuses: 'SET_PRODUCT_STATUSES',
-    currencies: 'SET_CURRENCIES',
-    units: 'SET_UNITS',
-    warehouses: 'SET_WAREHOUSES',
-    cashRegisters: 'SET_CASH_REGISTERS',
-    clients: 'SET_CLIENTS',
-    categories: 'SET_CATEGORIES',
-    projects: 'SET_PROJECTS',
-    users: 'SET_USERS',
-    products: 'SET_PRODUCTS',
-    services: 'SET_SERVICES',
-  };
-
-  const mutation = stateMapping[type];
+  // Очищаем соответствующие данные в state при инвалидации кэша (DRY)
+  const mutation = CLEAR_MUTATIONS_MAPPING[type] || (type === 'orderStatusCategories' ? 'SET_ORDER_STATUSES' : null);
   if (mutation) {
     store.commit(mutation, []);
     

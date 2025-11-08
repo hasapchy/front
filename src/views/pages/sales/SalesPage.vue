@@ -69,10 +69,11 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import { eventBus } from '@/eventBus';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
+import searchMixin from '@/mixins/searchMixin';
 
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin, searchMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, ClientButtonCell, BatchButton, AlertDialog },
     data() {
         return {
@@ -91,7 +92,7 @@ export default {
                 { name: 'dateUser', label: 'dateUser' },
                 { name: 'cashName', label: 'cashRegister' },
                 { name: 'warehouseName', label: 'warehouse' },
-                { name: 'client', label: 'buyer', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
+                { name: 'client', label: 'buyer', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, searchQuery: this.searchQuery }) },
                 { name: 'products', label: 'products', html: true },
                 { name: 'note', label: 'note' },
                 { name: 'price', label: 'saleAmount' },
@@ -139,10 +140,6 @@ export default {
                     return i[c];
             }
         },
-        handleSearch(query) {
-            this.$store.dispatch('setSearchQuery', query);
-            this.fetchItems(1, false);
-        },
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
@@ -168,10 +165,10 @@ export default {
                 this.loading = true;
             }
             try {
-                // ✅ Убеждаемся, что perPage всегда установлен (по умолчанию 10)
-                const perPage = this.perPage || 10;
+               
+                const per_page = this.perPage || 20;
                 
-                const new_data = await SaleController.getItemsPaginated(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, perPage);
+                const new_data = await SaleController.getItems(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, per_page);
                 this.data = new_data;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingSaleList'), error.message, true);

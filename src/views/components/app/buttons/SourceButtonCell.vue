@@ -28,7 +28,8 @@
 </template>
 
 <script>
-import { defineAsyncComponent } from 'vue';
+import { markRaw } from 'vue';
+import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
     emits: ['updated', 'deleted', 'error'],
@@ -81,9 +82,9 @@ export default {
             }
             
             if (this.searchQuery && this.searchQuery.trim()) {
-                return this.highlightText(text, this.searchQuery);
+                return highlightMatches(text, this.searchQuery);
             }
-            
+
             return text;
         },
         defaultText() {
@@ -91,15 +92,6 @@ export default {
         }
     },
     methods: {
-        highlightText(text, search) {
-            if (!text || !search) return text;
-            const searchStr = String(search).trim();
-            if (!searchStr) return text;
-            
-            const textStr = String(text);
-            const regex = new RegExp(`(${searchStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-            return textStr.replace(regex, '<mark style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 3px; font-weight: bold;">$1</mark>');
-        },
         async openSourceModal() {
             if (!this.sourceType || !this.sourceId) return;
             
@@ -107,29 +99,29 @@ export default {
             try {
                 // Загружаем SideModalDialog динамически
                 const SideModalDialog = (await import('@/views/components/app/dialog/SideModalDialog.vue')).default;
-                this.modalComponent = SideModalDialog;
+                this.modalComponent = markRaw(SideModalDialog);
                 
                 // Загружаем данные и компонент содержимого динамически - избегаем циклических зависимостей
                 if (this.sourceType.includes('Sale')) {
                     const SaleController = (await import('@/api/SaleController')).default;
                     const SaleCreatePage = (await import('@/views/pages/sales/SaleCreatePage.vue')).default;
                     this.editingItem = await SaleController.getItem(this.sourceId);
-                    this.modalContentComponent = SaleCreatePage;
+                    this.modalContentComponent = markRaw(SaleCreatePage);
                 } else if (this.sourceType.includes('Order')) {
                     const OrderController = (await import('@/api/OrderController')).default;
                     const OrderCreatePage = (await import('@/views/pages/orders/OrderCreatePage.vue')).default;
                     this.editingItem = await OrderController.getItem(this.sourceId);
-                    this.modalContentComponent = OrderCreatePage;
+                    this.modalContentComponent = markRaw(OrderCreatePage);
                 } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
                     const WarehouseReceiptController = (await import('@/api/WarehouseReceiptController')).default;
                     const WarehousesReceiptCreatePage = (await import('@/views/pages/warehouses/WarehousesReceiptCreatePage.vue')).default;
                     this.editingItem = await WarehouseReceiptController.getItem(this.sourceId);
-                    this.modalContentComponent = WarehousesReceiptCreatePage;
+                    this.modalContentComponent = markRaw(WarehousesReceiptCreatePage);
                 } else if (this.sourceType.includes('Transaction')) {
                     const TransactionController = (await import('@/api/TransactionController')).default;
                     const TransactionCreatePage = (await import('@/views/pages/transactions/TransactionCreatePage.vue')).default;
                     this.editingItem = await TransactionController.getItem(this.sourceId);
-                    this.modalContentComponent = TransactionCreatePage;
+                    this.modalContentComponent = markRaw(TransactionCreatePage);
                 } else {
                     console.warn('[SourceButtonCell] Unknown source type:', this.sourceType);
                     return;

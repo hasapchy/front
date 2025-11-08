@@ -31,7 +31,7 @@
         </div>
 
         <!-- Область для карточек -->
-        <div class="column-content flex-1 overflow-y-auto p-3" ref="scrollContainer">
+        <div class="column-content flex-1 overflow-y-auto p-3" ref="scrollContainer" @scroll="handleScroll">
             <draggable
                 :list="orders"
                 group="orders"
@@ -42,15 +42,19 @@
                 :disabled="disabled"
                 class="min-h-[200px]"
             >
-                <KanbanCard
+                <div
                     v-for="order in orders"
                     :key="order.id"
-                    :order="order"
-                    :is-selected="selectedIds.includes(order.id)"
-                    :is-project-mode="isProjectMode"
-                    @dblclick="handleCardDoubleClick"
-                    @select-toggle="handleCardSelectToggle"
-                />
+                    class="card-wrapper mb-2"
+                >
+                    <KanbanCard
+                        :order="order"
+                        :is-selected="selectedIds.includes(order.id)"
+                        :is-project-mode="isProjectMode"
+                        @dblclick="handleCardDoubleClick"
+                        @select-toggle="handleCardSelectToggle"
+                    />
+                </div>
             </draggable>
 
             <!-- Пустая колонка -->
@@ -67,6 +71,7 @@
 <script>
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanCard from './KanbanCard.vue';
+import debounce from 'lodash.debounce';
 
 export default {
     name: 'KanbanColumn',
@@ -98,20 +103,26 @@ export default {
         isProjectMode: {
             type: Boolean,
             default: false
+        },
+        hasMore: {
+            type: Boolean,
+            default: false
+        },
+        loading: {
+            type: Boolean,
+            default: false
         }
     },
-    emits: ['change', 'card-dblclick', 'card-select-toggle', 'column-select-toggle'],
+    emits: ['change', 'card-dblclick', 'card-select-toggle', 'column-select-toggle', 'load-more'],
     computed: {
         statusColor() {
-            // Используем тот же подход, что и в StatusSelectCell
-            // Поддержка как категорий (для заказов), так и прямого цвета
             const hex = this.status.category?.color || this.status.color;
             return hex || '#3571A4'; // Дефолтный цвет, если не задан
         },
         lightBackgroundColor() {
             // Осветляем цвет статуса для фона колонки
             const color = this.statusColor;
-            return this.lightenColor(color, 0.92); // 92% светлее = очень светлый оттенок
+            return this.lightenColor(color, 0.92); 
         },
         columnTotal() {
             return this.orders.reduce((sum, order) => {
@@ -169,7 +180,21 @@ export default {
             
             // Конвертируем обратно в HEX
             return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
-        }
+        },
+        handleScroll: debounce(function() {
+            if (!this.hasMore || this.loading) return;
+            
+            const container = this.$refs.scrollContainer;
+            if (!container) return;
+            
+            const scrollTop = container.scrollTop;
+            const scrollHeight = container.scrollHeight;
+            const clientHeight = container.clientHeight;
+            
+            if (scrollTop + clientHeight >= scrollHeight - 100) {
+                this.$emit('load-more');
+            }
+        }, 200),
     },
 };
 </script>
