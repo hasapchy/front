@@ -666,6 +666,7 @@ export default {
 
                     // Загружаем множественные категории
                     console.log('Editing item categories:', newEditingItem.categories);
+                    console.log('Editing item purchase price:', newEditingItem.purchase_price, newEditingItem?.prices?.[0]?.purchase_price);
                     if (newEditingItem.categories && newEditingItem.categories.length > 0) {
                         // Просто добавляем все категории как выбранные
                         this.selectedCategories = newEditingItem.categories.map(cat => ({
