@@ -664,9 +664,10 @@ export default {
                     this.image = newEditingItem.image || newEditingItem.productImage || '';
                     this.category_id = newEditingItem.category_id || newEditingItem.categoryId || '';
 
+                    const purchasePriceValue = newEditingItem.purchasePrice ?? 0;
                     // Загружаем множественные категории
                     console.log('Editing item categories:', newEditingItem.categories);
-                    console.log('Editing item purchase price:', newEditingItem.purchase_price, newEditingItem?.prices?.[0]?.purchase_price);
+                    console.log('Editing item purchase price:', purchasePriceValue);
                     if (newEditingItem.categories && newEditingItem.categories.length > 0) {
                         // Просто добавляем все категории как выбранные
                         this.selectedCategories = newEditingItem.categories.map(cat => ({
@@ -696,9 +697,9 @@ export default {
 
                     this.unit_id = newEditingItem.unit_id || newEditingItem.unitId || '';
                     this.barcode = newEditingItem.barcode || '';
-                    this.retail_price = newEditingItem.retail_price !== undefined ? newEditingItem.retail_price : 0;
-                    this.wholesale_price = newEditingItem.wholesale_price !== undefined ? newEditingItem.wholesale_price : 0;
-                    this.purchase_price = newEditingItem.purchase_price !== undefined ? newEditingItem.purchase_price : 0;
+                    this.retail_price = newEditingItem.retailPrice ?? 0;
+                    this.wholesale_price = newEditingItem.wholesalePrice ?? 0;
+                    this.purchase_price = purchasePriceValue ?? 0;
                     this.editingItemId = newEditingItem.id || newEditingItem.productId || null;
                 } else {
                     this.type = 'product';
