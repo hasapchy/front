@@ -933,6 +933,7 @@ export default {
   // Новые переводы для фильтров транзакций
   allTransactionTypes: 'Ähli tranzaksiya görnüşleri',
   allTransactions: 'Ähli tranzaksiyalar',
+  allTransactions: 'Ähli tranzaksiýalar',
   nonDebtTransactions: 'Karz däl tranzaksiyalar',
   debtsOnly: 'Diňe bergidarlyklar',
   allSources: 'Ähli çeşmeler',

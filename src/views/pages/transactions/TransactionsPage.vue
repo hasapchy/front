@@ -52,6 +52,7 @@
             <!-- Фильтр по долгам -->
             <div class="ml-2">
                 <select v-model="debtFilter" @change="() => fetchItems(1)">
+                    <option value="all">{{ $t('allTransactions') }}</option>
                     <option value="false">{{ $t('nonDebtTransactions') }}</option>
                     <option value="true">{{ $t('debtsOnly') }}</option>
                 </select>
@@ -162,7 +163,7 @@ export default {
             showStatusSelect: false,
             allCashRegisters: [],
             cashRegisterId: '',
-            dateFilter: 'all_time',
+            dateFilter: 'this_month',
             startDate: null,
             endDate: null,
             transactionTypeFilter: '',
@@ -269,6 +270,7 @@ export default {
                
                 const per_page = this.perPage || 20;
                 
+                const debtFilter = this.debtFilter === 'all' ? null : this.debtFilter;
                 const new_data = await TransactionController.getItems(
                     page,
                     this.cashRegisterId,
@@ -281,7 +283,7 @@ export default {
                     per_page,
                     this.startDate,
                     this.endDate,
-                    this.debtFilter // Фильтр по долгам (false/true)
+                    debtFilter
                 );
                 
                 // Обычная пагинация
@@ -325,7 +327,7 @@ export default {
             this.sourceFilter = '';
             this.projectId = '';
             this.debtFilter = 'false';
-            this.dateFilter = 'all_time';
+            this.dateFilter = 'this_month';
             this.startDate = null;
             this.endDate = null;
             this.fetchItems();
@@ -338,7 +340,7 @@ export default {
             this.sourceFilter = '';
             this.projectId = '';
             this.debtFilter = 'false';
-            this.dateFilter = 'all_time';
+            this.dateFilter = 'this_month';
             this.startDate = null;
             this.endDate = null;
             this.selectedIds = [];
@@ -452,7 +454,7 @@ export default {
                    this.sourceFilter !== '' ||
                    this.projectId !== '' ||
                    this.debtFilter !== 'false' ||
-                   this.dateFilter !== 'all_time' ||
+                   this.dateFilter !== 'this_month' ||
                    this.startDate !== null ||
                    this.endDate !== null;
         }

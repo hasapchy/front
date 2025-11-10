@@ -1036,6 +1036,7 @@ export default {
   // Новые переводы для фильтров транзакций
   allTransactionTypes: 'Все типы транзакций',
   allTransactions: 'Все транзакции',
+  allTransactions: 'Все транзакции',
   nonDebtTransactions: 'Некредиторские транзакции',
   debtsOnly: 'Только долги',
   allSources: 'Все источники',

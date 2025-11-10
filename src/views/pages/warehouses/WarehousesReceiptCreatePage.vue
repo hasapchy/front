@@ -53,16 +53,6 @@
         </div>
 
         <div class="mt-2">
-            <label>{{ $t('project') }}</label>
-            <select v-model="projectId" :disabled="!!editingItemId">
-                <option value="">{{ $t('no') }}</option>
-                <option v-for="project in allProjects" :key="project.id" :value="project.id">
-                    {{ project.name }}
-                </option>
-            </select>
-        </div>
-
-        <div class="mt-2">
             <label>{{ $t('note') }}</label>
             <input type="text" v-model="note">
         </div>
@@ -121,7 +111,6 @@ export default {
             date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
             note: this.editingItem ? this.editingItem.note : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId || '' : '',
-            projectId: this.editingItem ? this.editingItem.projectId || '' : '',
             type: this.editingItem ? this.editingItem.type : 'cash',
             cashId: this.editingItem ? this.editingItem.cashId : '',
             products: this.editingItem ? this.editingItem.products : [],
@@ -131,7 +120,6 @@ export default {
             deleteDialog: false,
             deleteLoading: false,
             allWarehouses: [],
-            allProjects: [],
             currencies: [],
             allCashRegisters: [],
         }
@@ -158,8 +146,7 @@ export default {
             await Promise.all([
                 this.fetchCurrencies(),
                 this.fetchAllWarehouses(),
-                this.fetchAllCashRegisters(),
-                this.fetchAllProjects()
+                this.fetchAllCashRegisters()
             ]);
             
             if (!this.editingItem) {
@@ -199,27 +186,6 @@ export default {
             if (!this.cashId && this.allCashRegisters.length) {
                 this.cashId = this.allCashRegisters[0].id;
             }
-        },
-        async fetchAllProjects() {
-            // Используем данные из store
-            await this.$store.dispatch('loadProjects');
-            const allProjectsFromStore = this.$store.getters.projects;
-            
-            // Если редактируем оприходование и у неё есть проект, который завершен (его нет в проектах из store),
-            // добавляем его в список опций
-            if (this.editingItem && this.editingItem.projectId && this.editingItem.projectName) {
-                const hasProject = allProjectsFromStore.some(p => p.id === this.editingItem.projectId);
-                if (!hasProject) {
-                    // Проект завершен, добавляем его вручную
-                    this.allProjects = [
-                        ...allProjectsFromStore,
-                        { id: this.editingItem.projectId, name: this.editingItem.projectName }
-                    ];
-                    return;
-                }
-            }
-            
-            this.allProjects = allProjectsFromStore;
         },
 
         async save() {
@@ -271,7 +237,6 @@ export default {
                 var formData = {
                     client_id: this.selectedClient?.id,
                     warehouse_id: this.warehouseId,
-                    project_id: this.projectId || null,
                     date: this.date,
                     note: this.note,
                     cash_id: this.cashId, // всегда отправляем выбранную кассу
@@ -333,7 +298,6 @@ export default {
             this.date = new Date().toISOString().substring(0, 16);
             this.note = '';
             this.warehouseId = '';
-            this.projectId = '';
             this.currencyId = '';
             this.selectedClient = null;
             this.products = [];
@@ -364,7 +328,6 @@ export default {
                     this.date = newEditingItem.date || '';
                     this.note = newEditingItem.note || '';
                     this.warehouseId = newEditingItem.warehouseId || '';
-                    this.projectId = newEditingItem.projectId || '';
                     this.currencyId = newEditingItem.currencyId || '';
                     this.selectedClient = newEditingItem.client || null;
                     this.editingItemId = newEditingItem.id || null;
