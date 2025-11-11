@@ -300,7 +300,7 @@ export default {
                 case "debt":
                     return i.getDebtHtml ? i.getDebtHtml() : '-';
                 case "clientImpact":
-                    return i.getClientImpactHtml ? i.getClientImpactHtml(this.currencyCode, this.$formatNumber) : '-';
+                    return i.getClientImpactHtml ? i.getClientImpactHtml(i.currencySymbol || this.currencyCode, this.$formatNumber) : '-';
                 default:
                     return i[c];
             }

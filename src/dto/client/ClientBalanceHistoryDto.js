@@ -2,7 +2,7 @@ import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatAmountWithColor, formatAmountWithStyle, formatAmountWithSignAndColor, formatAmountSimple, createFromApiArray } from "@/utils/dtoUtils";
 import { formatNumber } from "@/utils/numberUtils";
 export default class ClientBalanceHistoryDto {
-  constructor(source, sourceId, date, amount, description, userName = null, sourceType = null, note = null, isDebt = null, sourceSourceId = null) {
+  constructor(source, sourceId, date, amount, description, userName = null, sourceType = null, note = null, isDebt = null, sourceSourceId = null, currencySymbol = null, currencyCode = null) {
     this.source = source;
     this.sourceId = sourceId;
     this.sourceSourceId = sourceSourceId;
@@ -13,6 +13,8 @@ export default class ClientBalanceHistoryDto {
     this.sourceType = sourceType;
     this.note = note;
     this.isDebt = isDebt;
+    this.currencySymbol = currencySymbol;
+    this.currencyCode = currencyCode;
   }
 
   formattedAmount() {
@@ -47,7 +49,8 @@ export default class ClientBalanceHistoryDto {
   }
 
   formatAmountWithColorAndCurrency(currencyCode) {
-    return formatAmountWithStyle(this.amount, currencyCode);
+    const symbol = this.currencySymbol || currencyCode;
+    return formatAmountWithStyle(this.amount, symbol);
   }
 
   getBalanceLabel() {
@@ -94,12 +97,14 @@ export default class ClientBalanceHistoryDto {
 
   getClientImpactHtml(currencyCode, formatNumberFn = null) {
     const formatFn = formatNumberFn || ((val) => formatNumber(val, null, true));
-    return formatAmountWithSignAndColor(this.amount, currencyCode, (val) => formatFn(Math.abs(val)), this.isDebt == 1);
+    const symbol = this.currencySymbol || currencyCode;
+    return formatAmountWithSignAndColor(this.amount, symbol, (val) => formatFn(Math.abs(val)), this.isDebt == 1);
   }
 
   getPaymentImpactHtml(currencyCode, formatNumberFn = null) {
     const formatFn = formatNumberFn || ((val) => formatNumber(val, null, true));
-    return formatAmountSimple(this.amount, currencyCode, (val) => formatFn(Math.abs(val)));
+    const symbol = this.currencySymbol || currencyCode;
+    return formatAmountSimple(this.amount, symbol, (val) => formatFn(Math.abs(val)));
   }
 
   getDebtHtml() {
@@ -118,7 +123,9 @@ export default class ClientBalanceHistoryDto {
         data.source_type,
         data.note,
         data.is_debt,
-        data.source_source_id || data.sourceSourceId || null
+        data.source_source_id || data.sourceSourceId || null,
+        data.currency_symbol || data.currencySymbol || null,
+        data.currency_code || data.currencyCode || null
       );
     }).filter(Boolean);
   }

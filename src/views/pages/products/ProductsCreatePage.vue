@@ -215,9 +215,9 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import AdminCategoryCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
-
 import formChangesMixin from '@/mixins/formChangesMixin';
 import JsBarcode from "jsbarcode";
+import CacheInvalidator from '@/utils/cacheInvalidator';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
@@ -321,13 +321,8 @@ export default {
             }
         },
         async fetchAllCategories() {
-            // Используем данные из store
-            if (this.$store.getters.categories.length > 0) {
-                this.allCategories = this.$store.getters.categories;
-            } else {
-                await this.$store.dispatch('loadCategories');
-                this.allCategories = this.$store.getters.categories;
-            }
+            await this.$store.dispatch('loadCategories');
+            this.allCategories = this.$store.getters.categories;
         },
 
         // Методы для работы с каскадным выбором категорий
@@ -625,12 +620,14 @@ export default {
         closeModal() {
             this.modalDialog = false;
         },
-        handleSaved() {
-            this.fetchAllCategories();
+        async handleSaved() {
+            const companyId = this.$store.state.currentCompany?.id || null;
+            CacheInvalidator.onUpdate('categories', companyId);
+            await this.fetchAllCategories();
             this.closeModal();
         },
         handleSavedError(m) {
-            this.$emit('saved-error', this.getApiErrorMessage(error));
+            this.$emit('saved-error', m);
         },
         getProductImageSrc(item) {
             if (!item) return '';

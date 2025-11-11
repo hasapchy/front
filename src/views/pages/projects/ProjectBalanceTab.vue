@@ -320,11 +320,14 @@ export default {
             }
         },
         async handleBalanceItemClick(item) {
-            // Всегда открываем транзакцию, поскольку именно в ней содержится финансовая информация
             try {
                 this.transactionLoading = true;
-                // Для всех типов источников source_id содержит ID транзакции
-                const data = await this.ENTITY_CONFIG.transaction.fetch(item.source_id);
+                const sourceId = item?.sourceSourceId || item?.sourceId;
+                if (!sourceId) {
+                    this.$notify?.({ type: 'error', text: 'Ошибка при загрузке транзакции' });
+                    return;
+                }
+                const data = await this.ENTITY_CONFIG.transaction.fetch(sourceId);
                 this.editingTransactionItem = data;
                 
                 
