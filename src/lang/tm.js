@@ -18,6 +18,7 @@ export default {
   manageYourProfile: 'Profil maglumatlaryňy dolandyryň',
   position: 'Wezipesi',
   hireDate: 'Işe alnan senesi',
+  birthday: 'Doglan güni',
   roleInformation: 'Rol maglumatlary',
   enterNewPassword: 'Täze açarsöz giriziň',
   enterCurrentPassword: 'Häzirki açarsöz giriziň',
@@ -58,6 +59,12 @@ export default {
   roundingForReceipts: 'Gelen harytlar üçin döwülme',
   roundingForSales: 'Satuwlar üçin döwülme',
   roundingForTransactions: 'Tranzaksiyalar üçin döwülme',
+  roundingWarningNote: 'Döwülmäni açmak mukdarlary üýtgeder we asyl bahalar saklanmaz.',
+  roundingEnableConfirmDescription: 'Döwülmäni açmak isleýändigiňize ynanýaňyzmy? Mukdarlar döwülüp, asyl bahalar saklanmaz.',
+  roundingQuantityWarningNote: 'Mukdary döwülmäni açmak bahalary üýtgeder we asyl maglumat saklanmaz.',
+  roundingQuantityEnableConfirmDescription: 'Mukdary döwülmäni açmak isleýärsiňizmi? Bahalar döwülüp, asyl maglumat saklanmaz.',
+  skipProjectOrderBalanceWarningNote: 'Bu opsiýany açmak proýekt sargyt balansyny täzeden hasaplamaz we asyl maglumat saklanmaz.',
+  skipProjectOrderBalanceEnableConfirmDescription: 'Proýekt sargyt balansyny geçmek isleýärsiňizmi? Bahalar üýtgär we asyl maglumat saklanmaz.',
   
   // Навигация
   home: 'Baş sahypa',

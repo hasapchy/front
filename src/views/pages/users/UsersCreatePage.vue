@@ -29,7 +29,7 @@
                 </div>
 
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('name') }}</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('firstName') }}</label>
                     <input type="text" v-model="form.name"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required />
@@ -89,6 +89,12 @@
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('hireDate') }}</label>
                     <input type="date" v-model="form.hire_date"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('birthday') }}</label>
+                    <input type="date" v-model="form.birthday"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
 
@@ -216,6 +222,7 @@ export default {
                 newPassword: '',
                 position: '',
                 hire_date: '',
+                birthday: '',
                 is_active: true,
                 is_admin: false,
                 companies: [],
@@ -312,6 +319,7 @@ export default {
                 newPassword: this.form.newPassword,
                 position: this.form.position,
                 hire_date: this.form.hire_date,
+                birthday: this.form.birthday,
                 is_active: this.form.is_active,
                 is_admin: this.form.is_admin,
                 companies: [...this.form.companies],
@@ -382,6 +390,7 @@ export default {
             this.form.newPassword = '';
             this.form.position = '';
             this.form.hire_date = '';
+            this.form.birthday = '';
             this.form.is_active = true;
             this.form.is_admin = false;
             this.form.companies = [];
@@ -474,6 +483,7 @@ export default {
                         email: this.form.email,
                         position: this.form.position,
                         hire_date: this.form.hire_date,
+                        birthday: this.form.birthday,
                         is_active: this.form.is_active,
                         is_admin: this.form.is_admin,
                         permissions: Array.isArray(this.form.permissions) ? this.form.permissions : this.form.permissions.split(','),
@@ -499,6 +509,7 @@ export default {
                         password: this.form.password,
                         position: this.form.position,
                         hire_date: this.form.hire_date,
+                        birthday: this.form.birthday,
                         is_active: this.form.is_active,
                         is_admin: this.form.is_admin,
                         permissions: Array.isArray(this.form.permissions) ? this.form.permissions : this.form.permissions.split(','),
@@ -591,7 +602,12 @@ export default {
                     this.form.name = newEditingItem.name || '';
                     this.form.email = newEditingItem.email || '';
                     this.form.position = newEditingItem.position || '';
-                    this.form.hire_date = newEditingItem.hireDate || '';
+                    this.form.hire_date = newEditingItem.hireDate
+                        ? newEditingItem.hireDate.split('T')[0]
+                        : '';
+                    this.form.birthday = newEditingItem.birthday
+                        ? newEditingItem.birthday.split('T')[0]
+                        : '';
                     this.form.is_active = newEditingItem.isActive !== undefined ? newEditingItem.isActive : true;
                     this.form.is_admin = newEditingItem.isAdmin !== undefined ? newEditingItem.isAdmin : false;
                     this.form.companies = newEditingItem.companies?.map(c => c.id) || [];

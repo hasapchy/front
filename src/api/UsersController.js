@@ -34,22 +34,39 @@ const UsersController = {
 
   async storeItem(payload, file = null) {
     try {
-      const formData = new FormData();
-      
-      Object.keys(payload).forEach((key) => {
-        formData.append(key, payload[key]);
-      });
-      
+      let requestData;
+      let headers = {};
+
       if (file) {
+        const formData = new FormData();
+
+        Object.keys(payload).forEach((key) => {
+          const value = payload[key];
+          if (value === null || value === undefined) {
+            return;
+          }
+
+          if (Array.isArray(value)) {
+            value.forEach((item, index) => {
+              formData.append(`${key}[${index}]`, item);
+            });
+          } else {
+            formData.append(key, value);
+          }
+        });
+
         formData.append("photo", file);
+        requestData = formData;
+        headers["Content-Type"] = "multipart/form-data";
+      } else {
+        requestData = payload;
+        headers["Content-Type"] = "application/json";
       }
 
-      const { data } = await api.post("/users", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      const { data } = await api.post("/users", requestData, {
+        headers,
       });
-      
+
       return data;
     } catch (error) {
       console.error("Ошибка при создании пользователя:", error);
@@ -74,7 +91,11 @@ const UsersController = {
               formData.append(`${key}[${index}]`, item);
             });
           } else {
-            formData.append(key, payload[key]);
+            const value = payload[key];
+            if (value === null || value === undefined) {
+              return;
+            }
+            formData.append(key, value);
           }
         });
         

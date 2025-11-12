@@ -7,6 +7,7 @@ export class UserDto {
     this.email = data.email;
     this.emailVerifiedAt = data.email_verified_at;
     this.hireDate = data.hire_date;
+    this.birthday = data.birthday;
     this.position = data.position;
     this.isActive = Boolean(data.is_active);
     this.isAdmin = Boolean(data.is_admin);

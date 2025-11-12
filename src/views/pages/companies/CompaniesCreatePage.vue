@@ -61,10 +61,14 @@
                   <label class="flex items-center space-x-2 mt-3">
                     <input 
                       type="checkbox" 
-                      v-model="form.skip_project_order_balance"
+                      :checked="form.skip_project_order_balance"
+                      @change="handleSkipProjectOrderBalanceChange"
                     />
                     <span>{{ $t('skipProjectOrderBalance') || 'Пропускать баланс заказов проекта' }}</span>
                   </label>
+                  <div class="text-xs text-red-600 mt-1">
+                    {{ $t('skipProjectOrderBalanceWarningNote') || 'Включение опции пропустит пересчет баланса заказов проекта и исходные данные не сохранятся.' }}
+                  </div>
                 </div>
                 
                 <!-- Настройки округления -->
@@ -90,10 +94,14 @@
                     <label class="flex items-center space-x-2">
                       <input 
                         type="checkbox" 
-                        v-model="form.rounding_enabled"
+                        :checked="form.rounding_enabled"
+                        @change="handleRoundingEnableChange"
                       />
                       <span>{{ $t('enableRounding') }}</span>
                     </label>
+                    <div class="text-xs text-red-600 mt-1">
+                      {{ $t('roundingWarningNote') || 'Включение округления изменит суммы и исходные значения не сохранятся.' }}
+                    </div>
                   </div>
                   
                   <div v-if="form.rounding_enabled">
@@ -146,10 +154,14 @@
                     <label class="flex items-center space-x-2">
                       <input 
                         type="checkbox" 
-                        v-model="form.rounding_quantity_enabled"
+                        :checked="form.rounding_quantity_enabled"
+                        @change="handleQuantityRoundingEnableChange"
                       />
                       <span>{{ $t('enableRounding') }} ({{ $t('forQuantity') || 'для количества' }})</span>
                     </label>
+                    <div class="text-xs text-red-600 mt-1">
+                      {{ $t('roundingQuantityWarningNote') || 'Включение округления количества изменит значения и исходные данные не сохранятся.' }}
+                    </div>
                   </div>
                   
                   <div v-if="form.rounding_quantity_enabled">
@@ -196,6 +208,15 @@
         :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
         :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    <AlertDialog :dialog="roundingConfirmDialog" @confirm="confirmRoundingEnable" @leave="cancelRoundingEnable"
+        :descr="$t('roundingEnableConfirmDescription') || 'Вы уверены, что хотите включить округление? Суммы будут округляться без сохранения исходного значения.'"
+        :confirm-text="$t('enable') || 'Включить'" :leave-text="$t('cancel')" />
+    <AlertDialog :dialog="roundingQuantityConfirmDialog" @confirm="confirmQuantityRoundingEnable" @leave="cancelQuantityRoundingEnable"
+        :descr="$t('roundingQuantityEnableConfirmDescription') || 'Вы уверены, что хотите включить округление количества? Значения будут округляться без сохранения исходных данных.'"
+        :confirm-text="$t('enable') || 'Включить'" :leave-text="$t('cancel')" />
+    <AlertDialog :dialog="skipProjectOrderBalanceConfirmDialog" @confirm="confirmSkipProjectOrderBalance" @leave="cancelSkipProjectOrderBalance"
+        :descr="$t('skipProjectOrderBalanceEnableConfirmDescription') || 'Вы уверены, что хотите пропускать баланс заказов проекта? Значения будут изменены без сохранения исходных данных.'"
+        :confirm-text="$t('enable') || 'Включить'" :leave-text="$t('cancel')" />
         <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
             :is-danger="notificationIsDanger" @close="closeNotification" />
         
@@ -259,7 +280,10 @@ export default {
             tabs: [
                 { name: 'info', label: 'info' },
                 { name: 'settings', label: 'settings' }
-            ]
+            ],
+            roundingConfirmDialog: false,
+            roundingQuantityConfirmDialog: false,
+            skipProjectOrderBalanceConfirmDialog: false
         };
     },
     computed: {
@@ -421,6 +445,33 @@ export default {
                 this.showCropperModal = true;
             }
         },
+        handleRoundingEnableChange(event) {
+            const nextValue = event.target.checked;
+            if (nextValue) {
+                event.target.checked = this.form.rounding_enabled;
+                this.roundingConfirmDialog = true;
+                return;
+            }
+            this.form.rounding_enabled = false;
+        },
+        handleQuantityRoundingEnableChange(event) {
+            const nextValue = event.target.checked;
+            if (nextValue) {
+                event.target.checked = this.form.rounding_quantity_enabled;
+                this.roundingQuantityConfirmDialog = true;
+                return;
+            }
+            this.form.rounding_quantity_enabled = false;
+        },
+        handleSkipProjectOrderBalanceChange(event) {
+            const nextValue = event.target.checked;
+            if (nextValue) {
+                event.target.checked = this.form.skip_project_order_balance;
+                this.skipProjectOrderBalanceConfirmDialog = true;
+                return;
+            }
+            this.form.skip_project_order_balance = false;
+        },
         
         closeCropperModal() {
             this.showCropperModal = false;
@@ -471,10 +522,31 @@ export default {
             this.form.rounding_quantity_custom_threshold = company.rounding_quantity_custom_threshold || null;
             this.form.skip_project_order_balance = company.skip_project_order_balance !== undefined ? company.skip_project_order_balance : true;
             this.currentLogo = company.logo || '';
-            this.selected_logo = null; // Сбрасываем выбранное изображение при загрузке данных
+            this.selected_logo = null;
             if (this.$refs.logoInput) {
                 this.$refs.logoInput.value = null;
             }
+        },
+        confirmRoundingEnable() {
+            this.roundingConfirmDialog = false;
+            this.form.rounding_enabled = true;
+        },
+        cancelRoundingEnable() {
+            this.roundingConfirmDialog = false;
+        },
+        confirmQuantityRoundingEnable() {
+            this.roundingQuantityConfirmDialog = false;
+            this.form.rounding_quantity_enabled = true;
+        },
+        cancelQuantityRoundingEnable() {
+            this.roundingQuantityConfirmDialog = false;
+        },
+        confirmSkipProjectOrderBalance() {
+            this.skipProjectOrderBalanceConfirmDialog = false;
+            this.form.skip_project_order_balance = true;
+        },
+        cancelSkipProjectOrderBalance() {
+            this.skipProjectOrderBalanceConfirmDialog = false;
         }
     },
     watch: {

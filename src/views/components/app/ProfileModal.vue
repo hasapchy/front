@@ -50,6 +50,16 @@
                 />
             </div>
 
+            <!-- Birthday -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('birthday') }}</label>
+                <input 
+                    v-model="form.birthday" 
+                    type="date" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+            </div>
+
             <!-- Current Password -->
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('currentPassword') }}</label>
@@ -126,6 +136,7 @@ export default {
             form: {
                 name: '',
                 email: '',
+                birthday: '',
                 currentPassword: '',
                 newPassword: ''
             },
@@ -259,6 +270,7 @@ export default {
             return {
                 name: this.form.name,
                 email: this.form.email,
+                birthday: this.form.birthday,
                 currentPassword: this.form.currentPassword,
                 newPassword: this.form.newPassword,
                 selected_image: this.selected_image,
@@ -294,6 +306,7 @@ export default {
                 const updateData = {
                     name: this.form.name,
                     email: this.form.email,
+                    birthday: this.form.birthday,
                 };
                 
                 if (this.form.currentPassword) {
@@ -317,6 +330,9 @@ export default {
                 
                 this.form.name = savedUser.user.name;
                 this.form.email = savedUser.user.email;
+                this.form.birthday = savedUser.user.birthday
+                    ? savedUser.user.birthday.split('T')[0]
+                    : '';
                 this.form.currentPassword = '';
                 this.form.newPassword = '';
                 
@@ -346,6 +362,9 @@ export default {
                     this.form = {
                         name: newUser.name || '',
                         email: newUser.email || '',
+                        birthday: newUser.birthday
+                            ? newUser.birthday.split('T')[0]
+                            : '',
                         currentPassword: '',
                         newPassword: ''
                     };
