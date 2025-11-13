@@ -436,9 +436,11 @@ export default {
                         productDto = WarehouseReceiptProductDto.fromProductDto(product, true);
                     } else if (this.showPrice && (this.isSale && !this.showPriceType || !this.isSale)) {
                         productDto = OrderProductDto.fromProductDto(product, true);
-                        productDto.retailPrice = product.retailPrice || 0;
-                        productDto.wholesalePrice = product.wholesalePrice || 0;
-                        productDto.price = (this.projectId && productDto.wholesalePrice > 0) ? productDto.wholesalePrice : productDto.retailPrice;
+                        const retailPrice = Number(product.retailPrice) || 0;
+                        const wholesalePrice = Number(product.wholesalePrice) || 0;
+                        productDto.retailPrice = retailPrice;
+                        productDto.wholesalePrice = wholesalePrice;
+                        productDto.price = (this.projectId && wholesalePrice > 0) ? wholesalePrice : retailPrice;
                     } else if (this.isSale && this.showPriceType) {
                         productDto = SaleProductDto.fromProductDto(product, true);
                         productDto.retailPrice = product.retailPrice || 0;

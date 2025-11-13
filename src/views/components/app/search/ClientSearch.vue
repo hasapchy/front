@@ -24,7 +24,7 @@
                         <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
                         <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
                     </div>
-                    <span
+                    <span v-if="$store.getters.hasPermission('settings_client_balance_view')"
                         :class="client.balance == 0 ? 'text-[#337AB7]' : client.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
                         {{ client.balanceFormatted() }}
                         <span v-if="client.balance > 0">({{ $t('clientOwesUs') }})</span>
@@ -51,7 +51,7 @@
                             }}</span></p>
                     <p><span class="text-xs">{{ $t('phone') }}:</span> <span class="font-semibold text-sm">{{
                             clientPhones[0]?.phone || '' }}</span></p>
-                    <p><span class="text-xs">{{ $t('balance') }}:</span>
+                    <p v-if="$store.getters.hasPermission('settings_client_balance_view')"><span class="text-xs">{{ $t('balance') }}:</span>
                         <span class="font-semibold text-sm"
                             :class="selectedClient.balance == 0 ? 'text-[#337AB7]' : selectedClient.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
                             {{ clientBalance }} {{ defaultCurrencySymbol }}

@@ -27,7 +27,6 @@ export default class OrderProductDto {
   }
 
   static fromProductDto(productDto, def = false) {
-    const price = def ? (productDto.retailPrice || 0) : 0;
     const dto = new OrderProductDto(
       null,
       null,
@@ -38,9 +37,11 @@ export default class OrderProductDto {
       productDto.unitName,
       productDto.unitShortName,
       def ? 1 : 0,
-      price
+      0
     );
     dto.type = productDto.type;
+    dto.retailPrice = productDto.retailPrice;
+    dto.wholesalePrice = productDto.wholesalePrice;
     return dto;
   }
 

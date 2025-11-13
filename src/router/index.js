@@ -430,7 +430,7 @@ const routes = [
           title: "mutualSettlements",
           requiresAuth: true,
           showSearch: true,
-          permission: "transactions_view",
+          permission: "mutual_settlements_view",
           binded: [
             {
               name: "transfers",

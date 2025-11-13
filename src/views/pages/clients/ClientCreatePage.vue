@@ -103,7 +103,7 @@
           </div>
         </div>
       </div>
-      <div v-show="currentTab === 'balance' && editingItem" class="mt-4">
+      <div v-show="currentTab === 'balance' && editingItem && $store.getters.hasPermission('settings_client_balance_view')" class="mt-4">
         <ClientBalanceTab :editing-item="editingItem" />
       </div>
       <div v-show="currentTab === 'payments' && editingItem" class="mt-4">
@@ -191,9 +191,12 @@ export default {
   },
   computed: {
     translatedTabs() {
-      const visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab =>
+      let visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab =>
         tab.name !== 'balance' && tab.name !== 'payments' && tab.name !== 'operations'
       );
+      if (!this.$store.getters.hasPermission('settings_client_balance_view')) {
+        visibleTabs = visibleTabs.filter(tab => tab.name !== 'balance');
+      }
       return visibleTabs.map(tab => ({
         ...tab,
         label: this.$t(tab.label)

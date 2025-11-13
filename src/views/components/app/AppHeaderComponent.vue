@@ -90,11 +90,11 @@ export default {
             const permissionMap = {
                 '/categories': 'categories_view',
                 '/order_statuses': 'order_statuses_view',
-                '/project_statuses': 'order_statuscategories_view', // Используем то, что есть в сидере
+                '/project_statuses': 'order_statuscategories_view',
                 '/transaction_categories': 'transaction_categories_view',
-                '/order_additional_fields': 'order_categories_view', // Используем то, что есть в сидере
+                '/order_additional_fields': 'order_categories_view',
                 '/transactions': 'transactions_view',
-                '/mutual-settlements': 'transactions_view', // ✅ Взаиморасчеты используют те же права что и транзакции
+                '/mutual-settlements': 'mutual_settlements_view',
                 '/transfers': 'transfers_view',
                 '/cash-registers': 'cash_registers_view',
                 '/invoices': 'invoices_view',

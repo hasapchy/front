@@ -87,20 +87,7 @@ export default {
             savedSuccessText: this.$t('clientSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingClient'),
             deletedSuccessText: this.$t('clientSuccessfullyDeleted'),
-            deletedErrorText: this.$t('errorDeletingClient'),
-            columnsConfig: [
-                { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: 'number', size: 60 },
-                { name: 'firstName', label: 'fullNameCompany', html: true },
-                { name: 'phones', label: 'phoneNumber', html: true },
-                { name: 'emails', label: 'email', html: true },
-                { name: 'address', label: 'address' },
-                { name: 'note', label: 'note' },
-                { name: 'discount', label: 'discount' },
-                { name: 'balance', label: 'balance' },
-                { name: 'status', label: 'status', html: true },
-                { name: 'dateUser', label: 'dateUser' },
-            ]
+            deletedErrorText: this.$t('errorDeletingClient')
         }
     },
     created() {
@@ -194,6 +181,21 @@ export default {
         },
         hasActiveFilters() {
             return this.statusFilter !== '' || this.typeFilter !== '';
+        },
+        columnsConfig() {
+            return [
+                { name: 'select', label: '#', size: 15 },
+                { name: 'id', label: 'number', size: 60 },
+                { name: 'firstName', label: 'fullNameCompany', html: true },
+                { name: 'phones', label: 'phoneNumber', html: true },
+                { name: 'emails', label: 'email', html: true },
+                { name: 'address', label: 'address' },
+                { name: 'note', label: 'note' },
+                { name: 'discount', label: 'discount' },
+                ...(this.$store.getters.hasPermission('settings_client_balance_view') ? [{ name: 'balance', label: 'balance' }] : []),
+                { name: 'status', label: 'status', html: true },
+                { name: 'dateUser', label: 'dateUser' },
+            ];
         },
     },
 }

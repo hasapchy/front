@@ -23,38 +23,38 @@
                                             <span class="text-sm font-bold text-black ml-1">({{ item.currencySymbol || item.currencyCode || '' }})</span>
                                         </span>
                                     </div>
-                                    <div :class="getGridClass(item.balance)">
-                                        <div v-for="balance in getVisibleBalanceItems(item.balance)" :key="balance.title" 
-                                             class="text-center balance-item"
-                                             :class="{
-                                                 'clickable-balance': balance.type === 'income' || balance.type === 'outcome',
-                                                 'hover-income': balance.type === 'income',
-                                                 'hover-outcome': balance.type === 'outcome'
-                                             }"
-                                             :title="(balance.type === 'income' || balance.type === 'outcome') ? $t('clickToFilterTransactions') : ''"
-                                             @click="handleBalanceClick(item, balance)">
-                                            <div class="mb-1 flex items-center justify-center space-x-1">
-                                                <span class="text-xs font-medium text-gray-700">{{ translateBalanceTitle(balance.title) }}</span>
-                                                <i :class="{
-                                                    'fas fa-arrow-up text-green-500': balance.type === 'income',
-                                                    'fas fa-arrow-down text-red-500': balance.type === 'outcome',
-                                                    'fas fa-exclamation-triangle text-orange-500': balance.type === 'debt',
-                                                    'fas fa-calculator text-blue-500': balance.type === 'default',
-                                                    'fas fa-chart-line text-orange-500': balance.type === 'project_income'
-                                                }" class="text-xs"></i>
-                                            </div>
-                                            <div :class="{
-                                                'text-green-600': balance.type === 'income',
-                                                'text-red-600': balance.type === 'outcome',
-                                                'text-orange-600': balance.type === 'debt',
-                                                'text-blue-600': balance.type === 'default',
-                                                'text-orange-600': balance.type === 'project_income',
-                                                'font-bold text-sm': true
-                                            }" class="leading-tight">
-                                                <div class="balance-amount text-base">{{ formatBalanceValue(balance) }}</div>
-                                            </div>
-                                        </div>
+                            <div v-if="$store.getters.hasPermission('settings_cash_balance_view')" :class="getGridClass(item.balance)">
+                                <div v-for="balance in getVisibleBalanceItems(item.balance)" :key="balance.title" 
+                                     class="text-center balance-item"
+                                     :class="{
+                                         'clickable-balance': balance.type === 'income' || balance.type === 'outcome',
+                                         'hover-income': balance.type === 'income',
+                                         'hover-outcome': balance.type === 'outcome'
+                                     }"
+                                     :title="(balance.type === 'income' || balance.type === 'outcome') ? $t('clickToFilterTransactions') : ''"
+                                     @click="handleBalanceClick(item, balance)">
+                                    <div class="mb-1 flex items-center justify-center space-x-1">
+                                        <span class="text-xs font-medium text-gray-700">{{ translateBalanceTitle(balance.title) }}</span>
+                                        <i :class="{
+                                            'fas fa-arrow-up text-green-500': balance.type === 'income',
+                                            'fas fa-arrow-down text-red-500': balance.type === 'outcome',
+                                            'fas fa-exclamation-triangle text-orange-500': balance.type === 'debt',
+                                            'fas fa-calculator text-blue-500': balance.type === 'default',
+                                            'fas fa-chart-line text-orange-500': balance.type === 'project_income'
+                                        }" class="text-xs"></i>
                                     </div>
+                                    <div :class="{
+                                        'text-green-600': balance.type === 'income',
+                                        'text-red-600': balance.type === 'outcome',
+                                        'text-orange-600': balance.type === 'debt',
+                                        'text-blue-600': balance.type === 'default',
+                                        'text-orange-600': balance.type === 'project_income',
+                                        'font-bold text-sm': true
+                                    }" class="leading-tight">
+                                        <div class="balance-amount text-base">{{ formatBalanceValue(balance) }}</div>
+                                    </div>
+                                </div>
+                            </div>
                                 </div>
                             </div>
                         </div>
@@ -85,7 +85,7 @@
                                     <span class="text-sm font-bold text-black ml-1">({{ item.currencySymbol || item.currencyCode || '' }})</span>
                                 </span>
                             </div>
-                            <div :class="getGridClass(item.balance)">
+                            <div v-if="$store.getters.hasPermission('settings_cash_balance_view')" :class="getGridClass(item.balance)">
                                 <div v-for="balance in getVisibleBalanceItems(item.balance)" :key="balance.title" 
                                      class="text-center balance-item"
                                      :class="{
