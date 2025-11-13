@@ -25,17 +25,18 @@ export default class SaleProductDto {
     }
 
     static fromProductDto(productDto, def = false) {
+        const price = def ? (productDto.retailPrice || 0) : 0;
         const dto = new SaleProductDto(
             null,
             null,
             productDto.id,
             productDto.name,
             productDto.image,
-            productDto.unit_id,
-            productDto.unit_name,
-            productDto.unit_short_name,
+            productDto.unitId,
+            productDto.unitName,
+            productDto.unitShortName,
             def ? 1 : 0,
-            def ? productDto.sale_price :0
+            price
         );
         dto.type = productDto.type;
         return dto;

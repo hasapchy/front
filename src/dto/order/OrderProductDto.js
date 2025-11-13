@@ -23,21 +23,25 @@ export default class OrderProductDto {
     this.unitShortName = unitShortName;
     this.quantity = quantity;
     this.price = price;
+    this.type = null;
   }
 
   static fromProductDto(productDto, def = false) {
-    return new OrderProductDto(
+    const price = def ? (productDto.retailPrice || 0) : 0;
+    const dto = new OrderProductDto(
       null,
       null,
       productDto.id,
       productDto.name,
       productDto.image,
-      productDto.unit_id,
-      productDto.unit_name,
-      productDto.unit_short_name,
+      productDto.unitId,
+      productDto.unitName,
+      productDto.unitShortName,
       def ? 1 : 0,
-      def ? productDto.sale_price : 0
+      price
     );
+    dto.type = productDto.type;
+    return dto;
   }
 
   imgUrl() {
@@ -46,7 +50,7 @@ export default class OrderProductDto {
 
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
-      return new OrderProductDto(
+      const dto = new OrderProductDto(
         data.id,
         data.order_id,
         data.product_id,
@@ -58,6 +62,8 @@ export default class OrderProductDto {
         data.quantity,
         data.price
       );
+      dto.type = data.type || (data.product ? data.product.type : null);
+      return dto;
     }).filter(Boolean);
   }
 }

@@ -62,7 +62,7 @@
                             </option>
                         </select>
                     </div>
-                    <ProductSearch ref="productSearch" v-model="products" :show-quantity="true" :show-price="true" :show-price-type="true"
+                    <ProductSearch ref="productSearch" v-model="products" :show-quantity="true" :show-price="true" :show-price-type="false"
                         :is-sale="true" :currency-symbol="currencySymbol" :warehouse-id="warehouseId"
                         :project-id="projectId" v-model:discount="discount" v-model:discountType="discountType" required @product-removed="onProductRemoved" />
                 </template>

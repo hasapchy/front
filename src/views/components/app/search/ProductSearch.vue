@@ -129,9 +129,10 @@
                             :disabled="disabled" min="0.01" @input="onAmountChange(product)" />
                     </td>
                     <td v-if="showPriceType && !isReceipt && !isSale" class="py-2 px-4 border-x border-gray-300">
-                        <select v-model="product.priceType" class="w-full p-1" :disabled="disabled">
-                            <option value="purchase">{{ $t('purchasePrice') }}</option>
+                        <select v-model="product.priceType" class="w-full p-1" :disabled="disabled" @change="onPriceTypeChange(product)">
+                            <option v-if="product.purchasePrice !== undefined" value="purchase">{{ $t('purchasePrice') }}</option>
                             <option value="retail">{{ $t('retailPrice') }}</option>
+                            <option v-if="product.wholesalePrice !== undefined && product.wholesalePrice > 0" value="wholesale">{{ $t('wholesalePrice') }}</option>
                         </select>
                     </td>
                     <td class="px-4 border-x border-gray-300">
@@ -191,6 +192,7 @@ import ProductSearchDto from '@/dto/product/ProductSearchDto';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import WarehouseReceiptProductDto from '@/dto/warehouse/WarehouseReceiptProductDto';
 import SaleProductDto from '@/dto/sale/SaleProductDto';
+import OrderProductDto from '@/dto/order/OrderProductDto';
 import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
@@ -432,7 +434,12 @@ export default {
                     let productDto;
                     if (this.isReceipt) {
                         productDto = WarehouseReceiptProductDto.fromProductDto(product, true);
-                    } else if (this.isSale) {
+                    } else if (this.showPrice && (this.isSale && !this.showPriceType || !this.isSale)) {
+                        productDto = OrderProductDto.fromProductDto(product, true);
+                        productDto.retailPrice = product.retailPrice || 0;
+                        productDto.wholesalePrice = product.wholesalePrice || 0;
+                        productDto.price = (this.projectId && productDto.wholesalePrice > 0) ? productDto.wholesalePrice : productDto.retailPrice;
+                    } else if (this.isSale && this.showPriceType) {
                         productDto = SaleProductDto.fromProductDto(product, true);
                         productDto.retailPrice = product.retailPrice || 0;
                         productDto.wholesalePrice = product.wholesalePrice || 0;
@@ -468,8 +475,14 @@ export default {
             }
         },
         onPriceTypeChange(product) {
-            if (this.isSale) {
-                product.price = product.priceType === 'retail' ? product.retailPrice : product.wholesalePrice;
+            if (this.isSale || (this.showPrice && product.retailPrice !== undefined && product.wholesalePrice !== undefined)) {
+                if (product.priceType === 'retail') {
+                    product.price = product.retailPrice || 0;
+                } else if (product.priceType === 'wholesale') {
+                    product.price = product.wholesalePrice || 0;
+                } else if (product.priceType === 'purchase') {
+                    product.price = product.purchasePrice || 0;
+                }
                 this.updateTotals();
             }
         },
@@ -587,6 +600,23 @@ export default {
                     }
                 }
             },
+        },
+        projectId: {
+            handler(newProjectId, oldProjectId) {
+                if (newProjectId !== oldProjectId && this.showPrice && !this.isReceipt) {
+                    this.products.forEach(product => {
+                        if (product.retailPrice !== undefined && product.wholesalePrice !== undefined) {
+                            if (newProjectId && product.wholesalePrice > 0) {
+                                product.price = product.wholesalePrice;
+                            } else {
+                                product.price = product.retailPrice;
+                            }
+                        }
+                    });
+                    this.updateTotals();
+                }
+            },
+            immediate: false
         },
     },
 };

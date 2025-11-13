@@ -674,8 +674,6 @@ export default {
     currentPasswordRequired: 'Текущий пароль обязателен для смены пароля',
     newPasswordRequired: 'Новый пароль обязателен при указании текущего пароля',
     wrongCurrentPassword: 'Неверный текущий пароль',
-    success: 'Успех',
-    error: 'Ошибка',
     profileUpdatedSuccessfully: 'Профиль успешно обновлен',
     failedToUpdateProfile: 'Не удалось обновить профиль',
   userStatus: 'Активен',

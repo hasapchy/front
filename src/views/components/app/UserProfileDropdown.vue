@@ -45,6 +45,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import AuthController from '@/api/AuthController';
 import PrimaryButton from './buttons/PrimaryButton.vue';
 import SideModalDialog from './dialog/SideModalDialog.vue';
@@ -60,6 +61,7 @@ export default {
     setup() {
         const store = useStore();
         const router = useRouter();
+        const { t } = useI18n();
         
         const isOpen = ref(false);
         const showProfileModal = ref(false);
@@ -71,12 +73,10 @@ export default {
             if (store.state.user?.isAdmin) {
                 return 'Administrator';
             }
-            // Можно добавить логику для других ролей
             return 'User';
         });
         const userPhoto = computed(() => {
             if (store.state.user?.photo) {
-                // Используем UserDto метод если доступен
                 if (store.state.user.photoUrl) {
                     return store.state.user.photoUrl();
                 }
@@ -106,8 +106,8 @@ export default {
         const handleProfileSaved = () => {
             closeProfileModal();
             store.dispatch('showNotification', {
-                title: 'Success',
-                subtitle: 'Profile updated successfully',
+                title: t('success'),
+                subtitle: t('profileUpdatedSuccessfully'),
                 isDanger: false
             });
         };
@@ -115,8 +115,8 @@ export default {
         const handleProfileSavedError = (error) => {
             console.error('Error updating profile:', error);
             store.dispatch('showNotification', {
-                title: 'Error',
-                subtitle: 'Failed to update profile',
+                title: t('error'),
+                subtitle: t('failedToUpdateProfile'),
                 isDanger: true
             });
         };
