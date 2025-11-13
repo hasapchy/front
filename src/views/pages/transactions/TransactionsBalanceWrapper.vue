@@ -127,7 +127,7 @@
         </div>
         
         <!-- Debt Balance -->
-        <div class="w-auto ml-auto">
+        <div v-if="$store.getters.hasPermission('settings_client_balance_view')" class="w-auto ml-auto">
             <transition name="fade" mode="out-in">
                 <div v-if="data != null && !loading" key="table">
                     <div class="bg-white p-3 rounded-lg shadow-md">
@@ -359,38 +359,42 @@ export default {
                     params
                 );
 
-                // Загружаем балансы клиентов (логика как во взаиморасчетах) с учетом фильтра типа клиента из localStorage
-                try {
-                    const ClientController = (await import('@/api/ClientController')).default;
-                    const clients = await ClientController.getAllItems();
-                    const clientTypeFilter = (this.$store && this.$store.state && this.$store.state.clientTypeFilter) ? this.$store.state.clientTypeFilter : 'all';
-                    
-                    // Рассчитываем общий дебет и кредит из балансов клиентов
-                    let totalDebt = 0;    // Нам должны (положительный баланс)
-                    let totalCredit = 0;  // Мы должны (отрицательный баланс)
-                    
-                    clients
-                        .filter(client => {
-                            if (!clientTypeFilter || clientTypeFilter === 'all') return true;
-                            const type = client.clientType || 'individual';
-                            return type === clientTypeFilter;
-                        })
-                        .forEach(client => {
-                        const balance = parseFloat(client.balance) || 0;
-                        if (balance > 0) {
-                            totalDebt += balance;
-                        } else if (balance < 0) {
-                            totalCredit += Math.abs(balance);
-                        }
-                        });
-                    
-                    this.clientDebts = {
-                        positive: totalDebt,
-                        negative: totalCredit,
-                        balance: totalDebt - totalCredit
-                    };
-                } catch (error) {
-                    console.error('Ошибка при загрузке балансов клиентов:', error);
+                // Загружаем балансы клиентов только если есть право на просмотр баланса клиентов
+                if (this.$store.getters.hasPermission('settings_client_balance_view')) {
+                    try {
+                        const ClientController = (await import('@/api/ClientController')).default;
+                        const clients = await ClientController.getAllItems();
+                        const clientTypeFilter = (this.$store && this.$store.state && this.$store.state.clientTypeFilter) ? this.$store.state.clientTypeFilter : 'all';
+                        
+                        // Рассчитываем общий дебет и кредит из балансов клиентов
+                        let totalDebt = 0;    // Нам должны (положительный баланс)
+                        let totalCredit = 0;  // Мы должны (отрицательный баланс)
+                        
+                        clients
+                            .filter(client => {
+                                if (!clientTypeFilter || clientTypeFilter === 'all') return true;
+                                const type = client.clientType || 'individual';
+                                return type === clientTypeFilter;
+                            })
+                            .forEach(client => {
+                            const balance = parseFloat(client.balance) || 0;
+                            if (balance > 0) {
+                                totalDebt += balance;
+                            } else if (balance < 0) {
+                                totalCredit += Math.abs(balance);
+                            }
+                            });
+                        
+                        this.clientDebts = {
+                            positive: totalDebt,
+                            negative: totalCredit,
+                            balance: totalDebt - totalCredit
+                        };
+                    } catch (error) {
+                        console.error('Ошибка при загрузке балансов клиентов:', error);
+                        this.clientDebts = { positive: 0, negative: 0, balance: 0 };
+                    }
+                } else {
                     this.clientDebts = { positive: 0, negative: 0, balance: 0 };
                 }
             } finally {

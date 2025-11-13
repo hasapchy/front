@@ -85,6 +85,20 @@ export function permissionLabel(name) {
     return settingsMap[name] || name;
   }
 
+  if (name === 'mutual_settlements_view') {
+    if (typeof window !== 'undefined' && window.i18n && window.i18n.global && window.i18n.global.t) {
+      try {
+        const translation = window.i18n.global.t('mutual_settlements_view');
+        if (translation !== 'mutual_settlements_view') {
+          return translation;
+        }
+      } catch (error) {
+        console.warn('i18n translation failed:', error);
+      }
+    }
+    return 'Просмотр взаиморасчетов';
+  }
+
   const action = name.split("_").at(-1);
 
   if (typeof window !== 'undefined' && window.i18n && window.i18n.global && window.i18n.global.t) {

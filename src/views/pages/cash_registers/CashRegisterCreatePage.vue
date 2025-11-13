@@ -14,10 +14,12 @@
                 </template>
             </select>
         </div>
-        <label>{{ $t('balance') }}</label>
-        <div class="flex items-center rounded-l">
-            <input type="number" v-model="balance" :disabled="!!editingItemId">
-            <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span>
+        <div v-if="$store.getters.hasPermission('settings_cash_balance_view')">
+            <label>{{ $t('balance') }}</label>
+            <div class="flex items-center rounded-l">
+                <input type="number" v-model="balance" :disabled="!!editingItemId">
+                <span v-if="selectedCurrency" class="p-2 bg-gray-200 rounded-r ">{{ selectedCurrency?.symbol }}</span>
+            </div>
         </div>
         <div class="mt-4">
             <label>{{ $t('assignUsers') }}</label>

@@ -69,15 +69,6 @@ export default {
             savedErrorText: this.$t('errorSavingCashRegister'),
             deletedSuccessText: this.$t('cashRegisterSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingCashRegister'),
-            columnsConfig: [
-                { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: this.$t('number'), size: 60 },
-                { name: 'name', label: this.$t('name') },
-                { name: 'balance', label: this.$t('balance') },
-                { name: 'currency', label: this.$t('currency') },
-                { name: 'createdAt', label: this.$t('creationDate') },
-                { name: 'dateUser', label: this.$t('dateUser'), html: true },
-            ]
         }
     },
     created() {
@@ -140,6 +131,17 @@ export default {
         }
     },
     computed: {
+        columnsConfig() {
+            return [
+                { name: 'select', label: '#', size: 15 },
+                { name: 'id', label: this.$t('number'), size: 60 },
+                { name: 'name', label: this.$t('name') },
+                ...(this.$store.getters.hasPermission('settings_cash_balance_view') ? [{ name: 'balance', label: this.$t('balance') }] : []),
+                { name: 'currency', label: this.$t('currency') },
+                { name: 'createdAt', label: this.$t('creationDate') },
+                { name: 'dateUser', label: this.$t('dateUser'), html: true },
+            ];
+        },
     },
 }
 </script>

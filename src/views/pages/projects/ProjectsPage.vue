@@ -205,6 +205,8 @@ export default {
             switch (c) {
                 case 'users':
                     return (i.users || '').length + ' ' + this.$t('users');
+                case 'budget':
+                    return i.getBudgetDisplay ? i.getBudgetDisplay() : '';
                 case 'createdAt':
                     return i.formatCreatedAt();
                 case 'dateUser':
@@ -465,6 +467,7 @@ export default {
                         client: item.client,
                     })
                 },
+                ...(this.$store.getters.hasPermission('settings_project_budget_view') ? [{ name: 'budget', label: 'budget', html: true }] : []),
                 { name: 'name', label: 'name' },
             ];
         }
