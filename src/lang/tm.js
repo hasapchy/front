@@ -1071,9 +1071,13 @@ export default {
   
   // Settings permissions
   settings: 'Sazlamalar',
-  settings_edit_any_date: 'Islendik senäni üýtget',
-  settings_project_budget_view: 'Proýekt büdjetini gör',
-  settings_currencies_view: 'Başga walýutalary gör',
+    settings_edit_any_date: 'Islendik senäni üýtget',
+    settings_project_budget_view: 'Proýekt büdjetini gör',
+    settings_currencies_view: 'Başga walýutalary gör',
+    settings_cash_balance_view: 'Kassa balansyny gör',
+    settings_client_balance_view: 'Müşderi balansyny gör',
+    settings_view: 'Sazlamalary gör',
+    mutual_settlements_view: 'Özara hasaplaşyklary gör',
   
   // Image cropper
   cropImage: 'Suraty kesip al',

@@ -20,6 +20,12 @@
                 </SidebarLink>
             </ul>
 
+            <ul v-if="hasPermission('mutual_settlements_view')">
+                <SidebarLink to="/mutual-settlements" icon="fa-solid fa-handshake mr-2" :settings="true">
+                    {{ $t('mutualSettlements') }}
+                </SidebarLink>
+            </ul>
+
             <ul v-if="hasPermission('warehouses_view')">
                 <SidebarLink to="/admin/warehouses" icon="fa-solid fa-warehouse mr-2" :settings="true">
                     {{ $t('warehouses') }}

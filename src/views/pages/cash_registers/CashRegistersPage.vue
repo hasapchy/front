@@ -99,7 +99,7 @@ export default {
                 case 'createdAt':
                     return i.formatCreatedAt();
                 case 'dateUser':
-                    return `${i.formatDate()} / ${i.userName}`;
+                    return i.formatCreatedAt();
                 default:
                     return i[c];
             }

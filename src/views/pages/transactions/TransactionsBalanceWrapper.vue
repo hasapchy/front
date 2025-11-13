@@ -225,6 +225,9 @@ export default {
         maxSlide() {
             if (!this.data || this.data.length <= 3) return 0;
             return Math.ceil(this.data.length / 3) - 1;
+        },
+        canViewCashBalance() {
+            return this.$store.getters.hasPermission('settings_cash_balance_view');
         }
     },
     methods: {
@@ -292,6 +295,13 @@ export default {
             }
         },
         async fetchItems() {
+            if (!this.canViewCashBalance) {
+                this.loading = false;
+                this.data = [];
+                this.clientDebts = { positive: 0, negative: 0, balance: 0 };
+                return;
+            }
+
             this.loading = true;
             this.currentSlide = 0; // Сбрасываем слайдер при обновлении данных
             try {

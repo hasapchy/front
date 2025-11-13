@@ -362,6 +362,10 @@ export default {
     settings_edit_any_date: 'Edit Any Date',
     settings_project_budget_view: 'View Project Budget',
     settings_currencies_view: 'View Other Currencies',
+    settings_cash_balance_view: 'View Cash Balance',
+    settings_client_balance_view: 'View Client Balance',
+    settings_view: 'View Settings',
+    mutual_settlements_view: 'View Mutual Settlements',
     
     // Pagination
     show: 'Show',

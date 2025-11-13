@@ -2,8 +2,11 @@ export function permissionIcon(name) {
   if (name.startsWith('settings_')) {
     const settingsIconMap = {
       'settings_edit_any_date': 'fas fa-pen',
-      'settings_project_budget_view': 'fas fa-eye', 
-      'settings_currencies_view': 'fas fa-eye'
+      'settings_project_budget_view': 'fas fa-eye',
+      'settings_currencies_view': 'fas fa-eye',
+      'settings_cash_balance_view': 'fas fa-wallet',
+      'settings_client_balance_view': 'fas fa-user-circle',
+      'settings_view': 'fas fa-cog',
     };
     return settingsIconMap[name] || 'fas fa-cog';
   }
@@ -54,6 +57,7 @@ export function permissionGroupLabel(name) {
     products: "Products",
     transactions: "Transactions",
     transfers: "Cash Transfers",
+    mutual_settlements: "Mutual Settlements",
     sales: "Sales",
     projects: "Projects",
     order_statuses: "Order Statuses",
@@ -72,8 +76,11 @@ export function permissionLabel(name) {
   if (name.startsWith('settings_')) {
     const settingsMap = {
       'settings_edit_any_date': 'Изменение любой даты',
-      'settings_project_budget_view': 'Просмотр бюджета проекта', 
-      'settings_currencies_view': 'Просмотр других валют'
+      'settings_project_budget_view': 'Просмотр бюджета проекта',
+      'settings_currencies_view': 'Просмотр других валют',
+      'settings_cash_balance_view': 'Просмотр баланса касс',
+      'settings_client_balance_view': 'Просмотр баланса клиентов',
+      'settings_view': 'Просмотр настроек',
     };
     return settingsMap[name] || name;
   }
