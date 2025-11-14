@@ -127,41 +127,35 @@
                     </div>
                 </div>
             </div>
-            <div v-show="currentTab === 'permissions'">
+            <div v-show="currentTab === 'roles'">
                 <div class="mb-4">
-                    <label class="font-semibold mb-2 block">{{ $t('userPermissions') }}</label>
-
-                    <div class="mb-2">
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" v-model="selectAllChecked" @change="toggleSelectAll">
-                            <span>{{ $t('selectAllPermissions') }}</span>
-                        </label>
-                    </div>
-
-                    <div v-if="groupedPermissions">
-                        <div v-for="(actions, group) in sortedGroupedPermissions" :key="group"
-                            class="mb-2 border rounded p-2">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="font-semibold">
-                                    {{ permissionGroupLabel(actions[0]?.name || group) }}
-                                </span>
-                                <label class="flex items-center space-x-1 text-sm">
-                                    <input type="checkbox" :checked="isGroupChecked(group)"
-                                        @change="toggleGroup(group)" />
-                                    <span>{{ $t('all') }}</span>
-                                </label>
+                    <label class="font-semibold mb-2 block">{{ $t('roles') }}</label>
+                    <p class="text-sm text-gray-600 mb-3">{{ $t('selectRolesByCompany') }}</p>
+                    
+                    <div v-if="selectedCompanies && selectedCompanies.length > 0" class="space-y-4">
+                        <div v-for="company in selectedCompanies" :key="company.id" class="border border-gray-300 rounded-md p-3 bg-gray-50">
+                            <div class="font-semibold text-sm mb-2">{{ company.name }}</div>
+                            <div v-if="allRoles && allRoles.length > 0" class="max-h-48 overflow-y-auto">
+                                <div v-for="role in allRoles" :key="role.id" class="flex items-center space-x-2 mb-2">
+                                    <input 
+                                        type="checkbox" 
+                                        :id="`role-${company.id}-${role.id}`" 
+                                        :value="role.name"
+                                        @change="updateCompanyRoles(company.id, role.name, $event.target.checked)"
+                                        :checked="isRoleSelectedForCompany(company.id, role.name)"
+                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                    <label :for="`role-${company.id}-${role.id}`" class="text-sm text-gray-700 cursor-pointer flex-1">
+                                        {{ role.name }}
+                                        <span v-if="role.permissions && role.permissions.length > 0" class="text-xs text-gray-500 ml-2">
+                                            ({{ role.permissions.length }} {{ $t('permissions') }})
+                                        </span>
+                                    </label>
+                                </div>
                             </div>
-
-                            <div class="flex flex-wrap gap-2 text-xs">
-                                <label v-for="perm in sortedPermissions(actions)" :key="perm.name"
-                                    class="flex items-center gap-1 bg-gray-100 px-1.5 py-0.5 rounded text-[11px] whitespace-nowrap">
-                                    <input type="checkbox" :value="perm.name" v-model="form.permissions" />
-                                    <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
-                                    <span>{{ permissionLabel(perm.name) }}</span>
-                                </label>
-                            </div>
+                            <div v-else class="text-gray-500 text-sm">{{ $t('noRolesAvailable') }}</div>
                         </div>
                     </div>
+                    <div v-else class="text-gray-500 text-sm">{{ $t('noCompaniesAvailable') }}</div>
                 </div>
             </div>
         </div>
@@ -191,17 +185,10 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
 import UsersController from '@/api/UsersController';
 import CompaniesController from '@/api/CompaniesController';
+import RolesController from '@/api/RolesController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import userPhotoMixin from '@/mixins/userPhotoMixin';
-
-import {
-    permissionIcon,
-    permissionLabel,
-    permissionColor,
-    permissionGroupLabel,
-    getPermissionPrefix,
-} from '@/utils/PermissionUtils';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import AuthController from '@/api/AuthController';
 
@@ -226,10 +213,10 @@ export default {
                 is_active: true,
                 is_admin: false,
                 companies: [],
-                permissions: [],
+                roles: [],
+                company_roles: [],
             },
             editingItemId: null,
-            allPermissions: [],
             companies: [],
             saveLoading: false,
             deleteDialog: false,
@@ -246,8 +233,9 @@ export default {
             croppedFile: null,
             tabs: [
                 { name: 'info', label: 'information' },
-                { name: 'permissions', label: 'permissions' }
+                { name: 'roles', label: 'roles' }
             ],
+            allRoles: [],
         };
     },
     computed: {
@@ -257,38 +245,11 @@ export default {
                 label: this.$t(tab.label)
             }));
         },
-        groupedPermissions() {
-            const groups = {};
-            this.allPermissions.forEach((p) => {
-                let groupKey;
-
-                // Специальная обработка для settings permissions
-                if (p.name.startsWith('settings_')) {
-                    groupKey = 'settings';
-                } else {
-                    const parts = p.name.split('_');
-                    groupKey = parts.length >= 3 ? `${parts[0]}_${parts[1]}` : parts[0];
-                }
-
-                if (!groups[groupKey]) groups[groupKey] = [];
-                groups[groupKey].push(p);
-            });
-            return groups;
-        },
-        sortedGroupedPermissions() {
-            const sorted = {};
-            Object.keys(this.groupedPermissions)
-                .sort()
-                .forEach((key) => {
-                    sorted[key] = this.groupedPermissions[key];
-                });
-            return sorted;
-        },
-        selectAllChecked: {
-            get() {
-                return this.form.permissions.length === this.allPermissions.length;
-            },
-            set() { }
+        selectedCompanies() {
+            if (this.form.companies && this.form.companies.length > 0) {
+                return this.companies.filter(c => this.form.companies.includes(c.id));
+            }
+            return this.companies;
         }
     },
     mounted() {
@@ -298,8 +259,8 @@ export default {
 
         this.$nextTick(async () => {
             await Promise.all([
-                this.fetchPermissions(),
-                this.fetchCompanies()
+                this.fetchCompanies(),
+                this.fetchRoles()
             ]);
 
             if (!this.editingItem) {
@@ -323,7 +284,7 @@ export default {
                 is_active: this.form.is_active,
                 is_admin: this.form.is_admin,
                 companies: [...this.form.companies],
-                permissions: [...this.form.permissions],
+                roles: [...this.form.roles],
                 selected_image: this.selected_image,
                 image: this.image
             };
@@ -367,12 +328,6 @@ export default {
 
             this.closeCropperModal();
         },
-        async fetchPermissions() {
-            const allPermissions = await UsersController.getAllPermissions();
-            this.allPermissions = allPermissions.filter(permission =>
-                !permission.name.startsWith('system_settings_')
-            );
-        },
         async fetchCompanies() {
             try {
                 const result = await CompaniesController.getItems(1, 1000);
@@ -380,6 +335,14 @@ export default {
             } catch (error) {
                 console.error('Error fetching companies:', error);
                 this.companies = [];
+            }
+        },
+        async fetchRoles() {
+            try {
+                this.allRoles = await RolesController.getAllItems();
+            } catch (error) {
+                console.error('Error fetching roles:', error);
+                this.allRoles = [];
             }
         },
         clearForm() {
@@ -394,7 +357,8 @@ export default {
             this.form.is_active = true;
             this.form.is_admin = false;
             this.form.companies = [];
-            this.form.permissions = [];
+            this.form.roles = [];
+            this.form.company_roles = [];
             this.selected_image = null;
             this.image = null;
             this.hasNewFile = false;
@@ -411,62 +375,6 @@ export default {
             }
             this.resetFormChanges();
         },
-        isGroupChecked(group) {
-            let groupPermissions;
-
-            // Специальная обработка для settings группы
-            if (group === 'settings') {
-                groupPermissions = this.allPermissions
-                    .filter((p) => p.name.startsWith('settings_'));
-            } else {
-                groupPermissions = this.allPermissions
-                    .filter((p) => p.name.startsWith(`${group}_`));
-            }
-
-            return groupPermissions.every((p) => this.form.permissions.includes(p.name));
-        },
-        toggleGroup(group) {
-            let groupPermissions;
-
-            // Специальная обработка для settings группы
-            if (group === 'settings') {
-                groupPermissions = this.allPermissions
-                    .filter((p) => p.name.startsWith('settings_'))
-                    .map((p) => p.name);
-            } else {
-                groupPermissions = this.allPermissions
-                    .filter((p) => p.name.startsWith(`${group}_`))
-                    .map((p) => p.name);
-            }
-
-            const allChecked = this.isGroupChecked(group);
-            if (allChecked) {
-                this.form.permissions = this.form.permissions.filter(
-                    (p) => !groupPermissions.includes(p)
-                );
-            } else {
-                this.form.permissions = [...new Set([...this.form.permissions, ...groupPermissions])];
-            }
-        },
-        toggleSelectAll() {
-            if (this.selectAllChecked) {
-                this.form.permissions = [];
-            } else {
-                this.form.permissions = this.allPermissions.map((p) => p.name);
-            }
-        },
-        sortedPermissions(permissions) {
-            return [...permissions].sort((a, b) => a.name.localeCompare(b.name));
-        },
-        permissionIcon,
-        permissionLabel,
-        permissionColor,
-        permissionGroupLabel(name) {
-            const parts = name.split("_");
-            const prefix = parts.length > 2 ? `${parts[0]}_${parts[1]}` : parts[0];
-            return this.$t(prefix) || prefix;
-        },
-        getPermissionPrefix,
         async save() {
             if (!this.editingItemId && this.form.password !== this.form.confirmPassword) {
                 this.$emit('saved-error', this.$t('passwordsDoNotMatch'));
@@ -477,49 +385,20 @@ export default {
             try {
                 let savedUser;
 
-                if (this.editingItemId) {
-                    const updateData = {
-                        name: this.form.name,
-                        email: this.form.email,
-                        position: this.form.position,
-                        hire_date: this.form.hire_date,
-                        birthday: this.form.birthday,
-                        is_active: this.form.is_active,
-                        is_admin: this.form.is_admin,
-                        permissions: Array.isArray(this.form.permissions) ? this.form.permissions : this.form.permissions.split(','),
-                        companies: Array.isArray(this.form.companies) ? this.form.companies : this.form.companies.split(',').filter(c => c.trim() !== '')
-                    };
+                const formData = this.prepareUserData();
+            const fileToUpload = this.hasNewFile ? (this.croppedFile || this.$refs.imageInput?.files[0]) : null;
 
-
-                    if (this.form.newPassword) {
-                        updateData.password = this.form.newPassword;
-                    }
-
-                    if (this.editingItem && this.editingItem.photo === '') {
-                        updateData.photo = '';
-                    }
-
-                    // Используем обрезанный файл, если он есть, иначе файл из input
-                    const fileToUpload = this.hasNewFile ? (this.croppedFile || this.$refs.imageInput?.files[0]) : null;
-                    savedUser = await UsersController.updateItem(this.editingItemId, updateData, fileToUpload);
-                } else {
-                    const createData = {
-                        name: this.form.name,
-                        email: this.form.email,
-                        password: this.form.password,
-                        position: this.form.position,
-                        hire_date: this.form.hire_date,
-                        birthday: this.form.birthday,
-                        is_active: this.form.is_active,
-                        is_admin: this.form.is_admin,
-                        permissions: Array.isArray(this.form.permissions) ? this.form.permissions : this.form.permissions.split(','),
-                        companies: Array.isArray(this.form.companies) ? this.form.companies : this.form.companies.split(',').filter(c => c.trim() !== '')
-                    };
-
-                    // Используем обрезанный файл, если он есть, иначе файл из input
-                    const fileToUpload = this.hasNewFile ? (this.croppedFile || this.$refs.imageInput?.files[0]) : null;
-                    savedUser = await UsersController.storeItem(createData, fileToUpload);
+            if (this.editingItemId) {
+                if (this.form.newPassword) {
+                    formData.password = this.form.newPassword;
                 }
+                if (this.editingItem && this.editingItem.photo === '') {
+                    formData.photo = '';
+                }
+                savedUser = await UsersController.updateItem(this.editingItemId, formData, fileToUpload);
+            } else {
+                savedUser = await UsersController.storeItem(formData, fileToUpload);
+            }
 
                 const currentUser = this.$store.state.user;
                 if (savedUser.user && savedUser.user.id === currentUser.id) {
@@ -575,6 +454,52 @@ export default {
         changeTab(tab) {
             this.currentTab = tab;
         },
+        updateCompanyRoles(companyId, roleName, isChecked) {
+            let companyRole = this.form.company_roles.find(cr => cr.company_id === companyId);
+            
+            if (!companyRole) {
+                companyRole = { company_id: companyId, role_ids: [] };
+                this.form.company_roles.push(companyRole);
+            }
+            
+            if (isChecked) {
+                if (!companyRole.role_ids.includes(roleName)) {
+                    companyRole.role_ids.push(roleName);
+                }
+            } else {
+                companyRole.role_ids = companyRole.role_ids.filter(r => r !== roleName);
+            }
+            
+            this.form.company_roles = this.form.company_roles.filter(cr => cr.role_ids.length > 0);
+        },
+        isRoleSelectedForCompany(companyId, roleName) {
+            const companyRole = this.form.company_roles.find(cr => cr.company_id === companyId);
+            return companyRole && companyRole.role_ids.includes(roleName);
+        },
+        prepareUserData() {
+            const data = {
+                name: this.form.name,
+                email: this.form.email,
+                position: this.form.position,
+                hire_date: this.form.hire_date,
+                birthday: this.form.birthday,
+                is_active: this.form.is_active,
+                is_admin: this.form.is_admin,
+                companies: Array.isArray(this.form.companies) ? this.form.companies : this.form.companies.split(',').filter(c => c.trim() !== ''),
+            };
+
+            if (!this.editingItemId) {
+                data.password = this.form.password;
+            }
+
+            if (this.form.company_roles && this.form.company_roles.length > 0) {
+                data.company_roles = this.form.company_roles;
+            } else if (this.form.roles && this.form.roles.length > 0) {
+                data.roles = Array.isArray(this.form.roles) ? this.form.roles : (this.form.roles ? this.form.roles.split(',').filter(r => r.trim() !== '') : []);
+            }
+
+            return data;
+        },
 
         async deleteItem() {
             this.closeDeleteDialog();
@@ -611,7 +536,17 @@ export default {
                     this.form.is_active = newEditingItem.isActive !== undefined ? newEditingItem.isActive : true;
                     this.form.is_admin = newEditingItem.isAdmin !== undefined ? newEditingItem.isAdmin : false;
                     this.form.companies = newEditingItem.companies?.map(c => c.id) || [];
-                    this.form.permissions = newEditingItem.permissions || [];
+                    this.form.roles = newEditingItem.roles?.map(r => typeof r === 'string' ? r : r.name) || [];
+                    
+                    if (newEditingItem.company_roles && Array.isArray(newEditingItem.company_roles)) {
+                        this.form.company_roles = newEditingItem.company_roles.map(cr => ({
+                            company_id: cr.company_id,
+                            role_ids: Array.isArray(cr.role_ids) ? cr.role_ids : (cr.role_ids ? cr.role_ids.split(',') : [])
+                        }));
+                    } else {
+                        this.form.company_roles = [];
+                    }
+                    
                     this.editingItemId = newEditingItem.id || null;
                     this.currentTab = 'info'; // Всегда открываем первую вкладку
 

@@ -27,6 +27,7 @@ import TransactionCategoriesPage from "@/views/pages/transactions/TransactionCat
 import ProjectStatusesPage from "@/views/pages/projects/ProjectStatusesPage.vue";
 import InvoicesPage from "@/views/pages/invoices/InvoicesPage.vue";
 import UsersPage from "@/views/pages/users/UsersPage.vue";
+import RolesPage from "@/views/pages/roles/RolesPage.vue";
 import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
 import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
 
@@ -356,6 +357,12 @@ const routes = [
         name: "users",
         component: UsersPage,
         meta: { title: "users", requiresAuth: true },
+      },
+      {
+        path: "/roles",
+        name: "roles",
+        component: RolesPage,
+        meta: { title: "roles", requiresAuth: true },
       },
       {
         path: "/companies",

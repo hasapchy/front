@@ -11,7 +11,10 @@ export function permissionIcon(name) {
     return settingsIconMap[name] || 'fas fa-cog';
   }
 
-  const action = name.split("_").at(-1);
+  const parts = name.split("_");
+  const action = parts[parts.length - 1] === 'all' || parts[parts.length - 1] === 'own' 
+    ? parts[parts.length - 2] 
+    : parts[parts.length - 1];
 
   switch (action) {
     case "view":
@@ -129,7 +132,10 @@ export function permissionLabel(name) {
 }
 
 export function permissionColor(name) {
-  const action = name.split("_").at(-1);
+  const parts = name.split("_");
+  const action = parts[parts.length - 1] === 'all' || parts[parts.length - 1] === 'own' 
+    ? parts[parts.length - 2] 
+    : parts[parts.length - 1];
 
   switch (action) {
     case "view":

@@ -25,12 +25,14 @@
                                         {{ product.stockQuantity }}
                                         {{ product.unitShortName ||
                                             product.unitName || '' }}
-                                        {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
+                                        {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol
+                                        }}
                                     </div>
                                 </template>
                                 <template v-else>
                                     <div>∞{{ product.unitShortName ||
-                                        product.unitName || '' }} | {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}</div>
+                                        product.unitName || '' }} | {{ product.retailPriceFormatted() }}{{
+                                        defaultCurrencySymbol }}</div>
                                 </template>
                             </div>
 
@@ -58,27 +60,20 @@
                                 {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
                             </template>
                             <template v-else>
-                                ∞{{ product.unitShortName || product.unitName || '' }} | {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
+                                ∞{{ product.unitShortName || product.unitName || '' }} | {{
+                                product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
                             </template>
                         </div>
                     </div>
                 </li>
                 <li class="p-2 border-t border-gray-300 bg-gray-50 sticky bottom-0">
                     <div class="flex space-x-2">
-                        <PrimaryButton 
-                            :is-info="true" 
-                            :is-full="true"
-                            icon="fas fa-plus"
+                        <PrimaryButton :is-info="true" :is-full="true" icon="fas fa-plus"
                             @mousedown.prevent="openCreateProductModal">
                             {{ $t('createProductOrService') }}{{ productSearch ? ` "${productSearch}"` : '' }}
                         </PrimaryButton>
-                        <PrimaryButton
-                            v-if="!isSale && !isReceipt"
-                            :is-light="true"
-                            icon="fas fa-bolt"
-                            @mousedown.prevent="createTempProductQuick"
-                            :disabled="!productSearch.trim() || disabled"
-                        >
+                        <PrimaryButton v-if="allowTempProduct && !isReceipt" :is-light="true" icon="fas fa-bolt"
+                            @mousedown.prevent="createTempProductQuick" :disabled="!productSearch.trim() || disabled">
                             {{ $t('createTempProduct') }}
                         </PrimaryButton>
                     </div>
@@ -96,14 +91,15 @@
                     <th v-if="showPrice" class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
                         {{ isReceipt ? $t('purchasePrice') : $t('price') }}
                     </th>
-                    <th v-if="isReceipt && showPrice && showAmount" class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
+                    <th v-if="isReceipt && showPrice && showAmount"
+                        class="text-left border border-gray-300 py-2 px-4 font-medium w-48">
                         {{ $t('amount') }}
                     </th>
                     <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
                 </tr>
             </thead>
             <tbody>
-                                                 <tr v-for="(product, index) in products" :key="index" class="border-b border-gray-300">
+                <tr v-for="(product, index) in products" :key="index" class="border-b border-gray-300">
                     <td class="py-2 px-4 border-x border-gray-300">
                         <div class="flex items-center">
                             <div class="w-7 h-7 flex items-center justify-center mr-2">
@@ -116,7 +112,8 @@
                     </td>
                     <td v-if="showQuantity" class="py-2 px-4 border-x border-gray-300">
                         <input type="number" v-model.number="product.quantity" class="w-full p-1 text-right"
-                            :disabled="disabled" min="0.01" step="0.01" @blur="roundQuantity(product)" @input="onQuantityChange(product)" />
+                            :disabled="disabled" min="0.01" step="0.01" @blur="roundQuantity(product)"
+                            @input="onQuantityChange(product)" />
                     </td>
                     <td v-if="showPrice" class="py-2 px-4 border-x border-gray-300">
                         <div class="flex items-center space-x-2">
@@ -129,10 +126,15 @@
                             :disabled="disabled" min="0.01" @input="onAmountChange(product)" />
                     </td>
                     <td v-if="showPriceType && !isReceipt && !isSale" class="py-2 px-4 border-x border-gray-300">
-                        <select v-model="product.priceType" class="w-full p-1" :disabled="disabled" @change="onPriceTypeChange(product)">
-                            <option v-if="product.purchasePrice !== undefined" value="purchase">{{ $t('purchasePrice') }}</option>
+                        <select v-model="product.priceType" class="w-full p-1" :disabled="disabled"
+                            @change="onPriceTypeChange(product)">
+                            <option v-if="product.purchasePrice !== undefined" value="purchase">{{ $t('purchasePrice')
+                                }}
+                            </option>
                             <option value="retail">{{ $t('retailPrice') }}</option>
-                            <option v-if="product.wholesalePrice !== undefined && product.wholesalePrice > 0" value="wholesale">{{ $t('wholesalePrice') }}</option>
+                            <option v-if="product.wholesalePrice !== undefined && product.wholesalePrice > 0"
+                                value="wholesale">
+                                {{ $t('wholesalePrice') }}</option>
                         </select>
                     </td>
                     <td class="px-4 border-x border-gray-300">
@@ -145,7 +147,8 @@
             </tbody>
             <tfoot v-if="products.length && isSale">
                 <tr class="bg-gray-50 font-medium">
-                    <td :colspan="showQuantity ? 2 : 1" class="py-2 px-4 text-right">{{ $t('amountWithoutDiscount') }}</td>
+                    <td :colspan="showQuantity ? 2 : 1" class="py-2 px-4 text-right">{{ $t('amountWithoutDiscount') }}
+                    </td>
                     <td class="py-2 px-4 text-right">
                         {{ formatCurrency(subtotal, currencySymbol, 2, true) }}
                     </td>
@@ -270,6 +273,10 @@ export default {
         useAllProducts: {
             type: Boolean,
             default: false
+        },
+        allowTempProduct: {
+            type: Boolean,
+            default: false
         }
     },
     data() {
@@ -343,22 +350,22 @@ export default {
         lastProducts() {
             if (this.warehouseId && this.warehouseProductsLoaded) {
                 let products = this.warehouseProducts;
-                
+
                 if (this.onlyProducts) {
                     products = products.filter(p => Boolean(p.type));
                 }
-                
+
                 return products;
             }
-            
-            let products = this.useAllProducts 
-                ? this.$store.getters.allProducts 
+
+            let products = this.useAllProducts
+                ? this.$store.getters.allProducts
                 : this.$store.getters.lastProducts;
-            
+
             if (this.onlyProducts) {
                 products = products.filter(p => Boolean(p.type));
             }
-            
+
             return products;
         }
     },
@@ -366,7 +373,7 @@ export default {
         if (this.warehouseId) {
             await this.loadWarehouseProducts();
         }
-        
+
         if (this.useAllProducts) {
             await this.$store.dispatch('loadAllProducts');
         } else {
@@ -405,11 +412,11 @@ export default {
                 try {
                     const results = await ProductController.searchItems(this.productSearch, this.onlyProducts ? true : null, this.warehouseId);
                     let products = ProductSearchDto.fromApiArray(results);
-                    
+
                     if (this.onlyProducts) {
                         products = products.filter(p => Boolean(p.type));
                     }
-                    
+
                     this.productResults = products;
                     this.productSearchLoading = false;
                 } catch (error) {
@@ -504,10 +511,10 @@ export default {
         },
         removeSelectedProduct(id) {
             const removedProduct = this.products.find(p => p.productId === id);
-            
+
             this.products = this.products.filter(p => p.productId !== id);
             this.updateTotals();
-            
+
             this.$emit('product-removed', { id, wasTempProduct: removedProduct?.isTempProduct, name: removedProduct?.name });
         },
         handleBlur() {
@@ -589,14 +596,14 @@ export default {
                     } else {
                         this.warehouseProducts = [];
                         this.warehouseProductsLoaded = false;
-                        
+
                         if (this.useAllProducts) {
                             await this.$store.dispatch('loadAllProducts');
                         } else {
                             await this.$store.dispatch('loadLastProducts');
                         }
                     }
-                    
+
                     if (this.productSearch.length >= 3) {
                         this.searchProducts();
                     }

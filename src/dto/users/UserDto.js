@@ -17,7 +17,9 @@ export class UserDto {
     this.lastLoginAt = data.last_login_at;
 
     this.permissions = data.permissions?.map((p) => p.name) || [];
+    this.roles = data.roles?.map((r) => typeof r === 'string' ? r : (r.name || r)) || [];
     this.companies = data.companies?.map((c) => ({ id: c.id, name: c.name })) || [];
+    this.company_roles = data.company_roles || [];
   }
 
   photoUrl() {

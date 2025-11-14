@@ -1282,4 +1282,23 @@ export default {
   
   // Company settings
   skipProjectOrderBalance: 'Пропускать баланс заказов проекта',
+  
+  // Roles
+  roleName: 'Название роли',
+  roles: 'Роли',
+  createRole: 'Создать роль',
+  editRole: 'Редактировать роль',
+  selectAllPermissions: 'Выбрать все разрешения',
+  selectRolesByCompany: 'Выберите роли для каждой компании',
+  noCompaniesAvailable: 'Нет доступных компаний',
+  all: 'Все',
+  own: 'Только свои',
+  viewAll: 'Просмотр всех',
+  viewOwn: 'Просмотр своих',
+  updateAll: 'Редактирование всех',
+  updateOwn: 'Редактирование своих',
+  deleteAll: 'Удаление всех',
+  deleteOwn: 'Удаление своих',
+  noRolesAvailable: 'Нет доступных ролей',
+  create: 'Создание',
 }

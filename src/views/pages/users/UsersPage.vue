@@ -66,6 +66,7 @@ export default {
                 { name: 'name', label: 'name' },
                 { name: 'email', label: 'email' },
                 { name: 'position', label: 'position' },
+                { name: 'roles', label: 'roles' },
                 { name: 'companies', label: 'companies' },
                 { name: 'isActive', label: 'active', size: 80 },
                 { name: 'isAdmin', label: 'admin', size: 80 },
@@ -109,6 +110,8 @@ export default {
                     return new Date(item.createdAt).toLocaleDateString();
                 case 'lastLoginAt':
                     return item.lastLoginAt ? new Date(item.lastLoginAt).toLocaleDateString() + ' ' + new Date(item.lastLoginAt).toLocaleTimeString() : '—';
+                case 'roles':
+                    return item.roles && item.roles.length > 0 ? item.roles.join(', ') : '—';
                 case 'companies':
                     return item.companies.map(c => c.name).join(', ');
                 default:

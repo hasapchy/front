@@ -1555,7 +1555,21 @@ const store = createStore({
   getters: {
     user: (state) => state.user,
     permissions: (state) => state.permissions,
-    hasPermission: (state) => (perm) => state.permissions.includes(perm),
+    hasPermission: (state) => (perm) => {
+      // Проверяем прямое разрешение
+      if (state.permissions.includes(perm)) {
+        return true;
+      }
+      // Если запрашивается базовое разрешение (например, clients_view),
+      // проверяем также _all и _own варианты для обратной совместимости
+      if (perm.endsWith('_view') || perm.endsWith('_update') || perm.endsWith('_delete')) {
+        const basePerm = perm;
+        const allPerm = basePerm.replace(/_(view|update|delete)$/, '_$1_all');
+        const ownPerm = basePerm.replace(/_(view|update|delete)$/, '_$1_own');
+        return state.permissions.includes(allPerm) || state.permissions.includes(ownPerm);
+      }
+      return false;
+    },
     isLoading: (state) => state.isLoading,
     activeApiCalls: (state) => state.activeApiCalls,
     notification: (state) => state.notification,

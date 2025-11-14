@@ -169,7 +169,7 @@ export default {
             transactionTypeFilter: '',
             sourceFilter: '',
             projectId: '',
-            debtFilter: 'false',
+            debtFilter: 'all',
             allProjects: [],
             savedSuccessText: this.$t('transactionSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingTransaction'),
@@ -326,7 +326,7 @@ export default {
             this.transactionTypeFilter = '';
             this.sourceFilter = '';
             this.projectId = '';
-            this.debtFilter = 'false';
+            this.debtFilter = 'all';
             this.dateFilter = 'this_month';
             this.startDate = null;
             this.endDate = null;
@@ -339,7 +339,7 @@ export default {
             this.transactionTypeFilter = '';
             this.sourceFilter = '';
             this.projectId = '';
-            this.debtFilter = 'false';
+            this.debtFilter = 'all';
             this.dateFilter = 'this_month';
             this.startDate = null;
             this.endDate = null;
@@ -453,7 +453,7 @@ export default {
                    this.transactionTypeFilter !== '' ||
                    this.sourceFilter !== '' ||
                    this.projectId !== '' ||
-                   this.debtFilter !== 'false' ||
+                   this.debtFilter !== 'all' ||
                    this.dateFilter !== 'this_month' ||
                    this.startDate !== null ||
                    this.endDate !== null;

@@ -8,6 +8,12 @@
                 </SidebarLink>
             </ul>
 
+            <ul v-if="hasPermission('roles_view')">
+                <SidebarLink to="/roles" icon="fa-solid fa-user-shield mr-2" :settings="true">
+                    {{ $t('roles') }}
+                </SidebarLink>
+            </ul>
+
             <ul v-if="hasPermission('companies_view')">
                 <SidebarLink to="/companies" icon="fa-solid fa-building mr-2" :settings="true">
                     {{ $t('companies') }}
