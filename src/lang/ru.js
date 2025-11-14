@@ -1295,10 +1295,13 @@ export default {
   own: 'Только свои',
   viewAll: 'Просмотр всех',
   viewOwn: 'Просмотр своих',
+  viewAvailable: 'Просмотр доступных пользователю',
   updateAll: 'Редактирование всех',
   updateOwn: 'Редактирование своих',
+  updateAvailable: 'Редактирование доступных пользователю',
   deleteAll: 'Удаление всех',
   deleteOwn: 'Удаление своих',
+  deleteAvailable: 'Удаление доступных пользователю',
   noRolesAvailable: 'Нет доступных ролей',
   create: 'Создание',
 }
