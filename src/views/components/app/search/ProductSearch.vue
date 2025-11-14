@@ -72,7 +72,7 @@
                             @mousedown.prevent="openCreateProductModal">
                             {{ $t('createProductOrService') }}{{ productSearch ? ` "${productSearch}"` : '' }}
                         </PrimaryButton>
-                        <PrimaryButton v-if="allowTempProduct && !isReceipt" :is-light="true" icon="fas fa-bolt"
+                        <PrimaryButton v-if="allowTempProduct && !isReceipt && canCreateTempProduct" :is-light="true" icon="fas fa-bolt"
                             @mousedown.prevent="createTempProductQuick" :disabled="!productSearch.trim() || disabled">
                             {{ $t('createTempProduct') }}
                         </PrimaryButton>
@@ -367,6 +367,9 @@ export default {
             }
 
             return products;
+        },
+        canCreateTempProduct() {
+            return this.$store.getters.hasPermission('products_create_temp');
         }
     },
     async created() {

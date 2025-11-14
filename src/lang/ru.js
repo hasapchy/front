@@ -1304,4 +1304,6 @@ export default {
   deleteAvailable: 'Удаление доступных пользователю',
   noRolesAvailable: 'Нет доступных ролей',
   create: 'Создание',
+  roleSaved: 'Роль успешно сохранена',
+  mutual_settlements: 'Взаиморасчеты',
 }

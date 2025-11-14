@@ -19,7 +19,7 @@
                 </label>
             </div>
 
-            <div v-if="resourcesPermissions" class="max-h-96 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
+            <div v-if="resourcesPermissions" class="border border-gray-300 rounded-md p-3 bg-gray-50">
                 <div v-for="(resource, resourceKey) in sortedResources" :key="resourceKey"
                     class="mb-4 border-b pb-3 last:border-b-0">
                     <div class="flex items-center justify-between mb-2">

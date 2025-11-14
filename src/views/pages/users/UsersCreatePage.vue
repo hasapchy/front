@@ -134,16 +134,26 @@
                     
                     <div v-if="selectedCompanies && selectedCompanies.length > 0" class="space-y-4">
                         <div v-for="company in selectedCompanies" :key="company.id" class="border border-gray-300 rounded-md p-3 bg-gray-50">
-                            <div class="font-semibold text-sm mb-2">{{ company.name }}</div>
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="font-semibold text-sm">{{ company.name }}</div>
+                                <button 
+                                    v-if="getCompanyRole(company.id)"
+                                    @click="clearCompanyRole(company.id)"
+                                    type="button"
+                                    class="text-xs text-red-600 hover:text-red-800">
+                                    {{ $t('clear') || 'Очистить' }}
+                                </button>
+                            </div>
                             <div v-if="allRoles && allRoles.length > 0" class="max-h-48 overflow-y-auto">
                                 <div v-for="role in allRoles" :key="role.id" class="flex items-center space-x-2 mb-2">
                                     <input 
-                                        type="checkbox" 
+                                        type="radio" 
                                         :id="`role-${company.id}-${role.id}`" 
+                                        :name="`company-${company.id}-role`"
                                         :value="role.name"
-                                        @change="updateCompanyRoles(company.id, role.name, $event.target.checked)"
-                                        :checked="isRoleSelectedForCompany(company.id, role.name)"
-                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                        @change="updateCompanyRole(company.id, role.name)"
+                                        :checked="getCompanyRole(company.id) === role.name"
+                                        class="border-gray-300 text-blue-600 focus:ring-blue-500" />
                                     <label :for="`role-${company.id}-${role.id}`" class="text-sm text-gray-700 cursor-pointer flex-1">
                                         {{ role.name }}
                                         <span v-if="role.permissions && role.permissions.length > 0" class="text-xs text-gray-500 ml-2">
@@ -454,27 +464,24 @@ export default {
         changeTab(tab) {
             this.currentTab = tab;
         },
-        updateCompanyRoles(companyId, roleName, isChecked) {
+        updateCompanyRole(companyId, roleName) {
             let companyRole = this.form.company_roles.find(cr => cr.company_id === companyId);
             
-            if (!companyRole) {
-                companyRole = { company_id: companyId, role_ids: [] };
+            if (companyRole) {
+                companyRole.role_ids = [roleName];
+            } else {
+                companyRole = { company_id: companyId, role_ids: [roleName] };
                 this.form.company_roles.push(companyRole);
             }
-            
-            if (isChecked) {
-                if (!companyRole.role_ids.includes(roleName)) {
-                    companyRole.role_ids.push(roleName);
-                }
-            } else {
-                companyRole.role_ids = companyRole.role_ids.filter(r => r !== roleName);
-            }
-            
-            this.form.company_roles = this.form.company_roles.filter(cr => cr.role_ids.length > 0);
         },
-        isRoleSelectedForCompany(companyId, roleName) {
+        getCompanyRole(companyId) {
             const companyRole = this.form.company_roles.find(cr => cr.company_id === companyId);
-            return companyRole && companyRole.role_ids.includes(roleName);
+            return companyRole && companyRole.role_ids && companyRole.role_ids.length > 0 
+                ? companyRole.role_ids[0] 
+                : null;
+        },
+        clearCompanyRole(companyId) {
+            this.form.company_roles = this.form.company_roles.filter(cr => cr.company_id !== companyId);
         },
         prepareUserData() {
             const data = {

@@ -3,6 +3,7 @@
         <div class="flex justify-between items-center mb-2">
             <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
             <PrimaryButton 
+                v-if="canAdjustBalance"
                 icon="fas fa-plus" 
                 :onclick="openAdjustmentModal"
                 :is-success="true"
@@ -315,6 +316,9 @@ export default {
             } else {
                 return 'Взаиморасчеты';
             }
+        },
+        canAdjustBalance() {
+            return this.$store.getters.hasPermission('settings_client_balance_adjustment');
         }
     },
     watch: {
