@@ -77,6 +77,7 @@ export default {
   orders: 'Orders',
   sales: 'Sales',
   warehouses: 'Warehouses',
+  finance: 'Finance',
   transactions: 'Transactions',
     mutualSettlements: 'Mutual Settlements',
     impact: 'Impact',
@@ -88,7 +89,6 @@ export default {
   projects: 'Projects',
   users: 'Employees',
   settings: 'Settings',
-  orderAdditionalFields: 'Order Add. Fields',
   generalSettings: 'Settings',
   
   // Kanban

@@ -20,18 +20,41 @@
             </div>
 
             <div v-if="resourcesPermissions" class="border border-gray-300 rounded-md p-3 bg-gray-50">
-                <div v-for="(resource, resourceKey) in sortedResources" :key="resourceKey"
-                    class="mb-4 border-b pb-3 last:border-b-0">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="font-semibold text-sm">
-                            {{ getResourceLabel(resourceKey) }}
-                        </span>
-                        <label class="flex items-center space-x-1 text-xs">
-                            <input type="checkbox" :checked="isResourceAllChecked(resourceKey)"
-                                @change="toggleResourceAll(resourceKey)" />
-                            <span>{{ $t('all') }}</span>
-                        </label>
+                <div v-for="(group, groupKey) in groupedResources" :key="groupKey" class="mb-4 last:mb-0">
+                    <div class="mb-2 pb-2 border-b border-gray-400">
+                        <div class="flex items-center justify-between">
+                            <button 
+                                type="button"
+                                @click="toggleGroup(groupKey)"
+                                class="flex items-center gap-2 font-bold text-base text-gray-800 hover:text-blue-600 transition-colors"
+                            >
+                                <i :class="['fas', expandedGroups[groupKey] ? 'fa-chevron-down' : 'fa-chevron-right', 'text-xs']"></i>
+                                <span>{{ getResourceLabel(group.label) }}</span>
+                            </button>
+                            <label class="flex items-center space-x-1 text-xs">
+                                <input 
+                                    type="checkbox" 
+                                    :checked="isGroupAllChecked(group.resources)"
+                                    @change="toggleGroupAll(group.resources)"
+                                />
+                                <span>{{ $t('all') }}</span>
+                            </label>
+                        </div>
                     </div>
+                    
+                    <div v-show="expandedGroups[groupKey]" class="ml-4 space-y-4">
+                        <div v-for="(resource, resourceKey) in group.resources" :key="resourceKey"
+                            class="pb-3 border-b border-gray-200 last:border-b-0">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-sm text-gray-700">
+                                    {{ getResourceLabel(resourceKey) }}
+                                </span>
+                                <label class="flex items-center space-x-1 text-xs">
+                                    <input type="checkbox" :checked="isResourceAllChecked(resourceKey)"
+                                        @change="toggleResourceAll(resourceKey)" />
+                                    <span>{{ $t('all') }}</span>
+                                </label>
+                            </div>
 
                     <div class="grid grid-cols-1 gap-2 text-xs">
                         <!-- Create (без выбора all/own) -->
@@ -111,6 +134,8 @@
                             </label>
                         </div>
                     </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div v-if="customPermissions.length > 0" class="mt-4 pt-4 border-t">
@@ -173,6 +198,7 @@ export default {
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
+            expandedGroups: {},
         };
     },
     computed: {
@@ -198,6 +224,66 @@ export default {
                 'cash_registers',
                 'projects',
             ];
+        },
+        permissionGroups() {
+            return {
+                finance: {
+                    label: 'finance',
+                    resources: ['transactions', 'mutual_settlements', 'warehouse_movements', 'transaction_categories']
+                },
+                warehouses: {
+                    label: 'warehouses',
+                    resources: ['warehouses', 'warehouse_stocks', 'warehouse_receipts', 'warehouse_writeoffs']
+                },
+                cash: {
+                    label: 'cash_registers',
+                    resources: ['cash_registers', 'transfers']
+                },
+                orders: {
+                    label: 'orders',
+                    resources: ['orders', 'order_statuses', 'order_statuscategories']
+                },
+                products: {
+                    label: 'products',
+                    resources: ['products', 'categories']
+                },
+                clients: {
+                    label: 'clients',
+                    resources: ['clients']
+                },
+                sales: {
+                    label: 'sales',
+                    resources: ['sales']
+                },
+                projects: {
+                    label: 'projects',
+                    resources: ['projects']
+                },
+                invoices: {
+                    label: 'invoices',
+                    resources: ['invoices']
+                },
+                transaction_categories: {
+                    label: 'transaction_categories',
+                    resources: ['transaction_categories']
+                },
+                companies: {
+                    label: 'companies',
+                    resources: ['companies']
+                },
+                currency_history: {
+                    label: 'currency_history',
+                    resources: ['currency_history']
+                },
+                users: {
+                    label: 'users',
+                    resources: ['users']
+                },
+                roles: {
+                    label: 'roles',
+                    resources: ['roles']
+                },
+            };
         },
         resourcesPermissions() {
             const resources = {};
@@ -252,19 +338,53 @@ export default {
 
             return resources;
         },
+        groupedResources() {
+            const groups = {};
+            
+            Object.keys(this.permissionGroups).forEach(groupKey => {
+                const group = this.permissionGroups[groupKey];
+                const groupResources = {};
+                
+                group.resources.forEach(resourceKey => {
+                    if (this.resourcesPermissions[resourceKey]) {
+                        groupResources[resourceKey] = this.resourcesPermissions[resourceKey];
+                    }
+                });
+                
+                if (Object.keys(groupResources).length > 0) {
+                    groups[groupKey] = {
+                        label: group.label,
+                        resources: groupResources
+                    };
+                }
+            });
+            
+            const ungrouped = {};
+            Object.keys(this.resourcesPermissions).forEach(resourceKey => {
+                let isGrouped = false;
+                Object.values(this.permissionGroups).forEach(group => {
+                    if (group.resources.includes(resourceKey)) {
+                        isGrouped = true;
+                    }
+                });
+                if (!isGrouped) {
+                    ungrouped[resourceKey] = this.resourcesPermissions[resourceKey];
+                }
+            });
+            
+            if (Object.keys(ungrouped).length > 0) {
+                groups.other = {
+                    label: 'other',
+                    resources: ungrouped
+                };
+            }
+            
+            return groups;
+        },
         customPermissions() {
             return this.allPermissions.filter(perm => 
                 perm && perm.name && (perm.name.startsWith('settings_') || perm.name.includes('_edit_'))
             );
-        },
-        sortedResources() {
-            const sorted = {};
-            Object.keys(this.resourcesPermissions)
-                .sort()
-                .forEach((key) => {
-                    sorted[key] = this.resourcesPermissions[key];
-                });
-            return sorted;
         },
         selectAllChecked: {
             get() {
@@ -491,6 +611,92 @@ export default {
                     .map(p => p.name);
             }
         },
+        toggleGroup(groupKey) {
+            this.expandedGroups[groupKey] = !this.expandedGroups[groupKey];
+        },
+        isGroupAllChecked(groupResources) {
+            const resourceKeys = Object.keys(groupResources);
+            if (resourceKeys.length === 0) return false;
+            
+            return resourceKeys.every(resourceKey => this.isResourceAllChecked(resourceKey));
+        },
+        toggleGroupAll(groupResources) {
+            const resourceKeys = Object.keys(groupResources);
+            if (resourceKeys.length === 0) return;
+            
+            const allChecked = this.isGroupAllChecked(groupResources);
+            
+            if (allChecked) {
+                resourceKeys.forEach(resourceKey => {
+                    const resource = groupResources[resourceKey];
+                    if (!resource) return;
+                    
+                    const hasUserId = this.hasResourceUserId(resourceKey);
+                    const allPerms = [];
+                    const permPairs = [];
+                    const scopeActions = ['view', 'update', 'delete'];
+                    
+                    if (resource.create) {
+                        allPerms.push(resource.create.name);
+                    }
+                    
+                    for (const action of scopeActions) {
+                        if (resource[action]?.all) {
+                            allPerms.push(resource[action].all.name);
+                            if (hasUserId && resource[action].own) {
+                                allPerms.push(resource[action].own.name);
+                                permPairs.push({ 
+                                    all: resource[action].all.name, 
+                                    own: resource[action].own.name 
+                                });
+                            }
+                        }
+                    }
+                    
+                    this.form.permissions = this.form.permissions.filter(
+                        p => !allPerms.filter(Boolean).includes(p)
+                    );
+                });
+            } else {
+                resourceKeys.forEach(resourceKey => {
+                    const resource = groupResources[resourceKey];
+                    if (!resource) return;
+                    
+                    const hasUserId = this.hasResourceUserId(resourceKey);
+                    const permPairs = [];
+                    const scopeActions = ['view', 'update', 'delete'];
+                    
+                    for (const action of scopeActions) {
+                        if (resource[action]?.all && hasUserId && resource[action].own) {
+                            permPairs.push({ 
+                                all: resource[action].all.name, 
+                                own: resource[action].own.name 
+                            });
+                        }
+                    }
+                    
+                    permPairs.forEach(pair => {
+                        if (this.form.permissions.includes(pair.own)) {
+                            this.form.permissions = this.form.permissions.filter(p => p !== pair.own);
+                        }
+                    });
+                    
+                    const permsToAdd = [];
+                    if (resource.create) permsToAdd.push(resource.create.name);
+                    for (const action of scopeActions) {
+                        if (resource[action]?.all) {
+                            permsToAdd.push(resource[action].all.name);
+                        }
+                    }
+                    
+                    permsToAdd.filter(Boolean).forEach(perm => {
+                        if (!this.form.permissions.includes(perm)) {
+                            this.form.permissions.push(perm);
+                        }
+                    });
+                });
+            }
+        },
         permissionIcon,
         permissionColor,
         validateForm() {
@@ -529,7 +735,6 @@ export default {
                     : this.form.permissions.split(',');
                 
                 permissions = this.validatePermissions(permissions);
-                permissions = this.normalizePermissions(permissions);
 
                 const data = {
                     name: this.form.name.trim(),
@@ -566,29 +771,21 @@ export default {
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
-        normalizePermissions(permissions) {
-            if (!Array.isArray(permissions)) {
-                return [];
-            }
-            
-            const normalized = permissions.filter(p => typeof p === 'string' && p.trim());
-            const allPerms = normalized.filter(p => p.endsWith('_all'));
-            const ownPerms = normalized.filter(p => p.endsWith('_own'));
-            
-            ownPerms.forEach(ownPerm => {
-                const allPerm = ownPerm.replace('_own', '_all');
-                if (normalized.includes(allPerm)) {
-                    const index = normalized.indexOf(ownPerm);
-                    if (index > -1) {
-                        normalized.splice(index, 1);
-                    }
-                }
-            });
-            
-            return normalized;
-        },
     },
     watch: {
+        groupedResources: {
+            handler(newGroups) {
+                if (newGroups && Object.keys(newGroups).length > 0) {
+                    Object.keys(newGroups).forEach(groupKey => {
+                        if (!(groupKey in this.expandedGroups)) {
+                            this.expandedGroups[groupKey] = true;
+                        }
+                    });
+                }
+            },
+            immediate: true,
+            deep: true
+        },
         editingItem: {
             handler(newEditingItem, oldEditingItem) {
                 if (newEditingItem) {
@@ -598,7 +795,6 @@ export default {
                         : [];
                     
                     permissions = this.validatePermissions(permissions);
-                    permissions = this.normalizePermissions(permissions);
                     
                     this.form.permissions = permissions;
                     this.editingItemId = newEditingItem.id || null;

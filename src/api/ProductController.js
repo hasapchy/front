@@ -2,16 +2,16 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import ProductDto from "@/dto/product/ProductDto";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
 import api from "./axiosInstance";
-import queryCache from "@/utils/queryCache";
+import { queryCache } from "@/utils/cacheHelper";
 
 export default class ProductController {
   static async getItems(page = 1, products = true, params = {}, per_page = 20) {
     try {
       const cacheKey = products ? 'products_list' : 'services_list';
       const cacheParams = { page, per_page, products, ...params };
-      const cached = queryCache.get(cacheKey, cacheParams);
+      const cached = await queryCache.get(cacheKey, cacheParams);
       
-      if (cached) {
+      if (cached && cached.items && cached.items.length > 0 && cached.items[0] instanceof ProductDto) {
         console.log(`📦 Загружено из кэша: ${products ? 'products' : 'services'}`, cacheParams);
         return cached;
       }

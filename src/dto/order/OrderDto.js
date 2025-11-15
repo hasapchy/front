@@ -1,6 +1,5 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrency, formatNumber } from "@/utils/numberUtils";
-import OrderAfValueDto from "./OrderAfValueDto";
 import { createProductsTooltipList, createFromApiArray } from "@/utils/dtoUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import OrderProductDto from "./OrderProductDto";
@@ -35,8 +34,7 @@ export default class OrderDto {
     createdAt = "",
     updatedAt = "",
     client = null,
-    products = null,
-    additionalFields = null
+    products = null
   ) {
     this.id = id;
     this.note = note;
@@ -67,7 +65,6 @@ export default class OrderDto {
     this.updatedAt = updatedAt;
     this.client = client;
     this.products = products;
-    this.additionalFields = additionalFields;
   }
 
   priceInfo() {
@@ -96,40 +93,6 @@ export default class OrderDto {
 
   formatUpdatedAt() {
     return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
-
-  getAdditionalFields() {
-    if (!this.additionalFields) {
-      return [];
-    }
-    return OrderAfValueDto.fromApiArray(this.additionalFields);
-  }
-
-  getAdditionalFieldsHtml() {
-    const fields = this.getAdditionalFields();
-    if (fields.length === 0) {
-      return '';
-    }
-
-    return fields.map(field => field.getDisplayHtml()).join('');
-  }
-
-  hasAdditionalFields() {
-    return this.additionalFields && this.additionalFields.length > 0;
-  }
-
-  getAdditionalFieldsCount() {
-    return this.additionalFields ? this.additionalFields.length : 0;
-  }
-
-  getRequiredFields() {
-    return this.getAdditionalFields().filter(field => field.isRequired());
-  }
-
-  areRequiredFieldsFilled() {
-    const requiredFields = this.getRequiredFields();
-    return requiredFields.every(field => field.value && field.value.trim() !== '');
   }
 
   static fromApiArray(dataArray) {
@@ -166,8 +129,7 @@ export default class OrderDto {
         data.created_at,
         data.updated_at,
         client,
-        products,
-        data.additional_fields || null
+        products
       );
     }).filter(Boolean);
   }

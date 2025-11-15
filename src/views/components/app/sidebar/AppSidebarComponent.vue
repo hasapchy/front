@@ -12,35 +12,32 @@
             </a>
         </div>
 
-        <div class="pb-32">
-            <ul>
+        <div class="pb-32" v-if="permissionsLoaded">
+            <ul :key="permissionsKey">
                 <SidebarLink to="/" icon="fas fa-building mr-2">
                     {{ currentCompanyName }}
                 </SidebarLink>
 
-                <SidebarLink v-if="hasPermission('orders_view')" to="/orders" icon="fas fa-cart-arrow-down mr-2">
-                    {{ $t('orders') }}
-                </SidebarLink>
-
-                <SidebarLink v-if="hasPermission('sales_view')" to="/sales" icon="fas fa-shopping-cart mr-2">
-                    {{ $t('sales') }}
-                </SidebarLink>
-
-                <SidebarLink v-if="hasPermission('transactions_view')" to="/transactions" icon="fas fa-coins mr-2">
-                    {{ $t('finance') }}
-                </SidebarLink>
-
-                <SidebarLink v-if="hasPermission('clients_view')" to="/clients" icon="fa-solid fa-user-friends mr-2">
-                    {{ $t('clients') }}
-                </SidebarLink>
-
-                <SidebarLink v-if="hasPermission('projects_view')" to="/projects" icon="fa-solid fa-briefcase mr-2">
-                    {{ $t('projects') }}
-                </SidebarLink>
-
-                <SidebarLink v-if="hasPermission('warehouses_view')" to="/warehouses" icon="fa-solid fa-warehouse mr-2">
-                    {{ $t('warehouses') }}
-                </SidebarLink>
+                <draggable
+                    :list="draggableMenuItems"
+                    @change="onDragChange"
+                    :animation="200"
+                    handle=".drag-handle"
+                    item-key="id"
+                >
+                    <SidebarLink 
+                        v-for="element in draggableMenuItems"
+                        :key="element.id"
+                        :to="element.to" 
+                        :icon="element.icon"
+                        class="relative group"
+                    >
+                        <span class="flex items-center justify-between w-full">
+                            <span>{{ $t(element.label) }}</span>
+                            <i class="fas fa-grip-vertical drag-handle opacity-0 group-hover:opacity-50 cursor-move ml-2 text-xs"></i>
+                        </span>
+                    </SidebarLink>
+                </draggable>
 
                 <li class="mb-2">
                     <a href="#" @click="$store.state.settings_open = !$store.state.settings_open" id="settings-button"
@@ -88,18 +85,21 @@
 </template>
 
 <script>
+import { VueDraggableNext } from 'vue-draggable-next';
 import SidebarLink from './SidebarLink.vue';
-import { eventBus } from '@/eventBus';
 
 export default {
     components: {
+        draggable: VueDraggableNext,
         SidebarLink
     },
     
+    data() {
+        return {
+            draggableMenuItems: []
+        };
+    },
     computed: {
-        hasPermission() {
-            return (perm) => this.$store.getters.hasPermission(perm);
-        },
         currentCompany() {
             return this.$store.getters.currentCompany;
         },
@@ -109,24 +109,58 @@ export default {
                 return this.$t('myCompany');
             }
             return company.name;
+        },
+        mainMenuItems() {
+            return this.$store.getters.mainMenuItems;
+        },
+        permissionsKey() {
+            const perms = this.$store.state.permissions;
+            return Array.isArray(perms) && perms.length > 0 ? perms.join(',') : 'no-permissions';
+        },
+        permissionsLoaded() {
+            if (!this.$store.state.user) {
+                return true;
+            }
+            return this.$store.state.permissionsLoaded;
         }
     },
     
+    async mounted() {
+        if (!this.$store.state.menuItems || !this.$store.state.menuItems.main || this.$store.state.menuItems.main.length === 0) {
+            await this.$store.dispatch('initializeMenu');
+        }
+        this.$nextTick(() => {
+            this.updateDraggableItems();
+        });
+    },
+    watch: {
+        '$store.state.permissions': {
+            handler() {
+                this.$forceUpdate();
+            },
+            deep: true
+        },
+        mainMenuItems: {
+            handler() {
+                this.$nextTick(() => {
+                    this.updateDraggableItems();
+                });
+            },
+            immediate: true
+        }
+    },
     methods: {
         getCompanyLogo() {
             const company = this.currentCompany;
             if (!company) return '/logo.jpg';
             
-            // Если есть метод logoUrl в DTO
             if (company.logoUrl && typeof company.logoUrl === 'function') {
                 const url = company.logoUrl();
                 const ver = this.$store.state.logoVersion || 0;
                 return url + `&cv=${ver}`;
             }
             
-            // Если есть поле logo
             if (company.logo && company.logo.length > 0) {
-                // Добавляем timestamp для инвалидации кэша браузера
                 const timestamp = company.updatedAt ? new Date(company.updatedAt).getTime() : Date.now();
                 const ver = this.$store.state.logoVersion || 0;
                 return `${import.meta.env.VITE_APP_BASE_URL}/storage/${company.logo}?v=${timestamp}&cv=${ver}`;
@@ -137,8 +171,17 @@ export default {
         
         onLogoError(event) {
             console.error('Company logo failed to load:', event.target.src);
-            // Устанавливаем дефолтный логотип при ошибке
             event.target.src = '/logo.jpg';
+        },
+        
+        updateDraggableItems() {
+            this.draggableMenuItems = [...(this.mainMenuItems || [])];
+        },
+        onDragChange() {
+            this.$store.dispatch('updateMenuItems', { 
+                type: 'main', 
+                items: [...this.draggableMenuItems]
+            });
         }
     }
 }

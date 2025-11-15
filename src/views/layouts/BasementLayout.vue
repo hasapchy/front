@@ -58,6 +58,25 @@
         :is-danger="$store.getters.notificationIsDanger" 
         @close="closeNotification" 
       />
+      
+      <!-- ✅ Полноэкранный спиннер при загрузке данных компании -->
+      <!-- Временно отключен -->
+      <!--
+      <transition name="fade">
+        <div 
+          v-if="isLoadingCompanyData" 
+          class="fixed inset-0 bg-white bg-opacity-80 backdrop-blur-sm z-[9999] flex items-center justify-center"
+          @click.self.prevent
+          @contextmenu.prevent
+          style="pointer-events: all;"
+        >
+          <div class="bg-white rounded-xl p-8 shadow-2xl border border-gray-200 flex flex-col items-center gap-4">
+            <SpinnerIcon />
+            <p class="text-gray-700 font-medium">Загрузка данных компании...</p>
+          </div>
+        </div>
+      </transition>
+      -->
     </div>
     <div v-else key="loader" class="h-screen flex items-center justify-center">
       <SpinnerIcon />
@@ -69,6 +88,7 @@
 import { BasementAuthController } from '@/api/BasementAuthController'
 import LanguageSwitcher from '@/views/components/app/LanguageSwitcher.vue'
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue'
+import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue'
 import companyChangeMixin from '@/mixins/companyChangeMixin'
 
 export default {
@@ -76,7 +96,8 @@ export default {
   mixins: [companyChangeMixin],
   components: {
     LanguageSwitcher,
-    NotificationToast
+    NotificationToast,
+    SpinnerIcon
   },
   data() {
     return {
@@ -86,6 +107,9 @@ export default {
   computed: {
     user() {
       return this.$store.state.user
+    },
+    isLoadingCompanyData() {
+      return this.$store.state.loadingFlags?.companyData || false
     }
   },
   async created() {

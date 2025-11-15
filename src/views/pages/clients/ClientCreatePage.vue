@@ -67,13 +67,15 @@
               :required="true" ref="phoneInputRef" />
             <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" />
           </div>
-          <div v-for="(phone, index) in phones" :key="phone" class="flex items-stretch space-x-2 mt-2">
-            <div class="flex items-center justify-center" style="min-width: 40px;">
-              <img :src="getPhoneCountryFlag(phone)" :alt="getPhoneCountryName(phone)"
-                class="w-5 h-4 object-cover rounded" />
-            </div>
-            <input type="text" :value="phone" readonly
-              class="flex-1 px-3 py-1 border border-gray-300 rounded bg-gray-50" />
+          <div v-for="(phone, index) in phones" :key="`phone-${index}-${phone}`" class="flex items-stretch space-x-2 mt-2">
+            <PhoneInputWithCountry 
+              v-model="editingPhones[index]" 
+              :default-country="getPhoneCountryId(phone)"
+              @country-change="(country) => handlePhoneCountryChange(index, country)"
+              @blur="() => handleEditPhoneBlur(index)"
+              @keyup.enter="() => savePhoneEdit(index)"
+              class="flex-1" />
+            <PrimaryButton icon="fas fa-check" :is-info="true" :onclick="() => savePhoneEdit(index)" />
             <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" />
           </div>
         </div>
@@ -169,6 +171,8 @@ export default {
       isConflict: this.editingItem ? this.editingItem.isConflict : false,
       isSupplier: this.editingItem ? this.editingItem.isSupplier : false,
       phones: this.editingItem ? this.editingItem.phones.map((phone) => phone.phone) : [],
+      editingPhones: [],
+      editingPhoneCountries: [],
       emails: this.editingItem ? this.editingItem.emails.map((email) => email.email) : [],
       discountType: this.editingItem ? this.editingItem.discountType : "fixed",
       discount: this.editingItem ? this.editingItem.discount : 0,
@@ -349,6 +353,8 @@ export default {
           return;
         }
         this.phones.push(phoneToSave);
+        this.editingPhones.push(this.formatPhoneForInput(phoneToSave));
+        this.editingPhoneCountries.push(this.currentPhoneCountry || { dialCode: "993", id: "tm" });
         this.newPhone = "";
         this.currentPhoneCountry = null;
         this.newPhoneCountry = "tm";
@@ -356,6 +362,112 @@ export default {
     },
     removePhone(index) {
       this.phones.splice(index, 1);
+      this.editingPhones.splice(index, 1);
+      this.editingPhoneCountries.splice(index, 1);
+    },
+    formatPhoneForInput(phone) {
+      const cleaned = phone.replace(/\D/g, "");
+      if (cleaned.startsWith("993")) {
+        return cleaned.substring(3);
+      } else if (cleaned.startsWith("7")) {
+        return cleaned.substring(1);
+      }
+      return cleaned;
+    },
+    getPhoneCountryId(phone) {
+      const cleaned = phone.replace(/\D/g, "");
+      if (cleaned.startsWith("7")) {
+        return "ru";
+      }
+      return "tm";
+    },
+    handlePhoneCountryChange(index, country) {
+      this.editingPhoneCountries[index] = country;
+      if (this.editingPhones[index] !== undefined) {
+        const currentValue = this.editingPhones[index].replace(/\D/g, "");
+        if (currentValue) {
+          this.editingPhones[index] = currentValue;
+        }
+      }
+    },
+    handleEditPhoneBlur(index) {
+      if (this.editingPhones[index] && this.editingPhones[index].trim()) {
+        this.savePhoneEdit(index);
+      }
+    },
+    savePhoneEdit(index) {
+      if (this.editingPhones[index] === undefined) {
+        return;
+      }
+
+      const editedPhone = this.editingPhones[index];
+      if (!editedPhone || !editedPhone.trim()) {
+        this.showNotification("Ошибка", "Номер телефона не может быть пустым", true);
+        return;
+      }
+
+      const cleanedPhone = editedPhone.replace(/\D/g, "");
+      const expectedLength = 11;
+
+      if (cleanedPhone.length < expectedLength) {
+        this.showNotification("Ошибка", `Номер должен содержать ${expectedLength} цифр (код страны + номер)`, true);
+        this.editingPhones[index] = this.formatPhoneForInput(this.phones[index]);
+        return;
+      }
+
+      let phoneToSave = cleanedPhone;
+      const selectedCountry = this.editingPhoneCountries[index];
+
+      if (selectedCountry && selectedCountry.dialCode) {
+        if (!cleanedPhone.startsWith(selectedCountry.dialCode)) {
+          let phoneWithoutCode = cleanedPhone;
+          if (cleanedPhone.startsWith("993")) {
+            phoneWithoutCode = cleanedPhone.substring(3);
+          } else if (cleanedPhone.startsWith("7")) {
+            phoneWithoutCode = cleanedPhone.substring(1);
+          }
+          phoneToSave = selectedCountry.dialCode + phoneWithoutCode;
+        }
+      } else {
+        const currentPhone = this.phones[index];
+        const currentCleaned = currentPhone.replace(/\D/g, "");
+
+        if (currentCleaned.startsWith("993")) {
+          if (!cleanedPhone.startsWith("993")) {
+            phoneToSave = "993" + cleanedPhone;
+          }
+        } else if (currentCleaned.startsWith("7")) {
+          if (!cleanedPhone.startsWith("7")) {
+            phoneToSave = "7" + cleanedPhone;
+          }
+        } else {
+          if (!cleanedPhone.startsWith("993") && !cleanedPhone.startsWith("7")) {
+            phoneToSave = "993" + cleanedPhone;
+          }
+        }
+      }
+
+      if (phoneToSave.length !== expectedLength) {
+        this.showNotification("Ошибка", `Номер должен содержать ${expectedLength} цифр`, true);
+        this.editingPhones[index] = this.formatPhoneForInput(this.phones[index]);
+        return;
+      }
+
+      if (this.phones.includes(phoneToSave) && this.phones[index] !== phoneToSave) {
+        this.showNotification("Ошибка", "Этот номер телефона уже добавлен!", true);
+        this.editingPhones[index] = this.formatPhoneForInput(this.phones[index]);
+        return;
+      }
+
+      this.phones[index] = phoneToSave;
+      this.editingPhones[index] = this.formatPhoneForInput(phoneToSave);
+      
+      const cleaned = phoneToSave.replace(/\D/g, "");
+      if (cleaned.startsWith("7")) {
+        this.editingPhoneCountries[index] = { dialCode: "7", id: "ru" };
+      } else {
+        this.editingPhoneCountries[index] = { dialCode: "993", id: "tm" };
+      }
     },
     addEmail() {
       if (this.newEmail) {
@@ -432,6 +544,8 @@ export default {
       this.isConflict = false;
       this.isSupplier = false;
       this.phones = [];
+      this.editingPhones = [];
+      this.editingPhoneCountries = [];
       this.newPhone = "";
       this.newPhoneCountry = "tm";
       this.currentPhoneCountry = null;
@@ -468,6 +582,14 @@ export default {
           this.isConflict = newEditingItem.isConflict || false;
           this.isSupplier = newEditingItem.isSupplier || false;
           this.phones = newEditingItem.phones.map((phone) => phone.phone) || [];
+          this.editingPhones = newEditingItem.phones.map((phone) => this.formatPhoneForInput(phone.phone)) || [];
+          this.editingPhoneCountries = newEditingItem.phones.map((phone) => {
+            const cleaned = phone.phone.replace(/\D/g, "");
+            if (cleaned.startsWith("7")) {
+              return { dialCode: "7", id: "ru" };
+            }
+            return { dialCode: "993", id: "tm" };
+          }) || [];
           this.newPhone = "";
           this.newPhoneCountry = "tm";
           this.currentPhoneCountry = null;

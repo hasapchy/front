@@ -9,13 +9,13 @@
 
             <div class="flex items-center border border-gray-300 rounded overflow-hidden">
                 <button 
-                    @click="viewMode = 'table'"
+                    @click="changeViewMode('table')"
                     class="px-3 py-2 transition-colors"
                     :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
                     <i class="fas fa-table"></i>
                 </button>
                 <button 
-                    @click="viewMode = 'kanban'"
+                    @click="changeViewMode('kanban')"
                     class="px-3 py-2 transition-colors"
                     :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
                     <i class="fas fa-columns"></i>
@@ -725,24 +725,45 @@ export default {
             this.handleChangeStatus(this.selectedIds, statusId);
             this.batchStatusId = '';
             this.selectedIds = [];
+        },
+
+        changeViewMode(mode) {
+            if (!['table', 'kanban'].includes(mode)) {
+                return;
+            }
+            this.viewMode = mode;
+            try {
+                localStorage.setItem('orders_viewMode', mode);
+            } catch (error) {
+                console.warn('Failed to save view mode to localStorage:', error);
+            }
         }
     },
     mounted() {
-        const savedViewMode = localStorage.getItem('orders_viewMode');
-        if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
-            this.viewMode = savedViewMode;
-            
-            if (savedViewMode === 'kanban') {
-                this.kanbanFetchPerPage = 50;
-                this.allKanbanItems = [];
-                this.kanbanCurrentPage = 1;
+        try {
+            const savedViewMode = localStorage.getItem('orders_viewMode');
+            if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
+                this.viewMode = savedViewMode;
+                
+                if (savedViewMode === 'kanban') {
+                    this.kanbanFetchPerPage = 50;
+                    this.allKanbanItems = [];
+                    this.kanbanCurrentPage = 1;
+                }
+            } else {
+                try {
+                    localStorage.setItem('orders_viewMode', this.viewMode);
+                } catch (error) {
+                    console.warn('Failed to save default view mode to localStorage:', error);
+                }
+                if (this.viewMode === 'kanban') {
+                    this.kanbanFetchPerPage = 50;
+                    this.allKanbanItems = [];
+                    this.kanbanCurrentPage = 1;
+                }
             }
-        } else {
-            if (this.viewMode === 'kanban') {
-                this.kanbanFetchPerPage = 50;
-                this.allKanbanItems = [];
-                this.kanbanCurrentPage = 1;
-            }
+        } catch (error) {
+            console.warn('Failed to read view mode from localStorage:', error);
         }
     }
 };

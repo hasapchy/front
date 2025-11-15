@@ -3,7 +3,7 @@ import api from "./axiosInstance";
 import ClientDto from "@/dto/client/ClientDto";
 import ClientSearchDto from "@/dto/client/ClientSearchDto";
 import ClientBalanceHistoryDto from "@/dto/client/ClientBalanceHistoryDto";
-import queryCache from "@/utils/queryCache";
+import { queryCache } from "@/utils/cacheHelper";
 
 export default class ClientController {
 
@@ -22,9 +22,9 @@ export default class ClientController {
     try {
       const cacheKey = 'clients_list';
       const cacheParams = { page, per_page, search, includeInactive, statusFilter, typeFilter };
-      const cached = queryCache.get(cacheKey, cacheParams);
+      const cached = await queryCache.get(cacheKey, cacheParams);
       
-      if (cached) {
+      if (cached && cached.items && cached.items.length > 0 && cached.items[0] instanceof ClientDto) {
         console.log('📦 Загружено из кэша: clients', cacheParams);
         return cached;
       }

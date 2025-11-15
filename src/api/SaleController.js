@@ -1,16 +1,16 @@
 import api from "./axiosInstance";
 import SaleDto from "@/dto/sale/SaleDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
-import queryCache from "@/utils/queryCache";
+import { queryCache } from "@/utils/cacheHelper";
 
 export default class SaleController {
   static async getItems(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, per_page = 20) {
     try {
       const cacheKey = 'sales_list';
       const cacheParams = { page, per_page, search, dateFilter, startDate, endDate };
-      const cached = queryCache.get(cacheKey, cacheParams);
+      const cached = await queryCache.get(cacheKey, cacheParams);
       
-      if (cached) {
+      if (cached && cached.items && cached.items.length > 0 && cached.items[0] instanceof SaleDto) {
         console.log('📦 Загружено из кэша: sales', cacheParams);
         return cached;
       }

@@ -1,16 +1,16 @@
 import api from "./axiosInstance";
 import InvoiceDto from "@/dto/invoice/InvoiceDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
-import queryCache from "@/utils/queryCache";
+import { queryCache } from "@/utils/cacheHelper";
 
 export default class InvoiceController {
   static async getItems(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, typeFilter = null, statusFilter = null, per_page = 20) {
     try {
       const cacheKey = 'invoices_list';
       const cacheParams = { page, per_page, search, dateFilter, startDate, endDate, typeFilter, statusFilter };
-      const cached = queryCache.get(cacheKey, cacheParams);
+      const cached = await queryCache.get(cacheKey, cacheParams);
       
-      if (cached) {
+      if (cached && cached.items && cached.items.length > 0 && cached.items[0] instanceof InvoiceDto) {
         console.log('📦 Загружено из кэша: invoices', cacheParams);
         return cached;
       }

@@ -88,9 +88,6 @@ export default {
   cashRegisters: 'Kassalar',
   productCategories: 'Önüm/hyzmat kategoriýalary',
   orderStatuses: 'Sargyt ýagdaýlary',
-  orderAdditionalFields: 'Sargyt goş. meýdanlary',
-  additionalFields: 'Goşmaça meýdanlar',
-  
   // Kanban
   kanbanByStatuses: 'Ýagdaýa görä kanban',
   groupBy: 'Toparla',
@@ -98,13 +95,6 @@ export default {
   withoutProject: 'Proýeksiz',
   noOrders: 'Sargyt ýok',
   orderUpdated: 'Sargyt täzelendi',
-  errorGettingAdditionalFieldsList: 'Goşmaça meýdanlaryň sanawyny almakda ýalňyşlyk',
-  additionalFieldSaved: 'Goşmaça meýdan saklandy',
-  errorSavingAdditionalField: 'Goşmaça meýdany saklamakda ýalňyşlyk',
-  additionalFieldDeleted: 'Goşmaça meýdan pozuldy',
-  errorDeletingAdditionalField: 'Goşmaça meýdany pozmakda ýalňyşlyk',
-  createAdditionalField: 'Goşmaça meýdan döret',
-  editAdditionalField: 'Goşmaça meýdany redaktir et',
   fieldName: 'Meýdan ady',
   fieldType: 'Meýdan görnüşi',
   fieldRequired: 'Meýdan hökmany',

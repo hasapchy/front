@@ -21,8 +21,6 @@ import SalesPage from "@/views/pages/sales/SalesPage.vue";
 import OrdersPage from "@/views/pages/orders/OrdersPage.vue";
 import OrderStatusesPage from "@/views/pages/orders/OrderStatusesPage.vue";
 import OrderStatusCategoriesPage from "@/views/pages/orders/OrderStatusCategoriesPage.vue";
-import OrderCategoriesPage from "@/views/pages/orders/OrderCategoriesPage.vue";
-import OrderAdditionalFieldsPage from "@/views/pages/orders/OrderAdditionalFieldsPage.vue";
 import TransactionCategoriesPage from "@/views/pages/transactions/TransactionCategoriesPage.vue";
 import ProjectStatusesPage from "@/views/pages/projects/ProjectStatusesPage.vue";
 import InvoicesPage from "@/views/pages/invoices/InvoicesPage.vue";
@@ -64,7 +62,62 @@ const routes = [
         path: "/orders",
         name: "Orders",
         component: OrdersPage,
-        meta: { title: "orders", requiresAuth: true, showSearch: true },
+        meta: { 
+          title: "orders", 
+          requiresAuth: true, 
+          showSearch: true, 
+          permission: "orders_view",
+          binded: [
+            {
+              name: "orderStatuses",
+              path: "/order_statuses",
+            },
+            {
+              name: "orderStatusCategories",
+              path: "/order_status_categories",
+            },
+          ],
+        },
+      },
+      {
+        path: "/order_statuses",
+        name: "order_statuses",
+        component: OrderStatusesPage,
+        meta: { 
+          title: "orderStatuses", 
+          requiresAuth: true,
+          permission: "order_statuses_view",
+          binded: [
+            {
+              name: "orders",
+              path: "/orders",
+            },
+            {
+              name: "orderStatusCategories",
+              path: "/order_status_categories",
+            },
+          ],
+        },
+      },
+      {
+        path: "/order_status_categories",
+        name: "order_status_categories",
+        component: OrderStatusCategoriesPage,
+        meta: { 
+          title: "orderStatusCategories", 
+          requiresAuth: true,
+          permission: "order_statuscategories_view",
+          binded: [
+            {
+              name: "orders",
+              path: "/orders",
+            },
+            {
+              name: "orderStatuses",
+              path: "/order_statuses",
+            },
+          ],
+        },
       },
       {
         path: "/invoices",
@@ -88,6 +141,10 @@ const routes = [
               name: "cashRegisters",
               path: "/cash-registers",
             },
+            {
+              name: "transactionCategories",
+              path: "/transaction_categories",
+            },
           ],
         },
       },
@@ -99,6 +156,7 @@ const routes = [
           title: "finance",
           requiresAuth: true,
           showSearch: true,
+          permission: "transactions_view",
           binded: [
             {
               name: "mutualSettlements",
@@ -115,6 +173,10 @@ const routes = [
             {
               name: "invoices",
               path: "/invoices",
+            },
+            {
+              name: "transactionCategories",
+              path: "/transaction_categories",
             },
           ],
         },
@@ -143,6 +205,10 @@ const routes = [
               name: "invoices",
               path: "/invoices",
             },
+            {
+              name: "transactionCategories",
+              path: "/transaction_categories",
+            },
           ],
         },
       },
@@ -150,19 +216,19 @@ const routes = [
         path: "/warehouses",
         name: "Warehouses",
         component: WarehousesPage,
-        meta: { title: "warehouses", requiresAuth: true, showSearch: true },
+        meta: { title: "warehouses", requiresAuth: true, showSearch: true, permission: "warehouses_view" },
       },
       {
         path: "/clients",
         name: "Clients",
         component: ClientsPage,
-        meta: { title: "clients", requiresAuth: true, showSearch: true },
+        meta: { title: "clients", requiresAuth: true, showSearch: true, permission: "clients_view" },
       },
       {
         path: "/projects",
         name: "Projects",
         component: ProjectsPage,
-        meta: { title: "projects", requiresAuth: true },
+        meta: { title: "projects", requiresAuth: true, permission: "projects_view" },
       },
       {
         path: "/project_statuses",
@@ -178,16 +244,8 @@ const routes = [
               path: "/categories",
             },
             {
-              name: "orderStatuses",
-              path: "/order_statuses",
-            },
-            {
               name: "transactionCategories",
               path: "/transaction_categories",
-            },
-            {
-              name: "orderAdditionalFields",
-              path: "/order_additional_fields",
             },
           ],
         },
@@ -208,118 +266,8 @@ const routes = [
           permission: "categories_view",
           binded: [
             {
-              name: "orderStatuses",
-              path: "/order_statuses",
-            },
-            {
               name: "projectStatuses", 
               path: "/project_statuses",
-            },
-            {
-              name: "transactionCategories",
-              path: "/transaction_categories",
-            },
-            {
-              name: "orderAdditionalFields",
-              path: "/order_additional_fields",
-            },
-          ],
-        },
-      },
-      {
-        path: "/order_statuses",
-        name: "order_statuses",
-        component: OrderStatusesPage,
-        meta: { 
-          title: "orderStatuses", 
-          requiresAuth: true,
-          permission: "order_statuses_view",
-          binded: [
-            {
-              name: "orderStatusCategories",
-              path: "/order_status_categories",
-            },
-            {
-              name: "categories",
-              path: "/categories",
-            },
-            {
-              name: "projectStatuses", 
-              path: "/project_statuses",
-            },
-            {
-              name: "transactionCategories",
-              path: "/transaction_categories",
-            },
-            {
-              name: "orderAdditionalFields",
-              path: "/order_additional_fields",
-            },
-          ],
-        },
-      },
-      {
-        path: "/order_status_categories",
-        name: "order_status_categories",
-        component: OrderStatusCategoriesPage,
-        meta: { 
-          title: "orderStatusCategories", 
-          requiresAuth: true,
-          permission: "order_statuscategories_view",
-          binded: [
-            {
-              name: "orderStatuses",
-              path: "/order_statuses",
-            },
-            {
-              name: "categories",
-              path: "/categories",
-            },
-            {
-              name: "projectStatuses", 
-              path: "/project_statuses",
-            },
-            {
-              name: "transactionCategories",
-              path: "/transaction_categories",
-            },
-            {
-              name: "orderAdditionalFields",
-              path: "/order_additional_fields",
-            },
-          ],
-        },
-      },
-      {
-        path: "/order_categories",
-        name: "order_categories",
-        component: OrderCategoriesPage,
-        meta: { title: "orderTypes", requiresAuth: true },
-      },
-      {
-        path: "/order_additional_fields",
-        name: "order_additional_fields",
-        component: OrderAdditionalFieldsPage,
-        meta: { 
-          title: "orderAdditionalFields", 
-          requiresAuth: true,
-          permission: "order_categories_view",
-          binded: [
-            {
-              name: "categories",
-              path: "/categories",
-            },
-            {
-              name: "orderStatuses",
-              path: "/order_statuses",
-            },
-            {
-              name: "projectStatuses", 
-              path: "/project_statuses",
-            },
-            {
-              name: "transactionCategories",
-              path: "/transaction_categories",
             },
           ],
         },
@@ -334,20 +282,20 @@ const routes = [
           permission: "transaction_categories_view",
           binded: [
             {
-              name: "categories",
-              path: "/categories",
+              name: "finance",
+              path: "/transactions",
             },
             {
-              name: "orderStatuses",
-              path: "/order_statuses",
+              name: "mutualSettlements",
+              path: "/mutual-settlements",
             },
             {
-              name: "projectStatuses", 
-              path: "/project_statuses",
+              name: "transfers",
+              path: "/transfers",
             },
             {
-              name: "orderAdditionalFields",
-              path: "/order_additional_fields",
+              name: "invoices",
+              path: "/invoices",
             },
           ],
         },
@@ -356,19 +304,19 @@ const routes = [
         path: "/users",
         name: "users",
         component: UsersPage,
-        meta: { title: "users", requiresAuth: true },
+        meta: { title: "users", requiresAuth: true, permission: "users_view" },
       },
       {
         path: "/roles",
         name: "roles",
         component: RolesPage,
-        meta: { title: "roles", requiresAuth: true },
+        meta: { title: "roles", requiresAuth: true, permission: "roles_view" },
       },
       {
         path: "/companies",
         name: "companies",
         component: CompaniesPage,
-        meta: { title: "companies", requiresAuth: true },
+        meta: { title: "companies", requiresAuth: true, permission: "companies_view" },
       },
       {
         path: "/products",
@@ -378,6 +326,7 @@ const routes = [
           title: "products",
           requiresAuth: true,
           showSearch: true,
+          permission: "products_view",
           binded: [
             {
               name: "services",
@@ -394,6 +343,7 @@ const routes = [
           title: "services",
           requiresAuth: true,
           showSearch: true,
+          permission: "products_view",
           binded: [
             {
               name: "products",
@@ -409,6 +359,7 @@ const routes = [
         meta: {
           title: "cashRegisters",
           requiresAuth: true,
+          permission: "cash_registers_view",
           binded: [
             {
               name: "mutualSettlements",
@@ -454,6 +405,10 @@ const routes = [
             {
               name: "invoices",
               path: "/invoices",
+            },
+            {
+              name: "transactionCategories",
+              path: "/transaction_categories",
             },
           ],
         },
@@ -593,10 +548,15 @@ router.beforeEach(async (to, from, next) => {
     return next("/");
   }
 
-  const userPermissions = store.getters["permissions"];
-
-  if (to.meta.permission && !userPermissions.includes(to.meta.permission)) {
-    return next({ path: "/" });
+  if (to.meta.permission) {
+    if (!store.state.permissionsLoaded) {
+      next();
+      return;
+    }
+    
+    if (!store.getters.hasPermission(to.meta.permission)) {
+      return next({ path: "/" });
+    }
   }
 
   if (!to.meta.showSearch) {

@@ -10,7 +10,11 @@
              class="w-6 h-6 object-contain rounded">
       </div>
       <span class="company-name">
-        <span v-if="isLoading" class="flex items-center gap-1">
+        <span v-if="isLoadingCompanyData" class="flex items-center gap-1">
+          <SpinnerIcon size-class="text-xs" />
+          {{ currentCompanyName }}
+        </span>
+        <span v-else-if="isLoading" class="flex items-center gap-1">
           <SpinnerIcon size-class="text-xs" />
           {{ currentCompanyName }}
         </span>
@@ -52,9 +56,13 @@
 <script>
 import UserCompanyController from '@/api/UserCompanyController';
 import { eventBus } from '@/eventBus';
+import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 
 export default {
   name: 'CompanySwitcher',
+  components: {
+    SpinnerIcon
+  },
   data() {
     return {
       isOpen: false,
@@ -72,8 +80,11 @@ export default {
     selectedCompanyId() {
       return this.$store.getters.currentCompanyId;
     },
+    isLoadingCompanyData() {
+      return this.$store.state.loadingFlags?.companyData || false;
+    },
     currentCompanyName() {
-      if (this.isLoading && !this.currentCompany) {
+      if ((this.isLoading || this.isLoadingCompanyData) && !this.currentCompany) {
         return this.$t('loading');
       }
       return this.currentCompany ? this.currentCompany.name : this.$t('selectCompany');
@@ -83,7 +94,6 @@ export default {
   watch: {
     currentCompany: {
       handler(newCompany) {
-        // Если компания загрузилась, убираем индикатор загрузки
         if (newCompany && this.isLoading) {
           this.isLoading = false;
         }
@@ -150,14 +160,17 @@ export default {
     async selectCompany(companyId) {
       this.isOpen = false;
       
+      if (companyId === this.selectedCompanyId) {
+        return;
+      }
+      
       try {
-        // Устанавливаем выбранную компанию через store
-        // ✅ Store сам отправит событие 'company-changed' после загрузки данных
         await this.$store.dispatch('setCurrentCompany', companyId);
       } catch (error) {
         console.error('Ошибка при смене компании:', error);
         this.$store.dispatch('showNotification', {
           title: this.$t('errorChangingCompany'),
+          subtitle: error.message || 'Не удалось переключить компанию',
           isDanger: true
         });
       }

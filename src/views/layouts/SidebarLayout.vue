@@ -1,6 +1,6 @@
 <template>
     <transition name="fade" mode="out-in">
-        <div v-if="$store.state.user !== null" key="routerview" class="flex min-h-screen h-100 bg-white overflow-x-hidden">
+        <div v-if="$store.state.user !== null" key="routerview" class="flex min-h-screen h-100 bg-white overflow-x-hidden relative">
             <AppSidebarComponent />
             <transition name="settings-sidebar">
                 <AppSettingsSidebarComponent v-if="this.$store.state.settings_open" />
@@ -18,6 +18,24 @@
                 :is-danger="$store.getters.notificationIsDanger"
                 @close="$store.dispatch('closeNotification')"
             />
+            <!-- ✅ Полноэкранный спиннер при загрузке данных компании -->
+            <!-- Временно отключен -->
+            <!--
+            <transition name="fade">
+                <div 
+                    v-if="isLoadingCompanyData" 
+                    class="fixed inset-0 bg-white bg-opacity-80 backdrop-blur-sm z-[9999] flex items-center justify-center"
+                    @click.self.prevent
+                    @contextmenu.prevent
+                    style="pointer-events: all;"
+                >
+                    <div class="bg-white rounded-xl p-8 shadow-2xl border border-gray-200 flex flex-col items-center gap-4">
+                        <SpinnerIcon />
+                        <p class="text-gray-700 font-medium">Загрузка данных компании...</p>
+                    </div>
+                </div>
+            </transition>
+            -->
         </div>
         <div v-else key="loader" class="h-screen flex items-center justify-center">
             <SpinnerIcon />
@@ -30,13 +48,20 @@ import AppHeaderComponent from '../components/app/AppHeaderComponent.vue';
 import AppSidebarComponent from '../components/app/sidebar/AppSidebarComponent.vue';
 import AppSettingsSidebarComponent from '../components/app/sidebar/AppSettingsSidebarComponent.vue';
 import NotificationToast from '../components/app/dialog/NotificationToast.vue';
+import SpinnerIcon from '../components/app/SpinnerIcon.vue';
 
 export default {
     components: {
         AppHeaderComponent,
         AppSidebarComponent,
         AppSettingsSidebarComponent,
-        NotificationToast
+        NotificationToast,
+        SpinnerIcon
+    },
+    computed: {
+        isLoadingCompanyData() {
+            return this.$store.state.loadingFlags?.companyData || false;
+        }
     }
 }
 </script>

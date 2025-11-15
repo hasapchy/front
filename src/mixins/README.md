@@ -150,7 +150,6 @@
 - `ClientsPage.vue` - добавлен `crudEventMixin`, удалены дублирующиеся методы
 - `InvoicesPage.vue` - добавлены `crudEventMixin` и `tableTranslationMixin`, удалены дублирующиеся методы
 - `CompaniesPage.vue` - добавлен `crudEventMixin`, удалены дублирующиеся методы
-- `OrderAdditionalFieldsPage.vue` - добавлены `crudEventMixin` и `tableTranslationMixin`, удалены дублирующиеся методы
 - `OrderCategoriesPage.vue` - добавлен `crudEventMixin`, удалены дублирующиеся методы
 - `OrderStatusesPage.vue` - добавлен `crudEventMixin`, удалены дублирующиеся методы
 - `OrdersPage.vue` - добавлены `crudEventMixin` и `tableTranslationMixin`, удалены дублирующиеся методы

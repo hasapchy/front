@@ -15,18 +15,29 @@ export default {
         };
     },
     async created() {
-        // Устанавливаем состояние загрузки
-        this.$store.dispatch('setLoading', true);
+        this.$store.commit('SET_PERMISSIONS_LOADED', false);
+        this.$store.dispatch('setPermissions', []);
         
-        // Проверяем статус токенов
+        this.$store.dispatch('setLoading', true);
         this.$store.dispatch('checkTokenStatus');
         
         if (TokenUtils.isAuthenticated()) {
             try {
-                // Получаем информацию о пользователе
                 const userData = await AuthController.getUser();
                 this.$store.dispatch('setUser', userData.user);
                 this.$store.dispatch('setPermissions', userData.permissions);
+                
+                console.log('=== ПРАВА ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ===');
+                console.log('Права:', this.$store.state.permissions);
+                console.log('Количество прав:', this.$store.state.permissions?.length || 0);
+                console.log('Есть clients_view:', this.$store.getters.hasPermission('clients_view'));
+                console.log('Есть projects_view:', this.$store.getters.hasPermission('projects_view'));
+                console.log('Есть orders_view:', this.$store.getters.hasPermission('orders_view'));
+                console.log('Есть users_view:', this.$store.getters.hasPermission('users_view'));
+                console.log('Есть roles_view:', this.$store.getters.hasPermission('roles_view'));
+                console.log('==============================');
+                
+                await this.$store.dispatch('initializeMenu');
                 
                 // Загружаем глобальные справочники (валюты, единицы) параллельно
                 await Promise.all([
@@ -65,6 +76,8 @@ export default {
             TokenUtils.clearAuthData();
             this.$store.dispatch('setUser', null);
             this.$store.dispatch('setPermissions', []);
+            // Инициализируем меню даже без авторизации (для отображения дефолтных пунктов)
+            await this.$store.dispatch('initializeMenu');
         }
         
         // Завершаем загрузку

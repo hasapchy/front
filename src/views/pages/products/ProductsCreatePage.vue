@@ -217,7 +217,7 @@ import AdminCategoryCreatePage from '@/views/pages/categories/CategoriesCreatePa
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
 import JsBarcode from "jsbarcode";
-import CacheInvalidator from '@/utils/cacheInvalidator';
+import CacheInvalidator from '@/utils/cache';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],

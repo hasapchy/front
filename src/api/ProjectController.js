@@ -1,7 +1,7 @@
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import api from "./axiosInstance";
 import ProjectDto from "@/dto/project/ProjectDto";
-import queryCache from "@/utils/queryCache";
+import { queryCache } from "@/utils/cacheHelper";
 
 export default class ProjectController {
   static async getItems(page = 1, params = {}, per_page = 20) {

@@ -1,8 +1,8 @@
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import api from "./axiosInstance";
 import TransactionDto from "@/dto/transaction/TransactionDto";
-import queryCache from "@/utils/queryCache";
-import CacheInvalidator from "@/utils/cacheInvalidator";
+import { queryCache } from "@/utils/cacheHelper";
+import CacheInvalidator from "@/utils/cache";
 
 export default class TransactionController {
   static async getItems(
@@ -22,9 +22,9 @@ export default class TransactionController {
     try {
       const cacheKey = 'transactions_list';
       const cacheParams = { page, cash_id, date_filter_type, order_id, search, transaction_type, source, project_id, per_page, start_date, end_date, is_debt };
-      const cached = queryCache.get(cacheKey, cacheParams);
+      const cached = await queryCache.get(cacheKey, cacheParams);
       
-      if (cached) {
+      if (cached && cached.items && cached.items.length > 0 && cached.items[0] instanceof TransactionDto) {
         console.log('📦 Загружено из кэша: transactions', cacheParams);
         return cached;
       }
@@ -90,7 +90,6 @@ export default class TransactionController {
   static async storeItem(item) {
     try {
       const { data } = await api.post("/transactions", item);
-      queryCache.invalidate('transactions_list');
       CacheInvalidator.onCreate('transactions');
       return data;
     } catch (error) {
@@ -112,7 +111,7 @@ export default class TransactionController {
   static async updateItem(id, item) {
     try {
       const { data } = await api.put(`/transactions/${id}`, item);
-      queryCache.invalidate('transactions_list');
+      CacheInvalidator.onUpdate('transactions');
       return data;
     } catch (error) {
       console.error("Ошибка при обновлении транзакции:", error);
@@ -123,7 +122,7 @@ export default class TransactionController {
   static async deleteItem(id) {
     try {
       const { data } = await api.delete(`/transactions/${id}`);
-      queryCache.invalidate('transactions_list');
+      CacheInvalidator.onDelete('transactions');
       return data;
     } catch (error) {
       console.error("Ошибка при удалении транзакции:", error);

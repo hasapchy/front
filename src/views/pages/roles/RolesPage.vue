@@ -98,6 +98,33 @@ export default {
                     return item[column];
             }
         },
+        async handleSaved() {
+            this.showNotification(
+                this.savedSuccessText || "Успешно сохранено",
+                "",
+                false
+            );
+            
+            this.invalidateCache('onUpdate');
+            this.refreshDataAfterOperation();
+            
+            setTimeout(async () => {
+                try {
+                    await this.$store.dispatch('refreshUserPermissions');
+                    console.log('=== ПРАВА ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ (после обновления) ===');
+                    console.log('Права:', this.$store.state.permissions);
+                    console.log('Количество прав:', this.$store.state.permissions?.length || 0);
+                    console.log('Есть clients_view:', this.$store.getters.hasPermission('clients_view'));
+                    console.log('Есть projects_view:', this.$store.getters.hasPermission('projects_view'));
+                    console.log('Есть orders_view:', this.$store.getters.hasPermission('orders_view'));
+                    console.log('Есть users_view:', this.$store.getters.hasPermission('users_view'));
+                    console.log('Есть roles_view:', this.$store.getters.hasPermission('roles_view'));
+                    console.log('==================================================');
+                } catch (error) {
+                    console.error('Ошибка обновления прав:', error);
+                }
+            }, 500);
+        },
     },
 };
 </script>

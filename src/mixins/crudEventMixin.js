@@ -1,4 +1,4 @@
-import CacheInvalidator from '@/utils/cacheInvalidator';
+import CacheInvalidator from '@/utils/cache';
 
 export default {
   data() {

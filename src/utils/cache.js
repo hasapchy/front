@@ -31,19 +31,32 @@ export const CACHE_PLAIN_KEYS = [
   'allProductsData'
 ];
 
-export default class CacheInvalidator {
-  static dependencies = {
-    sales: ['clients', 'projects'],
-    orders: ['clients', 'projects'],
-    transactions: ['clients', 'projects', 'cashRegisters'],
-    receipts: ['clients'],
-    writeoffs: [],
-    movements: [],
-    transfers: ['cashRegisters'],
-    invoices: [],
-  };
+function getCurrentCompanyId() {
+  try {
+    const store = require('@/store').default;
+    return store?.state?.currentCompany?.id || null;
+  } catch {
+    return null;
+  }
+}
 
-  static invalidateByType(type) {
+export class CacheInvalidator {
+  static removeKeyAndTimestamp(key) {
+    let count = 0;
+    if (localStorage.getItem(key)) {
+      localStorage.removeItem(key);
+      count++;
+    }
+    const timestampKey = `${key}_timestamp`;
+    if (localStorage.getItem(timestampKey)) {
+      localStorage.removeItem(timestampKey);
+      count++;
+    }
+    return count;
+  }
+
+  static invalidateByType(type, companyId = null) {
+    const currentCompanyId = companyId || getCurrentCompanyId();
     const patterns = {
       currencies: ['currencies_cache'],
       units: ['units_cache'],
@@ -76,23 +89,33 @@ export default class CacheInvalidator {
     };
 
     const keysToRemove = patterns[type] || [];
+    if (keysToRemove.length === 0) {
+      eventBus.emit('cache:invalidate', { type });
+      return 0;
+    }
+
+    const allKeys = Object.keys(localStorage);
     let removedCount = 0;
 
     keysToRemove.forEach(pattern => {
-      const keys = Object.keys(localStorage);
-      keys.forEach(key => {
-        if (key.startsWith(pattern) || key === pattern) {
-          localStorage.removeItem(key);
-          localStorage.removeItem(`${key}_timestamp`);
-          removedCount++;
+      allKeys.forEach(key => {
+        let shouldRemove = false;
+        
+        if (pattern.endsWith('_') && currentCompanyId) {
+          shouldRemove = key === `${pattern}${currentCompanyId}` || key.startsWith(`${pattern}${currentCompanyId}_`);
+        } else if (key.startsWith(pattern) || key === pattern) {
+          shouldRemove = !currentCompanyId || key.includes(`_company_${currentCompanyId}`) || !key.includes('_company_');
+        }
+        
+        if (shouldRemove) {
+          removedCount += this.removeKeyAndTimestamp(key);
         }
       });
       
-      if (pattern.endsWith('_')) {
-        const timestampKey = pattern.slice(0, -1) + '_timestamp';
-        localStorage.removeItem(timestampKey);
-      } else {
-        localStorage.removeItem(`${pattern}_timestamp`);
+      if (pattern.endsWith('_') && currentCompanyId) {
+        removedCount += this.removeKeyAndTimestamp(`${pattern}${currentCompanyId}`);
+      } else if (!pattern.endsWith('_')) {
+        removedCount += this.removeKeyAndTimestamp(pattern);
       }
     });
 
@@ -102,23 +125,10 @@ export default class CacheInvalidator {
   }
 
   static invalidateByCompany(companyId) {
-    const patterns = CACHE_KEY_PREFIXES;
-
     let removedCount = 0;
 
-    patterns.forEach(pattern => {
-      const key = `${pattern}${companyId}`;
-      const timestampKey = `${key}_timestamp`;
-      
-      if (localStorage.getItem(key)) {
-        localStorage.removeItem(key);
-        removedCount++;
-      }
-      
-      if (localStorage.getItem(timestampKey)) {
-        localStorage.removeItem(timestampKey);
-        removedCount++;
-      }
+    CACHE_KEY_PREFIXES.forEach(pattern => {
+      removedCount += this.removeKeyAndTimestamp(`${pattern}${companyId}`);
     });
 
     return removedCount;
@@ -126,8 +136,19 @@ export default class CacheInvalidator {
 
   static invalidateAll() {
     const cacheKeys = this.getCacheKeys();
-    cacheKeys.forEach(key => localStorage.removeItem(key));
-    return cacheKeys.length;
+    let removedCount = 0;
+    cacheKeys.forEach(key => {
+      if (localStorage.getItem(key)) {
+        localStorage.removeItem(key);
+        removedCount++;
+      }
+      const timestampKey = `${key}_timestamp`;
+      if (localStorage.getItem(timestampKey)) {
+        localStorage.removeItem(timestampKey);
+        removedCount++;
+      }
+    });
+    return removedCount;
   }
 
   static getCacheKeys() {
@@ -145,37 +166,41 @@ export default class CacheInvalidator {
     });
   }
 
-  static onCreate(type, companyId = null) {
-    this.invalidateByType(type);
+  static dependencies = {
+    sales: ['clients', 'projects'],
+    orders: ['clients', 'projects'],
+    transactions: ['clients', 'projects', 'cashRegisters'],
+    receipts: ['clients'],
+    writeoffs: [],
+    movements: [],
+    transfers: ['cashRegisters'],
+    invoices: [],
+  };
+
+  static invalidateCrud(type, companyId = null) {
+    this.invalidateByType(type, companyId);
     if (companyId) {
       this.invalidateByCompany(companyId);
     }
     this.invalidateDependencies(type, companyId);
+  }
+
+  static onCreate(type, companyId = null) {
+    this.invalidateCrud(type, companyId);
   }
 
   static onUpdate(type, companyId = null) {
-    this.invalidateByType(type);
-    if (companyId) {
-      this.invalidateByCompany(companyId);
-    }
-    this.invalidateDependencies(type, companyId);
+    this.invalidateCrud(type, companyId);
   }
 
   static onDelete(type, companyId = null) {
-    this.invalidateByType(type);
-    if (companyId) {
-      this.invalidateByCompany(companyId);
-    }
-    this.invalidateDependencies(type, companyId);
+    this.invalidateCrud(type, companyId);
   }
 
   static invalidateDependencies(type, companyId = null) {
     const dependentTypes = this.dependencies[type] || [];
     dependentTypes.forEach(dependentType => {
-      this.invalidateByType(dependentType);
-      if (companyId) {
-        this.invalidateByCompany(companyId);
-      }
+      this.invalidateByType(dependentType, companyId);
     });
   }
 
@@ -229,3 +254,6 @@ export function clearCompanyCache(prefix, companyId) {
   const key = companyScopedKey(prefix, companyId);
   clearKey(key);
 }
+
+export default CacheInvalidator;
+

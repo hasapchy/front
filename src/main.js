@@ -24,25 +24,14 @@ import App from "./App.vue";
 import router from "./router";
 import store from "./store";
 import i18n from "./i18n";
-import AuthController from "./api/AuthController";
 import { setStore } from "./store/storeManager";
 import soundManager from "./utils/soundUtils";
 import SpinnerIcon from "./views/components/app/SpinnerIcon.vue";
 import { formatNumber, formatCurrency, getStepForDecimals, formatNumberWithRounding, formatCurrencyWithRounding } from "./utils/numberUtils";
 
 async function bootstrapApp() {
-  const token = localStorage.getItem("token");
-
-  if (token) {
-    try {
-      const userData = await AuthController.getUser();
-      store.dispatch("setUser", userData.user);
-      store.dispatch("setPermissions", userData.permissions);
-    } catch (e) {
-      console.error("Ошибка при загрузке пользователя:", e);
-      localStorage.removeItem("token");
-    }
-  }
+  store.commit("SET_PERMISSIONS_LOADED", false);
+  store.dispatch("setPermissions", []);
 
   // Инициализируем storeManager
   setStore(store);
