@@ -98,7 +98,7 @@
     
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="admin.orders" :columns-config="translatedColumnsConfig" :table-data="data.items"
+            <DraggableTable table-key="admin.orders" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper"                 :onItemClick="(i) => showModal(i)" @selectionChange="selectedIds = $event" />
         </div>
 
@@ -204,7 +204,6 @@ import crudEventMixin from "@/mixins/crudEventMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import batchActionsMixin from "@/mixins/batchActionsMixin";
 import modalMixin from "@/mixins/modalMixin";
-import tableTranslationMixin from "@/mixins/tableTranslationMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import { defineAsyncComponent } from "vue";
 import { eventBus } from "@/eventBus";
@@ -222,7 +221,7 @@ const TimelinePanel = defineAsyncComponent(() =>
 );
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin, companyChangeMixin, searchMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin],
     components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon },
     data() {
         return {
@@ -421,8 +420,7 @@ export default {
             }
         },
 
-        handleSaved() {
-            this.$options.mixins.find(m => m.methods?.handleSaved)?.methods.handleSaved.call(this);
+        onAfterSaved() {
             if (this.$refs.timelinePanel && !this.timelineCollapsed) {
                 this.$refs.timelinePanel.refreshTimeline();
             }

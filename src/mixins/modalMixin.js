@@ -10,7 +10,7 @@ export default {
   },
   methods: {
     showModal(item = null) {
-      this.savedScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+      this.savedScrollPosition = window.pageYOffset ?? document.documentElement.scrollTop;
       this.shouldRestoreScrollOnClose = true;
       this.modalDialog = true;
       this.showTimeline = true;
@@ -30,8 +30,8 @@ export default {
       }
     },
     handleModalClose() {
-      const formRef = Object.values(this.$refs).find(ref => ref && typeof ref.handleCloseRequest === 'function');
-      if (formRef && formRef.handleCloseRequest) {
+      const formRef = Object.values(this.$refs || {}).find(ref => ref?.handleCloseRequest);
+      if (formRef?.handleCloseRequest) {
         formRef.handleCloseRequest();
       } else {
         this.closeModal();

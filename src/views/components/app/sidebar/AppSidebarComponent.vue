@@ -24,6 +24,7 @@
                     :animation="200"
                     handle=".drag-handle"
                     item-key="id"
+                    group="menu-items"
                 >
                     <SidebarLink 
                         v-for="element in draggableMenuItems"
@@ -170,17 +171,43 @@ export default {
         },
         
         onLogoError(event) {
-            console.error('Company logo failed to load:', event.target.src);
             event.target.src = '/logo.jpg';
         },
         
         updateDraggableItems() {
             this.draggableMenuItems = [...(this.mainMenuItems || [])];
         },
-        onDragChange() {
-            this.$store.dispatch('updateMenuItems', { 
-                type: 'main', 
-                items: [...this.draggableMenuItems]
+        onDragChange(evt) {
+            this.$nextTick(() => {
+                const currentAvailable = this.$store.state.menuItems.available || [];
+                const mainItems = [...this.draggableMenuItems];
+                
+                if (evt.added) {
+                    const movedItem = evt.added.element;
+                    const updatedAvailable = currentAvailable.filter(item => item.id !== movedItem.id);
+                    this.$store.dispatch('updateBothMenuLists', {
+                        mainItems: mainItems,
+                        availableItems: updatedAvailable
+                    });
+                } else if (evt.removed) {
+                    const removedItem = evt.removed.element;
+                    if (!currentAvailable.find(item => item.id === removedItem.id)) {
+                        this.$store.dispatch('updateBothMenuLists', {
+                            mainItems: mainItems,
+                            availableItems: [...currentAvailable, removedItem]
+                        });
+                    } else {
+                        this.$store.dispatch('updateBothMenuLists', {
+                            mainItems: mainItems,
+                            availableItems: currentAvailable
+                        });
+                    }
+                } else {
+                    this.$store.dispatch('updateBothMenuLists', {
+                        mainItems: mainItems,
+                        availableItems: currentAvailable
+                    });
+                }
             });
         }
     }

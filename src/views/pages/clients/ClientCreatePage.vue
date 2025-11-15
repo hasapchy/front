@@ -407,48 +407,51 @@ export default {
       }
 
       const cleanedPhone = editedPhone.replace(/\D/g, "");
-      const expectedLength = 11;
+      const currentPhone = this.phones[index];
+      const currentFormatted = this.formatPhoneForInput(currentPhone);
+      const currentCleaned = currentFormatted.replace(/\D/g, "");
+      
+      if (cleanedPhone === currentCleaned) {
+        return;
+      }
 
-      if (cleanedPhone.length < expectedLength) {
-        this.showNotification("Ошибка", `Номер должен содержать ${expectedLength} цифр (код страны + номер)`, true);
+      let phoneWithoutCode = cleanedPhone;
+      if (cleanedPhone.startsWith("993")) {
+        phoneWithoutCode = cleanedPhone.substring(3);
+      } else if (cleanedPhone.startsWith("7")) {
+        phoneWithoutCode = cleanedPhone.substring(1);
+      }
+
+      const selectedCountry = this.editingPhoneCountries[index];
+      let dialCode = "993";
+      let expectedLocalLength = 8;
+
+      if (selectedCountry && selectedCountry.dialCode) {
+        dialCode = selectedCountry.dialCode;
+        expectedLocalLength = dialCode === "7" ? 10 : 8;
+      } else {
+        const currentCleanedFull = currentPhone.replace(/\D/g, "");
+        if (currentCleanedFull.startsWith("7")) {
+          dialCode = "7";
+          expectedLocalLength = 10;
+        }
+      }
+
+      if (phoneWithoutCode.length < expectedLocalLength) {
+        this.showNotification("Ошибка", `Номер должен содержать ${expectedLocalLength} цифр (без кода страны)`, true);
         this.editingPhones[index] = this.formatPhoneForInput(this.phones[index]);
         return;
       }
 
-      let phoneToSave = cleanedPhone;
-      const selectedCountry = this.editingPhoneCountries[index];
-
-      if (selectedCountry && selectedCountry.dialCode) {
-        if (!cleanedPhone.startsWith(selectedCountry.dialCode)) {
-          let phoneWithoutCode = cleanedPhone;
-          if (cleanedPhone.startsWith("993")) {
-            phoneWithoutCode = cleanedPhone.substring(3);
-          } else if (cleanedPhone.startsWith("7")) {
-            phoneWithoutCode = cleanedPhone.substring(1);
-          }
-          phoneToSave = selectedCountry.dialCode + phoneWithoutCode;
-        }
-      } else {
-        const currentPhone = this.phones[index];
-        const currentCleaned = currentPhone.replace(/\D/g, "");
-
-        if (currentCleaned.startsWith("993")) {
-          if (!cleanedPhone.startsWith("993")) {
-            phoneToSave = "993" + cleanedPhone;
-          }
-        } else if (currentCleaned.startsWith("7")) {
-          if (!cleanedPhone.startsWith("7")) {
-            phoneToSave = "7" + cleanedPhone;
-          }
-        } else {
-          if (!cleanedPhone.startsWith("993") && !cleanedPhone.startsWith("7")) {
-            phoneToSave = "993" + cleanedPhone;
-          }
-        }
+      if (phoneWithoutCode.length > expectedLocalLength) {
+        phoneWithoutCode = phoneWithoutCode.substring(phoneWithoutCode.length - expectedLocalLength);
       }
 
-      if (phoneToSave.length !== expectedLength) {
-        this.showNotification("Ошибка", `Номер должен содержать ${expectedLength} цифр`, true);
+      const phoneToSave = dialCode + phoneWithoutCode;
+      const expectedFullLength = 11;
+
+      if (phoneToSave.length !== expectedFullLength) {
+        this.showNotification("Ошибка", `Номер должен содержать ${expectedFullLength} цифр (код страны + номер)`, true);
         this.editingPhones[index] = this.formatPhoneForInput(this.phones[index]);
         return;
       }
@@ -462,8 +465,7 @@ export default {
       this.phones[index] = phoneToSave;
       this.editingPhones[index] = this.formatPhoneForInput(phoneToSave);
       
-      const cleaned = phoneToSave.replace(/\D/g, "");
-      if (cleaned.startsWith("7")) {
+      if (dialCode === "7") {
         this.editingPhoneCountries[index] = { dialCode: "7", id: "ru" };
       } else {
         this.editingPhoneCountries[index] = { dialCode: "993", id: "tm" };
@@ -510,10 +512,10 @@ export default {
           this.clearForm();
         }
       } catch (error) {
-        const errorMessage = this.getApiErrorMessage(error);
-        this.$emit("saved-error", errorMessage);
+        this.$emit("saved-error", error);
+      } finally {
+        this.saveLoading = false;
       }
-      this.saveLoading = false;
     },
     async deleteItem() {
       this.closeDeleteDialog();

@@ -69,6 +69,7 @@
                 <BasementProductSearch
                   v-model="form.products"
                   :show-quantity="true"
+                  :only-products="true"
                   :required="true"
                   :project-id="form.project_id"
                 />
@@ -211,14 +212,14 @@
 </template>
 
 <script>
-import basementApi from '@/api/basementAxiosInstance'
+import basementApi from '@/api/basement/basementAxiosInstance'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'
 import BasementClientSearch from '@/views/components/basement/BasementClientSearch.vue'
 import BasementProductSearch from '@/views/components/basement/BasementProductSearch.vue'
 import BasementStockSearch from '@/views/components/basement/BasementStockSearch.vue'
 import BasementServicesRow from '@/views/components/basement/BasementServicesRow.vue'
-import BasementProjectController from '@/api/BasementProjectController'
+import BasementProjectController from '@/api/basement/BasementProjectController'
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin'
 import crudEventMixin from '@/mixins/crudEventMixin'
 import { formatNumber } from '@/utils/numberUtils'
@@ -417,7 +418,6 @@ export default {
           this.form.category_id = basementCategoryMap[userId] || null;
         }
       } catch (error) {
-        console.error('Ошибка определения категории пользователя:', error);
       }
     },
     async loadCashRegisters() {
@@ -429,7 +429,6 @@ export default {
           this.form.cash_id = data[0].id;
         }
       } catch (error) {
-        console.error('Ошибка загрузки касс:', error);
         // Устанавливаем значение по умолчанию если API недоступен
         this.form.cash_id = 1;
       }
@@ -443,7 +442,6 @@ export default {
           this.form.warehouse_id = data[0].id;
         }
       } catch (error) {
-        console.error('Ошибка загрузки складов:', error);
         // Устанавливаем значение по умолчанию если API недоступен
         this.form.warehouse_id = 1;
       }
@@ -455,23 +453,12 @@ export default {
         // Для активных проектов возвращается массив, а не пагинированный ответ
         this.allProjects = Array.isArray(projects) ? projects : (projects.items || []);
       } catch (error) {
-        console.error('Ошибка загрузки проектов:', error);
         this.allProjects = [];
       }
     },
     onClientSelected(client) {
       this.selectedClient = client
       this.form.client_id = client ? client.id : null
-      console.log('[Basement] selectedClient:', client, 'form.client_id:', this.form.client_id, 'typeof:', typeof this.form.client_id)
-      const clientType = client?.client_type || client?.clientType || 'unknown'
-      const clientName = client?.fullName ? client.fullName() : `${client?.first_name || client?.firstName || ''} ${client?.last_name || client?.lastName || ''}`.trim()
-      console.log('[Basement] client debug →', { id: client?.id, name: clientName || '(no name)', type: clientType })
-      console.table([
-        { field: 'id', value: client?.id },
-        { field: 'name', value: clientName || '(no name)' },
-        { field: 'client_type', value: client?.client_type },
-        { field: 'clientType', value: client?.clientType },
-      ])
     },
     async createClient() {
       this.clientLoading = true
@@ -483,7 +470,6 @@ export default {
         this.showClientForm = false
         this.clientForm = { name: '', phone: '' }
       } catch (error) {
-        console.error('Ошибка создания клиента:', error)
       } finally {
         this.clientLoading = false
       }
@@ -555,16 +541,6 @@ export default {
           temp_products: tempProducts
         }
 
-        console.log('[Basement] createOrder payload', {
-          client_id: this.form.client_id,
-          client_id_typeof: typeof this.form.client_id,
-          project_id: this.form.project_id,
-          has_products: validProducts.length,
-          has_temp_products: tempProducts.length,
-          warehouse_id: this.form.warehouse_id,
-          category_id: this.form.category_id
-        })
-
         const { data } = await basementApi.post('/orders', orderData)
         
         // Уведомление об успехе
@@ -577,7 +553,6 @@ export default {
       } catch (error) {
         // Уведомление об ошибке
         const errorMessage = this.getApiErrorMessage(error)
-        console.error('[Basement] createOrder error raw', error?.response?.data || error)
         this.$store.dispatch('showNotification', { 
           title: this.savedErrorText, 
           subtitle: errorMessage, 
@@ -650,17 +625,6 @@ export default {
           temp_products: tempProducts
         }
 
-        console.log('[Basement] updateOrder payload', {
-          order_id: this.editingItem?.id || (this.orderId ? parseInt(this.orderId) : null),
-          client_id: this.form.client_id,
-          client_id_typeof: typeof this.form.client_id,
-          project_id: this.form.project_id,
-          has_products: validProducts.length,
-          has_temp_products: tempProducts.length,
-          warehouse_id: this.form.warehouse_id,
-          category_id: this.form.category_id
-        })
-
         const orderId = this.editingItem?.id || (this.orderId ? parseInt(this.orderId) : null)
         
         if (!orderId) {
@@ -686,7 +650,6 @@ export default {
       } catch (error) {
         // Уведомление об ошибке
         const errorMessage = this.getApiErrorMessage(error)
-        console.error('[Basement] updateOrder error raw', error?.response?.data || error)
         this.$store.dispatch('showNotification', { 
           title: 'Ошибка обновления заказа', 
           subtitle: errorMessage, 
@@ -720,7 +683,6 @@ export default {
           const orderData = data.item || data
           this.fillFormWithOrderData(orderData)
         } catch (error) {
-          console.error('Ошибка загрузки заказа для редактирования:', error)
           this.$store.dispatch('showNotification', {
             title: 'Ошибка',
             subtitle: 'Не удалось загрузить заказ для редактирования',

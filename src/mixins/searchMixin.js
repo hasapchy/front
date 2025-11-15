@@ -15,17 +15,11 @@ export default {
     },
 
     executeSearchAction() {
-      if (typeof this.searchAction === 'function') {
+      if (this.searchAction) {
         this.searchAction();
-        return;
-      }
-
-      if (typeof this.fetchItems === 'function') {
+      } else if (this.fetchItems) {
         this.fetchItems(1, false);
-        return;
-      }
-
-      if (typeof this.applyFilters === 'function') {
+      } else if (this.applyFilters) {
         this.applyFilters();
       }
     },

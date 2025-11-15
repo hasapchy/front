@@ -14,7 +14,7 @@
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.warehouse_writeoffs" :columns-config="translatedColumnsConfig"
+            <DraggableTable table-key="admin.warehouse_writeoffs" :columns-config="columnsConfig"
                 :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
@@ -47,10 +47,10 @@ import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import tableTranslationMixin from '@/mixins/tableTranslationMixin';
+
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, ],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, WarehousesWriteoffCreatePage, BatchButton, AlertDialog },
     data() {
         return {

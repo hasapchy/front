@@ -16,10 +16,10 @@
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-times"
-            :disabled="!$store.getters.hasPermission('projects_delete')">
+            :disabled="!$store.getters.hasPermission('project_statuses_delete')">
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('projects_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('projects_create'))">
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('project_statuses_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('project_statuses_create'))">
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"

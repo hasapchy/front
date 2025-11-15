@@ -19,6 +19,20 @@
       </div>
     </div>
 
+    <!-- Пагинация сверху -->
+    <div class="mt-4 flex justify-end">
+      <Pagination 
+        v-if="paginationData" 
+        :currentPage="paginationData.currentPage" 
+        :lastPage="paginationData.lastPage"
+        :per-page="perPage" 
+        :per-page-options="perPageOptions" 
+        :show-per-page-selector="true"
+        @changePage="fetchOrders" 
+        @perPageChange="handlePerPageChange" 
+      />
+    </div>
+
     <!-- Таблица заказов -->
     <div class="mt-8">
       <div v-if="loading" class="text-center py-12">
@@ -36,26 +50,45 @@
       />
     </div>
 
+    <!-- Пагинация снизу -->
+    <div class="mt-4 flex justify-end">
+      <Pagination 
+        v-if="paginationData" 
+        :currentPage="paginationData.currentPage" 
+        :lastPage="paginationData.lastPage"
+        :per-page="perPage" 
+        :per-page-options="perPageOptions" 
+        :show-per-page-selector="true"
+        @changePage="fetchOrders" 
+        @perPageChange="handlePerPageChange" 
+      />
+    </div>
+
   </div>
 </template>
 
 <script>
-import { BasementAuthController } from '@/api/BasementAuthController'
-import basementApi from '@/api/basementAxiosInstance'
+import { BasementAuthController } from '@/api/basement/BasementAuthController'
+import basementApi from '@/api/basement/basementAxiosInstance'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'
+import Pagination from '@/views/components/app/buttons/Pagination.vue'
 import { formatOrderDate } from '@/utils/dateUtils'
 
 export default {
   name: 'BasementOrdersPage',
   components: {
     PrimaryButton,
-    DraggableTable
+    DraggableTable,
+    Pagination
   },
   data() {
     return {
       orders: [],
-      loading: true
+      loading: true,
+      paginationData: null,
+      perPage: 20,
+      perPageOptions: [10, 20, 50, 100]
     }
   },
   computed: {
@@ -77,6 +110,11 @@ export default {
           size: 250 
         },
         { 
+          name: 'category', 
+          label: this.$t('category'), 
+          size: 200 
+        },
+        { 
           name: 'products', 
           label: this.$t('products'), 
           size: 350,
@@ -91,19 +129,34 @@ export default {
     }
   },
   async mounted() {
-    await this.loadOrders()
+    await this.fetchOrders(1)
   },
   methods: {
-    async loadOrders() {
+    async fetchOrders(page = 1) {
+      this.loading = true
       try {
-        const { data } = await basementApi.get('/orders')
+        const { data } = await basementApi.get('/orders', {
+          params: {
+            page,
+            per_page: this.perPage
+          }
+        })
         this.orders = data.items || []
+        this.paginationData = {
+          currentPage: data.current_page || page,
+          lastPage: data.last_page || 1,
+          total: data.total || 0
+        }
       } catch (error) {
-        console.error('Ошибка загрузки заказов:', error)
         this.orders = []
+        this.paginationData = null
       } finally {
         this.loading = false
       }
+    },
+    handlePerPageChange(newPerPage) {
+      this.perPage = newPerPage
+      this.fetchOrders(1)
     },
     itemMapper(order, columnName) {
       switch (columnName) {
@@ -113,6 +166,8 @@ export default {
           return this.getClientName(order)
         case 'project':
           return this.getProjectName(order)
+        case 'category':
+          return this.getCategoryName(order)
         case 'products':
           return this.formatProducts(order.products)
         case 'created_at':
@@ -149,6 +204,11 @@ export default {
       if (!order.project) return this.$t('notSpecified')
       
       return order.project.name || this.$t('notSpecified')
+    },
+    getCategoryName(order) {
+      if (!order.category && !order.category_name) return this.$t('notSpecified')
+      
+      return order.category?.name || order.category_name || this.$t('notSpecified')
     },
     editOrder(order) {
       this.$router.push(`/basement/orders/${order.id}/edit`)

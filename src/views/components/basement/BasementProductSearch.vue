@@ -191,7 +191,7 @@
 </template>
 
 <script>
-import BasementProductController from '@/api/BasementProductController';
+import BasementProductController from '@/api/basement/BasementProductController';
 import debounce from 'lodash.debounce';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import ServiceCard from './ServiceCard.vue';
@@ -236,7 +236,8 @@ export default {
             showProductDropdown: false,
             services: [],
             servicesLoading: false,
-            productDimensions: {}
+            productDimensions: {},
+            lastProductsList: []
         };
     },
     computed: {
@@ -278,18 +279,73 @@ export default {
         },
         
         lastProducts() {
-            return this.$store.getters.allProducts;
+            return this.lastProductsList;
         }
     },
     async created() {
-        await this.$store.dispatch('loadAllProducts');
+        await this.fetchLastProducts();
         await this.loadServices();
+        
+        // Создаем debounced метод поиска
+        this.performSearch = debounce(async (searchTerm) => {
+            if (searchTerm && searchTerm.length >= 3) {
+                this.productSearchLoading = true;
+                try {
+                    const results = await BasementProductController.searchItems(searchTerm);
+                    let products = results;
+
+                    if (this.onlyProducts) {
+                        products = products.filter(p => Boolean(p.type));
+                    }
+
+                    this.productResults = products;
+                    this.productSearchLoading = false;
+                } catch (error) {
+                    this.productResults = [];
+                    this.productSearchLoading = false;
+                }
+            }
+        }, 250);
     },
     methods: {
+        async fetchLastProducts() {
+            try {
+                let allProducts = [];
+                let currentPage = 1;
+                let hasMorePages = true;
+                const perPage = 1000;
+                
+                while (hasMorePages) {
+                    const prodPage = await BasementProductController.getItems(currentPage, true, {}, perPage);
+                    const products = prodPage.items || [];
+                    
+                    if (this.onlyProducts) {
+                        allProducts.push(...products.filter(p => Boolean(p.type)));
+                    } else {
+                        allProducts.push(...products);
+                    }
+                    
+                    if (prodPage.nextPage && currentPage < prodPage.lastPage) {
+                        currentPage++;
+                    } else {
+                        hasMorePages = false;
+                    }
+                }
+                
+                this.lastProductsList = allProducts
+                    .sort((a, b) => {
+                        const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+                        const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+                        return dateB - dateA;
+                    });
+            } catch (error) {
+                this.lastProductsList = [];
+            }
+        },
         async onFocus() {
             this.showProductDropdown = true;
-            if (!this.lastProducts || this.lastProducts.length === 0) {
-                await this.$store.dispatch('loadAllProducts');
+            if (!this.lastProductsList || this.lastProductsList.length === 0) {
+                await this.fetchLastProducts();
             }
         },
         async loadServices() {
@@ -298,28 +354,18 @@ export default {
                 const servicesData = await BasementProductController.getItems(1, false, {}, 20);
                 this.services = servicesData.items || [];
             } catch (error) {
-                console.error('Error loading services:', error);
                 this.services = [];
             } finally {
                 this.servicesLoading = false;
             }
         },
-        searchProducts: debounce(async function () {
+        searchProducts() {
             if (this.productSearch.length >= 3) {
-                this.productSearchLoading = true;
-                try {
-                    const results = await BasementProductController.searchItems(this.productSearch);
-                    const productsOnly = results.filter(item => item.type === 1 || item.type === true || item.type === '1');
-                    this.productResults = productsOnly;
-                    this.productSearchLoading = false;
-                } catch (error) {
-                    this.productResults = [];
-                    this.productSearchLoading = false;
-                }
+                this.performSearch(this.productSearch);
             } else {
                 this.productResults = [];
             }
-        }, 250),
+        },
         selectProduct(product) {
             try {
                 this.showProductDropdown = false;
@@ -356,7 +402,6 @@ export default {
                 this.updateTotals();
                 this.$refs.productInput.blur();
             } catch (error) {
-                console.error('Error selecting product:', error);
             }
         },
         selectService(service) {
@@ -390,7 +435,6 @@ export default {
                 this.products = [...this.products, productDto];
                 this.updateTotals();
             } catch (error) {
-                console.error('Error selecting service:', error);
             }
         },
         removeSelectedProduct(index) {
@@ -564,7 +608,7 @@ export default {
     watch: {
         productSearch: {
             handler: 'searchProducts',
-            immediate: true,
+            immediate: false,
         },
         products: {
             handler(newProducts) {

@@ -163,6 +163,12 @@ export default {
         async fetchPaymentsHistory() {
             if (!this.editingItem || !this.editingItem.id) return;
             
+            if (!this.$store.getters.hasPermission('settings_client_balance_view')) {
+                this.paymentsHistory = [];
+                this.totalPayments = 0;
+                return;
+            }
+            
             if (this.lastFetchedClientId === this.editingItem.id && !this.forceRefresh) {
                 return;
             }

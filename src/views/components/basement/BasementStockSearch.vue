@@ -142,7 +142,7 @@
 </template>
 
 <script>
-import BasementProductController from '@/api/BasementProductController';
+import BasementProductController from '@/api/basement/BasementProductController';
 import debounce from 'lodash.debounce';
 import { roundQuantityValue } from '@/utils/numberUtils';
 
@@ -208,7 +208,6 @@ export default {
                     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                     .slice(0, 10);
             } catch (error) {
-                console.error('Error fetching products:', error);
                 this.lastProducts = [];
             }
         },
@@ -275,7 +274,6 @@ export default {
                 this.stockItems = [...this.stockItems, tempProduct];
                 this.$refs.stockInput.blur();
             } catch (error) {
-                console.error('Error selecting stock:', error);
             }
         },
         removeStock(index) {

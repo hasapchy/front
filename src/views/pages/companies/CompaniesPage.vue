@@ -11,7 +11,7 @@
     </div>
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="admin.companies" :columns-config="translatedColumnsConfig" :table-data="data.items"
+            <DraggableTable table-key="admin.companies" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="(i) => showModal(i)" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
@@ -44,11 +44,11 @@ import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import tableTranslationMixin from '@/mixins/tableTranslationMixin';
+
 import { eventBus } from '@/eventBus';
 
 export default {
-    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
+    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, ],
     components: { NotificationToast, PrimaryButton, SideModalDialog, CompaniesCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog },
     data() {
         return {

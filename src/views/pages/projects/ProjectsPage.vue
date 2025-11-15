@@ -58,7 +58,7 @@
     <transition name="fade" mode="out-in">
         <!-- Табличный вид -->
         <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="admin.projects" :columns-config="translatedColumnsConfig" :table-data="data.items"
+            <DraggableTable table-key="admin.projects" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
@@ -116,7 +116,6 @@ import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
@@ -125,7 +124,7 @@ import debounce from "lodash.debounce";
 import { eventBus } from '@/eventBus';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, tableTranslationMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell },
     data() {
         return {

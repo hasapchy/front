@@ -102,7 +102,7 @@
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.transactions" :columns-config="translatedColumnsConfig"
+            <DraggableTable table-key="admin.transactions" :columns-config="columnsConfig"
                 :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
@@ -145,14 +145,13 @@ import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { eventBus } from '@/eventBus';
 import searchMixin from '@/mixins/searchMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin, searchMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin],
     components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, BatchButton },
     data() {
         return {
@@ -357,17 +356,10 @@ export default {
               isDanger: false
             });
         },
-        // Переопределяем методы из crudEventMixin для обновления баланса
-        handleSaved() {
-            // Вызываем метод из миксина
-            this.$options.mixins.find(m => m.methods?.handleSaved)?.methods.handleSaved.call(this);
-            // Добавляем специфическую логику
+        onAfterSaved() {
             this.updateBalace();
         },
-        handleDeleted() {
-            // Вызываем метод из миксина
-            this.$options.mixins.find(m => m.methods?.handleDeleted)?.methods.handleDeleted.call(this);
-            // Добавляем специфическую логику
+        onAfterDeleted() {
             this.updateBalace();
         },
         handleCopyTransaction(copiedTransaction) {

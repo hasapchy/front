@@ -19,25 +19,23 @@ export default {
   },
   
   beforeUnmount() {
+    this._isDestroyed = true;
     eventBus.off('company-changed', this.onCompanyChanged);
   },
   
   methods: {
     async onCompanyChanged(companyId) {
+      if (this._isDestroyed) return;
+      
       if (this.handleCompanyChanged) {
         await this.handleCompanyChanged(companyId);
-        return;
-      }
-      
-      if (this.fetchItems) {
+      } else if (this.fetchItems) {
         await this.fetchItems();
-      }
-      
-      if (this.refreshData) {
+      } else if (this.refreshData) {
         await this.refreshData();
       }
       
-      if (this.showNotification) {
+      if (!this._isDestroyed && this.showNotification) {
         this.showNotification('Компания изменена', '', false);
       }
     }

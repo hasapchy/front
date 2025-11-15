@@ -10,7 +10,7 @@
               <div>
                 <i class="text-sm mr-2 text-[#337AB7]"
                   :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                {{ element.label }}
+                {{ $te(element.label) ? $t(element.label) : element.label }}
               </div>
               <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i></div>
             </div>
@@ -28,12 +28,12 @@
           :class="{ hidden: !element.visible, relative: true }"
           class="text-left border border-gray-300 py-2 px-4 font-medium cursor-pointer select-none"
           :style="getColumnStyle(element)" @dblclick.prevent="sortBy(element.name)"
-          :title="$t('doubleClickToSort') + ' ' + element.label">
+          :title="$t('doubleClickToSort') + ' ' + ($te(element.label) ? $t(element.label) : element.label)">
           <template v-if="element.name === 'select'">
             <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" style="cursor:pointer;" />
           </template>
           <template v-else>
-            <span>{{ element.label }}</span>
+            <span>{{ $te(element.label) ? $t(element.label) : element.label }}</span>
             <span v-if="sortKey === element.name" class="ml-1">
               <i v-if="sortOrder === 1" class="fas fa-sort-up"></i>
               <i v-else class="fas fa-sort-down"></i>

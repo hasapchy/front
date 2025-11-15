@@ -47,7 +47,7 @@
 </template>
 
 <script>
-import BasementClientController from '@/api/BasementClientController';
+import BasementClientController from '@/api/basement/BasementClientController';
 import debounce from 'lodash.debounce';
 
 export default {
@@ -128,7 +128,6 @@ export default {
                 .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
                 .slice(0, 10);
         } catch (error) {
-            console.error('BasementClientSearch: Ошибка загрузки клиентов:', error);
             this.lastClients = [];
         }
     },
@@ -141,7 +140,6 @@ export default {
                         ? results.filter((client) => client.isSupplier)
                         : results;
                 } catch (error) {
-                    console.error('BasementClientSearch: Ошибка поиска клиентов:', error);
                     this.clientResults = [];
                 } finally {
                     this.clientSearchLoading = false;

@@ -3,9 +3,11 @@
         <div class="flex justify-start items-center">
             <PrimaryButton :onclick="openCreateWarehouse" icon="fas fa-plus"
                 :disabled="!$store.getters.hasPermission('warehouses_create')">
+                Склад
             </PrimaryButton>
             <PrimaryButton :onclick="openCreateProduct" icon="fas fa-plus" class="ml-2"
                 :disabled="!$store.getters.hasPermission('products_create')">
+                Товар
             </PrimaryButton>
             <div class="ml-2">
                 <select v-model="warehouseId" @change="fetchItems" class="p-2 border rounded">
@@ -41,7 +43,7 @@
     </div>
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.warehouse_stocks" :columns-config="translatedColumnsConfig"
+            <DraggableTable table-key="admin.warehouse_stocks" :columns-config="columnsConfig"
                 :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
@@ -76,7 +78,7 @@ import CategoryController from '@/api/CategoryController';
 import AdminWarehouseCreatePage from '@/views/pages/admin/warehouses/AdminWarehouseCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
-import tableTranslationMixin from '@/mixins/tableTranslationMixin';
+
 import ProductController from '@/api/ProductController';
 import { eventBus } from '@/eventBus';
 import { formatQuantity } from '@/utils/numberUtils';
@@ -85,7 +87,7 @@ import searchMixin from '@/mixins/searchMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
-    mixins: [modalMixin, notificationMixin, tableTranslationMixin, companyChangeMixin, searchMixin],
+    mixins: [modalMixin, notificationMixin,  companyChangeMixin, searchMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, AdminWarehouseCreatePage },
     data() {
         return {

@@ -206,6 +206,12 @@ export default {
         async fetchBalanceHistory() {
             if (!this.editingItem || !this.editingItem.id) return;
             
+            if (!this.$store.getters.hasPermission('settings_client_balance_view')) {
+                this.balanceHistory = [];
+                this.totalBalance = 0;
+                return;
+            }
+            
             if (this.lastFetchedClientId === this.editingItem.id && !this.forceRefresh) {
                 return;
             }

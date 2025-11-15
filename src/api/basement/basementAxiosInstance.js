@@ -33,8 +33,8 @@ basementApi.interceptors.request.use(
     if (store && store.getters.currentCompanyId) {
       config.headers['X-Company-ID'] = store.getters.currentCompanyId;
     } else {
-      // Для basement системы используем компанию по умолчанию (ID = 1)
-      config.headers['X-Company-ID'] = '1';
+      const defaultCompanyId = import.meta.env.VITE_BASEMENT_DEFAULT_COMPANY_ID || '1';
+      config.headers['X-Company-ID'] = defaultCompanyId;
     }
     
     return config;
@@ -79,8 +79,8 @@ basementApi.interceptors.response.use(
         console.error("Ошибка при обновлении токена", refreshError);
         BasementAuthController.logout();
         
-        if (window.location.pathname !== '/basement/login') {
-          window.location.href = '/basement/login';
+        if (window.location.pathname !== '/auth/login') {
+          window.location.href = '/auth/login';
         }
       }
     }

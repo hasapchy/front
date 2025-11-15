@@ -74,6 +74,7 @@ export default {
   home: 'Home',
   clients: 'Clients',
   products: 'Products',
+  categories: 'Product Categories',
   orders: 'Orders',
   sales: 'Sales',
   warehouses: 'Warehouses',
@@ -156,7 +157,7 @@ export default {
   notSpecified: 'Not specified',
   
   // System
-  accountingSystem: 'Birhasap',
+  accountingSystem: 'Hasap',
   
   // Company settings
   companyName: 'Company Name',
@@ -398,4 +399,17 @@ export default {
     
     // Company settings
     skipProjectOrderBalance: 'Skip project order balance',
+    
+    // Project Statuses
+    projectStatuses: 'Project Statuses',
+    projectStatus: 'Project Status',
+    createProjectStatus: 'Create Project Status',
+    editProjectStatus: 'Edit Project Status',
+    deleteProjectStatus: 'Delete Project Status',
+    statusColor: 'Status Color',
+    projectStatusSuccessfullyAdded: 'Project status successfully added',
+    projectStatusSuccessfullyDeleted: 'Project status successfully deleted',
+    errorSavingProjectStatus: 'Error saving project status',
+    errorDeletingProjectStatus: 'Error deleting project status',
+    errorGettingProjectStatuses: 'Error getting project statuses list',
 }

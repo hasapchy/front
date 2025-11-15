@@ -1,7 +1,11 @@
 import { createStore } from "vuex";
 import api from "@/api/axiosInstance";
-import basementApi from "@/api/basementAxiosInstance";
-import CacheInvalidator, { companyScopedKey, isFreshByKey, touchKey } from "@/utils/cache";
+import basementApi from "@/api/basement/basementAxiosInstance";
+import CacheInvalidator, {
+  companyScopedKey,
+  isFreshByKey,
+  touchKey,
+} from "@/utils/cache";
 import { CompanyDto } from "@/dto/companies/CompanyDto";
 import CACHE_TTL from "@/constants/cacheTTL";
 import createPersistedState from "vuex-persistedstate";
@@ -9,62 +13,66 @@ import { eventBus } from "@/eventBus";
 
 // DRY: единый маппинг для очистки state по типу данных
 const CLEAR_MUTATIONS_MAPPING = {
-  currencies: 'SET_CURRENCIES',
-  units: 'SET_UNITS',
-  orderStatuses: 'SET_ORDER_STATUSES',
-  projectStatuses: 'SET_PROJECT_STATUSES',
-  transactionCategories: 'SET_TRANSACTION_CATEGORIES',
-  productStatuses: 'SET_PRODUCT_STATUSES',
-  warehouses: 'SET_WAREHOUSES',
-  cashRegisters: 'SET_CASH_REGISTERS',
-  clients: 'SET_CLIENTS',
-  products: 'SET_PRODUCTS',
-  services: 'SET_SERVICES',
-  categories: 'SET_CATEGORIES',
-  projects: 'SET_PROJECTS'
+  currencies: "SET_CURRENCIES",
+  units: "SET_UNITS",
+  orderStatuses: "SET_ORDER_STATUSES",
+  projectStatuses: "SET_PROJECT_STATUSES",
+  transactionCategories: "SET_TRANSACTION_CATEGORIES",
+  productStatuses: "SET_PRODUCT_STATUSES",
+  warehouses: "SET_WAREHOUSES",
+  cashRegisters: "SET_CASH_REGISTERS",
+  clients: "SET_CLIENTS",
+  products: "SET_PRODUCTS",
+  services: "SET_SERVICES",
+  categories: "SET_CATEGORIES",
+  projects: "SET_PROJECTS",
 };
 
 // DRY: глобальные справочники (не зависят от компании)
 const GLOBAL_REFERENCE_FIELDS = [
-  'units',
-  'currencies',
-  'users',
-  'orderStatuses',
-  'projectStatuses',
-  'transactionCategories',
-  'productStatuses'
+  "units",
+  "currencies",
+  "users",
+  "orderStatuses",
+  "projectStatuses",
+  "transactionCategories",
+  "productStatuses",
 ];
 
 // DRY: поля данных компании, которые нужно очищать при смене компании/очистке кэша
 const COMPANY_DATA_FIELDS = [
-  'warehouses',
-  'cashRegisters',
-  'clients',
-  'clientsData',
-  'products',
-  'services',
-  'lastProducts',
-  'allProducts',
-  'lastProductsData',
-  'allProductsData',
-  'categories',
-  'projects',
-  'projectsData'
+  "warehouses",
+  "cashRegisters",
+  "clients",
+  "clientsData",
+  "products",
+  "services",
+  "lastProducts",
+  "allProducts",
+  "lastProductsData",
+  "allProductsData",
+  "categories",
+  "projects",
+  "projectsData",
 ];
 
 // DRY: поля с timestamp для persistedState (включает глобальные и данные компании)
 const FIELDS_WITH_TIMESTAMP = [
   ...GLOBAL_REFERENCE_FIELDS,
-  'warehouses',
-  'cashRegisters',
-  'clientsData',
-  'categories',
-  'projectsData',
-  'lastProductsData',
-  'allProductsData'
+  "warehouses",
+  "cashRegisters",
+  "clientsData",
+  "categories",
+  "projectsData",
+  "lastProductsData",
+  "allProductsData",
 ];
 
-async function retryWithExponentialBackoff(fn, maxRetries = 3, initialDelay = 1000) {
+async function retryWithExponentialBackoff(
+  fn,
+  maxRetries = 3,
+  initialDelay = 1000
+) {
   let lastError;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -73,8 +81,10 @@ async function retryWithExponentialBackoff(fn, maxRetries = 3, initialDelay = 10
       lastError = error;
       if (attempt < maxRetries) {
         const delay = initialDelay * Math.pow(2, attempt);
-        console.warn(`⚠️ Попытка ${attempt + 1} не удалась, повторяю через ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        console.warn(
+          `⚠️ Попытка ${attempt + 1} не удалась, повторяю через ${delay}ms...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }
@@ -93,123 +103,166 @@ function shouldUseCache(state, dataKey, companyId) {
 
 function handleLoadError(dispatch, title, error) {
   console.error(`❌ Ошибка загрузки ${title} после всех попыток:`, error);
-  dispatch('showNotification', {
+  dispatch("showNotification", {
     title: `Ошибка загрузки ${title}`,
     subtitle: error.message,
-    isDanger: true
+    isDanger: true,
   });
 }
 
 function generateQueryCacheKey(prefix, params, companyId) {
-  const sortedParams = Object.keys(params || {}).sort().reduce((acc, key) => {
-    acc[key] = params[key];
-    return acc;
-  }, {});
+  const sortedParams = Object.keys(params || {})
+    .sort()
+    .reduce((acc, key) => {
+      acc[key] = params[key];
+      return acc;
+    }, {});
   const paramsKey = JSON.stringify(sortedParams);
-  const companyKey = companyId ? `_company_${companyId}` : '';
+  const companyKey = companyId ? `_company_${companyId}` : "";
   return `${prefix}_${paramsKey}${companyKey}`;
 }
 
 function logRoundingGetter(name, value, state) {
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     console.log(`[Store] ${name}:`, {
       companyId: state.currentCompany?.id,
       companyName: state.currentCompany?.name,
-      value
+      value,
     });
   }
 }
 
 async function loadCompanyDataIfNeeded(dispatch, state) {
   if (!state.loadingFlags.companyData) {
-    await dispatch('loadCompanyData');
+    await dispatch("loadCompanyData");
   }
 }
 
 async function loadProductsForSearch(getters, isProducts, limit = 10) {
   if (getters.isBasementMode) {
-    const BasementProductController = (await import('@/api/BasementProductController')).default;
-    const [productsResult, servicesResult] = await Promise.all([
-      BasementProductController.getItems(1, true, {}, limit),
-      BasementProductController.getItems(1, false, {}, limit)
-    ]);
-    return { items: [...(productsResult.items || []), ...(servicesResult.items || [])] };
+    const BasementProductController = (
+      await import("@/api/basement/BasementProductController")
+    ).default;
+    
+    if (isProducts === true) {
+      const productsResult = await BasementProductController.getItems(1, true, {}, limit);
+      return {
+        items: productsResult.items || [],
+      };
+    } else if (isProducts === false) {
+      const servicesResult = await BasementProductController.getItems(1, false, {}, limit);
+      return {
+        items: servicesResult.items || [],
+      };
+    } else {
+      const [productsResult, servicesResult] = await Promise.all([
+        BasementProductController.getItems(1, true, {}, limit),
+        BasementProductController.getItems(1, false, {}, limit),
+      ]);
+      return {
+        items: [...(productsResult.items || []), ...(servicesResult.items || [])],
+      };
+    }
   } else {
-    const ProductController = (await import('@/api/ProductController')).default;
-    return await ProductController.getItems(1, isProducts ? null : isProducts, {}, limit);
+    const ProductController = (await import("@/api/ProductController")).default;
+    return await ProductController.getItems(
+      1,
+      isProducts ? null : isProducts,
+      {},
+      limit
+    );
   }
 }
 
 async function loadCompanyScopedData({ commit, state, dispatch }, config) {
-  const { loadingFlagKey, companyId, cacheKeyPrefix, cacheTtl, clearMutations, loggedFlagKey, logEmoji, logName, fetchData, errorName, stateKey } = config;
-  
+  const {
+    loadingFlagKey,
+    companyId,
+    cacheKeyPrefix,
+    cacheTtl,
+    clearMutations,
+    loggedFlagKey,
+    logEmoji,
+    logName,
+    fetchData,
+    errorName,
+    stateKey,
+  } = config;
+
   if (state.loadingFlags[loadingFlagKey]) {
-    return dispatch('waitForLoading', loadingFlagKey);
+    return dispatch("waitForLoading", loadingFlagKey);
   }
 
   if (!companyId) {
-    clearMutations.forEach(mutation => commit(mutation, []));
+    clearMutations.forEach((mutation) => commit(mutation, []));
     return;
   }
 
   const cacheKey = companyScopedKey(cacheKeyPrefix, companyId);
   const ttl = cacheTtl;
-  
+
   if (!isFreshByKey(cacheKey, ttl)) {
-    clearMutations.forEach(mutation => commit(mutation, []));
+    clearMutations.forEach((mutation) => commit(mutation, []));
   }
 
   const isChanged = isCompanyChanged(state, companyId);
   if (isChanged && state[stateKey]?.length > 0) {
-    clearMutations.forEach(mutation => commit(mutation, []));
+    clearMutations.forEach((mutation) => commit(mutation, []));
   }
 
   if (shouldUseCache(state, stateKey, companyId)) {
     if (!state.loggedDataFlags[loggedFlagKey]) {
-      console.log(`  ${logEmoji} ${logName} (${state[stateKey].length}) - из кэша`);
-      commit('SET_LOGGED_DATA_FLAG', { type: loggedFlagKey, logged: true });
+      console.log(
+        `  ${logEmoji} ${logName} (${state[stateKey].length}) - из кэша`
+      );
+      commit("SET_LOGGED_DATA_FLAG", { type: loggedFlagKey, logged: true });
     }
     return;
   }
 
-  commit('SET_LOADING_FLAG', { type: loadingFlagKey, loading: true });
-  
+  commit("SET_LOADING_FLAG", { type: loadingFlagKey, loading: true });
+
   try {
     const data = await retryWithExponentialBackoff(fetchData, 3);
     commit(clearMutations[0], data);
     console.log(`  ${logEmoji} ${logName} (${data.length})`);
     touchKey(cacheKey);
   } catch (error) {
-    clearMutations.forEach(mutation => commit(mutation, []));
+    clearMutations.forEach((mutation) => commit(mutation, []));
     handleLoadError(dispatch, errorName, error);
   } finally {
-    commit('SET_LOADING_FLAG', { type: loadingFlagKey, loading: false });
+    commit("SET_LOADING_FLAG", { type: loadingFlagKey, loading: false });
   }
 }
 
 function clearOldCompanyCache(oldCompanyId) {
   setTimeout(async () => {
     CacheInvalidator.invalidateByCompany(oldCompanyId);
-    
-    const persistKey = 'birhasap_vuex_cache';
-    const stored = JSON.parse(localStorage.getItem(persistKey) || '{}');
-    COMPANY_DATA_FIELDS.forEach(field => {
+
+    const persistKey = "hasap_vuex_cache";
+    const stored = JSON.parse(localStorage.getItem(persistKey) || "{}");
+    COMPANY_DATA_FIELDS.forEach((field) => {
       if (stored[field]) delete stored[field];
     });
     localStorage.setItem(persistKey, JSON.stringify(stored));
-    
-    const preservePrefixes = ['tableColumns_', 'tableSort_'];
-    const shouldPreserve = key => preservePrefixes.some(prefix => key?.startsWith(prefix));
+
+    const preservePrefixes = ["tableColumns_", "tableSort_"];
+    const shouldPreserve = (key) =>
+      preservePrefixes.some((prefix) => key?.startsWith(prefix));
     const keysToRemove = [];
-    
+
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && !shouldPreserve(key) && (key.includes('transaction') || key.includes('balance'))) {
+      if (
+        key &&
+        !shouldPreserve(key) &&
+        (key.includes("transaction") || key.includes("balance"))
+      ) {
         keysToRemove.push(key);
       }
     }
-    
-    keysToRemove.forEach(key => localStorage.removeItem(key));
+
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
   }, 0);
 }
 
@@ -218,13 +271,13 @@ function initializeStorageSync(_store) {
   let lastEmittedCompanyId = null;
   let debounceTimer = null;
 
-  window.addEventListener('storage', (e) => {
+  window.addEventListener("storage", (e) => {
     // ✅ Слушаем ТОЛЬКО события от ДРУГИХ вкладок (не от этой вкладки)
-    if (e.key !== 'birhasap_vuex_cache') return;
+    if (e.key !== "hasap_vuex_cache") return;
 
     try {
-      const newState = JSON.parse(e.newValue || '{}');
-      const oldState = JSON.parse(e.oldValue || '{}');
+      const newState = JSON.parse(e.newValue || "{}");
+      const oldState = JSON.parse(e.oldValue || "{}");
       const newCompanyId = newState.currentCompany?.id;
       const oldCompanyId = oldState.currentCompany?.id;
 
@@ -243,31 +296,31 @@ function initializeStorageSync(_store) {
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(async () => {
         try {
-          _store.commit('SET_IS_SYNCING_COMPANY_FROM_OTHER_TAB', true);
+          _store.commit("SET_IS_SYNCING_COMPANY_FROM_OTHER_TAB", true);
 
           // ⚡ Не дергаем сервер: берем компанию из newState другой вкладки
           if (newState.currentCompany) {
             const newCompanyId = newState.currentCompany?.id;
             const currentCompanyId = _store.state.currentCompany?.id;
-            
+
             if (newCompanyId === currentCompanyId) {
               return;
             }
-            
+
             const updatedCompany = new CompanyDto(newState.currentCompany);
-            _store.commit('SET_CURRENT_COMPANY', updatedCompany);
-            await _store.dispatch('loadCompanyData');
+            _store.commit("SET_CURRENT_COMPANY", updatedCompany);
+            await _store.dispatch("loadCompanyData");
             lastEmittedCompanyId = updatedCompany.id;
-            eventBus.emit('company-changed', updatedCompany.id);
+            eventBus.emit("company-changed", updatedCompany.id);
           }
         } catch (err) {
-          console.error('Ошибка синхронизации текущей компании:', err);
+          console.error("Ошибка синхронизации текущей компании:", err);
         } finally {
-          _store.commit('SET_IS_SYNCING_COMPANY_FROM_OTHER_TAB', false);
+          _store.commit("SET_IS_SYNCING_COMPANY_FROM_OTHER_TAB", false);
         }
       }, 50);
     } catch (error) {
-      console.error('Ошибка синхронизации между вкладками:', error);
+      console.error("Ошибка синхронизации между вкладками:", error);
     }
   });
 }
@@ -343,7 +396,7 @@ const store = createStore({
     tokenInfo: {
       accessTokenExpiresAt: null,
       refreshTokenExpiresAt: null,
-      needsRefresh: false
+      needsRefresh: false,
     },
     orderStatusesCustomOrder: null,
     // ✅ Флаг для предотвращения цикла между вкладками
@@ -351,7 +404,7 @@ const store = createStore({
     // ✅ Флаг синхронизации компании, пришедшей из другой вкладки
     isSyncingCompanyFromOtherTab: false,
     // Фильтр по типу клиента для взаиморасчетов/финансов
-    clientTypeFilter: 'all',
+    clientTypeFilter: "all",
     // Версия логотипа для инвалидации кэша изображений
     logoVersion: 0,
     // Кэш пагинированных запросов API
@@ -359,7 +412,7 @@ const store = createStore({
     // Настройки меню
     menuItems: {
       main: [],
-      available: []
+      available: [],
     },
   },
 
@@ -408,7 +461,10 @@ const store = createStore({
     SET_TOKEN_INFO(state, tokenInfo) {
       state.tokenInfo = { ...state.tokenInfo, ...tokenInfo };
     },
-    UPDATE_TOKEN_EXPIRATION(state, { accessTokenExpiresAt, refreshTokenExpiresAt }) {
+    UPDATE_TOKEN_EXPIRATION(
+      state,
+      { accessTokenExpiresAt, refreshTokenExpiresAt }
+    ) {
       state.tokenInfo.accessTokenExpiresAt = accessTokenExpiresAt;
       state.tokenInfo.refreshTokenExpiresAt = refreshTokenExpiresAt;
       state.tokenInfo.needsRefresh = false;
@@ -488,7 +544,9 @@ const store = createStore({
     //   state.companyDataCache[companyId][dataType] = data;
     // },
     CLEAR_COMPANY_DATA(state) {
-      COMPANY_DATA_FIELDS.forEach(f => { state[f] = []; });
+      COMPANY_DATA_FIELDS.forEach((f) => {
+        state[f] = [];
+      });
       state.projectsDataCompanyId = null;
       state.loggedDataFlags = {
         warehouses: false,
@@ -527,7 +585,7 @@ const store = createStore({
       state.isSyncingCompanyFromOtherTab = value;
     },
     SET_CLIENT_TYPE_FILTER(state, value) {
-      state.clientTypeFilter = value || 'all';
+      state.clientTypeFilter = value || "all";
     },
     SET_ORDER_STATUSES_CUSTOM_ORDER(state, order) {
       state.orderStatusesCustomOrder = order;
@@ -540,14 +598,14 @@ const store = createStore({
         state.queryCache = {};
         return;
       }
-      Object.keys(state.queryCache).forEach(key => {
+      Object.keys(state.queryCache).forEach((key) => {
         if (key.startsWith(prefix)) {
           delete state.queryCache[key];
         }
       });
     },
     CLEAR_QUERY_CACHE_BY_COMPANY(state, companyId) {
-      Object.keys(state.queryCache).forEach(key => {
+      Object.keys(state.queryCache).forEach((key) => {
         if (key.includes(`_company_${companyId}`)) {
           delete state.queryCache[key];
         }
@@ -558,7 +616,7 @@ const store = createStore({
       state.menuItems.available = available || [];
     },
     UPDATE_MENU_ITEMS(state, { type, items }) {
-      if (type === 'main' || type === 'available') {
+      if (type === "main" || type === "available") {
         state.menuItems[type] = items;
       }
     },
@@ -569,13 +627,13 @@ const store = createStore({
     async waitForLoading({ state }, type, maxAttempts = 50) {
       return new Promise((resolve, reject) => {
         let attempts = 0;
-        
+
         const checkLoaded = () => {
           if (!state.loadingFlags[type]) {
             resolve();
           } else if (attempts >= maxAttempts) {
             console.warn(`Таймаут ожидания загрузки: ${type}`);
-            reject(new Error('Таймаут загрузки'));
+            reject(new Error("Таймаут загрузки"));
           } else {
             attempts++;
             setTimeout(checkLoaded, 100);
@@ -588,7 +646,7 @@ const store = createStore({
       commit("SET_SEARCH_QUERY", query);
     },
     setClientTypeFilter({ commit }, value) {
-      commit('SET_CLIENT_TYPE_FILTER', value || 'all');
+      commit("SET_CLIENT_TYPE_FILTER", value || "all");
     },
     setUser({ commit }, user) {
       commit("SET_USER", user);
@@ -605,265 +663,298 @@ const store = createStore({
     endApiCall({ commit }) {
       commit("DECREMENT_API_CALLS");
     },
-    showNotification({ commit, state }, { title, subtitle = '', isDanger = false, duration = 10000 }) {
+    showNotification(
+      { commit, state },
+      { title, subtitle = "", isDanger = false, duration = 10000 }
+    ) {
       // Очищаем предыдущий таймер если есть
       if (state.notificationTimeoutId) {
         clearTimeout(state.notificationTimeoutId);
       }
-      
-      commit('SHOW_NOTIFICATION', { title, subtitle, isDanger, duration });
-      
+
+      commit("SHOW_NOTIFICATION", { title, subtitle, isDanger, duration });
+
       const timeoutId = setTimeout(() => {
-        commit('CLOSE_NOTIFICATION');
-        commit('SET_NOTIFICATION_TIMEOUT_ID', null);
+        commit("CLOSE_NOTIFICATION");
+        commit("SET_NOTIFICATION_TIMEOUT_ID", null);
       }, duration);
-      
-      commit('SET_NOTIFICATION_TIMEOUT_ID', timeoutId);
+
+      commit("SET_NOTIFICATION_TIMEOUT_ID", timeoutId);
     },
     closeNotification({ commit, state }) {
       // Очищаем таймер при закрытии
       if (state.notificationTimeoutId) {
         clearTimeout(state.notificationTimeoutId);
-        commit('SET_NOTIFICATION_TIMEOUT_ID', null);
+        commit("SET_NOTIFICATION_TIMEOUT_ID", null);
       }
-      commit('CLOSE_NOTIFICATION');
+      commit("CLOSE_NOTIFICATION");
     },
     pauseNotificationTimer({ commit, state }) {
       // Приостанавливаем таймер при наведении
       if (state.notificationTimeoutId) {
         clearTimeout(state.notificationTimeoutId);
-        commit('SET_NOTIFICATION_TIMEOUT_ID', null);
+        commit("SET_NOTIFICATION_TIMEOUT_ID", null);
       }
     },
     resumeNotificationTimer({ commit, state }) {
       // Возобновляем таймер при убирании мыши
       if (state.notification && !state.notificationTimeoutId) {
         const timeoutId = setTimeout(() => {
-          commit('CLOSE_NOTIFICATION');
-          commit('SET_NOTIFICATION_TIMEOUT_ID', null);
+          commit("CLOSE_NOTIFICATION");
+          commit("SET_NOTIFICATION_TIMEOUT_ID", null);
         }, state.notificationDuration);
-        
-        commit('SET_NOTIFICATION_TIMEOUT_ID', timeoutId);
+
+        commit("SET_NOTIFICATION_TIMEOUT_ID", timeoutId);
       }
     },
-    updateTokenExpiration({ commit }, { accessTokenExpiresAt, refreshTokenExpiresAt }) {
-      commit('UPDATE_TOKEN_EXPIRATION', { accessTokenExpiresAt, refreshTokenExpiresAt });
+    updateTokenExpiration(
+      { commit },
+      { accessTokenExpiresAt, refreshTokenExpiresAt }
+    ) {
+      commit("UPDATE_TOKEN_EXPIRATION", {
+        accessTokenExpiresAt,
+        refreshTokenExpiresAt,
+      });
     },
     checkTokenStatus({ commit, state }) {
-      if (state.tokenInfo.accessTokenExpiresAt && state.tokenInfo.refreshTokenExpiresAt) {
+      if (
+        state.tokenInfo.accessTokenExpiresAt &&
+        state.tokenInfo.refreshTokenExpiresAt
+      ) {
         const now = Date.now();
         const accessExpired = now > state.tokenInfo.accessTokenExpiresAt;
         const refreshExpired = now > state.tokenInfo.refreshTokenExpiresAt;
-        
-        commit('SET_TOKEN_INFO', {
-          needsRefresh: accessExpired && !refreshExpired
+
+        commit("SET_TOKEN_INFO", {
+          needsRefresh: accessExpired && !refreshExpired,
         });
       }
     },
     async loadUnits({ commit, state, getters }) {
-      const cacheKey = 'units';
+      const cacheKey = "units";
       const ttl = CACHE_TTL.units;
 
       if (!isFreshByKey(cacheKey, ttl)) {
-        commit('SET_UNITS', []);
+        commit("SET_UNITS", []);
       }
 
       if (state.units.length > 0) {
         return;
       }
 
-      commit('SET_LOADING_FLAG', { type: 'units', loading: true });
+      commit("SET_LOADING_FLAG", { type: "units", loading: true });
 
       try {
         const apiInstance = getters.isBasementMode ? basementApi : api;
-        const response = await apiInstance.get('/app/units');
-        commit('SET_UNITS', response.data);
+        const response = await apiInstance.get("/app/units");
+        commit("SET_UNITS", response.data);
         touchKey(cacheKey);
         console.log(`⚙️ Единицы (${response.data.length})`);
       } catch (error) {
-        console.error('Ошибка загрузки единиц измерения:', error);
+        console.error("Ошибка загрузки единиц измерения:", error);
       } finally {
-        commit('SET_LOADING_FLAG', { type: 'units', loading: false });
+        commit("SET_LOADING_FLAG", { type: "units", loading: false });
       }
     },
     async loadCurrencies({ commit, state, getters }) {
-      const cacheKey = 'currencies';
+      const cacheKey = "currencies";
       const ttl = CACHE_TTL.currencies;
 
       if (!isFreshByKey(cacheKey, ttl)) {
-        commit('SET_CURRENCIES', []);
+        commit("SET_CURRENCIES", []);
       }
 
       if (state.currencies.length > 0) {
-        const hasAccessToOtherCurrencies = typeof getters.hasPermission === 'function' && getters.hasPermission('settings_currencies_view');
-        const onlyDefaultInCache = state.currencies.every(c => (c.isDefault || c.is_default) === true);
-        
+        const hasAccessToOtherCurrencies =
+          typeof getters.hasPermission === "function" &&
+          getters.hasPermission("settings_currencies_view");
+        const onlyDefaultInCache = state.currencies.every(
+          (c) => (c.isDefault || c.is_default) === true
+        );
+
         if (hasAccessToOtherCurrencies && onlyDefaultInCache) {
-          commit('SET_CURRENCIES', []);
+          commit("SET_CURRENCIES", []);
         } else {
-          if (state.currencies[0]?.is_default && !state.currencies[0]?.isDefault) {
-            const CurrencyDto = (await import('@/dto/app/CurrencyDto')).default;
-            commit('SET_CURRENCIES', CurrencyDto.fromApiArray(state.currencies));
+          if (
+            state.currencies[0]?.is_default &&
+            !state.currencies[0]?.isDefault
+          ) {
+            const CurrencyDto = (await import("@/dto/app/CurrencyDto")).default;
+            commit(
+              "SET_CURRENCIES",
+              CurrencyDto.fromApiArray(state.currencies)
+            );
           }
           return;
         }
       }
 
-      commit('SET_LOADING_FLAG', { type: 'currencies', loading: true });
+      commit("SET_LOADING_FLAG", { type: "currencies", loading: true });
 
       try {
         const apiInstance = getters.isBasementMode ? basementApi : api;
-        const response = await apiInstance.get('/app/currency');
-        const CurrencyDto = (await import('@/dto/app/CurrencyDto')).default;
+        const response = await apiInstance.get("/app/currency");
+        const CurrencyDto = (await import("@/dto/app/CurrencyDto")).default;
         const converted = CurrencyDto.fromApiArray(response.data);
-        commit('SET_CURRENCIES', converted);
+        commit("SET_CURRENCIES", converted);
         touchKey(cacheKey);
         console.log(`💱 Валюты (${converted.length})`);
       } catch (error) {
-        console.error('Ошибка загрузки валют:', error);
+        console.error("Ошибка загрузки валют:", error);
       } finally {
-        commit('SET_LOADING_FLAG', { type: 'currencies', loading: false });
+        commit("SET_LOADING_FLAG", { type: "currencies", loading: false });
       }
     },
     async loadUsers({ commit, state }) {
-      const cacheKey = 'users';
+      const cacheKey = "users";
       const ttl = 24 * 60 * 60 * 1000;
 
       if (!isFreshByKey(cacheKey, ttl)) {
-        commit('SET_USERS', []);
+        commit("SET_USERS", []);
       }
 
       if (state.users.length > 0) {
         return;
       }
 
-      commit('SET_LOADING_FLAG', { type: 'users', loading: true });
+      commit("SET_LOADING_FLAG", { type: "users", loading: true });
 
       try {
-        const UsersController = (await import('@/api/UsersController')).default;
+        const UsersController = (await import("@/api/UsersController")).default;
         const data = await UsersController.getAllItems();
-        commit('SET_USERS', data);
+        commit("SET_USERS", data);
         touchKey(cacheKey);
         console.log(`👥 Сотрудники (${data.length})`);
       } catch (error) {
-        console.error('Ошибка загрузки сотрудников:', error);
-        commit('SET_USERS', []);
+        console.error("Ошибка загрузки сотрудников:", error);
+        commit("SET_USERS", []);
       } finally {
-        commit('SET_LOADING_FLAG', { type: 'users', loading: false });
+        commit("SET_LOADING_FLAG", { type: "users", loading: false });
       }
     },
     async loadWarehouses(context) {
       await loadCompanyScopedData(context, {
-        loadingFlagKey: 'warehouses',
-        stateKey: 'warehouses',
+        loadingFlagKey: "warehouses",
+        stateKey: "warehouses",
         companyId: context.state.currentCompany?.id,
-        cacheKeyPrefix: 'warehouses',
+        cacheKeyPrefix: "warehouses",
         cacheTtl: CACHE_TTL.warehouses,
-        clearMutations: ['SET_WAREHOUSES'],
-        loggedFlagKey: 'warehouses',
-        logEmoji: '📦',
-        logName: 'Склады',
+        clearMutations: ["SET_WAREHOUSES"],
+        loggedFlagKey: "warehouses",
+        logEmoji: "📦",
+        logName: "Склады",
         fetchData: async () => {
-          const WarehouseController = (await import('@/api/WarehouseController')).default;
+          const WarehouseController = (
+            await import("@/api/WarehouseController")
+          ).default;
           return await WarehouseController.getAllItems();
         },
-        errorName: 'складов'
+        errorName: "складов",
       });
     },
     async loadCashRegisters(context) {
       await loadCompanyScopedData(context, {
-        loadingFlagKey: 'cashRegisters',
-        stateKey: 'cashRegisters',
+        loadingFlagKey: "cashRegisters",
+        stateKey: "cashRegisters",
         companyId: context.state.currentCompany?.id,
-        cacheKeyPrefix: 'cashRegisters',
+        cacheKeyPrefix: "cashRegisters",
         cacheTtl: CACHE_TTL.cashRegisters,
-        clearMutations: ['SET_CASH_REGISTERS'],
-        loggedFlagKey: 'cashRegisters',
-        logEmoji: '💰',
-        logName: 'Кассы',
+        clearMutations: ["SET_CASH_REGISTERS"],
+        loggedFlagKey: "cashRegisters",
+        logEmoji: "💰",
+        logName: "Кассы",
         fetchData: async () => {
-          const CashRegisterController = (await import('@/api/CashRegisterController')).default;
+          const CashRegisterController = (
+            await import("@/api/CashRegisterController")
+          ).default;
           return await CashRegisterController.getAllItems();
         },
-        errorName: 'касс'
+        errorName: "касс",
       });
     },
     async loadClients({ commit, state, dispatch }) {
       if (state.loadingFlags.clients) {
-        return dispatch('waitForLoading', 'clients');
+        return dispatch("waitForLoading", "clients");
       }
 
       const companyId = state.currentCompany?.id;
       if (!companyId) {
-        commit('SET_CLIENTS', []);
-        commit('SET_CLIENTS_DATA', []);
+        commit("SET_CLIENTS", []);
+        commit("SET_CLIENTS_DATA", []);
         return;
       }
 
-      const cacheKey = companyScopedKey('clients', companyId);
+      const cacheKey = companyScopedKey("clients", companyId);
       const ttl = CACHE_TTL.clients;
-      
+
       if (!isFreshByKey(cacheKey, ttl)) {
-        commit('SET_CLIENTS', []);
-        commit('SET_CLIENTS_DATA', []);
+        commit("SET_CLIENTS", []);
+        commit("SET_CLIENTS_DATA", []);
       }
 
       const isChanged = isCompanyChanged(state, companyId);
       if (isChanged) {
-        commit('SET_CLIENTS', []);
-        commit('SET_CLIENTS_DATA', []);
+        commit("SET_CLIENTS", []);
+        commit("SET_CLIENTS_DATA", []);
       }
-      
-      if (state.clientsData.length > 0 && state.clients.length === 0 && !isChanged) {
+
+      if (
+        state.clientsData.length > 0 &&
+        state.clients.length === 0 &&
+        !isChanged
+      ) {
         const firstClient = state.clientsData[0];
-        const hasSnakeCase = firstClient && (firstClient.first_name !== undefined || firstClient.last_name !== undefined);
-        const hasCamelCase = firstClient && (firstClient.firstName !== undefined || firstClient.lastName !== undefined);
-        
+        const hasSnakeCase =
+          firstClient &&
+          (firstClient.first_name !== undefined ||
+            firstClient.last_name !== undefined);
+        const hasCamelCase =
+          firstClient &&
+          (firstClient.firstName !== undefined ||
+            firstClient.lastName !== undefined);
+
         if (hasCamelCase && !hasSnakeCase) {
-          commit('SET_CLIENTS_DATA', []);
-          commit('SET_CLIENTS', []);
+          commit("SET_CLIENTS_DATA", []);
+          commit("SET_CLIENTS", []);
         } else {
-          const ClientDto = (await import('@/dto/client/ClientDto')).default;
+          const ClientDto = (await import("@/dto/client/ClientDto")).default;
           const clients = ClientDto.fromApiArray(state.clientsData);
-          commit('SET_CLIENTS', clients);
+          commit("SET_CLIENTS", clients);
           return;
         }
       }
 
-      if (shouldUseCache(state, 'clients', companyId)) {
+      if (shouldUseCache(state, "clients", companyId)) {
         if (!state.loggedDataFlags.clients) {
           console.log(`  👤 Клиенты (${state.clients.length}) - из кэша`);
-          commit('SET_LOGGED_DATA_FLAG', { type: 'clients', logged: true });
+          commit("SET_LOGGED_DATA_FLAG", { type: "clients", logged: true });
         }
         return;
       }
 
-      commit('SET_LOADING_FLAG', { type: 'clients', loading: true });
-      
+      commit("SET_LOADING_FLAG", { type: "clients", loading: true });
+
       try {
-        const ClientDto = (await import('@/dto/client/ClientDto')).default;
-        const api = (await import('@/api/axiosInstance')).default;
-        
-        const response = await retryWithExponentialBackoff(
-          async () => {
-            const res = await api.get(`/clients/all`);
-            return res.data;
-          },
-          3
-        );
-        
+        const ClientDto = (await import("@/dto/client/ClientDto")).default;
+        const api = (await import("@/api/axiosInstance")).default;
+
+        const response = await retryWithExponentialBackoff(async () => {
+          const res = await api.get(`/clients/all`);
+          return res.data;
+        }, 3);
+
         const plainData = Array.isArray(response) ? response : [];
-        commit('SET_CLIENTS_DATA', plainData);
+        commit("SET_CLIENTS_DATA", plainData);
         const clients = ClientDto.fromApiArray(plainData);
-        commit('SET_CLIENTS', clients);
+        commit("SET_CLIENTS", clients);
         touchKey(cacheKey);
         console.log(`  👤 Клиенты (${plainData.length})`);
       } catch (error) {
-        commit('SET_CLIENTS', []);
-        commit('SET_CLIENTS_DATA', []);
-        handleLoadError(dispatch, 'клиентов', error);
+        commit("SET_CLIENTS", []);
+        commit("SET_CLIENTS_DATA", []);
+        handleLoadError(dispatch, "клиентов", error);
       } finally {
-        commit('SET_LOADING_FLAG', { type: 'clients', loading: false });
+        commit("SET_LOADING_FLAG", { type: "clients", loading: false });
       }
     },
     async loadProducts({ commit, state }) {
@@ -872,12 +963,13 @@ const store = createStore({
       }
 
       try {
-        const ProductController = (await import('@/api/ProductController')).default;
+        const ProductController = (await import("@/api/ProductController"))
+          .default;
         const data = await ProductController.getItems(1, true);
-        commit('SET_PRODUCTS', data.items);
+        commit("SET_PRODUCTS", data.items);
       } catch (error) {
-        console.error('Ошибка загрузки товаров:', error);
-        commit('SET_PRODUCTS', []);
+        console.error("Ошибка загрузки товаров:", error);
+        commit("SET_PRODUCTS", []);
       }
     },
     async loadServices({ commit, state }) {
@@ -886,105 +978,121 @@ const store = createStore({
       }
 
       try {
-        const ProductController = (await import('@/api/ProductController')).default;
+        const ProductController = (await import("@/api/ProductController"))
+          .default;
         const data = await ProductController.getItems(1, false);
-        commit('SET_SERVICES', data.items);
+        commit("SET_SERVICES", data.items);
       } catch (error) {
-        console.error('Ошибка загрузки услуг:', error);
-        commit('SET_SERVICES', []);
+        console.error("Ошибка загрузки услуг:", error);
+        commit("SET_SERVICES", []);
       }
     },
     async loadCategories(context) {
       await loadCompanyScopedData(context, {
-        loadingFlagKey: 'categories',
-        stateKey: 'categories',
+        loadingFlagKey: "categories",
+        stateKey: "categories",
         companyId: context.state.currentCompany?.id,
-        cacheKeyPrefix: 'categories',
+        cacheKeyPrefix: "categories",
         cacheTtl: CACHE_TTL.categories,
-        clearMutations: ['SET_CATEGORIES'],
-        loggedFlagKey: 'categories',
-        logEmoji: '✅',
-        logName: 'Категории',
+        clearMutations: ["SET_CATEGORIES"],
+        loggedFlagKey: "categories",
+        logEmoji: "✅",
+        logName: "Категории",
         fetchData: async () => {
-          const CategoryController = (await import('@/api/CategoryController')).default;
+          const CategoryController = (await import("@/api/CategoryController"))
+            .default;
           return await CategoryController.getAllItems();
         },
-        errorName: 'категорий'
+        errorName: "категорий",
       });
     },
     async loadProjects({ commit, state, dispatch }) {
       const companyId = state.currentCompany?.id;
       if (!companyId) {
-        commit('SET_PROJECTS', []);
-        commit('SET_PROJECTS_DATA', []);
+        commit("SET_PROJECTS", []);
+        commit("SET_PROJECTS_DATA", []);
         return;
       }
 
-      const cacheKey = companyScopedKey('projects', companyId);
+      const cacheKey = companyScopedKey("projects", companyId);
       const ttl = CACHE_TTL.projects;
-      
+
       if (!isFreshByKey(cacheKey, ttl)) {
-        commit('SET_PROJECTS', []);
-        commit('SET_PROJECTS_DATA', []);
+        commit("SET_PROJECTS", []);
+        commit("SET_PROJECTS_DATA", []);
       }
 
       const isChanged = isCompanyChanged(state, companyId);
-      const isProjectsCompanyChanged = state.projectsDataCompanyId !== null && state.projectsDataCompanyId !== companyId;
-      
+      const isProjectsCompanyChanged =
+        state.projectsDataCompanyId !== null &&
+        state.projectsDataCompanyId !== companyId;
+
       if (isChanged || isProjectsCompanyChanged) {
-        commit('SET_PROJECTS', []);
-        commit('SET_PROJECTS_DATA', []);
-        commit('SET_PROJECTS_DATA_COMPANY_ID', companyId);
+        commit("SET_PROJECTS", []);
+        commit("SET_PROJECTS_DATA", []);
+        commit("SET_PROJECTS_DATA_COMPANY_ID", companyId);
       }
-      
+
       if (
         state.projectsData.length > 0 &&
         state.projects.length === 0 &&
         state.projectsDataCompanyId === companyId &&
         !isChanged
       ) {
-        const ProjectDto = (await import('@/dto/project/ProjectDto')).default;
+        const ProjectDto = (await import("@/dto/project/ProjectDto")).default;
         const projects = ProjectDto.fromApiArray(state.projectsData);
-        commit('SET_PROJECTS', projects);
+        commit("SET_PROJECTS", projects);
         return;
       }
 
-      if (state.projects.length > 0 && state.projectsDataCompanyId === companyId && !isChanged) {
+      if (
+        state.projects.length > 0 &&
+        state.projectsDataCompanyId === companyId &&
+        !isChanged
+      ) {
         if (!state.loggedDataFlags.projects) {
           console.log(`  📋 Проекты (${state.projects.length}) - из кэша`);
-          commit('SET_LOGGED_DATA_FLAG', { type: 'projects', logged: true });
+          commit("SET_LOGGED_DATA_FLAG", { type: "projects", logged: true });
         }
         return;
       }
 
-      commit('SET_LOADING_FLAG', { type: 'projects', loading: true });
+      commit("SET_LOADING_FLAG", { type: "projects", loading: true });
 
       try {
-        const ProjectController = (await import('@/api/ProjectController')).default;
-        const ProjectDto = (await import('@/dto/project/ProjectDto')).default;
-        
+        const ProjectController = (await import("@/api/ProjectController"))
+          .default;
+        const ProjectDto = (await import("@/dto/project/ProjectDto")).default;
+
         const data = await retryWithExponentialBackoff(
           () => ProjectController.getAllItems(),
           3
         );
-        const plainData = data.map(project => ({ ...project }));
-        commit('SET_PROJECTS_DATA', plainData);
-        commit('SET_PROJECTS', ProjectDto.fromApiArray(plainData));
+        const plainData = data.map((project) => ({ ...project }));
+        commit("SET_PROJECTS_DATA", plainData);
+        commit("SET_PROJECTS", ProjectDto.fromApiArray(plainData));
         touchKey(cacheKey);
         console.log(`  📋 Проекты (${data.length})`);
       } catch (error) {
-        commit('SET_PROJECTS', []);
-        commit('SET_PROJECTS_DATA', []);
-        handleLoadError(dispatch, 'проектов', error);
+        commit("SET_PROJECTS", []);
+        commit("SET_PROJECTS_DATA", []);
+        handleLoadError(dispatch, "проектов", error);
       } finally {
-        commit('SET_LOADING_FLAG', { type: 'projects', loading: false });
+        commit("SET_LOADING_FLAG", { type: "projects", loading: false });
       }
     },
     async loadLastProducts({ commit, state, getters }) {
-      if (state.lastProductsData.length > 0 && state.lastProducts.length === 0) {
-        const ProductSearchDto = (await import('@/dto/product/ProductSearchDto')).default;
-        const lastProducts = ProductSearchDto.fromApiArray(state.lastProductsData);
-        commit('SET_LAST_PRODUCTS', lastProducts);
+      if (
+        state.lastProductsData.length > 0 &&
+        state.lastProducts.length === 0
+      ) {
+        const ProductSearchDto = (
+          await import("@/dto/product/ProductSearchDto")
+        ).default;
+        const lastProducts = ProductSearchDto.fromApiArray(
+          state.lastProductsData
+        );
+        commit("SET_LAST_PRODUCTS", lastProducts);
         return;
       }
 
@@ -994,21 +1102,30 @@ const store = createStore({
 
       try {
         const results = await loadProductsForSearch(getters, null, 10);
-        const ProductSearchDto = (await import('@/dto/product/ProductSearchDto')).default;
+        const ProductSearchDto = (
+          await import("@/dto/product/ProductSearchDto")
+        ).default;
         const lastProducts = ProductSearchDto.fromApiArray(results.items || []);
-        commit('SET_LAST_PRODUCTS', lastProducts);
-        commit('SET_LAST_PRODUCTS_DATA', (results.items || []).map(item => ({ ...item })));
+        commit("SET_LAST_PRODUCTS", lastProducts);
+        commit(
+          "SET_LAST_PRODUCTS_DATA",
+          (results.items || []).map((item) => ({ ...item }))
+        );
       } catch (error) {
-        console.error('Ошибка загрузки последних товаров:', error);
-        commit('SET_LAST_PRODUCTS', []);
-        commit('SET_LAST_PRODUCTS_DATA', []);
+        console.error("Ошибка загрузки последних товаров:", error);
+        commit("SET_LAST_PRODUCTS", []);
+        commit("SET_LAST_PRODUCTS_DATA", []);
       }
     },
     async loadAllProducts({ commit, state, getters }) {
       if (state.allProductsData.length > 0 && state.allProducts.length === 0) {
-        const ProductSearchDto = (await import('@/dto/product/ProductSearchDto')).default;
-        const allProducts = ProductSearchDto.fromApiArray(state.allProductsData);
-        commit('SET_ALL_PRODUCTS', allProducts);
+        const ProductSearchDto = (
+          await import("@/dto/product/ProductSearchDto")
+        ).default;
+        const allProducts = ProductSearchDto.fromApiArray(
+          state.allProductsData
+        );
+        commit("SET_ALL_PRODUCTS", allProducts);
         return;
       }
 
@@ -1017,212 +1134,238 @@ const store = createStore({
       }
 
       try {
-        const results = await loadProductsForSearch(getters, null, 1000);
-        const ProductSearchDto = (await import('@/dto/product/ProductSearchDto')).default;
+        const results = await loadProductsForSearch(getters, true, 1000);
+        const ProductSearchDto = (
+          await import("@/dto/product/ProductSearchDto")
+        ).default;
         const allProducts = ProductSearchDto.fromApiArray(results.items || []);
-        commit('SET_ALL_PRODUCTS', allProducts);
-        commit('SET_ALL_PRODUCTS_DATA', (results.items || []).map(item => ({ ...item })));
-        console.log(`✅ Загружено ${allProducts.length} товаров и услуг для поиска (кэш на 30 дней)`);
+        commit("SET_ALL_PRODUCTS", allProducts);
+        commit(
+          "SET_ALL_PRODUCTS_DATA",
+          (results.items || []).map((item) => ({ ...item }))
+        );
+        console.log(
+          `✅ Загружено ${allProducts.length} товаров для поиска (кэш на 30 дней)`
+        );
       } catch (error) {
-        console.error('Ошибка загрузки всех товаров:', error);
-        commit('SET_ALL_PRODUCTS', []);
-        commit('SET_ALL_PRODUCTS_DATA', []);
+        console.error("Ошибка загрузки всех товаров:", error);
+        commit("SET_ALL_PRODUCTS", []);
+        commit("SET_ALL_PRODUCTS_DATA", []);
       }
     },
     async loadOrderStatuses({ commit, state }) {
-      const cacheKey = 'orderStatuses';
+      const cacheKey = "orderStatuses";
       const ttl = CACHE_TTL.orderStatuses;
 
       if (!isFreshByKey(cacheKey, ttl)) {
-        commit('SET_ORDER_STATUSES', []);
+        commit("SET_ORDER_STATUSES", []);
       }
 
       if (state.orderStatuses.length > 0) {
         return;
       }
 
-      commit('SET_LOADING_FLAG', { type: 'orderStatuses', loading: true });
+      commit("SET_LOADING_FLAG", { type: "orderStatuses", loading: true });
 
       try {
-        const OrderStatusController = (await import('@/api/OrderStatusController')).default;
+        const OrderStatusController = (
+          await import("@/api/OrderStatusController")
+        ).default;
         const data = await OrderStatusController.getAllItems();
 
         if (state.orderStatusesCustomOrder) {
           const orderArray = state.orderStatusesCustomOrder;
           const orderedData = orderArray
-            .map(id => data.find(status => status.id === id))
+            .map((id) => data.find((status) => status.id === id))
             .filter(Boolean)
-            .concat(data.filter(status => !orderArray.includes(status.id)));
-          commit('SET_ORDER_STATUSES', orderedData);
+            .concat(data.filter((status) => !orderArray.includes(status.id)));
+          commit("SET_ORDER_STATUSES", orderedData);
         } else {
-          commit('SET_ORDER_STATUSES', data);
+          commit("SET_ORDER_STATUSES", data);
         }
 
         touchKey(cacheKey);
         console.log(`📊 Статусы заказов (${data.length})`);
       } catch (error) {
-        console.error('Ошибка загрузки статусов заказов:', error);
+        console.error("Ошибка загрузки статусов заказов:", error);
       } finally {
-        commit('SET_LOADING_FLAG', { type: 'orderStatuses', loading: false });
+        commit("SET_LOADING_FLAG", { type: "orderStatuses", loading: false });
       }
     },
     async loadProjectStatuses({ commit, state }) {
-      const cacheKey = 'projectStatuses';
+      const cacheKey = "projectStatuses";
       const ttl = CACHE_TTL.projectStatuses;
 
       if (!isFreshByKey(cacheKey, ttl)) {
-        commit('SET_PROJECT_STATUSES', []);
+        commit("SET_PROJECT_STATUSES", []);
       }
 
       if (state.projectStatuses.length > 0) {
         return;
       }
 
-      commit('SET_LOADING_FLAG', { type: 'projectStatuses', loading: true });
+      commit("SET_LOADING_FLAG", { type: "projectStatuses", loading: true });
 
       try {
-        const ProjectStatusController = (await import('@/api/ProjectStatusController')).default;
+        const ProjectStatusController = (
+          await import("@/api/ProjectStatusController")
+        ).default;
         const data = await ProjectStatusController.getAllItems();
-        commit('SET_PROJECT_STATUSES', data);
+        commit("SET_PROJECT_STATUSES", data);
         touchKey(cacheKey);
         console.log(`🎯 Статусы проектов (${data.length})`);
       } catch (error) {
-        console.error('Ошибка загрузки статусов проектов:', error);
+        console.error("Ошибка загрузки статусов проектов:", error);
       } finally {
-        commit('SET_LOADING_FLAG', { type: 'projectStatuses', loading: false });
+        commit("SET_LOADING_FLAG", { type: "projectStatuses", loading: false });
       }
     },
     async loadTransactionCategories({ commit, state }) {
-      const cacheKey = 'transactionCategories';
+      const cacheKey = "transactionCategories";
       const ttl = CACHE_TTL.transactionCategories;
 
       if (!isFreshByKey(cacheKey, ttl)) {
-        commit('SET_TRANSACTION_CATEGORIES', []);
+        commit("SET_TRANSACTION_CATEGORIES", []);
       }
 
       if (state.transactionCategories.length > 0) {
         return;
       }
 
-      commit('SET_LOADING_FLAG', { type: 'transactionCategories', loading: true });
+      commit("SET_LOADING_FLAG", {
+        type: "transactionCategories",
+        loading: true,
+      });
 
       try {
-        const TransactionCategoryController = (await import('@/api/TransactionCategoryController')).default;
+        const TransactionCategoryController = (
+          await import("@/api/TransactionCategoryController")
+        ).default;
         const data = await TransactionCategoryController.getAllItems();
-        commit('SET_TRANSACTION_CATEGORIES', data);
+        commit("SET_TRANSACTION_CATEGORIES", data);
         touchKey(cacheKey);
         console.log(`💳 Категории транзакций (${data.length})`);
       } catch (error) {
-        console.error('Ошибка загрузки категорий транзакций:', error);
+        console.error("Ошибка загрузки категорий транзакций:", error);
       } finally {
-        commit('SET_LOADING_FLAG', { type: 'transactionCategories', loading: false });
+        commit("SET_LOADING_FLAG", {
+          type: "transactionCategories",
+          loading: false,
+        });
       }
     },
     async loadProductStatuses({ commit, state }) {
-      const cacheKey = 'productStatuses';
+      const cacheKey = "productStatuses";
       const ttl = CACHE_TTL.productStatuses;
 
       if (!isFreshByKey(cacheKey, ttl)) {
-        commit('SET_PRODUCT_STATUSES', []);
+        commit("SET_PRODUCT_STATUSES", []);
       }
 
       if (state.productStatuses.length > 0) {
         return;
       }
 
-      commit('SET_LOADING_FLAG', { type: 'productStatuses', loading: true });
+      commit("SET_LOADING_FLAG", { type: "productStatuses", loading: true });
 
       try {
-        const AppController = (await import('@/api/AppController')).default;
+        const AppController = (await import("@/api/AppController")).default;
         const data = await retryWithExponentialBackoff(
           () => AppController.getProductStatuses(),
           3
         );
-        commit('SET_PRODUCT_STATUSES', data);
+        commit("SET_PRODUCT_STATUSES", data);
         touchKey(cacheKey);
         console.log(`🏷️ Статусы товаров (${data.length})`);
       } catch (error) {
-        console.error('❌ Ошибка загрузки статусов товаров после всех попыток:', error);
+        console.error(
+          "❌ Ошибка загрузки статусов товаров после всех попыток:",
+          error
+        );
       } finally {
-        commit('SET_LOADING_FLAG', { type: 'productStatuses', loading: false });
+        commit("SET_LOADING_FLAG", { type: "productStatuses", loading: false });
       }
     },
     // Загрузка всех данных компании
     async loadCompanyData({ dispatch, commit, state, rootGetters }) {
+      if (rootGetters.isBasementMode) {
+        return;
+      }
+
       if (!state.currentCompany?.id) {
         return;
       }
-      
+
       if (state.loadingFlags.companyData) {
         return;
       }
-      
+
       const companyId = state.currentCompany.id;
-      commit('SET_LOADING_FLAG', { type: 'companyData', loading: true });
-      
+      commit("SET_LOADING_FLAG", { type: "companyData", loading: true });
+
       try {
         // ✅ Загружаем все данные параллельно для максимальной скорости
         // Критичные данные (warehouses, cashRegisters) загружаются первыми
         const criticalLoads = Promise.allSettled([
-          dispatch('loadWarehouses'),
-          dispatch('loadCashRegisters')
+          dispatch("loadWarehouses"),
+          dispatch("loadCashRegisters"),
         ]);
-        
-        const otherLoadsPromises = [
-          dispatch('loadCategories')
-        ];
-        
-        if (rootGetters.hasPermission('clients_view')) {
-          otherLoadsPromises.push(dispatch('loadClients'));
+
+        const otherLoadsPromises = [dispatch("loadCategories")];
+
+        if (rootGetters.hasPermission("clients_view")) {
+          otherLoadsPromises.push(dispatch("loadClients"));
         }
-        
-        if (rootGetters.hasPermission('projects_view')) {
-          otherLoadsPromises.push(dispatch('loadProjects'));
+
+        if (rootGetters.hasPermission("projects_view")) {
+          otherLoadsPromises.push(dispatch("loadProjects"));
         }
-        
+
         const otherLoads = Promise.allSettled(otherLoadsPromises);
-        
+
         // ✅ Запускаем все параллельно для максимальной скорости
         const [criticalResults, otherResults] = await Promise.all([
           criticalLoads,
-          otherLoads
+          otherLoads,
         ]);
-        
+
         const allResults = [...criticalResults, ...otherResults];
-        const failed = allResults.filter(r => r.status === 'rejected');
-        
+        const failed = allResults.filter((r) => r.status === "rejected");
+
         if (failed.length > 0) {
           console.warn(`⚠️ ${failed.length} справочник(ов) не загрузилось`);
-          const criticalFailed = criticalResults.filter(r => r.status === 'rejected');
+          const criticalFailed = criticalResults.filter(
+            (r) => r.status === "rejected"
+          );
           if (criticalFailed.length > 0) {
-            dispatch('showNotification', {
-              title: 'Предупреждение',
-              subtitle: 'Некоторые критичные данные не загрузились',
+            dispatch("showNotification", {
+              title: "Предупреждение",
+              subtitle: "Некоторые критичные данные не загрузились",
               isDanger: false,
-              duration: 3000
+              duration: 3000,
             });
           }
         }
-        
-        commit('SET_LAST_COMPANY_ID', companyId);
+
+        commit("SET_LAST_COMPANY_ID", companyId);
       } catch (error) {
-        console.error('❌ Ошибка загрузки данных компании:', error);
-        dispatch('showNotification', {
-          title: 'Ошибка загрузки',
-          subtitle: error.message || 'Не удалось загрузить данные компании',
-          isDanger: true
+        console.error("❌ Ошибка загрузки данных компании:", error);
+        dispatch("showNotification", {
+          title: "Ошибка загрузки",
+          subtitle: error.message || "Не удалось загрузить данные компании",
+          isDanger: true,
         });
         throw error;
       } finally {
         // ✅ ВСЕГДА сбрасываем флаг загрузки после завершения (успех или ошибка)
-        commit('SET_LOADING_FLAG', { type: 'companyData', loading: false });
+        commit("SET_LOADING_FLAG", { type: "companyData", loading: false });
       }
     },
     async clearCache({ commit }) {
       CacheInvalidator.invalidateAll();
-      commit('CLEAR_COMPANY_DATA');
-      commit('CLEAR_QUERY_CACHE');
-      GLOBAL_REFERENCE_FIELDS.forEach(type => {
+      commit("CLEAR_COMPANY_DATA");
+      commit("CLEAR_QUERY_CACHE");
+      GLOBAL_REFERENCE_FIELDS.forEach((type) => {
         if (CLEAR_MUTATIONS_MAPPING[type]) {
           commit(CLEAR_MUTATIONS_MAPPING[type], []);
         }
@@ -1230,12 +1373,12 @@ const store = createStore({
     },
     async loadUserCompanies({ commit }) {
       try {
-        const response = await api.get('/user/companies');
+        const response = await api.get("/user/companies");
         const companies = CompanyDto.fromApiArray(response.data);
-        commit('SET_USER_COMPANIES', companies);
+        commit("SET_USER_COMPANIES", companies);
         return companies;
       } catch (error) {
-        console.error('Ошибка загрузки компаний пользователя:', error);
+        console.error("Ошибка загрузки компаний пользователя:", error);
         return [];
       }
     },
@@ -1243,60 +1386,67 @@ const store = createStore({
       try {
         if (state.currentCompany?.id) {
           const normalized = new CompanyDto(state.currentCompany);
-          commit('SET_CURRENT_COMPANY', normalized);
+          commit("SET_CURRENT_COMPANY", normalized);
           await loadCompanyDataIfNeeded(dispatch, state);
           return normalized;
         }
-        
+
         if (state.lastCompanyId && state.userCompanies?.length > 0) {
-          const lastCompany = state.userCompanies.find(c => c.id === state.lastCompanyId);
+          const lastCompany = state.userCompanies.find(
+            (c) => c.id === state.lastCompanyId
+          );
           if (lastCompany) {
-            commit('SET_CURRENT_COMPANY', lastCompany);
+            commit("SET_CURRENT_COMPANY", lastCompany);
             await loadCompanyDataIfNeeded(dispatch, state);
             return lastCompany;
           }
         }
-        
-        const response = await api.get('/user/current-company');
+
+        const response = await api.get("/user/current-company");
         const company = new CompanyDto(response.data.company);
-        commit('SET_CURRENT_COMPANY', company);
-        
+        commit("SET_CURRENT_COMPANY", company);
+
         if (company?.id) {
           await loadCompanyDataIfNeeded(dispatch, state);
         }
-        
+
         return company;
       } catch (error) {
-        console.error('[loadCurrentCompany] Ошибка загрузки текущей компании:', error);
+        console.error(
+          "[loadCurrentCompany] Ошибка загрузки текущей компании:",
+          error
+        );
         return null;
       }
     },
     async setCurrentCompany({ commit, dispatch }, companyId) {
       try {
         const oldCompanyId = this.state.currentCompany?.id;
-        
+
         if (oldCompanyId === companyId) {
           return this.state.currentCompany;
         }
-        
-        const response = await api.post('/user/set-company', { company_id: companyId });
+
+        const response = await api.post("/user/set-company", {
+          company_id: companyId,
+        });
         const company = new CompanyDto(response.data.company);
-        
-        commit('SET_CURRENT_COMPANY', company);
-        
+
+        commit("SET_CURRENT_COMPANY", company);
+
         if (oldCompanyId && oldCompanyId !== companyId) {
           clearOldCompanyCache(oldCompanyId);
-          dispatch('invalidateQueryCache', { companyId: oldCompanyId });
+          dispatch("invalidateQueryCache", { companyId: oldCompanyId });
         }
-        
-        commit('CLEAR_COMPANY_DATA');
-        await dispatch('loadCompanyData');
-        eventBus.emit('company-changed', companyId);
-        
+
+        commit("CLEAR_COMPANY_DATA");
+        await dispatch("loadCompanyData");
+        eventBus.emit("company-changed", companyId);
+
         return company;
       } catch (error) {
-        console.error('Ошибка установки текущей компании:', error);
-        commit('SET_LOADING_FLAG', { type: 'companyData', loading: false });
+        console.error("Ошибка установки текущей компании:", error);
+        commit("SET_LOADING_FLAG", { type: "companyData", loading: false });
         throw error;
       }
     },
@@ -1304,221 +1454,367 @@ const store = createStore({
     async refreshUserPermissions({ commit, getters }) {
       try {
         const apiInstance = getters.isBasementMode ? basementApi : api;
-        const response = await apiInstance.get('/user/me');
-        commit('SET_USER', response.data.user);
-        commit('SET_PERMISSIONS', response.data.permissions);
+        const response = await apiInstance.get("/user/me");
+        commit("SET_USER", response.data.user);
+        commit("SET_PERMISSIONS", response.data.permissions);
         return response.data;
       } catch (error) {
-        console.error('Ошибка обновления прав пользователя:', error);
+        console.error("Ошибка обновления прав пользователя:", error);
         throw error;
       }
     },
-    invalidateCache({ commit, dispatch }, { type, companyId = null, skipEventBus = false }) {
+    invalidateCache(
+      { commit, dispatch },
+      { type, companyId = null, skipEventBus = false }
+    ) {
       if (!skipEventBus) {
         CacheInvalidator.invalidateByType(type, companyId);
         if (companyId) {
           CacheInvalidator.invalidateByCompany(companyId);
         }
       }
-      
+
       if (CLEAR_MUTATIONS_MAPPING[type]) {
         commit(CLEAR_MUTATIONS_MAPPING[type], []);
       }
-      
-      if (type === 'products' || type === 'services') {
-        commit('SET_LAST_PRODUCTS', []);
-        commit('SET_LAST_PRODUCTS_DATA', []);
-        commit('SET_ALL_PRODUCTS', []);
-        commit('SET_ALL_PRODUCTS_DATA', []);
-        dispatch('invalidateQueryCache', { prefix: 'products_list' });
-        dispatch('invalidateQueryCache', { prefix: 'services_list' });
+
+      if (type === "products" || type === "services") {
+        commit("SET_LAST_PRODUCTS", []);
+        commit("SET_LAST_PRODUCTS_DATA", []);
+        commit("SET_ALL_PRODUCTS", []);
+        commit("SET_ALL_PRODUCTS_DATA", []);
+        dispatch("invalidateQueryCache", { prefix: "products_list" });
+        dispatch("invalidateQueryCache", { prefix: "services_list" });
       }
-      
+
       const queryCachePrefixes = {
-        clients: 'clients_list',
-        orders: 'orders_list',
-        sales: 'sales_list',
-        transactions: 'transactions_list',
-        invoices: 'invoices_list',
-        projects: 'projects_list',
+        clients: "clients_list",
+        orders: "orders_list",
+        sales: "sales_list",
+        transactions: "transactions_list",
+        invoices: "invoices_list",
+        projects: "projects_list",
       };
-      
+
       if (queryCachePrefixes[type]) {
-        dispatch('invalidateQueryCache', { prefix: queryCachePrefixes[type], companyId });
+        dispatch("invalidateQueryCache", {
+          prefix: queryCachePrefixes[type],
+          companyId,
+        });
       }
     },
     onDataCreate({ dispatch }, { type, companyId = null }) {
-      dispatch('invalidateCache', { type, companyId });
+      dispatch("invalidateCache", { type, companyId });
     },
     onDataUpdate({ dispatch }, { type, companyId = null }) {
-      dispatch('invalidateCache', { type, companyId });
+      dispatch("invalidateCache", { type, companyId });
     },
     onDataDelete({ dispatch }, { type, companyId = null }) {
-      dispatch('invalidateCache', { type, companyId });
+      dispatch("invalidateCache", { type, companyId });
     },
     onCompanyChange({ commit, dispatch }, { oldCompanyId, newCompanyId }) {
       CacheInvalidator.onCompanyChange(oldCompanyId, newCompanyId);
-      commit('CLEAR_COMPANY_DATA');
+      commit("CLEAR_COMPANY_DATA");
       if (oldCompanyId) {
-        dispatch('invalidateQueryCache', { companyId: oldCompanyId });
+        dispatch("invalidateQueryCache", { companyId: oldCompanyId });
       }
     },
     // Инвалидация при смене пользователя
     onUserChange({ commit }) {
       CacheInvalidator.onUserChange();
-      commit('CLEAR_COMPANY_DATA');
-      commit('CLEAR_QUERY_CACHE');
-      GLOBAL_REFERENCE_FIELDS.forEach(field => {
+      commit("CLEAR_COMPANY_DATA");
+      commit("CLEAR_QUERY_CACHE");
+      GLOBAL_REFERENCE_FIELDS.forEach((field) => {
         if (CLEAR_MUTATIONS_MAPPING[field]) {
           commit(CLEAR_MUTATIONS_MAPPING[field], []);
         }
       });
-      commit('SET_USERS', []);
+      commit("SET_USERS", []);
     },
     getQueryCache({ state }, { prefix, params, ttl = 120000 }) {
       const companyId = state.currentCompany?.id;
       const key = generateQueryCacheKey(prefix, params, companyId);
-      
+
       const cached = state.queryCache[key];
       if (!cached) return null;
-      
+
       if (Date.now() - cached.timestamp > ttl) {
         delete state.queryCache[key];
         return null;
       }
-      
+
       return cached.data;
     },
     setQueryCache({ commit, state }, { prefix, params, data }) {
       const companyId = state.currentCompany?.id;
       const key = generateQueryCacheKey(prefix, params, companyId);
-      commit('SET_QUERY_CACHE', { key, data });
+      commit("SET_QUERY_CACHE", { key, data });
     },
     invalidateQueryCache({ commit }, { prefix = null, companyId = null }) {
       if (companyId) {
-        commit('CLEAR_QUERY_CACHE_BY_COMPANY', companyId);
+        commit("CLEAR_QUERY_CACHE_BY_COMPANY", companyId);
       } else {
-        commit('CLEAR_QUERY_CACHE', prefix);
+        commit("CLEAR_QUERY_CACHE", prefix);
       }
     },
     initializeMenu({ commit }) {
-      const storageKey = 'menuItems';
+      const storageKey = "menuItems";
       let saved = null;
-      
+
       try {
         saved = localStorage.getItem(storageKey);
       } catch (e) {
-        console.warn('Failed to read from localStorage:', e);
+        console.warn("Failed to read from localStorage:", e);
       }
-      
+
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (parsed && Array.isArray(parsed.main) && Array.isArray(parsed.available)) {
-            const mainIds = new Set(parsed.main.map(item => item?.id).filter(Boolean));
-            const availableIds = new Set(parsed.available.map(item => item?.id).filter(Boolean));
-            
-            const mainUnique = parsed.main.filter(item => item && item.id && !availableIds.has(item.id));
-            const availableUnique = parsed.available.filter(item => item && item.id && !mainIds.has(item.id));
-            
+          if (
+            parsed &&
+            Array.isArray(parsed.main) &&
+            Array.isArray(parsed.available)
+          ) {
+            const mainIds = new Set(
+              parsed.main.map((item) => item?.id).filter(Boolean)
+            );
+            const availableIds = new Set(
+              parsed.available.map((item) => item?.id).filter(Boolean)
+            );
+
+            const mainUnique = parsed.main.filter(
+              (item) => item && item.id && !availableIds.has(item.id)
+            );
+            const availableUnique = parsed.available.filter(
+              (item) => item && item.id && !mainIds.has(item.id)
+            );
+
             const cleaned = {
               main: mainUnique,
-              available: availableUnique
+              available: availableUnique,
             };
-            commit('SET_MENU_ITEMS', cleaned);
-            
+            commit("SET_MENU_ITEMS", cleaned);
+
             try {
               localStorage.setItem(storageKey, JSON.stringify(cleaned));
             } catch (e) {
-              console.warn('Failed to save cleaned menu to localStorage:', e);
+              console.warn("Failed to save cleaned menu to localStorage:", e);
             }
             return;
           }
         } catch (e) {
-          console.warn('Failed to load saved menu, using default:', e);
+          console.warn("Failed to load saved menu, using default:", e);
         }
       }
-      
+
       const allMenuItems = [
-        { id: 'orders', to: '/orders', icon: 'fas fa-cart-arrow-down mr-2', label: 'orders', permission: 'orders_view' },
-        { id: 'sales', to: '/sales', icon: 'fas fa-shopping-cart mr-2', label: 'sales', permission: 'sales_view' },
-        { id: 'transactions', to: '/transactions', icon: 'fas fa-coins mr-2', label: 'finance', permission: 'transactions_view' },
-        { id: 'clients', to: '/clients', icon: 'fa-solid fa-user-friends mr-2', label: 'clients', permission: 'clients_view' },
-        { id: 'projects', to: '/projects', icon: 'fa-solid fa-briefcase mr-2', label: 'projects', permission: 'projects_view' },
-        { id: 'warehouses', to: '/warehouses', icon: 'fa-solid fa-warehouse mr-2', label: 'warehouses', permission: 'warehouses_view' },
-        { id: 'users', to: '/users', icon: 'fa-solid fa-user mr-2', label: 'users', permission: 'users_view' },
-        { id: 'roles', to: '/roles', icon: 'fa-solid fa-user-shield mr-2', label: 'roles', permission: 'roles_view' },
-        { id: 'companies', to: '/companies', icon: 'fa-solid fa-building mr-2', label: 'companies', permission: 'companies_view' },
-        { id: 'cash-registers', to: '/cash-registers', icon: 'fa-solid fa-cash-register mr-2', label: 'cashRegisters', permission: 'cash-registers_view' },
-        { id: 'mutual-settlements', to: '/mutual-settlements', icon: 'fa-solid fa-handshake mr-2', label: 'mutualSettlements', permission: 'mutual_settlements_view' },
-        { id: 'warehouses-admin', to: '/admin/warehouses', icon: 'fa-solid fa-warehouse mr-2', label: 'warehouses', permission: 'warehouses_view' },
-        { id: 'categories', to: '/categories', icon: 'fa-solid fa-list-alt mr-2', label: 'categories', permission: 'categories_view' },
-        { id: 'products', to: '/products', icon: 'fa-solid fa-box mr-2', label: 'products', permission: 'products_view' },
-        { id: 'services', to: '/services', icon: 'fa-solid fa-paint-roller mr-2', label: 'services', permission: 'products_view' },
-        { id: 'currency-history', to: '/settings/currency-history', icon: 'fa-solid fa-chart-line mr-2', label: 'currencyHistory', permission: 'currency_history_view' },
+        {
+          id: "orders",
+          to: "/orders",
+          icon: "fas fa-cart-arrow-down mr-2",
+          label: "orders",
+          permission: "orders_view",
+        },
+        {
+          id: "sales",
+          to: "/sales",
+          icon: "fas fa-shopping-cart mr-2",
+          label: "sales",
+          permission: "sales_view",
+        },
+        {
+          id: "transactions",
+          to: "/transactions",
+          icon: "fas fa-coins mr-2",
+          label: "finance",
+          permission: "transactions_view",
+        },
+        {
+          id: "clients",
+          to: "/clients",
+          icon: "fa-solid fa-user-friends mr-2",
+          label: "clients",
+          permission: "clients_view",
+        },
+        {
+          id: "projects",
+          to: "/projects",
+          icon: "fa-solid fa-briefcase mr-2",
+          label: "projects",
+          permission: "projects_view",
+        },
+        {
+          id: "warehouses",
+          to: "/warehouses",
+          icon: "fa-solid fa-warehouse mr-2",
+          label: "warehouses",
+          permission: "warehouses_view",
+        },
+        {
+          id: "users",
+          to: "/users",
+          icon: "fa-solid fa-user mr-2",
+          label: "users",
+          permission: "users_view",
+        },
+        {
+          id: "roles",
+          to: "/roles",
+          icon: "fa-solid fa-user-shield mr-2",
+          label: "roles",
+          permission: "roles_view",
+        },
+        {
+          id: "companies",
+          to: "/companies",
+          icon: "fa-solid fa-building mr-2",
+          label: "companies",
+          permission: "companies_view",
+        },
+        {
+          id: "cash-registers",
+          to: "/cash-registers",
+          icon: "fa-solid fa-cash-register mr-2",
+          label: "cashRegisters",
+          permission: "cash-registers_view",
+        },
+        {
+          id: "mutual-settlements",
+          to: "/mutual-settlements",
+          icon: "fa-solid fa-handshake mr-2",
+          label: "mutualSettlements",
+          permission: "mutual_settlements_view",
+        },
+        {
+          id: "warehouses-admin",
+          to: "/admin/warehouses",
+          icon: "fa-solid fa-warehouse mr-2",
+          label: "warehouses",
+          permission: "warehouses_view",
+        },
+        {
+          id: "products",
+          to: "/products",
+          icon: "fa-solid fa-box mr-2",
+          label: "products",
+          permission: "products_view",
+        },
+        {
+          id: "services",
+          to: "/services",
+          icon: "fa-solid fa-paint-roller mr-2",
+          label: "services",
+          permission: "products_view",
+        },
+        {
+          id: "currency-history",
+          to: "/settings/currency-history",
+          icon: "fa-solid fa-chart-line mr-2",
+          label: "currencyHistory",
+          permission: "currency_history_view",
+        },
       ];
-      
-      const defaultMain = ['orders', 'sales', 'transactions', 'clients', 'projects', 'warehouses'];
-      const defaultAvailable = ['users', 'roles', 'companies', 'cash-registers', 'mutual-settlements', 'warehouses-admin', 'categories', 'products', 'services', 'currency-history'];
-      
-      const main = defaultMain.map(id => allMenuItems.find(item => item.id === id)).filter(Boolean);
-      const available = defaultAvailable.map(id => allMenuItems.find(item => item.id === id)).filter(Boolean);
-      
-      commit('SET_MENU_ITEMS', { main, available });
+
+      const defaultMain = [
+        "orders",
+        "sales",
+        "transactions",
+        "clients",
+        "projects",
+        "warehouses",
+      ];
+      const defaultAvailable = [
+        "users",
+        "roles",
+        "companies",
+        "cash-registers",
+        "mutual-settlements",
+        "warehouses-admin",
+        "products",
+        "services",
+        "currency-history",
+      ];
+
+      const main = defaultMain
+        .map((id) => allMenuItems.find((item) => item.id === id))
+        .filter(Boolean);
+      const available = defaultAvailable
+        .map((id) => allMenuItems.find((item) => item.id === id))
+        .filter(Boolean);
+
+      commit("SET_MENU_ITEMS", { main, available });
       localStorage.setItem(storageKey, JSON.stringify({ main, available }));
     },
     updateMenuItems({ commit, state }, { type, items }) {
       if (!Array.isArray(items)) {
-        console.error('updateMenuItems: items must be an array', items);
+        console.error("updateMenuItems: items must be an array", items);
         return;
       }
-      
-      if (type !== 'main' && type !== 'available') {
-        console.error('updateMenuItems: type must be "main" or "available"', type);
+
+      if (type !== "main" && type !== "available") {
+        console.error(
+          'updateMenuItems: type must be "main" or "available"',
+          type
+        );
         return;
       }
-      
+
       const uniqueItems = [];
       const seenIds = new Set();
       for (const item of items) {
-        if (item && typeof item === 'object' && item.id && !seenIds.has(item.id)) {
+        if (
+          item &&
+          typeof item === "object" &&
+          item.id &&
+          !seenIds.has(item.id)
+        ) {
           seenIds.add(item.id);
           uniqueItems.push(item);
         }
       }
-      
-      const storageKey = 'menuItems';
-      const currentMain = type === 'main' ? uniqueItems : (state.menuItems.main || []);
-      const currentAvailable = type === 'available' ? uniqueItems : (state.menuItems.available || []);
-      
-      const mainIds = new Set(currentMain.map(item => item?.id).filter(Boolean));
-      const availableIds = new Set(currentAvailable.map(item => item?.id).filter(Boolean));
-      
-      const mainUnique = currentMain.filter(item => item && item.id && !availableIds.has(item.id));
-      const availableUnique = currentAvailable.filter(item => item && item.id && !mainIds.has(item.id));
-      
+
+      const storageKey = "menuItems";
+      const currentMain =
+        type === "main" ? uniqueItems : state.menuItems.main || [];
+      const currentAvailable =
+        type === "available" ? uniqueItems : state.menuItems.available || [];
+
+      const mainIds = new Set(
+        currentMain.map((item) => item?.id).filter(Boolean)
+      );
+      const availableIds = new Set(
+        currentAvailable.map((item) => item?.id).filter(Boolean)
+      );
+
+      const mainUnique = currentMain.filter(
+        (item) => item && item.id && !availableIds.has(item.id)
+      );
+      const availableUnique = currentAvailable.filter(
+        (item) => item && item.id && !mainIds.has(item.id)
+      );
+
       const current = {
         main: mainUnique,
-        available: availableUnique
+        available: availableUnique,
       };
-      commit('SET_MENU_ITEMS', current);
-      
+      commit("SET_MENU_ITEMS", current);
+
       try {
         localStorage.setItem(storageKey, JSON.stringify(current));
       } catch (e) {
-        console.error('Failed to save menu items to localStorage:', e);
+        console.error("Failed to save menu items to localStorage:", e);
       }
     },
     updateBothMenuLists({ commit }, { mainItems, availableItems }) {
       if (!Array.isArray(mainItems) || !Array.isArray(availableItems)) {
-        console.error('updateBothMenuLists: both arguments must be arrays');
+        console.error("updateBothMenuLists: both arguments must be arrays");
         return;
       }
-      
+
       const mainUnique = [];
       const mainSeenIds = new Set();
       for (const item of mainItems) {
-        if (item && typeof item === 'object' && item.id) {
+        if (item && typeof item === "object" && item.id) {
           if (!mainSeenIds.has(item.id)) {
             mainSeenIds.add(item.id);
             mainUnique.push({
@@ -1526,16 +1822,16 @@ const store = createStore({
               to: item.to,
               icon: item.icon,
               label: item.label,
-              permission: item.permission
+              permission: item.permission,
             });
           }
         }
       }
-      
+
       const availableUnique = [];
       const availableSeenIds = new Set();
       for (const item of availableItems) {
-        if (item && typeof item === 'object' && item.id) {
+        if (item && typeof item === "object" && item.id) {
           if (!availableSeenIds.has(item.id)) {
             availableSeenIds.add(item.id);
             availableUnique.push({
@@ -1543,28 +1839,36 @@ const store = createStore({
               to: item.to,
               icon: item.icon,
               label: item.label,
-              permission: item.permission
+              permission: item.permission,
             });
           }
         }
       }
-      
-      const mainIds = new Set(mainUnique.map(item => item.id).filter(Boolean));
-      const availableIds = new Set(availableUnique.map(item => item.id).filter(Boolean));
-      
-      const mainFiltered = mainUnique.filter(item => item && item.id && !availableIds.has(item.id));
-      const availableFiltered = availableUnique.filter(item => item && item.id && !mainIds.has(item.id));
-      
+
+      const mainIds = new Set(
+        mainUnique.map((item) => item.id).filter(Boolean)
+      );
+      const availableIds = new Set(
+        availableUnique.map((item) => item.id).filter(Boolean)
+      );
+
+      const mainFiltered = mainUnique.filter(
+        (item) => item && item.id && !availableIds.has(item.id)
+      );
+      const availableFiltered = availableUnique.filter(
+        (item) => item && item.id && !mainIds.has(item.id)
+      );
+
       const current = {
         main: mainFiltered,
-        available: availableFiltered
+        available: availableFiltered,
       };
-      commit('SET_MENU_ITEMS', current);
-      
+      commit("SET_MENU_ITEMS", current);
+
       try {
-        localStorage.setItem('menuItems', JSON.stringify(current));
+        localStorage.setItem("menuItems", JSON.stringify(current));
       } catch (e) {
-        console.error('Failed to save menu items to localStorage:', e);
+        console.error("Failed to save menu items to localStorage:", e);
       }
     },
   },
@@ -1573,10 +1877,20 @@ const store = createStore({
     user: (state) => state.user,
     permissions: (state) => state.permissions,
     hasPermission: (state) => (perm) => {
-      if (perm.endsWith('_view') || perm.endsWith('_update') || perm.endsWith('_delete')) {
-        const allPerm = perm.replace(/_(view|update|delete)$/, '_$1_all');
-        const ownPerm = perm.replace(/_(view|update|delete)$/, '_$1_own');
-        return state.permissions.includes(allPerm) || state.permissions.includes(ownPerm);
+      if (perm.startsWith("settings_")) {
+        return state.permissions.includes(perm);
+      }
+      if (
+        perm.endsWith("_view") ||
+        perm.endsWith("_update") ||
+        perm.endsWith("_delete")
+      ) {
+        const allPerm = perm.replace(/_(view|update|delete)$/, "_$1_all");
+        const ownPerm = perm.replace(/_(view|update|delete)$/, "_$1_own");
+        return (
+          state.permissions.includes(allPerm) ||
+          state.permissions.includes(ownPerm)
+        );
       }
       return state.permissions.includes(perm);
     },
@@ -1592,7 +1906,11 @@ const store = createStore({
     isTokenExpired: (state) => state.tokenInfo.needsRefresh,
     isBasementMode: (state) => {
       // Проверяем, находимся ли мы в basement режиме по роли пользователя
-      return state.user && state.user.roles && state.user.roles.includes('basement_worker')
+      return (
+        state.user &&
+        state.user.roles &&
+        state.user.roles.includes("basement_worker")
+      );
     },
     accessTokenTimeLeft: (state) => {
       if (!state.tokenInfo.accessTokenExpiresAt) return 0;
@@ -1616,24 +1934,26 @@ const store = createStore({
     allProducts: (state) => state.allProducts,
     categories: (state) => state.categories,
     projects: (state) => state.projects, // Все проекты для страницы проектов
-    activeProjects: (state) => state.projects.filter(p => p.statusId !== 3 && p.statusId !== 4), // Только активные для форм
+    activeProjects: (state) =>
+      state.projects.filter((p) => p.statusId !== 3 && p.statusId !== 4), // Только активные для форм
     orderStatuses: (state) => state.orderStatuses,
     projectStatuses: (state) => state.projectStatuses,
     transactionCategories: (state) => state.transactionCategories,
     productStatuses: (state) => state.productStatuses,
-    getUnitById: (state) => (id) => state.units.find(unit => unit.id === id),
+    getUnitById: (state) => (id) => state.units.find((unit) => unit.id === id),
     getUnitName: (state) => (id) => {
-      const unit = state.units.find(unit => unit.id === id);
-      return unit ? unit.name : '';
+      const unit = state.units.find((unit) => unit.id === id);
+      return unit ? unit.name : "";
     },
     getUnitShortName: (state) => (id) => {
-      const unit = state.units.find(unit => unit.id === id);
-      return unit ? unit.short_name : '';
+      const unit = state.units.find((unit) => unit.id === id);
+      return unit ? unit.short_name : "";
     },
-    getCurrencyById: (state) => (id) => state.currencies.find(currency => currency.id === id),
+    getCurrencyById: (state) => (id) =>
+      state.currencies.find((currency) => currency.id === id),
     getCurrencySymbol: (state) => (id) => {
-      const currency = state.currencies.find(currency => currency.id === id);
-      return currency ? currency.symbol : 'Нет валюты';
+      const currency = state.currencies.find((currency) => currency.id === id);
+      return currency ? currency.symbol : "Нет валюты";
     },
     currentCompany: (state) => state.currentCompany,
     userCompanies: (state) => state.userCompanies,
@@ -1647,50 +1967,70 @@ const store = createStore({
         return state.users;
       }
       // Фильтруем: показываем пользователей, у которых текущая компания есть в списке компаний
-      return state.users.filter(user => {
+      return state.users.filter((user) => {
         if (!user.companies || user.companies.length === 0) {
           return false; // Если у пользователя нет компаний - не показываем
         }
         // Проверяем, есть ли у пользователя текущая компания (т.е. он сотрудник этой компании)
         // Используем сравнение с приведением типов для надежности
-        return user.companies.some(company => Number(company.id) === Number(currentCompanyId));
+        return user.companies.some(
+          (company) => Number(company.id) === Number(currentCompanyId)
+        );
       });
     },
     soundEnabled: (state) => state.soundEnabled,
     // Настройки округления для сумм текущей компании
     roundingDecimals: (state) => {
       const decimals = state.currentCompany?.rounding_decimals;
-      logRoundingGetter('Rounding decimals', decimals, state);
+      logRoundingGetter("Rounding decimals", decimals, state);
       return decimals;
     },
     roundingEnabled: (state) => {
       const enabled = state.currentCompany?.rounding_enabled ?? true;
-      logRoundingGetter('Rounding enabled', enabled, state);
+      logRoundingGetter("Rounding enabled", enabled, state);
       return enabled;
     },
     roundingDirection: (state) => {
-      const direction = state.currentCompany?.rounding_direction || 'standard';
-      logRoundingGetter('Rounding direction', { direction, customThreshold: state.currentCompany?.rounding_custom_threshold }, state);
+      const direction = state.currentCompany?.rounding_direction || "standard";
+      logRoundingGetter(
+        "Rounding direction",
+        {
+          direction,
+          customThreshold: state.currentCompany?.rounding_custom_threshold,
+        },
+        state
+      );
       return direction;
     },
-    roundingCustomThreshold: (state) => state.currentCompany?.rounding_custom_threshold ?? 0.5,
+    roundingCustomThreshold: (state) =>
+      state.currentCompany?.rounding_custom_threshold ?? 0.5,
     roundingQuantityDecimals: (state) => {
       const decimals = state.currentCompany?.rounding_quantity_decimals ?? 2;
-      logRoundingGetter('Rounding quantity decimals', decimals, state);
+      logRoundingGetter("Rounding quantity decimals", decimals, state);
       return decimals;
     },
     roundingQuantityEnabled: (state) => {
       const enabled = state.currentCompany?.rounding_quantity_enabled ?? true;
-      logRoundingGetter('Rounding quantity enabled', enabled, state);
+      logRoundingGetter("Rounding quantity enabled", enabled, state);
       return enabled;
     },
     roundingQuantityDirection: (state) => {
-      const direction = state.currentCompany?.rounding_quantity_direction || 'standard';
-      logRoundingGetter('Rounding quantity direction', { direction, customThreshold: state.currentCompany?.rounding_quantity_custom_threshold }, state);
+      const direction =
+        state.currentCompany?.rounding_quantity_direction || "standard";
+      logRoundingGetter(
+        "Rounding quantity direction",
+        {
+          direction,
+          customThreshold:
+            state.currentCompany?.rounding_quantity_custom_threshold,
+        },
+        state
+      );
       return direction;
     },
-    roundingQuantityCustomThreshold: (state) => state.currentCompany?.rounding_quantity_custom_threshold ?? 0.5,
-    clientTypeFilter: (state) => state.clientTypeFilter || 'all',
+    roundingQuantityCustomThreshold: (state) =>
+      state.currentCompany?.rounding_quantity_custom_threshold ?? 0.5,
+    clientTypeFilter: (state) => state.clientTypeFilter || "all",
     mainMenuItems: (state, getters) => {
       if (!state.menuItems.main || state.menuItems.main.length === 0) {
         return [];
@@ -1698,20 +2038,23 @@ const store = createStore({
       if (!Array.isArray(state.permissions)) {
         return [];
       }
-      return state.menuItems.main.filter(item => {
+      return state.menuItems.main.filter((item) => {
         if (!item) return false;
         if (!item.permission) return true;
         return getters.hasPermission(item.permission);
       });
     },
     availableMenuItems: (state, getters) => {
-      if (!state.menuItems.available || state.menuItems.available.length === 0) {
+      if (
+        !state.menuItems.available ||
+        state.menuItems.available.length === 0
+      ) {
         return [];
       }
       if (!Array.isArray(state.permissions)) {
         return [];
       }
-      return state.menuItems.available.filter(item => {
+      return state.menuItems.available.filter((item) => {
         if (!item) return false;
         if (!item.permission) return true;
         return getters.hasPermission(item.permission);
@@ -1720,57 +2063,61 @@ const store = createStore({
   },
   plugins: [
     createPersistedState({
-      key: 'birhasap_vuex_cache',
+      key: "hasap_vuex_cache",
       paths: [
         // DRY: глобальные справочники (используем константу)
         ...GLOBAL_REFERENCE_FIELDS,
-        
+
         // Данные компании (10 минут)
-        'warehouses',
-        'cashRegisters',
-        'clientsData',   // ✅ Кэшируем plain data (без методов DTO)
-        'categories',   // ← Нужно для фильтров
-        'projectsData',  // ✅ Кэшируем plain data (без методов DTO)
-        'projectsDataCompanyId', // ✅ Для проверки соответствия компании
-        'lastProductsData',  // ✅ Последние товары - plain data (5 минут)
-        'allProductsData',  // ✅ ВСЕ товары - plain data (30 дней!)
+        "warehouses",
+        "cashRegisters",
+        "clientsData", // ✅ Кэшируем plain data (без методов DTO)
+        "categories", // ← Нужно для фильтров
+        "projectsData", // ✅ Кэшируем plain data (без методов DTO)
+        "projectsDataCompanyId", // ✅ Для проверки соответствия компании
+        "lastProductsData", // ✅ Последние товары - plain data (5 минут)
+        "allProductsData", // ✅ ВСЕ товары - plain data (30 дней!)
         // 'products',  // ← НЕ кэшируем глобально - каждая страница загружает свои данные
         // 'services',  // ← НЕ кэшируем глобально - каждая страница загружает свои данные
-        
+
         // Текущая компания и настройки
-        'currentCompany',
-        'lastCompanyId',
-        'userCompanies',
-        'soundEnabled',
-        'tokenInfo',
-        'orderStatusesCustomOrder',
+        "currentCompany",
+        "lastCompanyId",
+        "userCompanies",
+        "soundEnabled",
+        "tokenInfo",
+        "orderStatusesCustomOrder",
         // Пользовательские UI фильтры
-        'clientTypeFilter',
+        "clientTypeFilter",
         // Кэш пагинированных запросов API (2 минуты TTL)
-        'queryCache',
+        "queryCache",
         // Настройки меню
-        'menuItems',
+        "menuItems",
       ],
-      
+
       // Кастомная логика для проверки TTL при восстановлении
       getState: (key, storage) => {
         const value = storage.getItem(key);
         if (!value) return undefined;
-        
+
         try {
           const state = JSON.parse(value);
-          
+
           // ✅ Проверяем соответствие данных компании текущей компании
           const currentCompanyId = state.currentCompany?.id || null;
           const projectsDataCompanyId = state.projectsDataCompanyId || null;
-          
+
           // Если projectsData принадлежит другой компании - очищаем
-          if (projectsDataCompanyId && currentCompanyId && projectsDataCompanyId !== currentCompanyId) {
+          if (
+            projectsDataCompanyId &&
+            currentCompanyId &&
+            projectsDataCompanyId !== currentCompanyId
+          ) {
             state.projectsData = [];
             state.projectsDataCompanyId = null;
             state.projects = [];
           }
-          
+
           const now = Date.now();
           const fieldsToCheck = {
             ...GLOBAL_REFERENCE_FIELDS.reduce((acc, field) => {
@@ -1784,16 +2131,20 @@ const store = createStore({
             projectsData: CACHE_TTL.projects,
             lastProductsData: 5 * 60 * 1000,
             allProductsData: CACHE_TTL.products,
-            queryCache: 2 * 60 * 1000
+            queryCache: 2 * 60 * 1000,
           };
-          
-          Object.keys(fieldsToCheck).forEach(field => {
-            if (field === 'queryCache') {
-              if (state[field] && typeof state[field] === 'object') {
+
+          Object.keys(fieldsToCheck).forEach((field) => {
+            if (field === "queryCache") {
+              if (state[field] && typeof state[field] === "object") {
                 const cacheKeys = Object.keys(state[field]);
-                cacheKeys.forEach(key => {
+                cacheKeys.forEach((key) => {
                   const cached = state[field][key];
-                  if (cached && cached.timestamp && (now - cached.timestamp) > fieldsToCheck[field]) {
+                  if (
+                    cached &&
+                    cached.timestamp &&
+                    now - cached.timestamp > fieldsToCheck[field]
+                  ) {
                     delete state[field][key];
                   }
                 });
@@ -1801,67 +2152,75 @@ const store = createStore({
             } else if (state[field]?.length > 0) {
               const timestampKey = `${field}_timestamp`;
               const timestamp = storage.getItem(timestampKey);
-              
-              if (timestamp && (now - parseInt(timestamp)) > fieldsToCheck[field]) {
+
+              if (
+                timestamp &&
+                now - parseInt(timestamp) > fieldsToCheck[field]
+              ) {
                 state[field] = [];
                 storage.removeItem(timestampKey);
               }
             }
           });
-          
+
           return state;
         } catch {
           // Ошибка парсинга state - возвращаем пустое состояние
           return undefined;
         }
       },
-      
+
       // Сохраняем timestamp при каждом изменении
       setState: (key, state, storage) => {
         storage.setItem(key, JSON.stringify(state));
-        
+
         // Сохраняем timestamp для каждого массива данных
         const now = Date.now().toString();
         // DRY: используем константу вместо ручного списка
-        
-        FIELDS_WITH_TIMESTAMP.forEach(field => {
+
+        FIELDS_WITH_TIMESTAMP.forEach((field) => {
           if (state[field]?.length > 0) {
             storage.setItem(`${field}_timestamp`, now);
           }
         });
-      }
-    })
+      },
+    }),
   ],
 });
 
 // ✅ Инициализируем синхронизацию между вкладками
 initializeStorageSync(store);
 
-eventBus.on('company-updated', async () => {
-  await store.dispatch('loadUserCompanies');
-  
+eventBus.on("company-updated", async () => {
+  await store.dispatch("loadUserCompanies");
+
   const currentCompanyId = store.state.currentCompany?.id;
   if (!currentCompanyId) return;
 
   try {
-    const response = await api.get('/user/current-company');
+    const response = await api.get("/user/current-company");
     const updatedCompany = new CompanyDto(response.data.company);
-    store.commit('SET_CURRENT_COMPANY', updatedCompany);
-    store.commit('INCREMENT_LOGO_VERSION');
-    eventBus.emit('company-changed', currentCompanyId);
+    store.commit("SET_CURRENT_COMPANY", updatedCompany);
+    store.commit("INCREMENT_LOGO_VERSION");
+    eventBus.emit("company-changed", currentCompanyId);
   } catch (error) {
-    console.error('[Company Updated] Ошибка при загрузке обновленной компании:', error);
-    const updatedCompany = store.state.userCompanies.find(c => c.id === currentCompanyId);
+    console.error(
+      "[Company Updated] Ошибка при загрузке обновленной компании:",
+      error
+    );
+    const updatedCompany = store.state.userCompanies.find(
+      (c) => c.id === currentCompanyId
+    );
     if (updatedCompany) {
-      store.commit('SET_CURRENT_COMPANY', updatedCompany);
-      store.commit('INCREMENT_LOGO_VERSION');
-      eventBus.emit('company-changed', currentCompanyId);
+      store.commit("SET_CURRENT_COMPANY", updatedCompany);
+      store.commit("INCREMENT_LOGO_VERSION");
+      eventBus.emit("company-changed", currentCompanyId);
     }
   }
 });
 
-eventBus.on('cache:invalidate', ({ type, companyId = null }) => {
-  store.dispatch('invalidateCache', { type, companyId, skipEventBus: true });
+eventBus.on("cache:invalidate", ({ type, companyId = null }) => {
+  store.dispatch("invalidateCache", { type, companyId, skipEventBus: true });
 });
 
 export default store;

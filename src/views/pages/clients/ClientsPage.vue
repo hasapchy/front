@@ -37,7 +37,7 @@
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="common.clients" :columns-config="translatedColumnsConfig" :table-data="data.items"
+            <DraggableTable table-key="common.clients" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }"
                 @selectionChange="selectedIds = $event" />
         </div>
@@ -69,14 +69,15 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
+import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { eventBus } from '@/eventBus';
-import tableTranslationMixin from '@/mixins/tableTranslationMixin';
+
 import { highlightMatches } from '@/utils/searchUtils';
 import searchMixin from '@/mixins/searchMixin';
 
 export default {
-    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, tableTranslationMixin, searchMixin],
+    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, searchMixin, getApiErrorMessageMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog },
     data() {
         return {

@@ -41,7 +41,7 @@
         <!-- Таблица клиентов -->
         <transition name="fade" mode="out-in">
             <div v-if="clientBalances != null && !clientBalancesLoading" :key="`table-${$i18n.locale}`">
-                <DraggableTable table-key="mutual_settlements.clients" :columns-config="translatedColumnsConfig" 
+                <DraggableTable table-key="mutual_settlements.clients" :columns-config="columnsConfig" 
                     :table-data="clientBalances" :item-mapper="itemMapper" :onItemClick="handleRowClick" />
             </div>
             <div v-else key="loader" class="flex justify-center items-center h-64">
@@ -68,14 +68,15 @@ import ClientCreatePage from '@/views/pages/clients/ClientCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
-import tableTranslationMixin from '@/mixins/tableTranslationMixin';
+import crudEventMixin from '@/mixins/crudEventMixin';
+import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import MutualSettlementsBalanceWrapper from './MutualSettlementsBalanceWrapper.vue';
 import { eventBus } from '@/eventBus';
 import searchMixin from '@/mixins/searchMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
-    mixins: [notificationMixin, modalMixin, companyChangeMixin, tableTranslationMixin, searchMixin],
+    mixins: [notificationMixin, modalMixin, companyChangeMixin, searchMixin, crudEventMixin, getApiErrorMessageMixin],
     components: { NotificationToast, SideModalDialog, PrimaryButton, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper },
     data() {
         return {
@@ -257,26 +258,14 @@ export default {
             }
         },
         
-        async handleSaved() {
-            this.closeModal();
+        async onAfterSaved() {
             await this.loadClients();
             await this.loadClientBalances();
-            this.showNotification('Успешно', 'Клиент сохранен', false);
         },
         
-        handleSavedError(error) {
-            this.showNotification('Ошибка', error, true);
-        },
-        
-        async handleDeleted() {
-            this.closeModal();
+        async onAfterDeleted() {
             await this.loadClients();
             await this.loadClientBalances();
-            this.showNotification('Успешно', 'Клиент удален', false);
-        },
-        
-        handleDeletedError(error) {
-            this.showNotification('Ошибка', error, true);
         },
 
         resetFilters() {

@@ -625,6 +625,7 @@ export default {
             CacheInvalidator.onUpdate('categories', companyId);
             await this.fetchAllCategories();
             this.closeModal();
+            this.$emit('saved');
         },
         handleSavedError(m) {
             this.$emit('saved-error', m);

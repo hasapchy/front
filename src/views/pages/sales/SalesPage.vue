@@ -31,7 +31,7 @@
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.sales" :columns-config="translatedColumnsConfig" :table-data="data.items"
+            <DraggableTable table-key="admin.sales" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
@@ -66,14 +66,14 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import tableTranslationMixin from '@/mixins/tableTranslationMixin';
+
 import { eventBus } from '@/eventBus';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import searchMixin from '@/mixins/searchMixin';
 
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin, companyChangeMixin, searchMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,  companyChangeMixin, searchMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, ClientButtonCell, BatchButton, AlertDialog },
     data() {
         return {

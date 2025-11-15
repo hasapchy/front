@@ -5,11 +5,6 @@ const AuthController = {
         try {
             const { data } = await api.post('/user/login', { email, password, remember });
             
-            // Проверяем, что пользователь НЕ является ТОЛЬКО basement_worker (без других ролей)
-            if (data.user.roles && data.user.roles.includes('basement_worker') && !data.user.roles.includes('admin')) {
-                throw new Error('Access denied. Basement workers must use basement login page.');
-            }
-            
             // Сохраняем токены
             localStorage.setItem('token', data.access_token);
             localStorage.setItem('refresh_token', data.refresh_token);

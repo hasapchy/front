@@ -106,7 +106,9 @@ export default class ClientController {
       queryCache.invalidate('clients_list');
       return data;
     } catch (error) {
-      console.error("Ошибка при обновлении клиента:", error);
+      if (error?.response?.status !== 422) {
+        console.error("Ошибка при обновлении клиента:", error);
+      }
       throw error;
     }
   }
@@ -133,7 +135,9 @@ export default class ClientController {
       const items = ClientBalanceHistoryDto.fromApiArray(historyArray);
       return items;
     } catch (error) {
-      console.error("Ошибка при получении истории баланса клиента:", error);
+      if (error?.response?.status !== 403) {
+        console.error("Ошибка при получении истории баланса клиента:", error);
+      }
       throw error;
     }
   }

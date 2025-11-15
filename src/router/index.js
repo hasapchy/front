@@ -30,7 +30,6 @@ import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
 import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
 
 // Basement pages
-import BasementLoginPage from "@/views/pages/basement/BasementLoginPage.vue";
 import BasementOrdersPage from "@/views/pages/basement/BasementOrdersPage.vue";
 import BasementOrderCreatePage from "@/views/pages/basement/BasementOrderCreatePage.vue";
 import MutualSettlementsPage from "@/views/pages/mutual_settlements/MutualSettlementsPage.vue";
@@ -39,7 +38,6 @@ const routes = [
     path: "/",
     name: "Public",
     component: SidebarLayout,
-    redirect: "/",
     children: [
       {
         path: "/",
@@ -62,10 +60,10 @@ const routes = [
         path: "/orders",
         name: "Orders",
         component: OrdersPage,
-        meta: { 
-          title: "orders", 
-          requiresAuth: true, 
-          showSearch: true, 
+        meta: {
+          title: "orders",
+          requiresAuth: true,
+          showSearch: true,
           permission: "orders_view",
           binded: [
             {
@@ -83,8 +81,8 @@ const routes = [
         path: "/order_statuses",
         name: "order_statuses",
         component: OrderStatusesPage,
-        meta: { 
-          title: "orderStatuses", 
+        meta: {
+          title: "orderStatuses",
           requiresAuth: true,
           permission: "order_statuses_view",
           binded: [
@@ -103,8 +101,8 @@ const routes = [
         path: "/order_status_categories",
         name: "order_status_categories",
         component: OrderStatusCategoriesPage,
-        meta: { 
-          title: "orderStatusCategories", 
+        meta: {
+          title: "orderStatusCategories",
           requiresAuth: true,
           permission: "order_statuscategories_view",
           binded: [
@@ -123,9 +121,9 @@ const routes = [
         path: "/invoices",
         name: "Invoices",
         component: InvoicesPage,
-        meta: { 
-          title: "invoices", 
-          requiresAuth: true, 
+        meta: {
+          title: "invoices",
+          requiresAuth: true,
           showSearch: true,
           permission: "invoices_view",
           binded: [
@@ -216,36 +214,52 @@ const routes = [
         path: "/warehouses",
         name: "Warehouses",
         component: WarehousesPage,
-        meta: { title: "warehouses", requiresAuth: true, showSearch: true, permission: "warehouses_view" },
+        meta: {
+          title: "warehouses",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "warehouses_view",
+        },
       },
       {
         path: "/clients",
         name: "Clients",
         component: ClientsPage,
-        meta: { title: "clients", requiresAuth: true, showSearch: true, permission: "clients_view" },
+        meta: {
+          title: "clients",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "clients_view",
+        },
       },
       {
         path: "/projects",
         name: "Projects",
         component: ProjectsPage,
-        meta: { title: "projects", requiresAuth: true, permission: "projects_view" },
+        meta: {
+          title: "projects",
+          requiresAuth: true,
+          permission: "projects_view",
+          binded: [
+            {
+              name: "projectStatuses",
+              path: "/project_statuses",
+            },
+          ],
+        },
       },
       {
         path: "/project_statuses",
         name: "project_statuses",
         component: ProjectStatusesPage,
-        meta: { 
-          title: "projectStatuses", 
+        meta: {
+          title: "projectStatuses",
           requiresAuth: true,
-          permission: "order_statuscategories_view",
+          permission: "project_statuses_view",
           binded: [
             {
-              name: "categories",
-              path: "/categories",
-            },
-            {
-              name: "transactionCategories",
-              path: "/transaction_categories",
+              name: "projects",
+              path: "/projects",
             },
           ],
         },
@@ -260,14 +274,18 @@ const routes = [
         path: "/categories",
         name: "Categories",
         component: CategoriesPage,
-        meta: { 
-          title: "categories", 
+        meta: {
+          title: "categories",
           requiresAuth: true,
           permission: "categories_view",
           binded: [
             {
-              name: "projectStatuses", 
-              path: "/project_statuses",
+              name: "products",
+              path: "/products",
+            },
+            {
+              name: "services",
+              path: "/services",
             },
           ],
         },
@@ -276,8 +294,8 @@ const routes = [
         path: "/transaction_categories",
         name: "transaction_categories",
         component: TransactionCategoriesPage,
-        meta: { 
-          title: "transactionCategories", 
+        meta: {
+          title: "transactionCategories",
           requiresAuth: true,
           permission: "transaction_categories_view",
           binded: [
@@ -316,7 +334,11 @@ const routes = [
         path: "/companies",
         name: "companies",
         component: CompaniesPage,
-        meta: { title: "companies", requiresAuth: true, permission: "companies_view" },
+        meta: {
+          title: "companies",
+          requiresAuth: true,
+          permission: "companies_view",
+        },
       },
       {
         path: "/products",
@@ -331,6 +353,10 @@ const routes = [
             {
               name: "services",
               path: "/services",
+            },
+            {
+              name: "categories",
+              path: "/categories",
             },
           ],
         },
@@ -348,6 +374,10 @@ const routes = [
             {
               name: "products",
               path: "/products",
+            },
+            {
+              name: "categories",
+              path: "/categories",
             },
           ],
         },
@@ -414,22 +444,13 @@ const routes = [
         },
       },
       {
-        path: "/settings/performance",
-        name: "PerformanceSettings",
-        component: () => import("@/views/pages/settings/PerformanceMonitorPage.vue"),
-        meta: { 
-          title: "performanceMonitor", 
-          requiresAuth: true
-        },
-      },
-      {
         path: "/settings/currency-history",
         name: "CurrencyHistory",
         component: CurrencyHistoryPage,
-        meta: { 
-          title: "currencyHistory", 
+        meta: {
+          title: "currencyHistory",
           requiresAuth: true,
-          permission: "currency_history_view"
+          permission: "currency_history_view",
         },
       },
     ],
@@ -450,12 +471,6 @@ const routes = [
 
   // Basement worker routes
   {
-    path: "/basement/login",
-    name: "BasementLogin",
-    component: BasementLoginPage,
-    meta: { title: "Вход в подвал" }
-  },
-  {
     path: "/basement",
     component: BasementLayout,
     meta: { requiresBasementAuth: true },
@@ -464,22 +479,22 @@ const routes = [
         path: "orders",
         name: "BasementOrders",
         component: BasementOrdersPage,
-        meta: { title: "Заказы" }
+        meta: { title: "orders" },
       },
       {
         path: "orders/create",
         name: "BasementOrderCreate",
         component: BasementOrderCreatePage,
-        meta: { title: "Создать заказ" }
+        meta: { title: "createOrder" },
       },
       {
         path: "orders/:id/edit",
         name: "BasementOrderEdit",
         component: BasementOrderCreatePage,
-        meta: { title: "Редактировать заказ" }
-      }
-    ]
-  }
+        meta: { title: "editOrder" },
+      },
+    ],
+  },
 ];
 
 const router = createRouter({
@@ -499,8 +514,9 @@ router.beforeEach(async (to, from, next) => {
   try {
     if (user) {
       userData = JSON.parse(user);
-      isBasementWorker = userData.roles && userData.roles.includes('basement_worker');
-      isAdmin = userData.roles && userData.roles.includes('admin');
+      isBasementWorker =
+        userData.roles && userData.roles.includes("basement_worker");
+      isAdmin = userData.roles && userData.roles.includes("admin");
     }
   } catch {
     userData = null;
@@ -509,14 +525,14 @@ router.beforeEach(async (to, from, next) => {
   // Проверка для basement маршрутов
   if (to.meta.requiresBasementAuth) {
     if (!token) {
-      return next("/basement/login");
+      return next("/auth/login");
     }
-    
+
     // Только basement_worker или admin могут попасть в basement
     if (!isBasementWorker && !isAdmin) {
       return next("/auth/login");
     }
-    
+
     // Продолжаем к basement маршруту
     return next();
   }
@@ -526,7 +542,7 @@ router.beforeEach(async (to, from, next) => {
     if (!token) {
       return next("/auth/login");
     }
-    
+
     // ВАЖНО: Если пользователь ТОЛЬКО basement_worker (не admin), блокируем доступ к основной системе
     if (isBasementWorker && !isAdmin) {
       return next("/basement/orders");
@@ -534,26 +550,35 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // Если пользователь пытается попасть на страницу логина, но уже авторизован
-  if (to.name === 'Login' && token) {
+  if (to.name === "Login" && token) {
     if (isBasementWorker && !isAdmin) {
       return next("/basement/orders");
     }
     return next("/");
   }
 
-  if (to.name === 'BasementLogin' && token) {
-    if (isBasementWorker || isAdmin) {
-      return next("/basement/orders");
-    }
-    return next("/");
-  }
-
   if (to.meta.permission) {
-    if (!store.state.permissionsLoaded) {
-      next();
-      return;
+    if (!store.state.permissionsLoaded || (store.state.permissionsLoaded && store.state.permissions?.length === 0)) {
+      await new Promise((resolve) => {
+        let attempts = 0;
+        const maxAttempts = 100;
+        const checkPermissions = () => {
+          const hasPermissions = store.state.permissionsLoaded && 
+                                 store.state.permissions && 
+                                 store.state.permissions.length > 0;
+          if (hasPermissions) {
+            resolve();
+          } else if (attempts >= maxAttempts) {
+            resolve();
+          } else {
+            attempts++;
+            setTimeout(checkPermissions, 50);
+          }
+        };
+        checkPermissions();
+      });
     }
-    
+
     if (!store.getters.hasPermission(to.meta.permission)) {
       return next({ path: "/" });
     }

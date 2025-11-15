@@ -136,6 +136,18 @@
                     </div>
                         </div>
                     </div>
+                    
+                    <!-- Custom permissions для групп -->
+                    <div v-if="(groupKey === 'projects' || groupKey === 'cash' || groupKey === 'clients') && groupedResources[groupKey] && groupedResources[groupKey].customPermissions && groupedResources[groupKey].customPermissions.length > 0" class="ml-4 mt-4 pt-4 border-t border-gray-200">
+                        <div class="grid grid-cols-1 gap-2 text-xs">
+                            <div v-for="perm in groupedResources[groupKey].customPermissions" :key="perm.name" class="flex items-center gap-2">
+                                <input type="checkbox" :value="perm.name" v-model="form.permissions"
+                                    class="rounded border-gray-300" />
+                                <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
+                                <span>{{ getCustomPermissionLabel(perm.name) }}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div v-if="customPermissions.length > 0" class="mt-4 pt-4 border-t">
@@ -229,11 +241,11 @@ export default {
             return {
                 finance: {
                     label: 'finance',
-                    resources: ['transactions', 'mutual_settlements', 'warehouse_movements', 'transaction_categories']
+                    resources: ['transactions', 'mutual_settlements', 'transaction_categories', 'invoices']
                 },
                 warehouses: {
                     label: 'warehouses',
-                    resources: ['warehouses', 'warehouse_stocks', 'warehouse_receipts', 'warehouse_writeoffs']
+                    resources: ['warehouses', 'warehouse_stocks', 'warehouse_receipts', 'warehouse_writeoffs', 'warehouse_movements']
                 },
                 cash: {
                     label: 'cash_registers',
@@ -257,15 +269,7 @@ export default {
                 },
                 projects: {
                     label: 'projects',
-                    resources: ['projects']
-                },
-                invoices: {
-                    label: 'invoices',
-                    resources: ['invoices']
-                },
-                transaction_categories: {
-                    label: 'transaction_categories',
-                    resources: ['transaction_categories']
+                    resources: ['projects', 'project_statuses']
                 },
                 companies: {
                     label: 'companies',
@@ -277,11 +281,7 @@ export default {
                 },
                 users: {
                     label: 'users',
-                    resources: ['users']
-                },
-                roles: {
-                    label: 'roles',
-                    resources: ['roles']
+                    resources: ['users', 'roles']
                 },
             };
         },
@@ -351,10 +351,40 @@ export default {
                     }
                 });
                 
-                if (Object.keys(groupResources).length > 0) {
+                // Добавляем custom permissions в соответствующие группы
+                const customPerms = [];
+                if (groupKey === 'projects') {
+                    const projectBudgetPermission = this.allPermissions.find(p => p && p.name === 'settings_project_budget_view');
+                    if (projectBudgetPermission) {
+                        customPerms.push(projectBudgetPermission);
+                    }
+                }
+                if (groupKey === 'cash') {
+                    const cashBalancePermission = this.allPermissions.find(p => p && p.name === 'settings_cash_balance_view');
+                    if (cashBalancePermission) {
+                        customPerms.push(cashBalancePermission);
+                    }
+                    const currenciesPermission = this.allPermissions.find(p => p && p.name === 'settings_currencies_view');
+                    if (currenciesPermission) {
+                        customPerms.push(currenciesPermission);
+                    }
+                }
+                if (groupKey === 'clients') {
+                    const clientBalanceViewPermission = this.allPermissions.find(p => p && p.name === 'settings_client_balance_view');
+                    if (clientBalanceViewPermission) {
+                        customPerms.push(clientBalanceViewPermission);
+                    }
+                    const clientBalanceAdjustmentPermission = this.allPermissions.find(p => p && p.name === 'settings_client_balance_adjustment');
+                    if (clientBalanceAdjustmentPermission) {
+                        customPerms.push(clientBalanceAdjustmentPermission);
+                    }
+                }
+                
+                if (Object.keys(groupResources).length > 0 || customPerms.length > 0) {
                     groups[groupKey] = {
                         label: group.label,
-                        resources: groupResources
+                        resources: groupResources,
+                        customPermissions: customPerms
                     };
                 }
             });
@@ -379,11 +409,28 @@ export default {
                 };
             }
             
-            return groups;
+            // Сортируем группы по алфавиту на основе переведенных названий
+            const sortedGroupKeys = Object.keys(groups).sort((a, b) => {
+                const labelA = this.getResourceLabel(groups[a].label) || groups[a].label;
+                const labelB = this.getResourceLabel(groups[b].label) || groups[b].label;
+                return labelA.localeCompare(labelB, this.$i18n.locale || 'ru');
+            });
+            
+            const sortedGroups = {};
+            sortedGroupKeys.forEach(key => {
+                sortedGroups[key] = groups[key];
+            });
+            
+            return sortedGroups;
         },
         customPermissions() {
             return this.allPermissions.filter(perm => 
-                perm && perm.name && (perm.name.startsWith('settings_') || perm.name.includes('_edit_'))
+                perm && perm.name && (perm.name.startsWith('settings_') || perm.name.includes('_edit_')) 
+                && perm.name !== 'settings_project_budget_view'
+                && perm.name !== 'settings_cash_balance_view'
+                && perm.name !== 'settings_currencies_view'
+                && perm.name !== 'settings_client_balance_view'
+                && perm.name !== 'settings_client_balance_adjustment'
             );
         },
         selectAllChecked: {
@@ -516,7 +563,8 @@ export default {
                 'settings_project_budget_view': 'Просмотр бюджета проекта',
                 'settings_currencies_view': 'Просмотр валют',
                 'settings_cash_balance_view': 'Просмотр баланса кассы',
-                'settings_client_balance_view': 'Просмотр баланса клиента',
+                'settings_client_balance_view': 'Просмотр баланса клиентов',
+                'settings_client_balance_adjustment': 'Корректировка баланса клиента',
             };
 
             const translation = this.getTranslation(permissionName);

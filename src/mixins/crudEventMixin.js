@@ -2,15 +2,19 @@ import CacheInvalidator from '@/utils/cache';
 
 export default {
   data() {
-    const savedPerPage = localStorage.getItem('perPage');
     let perPage = 10;
-    if (savedPerPage) {
-      const parsed = parseInt(savedPerPage, 10);
-      if (!isNaN(parsed) && parsed > 0 && parsed <= 100) {
-        perPage = parsed;
-      } else if (parsed > 100) {
-        localStorage.removeItem('perPage');
+    try {
+      const savedPerPage = localStorage.getItem('perPage');
+      if (savedPerPage) {
+        const parsed = parseInt(savedPerPage, 10);
+        if (!isNaN(parsed) && parsed > 0 && parsed <= 100) {
+          perPage = parsed;
+        } else if (parsed > 100) {
+          localStorage.removeItem('perPage');
+        }
       }
+    } catch (e) {
+      console.warn('localStorage недоступен:', e);
     }
     
     return {
@@ -25,23 +29,25 @@ export default {
       if (newValue > 100) {
         return;
       }
-      localStorage.setItem('perPage', newValue.toString());
+      try {
+        localStorage.setItem('perPage', newValue.toString());
+      } catch (e) {
+        console.warn('Не удалось сохранить perPage:', e);
+      }
     }
   },
   methods: {
     invalidateCache(action) {
-      if (this.cacheInvalidationType) {
+      if (this.cacheInvalidationType && CacheInvalidator[action] && typeof CacheInvalidator[action] === 'function') {
         const companyId = this.$store.state.currentCompany?.id;
         CacheInvalidator[action](this.cacheInvalidationType, companyId);
       }
     },
     refreshDataAfterOperation() {
       if (this.fetchItems) {
-        this.fetchItems(this.data?.currentPage || 1, true).then(() => {
-          if (this.restoreScrollPosition) {
-            this.restoreScrollPosition();
-          }
-        });
+        this.fetchItems(this.data?.currentPage || 1, true)
+          .then(() => this.restoreScrollPosition?.())
+          .catch(error => console.error('Ошибка обновления данных:', error));
       }
       if (this.closeModal) {
         this.shouldRestoreScrollOnClose = false;
@@ -57,11 +63,16 @@ export default {
       
       this.invalidateCache('onUpdate');
       this.refreshDataAfterOperation();
+      
+      if (this.onAfterSaved) {
+        this.onAfterSaved();
+      }
     },
     handleSavedError(m) {
+      const messages = this.getApiErrorMessage(m) || ['Ошибка сохранения'];
       this.showNotification(
         this.savedErrorText || "Ошибка сохранения",
-        m,
+        messages.join('\n'),
         true
       );
     },
@@ -74,11 +85,16 @@ export default {
       
       this.invalidateCache('onDelete');
       this.refreshDataAfterOperation();
+      
+      if (this.onAfterDeleted) {
+        this.onAfterDeleted();
+      }
     },
     handleDeletedError(m) {
+      const messages = this.getApiErrorMessage(m) || ['Ошибка удаления'];
       this.showNotification(
         this.deletedErrorText || "Ошибка удаления",
-        m,
+        messages.join('\n'),
         true
       );
     },

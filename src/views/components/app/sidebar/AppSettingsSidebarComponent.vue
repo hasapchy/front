@@ -9,6 +9,7 @@
                     :animation="200"
                     handle=".drag-handle"
                     item-key="id"
+                    group="menu-items"
                 >
                     <SidebarLink 
                         v-for="element in draggableAvailableItems"
@@ -86,10 +87,37 @@ export default {
         updateDraggableItems() {
             this.draggableAvailableItems = [...(this.availableMenuItems || [])];
         },
-        onDragChange() {
-            this.$store.dispatch('updateMenuItems', { 
-                type: 'available', 
-                items: [...this.draggableAvailableItems]
+        onDragChange(evt) {
+            this.$nextTick(() => {
+                const currentMain = this.$store.state.menuItems.main || [];
+                const availableItems = [...this.draggableAvailableItems];
+                
+                if (evt.added) {
+                    const movedItem = evt.added.element;
+                    const updatedMain = currentMain.filter(item => item.id !== movedItem.id);
+                    this.$store.dispatch('updateBothMenuLists', {
+                        mainItems: updatedMain,
+                        availableItems: availableItems
+                    });
+                } else if (evt.removed) {
+                    const removedItem = evt.removed.element;
+                    if (!currentMain.find(item => item.id === removedItem.id)) {
+                        this.$store.dispatch('updateBothMenuLists', {
+                            mainItems: [...currentMain, removedItem],
+                            availableItems: availableItems
+                        });
+                    } else {
+                        this.$store.dispatch('updateBothMenuLists', {
+                            mainItems: currentMain,
+                            availableItems: availableItems
+                        });
+                    }
+                } else {
+                    this.$store.dispatch('updateBothMenuLists', {
+                        mainItems: currentMain,
+                        availableItems: availableItems
+                    });
+                }
             });
         }
     }

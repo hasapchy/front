@@ -21,7 +21,7 @@
 </template>
 
 <script>
-import BasementProductController from '@/api/BasementProductController';
+import BasementProductController from '@/api/basement/BasementProductController';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import ServiceCard from './ServiceCard.vue';
 
@@ -92,7 +92,6 @@ export default {
                     return user.id || 'guest';
                 }
             } catch (error) {
-                console.error('Error parsing user from localStorage:', error);
             }
             
             return 'guest';
@@ -108,7 +107,6 @@ export default {
                 const servicesData = await BasementProductController.getItems(1, false, {}, 20);
                 this.services = servicesData.items || [];
             } catch (error) {
-                console.error('Error loading services:', error);
                 this.services = [];
             } finally {
                 this.servicesLoading = false;
@@ -142,7 +140,6 @@ export default {
                 }
                 this.products = [...this.products, productDto];
             } catch (error) {
-                console.error('Error selecting service:', error);
             }
         },
         getLocalStorageKey() {
@@ -153,7 +150,6 @@ export default {
                 const saved = localStorage.getItem(this.getLocalStorageKey());
                 return saved ? JSON.parse(saved) : [];
             } catch (error) {
-                console.error('Error reading saved order from localStorage:', error);
                 return [];
             }
         },
@@ -161,7 +157,6 @@ export default {
             try {
                 localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(serviceIds));
             } catch (error) {
-                console.error('Error saving order to localStorage:', error);
             }
         },
         onDragStart(event, index) {

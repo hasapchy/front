@@ -21,13 +21,11 @@ export default {
       return null;
     },
     checkForChanges() {
-      if (!this.isFormInitialized) return false;
+      if (!this.isFormInitialized || !this.initialFormState) return false;
       
       try {
         const currentState = this.getFormState();
-        if (currentState === null || this.initialFormState === null) return false;
-        if (!currentState || Object.keys(currentState).length === 0) return false;
-        if (!this.initialFormState || Object.keys(this.initialFormState).length === 0) return false;
+        if (!currentState || !this.initialFormState) return false;
         return JSON.stringify(currentState) !== JSON.stringify(this.initialFormState);
       } catch (error) {
         console.error('Error checking form changes:', error);
@@ -54,18 +52,6 @@ export default {
     },
     closeForm() {
       this.$emit('close-request');
-    },
-    handleBeforeUnload(event) {
-      if (this.uploading) {
-        event.preventDefault();
-        event.returnValue = '';
-        return;
-      }
-      
-      if (this.isFormInitialized && this.checkForChanges()) {
-        event.preventDefault();
-        event.returnValue = '';
-      }
     },
     resetFormChanges() {
       this.saveInitialState();

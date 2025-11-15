@@ -157,7 +157,7 @@ export default {
   languageChanged: 'Язык изменен',
   turkmen: 'Туркменский',
   russian: 'Русский',
-  accountingSystem: 'Birhasap',
+  accountingSystem: 'Hasap',
   
   // Действия
   add: 'Добавить',
@@ -708,7 +708,7 @@ export default {
   settings_edit: 'Настройки',
   users: 'Сотрудники',
   orders: 'Заказы',
-  categories: 'Категории',
+  categories: 'Категории товаров',
   clients: 'Контакты',
   products: 'Товары',
   transactions: 'Транзакции',
@@ -1192,10 +1192,8 @@ export default {
   editProjectStatus: 'Редактировать статус проекта',
   deleteProjectStatus: 'Удалить статус проекта',
   statusColor: 'Цвет статуса',
-  projectStatuses: 'Статусы проектов',
   color: 'Цвет',
   projectStatus: 'Статус проекта',
-  projectStatuses: 'Статусы проектов',
   
   // Контракты
   addContract: 'Добавить контракт',

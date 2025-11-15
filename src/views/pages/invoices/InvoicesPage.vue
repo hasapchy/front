@@ -53,7 +53,7 @@
     
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="admin.invoices" :columns-config="translatedColumnsConfig" :table-data="data.items"
+            <DraggableTable table-key="admin.invoices" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" :onItemClick="(i) => showModal(i)" @selectionChange="selectedIds = $event" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
@@ -89,7 +89,6 @@ import crudEventMixin from "@/mixins/crudEventMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import batchActionsMixin from "@/mixins/batchActionsMixin";
 import modalMixin from "@/mixins/modalMixin";
-import tableTranslationMixin from "@/mixins/tableTranslationMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import { defineAsyncComponent } from "vue";
 import { eventBus } from "@/eventBus";
@@ -98,7 +97,7 @@ import searchMixin from "@/mixins/searchMixin";
 
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, tableTranslationMixin, companyChangeMixin, searchMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin,  companyChangeMixin, searchMixin],
     components: { 
         NotificationToast, 
         SideModalDialog, 

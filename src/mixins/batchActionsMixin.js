@@ -10,7 +10,7 @@ export default {
   },
   methods: {
     async deleteItems(ids) {
-      if (!ids || !ids.length) return;
+      if (!Array.isArray(ids) || !ids.length) return;
 
       this.idsToDelete = ids;
       this.deleteDialog = true;
@@ -28,22 +28,18 @@ export default {
           await this.controller.deleteItem(id);
           deletedCount++;
         } catch (e) {
-          const messages = this.getApiErrorMessage?.(e) || [
-            e.message || "Ошибка",
-          ];
+          const messages = this.getApiErrorMessage(e) || [e.message || "Ошибка"];
           errors.push(`ID ${id}: ${messages[0]}`);
         }
       }
 
       if (deletedCount > 0) {
-        this.showNotification?.(`Удалено ${deletedCount} элементов`);
-        if (this.invalidateCache) {
-          this.invalidateCache('onDelete');
-        }
+        this.showNotification(`Удалено ${deletedCount} элементов`);
+        this.invalidateCache?.('onDelete');
       }
 
       if (errors.length > 0) {
-        this.showNotification?.("Ошибки при удалении", errors.join("\n"), true);
+        this.showNotification("Ошибки при удалении", errors.join("\n"), true);
       }
 
       this.selectedIds = [];
@@ -54,9 +50,13 @@ export default {
     getBatchActions() {
       const actions = [];
       
-      const hasDeletePermission = this.$store?.getters?.hasPermission?.('orders_delete') || 
-                                 this.$store?.getters?.hasPermission?.('projects_delete') ||
-                                 this.$store?.getters?.hasPermission?.('clients_delete');
+      const deletePermissions = Array.isArray(this.deletePermission) 
+        ? this.deletePermission 
+        : (this.deletePermission ? [this.deletePermission] : ['orders_delete', 'projects_delete', 'clients_delete']);
+      
+      const hasDeletePermission = deletePermissions.some(perm => 
+        this.$store.getters.hasPermission(perm)
+      );
       
       if (hasDeletePermission) {
         actions.push({

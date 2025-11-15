@@ -925,7 +925,7 @@ export default {
   languageChanged: 'Dil üýtgedildi',
   turkmen: 'Türkmençe',
   russian: 'Rusça',
-  accountingSystem: 'Birhasap',
+  accountingSystem: 'Hasap',
   
   // Новые переводы для фильтров транзакций
   allTransactionTypes: 'Ähli tranzaksiya görnüşleri',

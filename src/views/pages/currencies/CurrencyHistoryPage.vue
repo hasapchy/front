@@ -1,9 +1,9 @@
 <template>
     <div class="flex justify-between items-center mb-4">
         <div class="flex items-center space-x-4">
-            <PrimaryButton 
-                v-if="selectedCurrency" 
-                :onclick="() => showModal(null)" 
+            <PrimaryButton
+                v-if="selectedCurrency"
+                :onclick="() => showModal(null)"
                 :disabled="!$store.getters.hasPermission('currency_history_create')"
                 icon="fas fa-plus">
             </PrimaryButton>
@@ -20,53 +20,53 @@
             :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
             @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
-    
+
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
-    
+
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
-            <DraggableTable 
-                table-key="settings.currency_history" 
-                :columns-config="translatedColumnsConfig" 
+            <DraggableTable
+                table-key="settings.currency_history"
+                :columns-config="columnsConfig"
                 :table-data="data.items"
-                :item-mapper="itemMapper" 
+                :item-mapper="itemMapper"
                 :onItemClick="(i) => { showModal(i) }"
-                @selectionChange="selectedIds = $event" 
+                @selectionChange="selectedIds = $event"
             />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <SpinnerIcon />
         </div>
     </transition>
-    
+
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <CurrencyHistoryCreatePage 
-            ref="currencyHistoryForm" 
-            @saved="handleSaved" 
-            @saved-error="handleSavedError" 
+        <CurrencyHistoryCreatePage
+            ref="currencyHistoryForm"
+            @saved="handleSaved"
+            @saved-error="handleSavedError"
             @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" 
-            @close-request="closeModal" 
+            @deleted-error="handleDeletedError"
+            @close-request="closeModal"
             :editingItem="editingItem"
             :currency="selectedCurrency"
         />
     </SideModalDialog>
-    
-    <NotificationToast 
-        :title="notificationTitle" 
-        :subtitle="notificationSubtitle" 
+
+    <NotificationToast
+        :title="notificationTitle"
+        :subtitle="notificationSubtitle"
         :show="notification"
-        :is-danger="notificationIsDanger" 
-        @close="closeNotification" 
+        :is-danger="notificationIsDanger"
+        @close="closeNotification"
     />
-    
-    <AlertDialog 
-        :dialog="deleteDialog" 
-        :descr="`${$t('confirmDeleteExchangeRate')} (${selectedIds.length})?`" 
+
+    <AlertDialog
+        :dialog="deleteDialog"
+        :descr="`${$t('confirmDeleteExchangeRate')} (${selectedIds.length})?`"
         :confirm-text="$t('deleteSelected')"
-        :leave-text="$t('cancel')" 
-        @confirm="confirmDeleteItems" 
-        @leave="deleteDialog = false" 
+        :leave-text="$t('cancel')"
+        @confirm="confirmDeleteItems"
+        @leave="deleteDialog = false"
     />
 </template>
 
@@ -84,19 +84,19 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import tableTranslationMixin from '@/mixins/tableTranslationMixin';
+
 
 export default {
-    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, tableTranslationMixin],
-    components: { 
-        NotificationToast, 
-        PrimaryButton, 
-        SideModalDialog, 
-        Pagination, 
-        DraggableTable, 
-        CurrencyHistoryCreatePage, 
-        BatchButton, 
-        AlertDialog 
+    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin],
+    components: {
+        NotificationToast,
+        PrimaryButton,
+        SideModalDialog,
+        Pagination,
+        DraggableTable,
+        CurrencyHistoryCreatePage,
+        BatchButton,
+        AlertDialog
     },
     data() {
         return {
@@ -140,21 +140,21 @@ export default {
                 this.showNotification(this.$t('errorLoadingCurrencies'), error.message, true);
             }
         },
-        
+
         async onCurrencyChange() {
             if (!this.selectedCurrencyId) {
                 this.selectedCurrency = null;
                 this.data = null;
                 return;
             }
-            
+
             try {
                 this.loading = true;
                 const currency = this.currencies.find(c => c.id == this.selectedCurrencyId);
                 this.selectedCurrency = currency;
-                
+
                 const historyData = await CurrencyHistoryController.getCurrencyHistory(this.selectedCurrencyId, 1, this.perPage);
-                
+
                 // Преобразуем в формат для таблицы
                 this.data = {
                     items: historyData.history,
@@ -167,7 +167,7 @@ export default {
                 this.loading = false;
             }
         },
-        
+
         itemMapper(i, c) {
             switch (c) {
                 case 'exchangeRate':
@@ -179,19 +179,19 @@ export default {
                 case 'duration':
                     return i.getDuration();
                 case 'status':
-                    return i.isActive() ? 
+                    return i.isActive() ?
                         '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">' + this.$t('active') + '</span>' :
                         '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">' + this.$t('inactive') + '</span>';
                 default:
                     return i[c];
             }
         },
-        
+
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
-        
+
         async fetchItems(page = 1, silent = false) {
             // Для истории курсов пагинация не нужна, так как это история одной валюты
             await this.onCurrencyChange();

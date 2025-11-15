@@ -11,7 +11,7 @@
     </div>
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="admin.roles" :columns-config="translatedColumnsConfig" :table-data="data.items"
+            <DraggableTable table-key="admin.roles" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="(i) => showModal(i)" />
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
@@ -43,10 +43,9 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import tableTranslationMixin from '@/mixins/tableTranslationMixin';
 
 export default {
-    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, tableTranslationMixin],
+    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, RolesCreatePage, Pagination, DraggableTable, AlertDialog },
     data() {
         return {
@@ -98,16 +97,7 @@ export default {
                     return item[column];
             }
         },
-        async handleSaved() {
-            this.showNotification(
-                this.savedSuccessText || "Успешно сохранено",
-                "",
-                false
-            );
-            
-            this.invalidateCache('onUpdate');
-            this.refreshDataAfterOperation();
-            
+        async onAfterSaved() {
             setTimeout(async () => {
                 try {
                     await this.$store.dispatch('refreshUserPermissions');
