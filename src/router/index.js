@@ -186,6 +186,7 @@ const routes = [
         meta: {
           title: "transfers",
           requiresAuth: true,
+          permission: "transfers_view",
           binded: [
             {
               name: "mutualSettlements",
