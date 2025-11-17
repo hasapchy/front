@@ -143,14 +143,24 @@ async function loadProductsForSearch(getters, isProducts, limit = 10) {
     const BasementProductController = (
       await import("@/api/basement/BasementProductController")
     ).default;
-    
+
     if (isProducts === true) {
-      const productsResult = await BasementProductController.getItems(1, true, {}, limit);
+      const productsResult = await BasementProductController.getItems(
+        1,
+        true,
+        {},
+        limit
+      );
       return {
         items: productsResult.items || [],
       };
     } else if (isProducts === false) {
-      const servicesResult = await BasementProductController.getItems(1, false, {}, limit);
+      const servicesResult = await BasementProductController.getItems(
+        1,
+        false,
+        {},
+        limit
+      );
       return {
         items: servicesResult.items || [],
       };
@@ -160,7 +170,10 @@ async function loadProductsForSearch(getters, isProducts, limit = 10) {
         BasementProductController.getItems(1, false, {}, limit),
       ]);
       return {
-        items: [...(productsResult.items || []), ...(servicesResult.items || [])],
+        items: [
+          ...(productsResult.items || []),
+          ...(servicesResult.items || []),
+        ],
       };
     }
   } else {
@@ -1877,6 +1890,9 @@ const store = createStore({
     user: (state) => state.user,
     permissions: (state) => state.permissions,
     hasPermission: (state) => (perm) => {
+      if (!perm) {
+        return true;
+      }
       if (perm.startsWith("settings_")) {
         return state.permissions.includes(perm);
       }

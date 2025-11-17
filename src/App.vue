@@ -47,6 +47,7 @@ export default {
             }
             
             this.$store.dispatch('setUser', userData.user);
+            console.log('[Auth] Current user:', userData.user);
             this.$store.dispatch('setPermissions', userData.permissions || []);
             await this.$store.dispatch('initializeMenu');
             
