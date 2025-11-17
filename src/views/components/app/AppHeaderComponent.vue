@@ -2,10 +2,6 @@
     <div class="shadow-sm px-4 py-1.5 mb-5 bg-white rounded">
         <div class="flex items-center justify-between">
                 <div class="flex items-center gap-6">
-                    <div class="flex items-center gap-3">
-                        <h1 class="text-lg font-semibold">{{ displayTitle }}</h1>
-                        <AppVersionBadge />
-                    </div>
                     <router-link v-for="tab in binded" :key="tab.path" :to="tab.path"
                         class="text-[#337AB7] hover:text-[#3571A4] hover:underline font-semibold transition-all mr-4">
                         {{ tab.name }}
@@ -35,7 +31,6 @@ import CompanySwitcher from './CompanySwitcher.vue';
 import SoundToggle from './SoundToggle.vue';
 import UserProfileDropdown from './UserProfileDropdown.vue';
 import ClearCacheButton from './ClearCacheButton.vue';
-import AppVersionBadge from './AppVersionBadge.vue';
 import { eventBus } from '@/eventBus';
 
 export default {
@@ -45,8 +40,7 @@ export default {
         CompanySwitcher,
         SoundToggle,
         UserProfileDropdown,
-        ClearCacheButton,
-        AppVersionBadge
+        ClearCacheButton
     },
     data() {
         const route = useRoute();

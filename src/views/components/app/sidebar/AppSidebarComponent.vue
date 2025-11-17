@@ -80,6 +80,10 @@
                         info@ltm.studio
                     </a>
                 </div>
+
+                <div class="mt-3 text-[11px] uppercase tracking-wide text-gray-500">
+                    версия {{ appVersionLabel }}
+                </div>
             </div>
         </div>
     </aside>
@@ -88,6 +92,7 @@
 <script>
 import { VueDraggableNext } from 'vue-draggable-next';
 import SidebarLink from './SidebarLink.vue';
+import { CURRENT_APP_VERSION } from '@/constants/appVersion';
 
 export default {
     components: {
@@ -123,6 +128,9 @@ export default {
                 return true;
             }
             return this.$store.state.permissionsLoaded;
+        },
+        appVersionLabel() {
+            return CURRENT_APP_VERSION.version;
         }
     },
     

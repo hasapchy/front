@@ -1,5 +1,5 @@
 <template>
-    <div class="relative select-none">
+    <div class="relative select-none z-[2000]">
         <button
             class="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors"
             type="button"
@@ -13,7 +13,7 @@
         <transition name="fade">
             <div
                 v-if="showNotes"
-                class="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-50"
+                class="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-[2100]"
             >
                 <div class="flex items-center justify-between mb-2">
                     <div>
