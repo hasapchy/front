@@ -1401,6 +1401,7 @@ const store = createStore({
           const normalized = new CompanyDto(state.currentCompany);
           commit("SET_CURRENT_COMPANY", normalized);
           await loadCompanyDataIfNeeded(dispatch, state);
+          await dispatch("refreshUserPermissions");
           return normalized;
         }
 
@@ -1411,6 +1412,7 @@ const store = createStore({
           if (lastCompany) {
             commit("SET_CURRENT_COMPANY", lastCompany);
             await loadCompanyDataIfNeeded(dispatch, state);
+            await dispatch("refreshUserPermissions");
             return lastCompany;
           }
         }
@@ -1421,6 +1423,7 @@ const store = createStore({
 
         if (company?.id) {
           await loadCompanyDataIfNeeded(dispatch, state);
+          await dispatch("refreshUserPermissions");
         }
 
         return company;
@@ -1454,6 +1457,7 @@ const store = createStore({
 
         commit("CLEAR_COMPANY_DATA");
         await dispatch("loadCompanyData");
+        await dispatch("refreshUserPermissions");
         eventBus.emit("company-changed", companyId);
 
         return company;
