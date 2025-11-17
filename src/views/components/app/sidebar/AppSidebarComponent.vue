@@ -60,7 +60,7 @@
             <div class="text-center">
                 <!-- Логотип LTM -->
                 <div class="mb-3">
-                    <img src="/logo.jpg" alt="LTM Studio" class="h-8 w-auto mx-auto opacity-80">
+                    <img src="/logo.png" alt="LTM Studio" class="h-8 w-auto mx-auto opacity-80">
                 </div>
                 
                 <!-- Название и ссылка -->
@@ -160,7 +160,7 @@ export default {
     methods: {
         getCompanyLogo() {
             const company = this.currentCompany;
-            if (!company) return '/logo.jpg';
+            if (!company) return '/logo.png';
             
             if (company.logoUrl && typeof company.logoUrl === 'function') {
                 const url = company.logoUrl();
@@ -174,11 +174,11 @@ export default {
                 return `${import.meta.env.VITE_APP_BASE_URL}/storage/${company.logo}?v=${timestamp}&cv=${ver}`;
             }
             
-            return '/logo.jpg';
+            return '/logo.png';
         },
         
         onLogoError(event) {
-            event.target.src = '/logo.jpg';
+            event.target.src = '/logo.png';
         },
         
         updateDraggableItems() {

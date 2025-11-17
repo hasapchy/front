@@ -46,7 +46,7 @@
                 <div v-else @click="$refs.imageInput.click()"
                     class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
                     <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
-                        <img src="/logo.jpg" alt="Placeholder" class="w-16 h-16 object-contain opacity-50">
+                        <img src="/logo.png" alt="Placeholder" class="w-16 h-16 object-contain opacity-50">
                         <span class="text-xs text-gray-500 mt-2 text-center">{{ $t('clickToUploadImage') }}</span>
                     </div>
                 </div>

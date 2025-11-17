@@ -5,7 +5,7 @@
             <!-- Logo or Title Section -->
             <div class="text-center mb-8 animate-fade-in">
                 <div class="inline-flex items-center justify-center mb-4">
-                    <img src="/logo.jpg" alt="Lebizli Tehnologiya Merkezi" class="h-20 w-auto object-contain">
+                    <img src="/logo.png" alt="Lebizli Tehnologiya Merkezi" class="h-20 w-auto object-contain">
                 </div>
                 <h1 class="text-3xl font-bold text-gray-800 mb-2">Добро пожаловать</h1>
                 <p class="text-gray-600">Войдите в свой аккаунт</p>

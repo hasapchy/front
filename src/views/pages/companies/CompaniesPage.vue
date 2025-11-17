@@ -109,7 +109,7 @@ export default {
         itemMapper(item, column) {
             switch (column) {
                 case 'logo':
-                    const logoUrl = item.logoUrl ? item.logoUrl() : '/logo.jpg';
+                    const logoUrl = item.logoUrl ? item.logoUrl() : '/logo.png';
                     return `<img src="${logoUrl}" alt="${item.name}" class="w-8 h-8 object-contain rounded">`;
                 case 'createdAt':
                     return new Date(item.createdAt).toLocaleDateString();

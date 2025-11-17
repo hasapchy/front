@@ -142,7 +142,7 @@ export default {
     },
     
     getCompanyLogo(company) {
-      if (!company) return '/logo.jpg';
+      if (!company) return '/logo.png';
       if (company.logoUrl && typeof company.logoUrl === 'function') {
         const url = company.logoUrl();
         const ver = this.$store.state.logoVersion || 0;
@@ -154,7 +154,7 @@ export default {
         const ver = this.$store.state.logoVersion || 0;
         return `${import.meta.env.VITE_APP_BASE_URL}/storage/${company.logo}?v=${timestamp}&cv=${ver}`;
       }
-      return '/logo.jpg';
+      return '/logo.png';
     },
     
     async selectCompany(companyId) {

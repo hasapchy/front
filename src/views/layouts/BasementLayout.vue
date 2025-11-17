@@ -123,7 +123,7 @@ export default {
   methods: {
     getLogo() {
       const company = this.$store.getters.currentCompany
-      if (!company) return '/logo.jpg'
+      if (!company) return '/logo.png'
 
       if (company.logoUrl && typeof company.logoUrl === 'function') {
         const url = company.logoUrl()
@@ -139,7 +139,7 @@ export default {
 
       const ver = this.$store?.state?.logoVersion || 0
       const ts = Date.now()
-      return `/logo.jpg?v=${ts}&cv=${ver}`
+      return `/logo.png?v=${ts}&cv=${ver}`
     },
     updatePageTitle(route) {
       let title = 'Hasapchy'
@@ -156,7 +156,7 @@ export default {
     },
     onLogoError(event) {
       console.error('Company logo failed to load:', event.target.src)
-      event.target.src = '/logo.jpg'
+      event.target.src = '/logo.png'
     },
     onLanguageChanged() {
       this.updatePageTitle(this.$route)

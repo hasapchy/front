@@ -24,7 +24,7 @@ export class CompanyDto {
       const timestamp = this.updatedAt ? new Date(this.updatedAt).getTime() : Date.now();
       return `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.logo}?v=${timestamp}`;
     }
-    return '/logo.jpg';
+    return '/logo.png';
   }
 
   static fromApiArray(dataArray) {
