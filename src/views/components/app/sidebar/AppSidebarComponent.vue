@@ -81,8 +81,9 @@
                     </a>
                 </div>
 
-                <div class="mt-3 text-[11px] uppercase tracking-wide text-gray-500">
-                    версия {{ appVersionLabel }}
+                <div class="mt-3 text-[11px] uppercase tracking-wide text-gray-400 flex items-center justify-center gap-1">
+                    <span>версия</span>
+                    <AppVersionBadge variant="dark" />
                 </div>
             </div>
         </div>
@@ -92,12 +93,13 @@
 <script>
 import { VueDraggableNext } from 'vue-draggable-next';
 import SidebarLink from './SidebarLink.vue';
-import { CURRENT_APP_VERSION } from '@/constants/appVersion';
+import AppVersionBadge from '../AppVersionBadge.vue';
 
 export default {
     components: {
         draggable: VueDraggableNext,
-        SidebarLink
+        SidebarLink,
+        AppVersionBadge
     },
     
     data() {
@@ -128,9 +130,6 @@ export default {
                 return true;
             }
             return this.$store.state.permissionsLoaded;
-        },
-        appVersionLabel() {
-            return CURRENT_APP_VERSION.version;
         }
     },
     
