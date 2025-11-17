@@ -1324,15 +1324,11 @@ const store = createStore({
           dispatch("loadCashRegisters"),
         ]);
 
-        const otherLoadsPromises = [dispatch("loadCategories")];
-
-        if (rootGetters.hasPermission("clients_view")) {
-          otherLoadsPromises.push(dispatch("loadClients"));
-        }
-
-        if (rootGetters.hasPermission("projects_view")) {
-          otherLoadsPromises.push(dispatch("loadProjects"));
-        }
+        const otherLoadsPromises = [
+          dispatch("loadCategories"),
+          dispatch("loadClients"),
+          dispatch("loadProjects"),
+        ];
 
         const otherLoads = Promise.allSettled(otherLoadsPromises);
 
