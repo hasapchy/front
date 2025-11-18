@@ -4,7 +4,7 @@
         <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
         <div>
             <div v-show="currentTab === 'info'">
-                <ClientSearch v-model:selectedClient="selectedClient" :allowDeselect="false" />
+                <ClientSearch v-model:selectedClient="selectedClient" :allowDeselect="true" />
                 <div>
                     <label class="required">{{ $t('productCategory') }}</label>
                     <div class="flex items-center space-x-2">

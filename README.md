@@ -31,7 +31,7 @@
 ├── database/migrations/      # Миграции БД
 └── routes/api.php           # API маршруты
 
-📁 hasapchy/            # Frontend (Vue.js SPA)
+📁 hasap/            # Frontend (Vue.js SPA)
 ├── src/api/                 # API контроллеры
 ├── src/dto/                 # Data Transfer Objects
 ├── src/views/pages/         # Страницы приложения

@@ -8,7 +8,7 @@
             <div class="flex">
               <div class="flex-shrink-0 flex items-center">
                 <div class="flex items-center gap-3">
-                  <img :src="getLogo()" alt="Hasapchy" class="h-8 w-8 object-contain" @error="onLogoError" />
+                  <img :src="getLogo()" alt="Hasapp.online" class="h-8 w-8 object-contain" @error="onLogoError" />
                   <h1 class="text-xl font-bold text-gray-900">{{ $t('accountingSystem') }}</h1>
                 </div>
               </div>
@@ -142,13 +142,13 @@ export default {
       return `/logo.png?v=${ts}&cv=${ver}`
     },
     updatePageTitle(route) {
-      let title = 'Hasapchy'
+      let title = 'Hasapp.online'
 
       if (route && route.meta && route.meta.title) {
         if (typeof route.meta.title === 'string') {
-          title = this.$t(route.meta.title) + ' - Hasapchy'
+          title = this.$t(route.meta.title) + ' - Hasapp.online'
         } else {
-          title = route.meta.title + ' - Hasapchy'
+          title = route.meta.title + ' - Hasapp.online'
         }
       }
 

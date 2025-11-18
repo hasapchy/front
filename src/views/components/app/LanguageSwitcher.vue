@@ -126,7 +126,7 @@ export default {
         title = this.$t('settings')
       }
       
-      return title ? `${title} - Hasapchy` : 'Hasapchy'
+      return title ? `${title} - Hasapp.online` : 'Hasapp.online'
     },
     
     showLanguageNotification(locale) {
