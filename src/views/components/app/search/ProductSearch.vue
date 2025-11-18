@@ -414,7 +414,7 @@ export default {
                 this.productSearchLoading = true;
                 try {
                     const results = await ProductController.searchItems(this.productSearch, this.onlyProducts ? true : null, this.warehouseId);
-                    let products = ProductSearchDto.fromApiArray(results);
+                    let products = results;
 
                     if (this.onlyProducts) {
                         products = products.filter(p => Boolean(p.type));

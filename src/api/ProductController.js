@@ -66,6 +66,21 @@ export default class ProductController {
         params: searchParams,
       });
       const data = response.data;
+      
+      console.log('[ProductController.searchItems] Raw response.data:', {
+        isArray: Array.isArray(data),
+        length: Array.isArray(data) ? data.length : 0,
+        first_item: Array.isArray(data) && data[0] ? {
+          id: data[0].id,
+          name: data[0].name,
+          retail_price: data[0].retail_price,
+          wholesale_price: data[0].wholesale_price,
+          purchase_price: data[0].purchase_price,
+          stock_quantity: data[0].stock_quantity,
+          full: data[0]
+        } : null
+      });
+      
       const items = ProductSearchDto.fromApiArray(data);
 
       return items;
