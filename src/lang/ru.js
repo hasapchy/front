@@ -157,7 +157,7 @@ export default {
   languageChanged: 'Язык изменен',
   turkmen: 'Туркменский',
   russian: 'Русский',
-  accountingSystem: 'Hasap',
+  accountingSystem: 'Hasapp.online',
   
   // Действия
   add: 'Добавить',

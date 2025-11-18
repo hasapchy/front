@@ -157,7 +157,7 @@ export default {
   notSpecified: 'Not specified',
   
   // System
-  accountingSystem: 'Hasap',
+  accountingSystem: 'Hasapp.online',
   
   // Company settings
   companyName: 'Company Name',
