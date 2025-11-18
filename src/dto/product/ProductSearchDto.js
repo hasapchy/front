@@ -29,7 +29,7 @@ export default class ProductSearchDto {
     this.categoryId = category_id;
     this.categoryName = category_name;
     this.categories = categories;
-    this.stockQuantity = stock_quantity;
+    this.stockQuantity = stock_quantity ?? 0;
     this.unitId = unit_id;
     this.unitName = unit_name;
     this.unitShortName = unit_short_name;
@@ -73,6 +73,16 @@ export default class ProductSearchDto {
 
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
+      console.log('[ProductSearchDto] Raw API data:', {
+        id: data.id,
+        name: data.name,
+        stock_quantity: data.stock_quantity,
+        retail_price: data.retail_price,
+        wholesale_price: data.wholesale_price,
+        purchase_price: data.purchase_price,
+        full_data: data
+      });
+      
       let stock_quantity = data.stock_quantity;
       if (stock_quantity === undefined || stock_quantity === null) {
         stock_quantity = data.warehouse_quantity || 
@@ -84,7 +94,7 @@ export default class ProductSearchDto {
                         data.quantity || 0;
       }
       
-      return new ProductSearchDto({
+      const dto = new ProductSearchDto({
         id: data.id,
         type: data.type,
         name: data.name,
@@ -102,6 +112,18 @@ export default class ProductSearchDto {
         wholesale_price: data.wholesale_price,
         purchase_price: data.purchase_price,
       });
+      
+      console.log('[ProductSearchDto] Processed DTO:', {
+        id: dto.id,
+        name: dto.name,
+        stockQuantity: dto.stockQuantity,
+        retailPrice: dto.retailPrice,
+        wholesalePrice: dto.wholesalePrice,
+        purchasePrice: dto.purchasePrice,
+        retailPriceFormatted: dto.retailPriceFormatted()
+      });
+      
+      return dto;
     }).filter(Boolean);
   }
 }

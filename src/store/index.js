@@ -123,13 +123,34 @@ function generateQueryCacheKey(prefix, params, companyId) {
 }
 
 function logRoundingGetter(name, value, state) {
-  if (process.env.NODE_ENV === "development") {
-    console.log(`[Store] ${name}:`, {
-      companyId: state.currentCompany?.id,
-      companyName: state.currentCompany?.name,
-      value,
-    });
+  console.log(`[Store] ${name}:`, {
+    companyId: state.currentCompany?.id,
+    companyName: state.currentCompany?.name,
+    value,
+  });
+}
+
+function logCompanyRoundingSettings(company) {
+  if (!company) {
+    return;
   }
+  const payload = {
+    companyId: company.id,
+    name: company.name,
+    amounts: {
+      enabled: company.rounding_enabled,
+      decimals: company.rounding_decimals,
+      direction: company.rounding_direction,
+      customThreshold: company.rounding_custom_threshold,
+    },
+    quantity: {
+      enabled: company.rounding_quantity_enabled,
+      decimals: company.rounding_quantity_decimals,
+      direction: company.rounding_quantity_direction,
+      customThreshold: company.rounding_quantity_custom_threshold,
+    },
+  };
+  console.log("[Company] Rounding settings:", payload);
 }
 
 async function loadCompanyDataIfNeeded(dispatch, state) {
@@ -574,6 +595,7 @@ const store = createStore({
         return;
       }
       state.currentCompany = company;
+      logCompanyRoundingSettings(company);
     },
     SET_LAST_COMPANY_ID(state, companyId) {
       state.lastCompanyId = companyId;
