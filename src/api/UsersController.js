@@ -173,6 +173,69 @@ const UsersController = {
       throw error;
     }
   },
+
+  async getSalaries(userId) {
+    try {
+      const { data } = await api.get(`/users/${userId}/salaries`);
+      return data.salaries || [];
+    } catch (error) {
+      console.error("Ошибка при получении зарплат:", error);
+      throw error;
+    }
+  },
+
+  async createSalary(userId, salaryData) {
+    try {
+      const { data } = await api.post(`/users/${userId}/salaries`, salaryData);
+      return data;
+    } catch (error) {
+      console.error("Ошибка при создании зарплаты:", error);
+      throw error;
+    }
+  },
+
+  async updateSalary(userId, salaryId, salaryData) {
+    try {
+      const { data } = await api.put(`/users/${userId}/salaries/${salaryId}`, salaryData);
+      return data;
+    } catch (error) {
+      console.error("Ошибка при обновлении зарплаты:", error);
+      throw error;
+    }
+  },
+
+  async deleteSalary(userId, salaryId) {
+    try {
+      const { data } = await api.delete(`/users/${userId}/salaries/${salaryId}`);
+      return data;
+    } catch (error) {
+      console.error("Ошибка при удалении зарплаты:", error);
+      throw error;
+    }
+  },
+
+  async getEmployeeBalance(userId) {
+    try {
+      const { data } = await api.get(`/users/${userId}/balance`);
+      return data.balance;
+    } catch (error) {
+      console.error("Ошибка при получении баланса сотрудника:", error);
+      throw error;
+    }
+  },
+
+  async getEmployeeBalanceHistory(userId) {
+    try {
+      const { data } = await api.get(`/users/${userId}/balance-history`);
+      const ClientBalanceHistoryDto = (await import("@/dto/client/ClientBalanceHistoryDto")).default;
+      return ClientBalanceHistoryDto.fromApiArray(data.history || []);
+    } catch (error) {
+      if (error?.response?.status !== 403) {
+        console.error("Ошибка при получении истории баланса сотрудника:", error);
+      }
+      throw error;
+    }
+  },
 };
 
 export default UsersController;

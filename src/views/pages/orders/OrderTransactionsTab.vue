@@ -16,7 +16,11 @@
             <template v-if="transactionModal">
                 <TransactionCreatePage :editingItem="editingTransaction" :initial-client="client"
                     :initial-project-id="projectId" :order-id="orderId" :default-cash-id="cashId"
-                    @saved="handleTransactionSaved" @deleted="handleTransactionDeleted" />
+                    :form-config="orderFormConfig"
+                    @saved="handleTransactionSaved"
+                    @saved-error="handleTransactionError"
+                    @deleted="handleTransactionDeleted"
+                    @deleted-error="handleTransactionError" />
             </template>
         </SideModalDialog>
     </div>
@@ -28,8 +32,12 @@ import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import TransactionController from '@/api/TransactionController';
+import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
+import notificationMixin from '@/mixins/notificationMixin';
+import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 
 export default {
+    mixins: [notificationMixin, getApiErrorMessage],
     props: {
         orderId: { type: [String, Number], required: true },
         client: { type: Object, default: null },
@@ -60,6 +68,11 @@ export default {
                 { name: 'date', label: 'Дата' },
                 { name: 'userName', label: 'Сотрудник' },
             ]
+        }
+    },
+    computed: {
+        orderFormConfig() {
+            return TRANSACTION_FORM_PRESETS.orderPayment;
         }
     },
     watch: {
@@ -131,6 +144,18 @@ export default {
             if (this.client?.id) {
                 await this.$store.dispatch('loadClients');
             }
+        },
+        handleTransactionError(error) {
+            let message;
+            if (typeof error === 'string') {
+                message = error;
+            } else if (Array.isArray(error)) {
+                message = error.join(', ');
+            } else {
+                const parsed = this.getApiErrorMessage(error);
+                message = Array.isArray(parsed) ? parsed.join(', ') : parsed;
+            }
+            this.showNotification(this.$t('error'), message || this.$t('unknownError'), true);
         },
         itemMapper(i, c) {
             switch (c) {

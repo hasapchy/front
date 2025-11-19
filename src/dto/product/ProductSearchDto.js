@@ -73,16 +73,6 @@ export default class ProductSearchDto {
 
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
-      console.log('[ProductSearchDto] Raw API data:', {
-        id: data.id,
-        name: data.name,
-        stock_quantity: data.stock_quantity,
-        retail_price: data.retail_price,
-        wholesale_price: data.wholesale_price,
-        purchase_price: data.purchase_price,
-        full_data: data
-      });
-      
       let stock_quantity = data.stock_quantity;
       if (stock_quantity === undefined || stock_quantity === null) {
         stock_quantity = data.warehouse_quantity || 
@@ -111,16 +101,6 @@ export default class ProductSearchDto {
         retail_price: data.retail_price,
         wholesale_price: data.wholesale_price,
         purchase_price: data.purchase_price,
-      });
-      
-      console.log('[ProductSearchDto] Processed DTO:', {
-        id: dto.id,
-        name: dto.name,
-        stockQuantity: dto.stockQuantity,
-        retailPrice: dto.retailPrice,
-        wholesalePrice: dto.wholesalePrice,
-        purchasePrice: dto.purchasePrice,
-        retailPriceFormatted: dto.retailPriceFormatted()
       });
       
       return dto;

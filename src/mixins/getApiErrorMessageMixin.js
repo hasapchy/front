@@ -1,6 +1,18 @@
 export default {
   methods: {
     getApiErrorMessage(error) {
+      if (!error) {
+        return ["Неизвестная ошибка"];
+      }
+
+      if (Array.isArray(error)) {
+        return error.filter(Boolean);
+      }
+
+      if (typeof error === "string") {
+        return [error];
+      }
+
       const messages = [];
 
       if (error?.response?.data) {

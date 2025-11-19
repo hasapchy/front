@@ -11,6 +11,7 @@ export default {
   clientDebts: 'Client Credits',
   oweUs: 'Owe Us',
   weOwe: 'We Owe',
+  enable: 'Enable',
   enableSound: 'Enable Sound',
   disableSound: 'Disable Sound',
   profileSettings: 'Profile Settings',
@@ -126,6 +127,7 @@ export default {
   deselectAll: 'Deselect all',
   selected: 'Selected',
   clearSelection: 'Clear selection',
+  companiesRequired: 'Select at least one company',
   changeStatus: 'Change status',
   
   // Order related
@@ -412,4 +414,22 @@ export default {
     errorSavingProjectStatus: 'Error saving project status',
     errorDeletingProjectStatus: 'Error deleting project status',
     errorGettingProjectStatuses: 'Error getting project statuses list',
+    
+    // Salaries
+    salary: 'Salary',
+    salaries: 'Salaries',
+    addSalary: 'Add Salary',
+    editSalary: 'Edit Salary',
+    salarySaved: 'Salary saved',
+    salaryDeleted: 'Salary deleted',
+    noSalaries: 'No salaries',
+    startDate: 'Start Date',
+    endDate: 'End Date',
+    amount: 'Amount',
+    period: 'Period',
+    currency: 'Currency',
+    selectCurrency: 'Select Currency',
+    present: 'to present',
+    bonus: 'Add Bonus',
+    penalty: 'Issue Penalty',
 }

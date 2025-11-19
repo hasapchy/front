@@ -58,6 +58,8 @@
                 :editingItem="editingTransactionItem"
                 :initialProjectId="editingItem?.id"
                 :initialClient="editingItem?.client"
+                :form-config="projectFormConfig"
+                :header-text="'Транзакция — проект'"
                 @saved="handleTransactionSaved"
                 @saved-error="handleTransactionSavedError"
                 @close-request="closeTransactionModal" />
@@ -93,6 +95,7 @@ const TransactionCreatePage = defineAsyncComponent(() =>
 );
 import TransactionController from "@/api/TransactionController";
 import ProjectController from "@/api/ProjectController";
+import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
 
 export default {
     mixins: [notificationMixin, getApiErrorMessage],
@@ -163,6 +166,9 @@ export default {
         };
     },
     computed: {
+        projectFormConfig() {
+            return TRANSACTION_FORM_PRESETS.projectBalance;
+        },
         balanceFormatted() {
             const balance = typeof this.balance === 'number' ? this.balance : 0;
             return this.$formatNumber(balance, null, true);

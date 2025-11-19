@@ -168,6 +168,12 @@
                     <div v-else class="text-gray-500 text-sm">{{ $t('noCompaniesAvailable') }}</div>
                 </div>
             </div>
+            <div v-show="currentTab === 'salaries' && editingItem" class="mt-4">
+                <UserSalaryTab :editing-item="editingItem" />
+            </div>
+            <div v-show="currentTab === 'balance' && editingItem && $store.getters.hasPermission('settings_client_balance_view')" class="mt-4">
+                <UserBalanceTab :editing-item="editingItem" />
+            </div>
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -201,11 +207,13 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 import userPhotoMixin from '@/mixins/userPhotoMixin';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import AuthController from '@/api/AuthController';
+import UserSalaryTab from '@/views/pages/users/UserSalaryTab.vue';
+import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, userPhotoMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal },
+    components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, UserSalaryTab, UserBalanceTab },
     props: {
         editingItem: { type: Object, required: false, default: null },
     },
@@ -243,14 +251,19 @@ export default {
             croppedFile: null,
             tabs: [
                 { name: 'info', label: 'information' },
-                { name: 'roles', label: 'roles' }
+                { name: 'roles', label: 'roles' },
+                { name: 'salaries', label: 'salaries' },
+                { name: 'balance', label: 'balance' }
             ],
             allRoles: [],
         };
     },
     computed: {
         translatedTabs() {
-            return this.tabs.map(tab => ({
+            let visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab =>
+                tab.name !== 'salaries' && tab.name !== 'balance'
+            );
+            return visibleTabs.map(tab => ({
                 ...tab,
                 label: this.$t(tab.label)
             }));
@@ -387,7 +400,20 @@ export default {
         },
         async save() {
             if (!this.editingItemId && this.form.password !== this.form.confirmPassword) {
-                this.$emit('saved-error', this.$t('passwordsDoNotMatch'));
+                const passwordError = new Error(this.$t('passwordsDoNotMatch'));
+                this.$emit('saved-error', passwordError);
+                return;
+            }
+
+            const selectedCompanies = Array.isArray(this.form.companies)
+                ? this.form.companies.filter((companyId) => companyId !== null && companyId !== undefined && `${companyId}` !== '')
+                : typeof this.form.companies === 'string'
+                    ? this.form.companies.split(',').filter((c) => c.trim() !== '')
+                    : [];
+
+            if (selectedCompanies.length === 0) {
+                const validationError = new Error(this.$t('companiesRequired'));
+                this.$emit('saved-error', validationError);
                 return;
             }
 
@@ -431,7 +457,7 @@ export default {
 
                 this.$emit('saved');
             } catch (e) {
-                this.$emit('saved-error', this.getApiErrorMessage(e));
+                this.$emit('saved-error', e);
             }
             this.saveLoading = false;
         },
@@ -516,7 +542,7 @@ export default {
                 await UsersController.deleteItem(this.editingItemId);
                 this.$emit('deleted');
             } catch (e) {
-                this.$emit('deleted-error', this.getApiErrorMessage(e));
+                this.$emit('deleted-error', e);
             }
             this.deleteLoading = false;
         },

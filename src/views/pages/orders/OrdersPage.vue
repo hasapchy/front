@@ -167,8 +167,8 @@
             :order-id="editingTransaction.orderId"
             :default-cash-id="editingTransaction.cashId"
             :prefill-amount="editingTransaction.prefillAmount"
-            :min-amount="editingTransaction.minAmount"
             :is-payment-modal="true"
+            :form-config="orderTransactionFormConfig"
             @saved="handleTransactionSaved"
             @saved-error="handleTransactionSavedError"
             @close-request="() => transactionModal = false"
@@ -215,6 +215,7 @@ import searchMixin from "@/mixins/searchMixin";
 import { formatCurrency } from "@/utils/numberUtils";
 import { highlightMatches } from "@/utils/searchUtils";
 import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
+import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 
 const TimelinePanel = defineAsyncComponent(() => 
     import("@/views/components/app/dialog/TimelinePanel.vue")
@@ -303,6 +304,9 @@ export default {
                    this.projectFilter !== '' ||
                    this.clientFilter !== '' ||
                    this.paidOrdersFilter !== false;
+        },
+        orderTransactionFormConfig() {
+            return TRANSACTION_FORM_PRESETS.orderPayment;
         }
     },
     watch: {
@@ -479,7 +483,6 @@ export default {
                     projectId: order.projectId,
                     cashId: order.cashId,
                     prefillAmount: paymentData.remaining_amount,
-                    minAmount: paymentData.remaining_amount
                 };
                 this.transactionModal = true;
             }

@@ -1,22 +1,22 @@
-import CacheInvalidator from '@/utils/cache';
+import CacheInvalidator from "@/utils/cache";
 
 export default {
   data() {
     let perPage = 10;
     try {
-      const savedPerPage = localStorage.getItem('perPage');
+      const savedPerPage = localStorage.getItem("perPage");
       if (savedPerPage) {
         const parsed = parseInt(savedPerPage, 10);
         if (!isNaN(parsed) && parsed > 0 && parsed <= 100) {
           perPage = parsed;
         } else if (parsed > 100) {
-          localStorage.removeItem('perPage');
+          localStorage.removeItem("perPage");
         }
       }
     } catch (e) {
-      console.warn('localStorage недоступен:', e);
+      console.warn("localStorage недоступен:", e);
     }
-    
+
     return {
       data: null,
       loading: false,
@@ -30,15 +30,19 @@ export default {
         return;
       }
       try {
-        localStorage.setItem('perPage', newValue.toString());
+        localStorage.setItem("perPage", newValue.toString());
       } catch (e) {
-        console.warn('Не удалось сохранить perPage:', e);
+        console.warn("Не удалось сохранить perPage:", e);
       }
-    }
+    },
   },
   methods: {
     invalidateCache(action) {
-      if (this.cacheInvalidationType && CacheInvalidator[action] && typeof CacheInvalidator[action] === 'function') {
+      if (
+        this.cacheInvalidationType &&
+        CacheInvalidator[action] &&
+        typeof CacheInvalidator[action] === "function"
+      ) {
         const companyId = this.$store.state.currentCompany?.id;
         CacheInvalidator[action](this.cacheInvalidationType, companyId);
       }
@@ -47,7 +51,7 @@ export default {
       if (this.fetchItems) {
         this.fetchItems(this.data?.currentPage || 1, true)
           .then(() => this.restoreScrollPosition?.())
-          .catch(error => console.error('Ошибка обновления данных:', error));
+          .catch((error) => console.error("Ошибка обновления данных:", error));
       }
       if (this.closeModal) {
         this.shouldRestoreScrollOnClose = false;
@@ -60,19 +64,27 @@ export default {
         "",
         false
       );
-      
-      this.invalidateCache('onUpdate');
+
+      this.invalidateCache("onUpdate");
       this.refreshDataAfterOperation();
-      
+
       if (this.onAfterSaved) {
         this.onAfterSaved();
       }
     },
     handleSavedError(m) {
-      const messages = this.getApiErrorMessage(m) || ['Ошибка сохранения'];
+      let messages = this.getApiErrorMessage(m);
+      if (Array.isArray(messages) && messages.length === 0) {
+        messages = null;
+      }
+      if (!messages) {
+        messages = ["Ошибка сохранения"];
+      } else if (!Array.isArray(messages)) {
+        messages = [messages];
+      }
       this.showNotification(
         this.savedErrorText || "Ошибка сохранения",
-        messages.join('\n'),
+        messages,
         true
       );
     },
@@ -82,19 +94,27 @@ export default {
         "",
         false
       );
-      
-      this.invalidateCache('onDelete');
+
+      this.invalidateCache("onDelete");
       this.refreshDataAfterOperation();
-      
+
       if (this.onAfterDeleted) {
         this.onAfterDeleted();
       }
     },
     handleDeletedError(m) {
-      const messages = this.getApiErrorMessage(m) || ['Ошибка удаления'];
+      let messages = this.getApiErrorMessage(m);
+      if (Array.isArray(messages) && messages.length === 0) {
+        messages = null;
+      }
+      if (!messages) {
+        messages = ["Ошибка удаления"];
+      } else if (!Array.isArray(messages)) {
+        messages = [messages];
+      }
       this.showNotification(
         this.deletedErrorText || "Ошибка удаления",
-        messages.join('\n'),
+        messages,
         true
       );
     },

@@ -1,9 +1,27 @@
 <template>
     <div class="mt-4">
-        <h3 class="text-md font-semibold mb-4">{{ $t('balanceHistory') }}</h3>
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
+            <div class="flex gap-2">
+                <PrimaryButton 
+                    icon="fas fa-gift" 
+                    :onclick="handleBonus"
+                    :is-success="true"
+                    :disabled="!editingItem || !editingItem.id">
+                    {{ $t('bonus') || 'Начислить премию' }}
+                </PrimaryButton>
+                <PrimaryButton 
+                    icon="fas fa-exclamation-triangle" 
+                    :onclick="handlePenalty"
+                    :is-danger="true"
+                    :disabled="!editingItem || !editingItem.id">
+                    {{ $t('penalty') || 'Выписать штраф' }}
+                </PrimaryButton>
+            </div>
+        </div>
         
-        <!-- Итого (баланс клиента) -->
-        <div v-if="!balanceLoading && currentClientAccount" class="mb-4 p-4 bg-gray-50 rounded-lg">
+        <!-- Итого (баланс сотрудника) -->
+        <div v-if="!balanceLoading && editingItem" class="mb-4 p-4 bg-gray-50 rounded-lg">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <i class="fas fa-wallet text-blue-500"></i>
@@ -39,11 +57,14 @@
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-1">
                             <span v-html="getOperationTypeIcon(item)" class="text-sm"></span>
-                            <span class="text-xs text-gray-500">{{ formatDate(item.date) }}</span>
-                            <span v-if="item.user_name" class="text-xs text-gray-400">• {{ item.user_name }}</span>
+                            <span class="text-xs text-gray-500">{{ formatDate(item) }}</span>
+                            <span v-if="item.userName || item.user_name" class="text-xs text-gray-400">• {{ item.userName || item.user_name }}</span>
                         </div>
                         <div v-if="item.note" class="text-sm text-gray-700 mt-1">
                             {{ item.note }}
+                        </div>
+                        <div v-if="item.description" class="text-xs text-gray-500 mt-1">
+                            {{ item.description }}
                         </div>
                     </div>
                     <div class="ml-4 text-right">
@@ -56,10 +77,13 @@
 </template>
 
 <script>
-import ClientController from "@/api/ClientController";
+import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 
 export default {
     name: 'UserBalanceTab',
+    components: {
+        PrimaryButton,
+    },
     props: {
         editingItem: {
             type: Object,
@@ -75,9 +99,6 @@ export default {
         };
     },
     computed: {
-        currentClientAccount() {
-            return this.editingItem;
-        },
         balanceStatusText() {
             if (this.totalBalance > 0) {
                 return this.$t('clientOwesUs') || 'Клиент нам должен';
@@ -111,43 +132,14 @@ export default {
         formatBalance(balance) {
             return `${this.$formatNumber(balance, null, true)} ${this.currencyCode}`;
         },
-        formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toLocaleString('ru-RU', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+        formatDate(item) {
+            return item.formatDate ? item.formatDate() : '';
         },
         formatAmount(item) {
-            const amount = parseFloat(item.amount);
-            const currencySymbol = this.currencyCode || '';
-            const formatted = this.$formatNumber(Math.abs(amount), null, true);
-            
-            // is_debt = 1 → Продажа (долг) → +amount (красный)
-            // is_debt = 0 → Оплата → -amount (зеленый)
-            if (item.is_debt === 1 || item.is_debt === true || item.is_debt === '1') {
-                return `<span class="text-[#EE4F47]">+${formatted} ${currencySymbol}</span>`;
-            } else {
-                return `<span class="text-[#5CB85C]">-${formatted} ${currencySymbol}</span>`;
-            }
+            return item.getClientImpactHtml ? item.getClientImpactHtml(this.currencyCode, this.$formatNumber) : '';
         },
         getOperationTypeIcon(item) {
-            const amount = parseFloat(item.amount);
-            const isDebt = item.is_debt === 1 || item.is_debt === true || item.is_debt === '1';
-            
-            if (amount > 0 && isDebt) {
-                return '<i class="fas fa-arrow-up text-[#EE4F47] mr-1"></i><span class="text-[#EE4F47] text-sm">Кредит</span>';
-            } else if (amount > 0 && !isDebt) {
-                return '<i class="fas fa-check text-[#5CB85C] mr-1"></i><span class="text-[#5CB85C] text-sm">Оплачено</span>';
-            } else if (amount < 0) {
-                return '<i class="fas fa-arrow-down text-[#5CB85C] mr-1"></i><span class="text-[#5CB85C] text-sm">Оплата</span>';
-            } else {
-                return '<i class="fas fa-exchange-alt text-gray-500 mr-1"></i><span class="text-gray-500 text-sm">Транзакция</span>';
-            }
+            return item.getOperationTypeHtml ? item.getOperationTypeHtml() : '';
         },
         async fetchDefaultCurrency() {
             try {
@@ -164,15 +156,13 @@ export default {
             
             this.balanceLoading = true;
             try {
-                const data = await ClientController.getBalanceHistory(this.editingItem.id);
+                const UsersController = (await import("@/api/UsersController")).default;
+                const balanceInfo = await UsersController.getEmployeeBalance(this.editingItem.id);
+                const history = await UsersController.getEmployeeBalanceHistory(this.editingItem.id);
                 
-                this.balanceHistory = (data || []).map(item => ({
-                    ...item,
-                    date: item.date || item.created_at || ''
-                }));
+                this.balanceHistory = history || [];
                 
-                // Используем баланс из editingItem
-                this.totalBalance = parseFloat(this.editingItem.balance || 0);
+                this.totalBalance = balanceInfo ? parseFloat(balanceInfo.balance || 0) : 0;
             } catch (e) {
                 console.error('Error fetching balance history:', e);
                 this.balanceHistory = [];
@@ -180,6 +170,12 @@ export default {
             } finally {
                 this.balanceLoading = false;
             }
+        },
+        handleBonus() {
+            alert('Начислить премию - заглушка');
+        },
+        handlePenalty() {
+            alert('Выписать штраф - заглушка');
         }
     }
 };

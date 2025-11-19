@@ -50,7 +50,8 @@
                     :editingItem="editingTransactionItem"
                     :preselectedClientId="editingItem.id"
                     :initialClient="editingItem"
-                    :forceDebt="false"
+                    :form-config="paymentsFormConfig"
+                    :header-text="paymentsHeaderText"
                     @saved="onEntitySaved"
                     @saved-error="onEntitySavedError"
                     @deleted="onEntityDeleted"
@@ -76,6 +77,7 @@ import TransactionController from "@/api/TransactionController";
 import ClientController from "@/api/ClientController";
 import ClientDto from "@/dto/client/ClientDto";
 import TransactionDto from "@/dto/transaction/TransactionDto";
+import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 
 export default {
     mixins: [notificationMixin, getApiErrorMessage],
@@ -118,6 +120,14 @@ export default {
                 { name: "clientImpact", label: this.$t("amount"), size: 130, html: true },
             ],
         };
+    },
+    computed: {
+        paymentsFormConfig() {
+            return TRANSACTION_FORM_PRESETS.clientPayment;
+        },
+        paymentsHeaderText() {
+            return 'Транзакция — платеж';
+        }
     },
     async mounted() {
         await this.fetchDefaultCurrency();

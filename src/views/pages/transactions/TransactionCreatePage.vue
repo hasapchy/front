@@ -1,22 +1,19 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editTransaction') : $t('createTransaction') }}</h2>
-        <ClientSearch 
-            v-model:selectedClient="selectedClient" 
-            :showLabel="true"
-            :required="isDebt"
-            :disabled="!!initialProjectId" 
-            :allowDeselect="!initialProjectId"
-        />
-        <div>
+        <h2 class="text-lg font-bold mb-4">{{ titleText }}</h2>
+        <ClientSearch v-if="isFieldVisible('client')" v-model:selectedClient="selectedClient" :showLabel="true"
+            :required="isDebt" :disabled="!!initialProjectId" :allowDeselect="!initialProjectId" />
+        <div v-if="canShowDateField">
             <label>{{ $t('date') }}</label>
             <input type="datetime-local" v-model="date"
                 :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
                 :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
         </div>
-        <div class="mt-2">
+        <div class="mt-2" v-if="isFieldVisible('type')">
             <label class="block mb-1 required">{{ $t('type') }}</label>
-            <select v-model="type" :disabled="!!editingItemId || !!orderId" required>
+            <select v-model="type"
+                :disabled="!!editingItemId || !!orderId || fieldConfig('type').readonly || fieldConfig('type').enforcedValue !== undefined"
+                required>
                 <option value="">{{ $t('selectType') }}</option>
                 <option value="income">✅ {{ $t('income') }}</option>
                 <option value="outcome">🔺 {{ $t('outcome') }}</option>
@@ -24,33 +21,29 @@
         </div>
         <div class="mt-2">
             <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
-                          <select v-model="cashId" :disabled="!!editingItemId" required>
-                  <option value="">{{ $t('no') }}</option>
+            <select v-model="cashId" :disabled="!!editingItemId" required>
+                <option value="">{{ $t('no') }}</option>
                 <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
                     {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
                 </option>
             </select>
         </div>
-        <div class="mt-2">
+        <div class="mt-2" v-if="isFieldVisible('debt')">
             <label class="inline-flex items-center">
-                <input 
-                    type="checkbox" 
-                    v-model="isDebt" 
-                    @change="handleDebtChange"
-                    :disabled="!!editingItemId || !!orderId || forceDebt"
-                />
+                <input type="checkbox" v-model="isDebt" @change="handleDebtChange"
+                    :disabled="!!editingItemId || !!orderId || fieldConfig('debt').readonly" />
                 <span class="ml-2">{{ $t('credit') }}</span>
             </label>
         </div>
         <div class="flex items-center space-x-2">
             <div class="w-full mt-2">
                 <label class="required">{{ $t('amountBeforeConversion') }}</label>
-                <input type="number" v-model="origAmount" required :min="minAmount || 0.01" 
-                       :title="minAmount ? `${$t('minimumAmount')}: ${minAmount}` : ''">
+                <input type="number" v-model="origAmount" required :min="0.01">
             </div>
             <div class="w-full mt-2">
                 <label class="block mb-1 required">{{ $t('currency') }}</label>
-                <select v-model="currencyIdComputed" required :disabled="!!editingItemId || !$store.getters.hasPermission('settings_currencies_view')">
+                <select v-model="currencyIdComputed" required
+                    :disabled="!!editingItemId || !$store.getters.hasPermission('settings_currencies_view')">
                     <option value="">{{ $t('no') }}</option>
                     <template v-if="currencies.length">
                         <option v-for="parent in currencies" :key="parent.id" :value="parent.id">
@@ -59,6 +52,15 @@
                     </template>
                 </select>
             </div>
+        </div>
+        <div v-if="showAdjustmentBalancePreview" class="mt-1 text-sm text-gray-600 flex items-center gap-2">
+            <span>{{ balanceAfterAdjustmentLabel }}:</span>
+            <span class="font-semibold text-sm" :class="balanceAfterAdjustmentClass">
+                {{ balanceAfterAdjustmentFormatted }} {{ defaultCurrencySymbol }}
+                <span v-if="balanceAfterAdjustmentStateText">
+                    ({{ balanceAfterAdjustmentStateText }})
+                </span>
+            </span>
         </div>
         <div v-if="cashCurrencyId != currencyId && editingItemId" class="flex items-center space-x-2">
             <div class="w-full mt-2">
@@ -78,16 +80,17 @@
                 </select>
             </div>
         </div>
-        <div class="mt-2">
+        <div class="mt-2" v-if="isFieldVisible('category')">
             <label class="block mb-1 required">{{ $t('category') }}</label>
-            <select v-model="categoryId" :disabled="adjustmentMode">
+            <select v-model="categoryId"
+                :disabled="fieldConfig('category').readonly || fieldConfig('category').enforcedValue !== undefined || fieldConfig('category').enforcedByType">
                 <option value="">{{ $t('no') }}</option>
                 <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">
                     {{ cat.type ? '✅' : '🔺' }} {{ cat.name }}
                 </option>
             </select>
         </div>
-        <div class="mt-2">
+        <div class="mt-2" v-if="isFieldVisible('project')">
             <label class="block mb-1">{{ $t('project') }}</label>
             <select v-model="projectId">
                 <option value="">{{ $t('no') }}</option>
@@ -97,15 +100,16 @@
             </select>
         </div>
         <div class="mt-2">
-            <label>{{ $t('note') }}</label>
+            <label :class="['block', 'mb-1', { 'required': isFieldRequired('note') }]">{{ $t('note') }}</label>
             <input type="text" v-model="note" />
         </div>
-        <div class="mt-2">
+        <div class="mt-2" v-if="isFieldVisible('source')">
             <template v-if="orderId || selectedSource">
                 <label class="block mb-1">{{ $t('source') || 'Источник' }}</label>
                 <div class="p-3 border rounded bg-white">
                     <div class="text-sm"><span class="font-semibold">Тип:</span> {{ displaySourceTypeLabel() }}</div>
-                    <div class="text-sm mt-1"><span class="font-semibold">ID:</span> {{ `#${selectedSource?.id || orderId}` }}</div>
+                    <div class="text-sm mt-1"><span class="font-semibold">ID:</span> {{ `#${selectedSource?.id ||
+                        orderId}` }}</div>
                 </div>
             </template>
         </div>
@@ -124,8 +128,8 @@
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
         :descr="$t('deleteTransaction')" :confirm-text="$t('deleteTransaction')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
+        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 
@@ -135,11 +139,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ProjectController from '@/api/ProjectController';
 import TransactionDto from '@/dto/transaction/TransactionDto';
 import ClientDto from '@/dto/client/ClientDto';
-import AppController from '@/api/AppController';
-import CashRegisterController from '@/api/CashRegisterController';
 import TransactionController from '@/api/TransactionController';
-import TransactionCategoryController from '@/api/TransactionCategoryController';
-import ClientController from '@/api/ClientController';
 import OrderController from '@/api/OrderController';
 import SaleController from '@/api/SaleController';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
@@ -160,19 +160,23 @@ export default {
         initialProjectId: { type: [String, Number, null], default: null },
         orderId: { type: [String, Number], required: false },
         defaultCashId: { type: Number, default: null, required: false },
-        // Новые флаги управления режимом долга и обязательностью примечания
-        forceDebt: { type: Boolean, default: false },
-        requireNote: { type: Boolean, default: false },
-        // Режим корректировки баланса - автоматически выбирает категорию "Корректировка остатка"
-        adjustmentMode: { type: Boolean, default: false },
-        // Для корректировки: 0 - уменьшить баланс (расход), 1 - увеличить баланс (приход)
-        adjustmentType: { type: Number, default: 0 },
         // Предзаполненная сумма для оплаты заказа
         prefillAmount: { type: [Number, String], default: null },
-        // Минимальная сумма оплаты
-        minAmount: { type: [Number, String], default: null },
         // Флаг модалки оплаты заказа
-        isPaymentModal: { type: Boolean, default: false }
+        isPaymentModal: { type: Boolean, default: false },
+        // Конфигурация отображения полей формы
+        formConfig: {
+            type: Object,
+            default: () => ({}),
+        },
+        headerText: {
+            type: String,
+            default: '',
+        },
+        currentClientBalance: {
+            type: [Number, String, null],
+            default: null,
+        },
     },
     data() {
         return {
@@ -204,7 +208,7 @@ export default {
             })(),
             note: this.editingItem ? this.editingItem.note : '',
             // Для заказов всегда false (не долговая)
-            isDebt: this.orderId ? false : (this.editingItem ? this.editingItem.isDebt : (this.forceDebt ? true : false)),
+            isDebt: this.orderId ? false : (this.editingItem ? this.editingItem.isDebt : (this.fieldConfig('debt').enforcedValue ?? false)),
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? (this.editingItem.client || this.initialClient) : this.initialClient,
             selectedSource: null,
@@ -220,6 +224,12 @@ export default {
         }
     },
     computed: {
+        titleText() {
+            if (this.headerText) {
+                return this.headerText;
+            }
+            return this.editingItem ? this.$t('editTransaction') : this.$t('createTransaction');
+        },
         currencyIdComputed: {
             get() {
                 return this.currencyId;
@@ -236,7 +246,7 @@ export default {
         allProjects() {
             // ✅ Берем напрямую из Store - автоматически обновляется при изменениях
             const activeProjects = this.$store.getters.activeProjects || [];
-            
+
             // Если редактируем транзакцию и у неё есть проект, который завершен (его нет в activeProjects),
             // добавляем его в список опций
             if (this.editingItem && this.editingItem.projectId && this.editingItem.projectName) {
@@ -249,8 +259,65 @@ export default {
                     ];
                 }
             }
-            
+
             return activeProjects;
+        },
+        canShowDateField() {
+            return this.$store.getters.hasPermission('settings_edit_any_date');
+        },
+        defaultCurrencySymbol() {
+            const currencies = this.$store?.state?.currencies || [];
+            const defaultCurrency = currencies.find(c => c.isDefault);
+            return defaultCurrency ? defaultCurrency.symbol : '';
+        },
+        showAdjustmentBalancePreview() {
+            const previewEnabled = this.formConfig?.options?.showBalancePreview;
+            return !!previewEnabled && this.currentClientBalance !== null && this.currentClientBalance !== undefined;
+        },
+        balanceAfterAdjustmentValue() {
+            if (!this.showAdjustmentBalancePreview) {
+                return null;
+            }
+            const base = parseFloat(this.currentClientBalance) || 0;
+            const delta = parseFloat(this.origAmount) || 0;
+            const sign = this.type === 'income' ? 1 : -1;
+            return base + sign * delta;
+        },
+        balanceAfterAdjustmentLabel() {
+            if (!this.showAdjustmentBalancePreview) {
+                return '';
+            }
+            return this.$t('balanceAfterOperation') !== 'balanceAfterOperation'
+                ? this.$t('balanceAfterOperation')
+                : 'Баланс после операции';
+        },
+        balanceAfterAdjustmentFormatted() {
+            if (!this.showAdjustmentBalancePreview) {
+                return '';
+            }
+            return this.$formatNumber
+                ? this.$formatNumber(this.balanceAfterAdjustmentValue, null, true)
+                : this.balanceAfterAdjustmentValue;
+        },
+        balanceAfterAdjustmentClass() {
+            const value = this.balanceAfterAdjustmentValue || 0;
+            if (value > 0) {
+                return 'text-[#5CB85C]';
+            }
+            if (value < 0) {
+                return 'text-[#EE4F47]';
+            }
+            return 'text-[#337AB7]';
+        },
+        balanceAfterAdjustmentStateText() {
+            const value = this.balanceAfterAdjustmentValue || 0;
+            if (value > 0) {
+                return this.$t('clientOwesUs');
+            }
+            if (value < 0) {
+                return this.$t('weOweClient');
+            }
+            return this.$t('mutualSettlement');
         }
     },
     mounted() {
@@ -261,7 +328,7 @@ export default {
                 this.fetchAllCashRegisters(),
                 this.loadOrderInfo()
             ]);
-            
+
             await this.$store.dispatch('loadProjects');
 
             if (!this.editingItem) {
@@ -271,7 +338,7 @@ export default {
                         this.currencyId = defaultCash.currency_id;
                     }
                 }
-                
+
                 if (this.allCashRegisters.length > 0 && !this.cashId) {
                     this.cashId = this.allCashRegisters[0].id;
                     this.currencyId = this.allCashRegisters[0].currency_id;
@@ -281,7 +348,7 @@ export default {
                         this.currencyId = defaultCurrency.id;
                     }
                 }
-                
+
                 // Устанавливаем предзаполненную сумму если она есть
                 if (this.prefillAmount != null && this.prefillAmount !== '') {
                     const amount = parseFloat(this.prefillAmount);
@@ -290,11 +357,61 @@ export default {
                     }
                 }
             }
-            
+
             this.saveInitialState();
+            this.applyTypeConstraints();
+            this.applyDebtConstraints();
+            this.applyCategoryConstraints();
         });
     },
     methods: {
+        fieldConfig(name) {
+            const baseConfig = {
+                visible: true,
+                readonly: false,
+                required: false,
+                enforcedValue: undefined,
+            };
+            const overrides = this.formConfig?.[name];
+            return overrides ? { ...baseConfig, ...overrides } : baseConfig;
+        },
+        isFieldRequired(name) {
+            return !!this.fieldConfig(name).required;
+        },
+        isFieldVisible(name) {
+            return this.fieldConfig(name).visible !== false;
+        },
+        applyCategoryConstraints() {
+            const config = this.fieldConfig('category');
+            if (config.visible === false) {
+                let enforcedValue = config.enforcedValue;
+                if (config.enforcedByType) {
+                    const typeKey = this.type === 'income' ? 'income' : 'outcome';
+                    enforcedValue = config.enforcedByType[typeKey] ?? enforcedValue;
+                }
+                if (enforcedValue !== undefined && enforcedValue !== null) {
+                    this.categoryId = enforcedValue;
+                }
+            }
+        },
+        applyTypeConstraints() {
+            if (this.editingItemId) {
+                return;
+            }
+            const config = this.fieldConfig('type');
+            if (config.enforcedValue !== undefined && config.enforcedValue !== null) {
+                this.type = config.enforcedValue;
+            }
+        },
+        applyDebtConstraints() {
+            if (this.editingItemId) {
+                return;
+            }
+            const config = this.fieldConfig('debt');
+            if (config.enforcedValue !== undefined && config.enforcedValue !== null) {
+                this.isDebt = config.enforcedValue;
+            }
+        },
         // Обработчик изменения чекбокса "Долг" - только для отслеживания изменений
         handleDebtChange() {
             // Просто отмечаем изменение формы - сохранение произойдет при нажатии "Сохранить"
@@ -310,7 +427,7 @@ export default {
                 categoryId: this.categoryId,
                 cashId: this.cashId,
                 currencyId: this.currencyIdComputed,
-                projectId: this.projectId,
+                projectId: this.isFieldVisible('project') ? this.projectId : null,
                 isDebt: this.isDebt,
                 sourceType: this.getSourceTypeForBackend(),
                 sourceId: this.selectedSource?.id || null
@@ -318,13 +435,13 @@ export default {
         },
         getSourceTypeForBackend() {
             if (!this.sourceType || !this.selectedSource) return null;
-            
+
             const typeMap = {
                 'order': 'App\\Models\\Order',
                 'sale': 'App\\Models\\Sale',
                 'warehouse_receipt': 'App\\Models\\WhReceipt'
             };
-            
+
             return typeMap[this.sourceType] || null;
         },
         displaySourceTypeLabel() {
@@ -368,26 +485,20 @@ export default {
                 }
             }
             // Валидация: если "в кредит", то клиент обязателен
-            if ((this.isDebt || this.forceDebt) && !this.selectedClient?.id) {
+            if (this.isDebt && !this.selectedClient?.id) {
                 this.$emit('saved-error', 'При транзакции "в кредит" должен быть выбран клиент');
                 this.saveLoading = false;
                 return;
             }
             // Валидация: если требуется примечание
-            if (this.requireNote && (!this.note || String(this.note).trim() === '')) {
+            if (this.isFieldRequired('note') && (!this.note || String(this.note).trim() === '')) {
                 this.$emit('saved-error', 'Заполните примечание');
                 this.saveLoading = false;
                 return;
             }
 
-            // Валидация минимальной суммы для оплаты заказа
-            if (this.minAmount && this.origAmount < this.minAmount) {
-                this.$emit('saved-error', `Минимальная сумма оплаты: ${this.minAmount}`);
-                this.saveLoading = false;
-                return;
-            }
-
             this.saveLoading = true;
+            const projectIdForSubmit = this.isFieldVisible('project') ? this.projectId : null;
 
             try {
                 if (this.editingItemId != null) {
@@ -395,13 +506,13 @@ export default {
                         this.editingItemId,
                         {
                             category_id: this.categoryId,
-                        project_id: this.projectId,
+                            project_id: projectIdForSubmit,
                             date: this.date,
-                        client_id: this.selectedClient?.id,
+                            client_id: this.selectedClient?.id,
                             orig_amount: this.origAmount, // обновления не трогаем
                             currency_id: this.currencyIdComputed,
                             note: this.note,
-                            is_debt: (this.forceDebt ? true : this.isDebt),
+                            is_debt: this.isDebt,
                             source_type: this.getSourceTypeForBackend(),
                             source_id: this.selectedSource?.id || null
                         });
@@ -415,12 +526,11 @@ export default {
                         currency_id: this.currencyIdComputed,
                         category_id: this.categoryId,
                         note: this.note,
-                        project_id: this.projectId,
+                        project_id: projectIdForSubmit,
                         date: this.date,
                         client_id: this.selectedClient?.id,
                         order_id: this.orderId,
-                        is_debt: (this.forceDebt ? true : this.isDebt),
-                        is_adjustment: this.adjustmentMode,
+                        is_debt: this.isDebt,
                         source_type: this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : null),
                         source_id: this.selectedSource?.id || this.orderId || null
                     });
@@ -430,18 +540,13 @@ export default {
                     if (this.isPaymentModal) {
                         await this.checkAndCloseOrder();
                     }
-                    
+
                     this.$emit('saved', resp)
                     this.clearForm();
                 }
             } catch (error) {
-                // Обработка ошибки недостаточной суммы оплаты
-                if (error.response && error.response.data && error.response.data.error === 'INSUFFICIENT_PAYMENT_AMOUNT') {
-                    const errorData = error.response.data;
-                    this.$emit('saved-error', `Минимальная сумма оплаты: ${errorData.minimum_amount}. Указано: ${errorData.provided_amount}`);
-                } else {
-                    this.$emit('saved-error', this.getApiErrorMessage(error));
-                }
+                const message = this.getApiErrorMessage(error);
+                this.$emit('saved-error', message);
             }
             this.saveLoading = false;
 
@@ -468,14 +573,17 @@ export default {
             this.cashId = this.allCashRegisters.length ? this.allCashRegisters[0].id : '';
             this.origAmount = 0;
             this.note = '';
-            this.isDebt = false;
+            this.isDebt = this.fieldConfig('debt').enforcedValue ?? false;
             this.categoryId = 4; // Устанавливаем id = 4 для типа income по умолчанию
-            this.projectId = this.initialProjectId || '';
+            this.projectId = this.isFieldVisible('project') ? (this.initialProjectId || '') : null;
             this.date = new Date().toISOString().substring(0, 16);
             this.selectedClient = this.initialClient || null;
             this.selectedSource = null;
             this.sourceType = '';
             this.editingItemId = null;
+            this.applyTypeConstraints();
+            this.applyDebtConstraints();
+            this.applyCategoryConstraints();
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
@@ -487,11 +595,11 @@ export default {
         copyTransaction() {
             // DRY: используем метод clone() из TransactionDto
             const copiedTransaction = this.editingItem.clone();
-            
+
             // Эмитим событие для открытия нового модального окна с копированными данными
             this.$emit('copy-transaction', copiedTransaction);
         },
-        
+
         // Загружаем информацию о заказе если это модалка доплаты
         async loadOrderInfo() {
             if (this.isPaymentModal && this.orderId) {
@@ -502,7 +610,7 @@ export default {
                 }
             }
         },
-        
+
         // Загружаем источник при редактировании
         async loadSourceForEdit(sourceType, sourceId) {
             try {
@@ -531,29 +639,29 @@ export default {
             if (!this.isPaymentModal || !this.orderId || !this.orderInfo) {
                 return;
             }
-            
+
             try {
                 // Получаем общую сумму оплат по заказу через существующий API
                 const paidTotalData = await TransactionController.getTotalByOrderId(this.orderId);
                 const totalPaid = parseFloat(paidTotalData.total) || 0;
                 const orderTotal = parseFloat(this.orderInfo.totalPrice) || 0;
-                
+
                 // Если оплачено достаточно, закрываем заказ
                 if (totalPaid >= orderTotal) {
                     // Находим статус "закрытый" (обычно это статус с category_id = 4)
                     const statuses = await OrderStatusController.getAllItems();
-                    
+
                     const closedStatus = statuses.find(status => status.categoryId === 4);
-                    
+
                     if (closedStatus) {
                         const result = await OrderController.batchUpdateStatus({
                             ids: [this.orderId],
                             status_id: closedStatus.id
                         });
-                        
+
                         this.showNotification(
-                            this.$t('success'), 
-                            this.$t('orderClosedAutomatically'), 
+                            this.$t('success'),
+                            this.$t('orderClosedAutomatically'),
                             false
                         );
                     }
@@ -567,6 +675,7 @@ export default {
         // Когда выбирают проект — автоматически подставляем клиента проекта (только если зашли из проекта)
         projectId: {
             async handler(newProjectId) {
+                if (!this.isFieldVisible('project')) return;
                 if (!newProjectId || !this.initialProjectId) return;
                 // Ищем проект в store (activeProjects может не содержать завершённых — в таком случае подгрузим)
                 let project = (this.allProjects || []).find(p => p.id === newProjectId) || null;
@@ -591,6 +700,7 @@ export default {
         },
         initialProjectId: {
             handler(newProjectId) {
+                if (!this.isFieldVisible('project')) return;
                 // Применяем initialProjectId если:
                 // 1. Это создание новой транзакции ИЛИ
                 // 2. Это редактирование, но у транзакции нет проекта
@@ -602,9 +712,6 @@ export default {
         },
         initialClient: {
             handler(newClient) {
-                // Применяем initialClient если:
-                // 1. Это создание новой транзакции ИЛИ
-                // 2. Это редактирование, но у транзакции нет клиента
                 if (newClient && (!this.editingItemId || !this.selectedClient)) {
                     this.selectedClient = newClient;
                 }
@@ -625,33 +732,22 @@ export default {
             }
         },
         type(newType) {
+            if (this.fieldConfig('category').visible === false) {
+                this.applyCategoryConstraints();
+                return;
+            }
             if (!this.editingItemId) {
-                // Если режим корректировки, не меняем категорию автоматически
-                if (this.adjustmentMode) return;
-                
+                const typeConfig = this.fieldConfig('type');
+                if (typeConfig.enforcedValue !== undefined && typeConfig.enforcedValue !== null) {
+                    return;
+                }
+
                 if (newType === "income") {
                     this.categoryId = 4; // Устанавливаем id = 4 для типа income
                 } else if (newType === "outcome") {
                     this.categoryId = 14;
                 } else {
                     this.categoryId = "";
-                }
-            }
-        },
-        // Отслеживаем изменение режима корректировки
-        adjustmentMode: {
-            handler(newVal) {
-                if (newVal && !this.editingItemId && this.allCategories.length) {
-                    // Устанавливаем тип транзакции в зависимости от adjustmentType
-                    this.type = this.adjustmentType === 1 ? 'income' : 'outcome';
-                    
-                    // Находим и устанавливаем категорию "Корректировка остатка" нужного типа
-                    const category = this.allCategories.find(cat => 
-                        cat.name === 'Корректировка остатка' && cat.type === this.adjustmentType
-                    );
-                    if (category) {
-                        this.categoryId = category.id;
-                    }
                 }
             }
         },
@@ -696,9 +792,11 @@ export default {
                     this.selectedSource = null;
                     this.sourceType = '';
                     this.editingItemId = null;
-                    // Для заказов всегда false (не долговая)
-                    this.isDebt = this.orderId ? false : false;
+                    this.isDebt = this.fieldConfig('debt').enforcedValue ?? false;
                 }
+                this.applyTypeConstraints();
+                this.applyDebtConstraints();
+                this.applyCategoryConstraints();
                 this.$nextTick(() => {
                     this.saveInitialState();
                 });
@@ -749,13 +847,14 @@ export default {
             immediate: true,
             deep: true
         },
-        // Принудительное включение долга при forceDebt
-        forceDebt: {
-            handler(val) {
-                if (val) this.isDebt = true;
+        formConfig: {
+            handler() {
+                this.applyTypeConstraints();
+                this.applyDebtConstraints();
+                this.applyCategoryConstraints();
             },
-            immediate: true
-        }
+            deep: true
+        },
     }
 }
 </script>

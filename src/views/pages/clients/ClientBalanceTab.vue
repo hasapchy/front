@@ -53,11 +53,10 @@
                     v-if="selectedEntity && selectedEntity.type === 'transaction'"
                     :editingItem="editingTransactionItem"
                     :preselectedClientId="editingItem.id"
-                    :forceDebt="isAdjustmentMode"
-                    :requireNote="isAdjustmentMode"
-                    :adjustmentMode="isAdjustmentMode"
-                    :adjustmentType="0"
                     :initialClient="editingItem"
+                    :form-config="balanceAdjustmentFormConfig"
+                    :current-client-balance="editingItem?.balance"
+                    :header-text="balanceAdjustmentHeader"
                     @saved="onEntitySaved"
                     @saved-error="onEntitySavedError"
                     @deleted="onEntityDeleted"
@@ -84,6 +83,7 @@ import TransactionController from "@/api/TransactionController";
 import ClientController from "@/api/ClientController";
 import ClientDto from "@/dto/client/ClientDto";
 import TransactionDto from "@/dto/transaction/TransactionDto";
+import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 
 export default {
     mixins: [notificationMixin, getApiErrorMessage],
@@ -325,7 +325,13 @@ export default {
         },
         canAdjustBalance() {
             return this.$store.getters.hasPermission('settings_client_balance_adjustment');
-        }
+        },
+        balanceAdjustmentFormConfig() {
+            return this.isAdjustmentMode ? TRANSACTION_FORM_PRESETS.balanceAdjustment : {};
+        },
+        balanceAdjustmentHeader() {
+            return this.isAdjustmentMode ? 'Транзакция — корректировка баланса' : '';
+        },
     },
     watch: {
         'editingItem.id': {
