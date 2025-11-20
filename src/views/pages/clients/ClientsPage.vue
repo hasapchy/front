@@ -4,31 +4,52 @@
             <PrimaryButton :onclick="() => { showModal(null) }" :disabled="!$store.getters.hasPermission('clients_create')"
                 icon="fas fa-plus"></PrimaryButton>
             
-            <div class="ml-2">
-                <select v-model="statusFilter" @change="() => fetchItems(1)">
-                    <option value="">{{ $t('allStatuses') }}</option>
-                    <option value="active">{{ $t('active') }}</option>
-                    <option value="inactive">{{ $t('inactive') }}</option>
-                </select>
-            </div>
+            <FiltersContainer 
+                :has-active-filters="hasActiveFilters"
+                :active-filters-count="getActiveFiltersCount()"
+                @reset="resetFilters">
+                <template #desktop>
+                    <div class="ml-2">
+                        <select v-model="statusFilter" @change="() => fetchItems(1)">
+                            <option value="">{{ $t('allStatuses') }}</option>
+                            <option value="active">{{ $t('active') }}</option>
+                            <option value="inactive">{{ $t('inactive') }}</option>
+                        </select>
+                    </div>
 
-            <div class="ml-2">
-                <select v-model="typeFilter" @change="() => fetchItems(1)">
-                    <option value="">{{ $t('allTypes') }}</option>
-                    <option value="individual">{{ $t('individual') }}</option>
-                    <option value="company">{{ $t('company') }}</option>
-                    <option value="employee">{{ $t('employee') }}</option>
-                    <option value="investor">{{ $t('investor') }}</option>
-                </select>
-            </div>
+                    <div class="ml-2">
+                        <select v-model="typeFilter" @change="() => fetchItems(1)">
+                            <option value="">{{ $t('allTypes') }}</option>
+                            <option value="individual">{{ $t('individual') }}</option>
+                            <option value="company">{{ $t('company') }}</option>
+                            <option value="employee">{{ $t('employee') }}</option>
+                            <option value="investor">{{ $t('investor') }}</option>
+                        </select>
+                    </div>
+                </template>
 
-            <div v-if="hasActiveFilters" class="ml-2">
-                <PrimaryButton 
-                    :onclick="resetFilters"
-                    icon="fas fa-filter-circle-xmark"
-                    :isLight="true">
-                </PrimaryButton>
-            </div>
+                <template #mobile>
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
+                        <select v-model="statusFilter" @change="() => fetchItems(1)" class="w-full">
+                            <option value="">{{ $t('allStatuses') }}</option>
+                            <option value="active">{{ $t('active') }}</option>
+                            <option value="inactive">{{ $t('inactive') }}</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
+                        <select v-model="typeFilter" @change="() => fetchItems(1)" class="w-full">
+                            <option value="">{{ $t('allTypes') }}</option>
+                            <option value="individual">{{ $t('individual') }}</option>
+                            <option value="company">{{ $t('company') }}</option>
+                            <option value="employee">{{ $t('employee') }}</option>
+                            <option value="investor">{{ $t('investor') }}</option>
+                        </select>
+                    </div>
+                </template>
+            </FiltersContainer>
         </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
@@ -45,6 +66,7 @@
             <SpinnerIcon />
         </div>
     </transition>
+
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
         <ClientCreatePage v-if="modalDialog" ref="clientForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
@@ -59,6 +81,7 @@
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import ClientController from '@/api/ClientController';
@@ -78,7 +101,7 @@ import searchMixin from '@/mixins/searchMixin';
 
 export default {
     mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, searchMixin, getApiErrorMessageMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog, FiltersContainer },
     data() {
         return {
             controller: ClientController,
@@ -174,6 +197,12 @@ export default {
             this.statusFilter = '';
             this.typeFilter = '';
             this.fetchItems(1);
+        },
+        getActiveFiltersCount() {
+            let count = 0;
+            if (this.statusFilter !== '') count++;
+            if (this.typeFilter !== '') count++;
+            return count;
         }
     },
     computed: {

@@ -73,7 +73,7 @@ export class CacheInvalidator {
       services: ['services_'],
       categories: ['categories_'],
       projects: ['projects_', 'projectsData'],
-      users: ['users_'],
+      users: ['users', 'users_'],
       companies: ['companies_'],
       orders: ['orders_'],
       sales: ['sales_'],

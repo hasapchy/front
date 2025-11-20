@@ -1,5 +1,5 @@
 <template>
-    <div class="flex gap-4 mb-4">
+    <div class="flex flex-col md:flex-row gap-2 md:gap-4 mb-4">
         <!-- Balance Cards -->
         <div class="flex-1">
             <transition name="fade" mode="out-in">
@@ -8,19 +8,19 @@
                     <div v-if="data.length > 3" class="relative">
                         <div class="cash-register-slider-container overflow-hidden">
                             <div 
-                                class="cash-register-slider flex gap-4 transition-transform duration-300 ease-in-out"
-                                :style="{ transform: `translateX(-${currentSlide * (100 / 3)}%)` }"
+                                class="cash-register-slider flex gap-2 md:gap-4 transition-transform duration-300 ease-in-out"
+                                :style="{ transform: `translateX(-${currentSlide * (isMobile ? 100 : 100 / 3)}%)` }"
                             >
                                 <div 
                                     v-for="item in data" 
                                     :key="item.id" 
-                                    class="cash-register-slide flex-shrink-0 bg-white p-3 rounded-lg shadow-md"
-                                    style="width: calc((100% - 2rem) / 3)"
+                                    class="cash-register-slide flex-shrink-0 bg-white p-2 md:p-3 rounded-lg shadow-md"
+                                    :style="{ width: isMobile ? 'calc(100% - 1rem)' : 'calc((100% - 2rem) / 3)' }"
                                 >
-                                    <div class="text-center mb-3">
-                                        <span class="text-sm font-semibold">
+                                    <div class="text-center mb-2 md:mb-3">
+                                        <span class="text-xs md:text-sm font-semibold">
                                             {{ translateCashRegisterName(item.name) }}
-                                            <span class="text-sm font-bold text-black ml-1">({{ item.currencySymbol || item.currencyCode || '' }})</span>
+                                            <span class="text-xs md:text-sm font-bold text-black ml-1">({{ item.currencySymbol || item.currencyCode || '' }})</span>
                                         </span>
                                     </div>
                             <div v-if="$store.getters.hasPermission('settings_cash_balance_view')" :class="getGridClass(item.balance)">
@@ -51,7 +51,7 @@
                                         'text-orange-600': balance.type === 'project_income',
                                         'font-bold text-sm': true
                                     }" class="leading-tight">
-                                        <div class="balance-amount text-base">{{ formatBalanceValue(balance) }}</div>
+                                        <div class="balance-amount ">{{ formatBalanceValue(balance) }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -77,12 +77,12 @@
                         </button>
                     </div>
                     <!-- Обычный grid для 3 касс и меньше -->
-                    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
-                        <div v-for="item in data" :key="item.id" class="bg-white p-3 rounded-lg shadow-md">
-                            <div class="text-center mb-3">
-                                <span class="text-sm font-semibold">
+                    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 xxl:grid-cols-3 gap-2 md:gap-4">
+                        <div v-for="item in data" :key="item.id" class="bg-white p-2 md:p-3 rounded-lg shadow-md">
+                            <div class="text-center mb-2 md:mb-3">
+                                <span class="text-xs md:text-sm font-semibold">
                                     {{ translateCashRegisterName(item.name) }}
-                                    <span class="text-sm font-bold text-black ml-1">({{ item.currencySymbol || item.currencyCode || '' }})</span>
+                                    <span class="text-xs md:text-sm font-bold text-black ml-1">({{ item.currencySymbol || item.currencyCode || '' }})</span>
                                 </span>
                             </div>
                             <div v-if="$store.getters.hasPermission('settings_cash_balance_view')" :class="getGridClass(item.balance)">
@@ -113,7 +113,7 @@
                                         'text-orange-600': balance.type === 'project_income',
                                         'font-bold text-sm': true
                                     }" class="leading-tight">
-                                        <div class="balance-amount text-base">{{ formatBalanceValue(balance) }}</div>
+                                        <div class="balance-amount ">{{ formatBalanceValue(balance) }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -127,10 +127,10 @@
         </div>
         
         <!-- Debt Balance -->
-        <div v-if="$store.getters.hasPermission('settings_client_balance_view')" class="w-auto ml-auto">
+        <div v-if="$store.getters.hasPermission('settings_client_balance_view')" class="w-full md:w-auto md:ml-auto mt-4 md:mt-0">
             <transition name="fade" mode="out-in">
                 <div v-if="data != null && !loading" key="table">
-                    <div class="bg-white p-3 rounded-lg shadow-md">
+                    <div class="bg-white p-2 md:p-3 rounded-lg shadow-md">
                         <div class="text-center mb-3">
                             <span class="text-sm font-semibold">{{ $t('clientDebts') }}</span>
                         </div>
@@ -149,7 +149,7 @@
                                     'text-green-600': true,
                                     'font-bold text-sm': true
                                 }" class="leading-tight">
-                                    <div class="balance-amount text-base">{{ formatBalanceValue({ value: clientDebts.positive, type: 'debt' }) }}</div>
+                                    <div class="balance-amount ">{{ formatBalanceValue({ value: clientDebts.positive, type: 'debt' }) }}</div>
                                 </div>
                             </div>
                             <div class="text-center balance-item"
@@ -166,7 +166,7 @@
                                     'text-red-600': true,
                                     'font-bold text-sm': true
                                 }" class="leading-tight">
-                                    <div class="balance-amount text-base">{{ formatBalanceValue({ value: Math.abs(clientDebts.negative), type: 'debt' }) }}</div>
+                                    <div class="balance-amount ">{{ formatBalanceValue({ value: Math.abs(clientDebts.negative), type: 'debt' }) }}</div>
                                 </div>
                             </div>
                         </div>
@@ -206,8 +206,13 @@ export default {
                 negative: 0,
                 balance: 0
             },
-            currentSlide: 0
+            currentSlide: 0,
+            isMobile: false
         };
+    },
+    mounted() {
+        this.checkMobile();
+        window.addEventListener('resize', this.checkMobile);
     },
     computed: {
         // Вычисляемое свойство для отслеживания всех фильтров
@@ -224,7 +229,8 @@ export default {
         // Максимальный слайд для слайдера
         maxSlide() {
             if (!this.data || this.data.length <= 3) return 0;
-            return Math.ceil(this.data.length / 3) - 1;
+            const itemsPerView = this.isMobile ? 1 : 3;
+            return Math.ceil(this.data.length / itemsPerView) - 1;
         },
         canViewCashBalance() {
             return this.$store.getters.hasPermission('settings_cash_balance_view');
@@ -283,6 +289,9 @@ export default {
             }
             
             return name;
+        },
+        checkMobile() {
+            this.isMobile = window.innerWidth < 768;
         },
         nextSlide() {
             if (this.currentSlide < this.maxSlide) {
@@ -444,19 +453,32 @@ export default {
 .balance-item {
     border: 1px solid transparent !important;
     border-radius: 0.5rem !important;
-    padding: 0.5rem !important;
-    min-height: 60px !important;
+    padding: 0.375rem 0.25rem !important;
+    min-height: 50px !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
     transition: all 0.2s ease !important;
 }
 
+@media (min-width: 768px) {
+    .balance-item {
+        padding: 0.5rem !important;
+        min-height: 60px !important;
+    }
+}
+
 .balance-amount {
     white-space: nowrap;
     font-weight: 700;
-    font-size: 1.1rem;
+    font-size: 0.875rem;
     line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+    .balance-amount {
+        font-size: 1.1rem;
+    }
 }
 
 @media (max-width: 768px) {

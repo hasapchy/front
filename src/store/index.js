@@ -15,6 +15,7 @@ import { eventBus } from "@/eventBus";
 const CLEAR_MUTATIONS_MAPPING = {
   currencies: "SET_CURRENCIES",
   units: "SET_UNITS",
+  users: "SET_USERS",
   orderStatuses: "SET_ORDER_STATUSES",
   projectStatuses: "SET_PROJECT_STATUSES",
   transactionCategories: "SET_TRANSACTION_CATEGORIES",
@@ -1971,9 +1972,9 @@ const store = createStore({
     lastProducts: (state) => state.lastProducts,
     allProducts: (state) => state.allProducts,
     categories: (state) => state.categories,
-    projects: (state) => state.projects, // Все проекты для страницы проектов
+    projects: (state) => state.projects,
     activeProjects: (state) =>
-      state.projects.filter((p) => p.statusId !== 3 && p.statusId !== 4), // Только активные для форм
+      state.projects.filter((p) => p.statusId !== 3 && p.statusId !== 4), 
     orderStatuses: (state) => state.orderStatuses,
     projectStatuses: (state) => state.projectStatuses,
     transactionCategories: (state) => state.transactionCategories,
@@ -1996,21 +1997,18 @@ const store = createStore({
     currentCompany: (state) => state.currentCompany,
     userCompanies: (state) => state.userCompanies,
     currentCompanyId: (state) => state.currentCompany?.id || null,
-    // ✅ Пользователи, отфильтрованные по текущей компании
-    // Показываем только тех, у кого есть доступ к текущей компании (т.е. они являются сотрудниками этой компании)
     usersForCurrentCompany: (state) => {
       const currentCompanyId = state.currentCompany?.id;
+      const activeUsers = state.users.filter((user) => Boolean(user?.isActive));
       if (!currentCompanyId) {
-        // Если нет текущей компании - возвращаем всех (на случай, если это глобальный режим)
-        return state.users;
+        // Если нет текущей компании - возвращаем только активных (глобальный режим)
+        return activeUsers;
       }
       // Фильтруем: показываем пользователей, у которых текущая компания есть в списке компаний
-      return state.users.filter((user) => {
+      return activeUsers.filter((user) => {
         if (!user.companies || user.companies.length === 0) {
           return false; // Если у пользователя нет компаний - не показываем
         }
-        // Проверяем, есть ли у пользователя текущая компания (т.е. он сотрудник этой компании)
-        // Используем сравнение с приведением типов для надежности
         return user.companies.some(
           (company) => Number(company.id) === Number(currentCompanyId)
         );

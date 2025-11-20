@@ -7,42 +7,75 @@
                 :disabled="!$store.getters.hasPermission('invoices_create')">
             </PrimaryButton>
             
-            
-            <div class="ml-2">
-                <select v-model="dateFilter" @change="fetchItems" class="pl-10">
-                    <option value="all_time">{{ $t('allTime') }}</option>
-                    <option value="today">{{ $t('today') }}</option>
-                    <option value="yesterday">{{ $t('yesterday') }}</option>
-                    <option value="this_week">{{ $t('thisWeek') }}</option>
-                    <option value="this_month">{{ $t('thisMonth') }}</option>
-                    <option value="last_week">{{ $t('lastWeek') }}</option>
-                    <option value="last_month">{{ $t('lastMonth') }}</option>
-                    <option value="custom">{{ $t('selectDates') }}</option>
-                </select>
-            </div>
-            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-2">
-                <input type="date" v-model="startDate" @change="fetchItems" />
-                <input type="date" v-model="endDate" @change="fetchItems" />
-            </div>
+            <FiltersContainer 
+                :has-active-filters="hasActiveFilters"
+                :active-filters-count="getActiveFiltersCount()"
+                @reset="resetFilters">
+                <template #desktop>
+                    <div class="ml-2">
+                        <select v-model="dateFilter" @change="fetchItems" class="pl-10">
+                            <option value="all_time">{{ $t('allTime') }}</option>
+                            <option value="today">{{ $t('today') }}</option>
+                            <option value="yesterday">{{ $t('yesterday') }}</option>
+                            <option value="this_week">{{ $t('thisWeek') }}</option>
+                            <option value="this_month">{{ $t('thisMonth') }}</option>
+                            <option value="last_week">{{ $t('lastWeek') }}</option>
+                            <option value="last_month">{{ $t('lastMonth') }}</option>
+                            <option value="custom">{{ $t('selectDates') }}</option>
+                        </select>
+                    </div>
+                    <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-2">
+                        <input type="date" v-model="startDate" @change="fetchItems" />
+                        <input type="date" v-model="endDate" @change="fetchItems" />
+                    </div>
+                    <div class="ml-2">
+                        <select v-model="statusFilter" @change="fetchItems">
+                            <option value="">{{ $t('allStatuses') }}</option>
+                            <option value="new">{{ $t('new') }}</option>
+                            <option value="in_progress">{{ $t('inProgress') }}</option>
+                            <option value="paid">{{ $t('paid') }}</option>
+                            <option value="cancelled">{{ $t('cancelled') }}</option>
+                        </select>
+                    </div>
+                </template>
+                <template #mobile>
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
+                        <select v-model="dateFilter" @change="fetchItems" class="w-full">
+                            <option value="all_time">{{ $t('allTime') }}</option>
+                            <option value="today">{{ $t('today') }}</option>
+                            <option value="yesterday">{{ $t('yesterday') }}</option>
+                            <option value="this_week">{{ $t('thisWeek') }}</option>
+                            <option value="this_month">{{ $t('thisMonth') }}</option>
+                            <option value="last_week">{{ $t('lastWeek') }}</option>
+                            <option value="last_month">{{ $t('lastMonth') }}</option>
+                            <option value="custom">{{ $t('selectDates') }}</option>
+                        </select>
+                    </div>
 
+                    <div v-if="dateFilter === 'custom'" class="space-y-2">
+                        <div>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
+                            <input type="date" v-model="startDate" @change="fetchItems" class="w-full" />
+                        </div>
+                        <div>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
+                            <input type="date" v-model="endDate" @change="fetchItems" class="w-full" />
+                        </div>
+                    </div>
 
-            <div class="ml-2">
-                <select v-model="statusFilter" @change="fetchItems">
-                    <option value="">{{ $t('allStatuses') }}</option>
-                    <option value="new">{{ $t('new') }}</option>
-                    <option value="in_progress">{{ $t('inProgress') }}</option>
-                    <option value="paid">{{ $t('paid') }}</option>
-                    <option value="cancelled">{{ $t('cancelled') }}</option>
-                </select>
-            </div>
-
-            <div class="ml-2">
-                <PrimaryButton 
-                    :onclick="resetFilters"
-                    icon="fas fa-trash"
-                    :isLight="true">
-                </PrimaryButton>
-            </div>
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
+                        <select v-model="statusFilter" @change="fetchItems" class="w-full">
+                            <option value="">{{ $t('allStatuses') }}</option>
+                            <option value="new">{{ $t('new') }}</option>
+                            <option value="in_progress">{{ $t('inProgress') }}</option>
+                            <option value="paid">{{ $t('paid') }}</option>
+                            <option value="cancelled">{{ $t('cancelled') }}</option>
+                        </select>
+                    </div>
+                </template>
+            </FiltersContainer>
         </div>
         <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" 
             :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
@@ -77,6 +110,7 @@
 import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import Pagination from "@/views/components/app/buttons/Pagination.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import InvoiceController from "@/api/InvoiceController";
@@ -108,6 +142,7 @@ export default {
         ClientButtonCell, 
         BatchButton, 
         AlertDialog, 
+        FiltersContainer,
     },
     data() {
         return {
@@ -167,6 +202,12 @@ export default {
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
+        },
+        hasActiveFilters() {
+            return this.dateFilter !== 'all_time' ||
+                   this.statusFilter !== '' ||
+                   this.startDate !== null ||
+                   this.endDate !== null;
         }
     },
     methods: {
@@ -238,6 +279,14 @@ export default {
             this.endDate = '';
             this.statusFilter = '';
             this.fetchItems();
+        },
+        getActiveFiltersCount() {
+            let count = 0;
+            if (this.dateFilter !== 'all_time') count++;
+            if (this.statusFilter !== '') count++;
+            if (this.startDate !== null && this.startDate !== '') count++;
+            if (this.endDate !== null && this.endDate !== '') count++;
+            return count;
         },
 
     }

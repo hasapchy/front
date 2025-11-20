@@ -3,8 +3,8 @@
         <button
             :class="buttonClasses"
             type="button"
-            @click="handleClick"
-            title="Сделайте несколько кликов, чтобы увидеть изменения"
+            @dblclick.stop="handleDoubleClick"
+            title="Сделайте двойной клик, чтобы увидеть изменения"
         >
             <i class="fas fa-code-branch text-[11px]"></i>
             <span>{{ versionLabel }}</span>
@@ -27,7 +27,7 @@
                                 </p>
                             </div>
                             <button class="text-gray-400 hover:text-gray-600" type="button" @click="closeNotes">
-                                <i class="fas fa-times text-base"></i>
+                                <i class="fas fa-times "></i>
                             </button>
                         </div>
                         <div v-if="versions.length > 1" class="flex flex-wrap gap-2 mb-4">
@@ -42,7 +42,7 @@
                                 v{{ version.version }}
                             </button>
                         </div>
-                        <ul class="list-disc list-outside text-base text-gray-700 space-y-3 max-h-[420px] overflow-y-auto pl-6">
+                        <ul class="list-disc list-outside  text-gray-700 space-y-3 max-h-[420px] overflow-y-auto pl-6">
                             <li v-for="(note, index) in releaseNotes" :key="index">
                                 {{ note }}
                             </li>
@@ -57,9 +57,6 @@
 <script>
 import { APP_VERSIONS, CURRENT_APP_VERSION } from '@/constants/appVersion';
 
-const CLICK_THRESHOLD = 2;
-const CLICK_TIMEOUT = 1500;
-
 export default {
     name: 'AppVersionBadge',
     props: {
@@ -70,8 +67,6 @@ export default {
     },
     data() {
         return {
-            clickCount: 0,
-            clickTimer: null,
             showNotes: false,
             selectedVersionIndex: 0
         };
@@ -101,32 +96,9 @@ export default {
         }
     },
     methods: {
-        handleClick() {
-            this.clickCount += 1;
-
-            if (this.clickCount >= CLICK_THRESHOLD) {
-                this.showNotes = true;
-                this.selectedVersionIndex = 0;
-                this.resetClickTracking();
-                return;
-            }
-
-            this.startClickTimer();
-        },
-        startClickTimer() {
-            if (this.clickTimer) {
-                clearTimeout(this.clickTimer);
-            }
-            this.clickTimer = setTimeout(() => {
-                this.resetClickTracking();
-            }, CLICK_TIMEOUT);
-        },
-        resetClickTracking() {
-            if (this.clickTimer) {
-                clearTimeout(this.clickTimer);
-                this.clickTimer = null;
-            }
-            this.clickCount = 0;
+        handleDoubleClick() {
+            this.showNotes = true;
+            this.selectedVersionIndex = 0;
         },
         closeNotes() {
             this.showNotes = false;
@@ -136,9 +108,6 @@ export default {
                 this.selectedVersionIndex = index;
             }
         }
-    },
-    beforeUnmount() {
-        this.resetClickTracking();
     }
 };
 </script>

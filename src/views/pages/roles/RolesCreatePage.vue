@@ -26,7 +26,7 @@
                             <button 
                                 type="button"
                                 @click="toggleGroup(groupKey)"
-                                class="flex items-center gap-2 font-bold text-base text-gray-800 hover:text-blue-600 transition-colors"
+                                class="flex items-center gap-2 font-bold  text-gray-800 hover:text-blue-600 transition-colors"
                             >
                                 <i :class="['fas', expandedGroups[groupKey] ? 'fa-chevron-down' : 'fa-chevron-right', 'text-xs']"></i>
                                 <span>{{ getResourceLabel(group.label) }}</span>

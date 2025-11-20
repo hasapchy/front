@@ -62,6 +62,7 @@ export default {
   created: 'Создано',
   info: 'Информация',
   settings: 'Доп. меню',
+  additionalMenu: 'Дополнительное меню',
   roundingSettings: 'Настройки округления',
   enableRounding: 'Включить округление',
   decimalPlaces: 'Количество знаков после запятой',
@@ -382,6 +383,7 @@ export default {
   rowsPerPage: 'Строк на странице',
   
   // Фильтры
+  filters: 'Фильтры',
   filter: 'Фильтр',
   clearFilter: 'Очистить фильтр',
   applyFilter: 'Применить фильтр',
@@ -1052,11 +1054,13 @@ export default {
   writeoff: 'Списание',
   
   // Новые переводы для фильтров транзакций
+  transactionType: 'Тип транзакции',
   allTransactionTypes: 'Все типы транзакций',
   allTransactions: 'Все транзакции',
   allTransactions: 'Все транзакции',
   nonDebtTransactions: 'Некредиторские транзакции',
   debtsOnly: 'Только долги',
+  debtFilter: 'Фильтр долгов',
   allSources: 'Все источники',
   allStatuses: 'Все статусы',
   notDebt: 'Не кредит',

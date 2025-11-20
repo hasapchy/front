@@ -19,7 +19,7 @@
                             <i class="fas fa-exclamation-triangle text-orange-500 text-xs"></i>
                         </div>
                         <div class="text-orange-600 font-bold text-sm leading-tight">
-                            <div class="balance-amount text-base">{{ $formatNumber(item.debtValue, null, false) }}</div>
+                            <div class="balance-amount ">{{ $formatNumber(item.debtValue, null, false) }}</div>
                         </div>
                     </div>
                 </div>
@@ -41,7 +41,7 @@
                     </div>
                     <div class="border-t pt-2 flex justify-between items-center">
                         <span class="text-sm font-semibold">{{ $t('balance') }}:</span>
-                        <span class="font-bold text-base" :class="clientDebts.balance >= 0 ? 'text-green-600' : 'text-red-600'">
+                        <span class="font-bold " :class="clientDebts.balance >= 0 ? 'text-green-600' : 'text-red-600'">
                             {{ $formatNumber(clientDebts.balance, null) }}
                         </span>
                     </div>

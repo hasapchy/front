@@ -1,32 +1,34 @@
 <template>
-
-  <div class="flex flex-row-reverse">
-    <TableFilterButton v-if="columns.length" :onReset="resetColumns">
-      <ul>
-        <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
-          <li v-for="(element, index) in columns" :key="element.name" @click="toggleVisible(index)"
-            class="flex items-center hover:bg-gray-100 p-2 rounded">
-            <div class="space-x-2 flex flex-row justify-between w-full select-none">
-              <div>
-                <i class="text-sm mr-2 text-[#337AB7]"
-                  :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                {{ $te(element.label) ? $t(element.label) : element.label }}
+  <div class="w-full">
+    <div class="flex flex-row-reverse mb-4">
+      <TableFilterButton v-if="columns.length" :onReset="resetColumns">
+        <ul>
+          <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
+            <li v-for="(element, index) in columns" :key="element.name" @click="toggleVisible(index)"
+              class="flex items-center hover:bg-gray-100 p-2 rounded">
+              <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                <div>
+                  <i class="text-sm mr-2 text-[#337AB7]"
+                    :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                  {{ $te(element.label) ? $t(element.label) : element.label }}
+                </div>
+                <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i></div>
               </div>
-              <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i></div>
-            </div>
-          </li>
-        </draggable>
-      </ul>
-    </TableFilterButton>
-  </div>
+            </li>
+          </draggable>
+        </ul>
+      </TableFilterButton>
+    </div>
 
-
-  <table class="min-w-full bg-white shadow-md rounded mb-6 w-100">
+    <!-- Desktop/Tablet Table View (hidden on mobile) -->
+    <div class="desktop-table overflow-x-auto">
+      <div class="overflow-x-auto w-full">
+        <table class="min-w-full bg-white shadow-md rounded mb-6" style="font-size: 12px;">
     <thead class="bg-gray-100 rounded-t-sm">
       <draggable v-if="columns.length" tag="tr" class="dragArea list-group w-full" :list="columns" @change="log">
         <th v-for="(element, index) in columns" :key="element.name"
           :class="{ hidden: !element.visible, relative: true }"
-          class="text-left border border-gray-300 py-2 px-4 font-medium cursor-pointer select-none"
+          class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium cursor-pointer select-none whitespace-nowrap"
           :style="getColumnStyle(element)" @dblclick.prevent="sortBy(element.name)"
           :title="$t('doubleClickToSort') + ' ' + ($te(element.label) ? $t(element.label) : element.label)">
           <template v-if="element.name === 'select'">
@@ -46,47 +48,91 @@
           </template>
         </th>
       </draggable>
-    </thead>
-    <tbody>
-      <tr v-if="sortedData.length === 0" class="text-center">
-        <td class="py-2 px-4 border-x border-gray-300" :colspan="columns.length">
-          {{ $t('noData') }}
-        </td>
-      </tr>
-      <tr v-for="(item, idx) in sortedData" :key="idx" class="cursor-pointer hover:bg-gray-100 transition-all"
-        :class="{ 
-          'border-b border-gray-300': idx !== sortedData.length - 1,
-          'opacity-50': item.isDeleted || item.is_deleted 
-        }" @dblclick="(e) => itemClick(item, e)">
-        <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`" 
-          class="py-2 px-4 border-x border-gray-300"
+      </thead>
+      <tbody>
+        <tr v-if="sortedData.length === 0" class="text-center">
+          <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300" :colspan="columns.length">
+            {{ $t('noData') }}
+          </td>
+        </tr>
+        <tr v-for="(item, idx) in sortedData" :key="idx" class="cursor-pointer hover:bg-gray-100 transition-all"
           :class="{ 
-            hidden: !column.visible,
-            'note-cell': column.name === 'note'
-          }" 
-          :style="getColumnStyle(column)"
-          :title="column.name === 'note' ? getNoteTitle(item, column) : null">
-          <template v-if="column.name === 'select'">
-            <input type="checkbox" :checked="selectedIds.includes(item.id)" @change.stop="toggleSelectRow(item.id)"
-              style="cursor:pointer;" />
-          </template>
-          <template v-if="column.component">
-            <component :is="column.component" v-bind="column.props?.(item)" />
-          </template>
-          <template v-else-if="column.image && itemMapper(item, column.name) !== null">
-            <img :src="itemMapper(item, column.name)" width="50" class="rounded" />
-          </template>
-          <template v-else-if="column.html">
-            <span v-html="itemMapper(item, column.name)" @click="(e) => handleHtmlClick(e, item, column)"
-              :class="{ 'line-through': item.isDeleted || item.is_deleted }"></span>
-          </template>
-          <template v-else>
-            <span :class="{ 'line-through': item.isDeleted || item.is_deleted }">{{ itemMapper(item, column.name) }}</span>
-          </template>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+            'border-b border-gray-300': idx !== sortedData.length - 1,
+            'opacity-50': item.isDeleted || item.is_deleted 
+          }" @dblclick="(e) => itemClick(item, e)">
+          <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`" 
+            class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300"
+            :class="{ 
+              hidden: !column.visible,
+              'note-cell': column.name === 'note'
+            }" 
+            :style="getColumnStyle(column)"
+            :title="column.name === 'note' ? getNoteTitle(item, column) : null">
+            <template v-if="column.name === 'select'">
+              <input type="checkbox" :checked="selectedIds.includes(item.id)" @change.stop="toggleSelectRow(item.id)"
+                class="cursor-pointer" />
+            </template>
+            <template v-if="column.component">
+              <component :is="column.component" v-bind="column.props?.(item)" />
+            </template>
+            <template v-else-if="column.image && itemMapper(item, column.name) !== null">
+              <img :src="itemMapper(item, column.name)" width="50" height="50" class="rounded object-cover" />
+            </template>
+            <template v-else-if="column.html">
+              <span v-html="itemMapper(item, column.name)" @click="(e) => handleHtmlClick(e, item, column)"
+                :class="{ 'line-through': item.isDeleted || item.is_deleted }"></span>
+            </template>
+            <template v-else>
+              <span :class="{ 'line-through': item.isDeleted || item.is_deleted }">{{ itemMapper(item, column.name) }}</span>
+            </template>
+          </td>
+        </tr>
+      </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Mobile Card View (visible on small screens) -->
+    <div class="md:hidden space-y-4">
+      <div v-if="sortedData.length === 0" class="bg-white shadow-md rounded-lg p-4 text-center text-sm text-gray-500">
+        {{ $t('noData') }}
+      </div>
+      <div v-for="(item, idx) in sortedData" :key="idx" 
+        @click="(e) => itemClick(item, e)"
+        :class="{ 
+          'opacity-50': item.isDeleted || item.is_deleted 
+        }"
+        class="bg-white shadow-md rounded-lg p-4 cursor-pointer hover:shadow-lg transition-shadow">
+        <div class="space-y-3">
+          <div v-for="(column, cIndex) in visibleColumns" :key="`${cIndex}_${idx}`"
+            class="flex flex-col border-b border-gray-100 pb-2 last:border-0 last:pb-0">
+            <div class="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">
+              {{ $te(column.label) ? $t(column.label) : column.label }}
+            </div>
+            <div class="text-sm text-gray-900 break-words"
+              :class="{ 'line-through': item.isDeleted || item.is_deleted }">
+              <template v-if="column.name === 'select'">
+                <input type="checkbox" :checked="selectedIds.includes(item.id)" @change.stop="toggleSelectRow(item.id)"
+                  class="cursor-pointer" />
+              </template>
+              <template v-else-if="column.component">
+                <component :is="column.component" v-bind="column.props?.(item)" />
+              </template>
+              <template v-else-if="column.image && itemMapper(item, column.name) !== null">
+                <img :src="itemMapper(item, column.name)" class="rounded object-cover max-w-full h-auto" />
+              </template>
+              <template v-else-if="column.html">
+                <span v-html="itemMapper(item, column.name)" @click="(e) => handleHtmlClick(e, item, column)"></span>
+              </template>
+              <template v-else>
+                {{ itemMapper(item, column.name) }}
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -181,6 +227,9 @@ export default {
     },
     isAllSelected() {
       return this.visibleIds.length > 0 && this.visibleIds.every(id => this.selectedIds.includes(id));
+    },
+    visibleColumns() {
+      return this.columns.filter(col => col.visible && col.name !== 'select');
     },
   },
   methods: {
@@ -484,6 +533,16 @@ export default {
 </script>
 
 <style scoped>
+.desktop-table {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .desktop-table {
+    display: block;
+  }
+}
+
 .note-cell {
   max-width: 200px;
   overflow: hidden;

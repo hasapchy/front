@@ -22,58 +22,114 @@
                 </button>
             </div>
             
-            <div>
-                <select v-model="dateFilter" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded bg-white">
-                    <option value="all_time">{{ $t('allTime') }}</option>
-                    <option value="today">{{ $t('today') }}</option>
-                    <option value="yesterday">{{ $t('yesterday') }}</option>
-                    <option value="this_week">{{ $t('thisWeek') }}</option>
-                    <option value="this_month">{{ $t('thisMonth') }}</option>
-                    <option value="last_week">{{ $t('lastWeek') }}</option>
-                    <option value="last_month">{{ $t('lastMonth') }}</option>
-                    <option value="custom">{{ $t('selectDates') }}</option>
-                </select>
-            </div>
+            <FiltersContainer 
+                :has-active-filters="hasActiveFilters"
+                :active-filters-count="getActiveFiltersCount()"
+                @reset="resetFilters">
+                <template #desktop>
+                    <div>
+                        <select v-model="dateFilter" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded bg-white">
+                            <option value="all_time">{{ $t('allTime') }}</option>
+                            <option value="today">{{ $t('today') }}</option>
+                            <option value="yesterday">{{ $t('yesterday') }}</option>
+                            <option value="this_week">{{ $t('thisWeek') }}</option>
+                            <option value="this_month">{{ $t('thisMonth') }}</option>
+                            <option value="last_week">{{ $t('lastWeek') }}</option>
+                            <option value="last_month">{{ $t('lastMonth') }}</option>
+                            <option value="custom">{{ $t('selectDates') }}</option>
+                        </select>
+                    </div>
 
-            <div>
-                <select v-model="statusFilter" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded bg-white">
-                    <option value="">{{ $t('allStatuses') }}</option>
-                    <option v-for="status in statuses" :key="status.id" :value="status.id">
-                        {{ status.name }}
-                    </option>
-                </select>
-            </div>
+                    <div class="ml-3">
+                        <select v-model="statusFilter" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded bg-white">
+                            <option value="">{{ $t('allStatuses') }}</option>
+                            <option v-for="status in statuses" :key="status.id" :value="status.id">
+                                {{ status.name }}
+                            </option>
+                        </select>
+                    </div>
 
-            <div>
-                <select v-model="projectFilter" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded bg-white">
-                    <option value="">{{ $t('allProjects') }}</option>
-                    <option v-for="project in projects" :key="project.id" :value="project.id">
-                        {{ project.name }}
-                    </option>
-                </select>
-            </div>
+                    <div class="ml-3">
+                        <select v-model="projectFilter" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded bg-white">
+                            <option value="">{{ $t('allProjects') }}</option>
+                            <option v-for="project in projects" :key="project.id" :value="project.id">
+                                {{ project.name }}
+                            </option>
+                        </select>
+                    </div>
 
-            <div>
-                <select v-model="clientFilter" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded bg-white">
-                    <option value="">{{ $t('allClients') }}</option>
-                    <option v-for="client in clients" :key="client.id" :value="client.id">
-                        {{ client.fullName() }}
-                    </option>
-                </select>
-            </div>
+                    <div class="ml-3">
+                        <select v-model="clientFilter" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded bg-white">
+                            <option value="">{{ $t('allClients') }}</option>
+                            <option v-for="client in clients" :key="client.id" :value="client.id">
+                                {{ client.fullName() }}
+                            </option>
+                        </select>
+                    </div>
+                    
+                    <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-3">
+                        <input type="date" v-model="startDate" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded" />
+                        <input type="date" v-model="endDate" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded" />
+                    </div>
+                </template>
 
-            <div v-if="hasActiveFilters">
-                <PrimaryButton 
-                    :onclick="resetFilters"
-                    icon="fas fa-filter-circle-xmark"
-                    :isLight="true">
-                </PrimaryButton>
-            </div>
-            
-            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center">
-                <input type="date" v-model="startDate" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded" />
-                <input type="date" v-model="endDate" @change="() => fetchItems(1)" class="p-2 border border-gray-300 rounded" />
-            </div>
+                <template #mobile>
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
+                        <select v-model="dateFilter" @change="() => fetchItems(1)" class="w-full">
+                            <option value="all_time">{{ $t('allTime') }}</option>
+                            <option value="today">{{ $t('today') }}</option>
+                            <option value="yesterday">{{ $t('yesterday') }}</option>
+                            <option value="this_week">{{ $t('thisWeek') }}</option>
+                            <option value="this_month">{{ $t('thisMonth') }}</option>
+                            <option value="last_week">{{ $t('lastWeek') }}</option>
+                            <option value="last_month">{{ $t('lastMonth') }}</option>
+                            <option value="custom">{{ $t('selectDates') }}</option>
+                        </select>
+                    </div>
+
+                    <div v-if="dateFilter === 'custom'" class="space-y-2">
+                        <div>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
+                            <input type="date" v-model="startDate" @change="() => fetchItems(1)" class="w-full" />
+                        </div>
+                        <div>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
+                            <input type="date" v-model="endDate" @change="() => fetchItems(1)" class="w-full" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
+                        <select v-model="statusFilter" @change="() => fetchItems(1)" class="w-full">
+                            <option value="">{{ $t('allStatuses') }}</option>
+                            <option v-for="status in statuses" :key="status.id" :value="status.id">
+                                {{ status.name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('project') || 'Проект' }}</label>
+                        <select v-model="projectFilter" @change="() => fetchItems(1)" class="w-full">
+                            <option value="">{{ $t('allProjects') }}</option>
+                            <option v-for="project in projects" :key="project.id" :value="project.id">
+                                {{ project.name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент' }}</label>
+                        <select v-model="clientFilter" @change="() => fetchItems(1)" class="w-full">
+                            <option value="">{{ $t('allClients') }}</option>
+                            <option v-for="client in clients" :key="client.id" :value="client.id">
+                                {{ client.fullName() }}
+                            </option>
+                        </select>
+                    </div>
+                </template>
+            </FiltersContainer>
         </div>
         
         <div class="flex items-center space-x-3">
@@ -125,6 +181,7 @@
             <SpinnerIcon />
         </div>
     </transition>
+
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed" 
         :showTimelineButton="!!editingItem" @toggle-timeline="toggleTimeline">
         <OrderCreatePage v-if="modalDialog" ref="ordercreatepageForm" @saved="handleSaved" @saved-silent="handleSavedSilent" @saved-error="handleSavedError"
@@ -185,6 +242,7 @@
 import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import Pagination from "@/views/components/app/buttons/Pagination.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import KanbanBoard from "@/views/components/app/kanban/KanbanBoard.vue";
@@ -223,7 +281,7 @@ const TimelinePanel = defineAsyncComponent(() =>
 
 export default {
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon, FiltersContainer },
     data() {
         return {
             viewMode: 'kanban',
@@ -298,8 +356,8 @@ export default {
         },
         hasActiveFilters() {
             return this.dateFilter !== 'all_time' ||
-                   this.startDate !== null ||
-                   this.endDate !== null ||
+                   (this.startDate !== null && this.startDate !== '') ||
+                   (this.endDate !== null && this.endDate !== '') ||
                    this.statusFilter !== '' ||
                    this.projectFilter !== '' ||
                    this.clientFilter !== '' ||
@@ -504,15 +562,25 @@ export default {
         },
         resetFilters() {
             this.dateFilter = 'all_time';
-            this.startDate = '';
-            this.endDate = '';
+            this.startDate = null;
+            this.endDate = null;
             this.statusFilter = '';
             this.projectFilter = '';
             this.clientFilter = '';
             this.paidOrdersFilter = false;
             this.fetchItems();
         },
-
+        getActiveFiltersCount() {
+            let count = 0;
+            if (this.dateFilter !== 'all_time') count++;
+            if (this.statusFilter !== '') count++;
+            if (this.projectFilter !== '') count++;
+            if (this.clientFilter !== '') count++;
+            if (this.paidOrdersFilter !== false) count++;
+            if (this.startDate !== null && this.startDate !== '') count++;
+            if (this.endDate !== null && this.endDate !== '') count++;
+            return count;
+        },
         handlePaidOrdersFilterChange(isActive) {
             this.paidOrdersFilter = isActive;
             this.fetchItems();

@@ -1,92 +1,170 @@
 <template>
-    <div class="flex justify-between items-center mb-4">
-        <div class="flex justify-start items-center">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-0 mb-4">
+        <div class="flex flex-wrap md:flex-nowrap justify-start items-center w-full md:w-auto">
             <PrimaryButton 
                 :onclick="() => { showModal(null) }" 
                 icon="fas fa-plus"
                 :disabled="!$store.getters.hasPermission('transactions_create')">
             </PrimaryButton>
-            <div class="ml-2">
-                <select v-model="cashRegisterId" @change="() => fetchItems(1)">
-                    <option value="">{{ $t('allCashRegisters') }}</option>
-                    <template v-if="allCashRegisters.length">
-                        <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
-                            {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
-                        </option>
-                    </template>
-                </select>
-            </div>
+            
+            <FiltersContainer 
+                :has-active-filters="hasActiveFilters"
+                :active-filters-count="getActiveFiltersCount()"
+                @reset="resetFilters">
+                <template #desktop>
+                    <div class="ml-2">
+                        <select v-model="cashRegisterId" @change="() => fetchItems(1)">
+                            <option value="">{{ $t('allCashRegisters') }}</option>
+                            <template v-if="allCashRegisters.length">
+                                <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
+                                    {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
+                                </option>
+                            </template>
+                        </select>
+                    </div>
 
-            <!-- Фильтр по типу транзакции -->
-            <div class="ml-2">
-                <select v-model="transactionTypeFilter" @change="() => fetchItems(1)">
-                    <option value="">{{ $t('allTransactionTypes') }}</option>
-                    <option value="income">{{ $t('income') }}</option>
-                    <option value="outcome">{{ $t('outcome') }}</option>
-                    <option value="transfer">{{ $t('transfer') }}</option>
-                </select>
-            </div>
+                    <div class="ml-2">
+                        <select v-model="transactionTypeFilter" @change="() => fetchItems(1)">
+                            <option value="">{{ $t('allTransactionTypes') }}</option>
+                            <option value="income">{{ $t('income') }}</option>
+                            <option value="outcome">{{ $t('outcome') }}</option>
+                            <option value="transfer">{{ $t('transfer') }}</option>
+                        </select>
+                    </div>
 
-            <!-- Фильтр по источнику средств -->
-            <div class="ml-2">
-                <select v-model="sourceFilter" @change="() => fetchItems(1)">
-                    <option value="">{{ $t('allSources') }}</option>
-                    <option v-for="option in sourceOptions" :key="option.value" :value="option.value">
-                        {{ option.label }}
-                    </option>
-                </select>
-            </div>
+                    <div class="ml-2">
+                        <select v-model="sourceFilter" @change="() => fetchItems(1)">
+                            <option value="">{{ $t('allSources') }}</option>
+                            <option v-for="option in sourceOptions" :key="option.value" :value="option.value">
+                                {{ option.label }}
+                            </option>
+                        </select>
+                    </div>
 
-            <!-- Фильтр по проектам -->
-            <div class="ml-2">
-                <select v-model="projectId" @change="() => fetchItems(1)">
-                    <option value="">{{ $t('allProjects') }}</option>
-                    <template v-if="allProjects.length">
-                        <option v-for="project in allProjects" :key="project.id" :value="project.id">
-                            {{ project.name }}
-                        </option>
-                    </template>
-                </select>
-            </div>
+                    <div class="ml-2">
+                        <select v-model="projectId" @change="() => fetchItems(1)">
+                            <option value="">{{ $t('allProjects') }}</option>
+                            <template v-if="allProjects.length">
+                                <option v-for="project in allProjects" :key="project.id" :value="project.id">
+                                    {{ project.name }}
+                                </option>
+                            </template>
+                        </select>
+                    </div>
 
-            <!-- Фильтр по долгам -->
-            <div class="ml-2">
-                <select v-model="debtFilter" @change="() => fetchItems(1)">
-                    <option value="all">{{ $t('allTransactions') }}</option>
-                    <option value="false">{{ $t('nonDebtTransactions') }}</option>
-                    <option value="true">{{ $t('debtsOnly') }}</option>
-                </select>
-            </div>
+                    <div class="ml-2">
+                        <select v-model="debtFilter" @change="() => fetchItems(1)">
+                            <option value="all">{{ $t('allTransactions') }}</option>
+                            <option value="false">{{ $t('nonDebtTransactions') }}</option>
+                            <option value="true">{{ $t('debtsOnly') }}</option>
+                        </select>
+                    </div>
 
-            <div class="ml-2">
-                <select v-model="dateFilter" @change="() => fetchItems(1)">
-                    <option value="all_time">{{ $t('allTime') }}</option>
-                    <option value="today">{{ $t('today') }}</option>
-                    <option value="yesterday">{{ $t('yesterday') }}</option>
-                    <option value="this_week">{{ $t('thisWeek') }}</option>
-                    <option value="this_month">{{ $t('thisMonth') }}</option>
-                    <option value="last_week">{{ $t('lastWeek') }}</option>
-                    <option value="last_month">{{ $t('lastMonth') }}</option>
-                    <option value="custom">{{ $t('selectDates') }}</option>
-                </select>
-            </div>
-            <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-2">
-                <input type="date" v-model="startDate" @change="() => fetchItems(1)" />
-                <input type="date" v-model="endDate" @change="() => fetchItems(1)" />
-            </div>
+                    <div class="ml-2">
+                        <select v-model="dateFilter" @change="() => fetchItems(1)">
+                            <option value="all_time">{{ $t('allTime') }}</option>
+                            <option value="today">{{ $t('today') }}</option>
+                            <option value="yesterday">{{ $t('yesterday') }}</option>
+                            <option value="this_week">{{ $t('thisWeek') }}</option>
+                            <option value="this_month">{{ $t('thisMonth') }}</option>
+                            <option value="last_week">{{ $t('lastWeek') }}</option>
+                            <option value="last_month">{{ $t('lastMonth') }}</option>
+                            <option value="custom">{{ $t('selectDates') }}</option>
+                        </select>
+                    </div>
+                    <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-2">
+                        <input type="date" v-model="startDate" @change="() => fetchItems(1)" />
+                        <input type="date" v-model="endDate" @change="() => fetchItems(1)" />
+                    </div>
+                </template>
 
-            <!-- Кнопка сброса фильтров -->
-            <div v-if="hasActiveFilters" class="ml-2">
-                <PrimaryButton 
-                    :onclick="resetFilters"
-                    icon="fas fa-filter-circle-xmark"
-                    :isLight="true">
-                </PrimaryButton>
-            </div>
+                <template #mobile>
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') || 'Касса' }}</label>
+                        <select v-model="cashRegisterId" @change="() => fetchItems(1)" class="w-full">
+                            <option value="">{{ $t('allCashRegisters') }}</option>
+                            <template v-if="allCashRegisters.length">
+                                <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
+                                    {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
+                                </option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('transactionType') || 'Тип транзакции' }}</label>
+                        <select v-model="transactionTypeFilter" @change="() => fetchItems(1)" class="w-full">
+                            <option value="">{{ $t('allTransactionTypes') }}</option>
+                            <option value="income">{{ $t('income') }}</option>
+                            <option value="outcome">{{ $t('outcome') }}</option>
+                            <option value="transfer">{{ $t('transfer') }}</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('source') || 'Источник' }}</label>
+                        <select v-model="sourceFilter" @change="() => fetchItems(1)" class="w-full">
+                            <option value="">{{ $t('allSources') }}</option>
+                            <option v-for="option in sourceOptions" :key="option.value" :value="option.value">
+                                {{ option.label }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('project') || 'Проект' }}</label>
+                        <select v-model="projectId" @change="() => fetchItems(1)" class="w-full">
+                            <option value="">{{ $t('allProjects') }}</option>
+                            <template v-if="allProjects.length">
+                                <option v-for="project in allProjects" :key="project.id" :value="project.id">
+                                    {{ project.name }}
+                                </option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('debtFilter') || 'Фильтр по долгам' }}</label>
+                        <select v-model="debtFilter" @change="() => fetchItems(1)" class="w-full">
+                            <option value="all">{{ $t('allTransactions') }}</option>
+                            <option value="false">{{ $t('nonDebtTransactions') }}</option>
+                            <option value="true">{{ $t('debtsOnly') }}</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
+                        <select v-model="dateFilter" @change="() => fetchItems(1)" class="w-full">
+                            <option value="all_time">{{ $t('allTime') }}</option>
+                            <option value="today">{{ $t('today') }}</option>
+                            <option value="yesterday">{{ $t('yesterday') }}</option>
+                            <option value="this_week">{{ $t('thisWeek') }}</option>
+                            <option value="this_month">{{ $t('thisMonth') }}</option>
+                            <option value="last_week">{{ $t('lastWeek') }}</option>
+                            <option value="last_month">{{ $t('lastMonth') }}</option>
+                            <option value="custom">{{ $t('selectDates') }}</option>
+                        </select>
+                    </div>
+                    
+                    <div v-if="dateFilter === 'custom'" class="space-y-2">
+                        <div>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
+                            <input type="date" v-model="startDate" @change="() => fetchItems(1)" class="w-full" />
+                        </div>
+                        <div>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
+                            <input type="date" v-model="endDate" @change="() => fetchItems(1)" class="w-full" />
+                        </div>
+                    </div>
+                </template>
+            </FiltersContainer>
         </div>
-        <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+        
+        <div class="w-full md:w-auto">
+            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
+                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+        </div>
     </div>
     <!-- ✅ Один компонент вместо двух - один API запрос вместо двух! -->
     <TransactionsBalanceWrapper 
@@ -128,6 +206,7 @@
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TransactionController from '@/api/TransactionController';
@@ -152,7 +231,7 @@ import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin],
-    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, BatchButton },
+    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, BatchButton, FiltersContainer },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -434,6 +513,18 @@ export default {
                     disabled: this.loadingBatch || nonTransferIds.length === 0,
                 },
             ];
+        },
+        getActiveFiltersCount() {
+            let count = 0;
+            if (this.cashRegisterId !== '') count++;
+            if (this.transactionTypeFilter !== '') count++;
+            if (this.sourceFilter !== '') count++;
+            if (this.projectId !== '') count++;
+            if (this.debtFilter !== 'all') count++;
+            if (this.dateFilter !== 'this_month' && this.dateFilter !== 'all_time') count++;
+            if (this.startDate !== null) count++;
+            if (this.endDate !== null) count++;
+            return count;
         },
     },
     computed: {

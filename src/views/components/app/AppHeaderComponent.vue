@@ -1,10 +1,23 @@
 <template>
     <div class="shadow-sm px-4 py-1.5 mb-5 bg-white rounded">
         <div class="flex items-center justify-between">
-                <div class="flex items-center gap-6">
-                    <router-link v-for="tab in binded" :key="tab.path" :to="tab.path"
-                        class="text-[#337AB7] hover:text-[#3571A4] hover:underline font-semibold transition-all mr-4">
-                        {{ tab.name }}
+                <!-- Mobile Menu Button -->
+                <button 
+                    @click="toggleMobileMenu"
+                    class="lg:hidden mr-4 p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
+                    aria-label="Toggle menu">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                
+                <div class="flex items-center gap-4">
+                    <router-link 
+                        v-for="tab in binded" 
+                        :key="tab.path" 
+                        :to="tab.path"
+                        class="flex items-center justify-center gap-2 text-[#337AB7] hover:text-[#3571A4] hover:underline font-semibold transition-all"
+                        :title="tab.name">
+                        <i :class="getTabIcon(tab.path)" class="text-lg"></i>
+                        <span class="tab-label">{{ tab.name }}</span>
                     </router-link>
                 </div>
 
@@ -102,6 +115,27 @@ export default {
                 '/services': 'products_view'
             };
             return permissionMap[path];
+        },
+        getTabIcon(path) {
+            const iconMap = {
+                '/orders': 'fas fa-clipboard-list',
+                '/order_statuses': 'fas fa-sitemap',
+                '/order_status_categories': 'fas fa-layer-group',
+                '/transactions': 'fas fa-money-check-alt',
+                '/mutual-settlements': 'fas fa-handshake',
+                '/transfers': 'fas fa-exchange-alt',
+                '/cash-registers': 'fas fa-cash-register',
+                '/invoices': 'fas fa-file-invoice-dollar',
+                '/products': 'fas fa-boxes',
+                '/services': 'fas fa-concierge-bell',
+                '/project_statuses': 'fas fa-project-diagram',
+                '/projects': 'fas fa-tasks',
+                '/categories': 'fas fa-tags'
+            };
+            return iconMap[path] || 'fas fa-circle';
+        },
+        toggleMobileMenu() {
+            eventBus.emit('toggleMobileMenu');
         }
     },
     
@@ -119,3 +153,11 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+@media (max-width: 640px) {
+    .tab-label {
+        display: none;
+    }
+}
+</style>

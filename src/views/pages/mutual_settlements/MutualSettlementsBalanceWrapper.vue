@@ -4,7 +4,7 @@
         <div class="flex-1">
             <transition name="fade" mode="out-in">
                 <div v-if="data != null && !loading && data.length > 0" key="table">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
                         <!-- Общий дебет -->
                         <div class="bg-white p-3 rounded-lg shadow-md">
                             <div class="text-center mb-3">
@@ -16,7 +16,7 @@
                                     <i class="fas fa-arrow-up text-green-500 text-xs"></i>
                                 </div>
                                 <div class="text-green-600 font-bold text-sm leading-tight">
-                                    <div class="balance-amount text-base">{{ $formatNumber(totalDebt, null, false) }}</div>
+                                    <div class="balance-amount ">{{ $formatNumber(totalDebt, null, false) }}</div>
                                 </div>
                             </div>
                         </div>
@@ -32,7 +32,7 @@
                                     <i class="fas fa-arrow-down text-red-500 text-xs"></i>
                                 </div>
                                 <div class="text-red-600 font-bold text-sm leading-tight">
-                                    <div class="balance-amount text-base">{{ $formatNumber(totalCredit, null, false) }}</div>
+                                    <div class="balance-amount ">{{ $formatNumber(totalCredit, null, false) }}</div>
                                 </div>
                             </div>
                         </div>
@@ -52,7 +52,7 @@
                                     'text-red-600': totalBalance < 0,
                                     'font-bold text-sm': true
                                 }" class="leading-tight">
-                                    <div class="balance-amount text-base">{{ $formatNumber(totalBalance, null, false) }}</div>
+                                    <div class="balance-amount ">{{ $formatNumber(totalBalance, null, false) }}</div>
                                 </div>
                             </div>
                         </div>

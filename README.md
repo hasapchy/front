@@ -16,7 +16,7 @@
 
 ### Backend  
 - **Laravel 10** - PHP фреймворк
-- **JWT Auth** - аутентификация
+- **Laravel Sanctum** - аутентификация
 - **Spatie Permissions** - система ролей
 - **MySQL** - база данных
 

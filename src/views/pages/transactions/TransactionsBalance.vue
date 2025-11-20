@@ -4,12 +4,12 @@
             <div v-if="data.length === 0" class="text-center text-gray-500 py-8">
                 {{ $t('noDataFound') }}
             </div>
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
-                <div v-for="item in data" :key="item.id" class="bg-white p-3 rounded-lg shadow-md">
-                    <div class="text-center mb-3">
-                        <span class="text-sm font-semibold">
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 xxl:grid-cols-3 gap-2 md:gap-4">
+                <div v-for="item in data" :key="item.id" class="bg-white p-2 md:p-3 rounded-lg shadow-md">
+                    <div class="text-center mb-2 md:mb-3">
+                        <span class="text-xs md:text-sm font-semibold">
                             {{ translateCashRegisterName(item.name) }}
-                            <span class="text-sm font-bold text-black ml-1">({{ item.currencySymbol || item.currencyCode || '' }})</span>
+                            <span class="text-xs md:text-sm font-bold text-black ml-1">({{ item.currencySymbol || item.currencyCode || '' }})</span>
                         </span>
                     </div>
                     <div :class="getGridClass(item.balance)">
@@ -40,7 +40,7 @@
                                 'text-orange-600': balance.type === 'project_income',
                                 'font-bold text-sm': true
                             }" class="leading-tight">
-                                <div class="balance-amount text-base">{{ $formatNumber(balance.value, null, false) }}</div>
+                                <div class="balance-amount ">{{ $formatNumber(balance.value, null, false) }}</div>
                             </div>
                         </div>
                     </div>
@@ -94,6 +94,13 @@ export default {
         getGridClass(balanceItems) {
             const visibleItems = this.getVisibleBalanceItems(balanceItems);
             const itemCount = visibleItems.length;
+            const isMobile = window.innerWidth < 768;
+            
+            if (isMobile) {
+                if (itemCount === 1) return 'grid grid-cols-1 gap-1.5';
+                if (itemCount === 2) return 'grid grid-cols-2 gap-1.5';
+                return 'grid grid-cols-2 gap-1.5';
+            }
             
             if (itemCount === 1) return 'grid grid-cols-1 gap-2';
             if (itemCount === 2) return 'grid grid-cols-2 gap-2';
@@ -240,14 +247,21 @@ export default {
 .balance-item {
     border: 2px solid transparent !important;
     border-radius: 0.5rem !important;
-    padding: 0.5rem !important;
-    min-height: 60px !important;
+    padding: 0.375rem 0.25rem !important;
+    min-height: 50px !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
     transform: none !important;
     box-shadow: none !important;
     transition: none !important;
+}
+
+@media (min-width: 768px) {
+    .balance-item {
+        padding: 0.5rem !important;
+        min-height: 60px !important;
+    }
 }
 
 /* Стили для кликабельных элементов баланса */

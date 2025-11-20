@@ -1,35 +1,56 @@
 <template>
     <div class="flex justify-between items-center mb-4">
         <div class="flex justify-start items-center">
-            <div class="ml-2">
-                <select v-model="clientId" @change="applyFilters">
-                    <option value="">{{ $t('allClients') }}</option>
-                    <template v-if="allClients.length">
-                        <option v-for="client in allClients" :key="client.id" :value="client.id">
-                            {{ ((client.firstName || client.first_name || '') + ' ' + (client.lastName || client.last_name || '')).trim() || 'Клиент без имени' }}
-                        </option>
-                    </template>
-                </select>
-            </div>
+            <FiltersContainer 
+                :has-active-filters="hasActiveFilters"
+                :active-filters-count="getActiveFiltersCount()"
+                @reset="resetFilters">
+                <template #desktop>
+                    <div class="ml-2">
+                        <select v-model="clientId" @change="applyFilters">
+                            <option value="">{{ $t('allClients') }}</option>
+                            <template v-if="allClients.length">
+                                <option v-for="client in allClients" :key="client.id" :value="client.id">
+                                    {{ ((client.firstName || client.first_name || '') + ' ' + (client.lastName || client.last_name || '')).trim() || 'Клиент без имени' }}
+                                </option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="ml-2">
+                        <select :value="clientTypeFilter" @change="handleClientTypeChange($event.target.value)">
+                            <option value="all">{{ $t('all') }}</option>
+                            <option value="individual">{{ $t('individual') }}</option>
+                            <option value="company">{{ $t('company') }}</option>
+                            <option value="employee">{{ $t('employee') }}</option>
+                            <option value="investor">{{ $t('investor') }}</option>
+                        </select>
+                    </div>
+                </template>
+                <template #mobile>
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент' }}</label>
+                        <select v-model="clientId" @change="applyFilters" class="w-full">
+                            <option value="">{{ $t('allClients') }}</option>
+                            <template v-if="allClients.length">
+                                <option v-for="client in allClients" :key="client.id" :value="client.id">
+                                    {{ ((client.firstName || client.first_name || '') + ' ' + (client.lastName || client.last_name || '')).trim() || 'Клиент без имени' }}
+                                </option>
+                            </template>
+                        </select>
+                    </div>
 
-            <div class="ml-2">
-                <select :value="clientTypeFilter" @change="handleClientTypeChange($event.target.value)">
-                    <option value="all">{{ $t('all') }}</option>
-                    <option value="individual">{{ $t('individual') }}</option>
-                    <option value="company">{{ $t('company') }}</option>
-                    <option value="employee">{{ $t('employee') }}</option>
-                    <option value="investor">{{ $t('investor') }}</option>
-                </select>
-            </div>
-
-            <!-- Кнопка сброса фильтров -->
-            <div v-if="clientId !== '' || clientTypeFilter !== 'all' || (searchQuery && searchQuery.trim())" class="ml-2">
-                <PrimaryButton 
-                    :onclick="resetFilters"
-                    icon="fas fa-filter-circle-xmark"
-                    :isLight="true">
-                </PrimaryButton>
-            </div>
+                    <div>
+                        <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
+                        <select :value="clientTypeFilter" @change="handleClientTypeChange($event.target.value)" class="w-full">
+                            <option value="all">{{ $t('all') }}</option>
+                            <option value="individual">{{ $t('individual') }}</option>
+                            <option value="company">{{ $t('company') }}</option>
+                            <option value="employee">{{ $t('employee') }}</option>
+                            <option value="investor">{{ $t('investor') }}</option>
+                        </select>
+                    </div>
+                </template>
+            </FiltersContainer>
         </div>
     </div>
 
@@ -62,6 +83,7 @@
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import ClientController from '@/api/ClientController';
 import ClientCreatePage from '@/views/pages/clients/ClientCreatePage.vue';
@@ -77,7 +99,7 @@ import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
     mixins: [notificationMixin, modalMixin, companyChangeMixin, searchMixin, crudEventMixin, getApiErrorMessageMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer },
     data() {
         return {
             allClients: [],
@@ -99,6 +121,14 @@ export default {
         
         // Подписываемся на событие глобального поиска
         eventBus.on('global-search', this.handleSearch);
+        
+        // Сбрасываем фильтры при инициализации, если они не дефолтные
+        if (!this.$store.state.clientTypeFilter || this.$store.state.clientTypeFilter === 'all') {
+            this.$store.dispatch('setClientTypeFilter', 'all');
+        }
+        if (!this.$store.state.searchQuery) {
+            this.$store.dispatch('setSearchQuery', '');
+        }
     },
 
     mounted() {
@@ -275,6 +305,13 @@ export default {
             this.$store.dispatch('setSearchQuery', '');
             this.applyFilters();
         },
+        getActiveFiltersCount() {
+            let count = 0;
+            if (this.clientId !== '') count++;
+            if (this.clientTypeFilter !== 'all') count++;
+            if (this.searchQuery && this.searchQuery.trim() !== '') count++;
+            return count;
+        },
         handleClientTypeChange(value) {
             this.$store.dispatch('setClientTypeFilter', value);
             this.applyFilters();
@@ -304,11 +341,26 @@ export default {
     },
     computed: {
         searchQuery() {
-            return this.$store.state.searchQuery || '';
+            const query = this.$store.state.searchQuery;
+            if (!query) return '';
+            const trimmed = String(query).trim();
+            return trimmed;
         },
         clientTypeFilter() {
-            return this.$store.state.clientTypeFilter || 'all';
+            const filter = this.$store.state.clientTypeFilter;
+            return filter || 'all';
         },
+        hasActiveFilters() {
+            const clientIdValue = String(this.clientId || '').trim();
+            const clientTypeValue = String(this.clientTypeFilter || 'all').trim();
+            const searchValue = this.searchQuery;
+            
+            const hasClientId = clientIdValue !== '';
+            const hasClientType = clientTypeValue !== 'all';
+            const hasSearch = searchValue && searchValue.length > 0;
+            
+            return hasClientId || hasClientType || hasSearch;
+        }
     },
 }
 </script>

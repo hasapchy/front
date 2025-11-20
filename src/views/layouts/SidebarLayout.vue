@@ -1,13 +1,13 @@
 <template>
     <transition name="fade" mode="out-in">
-        <div v-if="$store.state.user !== null" key="routerview" class="flex min-h-screen h-100 bg-white overflow-x-hidden relative">
+        <div v-if="$store.state.user !== null" key="routerview" class="flex h-screen max-h-screen bg-white overflow-hidden relative">
             <AppSidebarComponent />
             <transition name="settings-sidebar">
-                <AppSettingsSidebarComponent v-if="this.$store.state.settings_open" />
+                <AppSettingsSidebarComponent v-if="this.$store.state.settings_open && !isMobile" />
             </transition>
-            <div id="main-content" class="flex flex-col flex-1 transition-transform duration-300 h-full overflow-x-hidden">
+            <div id="main-content" class="flex flex-col w-full flex-1 min-w-0 min-h-0 transition-transform duration-300 overflow-x-hidden">
                 <AppHeaderComponent />
-                <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 pt-0">
+                <main class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 pt-0">
                     <router-view />
                 </main>
             </div>
@@ -58,9 +58,26 @@ export default {
         NotificationToast,
         SpinnerIcon
     },
+    data() {
+        return {
+            isMobile: false
+        };
+    },
+    mounted() {
+        this.checkMobile();
+        window.addEventListener('resize', this.checkMobile);
+    },
+    beforeUnmount() {
+        window.removeEventListener('resize', this.checkMobile);
+    },
     computed: {
         isLoadingCompanyData() {
             return this.$store.state.loadingFlags?.companyData || false;
+        }
+    },
+    methods: {
+        checkMobile() {
+            this.isMobile = window.innerWidth < 1024;
         }
     }
 }
