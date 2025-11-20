@@ -402,18 +402,24 @@ export default {
                 formData.products = this.products
                     .filter(p => !p.isTempProduct)
                     .map(p => ({
+                        id: p.orderProductId || null,
                         product_id: p.productId,
                         quantity: p.quantity,
-                        price: p.price
+                        price: p.price,
+                        width: p.width ?? null,
+                        height: p.height ?? null
                     }));
                 formData.temp_products = this.products
                     .filter(p => p.isTempProduct)
                     .map(p => ({
+                        id: p.orderProductId || null,
                         name: p.name || p.productName,
                         description: p.description || '',
                         quantity: p.quantity,
                         price: p.price,
-                        unit_id: p.unitId || null
+                        unit_id: p.unitId || null,
+                        width: p.width ?? null,
+                        height: p.height ?? null
                     }));
                 formData.remove_temp_products = this.removedTempProducts;
                 let resp;
@@ -470,18 +476,24 @@ export default {
                 formData.products = this.products
                     .filter(p => !p.isTempProduct)
                     .map(p => ({
+                        id: p.orderProductId || null,
                         product_id: p.productId,
                         quantity: p.quantity,
-                        price: p.price
+                        price: p.price,
+                        width: p.width ?? null,
+                        height: p.height ?? null
                     }));
                 formData.temp_products = this.products
                     .filter(p => p.isTempProduct)
                     .map(p => ({
+                        id: p.orderProductId || null,
                         name: p.name || p.productName,
                         description: p.description || '',
                         quantity: p.quantity,
                         price: p.price,
-                        unit_id: p.unitId || null
+                        unit_id: p.unitId || null,
+                        width: p.width ?? null,
+                        height: p.height ?? null
                     }));
                 formData.remove_temp_products = this.removedTempProducts;
                 
@@ -521,8 +533,10 @@ export default {
             this.deleteLoading = false;
         },
         onProductRemoved(productData) {
-            if (productData.wasTempProduct && productData.name) {
-                this.removedTempProducts.push(productData.name);
+            if (productData.wasTempProduct && productData.orderProductId) {
+                if (!this.removedTempProducts.includes(productData.orderProductId)) {
+                    this.removedTempProducts.push(productData.orderProductId);
+                }
             }
         },
         clearForm() {
@@ -688,24 +702,30 @@ export default {
                         const isTemp = p.isTempProduct || (p.productId == null);
                         if (isTemp) {
                             return {
+                                orderProductId: p.id || null,
                                 name: p.productName || p.name,
                                 productName: p.productName || p.name,
                                 description: p.description || '',
                                 quantity: Number(p.quantity) || 0,
                                 price: Number(p.price) || 0,
                                 unitId: p.unitId ?? null,
+                                width: p.width ?? null,
+                                height: p.height ?? null,
                                 productId: p.productId || this.generateTempProductId(),
                                 isTempProduct: true,
                                 icons() { return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>'; },
                             };
                         }
                         return {
+                            orderProductId: p.id || null,
                             productId: p.productId,
                             productName: p.productName || p.name,
                             name: p.productName || p.name,
                             quantity: Number(p.quantity) || 0,
                             price: Number(p.price) || 0,
-                                unitId: p.unitId ?? null,
+                            unitId: p.unitId ?? null,
+                            width: p.width ?? null,
+                            height: p.height ?? null,
                             icons() {
                                 const isProduct = p.product_type == 1 || p.product_type === '1' || p.type == 1 || p.type === '1';
                                 return isProduct

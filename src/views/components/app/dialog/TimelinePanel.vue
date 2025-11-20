@@ -17,7 +17,7 @@
                 <div v-else class="relative">
 
                     <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-300"></div>
-                    
+
 
                     <div v-for="(dayGroup, dayKey) in groupedTimeline" :key="dayKey" class="mb-6">
 
@@ -28,17 +28,17 @@
                                 </div>
                             </div>
                         </div>
-                        
+
 
                         <div v-for="item in dayGroup" :key="item.type + '_' + item.id" class="relative mb-4">
                             <div class="flex items-start">
 
                                 <div class="flex-shrink-0 w-8 flex justify-center relative">
-                                    <div class="w-3 h-3 rounded-full border-2 border-white shadow-sm relative z-10 mt-1" 
-                                         :class="item.type === 'comment' ? 'bg-blue-500' : 'bg-green-500'"></div>
+                                    <div class="w-3 h-3 rounded-full border-2 border-white shadow-sm relative z-10 mt-1"
+                                        :class="item.type === 'comment' ? 'bg-blue-500' : 'bg-green-500'"></div>
                                 </div>
-                                
-                    
+
+
                                 <div class="flex-1 ml-3 min-w-0">
 
                                     <div class="flex items-center justify-between mb-1">
@@ -47,7 +47,7 @@
                                         </span>
                                         <span class="text-xs text-gray-500">{{ formatTime(item.created_at) }}</span>
                                     </div>
-                                    
+
 
                                     <div class="text-sm text-gray-700">
                                         <template v-if="item.type === 'comment'">
@@ -62,38 +62,38 @@
                                                 <div class="flex-1">
                                                     <div class="flex items-center flex-wrap gap-2">
                                                         <span v-if="item.meta && item.meta.transaction_id"
-                                                              class="text-blue-600 underline cursor-pointer hover:text-blue-700"
-                                                              @click="openTransaction(item.meta.transaction_id)">
+                                                            class="text-blue-600 underline cursor-pointer hover:text-blue-700"
+                                                            @click="openTransaction(item.meta.transaction_id)">
                                                             {{ formatLogDescription(item.description) }}
                                                         </span>
                                                         <span v-else>
                                                             {{ formatLogDescription(item.description) }}
                                                         </span>
-                                                        <span v-if="item.meta && (item.meta.product_quantity != null || item.meta.product_price != null)" class="text-xs text-gray-600">
-                                                            <template v-if="item.meta.product_quantity != null">
-                                                                {{ $t('quantity') }}: {{ formatQuantity(item.meta.product_quantity) }}
-                                                            </template>
-                                                            <template v-if="item.meta.product_price != null">
-                                                                <span class="mx-1">/</span>
-                                                                {{ $t('price') }}: {{ formatCurrency(item.meta.product_price, defaultCurrencySymbol) }}
-                                                            </template>
+                                                        <span v-if="item.meta && item.meta.product_price != null"
+                                                            class="text-xs text-gray-600">
+                                                            {{ $t('price') }}:
+                                                            {{ formatCurrency(item.meta.product_price,
+                                                            item.meta.product_currency_symbol || defaultCurrencySymbol)
+                                                            }}
                                                         </span>
                                                     </div>
-                                                    
 
-                                                    <div v-if="item.changes?.attributes && shouldShowChanges(item)" 
-                                                         class="mt-2 space-y-1">
+
+                                                    <div v-if="item.changes?.attributes && shouldShowChanges(item)"
+                                                        class="mt-2 space-y-1">
                                                         <div v-for="(val, key) in filteredChanges(item.changes.attributes, item.changes.old)"
-                                                             :key="key" 
-                                                             class="text-xs bg-gray-50 px-2 py-1 rounded">
-                                                            <span class="font-medium">{{ smartTranslateField(key, type) }}:</span>
+                                                            :key="key" class="text-xs bg-gray-50 px-2 py-1 rounded">
+                                                            <span class="font-medium">{{ smartTranslateField(key, type)
+                                                                }}:</span>
                                                             <div class="flex items-center space-x-1 mt-1">
-                                                                <span class="text-red-600 line-through px-1 bg-red-50 rounded">
-                                                                    {{ formatFieldValue(key, item.changes.old?.[key]) || '—' }}
+                                                                <span
+                                                                    class="text-red-600 line-through px-1 bg-red-50 rounded">
+                                                                    {{ formatFieldValue(key, item.changes.old?.[key],
+                                                                    item.meta) ?? '0' }}
                                                                 </span>
                                                                 <span class="text-gray-400">→</span>
                                                                 <span class="text-green-600 px-1 bg-green-50 rounded">
-                                                                    {{ formatFieldValue(key, val) || '—' }}
+                                                                    {{ formatFieldValue(key, val, item.meta) ?? '0' }}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -112,12 +112,11 @@
 
             <div class="p-4 bg-[#edf4fb]">
                 <div class="flex space-x-2">
-                    <textarea v-model="newComment" 
-                              class="flex-1 h-8 max-h-[120px] border rounded px-3 py-2 resize-y text-sm"
-                              placeholder="Оставьте комментарий..." />
-                    <button @click="sendComment" 
-                            :disabled="!newComment.trim() || loading || sending"
-                            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
+                    <textarea v-model="newComment"
+                        class="flex-1 h-8 max-h-[120px] border rounded px-3 py-2 resize-y text-sm"
+                        placeholder="Оставьте комментарий..." />
+                    <button @click="sendComment" :disabled="!newComment.trim() || loading || sending"
+                        class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
                         <i class="fas fa-paper-plane text-xs"></i>
                     </button>
                 </div>
@@ -131,7 +130,7 @@
 import { dayjsDateTime } from '@/utils/dateUtils';
 import CommentController from '@/api/CommentController';
 import { translateField, formatFieldValue as formatFieldValueUtil } from '@/utils/fieldTranslations';
-import { formatQuantity } from '@/utils/numberUtils';
+import { formatQuantity as formatQuantityUtil, formatCurrency as formatCurrencyUtil } from '@/utils/numberUtils';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 
@@ -161,7 +160,6 @@ export default {
     },
     methods: {
         async loadInitialData() {
-            // Параллельная загрузка данных для лучшей производительности
             await Promise.all([
                 this.fetchTimeline(),
                 this.loadStatuses(),
@@ -177,7 +175,8 @@ export default {
         async fetchTimeline() {
             this.loading = true;
             try {
-                this.timeline = await CommentController.getTimeline(this.type, this.id);
+                const timeline = await CommentController.getTimeline(this.type, this.id);
+                this.timeline = timeline;
             } catch (e) {
                 console.error('Ошибка загрузки таймлайна:', e);
             }
@@ -193,7 +192,7 @@ export default {
             const date = dayjs(dateStr);
             const today = dayjs();
             const yesterday = dayjs().subtract(1, 'day');
-            
+
             if (date.isSame(today, 'day')) {
                 return 'Сегодня';
             } else if (date.isSame(yesterday, 'day')) {
@@ -213,7 +212,7 @@ export default {
             try {
                 const { comment } = await CommentController.create(this.type, this.id, body);
                 this.newComment = '';
-                
+
                 const newComment = {
                     type: 'comment',
                     id: comment.id,
@@ -221,7 +220,7 @@ export default {
                     user: comment.user,
                     created_at: comment.created_at || new Date().toISOString(),
                 };
-                
+
                 this.timeline.push(newComment);
                 this.timeline.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
@@ -235,23 +234,29 @@ export default {
             return Object.fromEntries(
                 Object.entries(newAttrs).filter(([key, newVal]) => {
                     const oldVal = oldAttrs?.[key] ?? null;
-                    return String(oldVal) !== String(newVal) && 
-                           !(newVal === null && oldVal === null) &&
-                           !(newVal === '' && oldVal === '');
+                    return String(oldVal) !== String(newVal) &&
+                        !(newVal === null && oldVal === null) &&
+                        !(newVal === '' && oldVal === '');
                 })
             );
         },
         shouldShowChanges(item) {
-            if (item.description === 'Добавлен товар/услуга: ' || 
+            if (item.description === 'Добавлен товар/услуга: ' ||
                 item.description === 'Удалён товар/услуга: ') {
                 return false;
             }
             return true;
         },
         translateField,
-        formatFieldValue(key, value) {
+        formatQuantity(value) {
+            return formatQuantityUtil(value);
+        },
+        formatCurrency(value, symbol) {
+            return formatCurrencyUtil(value, symbol);
+        },
+        formatFieldValue(key, value, meta = null) {
             if (value === null || value === undefined || value === '') {
-                return '—';
+                return '0';
             }
 
             // Специальная обработка для статусов заказов
@@ -269,10 +274,14 @@ export default {
                 case 'total_price':
                 case 'price':
                 case 'amount':
-                    const symbol = this.defaultCurrencySymbol || '₽';
-                    return typeof value === 'number' ? `${value.toLocaleString('ru-RU')} ${symbol}` : value;
+                    const currencySymbol = (meta && meta.product_currency_symbol) || this.defaultCurrencySymbol || '₽';
+                    return formatCurrencyUtil(value, currencySymbol);
                 case 'quantity':
-                    return typeof value === 'number' ? formatQuantity(value) : value;
+                    const formattedQuantity = typeof value === 'number' ? formatQuantity(value) : value;
+                    if (meta && meta.product_unit) {
+                        return `${formattedQuantity} ${meta.product_unit}`.trim();
+                    }
+                    return formattedQuantity;
                 case 'created_at':
                 case 'updated_at':
                     return dayjs(value).format('DD.MM.YYYY HH:mm');
@@ -339,4 +348,3 @@ export default {
     }
 };
 </script>
-

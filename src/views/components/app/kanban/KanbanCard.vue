@@ -104,6 +104,7 @@
 
 <script>
 import { dayjsDateTime } from '@/utils/dateUtils';
+import { formatNumber } from '@/utils/numberUtils';
 import userPhotoMixin from '@/mixins/userPhotoMixin';
 
 export default {
@@ -167,18 +168,18 @@ export default {
         },
         formatTotalPrice() {
             try {
-                if (this.order && typeof this.order.priceInfo === 'function') {
-                    return this.order.priceInfo();
-                }
                 const roundingEnabled = this.$store.getters.roundingEnabled;
                 const decimals = roundingEnabled ? this.$store.getters.roundingDecimals : 2;
-                const amount = Number(this.order?.totalPrice ?? 0);
-                const formatted = isNaN(amount) ? '0' : amount.toFixed(decimals);
-                const symbol = this.order?.currencySymbol || '';
-                return `${formatted} ${symbol}`.trim();
+                const rawAmount = this.order?.totalPrice ?? this.order?.total_price ?? this.order?.price ?? 0;
+                const amount = Number(rawAmount);
+                const symbol = this.order?.currencySymbol || this.order?.currency_symbol || '';
+                const formatter = this.$formatNumber || formatNumber;
+                const formatted = isNaN(amount) ? '0' : formatter(amount, decimals, true);
+                return symbol ? `${formatted} ${symbol}` : formatted;
             } catch (e) {
-                const symbol = this.order?.currencySymbol || '';
-                return `${this.order?.totalPrice ?? 0} ${symbol}`.trim();
+                const symbol = this.order?.currencySymbol || this.order?.currency_symbol || '';
+                const fallbackAmount = this.order?.totalPrice ?? this.order?.total_price ?? this.order?.price ?? 0;
+                return `${fallbackAmount} ${symbol}`.trim();
             }
         },
         formatBudget() {

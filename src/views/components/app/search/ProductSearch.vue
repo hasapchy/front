@@ -313,18 +313,25 @@ export default {
             return roundValue(rawSubtotal);
         },
         discountAmount() {
-            const disc = Number(this.discount) || 0;
-            if (!disc) return 0;
+            const sanitized = this.sanitizeDiscountValue(this.discount);
+            if (!sanitized) {
+                return 0;
+            }
+
             let amount = 0;
             if (this.discountType === 'percent') {
-                amount = this.subtotal * disc / 100;
+                amount = (this.subtotal * sanitized) / 100;
             } else {
-                amount = disc;
+                amount = sanitized;
             }
+
+            amount = Math.min(amount, this.subtotal);
+
             return roundValue(amount);
         },
         totalPrice() {
-            return this.subtotal - this.discountAmount;
+            const total = this.subtotal - this.discountAmount;
+            return total < 0 ? 0 : total;
         },
         defaultCurrencySymbol() {
             const currencies = this.$store.state.currencies || [];
@@ -336,7 +343,7 @@ export default {
                 return this.discount;
             },
             set(value) {
-                this.$emit('update:discount', value);
+                this.emitSanitizedDiscount(value);
             }
         },
         discountTypeLocal: {
@@ -385,6 +392,27 @@ export default {
     },
     methods: {
         formatCurrency,
+        sanitizeDiscountValue(value) {
+            const numeric = Number(value) || 0;
+            const nonNegative = numeric < 0 ? 0 : numeric;
+
+            if (this.discountType === 'percent') {
+                return Math.min(nonNegative, 100);
+            }
+
+            if (this.subtotal <= 0) {
+                return 0;
+            }
+
+            return Math.min(nonNegative, this.subtotal);
+        },
+        emitSanitizedDiscount(value = this.discount) {
+            const sanitized = this.sanitizeDiscountValue(value);
+            if (sanitized !== this.discount) {
+                this.$emit('update:discount', sanitized);
+            }
+            return sanitized;
+        },
         async loadWarehouseProducts() {
             try {
                 const results = await ProductController.getItems(1, true, { warehouse_id: this.warehouseId }, 50);
@@ -518,7 +546,12 @@ export default {
             this.products = this.products.filter(p => p.productId !== id);
             this.updateTotals();
 
-            this.$emit('product-removed', { id, wasTempProduct: removedProduct?.isTempProduct, name: removedProduct?.name });
+            this.$emit('product-removed', {
+                id,
+                wasTempProduct: removedProduct?.isTempProduct,
+                name: removedProduct?.name,
+                orderProductId: removedProduct?.orderProductId || null
+            });
         },
         handleBlur() {
             requestAnimationFrame(() => {
@@ -527,7 +560,7 @@ export default {
         }
         ,
         updateTotals() {
-            this.$emit('update:discount', this.discount);
+            this.emitSanitizedDiscount(this.discount);
             this.$emit('update:discountType', this.discountType);
             this.$emit('update:subtotal', this.subtotal);
             this.$emit('update:totalPrice', this.totalPrice);
@@ -629,6 +662,17 @@ export default {
                 }
             },
             immediate: false
+        },
+        discountType: {
+            handler() {
+                this.emitSanitizedDiscount();
+            },
+            immediate: true,
+        },
+        subtotal(newVal, oldVal) {
+            if (newVal !== oldVal) {
+                this.emitSanitizedDiscount();
+            }
         },
     },
 };

@@ -36,35 +36,41 @@ export default {
       this.isClearing = true;
 
       try {
-        // Получаем токен авторизации до очистки
-        const token = localStorage.getItem('token');
-        const refreshToken = localStorage.getItem('refresh_token');
-        const user = localStorage.getItem('vuex');
+        const preservedKeys = [
+          'token',
+          'refresh_token',
+          'token_expires_at',
+          'refresh_token_expires_at',
+          'user',
+          'vuex',
+          'current_company',
+          'locale'
+        ];
+        const preservedValues = preservedKeys.reduce((acc, key) => {
+          const value = localStorage.getItem(key);
+          if (value !== null) {
+            acc[key] = value;
+          }
+          return acc;
+        }, {});
 
         // 1. Очищаем Laravel кэш (Backend)
         await CacheController.clearAllCache();
 
-        // 2. Очищаем localStorage (Frontend) - НО СОХРАНЯЕМ ТОКЕН
+        // 2. Очищаем локальные кэши (Frontend)
         CacheInvalidator.invalidateAll();
         
-        // 3. Очищаем весь остальной localStorage КРОМЕ токена и vuex
-        const preserveKeys = ['token', 'refresh_token', 'vuex'];
+        // 3. Очищаем весь остальной localStorage, не трогая сохранённые ключи
         Object.keys(localStorage).forEach(key => {
-          if (!preserveKeys.includes(key)) {
+          if (!preservedKeys.includes(key)) {
             localStorage.removeItem(key);
           }
         });
 
-        // 4. Восстанавливаем токен если он был
-        if (token) {
-          localStorage.setItem('token', token);
-        }
-        if (refreshToken) {
-          localStorage.setItem('refresh_token', refreshToken);
-        }
-        if (user) {
-          localStorage.setItem('vuex', user);
-        }
+        // 4. Возвращаем сохранённые значения (на случай если были удалены)
+        Object.entries(preservedValues).forEach(([key, value]) => {
+          localStorage.setItem(key, value);
+        });
 
         // 5. Показываем уведомление
         this.$store.dispatch('showNotification', {
