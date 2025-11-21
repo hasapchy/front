@@ -110,7 +110,7 @@
                 </transition>
 
                 <!-- Desktop: Settings Button -->
-                <li class="mb-2 lg:block hidden">
+                <li class="mb-2 hidden lg:block">
                     <a href="#" @click="$store.state.settings_open = !$store.state.settings_open" id="settings-button"
                         :class="[
                             'flex items-center p-2 hover:bg-[#53585C]',
