@@ -35,79 +35,81 @@
             <i class="fas fa-times text-xl"></i>
         </button>
 
-        <div class="pb-32 pt-4 lg:pt-0 flex flex-col h-full overflow-y-auto" v-if="permissionsLoaded">
+        <div class="pb-32 pt-4 lg:pt-0 flex flex-col h-full overflow-y-auto">
             <ul :key="permissionsKey" class="flex-1">
                 <SidebarLink to="/" icon="fas fa-building mr-2">
                     {{ currentCompanyName }}
                 </SidebarLink>
 
-                <draggable
-                    :list="draggableMenuItems"
-                    @change="onDragChange"
-                    :animation="200"
-                    handle=".drag-handle"
-                    item-key="id"
-                    group="menu-items"
-                >
-                    <SidebarLink 
-                        v-for="element in draggableMenuItems"
-                        :key="element.id"
-                        :to="element.to" 
-                        :icon="element.icon"
-                        class="relative group"
+                <div v-if="permissionsLoaded">
+                    <draggable
+                        :list="draggableMenuItems"
+                        @change="onDragChange"
+                        :animation="200"
+                        handle=".drag-handle"
+                        item-key="id"
+                        group="menu-items"
                     >
-                        <span class="flex items-center justify-between w-full">
-                            <span>{{ $t(element.label) }}</span>
-                            <i class="fas fa-grip-vertical drag-handle opacity-0 group-hover:opacity-50 cursor-move ml-2 text-xs"></i>
-                        </span>
-                    </SidebarLink>
-                </draggable>
-
-                <!-- Mobile: Additional Menu Toggle Button -->
-                <li v-if="hasAvailableMenuItems && isMobile" class="mb-2 mt-4">
-                    <a href="#" @click.prevent="toggleAdditionalMenu"
-                        :class="[
-                            'flex items-center justify-between p-2 hover:bg-[#53585C]',
-                            showAdditionalMenu ? 'bg-[#53585C] border-l-2 border-red-500' : '',
-                            'transition-colors text-sm'
-                        ]">
-                        <span>
-                            <i class="fas fa-ellipsis-h mr-2"></i> {{ $t('additionalMenu') || 'Доп. меню' }}
-                        </span>
-                        <i :class="[
-                            'fas transition-transform duration-200',
-                            showAdditionalMenu ? 'fa-chevron-up' : 'fa-chevron-down'
-                        ]"></i>
-                    </a>
-                </li>
-
-                <!-- Mobile: Additional Menu Items (Collapsible) -->
-                <transition name="slide-down">
-                    <div v-if="showAdditionalMenu && isMobile && hasAvailableMenuItems" class="overflow-hidden">
-                        <draggable
-                            :list="draggableAvailableItems"
-                            @change="onAvailableDragChange"
-                            :animation="200"
-                            handle=".drag-handle"
-                            item-key="id"
-                            group="menu-items"
+                        <SidebarLink 
+                            v-for="element in draggableMenuItems"
+                            :key="element.id"
+                            :to="element.to" 
+                            :icon="element.icon"
+                            class="relative group"
                         >
-                            <SidebarLink 
-                                v-for="element in draggableAvailableItems"
-                                :key="element.id"
-                                :to="element.to" 
-                                :icon="element.icon"
-                                :settings="true"
-                                class="relative group pl-4"
+                            <span class="flex items-center justify-between w-full">
+                                <span>{{ $t(element.label) }}</span>
+                                <i class="fas fa-grip-vertical drag-handle opacity-0 group-hover:opacity-50 cursor-move ml-2 text-xs"></i>
+                            </span>
+                        </SidebarLink>
+                    </draggable>
+
+                    <!-- Mobile: Additional Menu Toggle Button -->
+                    <li v-if="hasAvailableMenuItems && isMobile" class="mb-2 mt-4">
+                        <a href="#" @click.prevent="toggleAdditionalMenu"
+                            :class="[
+                                'flex items-center justify-between p-2 hover:bg-[#53585C]',
+                                showAdditionalMenu ? 'bg-[#53585C] border-l-2 border-red-500' : '',
+                                'transition-colors text-sm'
+                            ]">
+                            <span>
+                                <i class="fas fa-ellipsis-h mr-2"></i> {{ $t('additionalMenu') || 'Доп. меню' }}
+                            </span>
+                            <i :class="[
+                                'fas transition-transform duration-200',
+                                showAdditionalMenu ? 'fa-chevron-up' : 'fa-chevron-down'
+                            ]"></i>
+                        </a>
+                    </li>
+
+                    <!-- Mobile: Additional Menu Items (Collapsible) -->
+                    <transition name="slide-down">
+                        <div v-if="showAdditionalMenu && isMobile && hasAvailableMenuItems" class="overflow-hidden">
+                            <draggable
+                                :list="draggableAvailableItems"
+                                @change="onAvailableDragChange"
+                                :animation="200"
+                                handle=".drag-handle"
+                                item-key="id"
+                                group="menu-items"
                             >
-                                <span class="flex items-center justify-between w-full">
-                                    <span>{{ $t(element.label) }}</span>
-                                    <i class="fas fa-grip-vertical drag-handle opacity-0 group-hover:opacity-50 cursor-move ml-2 text-xs"></i>
-                                </span>
-                            </SidebarLink>
-                        </draggable>
-                    </div>
-                </transition>
+                                <SidebarLink 
+                                    v-for="element in draggableAvailableItems"
+                                    :key="element.id"
+                                    :to="element.to" 
+                                    :icon="element.icon"
+                                    :settings="true"
+                                    class="relative group pl-4"
+                                >
+                                    <span class="flex items-center justify-between w-full">
+                                        <span>{{ $t(element.label) }}</span>
+                                        <i class="fas fa-grip-vertical drag-handle opacity-0 group-hover:opacity-50 cursor-move ml-2 text-xs"></i>
+                                    </span>
+                                </SidebarLink>
+                            </draggable>
+                        </div>
+                    </transition>
+                </div>
 
                 <!-- Desktop: Settings Button (показываем всегда на десктопе) -->
                 <li class="mb-2 hidden lg:block">
