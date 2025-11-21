@@ -111,17 +111,11 @@
                     </transition>
                 </div>
 
-                <!-- Desktop: Settings Button (показываем всегда на десктопе) -->
-                <li class="mb-2 hidden lg:block">
+                <!-- Desktop: Settings Button (показываем всегда) -->
+                <li class="mb-2">
                     <a href="#" @click="$store.state.settings_open = !$store.state.settings_open" id="settings-button"
-                        :class="[
-                            'flex items-center p-2 hover:bg-[#53585C]',
-                            $store.state.settings_open ? 'bg-[#53585C] border-l-2 border-red-500' : '',
-                            'transition-colors text-sm',
-                            $store.getters.isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
-                        ]"
-                        :disabled="$store.getters.isLoading">
-                        <i class="fas fa-cogs mr-2"></i> {{ $t('settings') }}
+                        class="flex items-center p-2 hover:bg-[#53585C] transition-colors text-sm">
+                        <i class="fas fa-cogs mr-2"></i> Доп. меню
                     </a>
                 </li>
             </ul>
