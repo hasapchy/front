@@ -122,12 +122,13 @@ export default {
         // Подписываемся на событие глобального поиска
         eventBus.on('global-search', this.handleSearch);
         
-        // Сбрасываем фильтры при инициализации, если они не дефолтные
-        if (!this.$store.state.clientTypeFilter || this.$store.state.clientTypeFilter === 'all') {
+        // Сбрасываем фильтры взаиморасчетов при инициализации страницы
+        this.clientId = '';
+        
+        // Сбрасываем clientTypeFilter при входе на страницу взаиморасчетов
+        // чтобы он не показывался как активный фильтр, если был сохранен из другой страницы
+        if (this.$store.state.clientTypeFilter && String(this.$store.state.clientTypeFilter).trim() !== 'all') {
             this.$store.dispatch('setClientTypeFilter', 'all');
-        }
-        if (!this.$store.state.searchQuery) {
-            this.$store.dispatch('setSearchQuery', '');
         }
     },
 
@@ -351,15 +352,19 @@ export default {
             return filter || 'all';
         },
         hasActiveFilters() {
+            // Проверяем clientId - должен быть непустой строкой (локальный фильтр страницы)
             const clientIdValue = String(this.clientId || '').trim();
+            const hasClientId = clientIdValue !== '' && clientIdValue !== '0' && clientIdValue !== 'null' && clientIdValue !== 'undefined';
+            
+            // Проверяем clientTypeFilter - должен быть не 'all' (локальный фильтр страницы)
+            // После сброса в created() он должен быть 'all', но проверяем на всякий случай
             const clientTypeValue = String(this.clientTypeFilter || 'all').trim();
-            const searchValue = this.searchQuery;
+            const hasClientType = clientTypeValue !== 'all' && clientTypeValue !== '' && clientTypeValue !== 'null' && clientTypeValue !== 'undefined';
             
-            const hasClientId = clientIdValue !== '';
-            const hasClientType = clientTypeValue !== 'all';
-            const hasSearch = searchValue && searchValue.length > 0;
+            // Не учитываем глобальный searchQuery как фильтр взаиморасчетов
+            // так как это глобальный поиск, который используется на всех страницах
             
-            return hasClientId || hasClientType || hasSearch;
+            return hasClientId || hasClientType;
         }
     },
 }
