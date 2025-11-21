@@ -63,6 +63,7 @@ export default {
   info: 'Информация',
   settings: 'Доп. меню',
   additionalMenu: 'Дополнительное меню',
+  noAvailableMenuItems: 'Нет доступных элементов меню',
   roundingSettings: 'Настройки округления',
   enableRounding: 'Включить округление',
   decimalPlaces: 'Количество знаков после запятой',

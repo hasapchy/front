@@ -109,8 +109,8 @@
                     </div>
                 </transition>
 
-                <!-- Desktop: Settings Button (показываем только если есть доступные пункты меню) -->
-                <li v-if="hasAvailableMenuItems" class="mb-2 hidden lg:block">
+                <!-- Desktop: Settings Button (показываем всегда на десктопе) -->
+                <li class="mb-2 hidden lg:block">
                     <a href="#" @click="$store.state.settings_open = !$store.state.settings_open" id="settings-button"
                         :class="[
                             'flex items-center p-2 hover:bg-[#53585C]',

@@ -2,30 +2,36 @@
     <div id="settings-sidebar" :key="permissionsKey"
         class="w-50 bg-[#53585C] text-white flex-shrink-0 transform transition-transform duration-300">
         <div v-if="permissionsLoaded">
-            <ul>
-                <draggable
-                    :list="draggableAvailableItems"
-                    @change="onDragChange"
-                    :animation="200"
-                    handle=".drag-handle"
-                    item-key="id"
-                    group="menu-items"
-                >
-                    <SidebarLink 
-                        v-for="element in draggableAvailableItems"
-                        :key="element.id"
-                        :to="element.to" 
-                        :icon="element.icon"
-                        :settings="true"
-                        class="relative group"
+            <div v-if="draggableAvailableItems.length > 0">
+                <ul>
+                    <draggable
+                        :list="draggableAvailableItems"
+                        @change="onDragChange"
+                        :animation="200"
+                        handle=".drag-handle"
+                        item-key="id"
+                        group="menu-items"
                     >
-                        <span class="flex items-center justify-between w-full">
-                            <span>{{ $t(element.label) }}</span>
-                            <i class="fas fa-grip-vertical drag-handle opacity-0 group-hover:opacity-50 cursor-move ml-2 text-xs"></i>
-                        </span>
-                    </SidebarLink>
-                </draggable>
-            </ul>
+                        <SidebarLink 
+                            v-for="element in draggableAvailableItems"
+                            :key="element.id"
+                            :to="element.to" 
+                            :icon="element.icon"
+                            :settings="true"
+                            class="relative group"
+                        >
+                            <span class="flex items-center justify-between w-full">
+                                <span>{{ $t(element.label) }}</span>
+                                <i class="fas fa-grip-vertical drag-handle opacity-0 group-hover:opacity-50 cursor-move ml-2 text-xs"></i>
+                            </span>
+                        </SidebarLink>
+                    </draggable>
+                </ul>
+            </div>
+            <div v-else class="p-4 text-center text-gray-300 text-sm">
+                <i class="fas fa-info-circle mb-2"></i>
+                <p>{{ $t('noAvailableMenuItems') || 'Нет доступных элементов меню' }}</p>
+            </div>
         </div>
     </div>
 </template>
