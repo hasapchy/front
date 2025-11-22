@@ -24,11 +24,6 @@
                             class="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-sm font-medium transition-colors">
                             {{ $t('resetFilters') || 'Сбросить' }}
                         </button>
-                        <button 
-                            @click="$emit('close')"
-                            class="flex-1 px-4 py-2 bg-[#337AB7] hover:bg-[#3571A4] text-white rounded-md text-sm font-medium transition-colors">
-                            {{ $t('apply') || 'Применить' }}
-                        </button>
                     </div>
                 </div>
             </div>

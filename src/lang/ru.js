@@ -4,6 +4,7 @@ export default {
   cancel: 'Отмена',
   delete: 'Удалить',
   copy: 'Копировать',
+  clear: 'Очистить',
   loading: 'Загрузка...',
   logout: 'Выйти',
   info: 'Информация',
@@ -870,6 +871,8 @@ export default {
   present: 'по н.в.',
   bonus: 'Начислить премию',
   penalty: 'Выписать штраф',
+  employeeClientNotFound: 'Клиент для сотрудника не найден',
+  employeeClientNotFoundDescription: 'Для работы с балансом сотрудника необходимо создать связанного клиента с employee_id, соответствующим ID этого сотрудника.',
   
   // Кассы
   addCashRegister: 'Добавить кассу',

@@ -38,6 +38,20 @@ export const TRANSACTION_FORM_PRESETS = {
         debt: { visible: false, enforcedValue: false },
         project: { visible: false },
     },
+    employeeBonus: {
+        client: { visible: false },
+        project: { visible: false },
+        debt: { visible: false, enforcedValue: true },
+        type: { visible: false, enforcedValue: 'income', readonly: true },
+        category: { visible: false, enforcedValue: 26 },
+    },
+    employeePenalty: {
+        client: { visible: false },
+        project: { visible: false },
+        debt: { visible: false, enforcedValue: true },
+        type: { visible: false, enforcedValue: 'outcome', readonly: true },
+        category: { visible: false, enforcedValue: 27 },
+    },
 };
 
 export default TRANSACTION_FORM_PRESETS;

@@ -101,7 +101,7 @@ export default class TransactionDto {
       };
       
       const source = Object.entries(sourceMap).find(([key]) => this.sourceType.includes(key))?.[1] || { icon: 'fa-link', text: 'Связь' };
-      return `<i class="fas ${source.icon} text-[#337AB7] mr-2 cursor-pointer hover:text-[#23527c]" data-source-type="${this.sourceType}" data-source-id="${this.sourceId}" title="Открыть ${source.text} #${this.sourceId}"></i> ${source.text}`;
+      return `<i class="fas ${source.icon} text-[#337AB7] mr-2 cursor-pointer hover:text-[#3571A4]" data-source-type="${this.sourceType}" data-source-id="${this.sourceId}" title="Открыть ${source.text} #${this.sourceId}"></i> ${source.text}`;
     }
     
     if (this.isSale == 1) {

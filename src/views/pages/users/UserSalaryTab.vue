@@ -2,13 +2,15 @@
     <div class="mt-4">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-md font-semibold">{{ $t('salaries') || 'Зарплаты' }}</h3>
-            <PrimaryButton 
-                icon="fas fa-plus" 
-                :onclick="openCreateModal"
-                :is-success="true"
-                :disabled="!editingItem || !editingItem.id">
-                {{ $t('addSalary') || 'Добавить зарплату' }}
-            </PrimaryButton>
+            <div class="flex gap-2">
+                <PrimaryButton 
+                    icon="fas fa-plus" 
+                    :onclick="openCreateModal"
+                    :is-success="true"
+                    :disabled="!editingItem || !editingItem.id">
+                    {{ $t('addSalary') || 'Добавить зарплату' }}
+                </PrimaryButton>
+            </div>
         </div>
 
         <div v-if="salariesLoading" class="text-gray-500">{{ $t('loading') }}</div>
@@ -78,7 +80,6 @@ export default {
                 { name: 'amount', label: 'amount', size: 150, html: true },
                 { name: 'startDate', label: 'startDate', size: 120 },
                 { name: 'endDate', label: 'endDate', size: 120, html: true },
-                { name: 'period', label: 'period', size: 200 },
             ],
         };
     },
@@ -152,15 +153,6 @@ export default {
                         return `<span class="text-gray-500">${this.$t('present') || 'по н.в.'}</span>`;
                     }
                     return new Date(item.end_date).toLocaleDateString('ru-RU');
-                case 'period':
-                    const start = item.start_date ? new Date(item.start_date).toLocaleDateString('ru-RU') : '';
-                    const end = item.end_date ? new Date(item.end_date).toLocaleDateString('ru-RU') : '';
-                    if (start && end) {
-                        return `${start} - ${end}`;
-                    } else if (start) {
-                        return `${start} - ${this.$t('present') || 'по н.в.'}`;
-                    }
-                    return '-';
                 default:
                     return item[column] || '-';
             }

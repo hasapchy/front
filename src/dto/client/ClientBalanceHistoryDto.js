@@ -2,7 +2,7 @@ import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatAmountWithColor, formatAmountWithStyle, formatAmountWithSignAndColor, formatAmountSimple, createFromApiArray } from "@/utils/dtoUtils";
 import { formatNumber } from "@/utils/numberUtils";
 export default class ClientBalanceHistoryDto {
-  constructor(source, sourceId, date, amount, description, userName = null, sourceType = null, note = null, isDebt = null, sourceSourceId = null, currencySymbol = null, currencyCode = null) {
+  constructor(source, sourceId, date, amount, description, userName = null, sourceType = null, note = null, isDebt = null, sourceSourceId = null, currencySymbol = null, currencyCode = null, categoryName = null) {
     this.source = source;
     this.sourceId = sourceId;
     this.sourceSourceId = sourceSourceId;
@@ -10,11 +10,13 @@ export default class ClientBalanceHistoryDto {
     this.amount = parseFloat(amount) || 0;
     this.description = description;
     this.userName = userName;
+    this.user_name = userName; // Для совместимости
     this.sourceType = sourceType;
     this.note = note;
     this.isDebt = isDebt;
     this.currencySymbol = currencySymbol;
     this.currencyCode = currencyCode;
+    this.categoryName = categoryName;
   }
 
   formattedAmount() {
@@ -125,7 +127,8 @@ export default class ClientBalanceHistoryDto {
         data.is_debt,
         data.source_source_id || data.sourceSourceId || null,
         data.currency_symbol || data.currencySymbol || null,
-        data.currency_code || data.currencyCode || null
+        data.currency_code || data.currencyCode || null,
+        data.category_name || data.categoryName || null
       );
     }).filter(Boolean);
   }

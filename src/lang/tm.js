@@ -758,6 +758,8 @@ export default {
   present: 'häzirki wagta çenli',
   bonus: 'Premiýa tabşyr',
   penalty: 'Jäza çykar',
+  employeeClientNotFound: 'Işgär üçin müşderi tapylmady',
+  employeeClientNotFoundDescription: 'Işgäriň balansy bilen işlemek üçin, bu işgäriň ID-sine gabat gelýän employee_id bilen baglanyşykly müşderi döretmeli.',
   
   // Кассы
   addCashRegister: 'Kassany goşuň',

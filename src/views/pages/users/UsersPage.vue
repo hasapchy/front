@@ -62,10 +62,9 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'ID', size: 60 },
-                { name: 'name', label: 'name' },
+                { name: 'name', label: 'firstName' },
                 { name: 'email', label: 'email' },
                 { name: 'position', label: 'position' },
-                { name: 'salary', label: 'salary', size: 150 },
                 { name: 'roles', label: 'roles' },
                 { name: 'companies', label: 'companies' },
                 { name: 'isActive', label: 'active', size: 80 },
@@ -114,14 +113,6 @@ export default {
                     return item.roles && item.roles.length > 0 ? item.roles.join(', ') : '—';
                 case 'companies':
                     return item.companies.map(c => c.name).join(', ');
-                case 'salary':
-                    if (!item.lastSalary) {
-                        return '—';
-                    }
-                    const salary = item.lastSalary;
-                    const amount = this.$formatNumber(salary.amount || 0, null, true);
-                    const symbol = salary.currency?.symbol || salary.currency?.code || '';
-                    return `${amount} ${symbol}`;
                 default:
                     return item[column];
             }
