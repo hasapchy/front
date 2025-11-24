@@ -26,6 +26,7 @@ export default class OrderDto {
     price,
     discount,
     totalPrice,
+    paidAmount = 0,
     currencyId,
     currencyName,
     currencyCode,
@@ -56,6 +57,7 @@ export default class OrderDto {
     this.price = price;
     this.discount = discount;
     this.totalPrice = totalPrice;
+    this.paidAmount = paidAmount;
     this.currencyId = currencyId;
     this.currencyName = currencyName;
     this.currencyCode = currencyCode;
@@ -121,6 +123,7 @@ export default class OrderDto {
         data.price,
         data.discount ?? 0,
         data.total_price,
+        data.paid_amount ?? 0,
         data.currency_id,
         data.currency_name,
         data.currency_code,

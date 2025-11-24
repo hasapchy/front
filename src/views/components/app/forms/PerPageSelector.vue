@@ -3,7 +3,7 @@
         <select 
             v-model="selectedPerPage" 
             @change="handlePerPageChange"
-            class="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="px-2 py-1 pr-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none w-auto min-w-fit cursor-pointer"
         >
             <option v-for="option in perPageOptions" :key="option" :value="option">
                 {{ option }}
@@ -22,7 +22,7 @@ export default {
         },
         perPageOptions: {
             type: Array,
-            default: () => [10, 25, 50, 100]
+            default: () => [10, 20, 50, 100]
         },
         storageKey: {
             type: String,
@@ -61,3 +61,15 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: none;
+    padding-right: 0.5rem;
+    width: auto;
+    min-width: fit-content;
+}
+</style>

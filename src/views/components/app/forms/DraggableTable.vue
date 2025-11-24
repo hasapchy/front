@@ -1,24 +1,30 @@
 <template>
-  <div class="w-full">
-    <div class="flex flex-row-reverse mb-4">
-      <TableFilterButton v-if="columns.length" :onReset="resetColumns">
-        <ul>
-          <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
-            <li v-for="(element, index) in columns" :key="element.name" @click="toggleVisible(index)"
-              class="flex items-center hover:bg-gray-100 p-2 rounded">
-              <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                <div>
-                  <i class="text-sm mr-2 text-[#337AB7]"
-                    :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                  {{ $te(element.label) ? $t(element.label) : element.label }}
-                </div>
-                <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i></div>
-              </div>
-            </li>
-          </draggable>
-        </ul>
-      </TableFilterButton>
-    </div>
+    <div class="w-full">
+    <slot name="tableControlsBar" :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
+      <div class="flex items-center justify-between gap-2 mb-4 flex-wrap">
+        <slot name="tableSettingsAdditional"></slot>
+        <div class="flex items-center gap-2">
+          <slot name="tableSettingsRight"></slot>
+          <TableFilterButton v-if="columns.length" :onReset="resetColumns">
+            <ul>
+              <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
+                <li v-for="(element, index) in columns" :key="element.name" @click="toggleVisible(index)"
+                  class="flex items-center hover:bg-gray-100 p-2 rounded">
+                  <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                    <div>
+                      <i class="text-sm mr-2 text-[#337AB7]"
+                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                      {{ $te(element.label) ? $t(element.label) : element.label }}
+                    </div>
+                    <div><i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i></div>
+                  </div>
+                </li>
+              </draggable>
+            </ul>
+          </TableFilterButton>
+        </div>
+      </div>
+    </slot>
 
     <!-- Desktop/Tablet Table View (hidden on mobile) -->
     <div class="desktop-table overflow-x-auto">

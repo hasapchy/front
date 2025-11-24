@@ -1,51 +1,104 @@
 <template>
-    <div class="flex justify-between items-center mb-4">
-        <div class="flex justify-start items-center">
-            <PrimaryButton :onclick="openCreateWarehouse" icon="fas fa-plus"
-                :disabled="!$store.getters.hasPermission('warehouses_create')">
-                Склад
-            </PrimaryButton>
-            <PrimaryButton :onclick="openCreateProduct" icon="fas fa-plus" class="ml-2"
-                :disabled="!$store.getters.hasPermission('products_create')">
-                Товар
-            </PrimaryButton>
-            <div class="ml-2">
-                <select v-model="warehouseId" @change="fetchItems" class="p-2 border rounded">
-                    <option value="">{{ $t('allWarehouses') }}</option>
-                    <template v-if="allWarehouses.length">
-                        <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">
-                            {{ parent.name }}
-                        </option>
-                    </template>
-                </select>
-            </div>
-            <div class="ml-2">
-                <select v-model="categoryId" @change="fetchItems" class="p-2 border rounded">
-                    <option value="">{{ $t('allCategories') }}</option>
-                    <template v-if="allCategories.length">
-                        <option v-for="parent in allCategories" :key="parent.id" :value="parent.id">
-                            {{ parent.name }}
-                        </option>
-                    </template>
-                </select>
-            </div>
-            <div class="ml-2">
-                <select v-model="availabilityFilter" @change="fetchItems" class="p-2 border rounded">
-                    <option value="all">Все товары</option>
-                    <option value="in_stock">В наличии</option>
-                    <option value="out_of_stock">Нет в наличии</option>
-                </select>
-            </div>
-        </div>
-        <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-    </div>
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.warehouse_stocks" :columns-config="columnsConfig"
                 :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="(i) => { showModal(i) }" />
+                :onItemClick="(i) => { showModal(i) }">
+                <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+                    <TableControlsBar
+                        :show-filters="true"
+                        :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()"
+                        :on-filters-reset="resetFilters"
+                        :show-pagination="true"
+                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+                        :on-page-change="fetchItems"
+                        :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns"
+                        :columns="columns"
+                        :toggleVisible="toggleVisible"
+                        :log="log">
+                        <template #left>
+                            <PrimaryButton 
+                                :onclick="openCreateWarehouse" 
+                                icon="fas fa-plus"
+                                :disabled="!$store.getters.hasPermission('warehouses_create')">
+                                Склад
+                            </PrimaryButton>
+                            <PrimaryButton 
+                                :onclick="openCreateProduct" 
+                                icon="fas fa-plus"
+                                :disabled="!$store.getters.hasPermission('products_create')">
+                                Товар
+                            </PrimaryButton>
+                            
+                            <FiltersContainer
+                                :has-active-filters="hasActiveFilters"
+                                :active-filters-count="getActiveFiltersCount()"
+                                @reset="resetFilters">
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('warehouse') || 'Склад' }}</label>
+                                    <select v-model="warehouseId" @change="fetchItems(1)" class="w-full">
+                                        <option value="">{{ $t('allWarehouses') }}</option>
+                                        <option v-for="warehouse in allWarehouses" :key="warehouse.id" :value="warehouse.id">
+                                            {{ warehouse.name }}
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('category') || 'Категория' }}</label>
+                                    <select v-model="categoryId" @change="fetchItems(1)" class="w-full">
+                                        <option value="">{{ $t('allCategories') }}</option>
+                                        <option v-for="category in allCategories" :key="category.id" :value="category.id">
+                                            {{ category.name }}
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('availability') || 'Наличие' }}</label>
+                                    <select v-model="availabilityFilter" @change="fetchItems(1)" class="w-full">
+                                        <option value="all">{{ $t('allProducts') || 'Все товары' }}</option>
+                                        <option value="in_stock">{{ $t('inStock') || 'В наличии' }}</option>
+                                        <option value="out_of_stock">{{ $t('outOfStock') || 'Нет в наличии' }}</option>
+                                    </select>
+                                </div>
+                            </FiltersContainer>
+                        </template>
+
+                        <template #right>
+                            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
+                                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+                                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                        </template>
+
+                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+                                <ul>
+                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
+                                        @change="log">
+                                        <li v-for="(element, index) in columns" :key="element.name"
+                                            @click="toggleVisible(index)"
+                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                <div>
+                                                    <i class="text-sm mr-2 text-[#337AB7]"
+                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
+                                                </div>
+                                                <div><i
+                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </draggable>
+                                </ul>
+                            </TableFilterButton>
+                        </template>
+                    </TableControlsBar>
+                </template>
+            </DraggableTable>
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <SpinnerIcon />
@@ -72,6 +125,10 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
+import { VueDraggableNext } from 'vue-draggable-next';
 import WarehouseStockController from '@/api/WarehouseStockController';
 import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import CategoryController from '@/api/CategoryController';
@@ -84,16 +141,15 @@ import { eventBus } from '@/eventBus';
 import { formatQuantity } from '@/utils/numberUtils';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import searchMixin from '@/mixins/searchMixin';
+import crudEventMixin from '@/mixins/crudEventMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
-    mixins: [modalMixin, notificationMixin,  companyChangeMixin, searchMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, AdminWarehouseCreatePage },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, companyChangeMixin, searchMixin],
+    components: { NotificationToast, PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, AdminWarehouseCreatePage, TableControlsBar, TableFilterButton, FiltersContainer, draggable: VueDraggableNext },
     data() {
         return {
-            data: null,
-            loading: false,
-            cacheInvalidationType: 'stocks', // Тип кэша для инвалидации
+            cacheInvalidationType: 'stocks',
             allWarehouses: [],
             allCategories: [],
             warehouseId: '',
@@ -112,9 +168,7 @@ export default {
                 { name: 'quantity', label: 'quantity' },
                 { name: 'categoryName', label: 'category', html: true },
                 { name: 'createdAt', label: 'createdAt' }
-            ],
-            perPage: 10,
-            perPageOptions: [10, 25, 50, 100]
+            ]
         }
     },
     created() {
@@ -190,7 +244,7 @@ export default {
             var warehouse_id = this.warehouseId != '' ? this.warehouseId : null;
             try {
                
-                const per_page = this.perPage || 20;
+                const per_page = this.perPage;
                 
                 const new_data = await WarehouseStockController.getItems(page, warehouse_id, category_id, per_page, this.searchQuery, this.availabilityFilter);
                 this.data = new_data;
@@ -200,6 +254,19 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
+        },
+        resetFilters() {
+            this.warehouseId = '';
+            this.categoryId = '';
+            this.availabilityFilter = 'all';
+            this.fetchItems(1);
+        },
+        getActiveFiltersCount() {
+            let count = 0;
+            if (this.warehouseId !== '') count++;
+            if (this.categoryId !== '') count++;
+            if (this.availabilityFilter !== 'all') count++;
+            return count;
         },
         openCreateWarehouse() {
             this.modalCreateWarehouse = true;
@@ -248,6 +315,9 @@ export default {
         searchQuery() {
             return this.$store.state.searchQuery;
         },
+        hasActiveFilters() {
+            return this.warehouseId !== '' || this.categoryId !== '' || this.availabilityFilter !== 'all';
+        }
     },
 }
 </script>

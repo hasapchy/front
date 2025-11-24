@@ -1,57 +1,4 @@
 <template>
-    <div class="flex justify-between items-center mb-2">
-        <div class="flex items-center space-x-3">
-            <PrimaryButton 
-                :onclick="() => { showModal(null) }" 
-                icon="fas fa-plus"
-                :disabled="!$store.getters.hasPermission('projects_create')">
-            </PrimaryButton>
-
-            <!-- Переключатель вида -->
-            <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                <button 
-                    @click="viewMode = 'table'"
-                    class="px-3 py-2 transition-colors"
-                    :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                    <i class="fas fa-table"></i>
-                </button>
-                <button 
-                    @click="viewMode = 'kanban'"
-                    class="px-3 py-2 transition-colors"
-                    :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                    <i class="fas fa-columns"></i>
-                </button>
-            </div>
-            
-            <!-- Фильтр по статусу -->
-            <div>
-                <select v-model="statusFilter" @change="debouncedFetchItems" class="p-2 border border-gray-300 rounded bg-white">
-                    <option value="">{{ $t('allStatuses') }}</option>
-                    <option v-for="status in statuses" :key="status.id" :value="status.id">
-                        {{ status.name }}
-                    </option>
-                </select>
-            </div>
-            
-            <!-- Фильтр по клиенту -->
-            <div>
-                <select v-model="clientFilter" @change="debouncedFetchItems" class="p-2 border border-gray-300 rounded bg-white">
-                    <option value="">{{ $t('allClients') }}</option>
-                    <option v-for="client in clients" :key="client.id" :value="client.id">
-                        {{ client.first_name }} {{ client.last_name || client.contact_person }}
-                    </option>
-                </select>
-            </div>
-            
-        </div>
-        
-        <div class="flex items-center space-x-3">
-            <Pagination v-if="data && viewMode === 'table'" :currentPage="data.currentPage" :lastPage="data.lastPage"
-                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-        </div>
-    </div>
-    
     <BatchButton v-if="selectedIds.length && viewMode === 'table'" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
         :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
     
@@ -60,11 +7,159 @@
         <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.projects" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="(i) => { showModal(i) }" />
+                :onItemClick="(i) => { showModal(i) }">
+                <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+                    <TableControlsBar
+                        :show-filters="true"
+                        :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()"
+                        :on-filters-reset="resetFilters"
+                        :show-pagination="true"
+                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+                        :on-page-change="fetchItems"
+                        :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns"
+                        :columns="columns"
+                        :toggleVisible="toggleVisible"
+                        :log="log">
+                        <template #left>
+                            <PrimaryButton 
+                                :onclick="() => { showModal(null) }" 
+                                icon="fas fa-plus"
+                                :disabled="!$store.getters.hasPermission('projects_create')">
+                            </PrimaryButton>
+                            
+                            <FiltersContainer
+                                :has-active-filters="hasActiveFilters"
+                                :active-filters-count="getActiveFiltersCount()"
+                                @reset="resetFilters">
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
+                                    <select v-model="statusFilter" @change="debouncedFetchItems" class="w-full">
+                                        <option value="">{{ $t('allStatuses') }}</option>
+                                        <option v-for="status in statuses" :key="status.id" :value="status.id">
+                                            {{ status.name }}
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент' }}</label>
+                                    <select v-model="clientFilter" @change="debouncedFetchItems" class="w-full">
+                                        <option value="">{{ $t('allClients') }}</option>
+                                        <option v-for="client in clients" :key="client.id" :value="client.id">
+                                            {{ client.first_name }} {{ client.last_name || client.contact_person }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </FiltersContainer>
+
+                            <div class="flex items-center border border-gray-300 rounded overflow-hidden">
+                                <button 
+                                    @click="viewMode = 'table'"
+                                    class="px-3 py-2 transition-colors"
+                                    :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                                    <i class="fas fa-table"></i>
+                                </button>
+                                <button 
+                                    @click="viewMode = 'kanban'"
+                                    class="px-3 py-2 transition-colors"
+                                    :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                                    <i class="fas fa-columns"></i>
+                                </button>
+                            </div>
+                        </template>
+
+                        <template #right>
+                            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
+                                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+                                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                        </template>
+                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+                                <ul>
+                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
+                                        @change="log">
+                                        <li v-for="(element, index) in columns" :key="element.name"
+                                            @click="toggleVisible(index)"
+                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                <div>
+                                                    <i class="text-sm mr-2 text-[#337AB7]"
+                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
+                                                </div>
+                                                <div><i
+                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </draggable>
+                                </ul>
+                            </TableFilterButton>
+                        </template>
+                    </TableControlsBar>
+                </template>
+            </DraggableTable>
         </div>
 
         <!-- Канбан вид -->
         <div v-else-if="data && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
+            <TableControlsBar
+                :show-filters="true"
+                :has-active-filters="hasActiveFilters"
+                :active-filters-count="getActiveFiltersCount()"
+                :on-filters-reset="resetFilters"
+                :show-pagination="false">
+                <template #left>
+                    <PrimaryButton 
+                        :onclick="() => { showModal(null) }" 
+                        icon="fas fa-plus"
+                        :disabled="!$store.getters.hasPermission('projects_create')">
+                    </PrimaryButton>
+                    
+                    <FiltersContainer
+                        :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()"
+                        @reset="resetFilters">
+                        <div>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
+                            <select v-model="statusFilter" @change="debouncedFetchItems" class="w-full">
+                                <option value="">{{ $t('allStatuses') }}</option>
+                                <option v-for="status in statuses" :key="status.id" :value="status.id">
+                                    {{ status.name }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент' }}</label>
+                            <select v-model="clientFilter" @change="debouncedFetchItems" class="w-full">
+                                <option value="">{{ $t('allClients') }}</option>
+                                <option v-for="client in clients" :key="client.id" :value="client.id">
+                                    {{ client.first_name }} {{ client.last_name || client.contact_person }}
+                                </option>
+                            </select>
+                        </div>
+                    </FiltersContainer>
+
+                    <div class="flex items-center border border-gray-300 rounded overflow-hidden">
+                        <button 
+                            @click="viewMode = 'table'"
+                            class="px-3 py-2 transition-colors"
+                            :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                            <i class="fas fa-table"></i>
+                        </button>
+                        <button 
+                            @click="viewMode = 'kanban'"
+                            class="px-3 py-2 transition-colors"
+                            :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                            <i class="fas fa-columns"></i>
+                        </button>
+                    </div>
+                </template>
+            </TableControlsBar>
+            
             <KanbanBoard
                 :orders="allKanbanItems"
                 :statuses="statuses"
@@ -105,6 +200,9 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import KanbanBoard from '@/views/components/app/kanban/KanbanBoard.vue';
 import ProjectController from '@/api/ProjectController';
 import ProjectStatusController from '@/api/ProjectStatusController';
@@ -122,10 +220,11 @@ import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vu
 import { markRaw } from 'vue';
 import debounce from "lodash.debounce";
 import { eventBus } from '@/eventBus';
+import { VueDraggableNext } from 'vue-draggable-next';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell, TableControlsBar, TableFilterButton, FiltersContainer, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -163,22 +262,25 @@ export default {
         let shouldFetch = true;
         
         if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
-            // Если режим изменяется, watch вызовет fetchItems, поэтому не нужно вызывать здесь
             if (this.viewMode !== savedViewMode) {
                 shouldFetch = false;
             }
             this.viewMode = savedViewMode;
             
             if (savedViewMode === 'kanban') {
-                this.perPage = 50;
                 this.allKanbanItems = [];
                 this.kanbanCurrentPage = 1;
+            } else {
+                const savedPerPage = localStorage.getItem('perPage');
+                this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
             }
         } else {
             if (this.viewMode === 'kanban') {
-                this.perPage = 50;
                 this.allKanbanItems = [];
                 this.kanbanCurrentPage = 1;
+            } else {
+                const savedPerPage = localStorage.getItem('perPage');
+                this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
             }
         }
         
@@ -272,7 +374,7 @@ export default {
                 this.loading = true;
             }
             try {
-                const per_page = this.viewMode === 'kanban' ? 1000 : (this.perPage || 20);
+                const per_page = this.viewMode === 'kanban' ? 1000 : this.perPage;
                 
                 const filters = {};
                 if (this.statusFilter) filters.status_id = this.statusFilter;
@@ -309,12 +411,20 @@ export default {
             }
             this.loading = false;
         },
-        handleDateFilterChange() {
-            if (this.dateFilter !== 'custom') {
-                this.startDate = null;
-                this.endDate = null;
+        resetFilters() {
+            this.statusFilter = '';
+            this.clientFilter = '';
+            if (this.viewMode === 'kanban') {
+                this.fetchItems(1, true);
+            } else {
+                this.fetchItems(1);
             }
-            this.fetchItems();
+        },
+        getActiveFiltersCount() {
+            let count = 0;
+            if (this.statusFilter !== '') count++;
+            if (this.clientFilter !== '') count++;
+            return count;
         },
         // Переопределяем метод из modalMixin для добавления специфичной логики
         showModal(item = null) {
@@ -433,25 +543,31 @@ export default {
     watch: {
         viewMode: {
             handler(newMode) {
-                // Сохраняем режим просмотра в localStorage
                 localStorage.setItem('projects_viewMode', newMode);
                 
                 if (newMode === 'kanban') {
-                    this.perPage = 50;
                     this.allKanbanItems = [];
                     this.kanbanCurrentPage = 1;
-                    this.fetchItems(1, false);
+                    this.$nextTick(() => {
+                        this.fetchItems(1, false);
+                    });
                 } else {
-                    const savedPerPage = localStorage.getItem('projectsPerPage');
-                    this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
+                    const savedPerPage = localStorage.getItem('perPage');
+                    const newPerPage = savedPerPage ? parseInt(savedPerPage) : 10;
+                    this.perPage = newPerPage;
                     this.allKanbanItems = [];
-                    this.fetchItems(1, false);
+                    this.$nextTick(() => {
+                        this.fetchItems(1, false);
+                    });
                 }
             },
-            immediate: false // Не вызывать при инициализации, только при изменениях
+            immediate: false
         }
     },
     computed: {
+        hasActiveFilters() {
+            return this.statusFilter !== '' || this.clientFilter !== '';
+        },
         columnsConfig() {
             return [
                 { name: 'select', label: '#', size: 15 },

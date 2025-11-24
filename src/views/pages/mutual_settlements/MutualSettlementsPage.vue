@@ -1,59 +1,4 @@
 <template>
-    <div class="flex justify-between items-center mb-4">
-        <div class="flex justify-start items-center">
-            <FiltersContainer 
-                :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()"
-                @reset="resetFilters">
-                <template #desktop>
-                    <div class="ml-2">
-                        <select v-model="clientId" @change="applyFilters">
-                            <option value="">{{ $t('allClients') }}</option>
-                            <template v-if="allClients.length">
-                                <option v-for="client in allClients" :key="client.id" :value="client.id">
-                                    {{ ((client.firstName || client.first_name || '') + ' ' + (client.lastName || client.last_name || '')).trim() || 'Клиент без имени' }}
-                                </option>
-                            </template>
-                        </select>
-                    </div>
-                    <div class="ml-2">
-                        <select :value="clientTypeFilter" @change="handleClientTypeChange($event.target.value)">
-                            <option value="all">{{ $t('all') }}</option>
-                            <option value="individual">{{ $t('individual') }}</option>
-                            <option value="company">{{ $t('company') }}</option>
-                            <option value="employee">{{ $t('employee') }}</option>
-                            <option value="investor">{{ $t('investor') }}</option>
-                        </select>
-                    </div>
-                </template>
-                <template #mobile>
-                    <div>
-                        <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент' }}</label>
-                        <select v-model="clientId" @change="applyFilters" class="w-full">
-                            <option value="">{{ $t('allClients') }}</option>
-                            <template v-if="allClients.length">
-                                <option v-for="client in allClients" :key="client.id" :value="client.id">
-                                    {{ ((client.firstName || client.first_name || '') + ' ' + (client.lastName || client.last_name || '')).trim() || 'Клиент без имени' }}
-                                </option>
-                            </template>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
-                        <select :value="clientTypeFilter" @change="handleClientTypeChange($event.target.value)" class="w-full">
-                            <option value="all">{{ $t('all') }}</option>
-                            <option value="individual">{{ $t('individual') }}</option>
-                            <option value="company">{{ $t('company') }}</option>
-                            <option value="employee">{{ $t('employee') }}</option>
-                            <option value="investor">{{ $t('investor') }}</option>
-                        </select>
-                    </div>
-                </template>
-            </FiltersContainer>
-        </div>
-    </div>
-
         <!-- Статистика балансов -->
         <MutualSettlementsBalanceWrapper 
             :data="clientBalances" 
@@ -63,7 +8,74 @@
         <transition name="fade" mode="out-in">
             <div v-if="clientBalances != null && !clientBalancesLoading" :key="`table-${$i18n.locale}`">
                 <DraggableTable table-key="mutual_settlements.clients" :columns-config="columnsConfig" 
-                    :table-data="clientBalances" :item-mapper="itemMapper" :onItemClick="handleRowClick" />
+                    :table-data="clientBalances" :item-mapper="itemMapper" :onItemClick="handleRowClick">
+                    <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+                        <TableControlsBar
+                            :show-filters="true"
+                            :has-active-filters="hasActiveFilters"
+                            :active-filters-count="getActiveFiltersCount()"
+                            :on-filters-reset="resetFilters"
+                            :show-pagination="false"
+                            :resetColumns="resetColumns"
+                            :columns="columns"
+                            :toggleVisible="toggleVisible"
+                            :log="log">
+                            <template #left>
+                                <FiltersContainer 
+                                    :has-active-filters="hasActiveFilters"
+                                    :active-filters-count="getActiveFiltersCount()"
+                                    @reset="resetFilters">
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент' }}</label>
+                                        <select v-model="clientId" @change="applyFilters" class="w-full">
+                                            <option value="">{{ $t('allClients') }}</option>
+                                            <template v-if="allClients.length">
+                                                <option v-for="client in allClients" :key="client.id" :value="client.id">
+                                                    {{ ((client.firstName || client.first_name || '') + ' ' + (client.lastName || client.last_name || '')).trim() || 'Клиент без имени' }}
+                                                </option>
+                                            </template>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
+                                        <select :value="clientTypeFilter" @change="handleClientTypeChange($event.target.value)" class="w-full">
+                                            <option value="all">{{ $t('all') }}</option>
+                                            <option value="individual">{{ $t('individual') }}</option>
+                                            <option value="company">{{ $t('company') }}</option>
+                                            <option value="employee">{{ $t('employee') }}</option>
+                                            <option value="investor">{{ $t('investor') }}</option>
+                                        </select>
+                                    </div>
+                                </FiltersContainer>
+                            </template>
+
+                            <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                                <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+                                    <ul>
+                                        <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
+                                            @change="log">
+                                            <li v-for="(element, index) in columns" :key="element.name"
+                                                @click="toggleVisible(index)"
+                                                class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                                <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                    <div>
+                                                        <i class="text-sm mr-2 text-[#337AB7]"
+                                                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                        {{ $te(element.label) ? $t(element.label) : element.label }}
+                                                    </div>
+                                                    <div><i
+                                                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </draggable>
+                                    </ul>
+                                </TableFilterButton>
+                            </template>
+                        </TableControlsBar>
+                    </template>
+                </DraggableTable>
             </div>
             <div v-else key="loader" class="flex justify-center items-center h-64">
                 <SpinnerIcon />
@@ -84,7 +96,10 @@ import NotificationToast from '@/views/components/app/dialog/NotificationToast.v
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import { VueDraggableNext } from 'vue-draggable-next';
 import ClientController from '@/api/ClientController';
 import ClientCreatePage from '@/views/pages/clients/ClientCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -99,7 +114,7 @@ import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
     mixins: [notificationMixin, modalMixin, companyChangeMixin, searchMixin, crudEventMixin, getApiErrorMessageMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
     data() {
         return {
             allClients: [],
@@ -117,7 +132,7 @@ export default {
         }
     },
     created() {
-        this.$store.commit('SET_SETTINGS_OPEN', false);
+        this.$store.commit('SET_SETTINGS_OPEN', true);
         
         // Подписываемся на событие глобального поиска
         eventBus.on('global-search', this.handleSearch);

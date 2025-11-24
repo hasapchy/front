@@ -1,66 +1,85 @@
 <template>
-    <div class="flex justify-between items-center mb-4">
-        <div class="flex justify-start items-center">
-            <PrimaryButton :onclick="() => { showModal(null) }" :disabled="!$store.getters.hasPermission('clients_create')"
-                icon="fas fa-plus"></PrimaryButton>
-            
-            <FiltersContainer 
-                :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()"
-                @reset="resetFilters">
-                <template #desktop>
-                    <div class="ml-2">
-                        <select v-model="statusFilter" @change="() => fetchItems(1)">
-                            <option value="">{{ $t('allStatuses') }}</option>
-                            <option value="active">{{ $t('active') }}</option>
-                            <option value="inactive">{{ $t('inactive') }}</option>
-                        </select>
-                    </div>
-
-                    <div class="ml-2">
-                        <select v-model="typeFilter" @change="() => fetchItems(1)">
-                            <option value="">{{ $t('allTypes') }}</option>
-                            <option value="individual">{{ $t('individual') }}</option>
-                            <option value="company">{{ $t('company') }}</option>
-                            <option value="employee">{{ $t('employee') }}</option>
-                            <option value="investor">{{ $t('investor') }}</option>
-                        </select>
-                    </div>
-                </template>
-
-                <template #mobile>
-                    <div>
-                        <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
-                        <select v-model="statusFilter" @change="() => fetchItems(1)" class="w-full">
-                            <option value="">{{ $t('allStatuses') }}</option>
-                            <option value="active">{{ $t('active') }}</option>
-                            <option value="inactive">{{ $t('inactive') }}</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
-                        <select v-model="typeFilter" @change="() => fetchItems(1)" class="w-full">
-                            <option value="">{{ $t('allTypes') }}</option>
-                            <option value="individual">{{ $t('individual') }}</option>
-                            <option value="company">{{ $t('company') }}</option>
-                            <option value="employee">{{ $t('employee') }}</option>
-                            <option value="investor">{{ $t('investor') }}</option>
-                        </select>
-                    </div>
-                </template>
-            </FiltersContainer>
-        </div>
-        <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-    </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="common.clients" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }"
-                @selectionChange="selectedIds = $event" />
+                @selectionChange="selectedIds = $event">
+                <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+                    <TableControlsBar
+                        :show-create-button="true"
+                        :on-create-click="() => { showModal(null) }"
+                        :create-button-disabled="!$store.getters.hasPermission('clients_create')"
+                        :show-filters="true"
+                        :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()"
+                        :on-filters-reset="resetFilters"
+                        :show-pagination="true"
+                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+                        :on-page-change="fetchItems"
+                        :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns"
+                        :columns="columns"
+                        :toggleVisible="toggleVisible"
+                        :log="log">
+                        <template #filters-desktop>
+                            <FiltersContainer
+                                :has-active-filters="hasActiveFilters"
+                                :active-filters-count="getActiveFiltersCount()"
+                                @reset="resetFilters">
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
+                                    <select v-model="statusFilter" @change="() => fetchItems(1)" class="w-full">
+                                        <option value="">{{ $t('allStatuses') }}</option>
+                                        <option value="active">{{ $t('active') }}</option>
+                                        <option value="inactive">{{ $t('inactive') }}</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
+                                    <select v-model="typeFilter" @change="() => fetchItems(1)" class="w-full">
+                                        <option value="">{{ $t('allTypes') }}</option>
+                                        <option value="individual">{{ $t('individual') }}</option>
+                                        <option value="company">{{ $t('company') }}</option>
+                                        <option value="employee">{{ $t('employee') }}</option>
+                                        <option value="investor">{{ $t('investor') }}</option>
+                                    </select>
+                                </div>
+                            </FiltersContainer>
+                        </template>
+
+                        <template #right>
+                            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
+                                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+                                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                        </template>
+                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+                                <ul>
+                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
+                                        @change="log">
+                                        <li v-for="(element, index) in columns" :key="element.name"
+                                            @click="toggleVisible(index)"
+                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                <div>
+                                                    <i class="text-sm mr-2 text-[#337AB7]"
+                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
+                                                </div>
+                                                <div><i
+                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </draggable>
+                                </ul>
+                            </TableFilterButton>
+                        </template>
+                    </TableControlsBar>
+                </template>
+            </DraggableTable>
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <SpinnerIcon />
@@ -84,6 +103,8 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import ClientController from '@/api/ClientController';
 import ClientCreatePage from './ClientCreatePage.vue';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
@@ -95,13 +116,14 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { eventBus } from '@/eventBus';
+import { VueDraggableNext } from 'vue-draggable-next';
 
 import { highlightMatches } from '@/utils/searchUtils';
 import searchMixin from '@/mixins/searchMixin';
 
 export default {
     mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, searchMixin, getApiErrorMessageMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog, FiltersContainer },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog, FiltersContainer, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
     data() {
         return {
             controller: ClientController,
@@ -181,7 +203,7 @@ export default {
                 this.loading = true;
             }
             try {
-                const per_page = this.perPage || 20;
+                const per_page = this.perPage;
                 
                 const includeInactive = this.statusFilter === 'inactive';
                 const new_data = await ClientController.getItems(page, this.searchQuery, includeInactive, this.statusFilter, this.typeFilter, per_page);

@@ -15,8 +15,8 @@
              alt="RU" 
              class="w-6 h-5 object-contain rounded">
       </div>
-      <span class="language-name">{{ currentLanguageName }}</span>
-      <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': isOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <span class="language-name hidden sm:inline">{{ currentLanguageName }}</span>
+      <svg class="w-4 h-4 transition-transform hidden sm:block" :class="{ 'rotate-180': isOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
       </svg>
     </button>
@@ -24,7 +24,8 @@
 
     <div 
       v-if="isOpen" 
-      class="dropdown-menu absolute top-full left-0 mt-1 w-40 bg-white border border-gray-200 rounded shadow-lg z-50"
+      class="dropdown-menu absolute top-full mt-1 w-40 bg-white border border-gray-200 rounded shadow-lg z-50"
+      :class="isMobile ? 'right-0' : 'left-0'"
     >
       <div class="py-1">
         <button 
@@ -62,7 +63,8 @@ export default {
   name: 'LanguageSwitcher',
   data() {
     return {
-      isOpen: false
+      isOpen: false,
+      isMobile: false
     }
   },
   computed: {
@@ -75,12 +77,18 @@ export default {
     }
   },
   mounted() {
+    this.checkMobile();
+    window.addEventListener('resize', this.checkMobile);
     document.addEventListener('click', this.handleClickOutside)
   },
   beforeUnmount() {
+    window.removeEventListener('resize', this.checkMobile);
     document.removeEventListener('click', this.handleClickOutside)
   },
   methods: {
+    checkMobile() {
+      this.isMobile = window.innerWidth < 640;
+    },
     toggleDropdown() {
       this.isOpen = !this.isOpen
     },
@@ -245,19 +253,26 @@ export default {
   }
 }
 
-/* Адаптивность для мобильных устройств */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .dropdown-trigger {
-    min-width: 60px;
-    padding: 6px 10px;
+    min-width: auto;
+    padding: 6px 8px;
   }
   
   .dropdown-menu {
-    width: 140px;
+    width: 120px;
+    right: 0;
+    left: auto;
   }
   
   .language-option {
-    padding: 8px 12px;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  
+  .flag-icon img {
+    width: 20px;
+    height: 16px;
   }
 }
 </style>

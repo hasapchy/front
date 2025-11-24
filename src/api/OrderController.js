@@ -4,7 +4,7 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import { queryCache } from "@/utils/cacheHelper";
 
 export default class OrderController {
-  static async getItems(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, statusFilter = '', projectFilter = '', clientFilter = '', per_page = 20) {
+  static async getItems(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, statusFilter = '', projectFilter = '', clientFilter = '', per_page = 20, unpaidOnly = false) {
     try {
       const params = { page: page, per_page: per_page };
       if (search) {
@@ -26,6 +26,9 @@ export default class OrderController {
       if (clientFilter) {
         params.client_id = clientFilter;
       }
+      if (unpaidOnly) {
+        params.unpaid_only = true;
+      }
       const response = await api.get("/orders", { params });
       const data = response.data;
       const items = OrderDto.fromApiArray(data.items);
@@ -34,7 +37,8 @@ export default class OrderController {
         data.current_page,
         data.next_page,
         data.last_page,
-        data.total
+        data.total,
+        data.unpaid_orders_total || 0
       );
 
       return paginatedResponse;

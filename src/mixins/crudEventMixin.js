@@ -2,7 +2,7 @@ import CacheInvalidator from "@/utils/cache";
 
 export default {
   data() {
-    let perPage = 10;
+    let perPage = 20;
     try {
       const savedPerPage = localStorage.getItem("perPage");
       if (savedPerPage) {
@@ -21,7 +21,7 @@ export default {
       data: null,
       loading: false,
       perPage: perPage,
-      perPageOptions: [10, 25, 50, 100],
+      perPageOptions: [10, 20, 50, 100],
     };
   },
   watch: {

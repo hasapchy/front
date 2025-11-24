@@ -106,7 +106,7 @@ export default {
                 this.loading = true;
             }
             try {
-                const per_page = this.perPage || 10;
+                const per_page = this.perPage;
                 
                 const new_data = await OrderStatusCategoryController.getItems(page, per_page);
                 this.data = new_data;

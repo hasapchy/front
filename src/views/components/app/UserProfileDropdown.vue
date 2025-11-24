@@ -1,15 +1,15 @@
 <template>
     <div class="relative user-profile-dropdown">
         <button @click="toggleDropdown" class="flex items-center gap-2 text-gray-700 hover:text-gray-900 focus:outline-none">
-            <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+            <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
                 <img v-if="userPhoto" :src="userPhoto" :alt="userName" class="w-full h-full object-cover">
                 <i v-else class="fas fa-user text-gray-500"></i>
             </div>
-            <span class="font-semibold">{{ userName }}</span>
-            <i class="fas fa-chevron-down text-xs"></i>
+            <span class="font-semibold hidden sm:inline">{{ userName }}</span>
+            <i class="fas fa-chevron-down text-xs hidden sm:inline"></i>
         </button>
 
-        <div v-if="isOpen" class="absolute right-0 mt-2 w-auto bg-white rounded-xl shadow-xl border border-gray-200 z-50">
+        <div v-if="isOpen" class="absolute right-0 mt-2 w-auto min-w-[120px] bg-white rounded-xl shadow-xl border border-gray-200 z-50">
             <div class="p-4 flex gap-2">
                 <!-- Edit Profile Button -->
                 <PrimaryButton 

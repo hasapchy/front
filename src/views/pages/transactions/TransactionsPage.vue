@@ -1,199 +1,150 @@
 <template>
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-0 mb-4">
-        <div class="flex flex-wrap md:flex-nowrap justify-start items-center w-full md:w-auto">
-            <PrimaryButton 
-                :onclick="() => { showModal(null) }" 
-                icon="fas fa-plus"
-                :disabled="!$store.getters.hasPermission('transactions_create')">
-            </PrimaryButton>
-            
-            <FiltersContainer 
-                :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()"
-                @reset="resetFilters">
-                <template #desktop>
-                    <div class="ml-2">
-                        <select v-model="cashRegisterId" @change="() => fetchItems(1)">
-                            <option value="">{{ $t('allCashRegisters') }}</option>
-                            <template v-if="allCashRegisters.length">
-                                <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
-                                    {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
-                                </option>
-                            </template>
-                        </select>
-                    </div>
-
-                    <div class="ml-2">
-                        <select v-model="transactionTypeFilter" @change="() => fetchItems(1)">
-                            <option value="">{{ $t('allTransactionTypes') }}</option>
-                            <option value="income">{{ $t('income') }}</option>
-                            <option value="outcome">{{ $t('outcome') }}</option>
-                            <option value="transfer">{{ $t('transfer') }}</option>
-                        </select>
-                    </div>
-
-                    <div class="ml-2">
-                        <select v-model="sourceFilter" @change="() => fetchItems(1)">
-                            <option value="">{{ $t('allSources') }}</option>
-                            <option v-for="option in sourceOptions" :key="option.value" :value="option.value">
-                                {{ option.label }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <div class="ml-2">
-                        <select v-model="projectId" @change="() => fetchItems(1)">
-                            <option value="">{{ $t('allProjects') }}</option>
-                            <template v-if="allProjects.length">
-                                <option v-for="project in allProjects" :key="project.id" :value="project.id">
-                                    {{ project.name }}
-                                </option>
-                            </template>
-                        </select>
-                    </div>
-
-                    <div class="ml-2">
-                        <select v-model="debtFilter" @change="() => fetchItems(1)">
-                            <option value="all">{{ $t('allTransactions') }}</option>
-                            <option value="false">{{ $t('nonDebtTransactions') }}</option>
-                            <option value="true">{{ $t('debtsOnly') }}</option>
-                        </select>
-                    </div>
-
-                    <div class="ml-2">
-                        <select v-model="dateFilter" @change="() => fetchItems(1)">
-                            <option value="all_time">{{ $t('allTime') }}</option>
-                            <option value="today">{{ $t('today') }}</option>
-                            <option value="yesterday">{{ $t('yesterday') }}</option>
-                            <option value="this_week">{{ $t('thisWeek') }}</option>
-                            <option value="this_month">{{ $t('thisMonth') }}</option>
-                            <option value="last_week">{{ $t('lastWeek') }}</option>
-                            <option value="last_month">{{ $t('lastMonth') }}</option>
-                            <option value="custom">{{ $t('selectDates') }}</option>
-                        </select>
-                    </div>
-                    <div v-if="dateFilter === 'custom'" class="flex space-x-2 items-center ml-2">
-                        <input type="date" v-model="startDate" @change="() => fetchItems(1)" />
-                        <input type="date" v-model="endDate" @change="() => fetchItems(1)" />
-                    </div>
-                </template>
-
-                <template #mobile>
-                    <div>
-                        <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') || 'Касса' }}</label>
-                        <select v-model="cashRegisterId" @change="() => fetchItems(1)" class="w-full">
-                            <option value="">{{ $t('allCashRegisters') }}</option>
-                            <template v-if="allCashRegisters.length">
-                                <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
-                                    {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
-                                </option>
-                            </template>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block mb-2 text-xs font-semibold">{{ $t('transactionType') || 'Тип транзакции' }}</label>
-                        <select v-model="transactionTypeFilter" @change="() => fetchItems(1)" class="w-full">
-                            <option value="">{{ $t('allTransactionTypes') }}</option>
-                            <option value="income">{{ $t('income') }}</option>
-                            <option value="outcome">{{ $t('outcome') }}</option>
-                            <option value="transfer">{{ $t('transfer') }}</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block mb-2 text-xs font-semibold">{{ $t('source') || 'Источник' }}</label>
-                        <select v-model="sourceFilter" @change="() => fetchItems(1)" class="w-full">
-                            <option value="">{{ $t('allSources') }}</option>
-                            <option v-for="option in sourceOptions" :key="option.value" :value="option.value">
-                                {{ option.label }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block mb-2 text-xs font-semibold">{{ $t('project') || 'Проект' }}</label>
-                        <select v-model="projectId" @change="() => fetchItems(1)" class="w-full">
-                            <option value="">{{ $t('allProjects') }}</option>
-                            <template v-if="allProjects.length">
-                                <option v-for="project in allProjects" :key="project.id" :value="project.id">
-                                    {{ project.name }}
-                                </option>
-                            </template>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block mb-2 text-xs font-semibold">{{ $t('debtFilter') || 'Фильтр по долгам' }}</label>
-                        <select v-model="debtFilter" @change="() => fetchItems(1)" class="w-full">
-                            <option value="all">{{ $t('allTransactions') }}</option>
-                            <option value="false">{{ $t('nonDebtTransactions') }}</option>
-                            <option value="true">{{ $t('debtsOnly') }}</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
-                        <select v-model="dateFilter" @change="() => fetchItems(1)" class="w-full">
-                            <option value="all_time">{{ $t('allTime') }}</option>
-                            <option value="today">{{ $t('today') }}</option>
-                            <option value="yesterday">{{ $t('yesterday') }}</option>
-                            <option value="this_week">{{ $t('thisWeek') }}</option>
-                            <option value="this_month">{{ $t('thisMonth') }}</option>
-                            <option value="last_week">{{ $t('lastWeek') }}</option>
-                            <option value="last_month">{{ $t('lastMonth') }}</option>
-                            <option value="custom">{{ $t('selectDates') }}</option>
-                        </select>
-                    </div>
-                    
-                    <div v-if="dateFilter === 'custom'" class="space-y-2">
-                        <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
-                            <input type="date" v-model="startDate" @change="() => fetchItems(1)" class="w-full" />
-                        </div>
-                        <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
-                            <input type="date" v-model="endDate" @change="() => fetchItems(1)" class="w-full" />
-                        </div>
-                    </div>
-                </template>
-            </FiltersContainer>
-        </div>
-        
-        <div class="w-full md:w-auto">
-            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-        </div>
-    </div>
     <!-- ✅ Один компонент вместо двух - один API запрос вместо двух! -->
-    <TransactionsBalanceWrapper 
-        ref="balanceWrapper"
-        :cash-register-id="cashRegisterId || null" 
-        :start-date="startDate"
-        :end-date="endDate" 
-        :date-filter="dateFilter" 
-        :transaction-type-filter="transactionTypeFilter" 
-        :source-filter="sourceFilter"
-        @balance-click="handleBalanceClick"
-    />
+    <TransactionsBalanceWrapper ref="balanceWrapper" :cash-register-id="cashRegisterId || null" :start-date="startDate"
+        :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter"
+        :source-filter="sourceFilter" @balance-click="handleBalanceClick" />
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
-            <DraggableTable table-key="admin.transactions" :columns-config="columnsConfig"
+            <DraggableTable ref="draggableTable" table-key="admin.transactions" :columns-config="columnsConfig"
                 :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="(i) => { showModal(i) }" />
+                :onItemClick="(i) => { showModal(i) }">
+                <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+                    <TableControlsBar :show-create-button="true" :on-create-click="() => { showModal(null) }"
+                        :create-button-disabled="!$store.getters.hasPermission('transactions_create')"
+                        :show-filters="true" :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
+                        :show-pagination="true"
+                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+                        :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
+                        <template #filters-desktop>
+                            <FiltersContainer
+                                :has-active-filters="hasActiveFilters"
+                                :active-filters-count="getActiveFiltersCount()"
+                                @reset="resetFilters">
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') || 'Касса' }}</label>
+                                        <select v-model="cashRegisterId" @change="() => fetchItems(1)" class="w-full">
+                                            <option value="">{{ $t('allCashRegisters') }}</option>
+                                            <template v-if="allCashRegisters.length">
+                                                <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
+                                                    {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
+                                                </option>
+                                            </template>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('transactionType') || 'Тип транзакции' }}</label>
+                                        <select v-model="transactionTypeFilter" @change="() => fetchItems(1)" class="w-full">
+                                            <option value="">{{ $t('allTransactionTypes') }}</option>
+                                            <option value="income">{{ $t('income') }}</option>
+                                            <option value="outcome">{{ $t('outcome') }}</option>
+                                            <option value="transfer">{{ $t('transfer') }}</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('source') || 'Источник' }}</label>
+                                        <select v-model="sourceFilter" @change="() => fetchItems(1)" class="w-full">
+                                            <option value="">{{ $t('allSources') }}</option>
+                                            <option v-for="option in sourceOptions" :key="option.value" :value="option.value">
+                                                {{ option.label }}
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('project') || 'Проект' }}</label>
+                                        <select v-model="projectId" @change="() => fetchItems(1)" class="w-full">
+                                            <option value="">{{ $t('allProjects') }}</option>
+                                            <template v-if="allProjects.length">
+                                                <option v-for="project in allProjects" :key="project.id" :value="project.id">
+                                                    {{ project.name }}
+                                                </option>
+                                            </template>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('debtFilter') || 'Фильтр по долгам' }}</label>
+                                        <select v-model="debtFilter" @change="() => fetchItems(1)" class="w-full">
+                                            <option value="all">{{ $t('allTransactions') }}</option>
+                                            <option value="false">{{ $t('nonDebtTransactions') }}</option>
+                                            <option value="true">{{ $t('debtsOnly') }}</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
+                                        <select v-model="dateFilter" @change="() => fetchItems(1)" class="w-full">
+                                            <option value="all_time">{{ $t('allTime') }}</option>
+                                            <option value="today">{{ $t('today') }}</option>
+                                            <option value="yesterday">{{ $t('yesterday') }}</option>
+                                            <option value="this_week">{{ $t('thisWeek') }}</option>
+                                            <option value="this_month">{{ $t('thisMonth') }}</option>
+                                            <option value="last_week">{{ $t('lastWeek') }}</option>
+                                            <option value="last_month">{{ $t('lastMonth') }}</option>
+                                            <option value="custom">{{ $t('selectDates') }}</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div v-if="dateFilter === 'custom'" class="space-y-2">
+                                        <div>
+                                            <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
+                                            <input type="date" v-model="startDate" @change="() => fetchItems(1)" class="w-full" />
+                                        </div>
+                                        <div>
+                                            <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
+                                            <input type="date" v-model="endDate" @change="() => fetchItems(1)" class="w-full" />
+                                        </div>
+                                    </div>
+                            </FiltersContainer>
+                        </template>
+
+                        <template #right>
+                            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
+                                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+                                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                        </template>
+                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+                                <ul>
+                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
+                                        @change="log">
+                                        <li v-for="(element, index) in columns" :key="element.name"
+                                            @click="toggleVisible(index)"
+                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                <div>
+                                                    <i class="text-sm mr-2 text-[#337AB7]"
+                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
+                                                </div>
+                                                <div><i
+                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </draggable>
+                                </ul>
+                            </TableFilterButton>
+                        </template>
+                    </TableControlsBar>
+                </template>
+            </DraggableTable>
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <SpinnerIcon />
         </div>
     </transition>
-    
+
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <TransactionCreatePage v-if="modalDialog" ref="transactioncreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
-            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
-            @copy-transaction="handleCopyTransaction"
-            :editingItem="editingItem" :default-cash-id="cashRegisterId || null" :form-config="fullFormConfig" />
+        <TransactionCreatePage v-if="modalDialog" ref="transactioncreatepageForm" @saved="handleSaved"
+            @saved-error="handleSavedError" @deleted="handleDeleted" @deleted-error="handleDeletedError"
+            @close-request="closeModal" @copy-transaction="handleCopyTransaction" :editingItem="editingItem"
+            :default-cash-id="cashRegisterId || null" :form-config="fullFormConfig" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
@@ -209,6 +160,9 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import { VueDraggableNext } from 'vue-draggable-next';
 import TransactionController from '@/api/TransactionController';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import CashRegisterController from '@/api/CashRegisterController';
@@ -232,7 +186,7 @@ import TRANSACTION_FORM_PRESETS from '@/constants/transactionFormPresets';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin],
-    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, BatchButton, FiltersContainer },
+    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, BatchButton, FiltersContainer, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -301,10 +255,10 @@ export default {
     },
 
     mounted() {
-      this.fetchItems();
-      // Кассы и проекты загружаются автоматически через store при установке компании
-      this.allCashRegisters = this.$store.getters.cashRegisters;
-      this.allProjects = this.$store.getters.activeProjects;
+        this.fetchItems();
+        // Кассы и проекты загружаются автоматически через store при установке компании
+        this.allCashRegisters = this.$store.getters.cashRegisters;
+        this.allProjects = this.$store.getters.activeProjects;
     },
     beforeUnmount() {
         eventBus.off('global-search', this.handleSearch);
@@ -318,7 +272,7 @@ export default {
         },
         itemMapper(i, c) {
             const search = this.searchQuery;
-            
+
             switch (c) {
                 case 'type':
                     return i.typeCell();
@@ -346,9 +300,9 @@ export default {
                 this.loading = true;
             }
             try {
-               
-                const per_page = this.perPage || 20;
-                
+
+                const per_page = this.perPage;
+
                 const debtFilter = this.debtFilter === 'all' ? null : this.debtFilter;
                 const new_data = await TransactionController.getItems(
                     page,
@@ -364,7 +318,7 @@ export default {
                     this.endDate,
                     debtFilter
                 );
-                
+
                 // Обычная пагинация
                 this.data = new_data;
             } catch (error) {
@@ -385,10 +339,10 @@ export default {
         },
         handleBalanceClick(data) {
             // Проверяем, установлены ли уже такие же фильтры
-            const isSameFilters = 
+            const isSameFilters =
                 this.cashRegisterId === data.cashRegisterId &&
                 this.transactionTypeFilter === data.transactionType;
-            
+
             if (isSameFilters) {
                 // Если уже установлены такие же фильтры, сбрасываем их
                 this.cashRegisterId = '';
@@ -423,17 +377,17 @@ export default {
             this.startDate = null;
             this.endDate = null;
             this.selectedIds = [];
-            
+
             // ✅ Перезагружаем данные со страницы 1
             await this.fetchItems(1, false);
-            
+
             // ✅ Обновляем баланс
             this.updateBalace();
-            
+
             // ✅ Уведомляем пользователя о смене компании
             this.$store.dispatch('showNotification', {
-              title: 'Компания изменена',
-              isDanger: false
+                title: 'Компания изменена',
+                isDanger: false
             });
         },
         onAfterSaved() {
@@ -445,7 +399,7 @@ export default {
         handleCopyTransaction(copiedTransaction) {
             // Закрываем текущее модальное окно
             this.closeModal();
-            
+
             // Небольшая задержка для плавного перехода
             setTimeout(() => {
                 // Открываем новое модальное окно с копированными данными
@@ -494,17 +448,17 @@ export default {
                 const item = this.data?.items?.find(i => i.id === id);
                 return item && item.isTransfer !== 1 && item.isTransfer !== true;
             });
-            
+
             const hasTransfers = this.selectedIds.length > nonTransferIds.length;
-            
+
             if (hasTransfers) {
                 this.showNotification(
-                    this.$t('cannotDeleteTransfers'), 
-                    this.$t('transferTransactionsCannotBeDeleted'), 
+                    this.$t('cannotDeleteTransfers'),
+                    this.$t('transferTransactionsCannotBeDeleted'),
                     true
                 );
             }
-            
+
             return [
                 {
                     label: "Удалить",
@@ -534,13 +488,13 @@ export default {
         },
         hasActiveFilters() {
             return this.cashRegisterId !== '' ||
-                   this.transactionTypeFilter !== '' ||
-                   this.sourceFilter !== '' ||
-                   this.projectId !== '' ||
-                   this.debtFilter !== 'all' ||
-                   this.dateFilter !== 'this_month' ||
-                   this.startDate !== null ||
-                   this.endDate !== null;
+                this.transactionTypeFilter !== '' ||
+                this.sourceFilter !== '' ||
+                this.projectId !== '' ||
+                this.debtFilter !== 'all' ||
+                this.dateFilter !== 'this_month' ||
+                this.startDate !== null ||
+                this.endDate !== null;
         },
         fullFormConfig() {
             return TRANSACTION_FORM_PRESETS.full;

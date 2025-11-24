@@ -81,7 +81,7 @@ export default {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-                const per_page = this.perPage || 20;
+                const per_page = this.perPage;
                 
                 this.data = await OrderCategoryController.getItems(page, per_page);
             } catch (error) {
