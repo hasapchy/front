@@ -193,7 +193,7 @@
         <TransactionCreatePage v-if="modalDialog" ref="transactioncreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
             @copy-transaction="handleCopyTransaction"
-            :editingItem="editingItem" :default-cash-id="cashRegisterId || null" />
+            :editingItem="editingItem" :default-cash-id="cashRegisterId || null" :form-config="fullFormConfig" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
@@ -228,6 +228,7 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { eventBus } from '@/eventBus';
 import searchMixin from '@/mixins/searchMixin';
 import { highlightMatches } from '@/utils/searchUtils';
+import TRANSACTION_FORM_PRESETS from '@/constants/transactionFormPresets';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin],
@@ -540,6 +541,9 @@ export default {
                    this.dateFilter !== 'this_month' ||
                    this.startDate !== null ||
                    this.endDate !== null;
+        },
+        fullFormConfig() {
+            return TRANSACTION_FORM_PRESETS.full;
         }
     },
     watch: {

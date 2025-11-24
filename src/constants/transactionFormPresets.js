@@ -52,6 +52,15 @@ export const TRANSACTION_FORM_PRESETS = {
         type: { visible: false, enforcedValue: 'outcome', readonly: true },
         category: { visible: false, enforcedValue: 27 },
     },
+    full: {
+        client: { visible: true },
+        project: { visible: true },
+        debt: { visible: true },
+        type: { visible: true },
+        category: { visible: true },
+        source: { visible: true },
+        note: { required: false },
+    },
 };
 
 export default TRANSACTION_FORM_PRESETS;

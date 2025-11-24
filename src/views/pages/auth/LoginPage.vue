@@ -1,17 +1,21 @@
 <template>
-    <div class="flex justify-center items-center flex-col min-h-screen bg-gray-100 p-5">
+    <div class="flex justify-center items-center flex-col min-h-screen bg-gray-100 p-3 md:p-5">
         <div ref="container" :class="[
-            'bg-white rounded-xl shadow-2xl relative overflow-hidden w-full max-w-4xl min-h-[480px]',
+            'bg-white rounded-xl shadow-2xl relative overflow-hidden w-full max-w-4xl min-h-[400px] md:min-h-[480px]',
             isRightPanelActive ? 'right-panel-active' : ''
         ]">
             <!-- Sign In Form -->
             <div :class="[
-                'absolute top-0 left-0 w-1/2 h-full transition-all duration-600 ease-in-out z-20',
-                isRightPanelActive ? 'translate-x-full' : ''
+                'relative md:absolute top-0 left-0 w-full md:w-1/2 h-full transition-all duration-600 ease-in-out z-20',
+                isRightPanelActive ? 'hidden md:block md:translate-x-full' : ''
             ]">
-                <form class="bg-white flex items-center justify-center flex-col px-12 py-10 h-full text-center"
+                <form class="bg-white flex items-center justify-center flex-col px-6 py-8 md:px-12 md:py-10 h-full text-center"
                     method="POST" action="/" @submit.prevent="login">
-                    <h1 class="font-bold text-3xl mb-2.5 mt-0">Войти</h1>
+                    <div class="mb-6 md:hidden">
+                        <img src="/logo.png" alt="Lebizli Tehnologiya Merkezi"
+                            class="h-16 w-auto object-contain mx-auto" />
+                    </div>
+                    <h1 class="font-bold text-2xl md:text-3xl mb-2.5 mt-0">Войти</h1>
                     <span class="text-xs text-gray-500 mb-5">или используйте ваш аккаунт</span>
 
                     <input id="email" type="email" placeholder="Email" @input="clearErrors" :class="[
@@ -54,17 +58,24 @@
                         class="rounded-full border border-[#337AB7] bg-[#337AB7] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform duration-80 cursor-pointer mt-2.5 w-full disabled:opacity-60 disabled:cursor-not-allowed active:scale-95 focus:outline-none hover:bg-[#3571A4] hover:border-[#3571A4]">
                         {{ loading ? 'Вход...' : 'Войти' }}
                     </button>
+                    <button type="button" @click="togglePanel" class="md:hidden mt-4 text-xs text-gray-500 hover:text-gray-700 focus:outline-none">
+                        Нет аккаунта? Зарегистрироваться
+                    </button>
                 </form>
             </div>
 
             <!-- Sign Up Form (Заглушка) -->
             <div :class="[
-                'absolute top-0 left-0 w-1/2 h-full transition-all duration-600 ease-in-out opacity-0 z-10',
-                isRightPanelActive ? 'translate-x-full opacity-100 z-50 animate-show' : ''
+                'relative md:absolute top-0 left-0 w-full md:w-1/2 h-full transition-all duration-600 ease-in-out z-10',
+                isRightPanelActive ? 'block opacity-100 z-50 md:translate-x-full md:animate-show' : 'hidden md:block opacity-0 md:opacity-0'
             ]">
-                <form class="bg-white flex items-center justify-center flex-col px-12 py-10 h-full text-center"
+                <form class="bg-white flex items-center justify-center flex-col px-6 py-8 md:px-12 md:py-10 h-full text-center"
                     method="POST" action="/" @submit.prevent="handleSignUp">
-                    <h1 class="font-bold text-3xl mb-2.5 mt-0">Создать аккаунт</h1>
+                    <div class="mb-6 md:hidden">
+                        <img src="/logo.png" alt="Lebizli Tehnologiya Merkezi"
+                            class="h-16 w-auto object-contain mx-auto" />
+                    </div>
+                    <h1 class="font-bold text-2xl md:text-3xl mb-2.5 mt-0">Создать аккаунт</h1>
                     <span class="text-xs text-gray-500 mb-5">или используйте email для регистрации</span>
 
                     <input type="text" placeholder="Имя" v-model="signUpForm.name"
@@ -98,12 +109,15 @@
                         class="rounded-full border border-[#337AB7] bg-[#337AB7] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform duration-80 cursor-pointer mt-2.5 w-full active:scale-95 focus:outline-none hover:bg-[#3571A4] hover:border-[#3571A4]">
                         Зарегистрироваться
                     </button>
+                    <button type="button" @click="togglePanel" class="md:hidden mt-4 text-xs text-gray-500 hover:text-gray-700 focus:outline-none">
+                        Уже есть аккаунт? Войти
+                    </button>
                 </form>
             </div>
 
             <!-- Overlay -->
             <div :class="[
-                'absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-600 ease-in-out z-100',
+                'hidden md:block absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-600 ease-in-out z-100',
                 isRightPanelActive ? '-translate-x-full' : ''
             ]">
                 <div :class="[
