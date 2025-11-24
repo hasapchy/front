@@ -6,8 +6,8 @@
         ]">
             <!-- Sign In Form -->
             <div :class="[
-                'relative md:absolute top-0 left-0 w-full md:w-1/2 h-full transition-all duration-600 ease-in-out z-20',
-                isRightPanelActive ? 'hidden md:block md:translate-x-full' : ''
+                'relative md:absolute top-0 left-0 w-full md:w-1/2 h-full transition-all duration-600 ease-in-out',
+                isRightPanelActive ? 'hidden md:block md:translate-x-full z-10' : 'z-20'
             ]">
                 <form class="bg-white flex items-center justify-center flex-col px-6 py-8 md:px-12 md:py-10 h-full text-center"
                     method="POST" action="/" @submit.prevent="login">
@@ -116,7 +116,7 @@
             </div>
 
             <!-- Overlay -->
-            <div :class="[
+            <div id="login-overlay" :class="[
                 'hidden md:block absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-600 ease-in-out z-100',
                 isRightPanelActive ? '-translate-x-full' : ''
             ]">
@@ -337,6 +337,16 @@ export default {
 
     .overlay-container {
         display: none;
+    }
+
+    #login-overlay {
+        display: none !important;
+    }
+}
+
+@media (min-width: 768px) {
+    #login-overlay {
+        display: block !important;
     }
 }
 </style>
