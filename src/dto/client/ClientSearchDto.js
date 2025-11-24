@@ -1,6 +1,6 @@
 import ClientPhoneDto from "./ClientPhoneDto";
 import { formatNumber } from "@/utils/numberUtils";
-import { createFromApiArray } from "@/utils/dtoUtils";
+import { createFromApiArray, normalizeNumber, normalizeBoolean } from "@/utils/dtoUtils";
 
 export default class ClientSearchDto {
   constructor(
@@ -17,13 +17,13 @@ export default class ClientSearchDto {
   ) {
     this.id = id;
     this.clientType = clientType;
-    this.balance = balance != null ? parseFloat(balance) || 0 : 0;
-    this.isSupplier = Boolean(isSupplier);
-    this.isConflict = Boolean(isConflict);
+    this.balance = balance != null ? (normalizeNumber(balance) ?? 0) : 0;
+    this.isSupplier = normalizeBoolean(isSupplier, false);
+    this.isConflict = normalizeBoolean(isConflict, false);
     this.firstName = firstName;
     this.lastName = lastName;
     this.contactPerson = contactPerson;
-    this.status = Boolean(status);
+    this.status = normalizeBoolean(status, false);
     this.phones = (phones || []).map((phone) => {
       if (typeof phone === 'string') {
         return { phone };
@@ -78,6 +78,6 @@ export default class ClientSearchDto {
         data.status,
         data.phones || []
       );
-    }).filter(Boolean);
+    });
   }
 }

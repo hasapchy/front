@@ -49,6 +49,21 @@ async function bootstrapApp() {
   
   app.use(router).use(store).use(i18n);
   
+  // Синхронизируем язык из store в i18n при загрузке
+  if (store.getters.locale) {
+    i18n.global.locale = store.getters.locale;
+  }
+  
+  // Реактивная синхронизация: следим за изменениями locale в store и обновляем i18n
+  store.watch(
+    (state) => state.locale,
+    (newLocale) => {
+      if (newLocale && i18n.global.locale !== newLocale) {
+        i18n.global.locale = newLocale;
+      }
+    }
+  );
+  
   // Добавляем глобальные методы с доступом к store
   app.config.globalProperties.$formatNumberForCompany = (value, showDecimals = true) => {
     return formatNumberWithRounding(value, showDecimals);

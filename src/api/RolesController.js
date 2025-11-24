@@ -1,89 +1,75 @@
-import api from "./axiosInstance";
+import BaseController from "./BaseController";
 
-import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
+/**
+ * Контроллер для работы с ролями
+ * @class RolesController
+ */
+export default class RolesController {
+  /**
+   * Получить список ролей с пагинацией
+   * @param {number} [page=1] - Номер страницы
+   * @param {number} [per_page=20] - Количество элементов на странице
+   * @param {string|null} [search=null] - Поисковый запрос
+   * @returns {Promise<PaginatedResponse>} Объект с пагинированными данными
+   */
+  static async getItems(page = 1, per_page = 20, search = null) {
+    const params = {
+      ...(search && { search })
+    };
+    return BaseController.getItems('/roles', null, page, per_page, params);
+  }
 
-const RolesController = {
-  async getItems(page = 1, per_page = 20, search = null) {
-    try {
-      let url = `/roles?page=${page}&per_page=${per_page}`;
-      if (search) {
-        url += `&search=${encodeURIComponent(search)}`;
-      }
-      const { data } = await api.get(url);
-      const items = data.items || [];
-      return new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
-      );
-    } catch (error) {
-      console.error("Ошибка при получении ролей:", error);
-      throw error;
-    }
-  },
+  /**
+   * Получить все роли без пагинации
+   * @returns {Promise<Array>} Массив ролей
+   */
+  static async getAllItems() {
+    return BaseController.getAllItems('/roles', null);
+  }
 
-  async getAllItems() {
-    try {
-      const { data } = await api.get(`/roles/all`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при получении всех ролей:", error);
-      throw error;
-    }
-  },
+  /**
+   * Получить роль по ID
+   * @param {number|string} id - ID роли
+   * @returns {Promise<Object>} Данные роли
+   */
+  static async getItem(id) {
+    return BaseController.getItem('/roles', null, id);
+  }
 
-  async getItem(id) {
-    try {
-      const { data } = await api.get(`/roles/${id}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при получении роли:", error);
-      throw error;
-    }
-  },
+  /**
+   * Создать новую роль
+   * @param {Object} payload - Данные роли
+   * @returns {Promise<Object>} Ответ от сервера
+   */
+  static async storeItem(payload) {
+    return BaseController.storeItem('/roles', payload, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  }
 
-  async storeItem(payload) {
-    try {
-      const { data } = await api.post("/roles", payload, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+  /**
+   * Обновить роль
+   * @param {number|string} id - ID роли
+   * @param {Object} payload - Данные роли
+   * @returns {Promise<Object>} Ответ от сервера
+   */
+  static async updateItem(id, payload) {
+    return BaseController.updateItem('/roles', id, payload, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  }
 
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании роли:", error);
-      throw error;
-    }
-  },
-
-  async updateItem(id, payload) {
-    try {
-      const { data } = await api.put(`/roles/${id}`, payload, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении роли:", error);
-      throw error;
-    }
-  },
-
-  async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/roles/${id}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении роли:", error);
-      throw error;
-    }
-  },
-};
-
-export default RolesController;
+  /**
+   * Удалить роль
+   * @param {number|string} id - ID роли
+   * @returns {Promise<Object>} Ответ от сервера
+   */
+  static async deleteItem(id) {
+    return BaseController.deleteItem('/roles', id);
+  }
+}
 

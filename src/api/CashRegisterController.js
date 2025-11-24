@@ -1,100 +1,77 @@
+import BaseController from "./BaseController";
 import api from "./axiosInstance";
-import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import CashRegisterBalanceDto from "@/dto/cash_register/CashRegisterBalanceDto";
-import CashRegisterBalanceItemDto from "@/dto/cash_register/CashRegisterBalanceItemDto";
 import CashRegisterDto from "@/dto/cash_register/CashRegisterDto";
 
+/**
+ * Контроллер для работы с кассами
+ * @class CashRegisterController
+ */
 export default class CashRegisterController {
+  /**
+   * Получить список касс с пагинацией
+   * @param {number} [page=1] - Номер страницы
+   * @param {number} [per_page=20] - Количество элементов на странице
+   * @returns {Promise<PaginatedResponse>} Объект с пагинированными данными
+   */
   static async getItems(page = 1, per_page = 20) {
-    try {
-      const response = await api.get(`/cash_registers?page=${page}&per_page=${per_page}`);
-      const data = response.data;
-      const items = CashRegisterDto.fromApiArray(data.items);
-
-      const paginatedResponse = new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
-      );
-
-      return paginatedResponse;
-    } catch (error) {
-      console.error("Ошибка при получении касс:", error);
-      throw error;
-    }
+    return BaseController.getItems('/cash_registers', CashRegisterDto, page, per_page);
   }
 
+  /**
+   * Получить все кассы без пагинации
+   * @returns {Promise<Array<CashRegisterDto>>} Массив касс
+   */
   static async getAllItems() {
-    try {
-      const response = await api.get(`/cash_registers/all`);
-      const data = response.data;
-      const items = CashRegisterDto.fromApiArray(data);
-      return items;
-    } catch (error) {
-      console.error("Ошибка при получении касс:", error);
-      throw error;
-    }
+    return BaseController.getAllItems('/cash_registers', CashRegisterDto);
   }
 
+  /**
+   * Получить баланс касс
+   * @param {Array<number|string>} [cashIds=[]] - Массив ID касс
+   * @param {string|null} [startDate=null] - Начальная дата
+   * @param {string|null} [endDate=null] - Конечная дата
+   * @param {Object} [additionalParams={}] - Дополнительные параметры (transaction_type, source)
+   * @returns {Promise<Array<CashRegisterBalanceDto>>} Массив балансов касс
+   */
   static async getCashBalance(cashIds = [], startDate = null, endDate = null, additionalParams = {}) {
-    try {
-      const params = {};
-      if (cashIds.length) {
-        params.cash_register_ids = cashIds.join(",");
-      }
-      if (startDate) {
-        params.start_date = startDate;
-      }
-      if (endDate) {
-        params.end_date = endDate;
-      }
+    const params = {
+      ...(cashIds.length && { cash_register_ids: cashIds.join(",") }),
+      ...(startDate && { start_date: startDate }),
+      ...(endDate && { end_date: endDate }),
+      ...(additionalParams.transaction_type && { transaction_type: additionalParams.transaction_type }),
+      ...(additionalParams.source && { source: additionalParams.source })
+    };
 
-      // Добавляем дополнительные параметры фильтрации
-      if (additionalParams.transaction_type) {
-        params.transaction_type = additionalParams.transaction_type;
-      }
-      if (additionalParams.source) {
-        params.source = additionalParams.source;
-      }
-
-      const response = await api.get("/cash_registers/balance", { params });
-      const data = response.data;
-      return CashRegisterBalanceDto.fromApiArray(data);
-    } catch (error) {
-      console.error("Ошибка при получении баланса касс:", error);
-      throw error;
-    }
+    const response = await api.get("/cash_registers/balance", { params });
+    return CashRegisterBalanceDto.fromApiArray(response.data.data);
   }
 
+  /**
+   * Создать новую кассу
+   * @param {Object} item - Данные кассы
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async storeItem(item) {
-    try {
-      const { data } = await api.post("/cash_registers", item);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании кассы:", error);
-      throw error;
-    }
+    return BaseController.storeItem('/cash_registers', item);
   }
 
+  /**
+   * Обновить кассу
+   * @param {number|string} id - ID кассы
+   * @param {Object} item - Данные кассы
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async updateItem(id, item) {
-    try {
-      const { data } = await api.put(`/cash_registers/${id}`, item);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении кассы:", error);
-      throw error;
-    }
+    return BaseController.updateItem('/cash_registers', id, item);
   }
 
+  /**
+   * Удалить кассу
+   * @param {number|string} id - ID кассы
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/cash_registers/${id}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении кассы:", error);
-      throw error;
-    }
+    return BaseController.deleteItem('/cash_registers', id);
   }
 }

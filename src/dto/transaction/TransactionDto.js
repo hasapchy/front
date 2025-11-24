@@ -1,9 +1,9 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrencyWithRounding } from "@/utils/numberUtils";
 import { formatAmountWithColor, createFromApiArray } from "@/utils/dtoUtils";
+import BaseDto from "@/dto/BaseDto";
 import ClientDto from "@/dto/client/ClientDto";
 
-export default class TransactionDto {
+export default class TransactionDto extends BaseDto {
   constructor(
     id,
     type,
@@ -41,6 +41,7 @@ export default class TransactionDto {
     sourceId = null,
     isDeleted = false
   ) {
+    super();
     this.id = id;
     this.type = type;
     this.isTransfer = isTransfer;
@@ -133,18 +134,6 @@ export default class TransactionDto {
     return formatCurrencyWithRounding(this.origAmount, this.origCurrencySymbol, true);
   }
 
-  formatDate() {
-    return dtoDateFormatters.formatDate(this.date);
-  }
-
-  formatCreatedAt() {
-    return dtoDateFormatters.formatCreatedAt(this.createdAt);
-  }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
   clone() {
     return new TransactionDto(
       null,
@@ -187,7 +176,7 @@ export default class TransactionDto {
 
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
-      const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;
+      const client = data.client ? ClientDto.fromApiArray([data.client])[0] : null;
       
       return new TransactionDto(
         data.id,
@@ -226,6 +215,6 @@ export default class TransactionDto {
         data.source_id || null,
         data.is_deleted || false
       );
-    }).filter(Boolean);
+    });
   }
 }

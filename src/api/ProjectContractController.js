@@ -1,126 +1,89 @@
+import BaseController from './BaseController';
 import api from './axiosInstance';
 import ProjectContractDto from '../dto/project/ProjectContractDto';
-import PaginatedResponse from '@/dto/app/PaginatedResponseDto';
 
-class ProjectContractController {
-    async getItems(projectId, params = {}) {
-        try {
-            const response = await api.get(`/projects/${projectId}/contracts`, { params });
-            const items = ProjectContractDto.fromApiArray(response.data.items);
-            const paginatedResponse = new PaginatedResponse(
-                items,
-                response.data.current_page,
-                response.data.next_page,
-                response.data.last_page,
-                response.data.total
-            );
-            return {
-                success: true,
-                data: paginatedResponse
-            };
-        } catch (error) {
-            console.error('Error fetching project contracts:', error);
-            return {
-                success: false,
-                error: error.response?.data?.message || error.message
-            };
-        }
+/**
+ * Контроллер для работы с контрактами проектов
+ * @class ProjectContractController
+ */
+export default class ProjectContractController {
+    /**
+     * Получить список контрактов проекта
+     * @param {number|string} projectId - ID проекта
+     * @param {Object} [params={}] - Дополнительные параметры
+     * @returns {Promise<PaginatedResponse>} Объект с пагинированными данными
+     */
+    static async getItems(projectId, params = {}) {
+        return BaseController.getItems(`/projects/${projectId}/contracts`, ProjectContractDto, params.page || 1, params.per_page || 20, params);
     }
 
-    async getAllItems(projectId) {
-        try {
-            const response = await api.get(`/projects/${projectId}/contracts/all`);
-            return {
-                success: true,
-                items: ProjectContractDto.fromApiArray(response.data)
-            };
-        } catch (error) {
-            console.error('Error fetching all project contracts:', error);
-            return {
-                success: false,
-                error: error.response?.data?.message || error.message
-            };
-        }
+    /**
+     * Получить все контракты проекта без пагинации
+     * @param {number|string} projectId - ID проекта
+     * @returns {Promise<Array<ProjectContractDto>>} Массив контрактов
+     */
+    static async getAllItems(projectId) {
+        return BaseController.getAllItems(`/projects/${projectId}/contracts`, ProjectContractDto);
     }
 
-    async getItem(id) {
-        try {
-            const response = await api.get(`/contracts/${id}`);
-            return {
-                success: true,
-                item: ProjectContractDto.fromApiArray([response.data.item])[0] || null
-            };
-        } catch (error) {
-            console.error('Error fetching contract:', error);
-            return {
-                success: false,
-                error: error.response?.data?.message || error.message
-            };
-        }
+    /**
+     * Получить контракт по ID
+     * @param {number|string} id - ID контракта
+     * @returns {Promise<ProjectContractDto|null>} Контракт или null
+     */
+    static async getItem(id) {
+        return BaseController.getItem('/contracts', ProjectContractDto, id);
     }
 
-    async storeItem(projectId, item) {
-        try {
-            const contractData = {
-                ...item,
-                projectId: projectId,
-                id: null
-            };
-            const contractDto = ProjectContractDto.fromApiArray([contractData])[0];
+    /**
+     * Создать новый контракт проекта
+     * @param {number|string} projectId - ID проекта
+     * @param {Object} item - Данные контракта
+     * @returns {Promise<Object>} Ответ от сервера с созданным контрактом
+     */
+    static async storeItem(projectId, item) {
+        const contractData = {
+            ...item,
+            projectId: projectId,
+            id: null
+        };
+        const contractDto = ProjectContractDto.fromApiArray([contractData])[0];
 
-            const response = await api.post(`/projects/${projectId}/contracts`, contractDto.toApi());
-            return {
-                success: true,
-                item: ProjectContractDto.fromApiArray([response.data.item])[0] || null,
-                message: response.data.message
-            };
-        } catch (error) {
-            console.error('Error creating contract:', error);
-            return {
-                success: false,
-                error: error.response?.data?.message || error.message
-            };
-        }
+        const response = await api.post(`/projects/${projectId}/contracts`, contractDto.toApi());
+        const items = ProjectContractDto.fromApiArray([response.data]);
+        return {
+            item: items[0] || null,
+            message: response.data.message || null
+        };
     }
 
-    async updateItem(id, item) {
-        try {
-            const contractData = {
-                ...item,
-                id: id
-            };
-            const contractDto = ProjectContractDto.fromApiArray([contractData])[0];
+    /**
+     * Обновить контракт
+     * @param {number|string} id - ID контракта
+     * @param {Object} item - Данные контракта
+     * @returns {Promise<Object>} Ответ от сервера с обновленным контрактом
+     */
+    static async updateItem(id, item) {
+        const contractData = {
+            ...item,
+            id: id
+        };
+        const contractDto = ProjectContractDto.fromApiArray([contractData])[0];
 
-            const response = await api.put(`/contracts/${id}`, contractDto.toApi());
-            return {
-                success: true,
-                item: ProjectContractDto.fromApiArray([response.data.item])[0] || null,
-                message: response.data.message
-            };
-        } catch (error) {
-            console.error('Error updating contract:', error);
-            return {
-                success: false,
-                error: error.response?.data?.message || error.message
-            };
-        }
+        const response = await api.put(`/contracts/${id}`, contractDto.toApi());
+        const items = ProjectContractDto.fromApiArray([response.data]);
+        return {
+            item: items[0] || null,
+            message: response.data.message || null
+        };
     }
 
-    async deleteItem(id) {
-        try {
-            const response = await api.delete(`/contracts/${id}`);
-            return {
-                success: true,
-                message: response.data.message
-            };
-        } catch (error) {
-            console.error('Error deleting contract:', error);
-            return {
-                success: false,
-                error: error.response?.data?.message || error.message
-            };
-        }
+    /**
+     * Удалить контракт
+     * @param {number|string} id - ID контракта
+     * @returns {Promise<Object>} Ответ от сервера
+     */
+    static async deleteItem(id) {
+        return BaseController.deleteItem('/contracts', id);
     }
 }
-
-export default new ProjectContractController();

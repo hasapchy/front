@@ -1,10 +1,31 @@
-import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
+import BaseController from "./BaseController";
 import api from "./axiosInstance";
 import TransactionDto from "@/dto/transaction/TransactionDto";
 import { queryCache } from "@/utils/cacheHelper";
-import CacheInvalidator from "@/utils/cache";
+import { getStore } from "@/store/storeManager";
+import { buildDateFilterParams } from "@/utils/dateFilterHelper";
 
+/**
+ * Контроллер для работы с транзакциями
+ * @class TransactionController
+ */
 export default class TransactionController {
+  /**
+   * Получить список транзакций с пагинацией
+   * @param {number} [page=1] - Номер страницы
+   * @param {number|null} [cash_id=null] - ID кассы
+   * @param {string} [date_filter_type='all_time'] - Тип фильтра по дате
+   * @param {number|null} [order_id=null] - ID заказа
+   * @param {string|null} [search=null] - Поисковый запрос
+   * @param {string|null} [transaction_type=null] - Тип транзакции
+   * @param {string|null} [source=null] - Источник транзакции
+   * @param {number|null} [project_id=null] - ID проекта
+   * @param {number} [per_page=20] - Количество элементов на странице
+   * @param {string|null} [start_date=null] - Начальная дата
+   * @param {string|null} [end_date=null] - Конечная дата
+   * @param {boolean|null} [is_debt=null] - Фильтр по долгам
+   * @returns {Promise<PaginatedResponse>} Объект с пагинированными данными
+   */
   static async getItems(
     page = 1,
     cash_id = null,
@@ -19,118 +40,119 @@ export default class TransactionController {
     end_date = null,
     is_debt = null
   ) {
-    try {
-      const cacheKey = 'transactions_list';
-      const cacheParams = { page, cash_id, date_filter_type, order_id, search, transaction_type, source, project_id, per_page, start_date, end_date, is_debt };
-      const cached = await queryCache.get(cacheKey, cacheParams);
-      
-      if (cached && cached.items && cached.items.length > 0 && cached.items[0] instanceof TransactionDto) {
-        console.log('📦 Загружено из кэша: transactions', cacheParams);
-        return cached;
-      }
+    const dateParams = buildDateFilterParams(date_filter_type, start_date, end_date, 'date');
+    const params = {
+      cash_id,
+      order_id,
+      search,
+      transaction_type,
+      source,
+      project_id,
+      start_date,
+      end_date,
+      is_debt,
+      ...dateParams
+    };
 
-      const response = await api.get("/transactions", {
-        params: {
-          page: page,
-          cash_id: cash_id,
-          date_filter_type: date_filter_type,
-          order_id: order_id,
-          search: search,
-          transaction_type: transaction_type,
-          source: source,
-          project_id: project_id,
-          per_page: per_page,
-          start_date: start_date,
-          end_date: end_date,
-          is_debt: is_debt,
-        },
-      });
-      const data = response.data;
-      const items = TransactionDto.fromApiArray(data.items);
+    const cacheParams = {
+      cash_id,
+      date_filter_type,
+      order_id,
+      search,
+      transaction_type,
+      source,
+      project_id,
+      start_date,
+      end_date,
+      is_debt
+    };
 
-      const paginatedResponse = new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
-      );
-
-      queryCache.set(cacheKey, cacheParams, paginatedResponse);
-      return paginatedResponse;
-    } catch (error) {
-      console.error("Ошибка при получении транзакций:", error);
-      throw error;
-    }
+    return BaseController.getItems(
+      '/transactions',
+      TransactionDto,
+      page,
+      per_page,
+      params,
+      { cacheKey: 'transactions_list', cacheParams }
+    );
   }
+
+  /**
+   * Получить транзакцию по ID
+   * @param {number|string} id - ID транзакции
+   * @returns {Promise<TransactionDto|null>} Транзакция или null
+   */
   static async getItem(id) {
-    try {
-      const { data } = await api.get(`/transactions/${id}`);
-      const item = data.item;
-      
-      return TransactionDto.fromApiArray([item])[0] || null;
-    } catch (error) {
-      console.error("Ошибка при получении транзакции:", error);
-      throw error;
-    }
+    return BaseController.getItem('/transactions', TransactionDto, id);
   }
 
+  /**
+   * Получить общую сумму оплат по заказу
+   * @param {number|string} orderId - ID заказа
+   * @returns {Promise<Object>} Данные об общей сумме оплат
+   */
   static async getTotalPaidByOrderId(orderId) {
-    try {
-      const response = await api.get(`/transactions/total`, {
-        params: { order_id: orderId },
-      });
-      return response.data;
-    } catch (error) {
-      console.error("Ошибка при получении оплаченной суммы:", error);
-      throw error;
-    }
+    const response = await api.get(`/transactions/total`, {
+      params: { order_id: orderId },
+    });
+    return response.data;
   }
 
+  /**
+   * Создать новую транзакцию
+   * @param {Object} item - Данные транзакции
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async storeItem(item) {
-    try {
-      const { data } = await api.post("/transactions", item);
-      CacheInvalidator.onCreate('transactions');
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании транзакции:", error);
-      throw error;
+    const data = await BaseController.storeItem('/transactions', item);
+    const store = getStore();
+    if (store) {
+      store.dispatch('onDataCreate', { type: 'transactions' });
     }
+    return data;
   }
 
+  /**
+   * Создать транзакцию для заказа
+   * @param {number|string} orderId - ID заказа
+   * @param {Object} transactionData - Данные транзакции
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async createTransactionForOrder(orderId, transactionData) {
-    const item = {
+    const result = await this.storeItem({
       ...transactionData,
       order_id: orderId
-    };
-    const result = await this.storeItem(item);
+    });
     queryCache.invalidate('orders_list');
     return result;
   }
 
+  /**
+   * Обновить транзакцию
+   * @param {number|string} id - ID транзакции
+   * @param {Object} item - Данные транзакции
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async updateItem(id, item) {
-    try {
-      const { data } = await api.put(`/transactions/${id}`, item);
-      CacheInvalidator.onUpdate('transactions');
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении транзакции:", error);
-      throw error;
+    const data = await BaseController.updateItem('/transactions', id, item);
+    const store = getStore();
+    if (store) {
+      store.dispatch('onDataUpdate', { type: 'transactions' });
     }
+    return data;
   }
 
+  /**
+   * Удалить транзакцию
+   * @param {number|string} id - ID транзакции
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/transactions/${id}`);
-      CacheInvalidator.onDelete('transactions');
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении транзакции:", error);
-      throw error;
+    const data = await BaseController.deleteItem('/transactions', id);
+    const store = getStore();
+    if (store) {
+      store.dispatch('onDataDelete', { type: 'transactions' });
     }
-  }
-
-  static async getTotalByOrderId(orderId) {
-    return this.getTotalPaidByOrderId(orderId);
+    return data;
   }
 }

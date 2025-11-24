@@ -12,7 +12,6 @@
 
 <script>
 import { mapActions } from 'vuex';
-import { eventBus } from '@/eventBus';
 
 export default {
     computed: {
@@ -60,7 +59,8 @@ export default {
         performSearch(query) {
             this.$emit('search', query);
             
-            eventBus.emit('global-search', query);
+            // Используем Vuex store вместо eventBus
+            this.$store.dispatch('setGlobalSearchQuery', query);
         }
     },
     beforeUnmount() {

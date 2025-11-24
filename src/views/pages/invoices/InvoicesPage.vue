@@ -1,15 +1,11 @@
 <template>
     <div class="flex justify-between items-center mb-2">
         <div class="flex items-center">
-            <PrimaryButton 
-                :onclick="() => showModal(null)" 
-                icon="fas fa-plus"
+            <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
                 :disabled="!$store.getters.hasPermission('invoices_create')">
             </PrimaryButton>
-            
-            <FiltersContainer 
-                :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()"
+
+            <FiltersContainer :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"
                 @reset="resetFilters">
                 <template #desktop>
                     <div class="ml-2">
@@ -55,11 +51,13 @@
 
                     <div v-if="dateFilter === 'custom'" class="space-y-2">
                         <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата'
+                                }}</label>
                             <input type="date" v-model="startDate" @change="fetchItems" class="w-full" />
                         </div>
                         <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата'
+                                }}</label>
                             <input type="date" v-model="endDate" @change="fetchItems" class="w-full" />
                         </div>
                     </div>
@@ -77,15 +75,15 @@
                 </template>
             </FiltersContainer>
         </div>
-        <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" 
-            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+        <Pagination v-if="data" :currentPage="data.currentPage" :lastPage="data.lastPage" :per-page="perPage"
+            :per-page-options="perPageOptions" :show-per-page-selector="true" @changePage="fetchItems"
+            @perPageChange="handlePerPageChange" />
     </div>
-    
+
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
-    
+
     <transition name="fade" mode="out-in">
-        <div v-if="data && !loading" :key="`table-${$i18n.locale}`">
+        <div v-if="data" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.invoices" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" :onItemClick="(i) => showModal(i)" @selectionChange="selectedIds = $event" />
         </div>
@@ -93,17 +91,18 @@
             <SpinnerIcon />
         </div>
     </transition>
-    
+
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <InvoiceCreatePage v-if="modalDialog" ref="invoicecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
-            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" 
-            :preselectedOrderIds="preselectedOrderIds" />
+        <InvoiceCreatePage v-if="modalDialog" ref="invoicecreatepageForm" @saved="handleSaved"
+            @saved-error="handleSavedError" @deleted="handleDeleted" @deleted-error="handleDeletedError"
+            @close-request="closeModal" :editingItem="editingItem" :preselectedOrderIds="preselectedOrderIds" />
     </SideModalDialog>
 
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
-          :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
+        :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
+        @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -124,24 +123,22 @@ import notificationMixin from "@/mixins/notificationMixin";
 import batchActionsMixin from "@/mixins/batchActionsMixin";
 import modalMixin from "@/mixins/modalMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
-import { defineAsyncComponent } from "vue";
-import { eventBus } from "@/eventBus";
 import companyChangeMixin from "@/mixins/companyChangeMixin";
 import searchMixin from "@/mixins/searchMixin";
 
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin,  companyChangeMixin, searchMixin],
-    components: { 
-        NotificationToast, 
-        SideModalDialog, 
-        PrimaryButton, 
-        Pagination, 
-        DraggableTable, 
-        InvoiceCreatePage, 
-        ClientButtonCell, 
-        BatchButton, 
-        AlertDialog, 
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin],
+    components: {
+        NotificationToast,
+        SideModalDialog,
+        PrimaryButton,
+        Pagination,
+        DraggableTable,
+        InvoiceCreatePage,
+        ClientButtonCell,
+        BatchButton,
+        AlertDialog,
         FiltersContainer,
     },
     data() {
@@ -177,17 +174,17 @@ export default {
     },
     created() {
         this.$store.commit("SET_SETTINGS_OPEN", false);
-        
-        eventBus.on('global-search', this.handleSearch);
-        
+
         if (this.$route.query.create === 'true' && this.$route.query.order_ids) {
             this.preselectedOrderIds = this.$route.query.order_ids.split(',').map(id => parseInt(id));
         }
     },
 
     mounted() {
-        this.fetchItems();
-        
+        this.$nextTick(() => {
+            this.fetchItems();
+        });
+
         if (this.preselectedOrderIds.length > 0) {
             this.$nextTick(() => {
                 this.showModal(null);
@@ -195,8 +192,12 @@ export default {
         }
     },
 
-    beforeUnmount() {
-        eventBus.off('global-search', this.handleSearch);
+    watch: {
+        '$store.getters.globalSearchQuery'(newQuery) {
+            if (newQuery !== undefined) {
+                this.handleSearch(newQuery);
+            }
+        }
     },
 
     computed: {
@@ -205,9 +206,9 @@ export default {
         },
         hasActiveFilters() {
             return this.dateFilter !== 'all_time' ||
-                   this.statusFilter !== '' ||
-                   this.startDate !== null ||
-                   this.endDate !== null;
+                this.statusFilter !== '' ||
+                this.startDate !== null ||
+                this.endDate !== null;
         }
     },
     methods: {
@@ -247,16 +248,16 @@ export default {
             this.endDate = null;
             this.statusFilter = '';
             this.selectedIds = [];
-            
+
             // Перезагружаем данные со страницы 1
             await this.fetchItems(1, false);
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-               
+
                 const per_page = this.perPage || 20;
-                
+
                 const newData = await InvoiceController.getItems(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, null, this.statusFilter, per_page);
                 this.data = newData;
             } catch (error) {

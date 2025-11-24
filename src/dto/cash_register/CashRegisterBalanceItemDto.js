@@ -14,6 +14,6 @@ export default class CashRegisterBalanceItemDto {
                 data.title,
                 data.type
             );
-        }).filter(Boolean);
+        });
     }
 }

@@ -24,7 +24,7 @@
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
-        <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
+        <div v-if="data != null" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.products" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
@@ -52,7 +52,6 @@ import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import ProductController from '@/api/ProductController';
 import CategoryController from '@/api/CategoryController';
 import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
-import { eventBus } from '@/eventBus';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
@@ -96,17 +95,20 @@ export default {
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', true);
-        
-        eventBus.on('global-search', this.handleSearch);
     },
 
     mounted() {
-        this.fetchCategories();
-        this.fetchItems();
+        this.$nextTick(() => {
+            this.fetchCategories();
+            this.fetchItems();
+        });
     },
-
-    beforeUnmount() {
-        eventBus.off('global-search', this.handleSearch);
+    watch: {
+        '$store.getters.globalSearchQuery'(newQuery) {
+            if (newQuery !== undefined) {
+                this.handleSearch(newQuery);
+            }
+        }
     },
 
     methods: {

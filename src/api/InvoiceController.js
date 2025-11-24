@@ -1,109 +1,102 @@
+import BaseController from "./BaseController";
 import api from "./axiosInstance";
 import InvoiceDto from "@/dto/invoice/InvoiceDto";
-import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
-import { queryCache } from "@/utils/cacheHelper";
+import { buildDateFilterParams } from "@/utils/dateFilterHelper";
 
+/**
+ * Контроллер для работы со счетами
+ * @class InvoiceController
+ */
 export default class InvoiceController {
+  /**
+   * Получить список счетов с пагинацией
+   * @param {number} [page=1] - Номер страницы
+   * @param {string|null} [search=null] - Поисковый запрос
+   * @param {string} [dateFilter='all_time'] - Фильтр по дате
+   * @param {string|null} [startDate=null] - Начальная дата (для custom фильтра)
+   * @param {string|null} [endDate=null] - Конечная дата (для custom фильтра)
+   * @param {string|null} [typeFilter=null] - Фильтр по типу
+   * @param {string|null} [statusFilter=null] - Фильтр по статусу
+   * @param {number} [per_page=20] - Количество элементов на странице
+   * @returns {Promise<PaginatedResponse>} Объект с пагинированными данными
+   */
   static async getItems(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, typeFilter = null, statusFilter = null, per_page = 20) {
-    try {
-      const cacheKey = 'invoices_list';
-      const cacheParams = { page, per_page, search, dateFilter, startDate, endDate, typeFilter, statusFilter };
-      const cached = await queryCache.get(cacheKey, cacheParams);
-      
-      if (cached && cached.items && cached.items.length > 0 && cached.items[0] instanceof InvoiceDto) {
-        console.log('📦 Загружено из кэша: invoices', cacheParams);
-        return cached;
-      }
+    const params = {
+      ...(search && { search }),
+      ...buildDateFilterParams(dateFilter, startDate, endDate),
+      ...(typeFilter && { type: typeFilter }),
+      ...(statusFilter && { status: statusFilter })
+    };
 
-      const params = { page: page, per_page: per_page };
-      if (search) {
-        params.search = search;
-      }
-      if (dateFilter && dateFilter !== 'all_time') {
-        params.date_filter_type = dateFilter;
-        if (dateFilter === 'custom' && startDate && endDate) {
-          params.start_date = startDate;
-          params.end_date = endDate;
-        }
-      }
-      if (typeFilter) {
-        params.type = typeFilter;
-      }
-      if (statusFilter) {
-        params.status = statusFilter;
-      }
-      const response = await api.get("/invoices", { params });
-      const data = response.data;
-      const items = InvoiceDto.fromApiArray(data.items);
-      const paginatedResponse = new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
-      );
+    const cacheParams = {
+      search,
+      dateFilter,
+      startDate,
+      endDate,
+      typeFilter,
+      statusFilter
+    };
 
-      queryCache.set(cacheKey, cacheParams, paginatedResponse);
-      return paginatedResponse;
-    } catch (error) {
-      console.error("Ошибка при получении списка счетов:", error);
-      throw error;
-    }
+    return BaseController.getItems(
+      '/invoices',
+      InvoiceDto,
+      page,
+      per_page,
+      params,
+      { cacheKey: 'invoices_list', cacheParams }
+    );
   }
 
+  /**
+   * Создать новый счет
+   * @param {Object} item - Данные счета
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async storeItem(item) {
-    try {
-      const { data } = await api.post("/invoices", {
-        ...item,
-      });
-      queryCache.invalidate('invoices_list');
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании счета:", error);
-      throw error;
-    }
+    return BaseController.storeItemWithCache('/invoices', item, {
+      cacheKeys: 'invoices_list'
+    });
   }
 
+  /**
+   * Обновить счет
+   * @param {number|string} id - ID счета
+   * @param {Object} item - Данные счета
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async updateItem(id, item) {
-    try {
-      const { data } = await api.put(`/invoices/${id}`, {
-        ...item,
-      });
-      queryCache.invalidate('invoices_list');
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении счета:", error);
-      throw error;
-    }
+    return BaseController.updateItemWithCache('/invoices', id, item, {
+      cacheKeys: 'invoices_list'
+    });
   }
 
+  /**
+   * Удалить счет
+   * @param {number|string} id - ID счета
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/invoices/${id}`);
-      queryCache.invalidate('invoices_list');
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении счета:", error);
-      throw error;
-    }
+    return BaseController.deleteItem('/invoices', id, 'invoices_list');
   }
 
+  /**
+   * Получить счет по ID
+   * @param {number|string} id - ID счета
+   * @returns {Promise<InvoiceDto|null>} Счет или null
+   */
   static async getItem(id) {
-    const { data } = await api.get(`/invoices/${id}`);
-    const item = data.item;
-    
-    return InvoiceDto.fromApiArray([item])[0] || null;
+    return BaseController.getItem('/invoices', InvoiceDto, id);
   }
 
+  /**
+   * Получить заказы для счета
+   * @param {Array<number|string>} orderIds - Массив ID заказов
+   * @returns {Promise<Object>} Данные заказов
+   */
   static async getOrdersForInvoice(orderIds) {
-    try {
-      const { data } = await api.post("/invoices/orders", {
-        order_ids: orderIds
-      });
-      return data;
-    } catch (error) {
-      console.error("Ошибка при получении данных для счета:", error);
-      throw error;
-    }
+    const { data } = await api.post("/invoices/orders", {
+      order_ids: orderIds
+    });
+    return data;
   }
 }

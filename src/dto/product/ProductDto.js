@@ -1,7 +1,39 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatNumber } from "@/utils/numberUtils";
-import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
-class ProductDto {
+import { getImageUrl, createFromApiArray, normalizeNumber } from "@/utils/dtoUtils";
+import BaseDto from "@/dto/BaseDto";
+
+/**
+ * DTO для товара или услуги
+ * @class ProductDto
+ * @extends BaseDto
+ */
+export default class ProductDto extends BaseDto {
+  /**
+   * Создает экземпляр ProductDto
+   * @param {Object} params - Параметры товара/услуги
+   * @param {number} params.id - ID товара/услуги
+   * @param {number} params.type - Тип (1 - товар, 2 - услуга)
+   * @param {string} params.name - Название
+   * @param {string} params.description - Описание
+   * @param {string} params.sku - Артикул
+   * @param {string|null} params.image - Путь к изображению
+   * @param {number|null} params.category_id - ID основной категории
+   * @param {string} params.category_name - Название основной категории
+   * @param {Array} params.categories - Массив категорий
+   * @param {number} params.stock_quantity - Количество на складе
+   * @param {number} params.unit_id - ID единицы измерения
+   * @param {string} params.unit_name - Название единицы измерения
+   * @param {string} params.unit_short_name - Короткое название единицы измерения
+   * @param {string|null} params.barcode - Штрих-код
+   * @param {boolean} params.is_serialized - Является ли товар серийным
+   * @param {string} params.date - Дата
+   * @param {string} params.creator - Создатель
+   * @param {string} params.created_at - Дата создания
+   * @param {string} params.updated_at - Дата обновления
+   * @param {number|null} params.retail_price - Розничная цена
+   * @param {number|null} params.wholesale_price - Оптовая цена
+   * @param {number|null} params.purchase_price - Закупочная цена
+   */
   constructor({
     id,
     type,
@@ -26,6 +58,7 @@ class ProductDto {
     wholesale_price,
     purchase_price
   }) {
+    super();
     this.id = id;
     this.type = type;
     this.name = name;
@@ -50,13 +83,18 @@ class ProductDto {
     this.purchasePrice = purchase_price;
   }
 
+  /**
+   * Получить название типа товара
+   * @returns {string} "product" для товара, "service" для услуги
+   */
   typeName() {
     return this.type == 1 ? "product" : "service";
   }
-  formatDate() {
-    return dtoDateFormatters.formatDate(this.date);
-  }
 
+  /**
+   * Получить HTML иконку для товара/услуги
+   * @returns {string} HTML строка с иконкой
+   */
   icons() {
     if (this.typeName() === "product") {
       return '<i class="fas fa-box text-[#3571A4] mr-2" title="Товар"></i>';
@@ -65,63 +103,92 @@ class ProductDto {
     }
   }
 
-
-
+  /**
+   * Получить отформатированную розничную цену
+   * @returns {string} Отформатированная розничная цена
+   */
   retailPriceFormatted() {
     let price = this.retailPrice;
     return this.priceFormatted(price);
   }
 
+  /**
+   * Получить отформатированную оптовую цену
+   * @returns {string} Отформатированная оптовая цена
+   */
   wholesalePriceFormatted() {
     let price = this.wholesalePrice;
     return this.priceFormatted(price);
   }
 
+  /**
+   * Форматирует цену
+   * @param {number|null} price - Цена для форматирования
+   * @returns {string} Отформатированная цена или пустая строка
+   */
   priceFormatted(price) {
-    if (typeof price !== "number") {
-      price = parseFloat(price);
-    }
-    return isNaN(price) ? "" : formatNumber(price, null, true);
+    const normalizedPrice = normalizeNumber(price);
+    if (normalizedPrice === undefined) return "";
+    return formatNumber(normalizedPrice, null, true);
   }
 
+  /**
+   * Получить URL изображения товара
+   * @returns {string|null} URL изображения или null
+   */
   imgUrl() {
     return getImageUrl(this.image);
   }
 
+  /**
+   * Получить основную категорию
+   * @returns {Object|null} Объект основной категории или null
+   */
   getPrimaryCategory() {
-    return this.categories[0] || null;
+    return this.categories[0] ?? null;
   }
 
+  /**
+   * Получить вторичные категории (все кроме основной)
+   * @returns {Array} Массив вторичных категорий
+   */
   getSecondaryCategories() {
     return this.categories.slice(1);
   }
 
+  /**
+   * Получить список названий всех категорий через запятую
+   * @returns {string} Строка с названиями категорий
+   */
   getCategoryNames() {
     return this.categories.map(cat => cat.name).join(', ');
   }
 
+  /**
+   * Проверить, принадлежит ли товар к указанной категории
+   * @param {number} categoryId - ID категории
+   * @returns {boolean} true, если товар принадлежит категории
+   */
   hasCategory(categoryId) {
     return this.categories.some(cat => cat.id == categoryId);
   }
 
+  /**
+   * Получить отображаемое название категории
+   * @returns {string} Название основной категории или categoryName
+   */
   getCategoryDisplayName() {
     const primary = this.getPrimaryCategory();
-    return primary ? primary.name : (this.categoryName || '');
+    return primary ? primary.name : (this.categoryName ?? '');
   }
 
+  /**
+   * Создает массив экземпляров ProductDto из массива данных API
+   * @param {Array} dataArray - Массив объектов товаров/услуг из API
+   * @returns {Array<ProductDto>} Массив экземпляров ProductDto
+   */
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
-      let stock_quantity = data.stock_quantity;
-      if (stock_quantity === undefined || stock_quantity === null) {
-        stock_quantity = data.warehouse_quantity || 
-                        data.quantity_on_warehouse || 
-                        data.warehouse_stock || 
-                        data.warehouse_stock_quantity ||
-                        data.current_stock || 
-                        data.stock_on_warehouse ||
-                        data.quantity || 0;
-      }
-      
       return new ProductDto({
         id: data.id,
         type: data.type,
@@ -131,8 +198,8 @@ class ProductDto {
         image: data.image,
         category_id: data.category_id,
         category_name: data.category_name,
-        categories: data.categories || [],
-        stock_quantity: stock_quantity,
+        categories: data.categories ?? [],
+        stock_quantity: data.stock_quantity ?? 0,
         unit_id: data.unit_id,
         unit_name: data.unit_name,
         unit_short_name: data.unit_short_name,
@@ -146,7 +213,6 @@ class ProductDto {
         wholesale_price: data.wholesale_price,
         purchase_price: data.purchase_price,
       });
-    }).filter(Boolean);
+    });
   }
 }
-export default ProductDto;

@@ -80,7 +80,6 @@ import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 
 import ProductController from '@/api/ProductController';
-import { eventBus } from '@/eventBus';
 import { formatQuantity } from '@/utils/numberUtils';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import searchMixin from '@/mixins/searchMixin';
@@ -119,7 +118,6 @@ export default {
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
-        eventBus.on('global-search', this.handleSearch);
     },
 
     mounted() {
@@ -127,8 +125,12 @@ export default {
         this.fetchAllCategories();
         this.fetchAllWarehouses();
     },
-    beforeUnmount() {
-        eventBus.off('global-search', this.handleSearch);
+    watch: {
+        '$store.getters.globalSearchQuery'(newQuery) {
+            if (newQuery !== undefined) {
+                this.handleSearch(newQuery);
+            }
+        }
     },
     methods: {
         async fetchAllCategories() {

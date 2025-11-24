@@ -57,7 +57,7 @@ export default {
             set(val) { this.$emit('update:modelValue', val) }
         },
         sortedServices() {
-            // Получаем сохраненный порядок из localStorage
+            // Получаем сохраненный порядок из store
             const savedOrder = this.getSavedOrder();
             
             if (!savedOrder || savedOrder.length === 0) {
@@ -79,19 +79,10 @@ export default {
             return [...sorted, ...newServices];
         },
         userId() {
-            // Получаем ID пользователя из store или localStorage (для basement workers)
-            if (this.$store.state.user?.id) {
-                return this.$store.state.user.id;
-            }
-            
-            // Для basement workers проверяем localStorage
-            try {
-                const userStr = localStorage.getItem('user');
-                if (userStr) {
-                    const user = JSON.parse(userStr);
-                    return user.id || 'guest';
-                }
-            } catch (error) {
+            // Получаем ID пользователя из store
+            const user = this.$store.getters.user;
+            if (user && user.id) {
+                return user.id;
             }
             
             return 'guest';
@@ -142,22 +133,15 @@ export default {
             } catch (error) {
             }
         },
-        getLocalStorageKey() {
-            return `basement_services_order_${this.userId}`;
-        },
         getSavedOrder() {
-            try {
-                const saved = localStorage.getItem(this.getLocalStorageKey());
-                return saved ? JSON.parse(saved) : [];
-            } catch (error) {
-                return [];
-            }
+            const saved = this.$store.getters.getBasementServicesOrder(this.userId);
+            return saved && Array.isArray(saved) ? saved : [];
         },
         saveOrder(serviceIds) {
-            try {
-                localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(serviceIds));
-            } catch (error) {
-            }
+            this.$store.dispatch('setBasementServicesOrder', {
+                userId: this.userId,
+                order: serviceIds
+            });
         },
         onDragStart(event, index) {
             this.draggedIndex = index;
@@ -188,7 +172,7 @@ export default {
             // Вставляем на новую позицию
             newServices.splice(dropIndex, 0, draggedService);
             
-            // Сохраняем новый порядок ID в localStorage
+            // Сохраняем новый порядок ID в store
             const newOrder = newServices.map(s => s.id);
             this.saveOrder(newOrder);
             

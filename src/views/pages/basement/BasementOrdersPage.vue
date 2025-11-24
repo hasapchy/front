@@ -68,7 +68,7 @@
 </template>
 
 <script>
-import { BasementAuthController } from '@/api/basement/BasementAuthController'
+import BasementAuthController from '@/api/basement/BasementAuthController'
 import basementApi from '@/api/basement/basementAxiosInstance'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'

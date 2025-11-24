@@ -1,32 +1,29 @@
-import api from './axiosInstance';
-import PaginatedResponse from '@/dto/app/PaginatedResponseDto';
+import BaseController from './BaseController';
 import WarehouseStockDto from '@/dto/warehouse/WarehouseStockDto';
 
+/**
+ * Контроллер для работы со складскими остатками
+ * @class WarehouseStockController
+ */
 export default class WarehouseStockController {
+    /**
+     * Получить список складских остатков с пагинацией
+     * @param {number} [page=1] - Номер страницы
+     * @param {number|null} [warehouse_id=null] - ID склада
+     * @param {number|null} [category_id=null] - ID категории
+     * @param {number} [per_page=20] - Количество элементов на странице
+     * @param {string|null} [search=null] - Поисковый запрос
+     * @param {string} [availability='all'] - Фильтр по наличию
+     * @returns {Promise<PaginatedResponse>} Объект с пагинированными данными
+     */
     static async getItems(page = 1, warehouse_id = null, category_id = null, per_page = 20, search = null, availability = 'all') {
-        try {
-            const response = await api.get(`/warehouse_stocks?page=${page}`, {
-                params: {
-                    warehouse_id: warehouse_id,
-                    per_page: per_page,
-                    category_id: category_id,
-                    availability: availability,
-                    ...(search ? { search } : {})
-                }
-            });
-            const data = response.data;
-            const items = WarehouseStockDto.fromApiArray(data.items);
-
-            const paginatedResponse = new PaginatedResponse(items, data.current_page, data.next_page, data.last_page, data.total);
-
-            return paginatedResponse;
-        } catch (error) {
-            console.error('Ошибка при получении стоков:', error);
-            throw error;
-        }
-    }
-
-    static async getStocks(page = 1, warehouse_id = null, category_id = null, per_page = 20, search = null, availability = 'all') {
-        return this.getItems(page, warehouse_id, category_id, per_page, search, availability);
+        const params = {
+            warehouse_id,
+            category_id,
+            availability,
+            ...(search && { search })
+        };
+        
+        return BaseController.getItems('/warehouse_stocks', WarehouseStockDto, page, per_page, params);
     }
 }

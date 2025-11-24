@@ -642,7 +642,7 @@ export default {
 
             try {
                 // Получаем общую сумму оплат по заказу через существующий API
-                const paidTotalData = await TransactionController.getTotalByOrderId(this.orderId);
+                const paidTotalData = await TransactionController.getTotalPaidByOrderId(this.orderId);
                 const totalPaid = parseFloat(paidTotalData.total) || 0;
                 const orderTotal = parseFloat(this.orderInfo.totalPrice) || 0;
 
@@ -837,7 +837,10 @@ export default {
         '$store.state.clients': {
             handler(newClients) {
                 // Автоматически обновляем selectedClient из Store когда кэш обновляется
-                if (this.selectedClient?.id && newClients.length) {
+                if (!Array.isArray(newClients) || !newClients.length) {
+                    return;
+                }
+                if (this.selectedClient?.id) {
                     const updated = newClients.find(c => c.id === this.selectedClient.id);
                     if (updated) {
                         this.selectedClient = updated;

@@ -1,6 +1,6 @@
-import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
+import { getImageUrl, createFromApiArray, normalizeBoolean } from "@/utils/dtoUtils";
 
-export class UserDto {
+export default class UserDto {
   constructor(data) {
     this.id = data.id;
     this.name = data.name;
@@ -9,8 +9,8 @@ export class UserDto {
     this.hireDate = data.hire_date;
     this.birthday = data.birthday;
     this.position = data.position;
-    this.isActive = Boolean(data.is_active);
-    this.isAdmin = Boolean(data.is_admin);
+    this.isActive = normalizeBoolean(data.is_active, false);
+    this.isAdmin = normalizeBoolean(data.is_admin, false);
     this.photo = data.photo;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;

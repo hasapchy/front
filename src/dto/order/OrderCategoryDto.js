@@ -1,6 +1,7 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
-export default class OrderCategoryDto {
+import BaseDto from "@/dto/BaseDto";
+
+export default class OrderCategoryDto extends BaseDto {
   constructor(
     id,
     name,
@@ -9,20 +10,13 @@ export default class OrderCategoryDto {
     createdAt = "",
     updatedAt = ""
   ) {
+    super();
     this.id = id;
     this.name = name;
     this.userId = userId;
     this.userName = userName;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
-  }
-
-  formatCreatedAt() {
-    return dtoDateFormatters.formatCreatedAt(this.createdAt);
-  }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
   static fromApiArray(dataArray) {
@@ -35,6 +29,6 @@ export default class OrderCategoryDto {
         data.created_at,
         data.updated_at
       );
-    }).filter(Boolean);
+    });
   }
 }

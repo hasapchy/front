@@ -403,21 +403,20 @@ export default {
   methods: {
     setCategoryByUser() {
       // Хардкод соответствия: юзер 6 = категория 2, 7 = 3, 8 = 14
-      try {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          const user = JSON.parse(userStr);
-          const userId = user.id;
-          
-          const basementCategoryMap = {
-            6: 2,
-            7: 3,
-            8: 14
-          };
-          
-          this.form.category_id = basementCategoryMap[userId] || null;
-        }
-      } catch (error) {
+      const user = this.$store.getters.user;
+      
+      if (!user) {
+        return;
+      }
+      
+      if (user && user.id) {
+        const userId = user.id;
+        const basementCategoryMap = {
+          6: 2,
+          7: 3,
+          8: 14
+        };
+        this.form.category_id = basementCategoryMap[userId] || null;
       }
     },
     async loadCashRegisters() {

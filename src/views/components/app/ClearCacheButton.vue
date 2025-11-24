@@ -1,10 +1,7 @@
 <template>
-  <button
-    @click="clearCache"
-    :disabled="isClearing"
+  <button @click="clearCache" :disabled="isClearing"
     class="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-    :title="$t('clearCache')"
-  >
+    :title="$t('clearCache')">
     <span class="text-sm">
       <SpinnerIcon v-if="isClearing" size-class="text-sm" />
       <i v-else class="fas fa-broom"></i>
@@ -15,7 +12,6 @@
 
 <script>
 import CacheController from '@/api/CacheController';
-import CacheInvalidator from '@/utils/cache';
 
 export default {
   name: 'ClearCacheButton',
@@ -36,41 +32,8 @@ export default {
       this.isClearing = true;
 
       try {
-        const preservedKeys = [
-          'token',
-          'refresh_token',
-          'token_expires_at',
-          'refresh_token_expires_at',
-          'user',
-          'vuex',
-          'current_company',
-          'locale'
-        ];
-        const preservedValues = preservedKeys.reduce((acc, key) => {
-          const value = localStorage.getItem(key);
-          if (value !== null) {
-            acc[key] = value;
-          }
-          return acc;
-        }, {});
-
-        // 1. Очищаем Laravel кэш (Backend)
         await CacheController.clearAllCache();
-
-        // 2. Очищаем локальные кэши (Frontend)
-        CacheInvalidator.invalidateAll();
-        
-        // 3. Очищаем весь остальной localStorage, не трогая сохранённые ключи
-        Object.keys(localStorage).forEach(key => {
-          if (!preservedKeys.includes(key)) {
-            localStorage.removeItem(key);
-          }
-        });
-
-        // 4. Возвращаем сохранённые значения (на случай если были удалены)
-        Object.entries(preservedValues).forEach(([key, value]) => {
-          localStorage.setItem(key, value);
-        });
+        await this.$store.dispatch('clearCache');
 
         // 5. Показываем уведомление
         this.$store.dispatch('showNotification', {
@@ -104,4 +67,3 @@ button {
   min-width: 40px;
 }
 </style>
-

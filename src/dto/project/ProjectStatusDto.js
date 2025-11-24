@@ -1,7 +1,7 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
+import BaseDto from "@/dto/BaseDto";
 
-export default class ProjectStatusDto {
+export default class ProjectStatusDto extends BaseDto {
   constructor(
     id,
     name,
@@ -11,6 +11,7 @@ export default class ProjectStatusDto {
     createdAt = "",
     updatedAt = ""
   ) {
+    super();
     this.id = id;
     this.name = name;
     this.color = color;
@@ -18,14 +19,6 @@ export default class ProjectStatusDto {
     this.user = user;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
-  }
-
-  formatCreatedAt() {
-    return dtoDateFormatters.formatCreatedAt(this.createdAt);
-  }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
   static fromApiArray(dataArray) {
@@ -39,6 +32,6 @@ export default class ProjectStatusDto {
         data.created_at,
         data.updated_at
       );
-    }).filter(Boolean);
+    });
   }
 }

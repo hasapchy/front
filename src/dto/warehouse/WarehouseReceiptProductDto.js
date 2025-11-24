@@ -62,6 +62,6 @@ export default class WarehouseReceiptProductDto {
                 data.price,
                 data.sn_id
             );
-        }).filter(Boolean);
+        });
     }
 }

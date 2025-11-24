@@ -45,7 +45,6 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
-import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, ],
@@ -76,12 +75,15 @@ export default {
 
     mounted() {
         this.fetchItems();
-        // Слушаем события обновления компаний для перезагрузки данных
-        eventBus.on('company-updated', this.handleCompanyUpdated);
     },
-
-    beforeUnmount() {
-        eventBus.off('company-updated', this.handleCompanyUpdated);
+    watch: {
+        // Отслеживаем обновление компаний через store
+        '$store.getters.userCompanies': {
+            handler() {
+                this.handleCompanyUpdated();
+            },
+            deep: true
+        }
     },
 
     methods: {

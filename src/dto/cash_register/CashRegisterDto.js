@@ -1,7 +1,7 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
 import { getUserIdsFromArray, createFromApiArray } from "@/utils/dtoUtils";
+import BaseDto from "@/dto/BaseDto";
 
-export default class CashRegisterDto {
+export default class CashRegisterDto extends BaseDto {
   constructor(
     id,
     name,
@@ -23,15 +23,7 @@ export default class CashRegisterDto {
     this.currencyCode = currency_code;
     this.currencySymbol = currency_symbol;
     this.createdAt = createdAt;
-    this.updatedAt = updatedAt;
-  }
-
-  formatCreatedAt() {
-    return dtoDateFormatters.formatCreatedAt(this.createdAt);
-  }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
+        this.updatedAt = updatedAt;
   }
 
   getUserIds() {
@@ -44,7 +36,7 @@ export default class CashRegisterDto {
         data.id,
         data.name,
         data.balance,
-        data.users || [],
+        data.users ?? [],
         data.currency_id,
         data.currency?.name,
         data.currency?.code,
@@ -52,6 +44,6 @@ export default class CashRegisterDto {
         data.created_at,
         data.updated_at
       );
-    }).filter(Boolean);
+    });
   }
 }

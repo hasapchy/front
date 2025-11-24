@@ -1,8 +1,8 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatNumber } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
+import BaseDto from "@/dto/BaseDto";
 
-export default class CurrencyHistoryDto {
+export default class CurrencyHistoryDto extends BaseDto {
   constructor(
     id,
     currencyId,
@@ -28,15 +28,8 @@ export default class CurrencyHistoryDto {
   }
 
   formatEndDate() {
-    return this.endDate ? dtoDateFormatters.formatCreatedAt(this.endDate) : 'Текущий';
-  }
-
-  formatCreatedAt() {
-    return dtoDateFormatters.formatCreatedAt(this.createdAt);
-  }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
+    if (!this.endDate) return 'Текущий';
+    return dtoDateFormatters.formatCreatedAt(this.endDate);
   }
 
   formatExchangeRate() {
@@ -77,6 +70,6 @@ export default class CurrencyHistoryDto {
         data.updated_at,
         data.currency
       );
-    }).filter(Boolean);
+    });
   }
 }

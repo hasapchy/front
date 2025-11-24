@@ -1,64 +1,54 @@
+import BaseController from "./BaseController";
 import OrderStatusCategoryDto from "@/dto/order/OrderStatusCategoryDto";
-import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
-import api from "./axiosInstance";
 
+/**
+ * Контроллер для работы с категориями статусов заказов
+ * @class OrderStatusCategoryController
+ */
 export default class OrderStatusCategoryController {
+  /**
+   * Получить список категорий статусов заказов с пагинацией
+   * @param {number} [page=1] - Номер страницы
+   * @param {number} [per_page=20] - Количество элементов на странице
+   * @returns {Promise<PaginatedResponse>} Объект с пагинированными данными
+   */
   static async getItems(page = 1, per_page = 20) {
-    try {
-      const response = await api.get(`/order_status_categories?page=${page}&per_page=${per_page}`);
-      const data = response.data;
-      const items = OrderStatusCategoryDto.fromApiArray(data.items);
-      return new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
-      );
-    } catch (error) {
-      console.error("Ошибка при получении категорий статусов:", error);
-      throw error;
-    }
+    return BaseController.getItems('/order_status_categories', OrderStatusCategoryDto, page, per_page);
   }
 
+  /**
+   * Получить все категории статусов заказов без пагинации
+   * @returns {Promise<Array<OrderStatusCategoryDto>>} Массив категорий
+   */
   static async getAllItems() {
-    try {
-      const response = await api.get(`/order_status_categories/all`);
-      const data = response.data;
-      return OrderStatusCategoryDto.fromApiArray(data);
-    } catch (error) {
-      console.error("Ошибка при получении всех категорий статусов:", error);
-      throw error;
-    }
+    return BaseController.getAllItems('/order_status_categories', OrderStatusCategoryDto);
   }
 
+  /**
+   * Создать новую категорию статуса заказа
+   * @param {Object} item - Данные категории
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async storeItem(item) {
-    try {
-      const { data } = await api.post("/order_status_categories", item);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании категории статусов:", error);
-      throw error;
-    }
+    return BaseController.storeItem('/order_status_categories', item);
   }
 
+  /**
+   * Обновить категорию статуса заказа
+   * @param {number|string} id - ID категории
+   * @param {Object} item - Данные категории
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async updateItem(id, item) {
-    try {
-      const { data } = await api.put(`/order_status_categories/${id}`, item);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении категории статусов:", error);
-      throw error;
-    }
+    return BaseController.updateItem('/order_status_categories', id, item);
   }
 
+  /**
+   * Удалить категорию статуса заказа
+   * @param {number|string} id - ID категории
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/order_status_categories/${id}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении категории статусов:", error);
-      throw error;
-    }
+    return BaseController.deleteItem('/order_status_categories', id);
   }
 }

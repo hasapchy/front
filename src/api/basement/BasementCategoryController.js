@@ -1,19 +1,18 @@
 import CategoryDto from "@/dto/category/CategoryDto";
 import basementApi from "./basementAxiosInstance";
 
+/**
+ * Контроллер для работы с категориями в Basement
+ * @class BasementCategoryController
+ */
 export default class BasementCategoryController {
+  /**
+   * Получить все категории без пагинации
+   * @returns {Promise<Array<CategoryDto>>} Массив категорий
+   */
   static async getAllItems() {
-    try {
-      const response = await basementApi.get("/categories/all");
-      const data = response.data;
-      
-      const items = CategoryDto.fromApiArray(data);
-
-      return items;
-    } catch (error) {
-      console.error("Ошибка при получении категорий:", error);
-      throw error;
-    }
+    const response = await basementApi.get("/categories/all");
+    return CategoryDto.fromApiArray(response.data.data);
   }
 }
 

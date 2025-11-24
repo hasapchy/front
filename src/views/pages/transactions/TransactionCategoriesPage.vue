@@ -9,7 +9,7 @@
     </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
-        <div v-if="data != null && !loading" key="table">
+        <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.transaction_categories" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
@@ -42,9 +42,10 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, TransactionCategoryCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog },
     data() {
         return {
@@ -65,7 +66,7 @@ export default {
             ]
         }
     },
-    created() {
+    mounted() {
         this.fetchItems();
     },
     methods: {
@@ -76,7 +77,7 @@ export default {
                 case 'createdAt':
                     return i.formatCreatedAt();
                 case 'name':
-                    return i.canBeDeleted() ? i.name : `${i.name} 🔒`;
+                    return i.name;
                 case 'user_name':
                     return i.user_name || '-';
                 default:
@@ -88,16 +89,19 @@ export default {
             this.fetchItems(1, false);
         },
         async fetchItems(page = 1, silent = false) {
-            if (!silent) this.loading = true;
+            if (!silent) {
+                this.loading = true;
+            }
             try {
-               
                 const per_page = this.perPage || 20;
-                
-                this.data = await TransactionCategoryController.getItems(page, per_page);
+                const new_data = await TransactionCategoryController.getItems(page, per_page);
+                this.data = new_data;
             } catch (error) {
                 this.showNotification('Ошибка получения списка категорий транзакций', error.message, true);
             }
-            if (!silent) this.loading = false;
+            if (!silent) {
+                this.loading = false;
+            }
         }
     }
 }

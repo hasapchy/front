@@ -226,17 +226,12 @@ export default {
                     response = await ProjectContractController.storeItem(this.projectId, formData);
                 }
 
-        if (response.success) {
-            this.$emit('saved', response.item);
-            this.showNotification('Успех', response.message, false);
-            if (!this.editingItem) {
-                this.clearForm();
-            }
-            this.resetFormChanges();
-        } else {
-                    this.$emit('saved-error', response.error);
-                    this.showNotification('Ошибка', response.error, true);
+                this.$emit('saved', response.item);
+                this.showNotification('Успех', response.message || 'Контракт успешно сохранен', false);
+                if (!this.editingItem) {
+                    this.clearForm();
                 }
+                this.resetFormChanges();
             } catch (error) {
                 console.error('Error saving contract:', error);
                 this.$emit('saved-error', error);
@@ -245,63 +240,6 @@ export default {
                 this.saveLoading = false;
             }
         },
-        // handleFileUpload(files) {
-        //     if (!files || !files.length) return;
-            
-        //     this.uploading = true;
-        //     this.uploadProgress = 0;
-            
-        //     // Симуляция прогресса загрузки
-        //     const progressInterval = setInterval(() => {
-        //         if (this.uploadProgress < 90) {
-        //             this.uploadProgress += Math.random() * 10;
-        //         }
-        //     }, 200);
-            
-        //     setTimeout(() => {
-        //         clearInterval(progressInterval);
-        //         this.uploadProgress = 100;
-                
-        //         // Добавляем файлы в форму
-        //         const newFiles = files.map(file => ({
-        //             name: file.name,
-        //             file: file
-        //         }));
-        //         this.form.files = [...this.form.files, ...newFiles];
-                
-        //         setTimeout(() => {
-        //             this.uploading = false;
-        //             this.uploadProgress = 0;
-        //         }, 500);
-        //     }, 1000);
-        // },
-        // removeFileByPath(filePath) {
-        //     const index = this.form.files.findIndex(file => 
-        //         (typeof file === 'string' ? file : file.name) === filePath
-        //     );
-        //     if (index !== -1) {
-        //         this.form.files.splice(index, 1);
-        //     }
-        // },
-        // removeMultipleFiles(filePaths) {
-        //     this.form.files = this.form.files.filter(file => 
-        //         !filePaths.includes(typeof file === 'string' ? file : file.name)
-        //     );
-        // },
-        // getFileIcon(filename) {
-        //     if (!filename) return 'fas fa-file';
-        //     const ext = filename.split('.').pop().toLowerCase();
-        //     const iconMap = {
-        //         'pdf': 'fas fa-file-pdf',
-        //         'doc': 'fas fa-file-word',
-        //         'docx': 'fas fa-file-word',
-        //         'jpg': 'fas fa-file-image',
-        //         'jpeg': 'fas fa-file-image',
-        //         'png': 'fas fa-file-image',
-        //         'gif': 'fas fa-file-image'
-        //     };
-        //     return iconMap[ext] || 'fas fa-file';
-        // },
         showDeleteDialog() {
             this.deleteDialog = true;
         },
@@ -315,17 +253,14 @@ export default {
             try {
                 const response = await ProjectContractController.deleteItem(this.editingItemId);
                 
-                if (response.success) {
-                    this.showNotification('Успех', response.message || 'Контракт успешно удален', false);
-                    this.$emit('saved'); // Используем тот же эмит, что и при сохранении, чтобы обновить список
-                    this.closeDeleteDialog();
-                    this.clearForm();
-                } else {
-                    this.showNotification('Ошибка', response.error, true);
-                }
+                this.showNotification('Успех', response.message || 'Контракт успешно удален', false);
+                this.$emit('saved');
+                this.closeDeleteDialog();
+                this.clearForm();
             } catch (error) {
-                console.error('Error deleting contract:', error);
-                this.showNotification('Ошибка', 'Ошибка при удалении контракта', true);
+                console.error('Ошибка при удалении контракта:', error);
+                const errorMessage = error?.response?.data?.message || error?.message || 'Ошибка при удалении контракта';
+                this.showNotification('Ошибка', errorMessage, true);
             } finally {
                 this.deleteLoading = false;
             }

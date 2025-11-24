@@ -1,7 +1,7 @@
-import { dtoDateFormatters } from '@/utils/dateUtils';
 import { createFromApiArray } from '@/utils/dtoUtils';
+import BaseDto from "@/dto/BaseDto";
 
-export default class TransactionCategoryDto {
+export default class TransactionCategoryDto extends BaseDto {
     constructor({ id, name, type, user_id, user_name, created_at, updated_at }) {
         this.id = id;
         this.name = name;
@@ -20,34 +20,6 @@ export default class TransactionCategoryDto {
         return this.type ? 'Приход' : 'Расход';
     }
 
-    formatCreatedAt() {
-        return dtoDateFormatters.formatCreatedAt(this.createdAt);
-    }
-
-    formatUpdatedAt() {
-        return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-    }
-
-    canBeDeleted() {
-        const protectedCategories = [
-            'Перемещение',
-            'Выплата зарплаты',
-            'Продажа',
-            'Предоплата',
-            'Оплата покупателя за услугу, товар',
-            'Прочий приход денег',
-            'Возврат денег покупателю',
-            'Оплата поставщикам товаров, запчастей',
-            'Прочий расход денег'
-        ];
-        
-        return !protectedCategories.includes(this.name);
-    }
-
-    canBeEdited() {
-        return this.canBeDeleted();
-    }
-
     static fromApiArray(dataArray) {
         return createFromApiArray(dataArray, data => {
             return new TransactionCategoryDto({
@@ -59,6 +31,6 @@ export default class TransactionCategoryDto {
                 created_at: data.created_at,
                 updated_at: data.updated_at
             });
-        }).filter(Boolean);
+        });
     }
 }

@@ -1,8 +1,8 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
 import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
+import BaseDto from "@/dto/BaseDto";
 import WarehouseMovementProductDto from "./WarehouseMovementProductDto";
 
-export default class WarehouseMovementDto {
+export default class WarehouseMovementDto extends BaseDto {
   constructor(
     id,
     warehouseFromId,
@@ -39,17 +39,6 @@ export default class WarehouseMovementDto {
   productsHtmlList() {
     return createProductsHtmlList(this.products);
   }
-  formatDate() {
-    return dtoDateFormatters.formatDate(this.date);
-  }
-
-  formatCreatedAt() {
-    return dtoDateFormatters.formatCreatedAt(this.createdAt);
-  }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
 
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
@@ -69,6 +58,6 @@ export default class WarehouseMovementDto {
         data.created_at,
         data.updated_at
       );
-    }).filter(Boolean);
+    });
   }
 }

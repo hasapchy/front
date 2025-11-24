@@ -1,5 +1,3 @@
-import { eventBus } from '@/eventBus';
-
 export default {
   computed: {
     currentCompanyId() {
@@ -7,11 +5,21 @@ export default {
     }
   },
   
+  watch: {
+    // Отслеживаем изменение компании через Vuex watcher
+    currentCompanyId: {
+      handler(newCompanyId, oldCompanyId) {
+        if (newCompanyId && newCompanyId !== oldCompanyId) {
+          this.onCompanyChanged(newCompanyId);
+        }
+      },
+      immediate: false
+    }
+  },
+  
   async mounted() {
-    eventBus.on('company-changed', this.onCompanyChanged);
-    
     const currentCompanyId = this.$store.getters.currentCompanyId;
-    const lastCompanyId = this.$store.state.lastCompanyId;
+    const lastCompanyId = this.$store.state.company?.lastCompanyId;
     
     if (currentCompanyId && currentCompanyId !== lastCompanyId) {
       await this.onCompanyChanged(currentCompanyId);
@@ -20,7 +28,6 @@ export default {
   
   beforeUnmount() {
     this._isDestroyed = true;
-    eventBus.off('company-changed', this.onCompanyChanged);
   },
   
   methods: {

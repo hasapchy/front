@@ -1,35 +1,35 @@
 import api from './axiosInstance';
 
-class UserCompanyController {
-    async getCurrentCompany() {
-        try {
-            const response = await api.get('/user/current-company');
-            return response.data;
-        } catch (error) {
-            console.error('Ошибка при получении текущей компании:', error);
-            throw error;
-        }
+/**
+ * Контроллер для работы с компаниями пользователя
+ * @class UserCompanyController
+ */
+export default class UserCompanyController {
+    /**
+     * Получить текущую компанию пользователя
+     * @returns {Promise<Object>} Данные текущей компании
+     */
+    static async getCurrentCompany() {
+        const response = await api.get('/user/current-company');
+        return response.data;
     }
 
-    async setCurrentCompany(companyId) {
-        try {
-            const response = await api.post('/user/set-company', { company_id: companyId });
-            return response.data;
-        } catch (error) {
-            console.error('Ошибка при установке компании:', error);
-            throw error;
-        }
+    /**
+     * Установить текущую компанию пользователя
+     * @param {number|string} companyId - ID компании
+     * @returns {Promise<Object>} Ответ от сервера
+     */
+    static async setCurrentCompany(companyId) {
+        const response = await api.post('/user/set-company', { company_id: companyId });
+        return response.data;
     }
 
-    async getUserCompanies() {
-        try {
-            const response = await api.get('/user/companies');
-            return response.data;
-        } catch (error) {
-            console.error('Ошибка при получении компаний пользователя:', error);
-            throw error;
-        }
+    /**
+     * Получить список компаний пользователя
+     * @returns {Promise<Array>} Массив компаний пользователя
+     */
+    static async getUserCompanies() {
+        const response = await api.get('/user/companies');
+        return response.data;
     }
 }
-
-export default new UserCompanyController();

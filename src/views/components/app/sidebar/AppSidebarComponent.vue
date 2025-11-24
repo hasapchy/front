@@ -160,7 +160,6 @@
 import { VueDraggableNext } from 'vue-draggable-next';
 import SidebarLink from './SidebarLink.vue';
 import AppVersionBadge from '../AppVersionBadge.vue';
-import { eventBus } from '@/eventBus';
 
 export default {
     components: {
@@ -173,12 +172,19 @@ export default {
         return {
             draggableMenuItems: [],
             draggableAvailableItems: [],
-            isMobileMenuOpen: false,
             isDesktop: false,
             showAdditionalMenu: false
         };
     },
     computed: {
+        isMobileMenuOpen: {
+            get() {
+                return this.$store.getters.isMobileMenuOpen;
+            },
+            set(value) {
+                this.$store.dispatch('setMobileMenuOpen', value);
+            }
+        },
         sidebarDisplayStyle() {
             if (this.isDesktop) {
                 return 'block';
@@ -230,9 +236,6 @@ export default {
             this.updateAvailableItems();
         });
         
-        eventBus.on('toggleMobileMenu', this.toggleMobileMenu);
-        eventBus.on('closeMobileMenu', this.closeMobileMenu);
-        
         this.$router.afterEach(() => {
             if (window.innerWidth < 1024) {
                 this.closeMobileMenu();
@@ -241,9 +244,17 @@ export default {
     },
     beforeUnmount() {
         window.removeEventListener('resize', this.checkDesktop);
-        eventBus.off('toggleMobileMenu', this.toggleMobileMenu);
-        eventBus.off('closeMobileMenu', this.closeMobileMenu);
         document.body.style.overflow = '';
+    },
+    watch: {
+        isMobileMenuOpen(isOpen) {
+            // Синхронизируем body overflow с состоянием меню
+            if (isOpen) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
     },
     watch: {
         '$store.state.permissions': {
@@ -273,7 +284,7 @@ export default {
         checkDesktop() {
             this.isDesktop = window.innerWidth >= 1024;
             if (this.isDesktop) {
-                this.isMobileMenuOpen = false;
+                this.$store.dispatch('setMobileMenuOpen', false);
             }
         },
         getCompanyLogo() {
@@ -375,17 +386,12 @@ export default {
             });
         },
         toggleMobileMenu() {
-            this.isMobileMenuOpen = !this.isMobileMenuOpen;
-            if (this.isMobileMenuOpen) {
-                document.body.style.overflow = 'hidden';
-            } else {
-                document.body.style.overflow = '';
-            }
+            this.$store.dispatch('toggleMobileMenu');
+            // body overflow управляется через watch isMobileMenuOpen
         },
         closeMobileMenu() {
-            this.isMobileMenuOpen = false;
+            this.$store.dispatch('setMobileMenuOpen', false);
             this.showAdditionalMenu = false;
-            document.body.style.overflow = '';
         }
     }
 }

@@ -6,8 +6,7 @@
 
 <script>
 import AuthController from '@/api/AuthController';
-import { BasementAuthController } from '@/api/basement/BasementAuthController';
-import TokenUtils from '@/utils/tokenUtils';
+import BasementAuthController from '@/api/basement/BasementAuthController';
 import { isBasementWorkerOnly, getUserFromStorage } from '@/utils/userUtils';
 
 export default {
@@ -20,12 +19,9 @@ export default {
         this.$store.commit('SET_PERMISSIONS_LOADED', false);
         this.$store.dispatch('setPermissions', []);
         this.$store.dispatch('setLoading', true);
-        this.$store.dispatch('checkTokenStatus');
         
-        if (!TokenUtils.isAuthenticated()) {
-            TokenUtils.clearAuthData();
-            this.$store.dispatch('setUser', null);
-            this.$store.dispatch('setPermissions', []);
+        if (!this.$store.getters.token || this.$store.getters.isTokenExpired) {
+            this.$store.dispatch('clearAuth');
             await this.$store.dispatch('initializeMenu');
             this.$store.dispatch('setLoading', false);
             this.loading = false;
@@ -33,8 +29,8 @@ export default {
         }
         
         try {
-            const userFromStorage = getUserFromStorage();
-            const isBasementWorker = isBasementWorkerOnly(userFromStorage);
+            const userFromStore = this.$store.getters.user;
+            const isBasementWorker = isBasementWorkerOnly(userFromStore);
             
             this.$store.commit('SET_CURRENT_COMPANY', null);
             
@@ -65,20 +61,10 @@ export default {
                 }
             }
             
-            const tokenExpiresAt = localStorage.getItem('token_expires_at');
-            const refreshTokenExpiresAt = localStorage.getItem('refresh_token_expires_at');
-            
-            if (tokenExpiresAt && refreshTokenExpiresAt) {
-                this.$store.dispatch('updateTokenExpiration', {
-                    accessTokenExpiresAt: parseInt(tokenExpiresAt),
-                    refreshTokenExpiresAt: parseInt(refreshTokenExpiresAt)
-                });
-            }
+            // Токен уже загружен из persistedstate в store
         } catch (error) {
             console.error('Ошибка получения пользователя:', error);
-            this.$store.dispatch('setUser', null);
-            this.$store.dispatch('setPermissions', []);
-            TokenUtils.clearAuthData();
+            this.$store.dispatch('clearAuth');
             this.$router.push('/auth/login');
         } finally {
             this.$store.dispatch('setLoading', false);

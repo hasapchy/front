@@ -264,7 +264,6 @@ import batchActionsMixin from "@/mixins/batchActionsMixin";
 import modalMixin from "@/mixins/modalMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import { defineAsyncComponent } from "vue";
-import { eventBus } from "@/eventBus";
 import OrderPaymentFilter from "@/views/components/app/forms/OrderPaymentFilter.vue";
 import StatusSelectCell from "@/views/components/app/buttons/StatusSelectCell.vue";
 import debounce from "lodash.debounce";
@@ -284,7 +283,6 @@ export default {
     components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon, FiltersContainer },
     data() {
         return {
-            viewMode: 'kanban',
             statuses: [],
             projects: [],
             clients: [],
@@ -331,20 +329,37 @@ export default {
         };
     },
     created() {
+        if (this.viewMode === 'kanban') {
+            this.kanbanFetchPerPage = 50;
+            this.allKanbanItems = [];
+            this.kanbanCurrentPage = 1;
+        }
+        
         this.fetchItems();
         this.fetchStatuses();
         this.projects = this.$store.getters.projects || [];
         this.clients = this.$store.getters.clients || [];
 
         this.$store.commit("SET_SETTINGS_OPEN", false);
-        eventBus.on('global-search', this.handleSearch);
     },
 
-    beforeUnmount() {
-        eventBus.off('global-search', this.handleSearch);
+    watch: {
+        '$store.getters.globalSearchQuery'(newQuery) {
+            if (newQuery !== undefined) {
+                this.handleSearch(newQuery);
+            }
+        }
     },
 
     computed: {
+        viewMode: {
+            get() {
+                return this.$store.getters.ordersViewMode || 'kanban';
+            },
+            set(value) {
+                this.$store.dispatch('setOrdersViewMode', value);
+            }
+        },
         searchQuery() {
             return this.$store.state.searchQuery;
         },
@@ -801,38 +816,12 @@ export default {
                 return;
             }
             this.viewMode = mode;
-            try {
-                localStorage.setItem('orders_viewMode', mode);
-            } catch (error) {
-                console.warn('Failed to save view mode to localStorage:', error);
+            
+            if (mode === 'kanban') {
+                this.kanbanFetchPerPage = 50;
+                this.allKanbanItems = [];
+                this.kanbanCurrentPage = 1;
             }
-        }
-    },
-    mounted() {
-        try {
-            const savedViewMode = localStorage.getItem('orders_viewMode');
-            if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
-                this.viewMode = savedViewMode;
-                
-                if (savedViewMode === 'kanban') {
-                    this.kanbanFetchPerPage = 50;
-                    this.allKanbanItems = [];
-                    this.kanbanCurrentPage = 1;
-                }
-            } else {
-                try {
-                    localStorage.setItem('orders_viewMode', this.viewMode);
-                } catch (error) {
-                    console.warn('Failed to save default view mode to localStorage:', error);
-                }
-                if (this.viewMode === 'kanban') {
-                    this.kanbanFetchPerPage = 50;
-                    this.allKanbanItems = [];
-                    this.kanbanCurrentPage = 1;
-                }
-            }
-        } catch (error) {
-            console.warn('Failed to read view mode from localStorage:', error);
         }
     }
 };

@@ -5,15 +5,19 @@
       @click="toggleDropdown"
       class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border-0 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
     >
-      <div class="flag-icon">
-        <img v-if="currentLocale === 'tm'" 
-             src="/flags/640px-Flag_of_Turkmenistan.svg.png" 
-             alt="TM" 
-             class="w-6 h-5 object-contain rounded">
-        <img v-else 
-             src="/flags/640px-Flag_of_Russia.svg.webp" 
-             alt="RU" 
-             class="w-6 h-5 object-contain rounded">
+      <div class="language-icon">
+        <svg v-if="currentLocale === 'tm'" class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+          <text x="12" y="17" font-size="10" font-weight="bold" text-anchor="middle" fill="currentColor">TM</text>
+        </svg>
+        <svg v-else-if="currentLocale === 'en'" class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+          <text x="12" y="17" font-size="10" font-weight="bold" text-anchor="middle" fill="currentColor">EN</text>
+        </svg>
+        <svg v-else class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+          <text x="12" y="17" font-size="10" font-weight="bold" text-anchor="middle" fill="currentColor">RU</text>
+        </svg>
       </div>
       <span class="language-name">{{ currentLanguageName }}</span>
       <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': isOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -32,10 +36,11 @@
           class="language-option w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
           :class="{ 'bg-blue-50 text-blue-700': currentLocale === 'tm' }"
         >
-          <div class="flag-icon">
-            <img src="/flags/640px-Flag_of_Turkmenistan.svg.png" 
-                 alt="TM" 
-                 class="w-6 h-5 object-contain rounded">
+          <div class="language-icon">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+              <text x="12" y="17" font-size="10" font-weight="bold" text-anchor="middle" fill="currentColor">TM</text>
+            </svg>
           </div>
           <span class="text-sm">TM</span>
         </button>
@@ -45,12 +50,27 @@
           class="language-option w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
           :class="{ 'bg-blue-50 text-blue-700': currentLocale === 'ru' }"
         >
-          <div class="flag-icon">
-            <img src="/flags/640px-Flag_of_Russia.svg.webp" 
-                 alt="RU" 
-                 class="w-6 h-5 object-contain rounded">
+          <div class="language-icon">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+              <text x="12" y="17" font-size="10" font-weight="bold" text-anchor="middle" fill="currentColor">RU</text>
+            </svg>
           </div>
           <span class="text-sm">RU</span>
+        </button>
+        
+        <button 
+          @click="changeLanguage('en')"
+          class="language-option w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
+          :class="{ 'bg-blue-50 text-blue-700': currentLocale === 'en' }"
+        >
+          <div class="language-icon">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+              <text x="12" y="17" font-size="10" font-weight="bold" text-anchor="middle" fill="currentColor">EN</text>
+            </svg>
+          </div>
+          <span class="text-sm">EN</span>
         </button>
       </div>
     </div>
@@ -67,11 +87,13 @@ export default {
   },
   computed: {
     currentLocale() {
-      return this.$i18n.locale
+      return this.$store.getters.locale
     },
 
     currentLanguageName() {
-      return this.currentLocale === 'tm' ? 'TM' : 'RU'
+      if (this.currentLocale === 'tm') return 'TM'
+      if (this.currentLocale === 'en') return 'EN'
+      return 'RU'
     }
   },
   mounted() {
@@ -86,8 +108,7 @@ export default {
     },
     
     changeLanguage(locale) {
-      this.$i18n.locale = locale
-      localStorage.setItem('locale', locale)
+      this.$store.dispatch('setLocale', locale)
       
       this.isOpen = false
       
@@ -130,10 +151,15 @@ export default {
     },
     
     showLanguageNotification(locale) {
-      const languageName = locale === 'tm' ? this.$t('turkmen') : this.$t('russian')
-      const message = locale === 'tm' 
-        ? `${this.$t('languageChanged')}: ${languageName}`
-        : `${this.$t('languageChanged')}: ${languageName}`
+      let languageName
+      if (locale === 'tm') {
+        languageName = this.$t('turkmen')
+      } else if (locale === 'en') {
+        languageName = this.$t('english')
+      } else {
+        languageName = this.$t('russian')
+      }
+      const message = `${this.$t('languageChanged')}: ${languageName}`
       
       const notification = document.createElement('div')
       notification.className = 'language-notification'
@@ -219,19 +245,14 @@ export default {
   border-bottom-right-radius: 6px;
 }
 
-.flag-icon {
+.language-icon {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.flag-icon img {
-  border-radius: 2px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
+.language-icon svg {
+  color: currentColor;
 }
 
 @keyframes fadeIn {

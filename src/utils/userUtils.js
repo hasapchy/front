@@ -5,8 +5,8 @@ export function isBasementWorkerOnly(user) {
 
 export function getUserFromStorage() {
   try {
-    const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
+    const store = require('@/store').default;
+    return store.getters.user || null;
   } catch {
     return null;
   }

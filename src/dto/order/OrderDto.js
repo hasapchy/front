@@ -1,10 +1,47 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrency, formatNumber } from "@/utils/numberUtils";
 import { createProductsTooltipList, createFromApiArray } from "@/utils/dtoUtils";
+import BaseDto from "@/dto/BaseDto";
 import ClientDto from "@/dto/client/ClientDto";
 import OrderProductDto from "./OrderProductDto";
 
-export default class OrderDto {
+/**
+ * DTO для заказа
+ * @class OrderDto
+ * @extends BaseDto
+ */
+export default class OrderDto extends BaseDto {
+  /**
+   * Создает экземпляр OrderDto
+   * @param {number} id - ID заказа
+   * @param {string} note - Примечание
+   * @param {string} description - Описание
+   * @param {number} statusId - ID статуса заказа
+   * @param {string} statusName - Название статуса
+   * @param {number} categoryId - ID категории заказа
+   * @param {string} categoryName - Название категории
+   * @param {number} clientId - ID клиента
+   * @param {number} userId - ID пользователя, создавшего заказ
+   * @param {string} userName - Имя пользователя
+   * @param {string|null} userPhoto - Фото пользователя
+   * @param {number|null} cashId - ID кассы
+   * @param {string} cashName - Название кассы
+   * @param {number} warehouseId - ID склада
+   * @param {string} warehouseName - Название склада
+   * @param {number|null} projectId - ID проекта
+   * @param {string} projectName - Название проекта
+   * @param {number} price - Цена без скидки
+   * @param {number} discount - Размер скидки
+   * @param {number} totalPrice - Итоговая цена
+   * @param {number} currencyId - ID валюты
+   * @param {string} currencyName - Название валюты
+   * @param {string} currencyCode - Код валюты
+   * @param {string} currencySymbol - Символ валюты
+   * @param {string} date - Дата заказа
+   * @param {string} createdAt - Дата создания
+   * @param {string} updatedAt - Дата обновления
+   * @param {ClientDto|null} client - Объект клиента
+   * @param {Array<OrderProductDto>|null} products - Массив товаров в заказе
+   */
   constructor(
     id,
     note = "",
@@ -36,6 +73,7 @@ export default class OrderDto {
     client = null,
     products = null
   ) {
+    super();
     this.id = id;
     this.note = note;
     this.description = description;
@@ -67,6 +105,10 @@ export default class OrderDto {
     this.products = products;
   }
 
+  /**
+   * Получить информацию о цене с учетом скидки
+   * @returns {string} Отформатированная строка с ценой и скидкой
+   */
   priceInfo() {
     if (!this.discount || this.discount <= 0) {
       return formatCurrency(this.totalPrice, this.currencySymbol, null, true);
@@ -74,30 +116,32 @@ export default class OrderDto {
     return `${formatCurrency(this.totalPrice, this.currencySymbol, null, true)} (из ${formatCurrency(this.price, this.currencySymbol, null, true)}, скидка ${formatCurrency(this.discount, this.currencySymbol, null, true)})`;
   }
 
+  /**
+   * Форматирует количество
+   * @param {number} quantity - Количество для форматирования
+   * @returns {string} Отформатированное количество
+   */
   formatQuantity(quantity) {
     const num = Number(quantity);
     return isNaN(num) || !quantity ? '0.00' : formatNumber(quantity, 2, true);
   }
 
+  /**
+   * Получить HTML список товаров для tooltip
+   * @returns {string} HTML строка со списком товаров
+   */
   productsHtmlList() {
     return createProductsTooltipList(this.products, (qty) => this.formatQuantity(qty), (product) => product.unitShortName);
   }
 
-  formatDate() {
-    return dtoDateFormatters.formatDate(this.date);
-  }
-
-  formatCreatedAt() {
-    return dtoDateFormatters.formatCreatedAt(this.createdAt);
-  }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
-  }
-
+  /**
+   * Создает массив экземпляров OrderDto из массива данных API
+   * @param {Array} dataArray - Массив объектов заказов из API
+   * @returns {Array<OrderDto>} Массив экземпляров OrderDto
+   */
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
-      const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;
+      const client = data.client ? ClientDto.fromApiArray([data.client])[0] : null;
       const products = data.products ? OrderProductDto.fromApiArray(data.products) : null;
       
       return new OrderDto(
@@ -106,14 +150,14 @@ export default class OrderDto {
         data.description ?? "",
         data.status_id,
         data.status_name,
-        data.category_id ?? data.product_category_id,
-        data.category_name ?? data.product_category_name,
+        data.category_id,
+        data.category_name,
         data.client_id,
         data.user_id,
         data.user_name,
         data.user_photo,
-        data.cash_id ?? null,
-        data.cash_name ?? null,
+        data.cash_id,
+        data.cash_name,
         data.warehouse_id,
         data.warehouse_name,
         data.project_id,
@@ -131,6 +175,6 @@ export default class OrderDto {
         client,
         products
       );
-    }).filter(Boolean);
+    });
   }
 }

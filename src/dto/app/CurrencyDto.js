@@ -1,6 +1,6 @@
 import { createFromApiArray } from '@/utils/dtoUtils';
 
-class CurrencyDto {
+export default class CurrencyDto {
     constructor({ id, code, name, symbol, is_default, is_report, status }) {
         this.id = id;
         this.code = code;
@@ -22,8 +22,6 @@ class CurrencyDto {
                 is_report: data.is_report,
                 status: data.status
             });
-        }).filter(Boolean);
+        });
     }
 }
-
-export default CurrencyDto;

@@ -1,7 +1,7 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
 import { getImageUrl, createFromApiArray } from "@/utils/dtoUtils";
+import BaseDto from "@/dto/BaseDto";
 
-export default class WarehouseStockDto {
+export default class WarehouseStockDto extends BaseDto {
     constructor(id,
         warehouseId,
         warehouseName,
@@ -34,11 +34,6 @@ export default class WarehouseStockDto {
         return getImageUrl(this.productImage);
     }
 
-
-    formatCreatedAt() {
-        return dtoDateFormatters.formatCreatedAt(this.createdAt);
-    }
-
     static fromApiArray(dataArray) {
         return createFromApiArray(dataArray, data => {
             return new WarehouseStockDto(
@@ -56,6 +51,6 @@ export default class WarehouseStockDto {
                 data.quantity,
                 data.created_at
             );
-        }).filter(Boolean);
+        });
     }
 }

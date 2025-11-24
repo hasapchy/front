@@ -135,7 +135,7 @@ export default {
             if (this.clientSearch.length >= 3) {
                 this.clientSearchLoading = true;
                 try {
-                    const results = await BasementClientController.search(this.clientSearch);
+                    const results = await BasementClientController.searchItems(this.clientSearch);
                     this.clientResults = this.onlySuppliers
                         ? results.filter((client) => client.isSupplier)
                         : results;

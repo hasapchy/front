@@ -1,63 +1,54 @@
+import BaseController from "./BaseController";
 import OrderStatusDto from "@/dto/order/OrderStatusDto";
-import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
-import api from "./axiosInstance";
 
+/**
+ * Контроллер для работы со статусами заказов
+ * @class OrderStatusController
+ */
 export default class OrderStatusController {
+  /**
+   * Получить все статусы заказов без пагинации
+   * @returns {Promise<Array<OrderStatusDto>>} Массив статусов
+   */
   static async getAllItems() {
-    try {
-      const response = await api.get(`/order_statuses/all`);
-      return OrderStatusDto.fromApiArray(response.data);
-    } catch (error) {
-      console.error("Ошибка при получении статусов заказов:", error);
-      throw error;
-    }
+    return BaseController.getAllItems('/order_statuses', OrderStatusDto);
   }
 
+  /**
+   * Получить список статусов заказов с пагинацией
+   * @param {number} [page=1] - Номер страницы
+   * @param {number} [per_page=20] - Количество элементов на странице
+   * @returns {Promise<PaginatedResponse>} Объект с пагинированными данными
+   */
   static async getItems(page = 1, per_page = 20) {
-    try {
-      const response = await api.get(`/order_statuses?page=${page}&per_page=${per_page}`);
-      const data = response.data;
-      const items = OrderStatusDto.fromApiArray(data.items);
-      return new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
-      );
-    } catch (error) {
-      console.error("Ошибка при получении статусов заказов:", error);
-      throw error;
-    }
+    return BaseController.getItems('/order_statuses', OrderStatusDto, page, per_page);
   }
 
+  /**
+   * Создать новый статус заказа
+   * @param {Object} item - Данные статуса
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async storeItem(item) {
-    try {
-      const { data } = await api.post("/order_statuses", item);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании статуса заказа:", error);
-      throw error;
-    }
+    return BaseController.storeItem('/order_statuses', item);
   }
 
+  /**
+   * Обновить статус заказа
+   * @param {number|string} id - ID статуса
+   * @param {Object} item - Данные статуса
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async updateItem(id, item) {
-    try {
-      const { data } = await api.put(`/order_statuses/${id}`, item);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении статуса заказа:", error);
-      throw error;
-    }
+    return BaseController.updateItem('/order_statuses', id, item);
   }
 
+  /**
+   * Удалить статус заказа
+   * @param {number|string} id - ID статуса
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/order_statuses/${id}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении статуса заказа:", error);
-      throw error;
-    }
+    return BaseController.deleteItem('/order_statuses', id);
   }
 }

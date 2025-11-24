@@ -234,38 +234,12 @@ export default {
   },
   methods: {
     getStorageKey() {
-      return `tableColumns_${this.tableKey}`;
-    },
-    getLegacyStorageKey() {
-      const companyId = this.$store.state.currentCompany?.id || 'default';
-      return `tableColumns_${this.tableKey}_${companyId}`;
-    },
-    getStorageItem(primaryKey, legacyKey) {
-      const saved = localStorage.getItem(primaryKey);
-      if (saved) {
-        return saved;
-      }
-      const legacy = legacyKey ? localStorage.getItem(legacyKey) : null;
-      if (!legacy) {
-        return null;
-      }
-      localStorage.setItem(primaryKey, legacy);
-      if (legacyKey) {
-        localStorage.removeItem(legacyKey);
-      }
-      return legacy;
-    },
-    setStorageItem(primaryKey, legacyKey, value) {
-      localStorage.setItem(primaryKey, value);
-      if (legacyKey) {
-        localStorage.removeItem(legacyKey);
-      }
+      return this.tableKey;
     },
     loadColumns() {
-      const saved = this.getStorageItem(this.getStorageKey(), this.getLegacyStorageKey());
-      if (saved) {
+      const savedColumns = this.$store.getters.getTableColumns(this.getStorageKey());
+      if (savedColumns && Array.isArray(savedColumns)) {
         try {
-          const savedColumns = JSON.parse(saved);
           this.columns = savedColumns.map((savedCol) => {
             const original = this.columnsConfig.find(c => c.name === savedCol.name) || {};
             let size = savedCol.size ?? null;
@@ -313,11 +287,10 @@ export default {
         const { component, props, ...serializableCol } = col;
         return serializableCol;
       });
-      this.setStorageItem(
-        this.getStorageKey(),
-        this.getLegacyStorageKey(),
-        JSON.stringify(serializableColumns)
-      );
+      this.$store.dispatch('setTableColumns', {
+        tableKey: this.getStorageKey(),
+        columns: serializableColumns
+      });
     },
     toggleVisible(index) {
       this.columns[index].visible = !this.columns[index].visible;
@@ -343,18 +316,13 @@ export default {
       this.onItemClick?.(i);
     },
     getSortStorageKey() {
-      return `tableSort_${this.tableKey}`;
-    },
-    getLegacySortStorageKey() {
-      const companyId = this.$store.state.currentCompany?.id || 'default';
-      return `tableSort_${this.tableKey}_${companyId}`;
+      return this.tableKey;
     },
     saveSort() {
-      this.setStorageItem(
-        this.getSortStorageKey(),
-        this.getLegacySortStorageKey(),
-        JSON.stringify({ key: this.sortKey, order: this.sortOrder })
-      );
+      this.$store.dispatch('setTableSort', {
+        tableKey: this.getSortStorageKey(),
+        sort: { key: this.sortKey, order: this.sortOrder }
+      });
     },
     sortBy(key) {
       if (this.sortKey === key) {
@@ -489,15 +457,11 @@ export default {
     '$store.state.currentCompany.id': {
       handler() {
         this.loadColumns();
-        const saved = this.getStorageItem(
-          this.getSortStorageKey(),
-          this.getLegacySortStorageKey()
-        );
+        const saved = this.$store.getters.getTableSort(this.getSortStorageKey());
         if (saved) {
           try {
-            const { key, order } = JSON.parse(saved);
-            this.sortKey = key;
-            this.sortOrder = order;
+            this.sortKey = saved.key;
+            this.sortOrder = saved.order;
           } catch (e) {
           }
         } else {
@@ -511,15 +475,11 @@ export default {
   mounted() {
     this.loadColumns();
 
-    const saved = this.getStorageItem(
-      this.getSortStorageKey(),
-      this.getLegacySortStorageKey()
-    );
+    const saved = this.$store.getters.getTableSort(this.getSortStorageKey());
     if (saved) {
       try {
-        const { key, order } = JSON.parse(saved);
-        this.sortKey = key;
-        this.sortOrder = order;
+        this.sortKey = saved.key;
+        this.sortOrder = saved.order;
       } catch (e) {
 
       }

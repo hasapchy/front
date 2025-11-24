@@ -3,9 +3,16 @@ export function getImageUrl(imagePath) {
   return `${import.meta.env.VITE_APP_BASE_URL}/storage/${imagePath}`;
 }
 
+/**
+ * Creates an array of DTO instances from API response array.
+ * Automatically filters out null/undefined/falsy values.
+ * @param {Array} dataArray - Array of data objects from API.
+ * @param {Function} fromApiMethod - Function to convert single data object to DTO.
+ * @returns {Array} Array of DTO instances.
+ */
 export function createFromApiArray(dataArray, fromApiMethod) {
   if (!Array.isArray(dataArray)) return [];
-  return dataArray.map(data => fromApiMethod(data));
+  return dataArray.map(data => fromApiMethod(data)).filter(Boolean);
 }
 
 export function getUserIdsFromArray(users) {
@@ -98,5 +105,42 @@ export function formatAmountSimple(amount, currencyCode = '', formatFn = null) {
   const currencySymbol = currencyCode || '';
   const formatted = formatFn ? formatFn(Math.abs(val)) : Math.abs(val).toFixed(2);
   return `<span class="text-[#5CB85C] font-semibold">${formatted} ${currencySymbol}</span>`;
+}
+
+/**
+ * Normalizes a number value, converting it to a number or returning undefined.
+ * @param {any} value - The value to normalize.
+ * @returns {number|undefined} Normalized number or undefined if invalid.
+ */
+export function normalizeNumber(value) {
+  if (value === null || value === undefined || value === "") {
+    return undefined;
+  }
+  const num = Number(value);
+  return Number.isNaN(num) ? undefined : num;
+}
+
+/**
+ * Normalizes a boolean value from various formats.
+ * @param {any} value - The value to normalize.
+ * @param {boolean} fallback - Default value if value is null/undefined.
+ * @returns {boolean} Normalized boolean value.
+ */
+export function normalizeBoolean(value, fallback = true) {
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return value !== 0;
+  }
+  if (typeof value === "string") {
+    if (value === "0") return false;
+    if (value === "1") return true;
+    return value.toLowerCase() === "true";
+  }
+  return fallback;
 }
 

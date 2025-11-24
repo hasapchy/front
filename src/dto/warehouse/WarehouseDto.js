@@ -1,17 +1,13 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
 import { getUserIdsFromArray, createFromApiArray } from "@/utils/dtoUtils";
+import BaseDto from "@/dto/BaseDto";
 
-export default class WarehouseDto {
+export default class WarehouseDto extends BaseDto {
     constructor(id, name, users = [], createdAt = '', updatedAt = '') {
         this.id = id;
         this.name = name;
         this.users = users;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
-    }
-
-    formatCreatedAt() {
-        return dtoDateFormatters.formatCreatedAt(this.createdAt);
     }
 
     getUserIds() {
@@ -23,10 +19,10 @@ export default class WarehouseDto {
             return new WarehouseDto(
                 data.id,
                 data.name,
-                data.users || [],
+                data.users ?? [],
                 data.created_at,
                 data.updated_at
             );
-        }).filter(Boolean);
+        });
     }
 }

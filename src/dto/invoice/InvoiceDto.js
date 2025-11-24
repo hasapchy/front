@@ -1,11 +1,12 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrency } from "@/utils/numberUtils";
 import { createProductsTooltipList, createFromApiArray } from "@/utils/dtoUtils";
+import { dtoDateFormatters } from "@/utils/dateUtils";
+import BaseDto from "@/dto/BaseDto";
 import ClientDto from "@/dto/client/ClientDto";
 import InvoiceProductDto from "./InvoiceProductDto";
 import OrderDto from "@/dto/order/OrderDto";
 
-export default class InvoiceDto {
+export default class InvoiceDto extends BaseDto {
   constructor(
     id,
     clientId,
@@ -22,6 +23,7 @@ export default class InvoiceDto {
     orders = null,
     products = null
   ) {
+    super();
     this.id = id;
     this.clientId = clientId;
     this.userId = userId;
@@ -63,19 +65,12 @@ export default class InvoiceDto {
   }
 
   productsHtmlList() {
-    return createProductsTooltipList(this.products, null, (product) => product.unitName || '');
+    return createProductsTooltipList(this.products, null, (product) => product.unitName ?? '');
   }
 
   formatDate() {
+    if (!this.invoiceDate) return '';
     return dtoDateFormatters.formatDate(this.invoiceDate);
-  }
-
-  formatCreatedAt() {
-    return dtoDateFormatters.formatCreatedAt(this.createdAt);
-  }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
   getOrdersCount() {
@@ -118,14 +113,14 @@ export default class InvoiceDto {
 
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
-      const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;
+      const client = data.client ? ClientDto.fromApiArray([data.client])[0] : null;
       
       const orders = data.orders ? OrderDto.fromApiArray(data.orders.map(order => ({
         ...order,
-        currency_id: order.currency_id ?? order.cash?.currency?.id ?? null,
-        currency_name: order.currency_name ?? order.cash?.currency?.name ?? null,
-        currency_code: order.currency_code ?? order.cash?.currency?.code ?? null,
-        currency_symbol: order.currency_symbol ?? order.cash?.currency?.symbol ?? null,
+        currency_id: order.currency_id ?? null,
+        currency_name: order.currency_name ?? null,
+        currency_code: order.currency_code ?? null,
+        currency_symbol: order.currency_symbol ?? null,
         client: data.client,
         category_id: null,
         category_name: null
@@ -142,13 +137,13 @@ export default class InvoiceDto {
         data.note,
         data.total_amount,
         data.invoice_number,
-        data.status || 'new',
+        data.status ?? 'new',
         data.created_at,
         data.updated_at,
         client,
         orders,
         products
       );
-    }).filter(Boolean);
+    });
   }
 }

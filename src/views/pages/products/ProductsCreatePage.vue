@@ -217,7 +217,6 @@ import AdminCategoryCreatePage from '@/views/pages/categories/CategoriesCreatePa
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
 import JsBarcode from "jsbarcode";
-import CacheInvalidator from '@/utils/cache';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
@@ -621,8 +620,7 @@ export default {
             this.modalDialog = false;
         },
         async handleSaved() {
-            const companyId = this.$store.state.currentCompany?.id || null;
-            CacheInvalidator.onUpdate('categories', companyId);
+            this.$store.dispatch('onDataUpdate', { type: 'categories' });
             await this.fetchAllCategories();
             this.closeModal();
             this.$emit('saved');

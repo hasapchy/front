@@ -1,8 +1,8 @@
 import { formatNumber } from '@/utils/numberUtils';
-import { dtoDateFormatters } from '@/utils/dateUtils';
-import { formatAmountWithStyle, createFromApiArray } from '@/utils/dtoUtils';
+import { formatAmountWithStyle, createFromApiArray, normalizeNumber } from '@/utils/dtoUtils';
+import BaseDto from "@/dto/BaseDto";
 
-export default class ProjectBalanceHistoryDto {
+export default class ProjectBalanceHistoryDto extends BaseDto {
   constructor(
     source,
     sourceId,
@@ -24,24 +24,16 @@ export default class ProjectBalanceHistoryDto {
     this.userName = userName;
     this.isDebt = isDebt;
     this.sourceType = sourceType;
-    this.sourceSourceId = sourceSourceId || sourceId;
+    this.sourceSourceId = sourceSourceId ?? sourceId;
     this.cashCurrencySymbol = cashCurrencySymbol;
     this.origAmount = origAmount;
   }
 
-  get dateUser() {
-    return this.formatDate();
-  }
-
-  formatDate() {
-    return dtoDateFormatters.formatDate(this.date);
-  }
-
   formatAmountWithColor(projectCurrency, formatNumberFn = formatNumber) {
-    const currency = projectCurrency || 'Нет валюты';
+    const currency = projectCurrency ?? 'Нет валюты';
     
     if (this.cashCurrencySymbol && this.origAmount) {
-      const originalAmount = parseFloat(this.origAmount);
+      const originalAmount = normalizeNumber(this.origAmount) ?? 0;
       const originalSymbol = this.cashCurrencySymbol;
       
       if (originalSymbol !== currency) {
@@ -80,17 +72,17 @@ export default class ProjectBalanceHistoryDto {
     return createFromApiArray(dataArray, data => {
       return new ProjectBalanceHistoryDto(
         data.source,
-        data.source_id || data.sourceId,
+        data.source_id,
         data.date,
         data.amount,
-        data.note || '',
-        data.user_name || '',
-        data.is_debt || false,
-        data.source_type || null,
-        data.source_source_id || data.sourceId || null,
-        data.cash_currency_symbol || null,
-        data.orig_amount || null
+        data.note ?? '',
+        data.user_name ?? '',
+        data.is_debt ?? false,
+        data.source_type,
+        data.source_source_id,
+        data.cash_currency_symbol,
+        data.orig_amount
       );
-    }).filter(Boolean);
+    });
   }
 }

@@ -1,14 +1,15 @@
 import { createI18n } from 'vue-i18n'
 import tm from '../lang/tm'
 import ru from '../lang/ru'
+import en from '../lang/en'
 
 const messages = {
   tm,
-  ru
+  ru,
+  en
 }
 
-// Получаем язык из localStorage или используем русский по умолчанию
-const locale = localStorage.getItem('locale') || 'ru'
+const locale = 'ru'
 
 export default createI18n({
   locale,

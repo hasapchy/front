@@ -122,7 +122,6 @@ import ProjectController from '@/api/ProjectController';
 import AppController from '@/api/AppController';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import OrderStatusController from '@/api/OrderStatusController';
-import CategoriesController from '@/api/CategoriesController';
 import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";

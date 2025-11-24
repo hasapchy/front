@@ -1,92 +1,87 @@
-import { CompanyDto } from "@/dto/companies/CompanyDto";
-import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
+import BaseController from "./BaseController";
+import CompanyDto from "@/dto/companies/CompanyDto";
 import api from "./axiosInstance";
+import { createFormData } from "@/utils/formDataHelper";
 
-const CompaniesController = {
-  async getItems(page = 1, per_page = 20) {
-    try {
-      const { data } = await api.get(`/companies?page=${page}&per_page=${per_page}`);
-      const items = CompanyDto.fromApiArray(data.items);
-      return new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
-      );
-    } catch (error) {
-      console.error("Ошибка при получении компаний:", error);
-      throw error;
-    }
-  },
+/**
+ * Контроллер для работы с компаниями
+ * @class CompaniesController
+ */
+export default class CompaniesController {
+  /**
+   * Получить список компаний с пагинацией
+   * @param {number} [page=1] - Номер страницы
+   * @param {number} [per_page=20] - Количество элементов на странице
+   * @returns {Promise<PaginatedResponse>} Объект с пагинированными данными
+   */
+  static async getItems(page = 1, per_page = 20) {
+    return BaseController.getItems('/companies', CompanyDto, page, per_page);
+  }
 
-  async storeItem(item, logoFile) {
-    try {
-      const formData = new FormData();
-      const booleanFields = ['show_deleted_transactions', 'rounding_enabled', 'rounding_quantity_enabled', 'skip_project_order_balance'];
-      Object.keys(item).forEach((key) => {
-        const value = item[key];
-        if (value === null || value === undefined) return;
-        if (booleanFields.includes(key)) {
-          formData.append(key, value ? '1' : '0');
-        } else {
-          formData.append(key, value);
-        }
-      });
-      if (logoFile) {
-        formData.append("logo", logoFile);
-      }
+  /**
+   * Создать новую компанию
+   * @param {Object} item - Данные компании
+   * @param {File|null} [logoFile=null] - Файл логотипа
+   * @param {Object} [options={}] - Дополнительные опции (cancelToken, onProgress, timeout)
+   * @returns {Promise<Object>} Ответ от сервера
+   */
+  static async storeItem(item, logoFile, options = {}) {
+    const formData = this._buildFormData(item, logoFile);
+    const { data } = await api.post("/companies", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      cancelToken: options.cancelToken,
+      onUploadProgress: logoFile ? options.onProgress : undefined,
+      timeout: logoFile ? (options.timeout || 60000) : undefined,
+    });
+    return data;
+  }
 
-      const { data } = await api.post("/companies", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании компании:", error);
-      throw error;
-    }
-  },
+  /**
+   * Обновить компанию
+   * @param {number|string} id - ID компании
+   * @param {Object} item - Данные компании
+   * @param {File|null} [logoFile=null] - Файл логотипа
+   * @param {Object} [options={}] - Дополнительные опции (cancelToken, onProgress, timeout)
+   * @returns {Promise<Object>} Ответ от сервера
+   */
+  static async updateItem(id, item, logoFile, options = {}) {
+    const formData = this._buildFormData(item, logoFile);
+    const { data } = await api.post(`/companies/${id}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      cancelToken: options.cancelToken,
+      onUploadProgress: logoFile ? options.onProgress : undefined,
+      timeout: logoFile ? (options.timeout || 60000) : undefined,
+    });
+    return data;
+  }
 
-  async updateItem(id, item, logoFile) {
-    try {
-      const formData = new FormData();
-      const booleanFields = ['show_deleted_transactions', 'rounding_enabled', 'rounding_quantity_enabled', 'skip_project_order_balance'];
-      Object.keys(item).forEach((key) => {
-        const value = item[key];
-        if (value === null || value === undefined) return;
-        if (booleanFields.includes(key)) {
-          formData.append(key, value ? '1' : '0');
-        } else {
-          formData.append(key, value);
-        }
-      });
-      if (logoFile) {
-        formData.append("logo", logoFile);
-      }
+  /**
+   * Удалить компанию
+   * @param {number|string} id - ID компании
+   * @returns {Promise<Object>} Ответ от сервера
+   */
+  static async deleteItem(id) {
+    const { data } = await api.delete(`/companies/${id}`);
+    return data;
+  }
 
-      const { data } = await api.post(`/companies/${id}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении компании:", error);
-      throw error;
-    }
-  },
-
-  async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/companies/${id}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении компании:", error);
-      throw error;
-    }
-  },
-};
-
-export default CompaniesController;
+  /**
+   * Построить FormData из данных компании
+   * @private
+   * @param {Object} item - Данные компании
+   * @param {File|null} logoFile - Файл логотипа
+   * @returns {FormData} FormData объект
+   */
+  static _buildFormData(item, logoFile) {
+    const booleanFields = ['show_deleted_transactions', 'rounding_enabled', 'rounding_quantity_enabled', 'skip_project_order_balance'];
+    return createFormData(item, {
+      file: logoFile,
+      fileKey: 'logo',
+      booleanFields
+    });
+  }
+}

@@ -173,9 +173,9 @@ export default {
                 return sum + (parseFloat(order.totalPrice) || 0);
             }, 0);
         },
-        // Ключ для localStorage в зависимости от режима (проекты/заказы)
-        storageKey() {
-            return this.isProjectMode ? 'kanban_column_order_projects' : 'kanban_column_order_orders';
+        // Режим для хранения порядка колонок
+        kanbanMode() {
+            return this.isProjectMode ? 'projects' : 'orders';
         }
     },
     methods: {
@@ -228,16 +228,16 @@ export default {
             // Когда пользователь меняет порядок колонок через drag&drop
             const order = this.sortedColumns.map(col => col.id);
             this.columnOrder = order;
-            localStorage.setItem(this.storageKey, JSON.stringify(order));
+            this.$store.dispatch('setKanbanColumnOrder', {
+                mode: this.kanbanMode,
+                order: order
+            });
         },
         loadColumnOrder() {
-            try {
-                const saved = localStorage.getItem(this.storageKey);
-                if (saved) {
-                    this.columnOrder = JSON.parse(saved);
-                }
-            } catch (error) {
-                console.error('Error loading column order:', error);
+            const saved = this.$store.getters.getKanbanColumnOrder(this.kanbanMode);
+            if (saved && Array.isArray(saved)) {
+                this.columnOrder = saved;
+            } else {
                 this.columnOrder = [];
             }
         },
@@ -282,7 +282,7 @@ export default {
     },
     watch: {
         compactView(newValue) {
-            localStorage.setItem('kanban_compactView', newValue);
+            this.$store.dispatch('setKanbanCompactView', newValue);
         },
         isProjectMode() {
             this.loadColumnOrder();
@@ -302,10 +302,10 @@ export default {
         }
     },
     mounted() {
-        // Восстанавливаем настройки из localStorage
-        const savedCompactView = localStorage.getItem('kanban_compactView');
-        if (savedCompactView !== null) {
-            this.compactView = savedCompactView === 'true';
+        // Восстанавливаем настройки из store
+        const savedCompactView = this.$store.getters.getKanbanCompactView;
+        if (savedCompactView !== null && savedCompactView !== undefined) {
+            this.compactView = savedCompactView;
         }
         
         // Загружаем порядок колонок
@@ -316,67 +316,4 @@ export default {
     }
 };
 </script>
-
-<style scoped>
-.kanban-board-wrapper {
-    position: relative;
-    width: 100%;
-}
-
-/* Toolbar - фиксированный, не скроллится */
-.kanban-toolbar {
-    width: 100%;
-}
-
-/* Контейнер для канбана - скроллится горизонтально */
-.kanban-board-container {
-    width: 100%;
-    overflow-x: auto;
-    overflow-y: visible;
-    scrollbar-width: thin;
-    scrollbar-color: #CBD5E0 #F7FAFC;
-}
-
-.kanban-board {
-    padding-bottom: 1rem;
-}
-
-/* Кастомные скроллбары для webkit браузеров */
-.kanban-board-container::-webkit-scrollbar {
-    height: 8px;
-}
-
-.kanban-board-container::-webkit-scrollbar-track {
-    background: #F7FAFC;
-    border-radius: 4px;
-}
-
-.kanban-board-container::-webkit-scrollbar-thumb {
-    background-color: #CBD5E0;
-    border-radius: 4px;
-}
-
-.kanban-board-container::-webkit-scrollbar-thumb:hover {
-    background-color: #A0AEC0;
-}
-
-/* Компактный вид */
-.kanban-columns.compact .kanban-column {
-    width: 280px;
-    min-width: 280px;
-}
-
-/* Стили для перетаскивания колонок */
-.ghost-column {
-    opacity: 0.4;
-    background: #e3f2fd;
-    border: 2px dashed #2196f3;
-}
-
-.dragging-column {
-    opacity: 0.8;
-    transform: rotate(1deg);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-</style>
 

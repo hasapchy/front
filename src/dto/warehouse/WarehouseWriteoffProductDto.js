@@ -60,6 +60,6 @@ export default class WarehouseWriteoffProductDto {
                 data.sn_id,
                 data.stock_quantity
             );
-        }).filter(Boolean);
+        });
     }
 }

@@ -434,4 +434,9 @@ export default {
     penalty: 'Issue Penalty',
     employeeClientNotFound: 'Client for employee not found',
     employeeClientNotFoundDescription: 'To work with employee balance, you need to create a linked client with employee_id matching this employee\'s ID.',
+    
+    languageChanged: 'Language changed',
+    turkmen: 'Turkmen',
+    russian: 'Russian',
+    english: 'English',
 }

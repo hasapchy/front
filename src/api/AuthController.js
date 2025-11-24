@@ -1,90 +1,56 @@
 import api from './axiosInstance';
+import store from '@/store';
 
-const AuthController = {
-    async login(email, password, remember = false) {
-        try {
-            const { data } = await api.post('/user/login', { email, password, remember });
-            
-            // Сохраняем токены
-            localStorage.setItem('token', data.access_token);
-            localStorage.setItem('refresh_token', data.refresh_token);
-            
-            // Сохраняем время истечения токенов
-            const now = Date.now();
-            localStorage.setItem('token_expires_at', now + (data.expires_in * 1000));
-            localStorage.setItem('refresh_token_expires_at', now + (data.refresh_expires_in * 1000));
-            
-            // Сохраняем информацию о пользователе
-            if (data.user) {
-                localStorage.setItem('user', JSON.stringify(data.user));
-            }
-            
-            return data;
-        } catch (error) {
-            console.error('Ошибка входа:', error);
-            throw error;
+/**
+ * Контроллер для работы с аутентификацией
+ * @class AuthController
+ */
+export default class AuthController {
+    /**
+     * Войти в систему
+     * @param {string} email - Email пользователя
+     * @param {string} password - Пароль
+     * @param {boolean} [remember=false] - Запомнить пользователя
+     * @returns {Promise<Object>} Данные авторизации
+     */
+    static async login(email, password, remember = false) {
+        const { data } = await api.post('/user/login', { email, password, remember });
+        
+        const now = Date.now();
+        const tokenExpiresAt = data.expires_in ? now + (data.expires_in * 1000) : null;
+        
+        store.dispatch('setToken', {
+            token: data.access_token,
+            expiresAt: tokenExpiresAt
+        });
+        
+        if (data.user) {
+            store.dispatch('setUser', data.user);
         }
-    },
+        
+        return data;
+    }
 
-    async getUser() {
-        try {
-            const { data } = await api.get('/user/me');
-            return data;
-        } catch (error) {
-            console.error('Ошибка получения пользователя:', error);
-            throw error;
-        }
-    },
+    /**
+     * Получить данные текущего пользователя
+     * @returns {Promise<Object>} Данные пользователя
+     */
+    static async getUser() {
+        const { data } = await api.get('/user/me');
+        return data;
+    }
 
-    async logout() {
+    /**
+     * Выйти из системы
+     * @returns {Promise<void>}
+     */
+    static async logout() {
         try {
             await api.post('/user/logout');
         } catch (error) {
             console.error('Ошибка выхода:', error);
         } finally {
-            // Очищаем все данные аутентификации
-            localStorage.removeItem('token');
-            localStorage.removeItem('refresh_token');
-            localStorage.removeItem('token_expires_at');
-            localStorage.removeItem('refresh_token_expires_at');
-            localStorage.removeItem('user');
-            // Очищаем текущую компанию
-            localStorage.removeItem('current_company');
-        }
-    },
-
-    async refreshToken() {
-        try {
-            const refreshToken = localStorage.getItem('refresh_token');
-            const refreshTokenExpiresAt = localStorage.getItem('refresh_token_expires_at');
-            
-            // Проверяем, не истек ли refresh token
-            if (!refreshToken || !refreshTokenExpiresAt || Date.now() > parseInt(refreshTokenExpiresAt)) {
-                throw new Error('Refresh token expired');
-            }
-            
-            const { data } = await api.post('/user/refresh', { 'refresh_token': refreshToken });
-            
-            // Обновляем токены
-            localStorage.setItem('token', data.access_token);
-            localStorage.setItem('refresh_token', data.refresh_token);
-            
-            // Обновляем время истечения токенов
-            const now = Date.now();
-            localStorage.setItem('token_expires_at', now + (data.expires_in * 1000));
-            localStorage.setItem('refresh_token_expires_at', now + (data.refresh_expires_in * 1000));
-            
-            // Обновляем информацию о пользователе
-            if (data.user) {
-                localStorage.setItem('user', JSON.stringify(data.user));
-            }
-            
-            return data;
-        } catch (error) {
-            console.error('Ошибка обновления токена:', error);
-            throw error;
+            store.dispatch('clearAuth');
         }
     }
-};
-
-export default AuthController;
+}

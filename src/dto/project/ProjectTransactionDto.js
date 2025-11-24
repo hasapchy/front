@@ -1,8 +1,8 @@
-import { dtoDateFormatters } from '@/utils/dateUtils';
 import { formatAmountWithColor } from '@/utils/dtoUtils';
 import { formatNumber } from '@/utils/numberUtils';
+import BaseDto from "@/dto/BaseDto";
 
-export default class ProjectTransactionDto {
+export default class ProjectTransactionDto extends BaseDto {
     constructor(
         id,
         userId,
@@ -39,14 +39,14 @@ export default class ProjectTransactionDto {
         return new ProjectTransactionDto(
             data.id,
             data.user_id,
-            data.user_name || data.user?.name || null,
+            data.user_name || data.user?.name,
             data.project_id,
-            data.project_name || data.project?.name || null,
+            data.project_name || data.project?.name,
             data.amount,
             data.currency_id,
-            data.currency_name || data.currency?.name || null,
-            data.currency_code || data.currency?.code || null,
-            data.currency_symbol || data.currency?.symbol || null,
+            data.currency_name || data.currency?.name,
+            data.currency_code || data.currency?.code,
+            data.currency_symbol || data.currency?.symbol,
             data.note,
             data.date,
             data.created_at,
@@ -55,24 +55,19 @@ export default class ProjectTransactionDto {
     }
 
     formatAmount() {
-        return formatNumber(this.amount || 0, null, true);
+        return formatNumber(this.amount ?? 0, null, true);
     }
 
     formatAmountWithCurrency() {
-        return `${this.formatAmount()} ${this.currencySymbol || this.currencyCode}`;
-    }
-
-    formatDate() {
-        return dtoDateFormatters.formatDate(this.date);
+        return `${this.formatAmount()} ${this.currencySymbol ?? this.currencyCode}`;
     }
 
     formatDateTime() {
-        if (!this.date) return '';
-        return dtoDateFormatters.formatDate(this.date);
+        return this.formatDate();
     }
 
     getDescription() {
-        return this.note || 'Приход';
+        return this.note ?? 'Приход';
     }
 
     getSource() {

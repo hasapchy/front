@@ -179,7 +179,7 @@
     />
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
-        <div v-if="data != null && !loading" key="table">
+        <div v-if="data != null" key="table">
             <DraggableTable table-key="admin.transactions" :columns-config="columnsConfig"
                 :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
@@ -225,7 +225,6 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
-import { eventBus } from '@/eventBus';
 import searchMixin from '@/mixins/searchMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 
@@ -295,18 +294,23 @@ export default {
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
-
-        eventBus.on('global-search', this.handleSearch);
     },
 
     mounted() {
-      this.fetchItems();
       // Кассы и проекты загружаются автоматически через store при установке компании
       this.allCashRegisters = this.$store.getters.cashRegisters;
       this.allProjects = this.$store.getters.activeProjects;
+      // Загружаем данные асинхронно, не блокируя отображение страницы
+      this.$nextTick(() => {
+        this.fetchItems();
+      });
     },
-    beforeUnmount() {
-        eventBus.off('global-search', this.handleSearch);
+    watch: {
+        '$store.getters.globalSearchQuery'(newQuery) {
+            if (newQuery !== undefined) {
+                this.handleSearch(newQuery);
+            }
+        }
     },
     methods: {
         updateBalace() {

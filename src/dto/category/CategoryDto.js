@@ -1,8 +1,9 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
 import { getUserIdsFromArray, createFromApiArray } from "@/utils/dtoUtils";
+import BaseDto from "@/dto/BaseDto";
 
-export default class CategoryDto {
+export default class CategoryDto extends BaseDto {
     constructor(id, name, parentId = null, parentName = null, userId = null, userName = null, users = [], createdAt = '', updatedAt = '') {
+        super();
         this.id = id;
         this.name = name;
         this.parentId = parentId;
@@ -12,14 +13,6 @@ export default class CategoryDto {
         this.users = users;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
-    }
-
-    formatCreatedAt() {
-        return dtoDateFormatters.formatCreatedAt(this.createdAt);
-    }
-
-    formatUpdatedAt() {
-        return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
     }
 
     getUserIds() {
@@ -35,10 +28,10 @@ export default class CategoryDto {
                 data.parent_name,
                 data.user_id,
                 data.user_name,
-                data.users || [],
+                data.users ?? [],
                 data.created_at,
                 data.updated_at
             );
-        }).filter(Boolean);
+        });
     }
 }

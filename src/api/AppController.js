@@ -2,38 +2,37 @@ import UnitDto from "../dto/app/UnitDto";
 import CurrencyDto from "../dto/app/CurrencyDto";
 import api from "./axiosInstance";
 
+/**
+ * Контроллер для работы с общими данными приложения
+ * @class AppController
+ */
 class AppController {
+  /**
+   * Получить список валют
+   * @returns {Promise<Array<CurrencyDto>>} Массив валют
+   */
   async getCurrencies() {
-    try {
-      const response = await api.get("/app/currency");
-      const data = response.data;
-      return CurrencyDto.fromApiArray(data);
-    } catch (error) {
-      console.error("Error fetching currencies:", error);
-      throw error;
-    }
+    const response = await api.get("/app/currency");
+    return CurrencyDto.fromApiArray(response.data.data);
   }
 
+  /**
+   * Получить список единиц измерения
+   * @returns {Promise<Array<UnitDto>>} Массив единиц измерения
+   */
   async getUnits() {
-    try {
-      const response = await api.get("/app/units");
-      const data = response.data;
-
-      return UnitDto.fromApiArray(data);
-    } catch (error) {
-      console.error("Error fetching units:", error);
-      throw error;
-    }
+    const response = await api.get("/app/units");
+    return UnitDto.fromApiArray(response.data.data);
   }
 
+  /**
+   * Получить курс обмена валюты
+   * @param {number|string} currencyId - ID валюты
+   * @returns {Promise<Object>} Данные курса обмена
+   */
   async getCurrencyExchangeRate(currencyId) {
-    try {
-      const response = await api.get(`/app/currency/${currencyId}/exchange-rate`);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching currency exchange rate:", error);
-      throw error;
-    }
+    const response = await api.get(`/app/currency/${currencyId}/exchange-rate`);
+    return response.data;
   }
 }
 

@@ -56,6 +56,6 @@ export default class WarehouseMovementProductDto {
                 data.quantity,
                 data.sn_id
             );
-        }).filter(Boolean);
+        });
     }
 }

@@ -1,8 +1,8 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrency } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
+import BaseDto from "@/dto/BaseDto";
 
-export default class TransferDto {
+export default class TransferDto extends BaseDto {
     constructor(id, cashFromId, cashFromName, currencyFromId, currencyFromName, currencyFromCode, currencyFromSymbol, cashToId, cashToName, currencyToId, currencyToName, currencyToCode, currencyToSymbol, amount, userId, userName, date = null, note = null) {
         this.id = id;
         this.cashFromId = cashFromId;
@@ -28,10 +28,6 @@ export default class TransferDto {
         return `<i class="fas fa-right-long text-[#EE4F47] mr-2"></i><span class="font-semibold">${formatCurrency(this.amount, this.currencyFromSymbol)}</span><i class="fas fa-right-long text-[#5CB85C] ml-2"></i>`;
     }
 
-    formatDate() {
-     return dtoDateFormatters.formatDate(this.date);
-   }
-
    static fromApiArray(dataArray) {
      return createFromApiArray(dataArray, data => {
        return new TransferDto(
@@ -54,6 +50,6 @@ export default class TransferDto {
          data.date,
          data.note
        );
-     }).filter(Boolean);
+     });
    }
 }

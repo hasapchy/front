@@ -1,11 +1,11 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatNumber, formatCurrency } from "@/utils/numberUtils";
 import { createFromApiArray, getUserIdsFromArray } from "@/utils/dtoUtils";
+import BaseDto from "@/dto/BaseDto";
 import ClientDto from "@/dto/client/ClientDto";
 import CurrencyDto from "@/dto/app/CurrencyDto";
 import "dayjs/locale/ru";
 
-export default class ProjectDto {
+export default class ProjectDto extends BaseDto {
   constructor(
     id,
     name,
@@ -28,6 +28,7 @@ export default class ProjectDto {
     statusId = null,
     status = null,
   ) {
+    super();
     this.id = id;
     this.name = name;
     this.date = date;
@@ -59,18 +60,6 @@ export default class ProjectDto {
     if (this.status) {
       this.status.name = value;
     }
-  }
-
-  formatDate() {
-    return dtoDateFormatters.formatDate(this.date);
-  }
-
-  formatCreatedAt() {
-    return dtoDateFormatters.formatCreatedAt(this.createdAt);
-  }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
   getUserIds() {
@@ -155,7 +144,7 @@ export default class ProjectDto {
 
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
-      const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;
+      const client = data.client ? ClientDto.fromApiArray([data.client])[0] : null;
       const currency = data.currency ? new CurrencyDto({
         id: data.currency.id,
         code: data.currency.code,
@@ -178,16 +167,16 @@ export default class ProjectDto {
         data.user_id,
         data.user_name,
         data.user_photo,
-        data.users || [],
+        data.users ?? [],
         data.created_at,
         data.updated_at,
-        data.files || [],
+        data.files ?? [],
         currency,
         data.description,
         data.creator,
         data.status_id,
         data.status
       );
-    }).filter(Boolean);
+    });
   }
 }

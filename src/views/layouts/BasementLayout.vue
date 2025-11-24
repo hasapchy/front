@@ -78,7 +78,7 @@
 </template>
 
 <script>
-import { BasementAuthController } from '@/api/basement/BasementAuthController'
+import BasementAuthController from '@/api/basement/BasementAuthController'
 import LanguageSwitcher from '@/views/components/app/LanguageSwitcher.vue'
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue'
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue'
@@ -106,7 +106,7 @@ export default {
     }
   },
   async created() {
-    const token = localStorage.getItem('token')
+    const token = this.$store.getters.token
     if (!token || !this.$store.state.user) {
       this.$router.push('/auth/login')
       return

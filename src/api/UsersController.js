@@ -1,241 +1,208 @@
-import { UserDto } from "@/dto/users/UserDto";
+import BaseController from "./BaseController";
+import UserDto from "@/dto/users/UserDto";
 import api from "./axiosInstance";
+import { createFormData } from "@/utils/formDataHelper";
 
-import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
+/**
+ * Контроллер для работы с пользователями
+ * @class UsersController
+ */
+export default class UsersController {
+  /**
+   * Получить список пользователей с пагинацией
+   * @param {number} [page=1] - Номер страницы
+   * @param {number} [per_page=20] - Количество элементов на странице
+   * @returns {Promise<PaginatedResponse>} Объект с пагинированными данными
+   */
+  static async getItems(page = 1, per_page = 20) {
+    return BaseController.getItems('/users', UserDto, page, per_page);
+  }
 
-const UsersController = {
-  async getItems(page = 1, per_page = 20) {
-    try {
-      const { data } = await api.get(`/users?page=${page}&per_page=${per_page}`);
-      const items = UserDto.fromApiArray(data.items);
-      return new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
-      );
-    } catch (error) {
-      console.error("Ошибка при получении пользователей:", error);
-      throw error;
-    }
-  },
+  /**
+   * Получить всех пользователей без пагинации
+   * @returns {Promise<Array<UserDto>>} Массив пользователей
+   */
+  static async getAllItems() {
+    return BaseController.getAllItems('/users', UserDto);
+  }
 
-  async getAllItems() {
-    try {
-      const { data } = await api.get(`/users/all`);
-      return UserDto.fromApiArray(data);
-    } catch (error) {
-      console.error("Ошибка при получении всех пользователей:", error);
-      throw error;
-    }
-  },
+  /**
+   * Создать нового пользователя
+   * @param {Object} payload - Данные пользователя
+   * @param {File|null} [file=null] - Файл фотографии
+   * @param {Object} [options={}] - Дополнительные опции (cancelToken, onProgress, timeout)
+   * @returns {Promise<Object>} Ответ от сервера
+   */
+  static async storeItem(payload, file = null, options = {}) {
+    const { requestData, headers } = this._prepareRequestData(payload, file);
+    const { data } = await api.post("/users", requestData, {
+      headers,
+      cancelToken: options.cancelToken,
+      onUploadProgress: file ? options.onProgress : undefined,
+      timeout: file ? (options.timeout || 60000) : undefined,
+    });
+    return data;
+  }
 
+  /**
+   * Обновить пользователя
+   * @param {number|string} id - ID пользователя
+   * @param {Object} payload - Данные пользователя
+   * @param {File|null} [file=null] - Файл фотографии
+   * @param {Object} [options={}] - Дополнительные опции (cancelToken, onProgress, timeout)
+   * @returns {Promise<Object>} Ответ от сервера
+   */
+  static async updateItem(id, payload, file = null, options = {}) {
+    const { requestData, headers } = this._prepareRequestData(payload, file);
+    const { data } = await api.put(`/users/${id}`, requestData, {
+      headers,
+      cancelToken: options.cancelToken,
+      onUploadProgress: file ? options.onProgress : undefined,
+      timeout: file ? (options.timeout || 60000) : undefined,
+    });
+    return data;
+  }
 
-  async storeItem(payload, file = null) {
-    try {
-      let requestData;
-      let headers = {};
+  /**
+   * Удалить пользователя
+   * @param {number|string} id - ID пользователя
+   * @returns {Promise<Object>} Ответ от сервера
+   */
+  static async deleteItem(id) {
+    const { data } = await api.delete(`/users/${id}`);
+    return data;
+  }
 
-      if (file) {
-        const formData = new FormData();
+  /**
+   * Получить все разрешения
+   * @returns {Promise<Array>} Массив разрешений
+   */
+  static async getAllPermissions() {
+    const { data } = await api.get(`/permissions`);
+    return data;
+  }
 
-        Object.keys(payload).forEach((key) => {
-          const value = payload[key];
-          if (value === null || value === undefined) {
-            return;
-          }
+  /**
+   * Получить текущего пользователя
+   * @returns {Promise<Object>} Данные текущего пользователя
+   */
+  static async getCurrentUser() {
+    const { data } = await api.get(`/user/current`);
+    return data;
+  }
 
-          if (Array.isArray(value)) {
-            value.forEach((item, index) => {
-              formData.append(`${key}[${index}]`, item);
-            });
-          } else {
-            formData.append(key, value);
-          }
-        });
+  /**
+   * Обновить профиль текущего пользователя
+   * @param {Object} payload - Данные профиля
+   * @param {File|null} [file=null] - Файл фотографии
+   * @param {Object} [options={}] - Дополнительные опции (cancelToken, onProgress, timeout)
+   * @returns {Promise<Object>} Ответ от сервера
+   */
+  static async updateProfile(payload, file = null, options = {}) {
+    const formData = createFormData(payload, {
+      file,
+      fileKey: 'photo'
+    });
 
-        formData.append("photo", file);
-        requestData = formData;
-        headers["Content-Type"] = "multipart/form-data";
-      } else {
-        requestData = payload;
-        headers["Content-Type"] = "application/json";
-      }
+    const { data } = await api.post(`/user/profile`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      cancelToken: options.cancelToken,
+      onUploadProgress: file ? options.onProgress : undefined,
+      timeout: file ? (options.timeout || 60000) : undefined,
+    });
+    return data;
+  }
 
-      const { data } = await api.post("/users", requestData, {
-        headers,
+  /**
+   * Получить зарплаты пользователя
+   * @param {number|string} userId - ID пользователя
+   * @returns {Promise<Array>} Массив зарплат
+   */
+  static async getSalaries(userId) {
+    const { data } = await api.get(`/users/${userId}/salaries`);
+    return data.salaries || [];
+  }
+
+  /**
+   * Создать зарплату для пользователя
+   * @param {number|string} userId - ID пользователя
+   * @param {Object} salaryData - Данные зарплаты
+   * @returns {Promise<Object>} Ответ от сервера
+   */
+  static async createSalary(userId, salaryData) {
+    const { data } = await api.post(`/users/${userId}/salaries`, salaryData);
+    return data;
+  }
+
+  /**
+   * Обновить зарплату пользователя
+   * @param {number|string} userId - ID пользователя
+   * @param {number|string} salaryId - ID зарплаты
+   * @param {Object} salaryData - Данные зарплаты
+   * @returns {Promise<Object>} Ответ от сервера
+   */
+  static async updateSalary(userId, salaryId, salaryData) {
+    const { data } = await api.put(`/users/${userId}/salaries/${salaryId}`, salaryData);
+    return data;
+  }
+
+  /**
+   * Удалить зарплату пользователя
+   * @param {number|string} userId - ID пользователя
+   * @param {number|string} salaryId - ID зарплаты
+   * @returns {Promise<Object>} Ответ от сервера
+   */
+  static async deleteSalary(userId, salaryId) {
+    const { data } = await api.delete(`/users/${userId}/salaries/${salaryId}`);
+    return data;
+  }
+
+  /**
+   * Получить баланс сотрудника
+   * @param {number|string} userId - ID пользователя
+   * @returns {Promise<number>} Баланс сотрудника
+   */
+  static async getEmployeeBalance(userId) {
+    const { data } = await api.get(`/users/${userId}/balance`);
+    return data.balance;
+  }
+
+  /**
+   * Получить историю баланса сотрудника
+   * @param {number|string} userId - ID пользователя
+   * @returns {Promise<Array>} История баланса
+   */
+  static async getEmployeeBalanceHistory(userId) {
+    const { data } = await api.get(`/users/${userId}/balance-history`);
+    const ClientBalanceHistoryDto = (await import("@/dto/client/ClientBalanceHistoryDto")).default;
+    return ClientBalanceHistoryDto.fromApiArray(data.history || []);
+  }
+
+  /**
+   * Подготовить данные запроса (FormData или JSON)
+   * @private
+   * @param {Object} payload - Данные для отправки
+   * @param {File|null} file - Файл для загрузки
+   * @returns {Object} Объект с requestData и headers
+   */
+  static _prepareRequestData(payload, file) {
+    if (file) {
+      const arrayFields = Object.keys(payload).filter(key => Array.isArray(payload[key]));
+      const formData = createFormData(payload, {
+        file,
+        fileKey: 'photo',
+        arrayFields
       });
-
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании пользователя:", error);
-      throw error;
+      return {
+        requestData: formData,
+        headers: { "Content-Type": "multipart/form-data" }
+      };
     }
-  },
-
-  async updateItem(id, payload, file = null) {
-    try {
-      
-      let requestData;
-      let headers = {};
-      
-      if (file) {
-        // Если есть файл, используем FormData
-        const formData = new FormData();
-        
-        Object.keys(payload).forEach((key) => {
-          if (Array.isArray(payload[key])) {
-            // Для массивов добавляем каждый элемент отдельно
-            payload[key].forEach((item, index) => {
-              formData.append(`${key}[${index}]`, item);
-            });
-          } else {
-            const value = payload[key];
-            if (value === null || value === undefined) {
-              return;
-            }
-            formData.append(key, value);
-          }
-        });
-        
-        formData.append("photo", file);
-        requestData = formData;
-        headers["Content-Type"] = "multipart/form-data";
-      } else {
-        // Если нет файла, отправляем JSON
-        requestData = payload;
-        headers["Content-Type"] = "application/json";
-      }
-
-      const { data } = await api.put(`/users/${id}`, requestData, {
-        headers: headers,
-      });
-      
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении пользователя:", error);
-      throw error;
-    }
-  },
-
-  async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/users/${id}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении пользователя:", error);
-      throw error;
-    }
-  },
-
-  async getAllPermissions() {
-    try {
-      const { data } = await api.get(`/permissions`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при получении разрешений:", error);
-      throw error;
-    }
-  },
-
-  async getCurrentUser() {
-    try {
-      const { data } = await api.get(`/user/current`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при получении текущего пользователя:", error);
-      throw error;
-    }
-  },
-
-  async updateProfile(payload, file = null) {
-    try {
-      const formData = new FormData();
-      
-      Object.keys(payload).forEach((key) => {
-        formData.append(key, payload[key]);
-      });
-      
-      if (file) {
-        formData.append("photo", file);
-      }
-
-      const { data } = await api.post(`/user/profile`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении профиля:", error);
-      throw error;
-    }
-  },
-
-  async getSalaries(userId) {
-    try {
-      const { data } = await api.get(`/users/${userId}/salaries`);
-      return data.salaries || [];
-    } catch (error) {
-      console.error("Ошибка при получении зарплат:", error);
-      throw error;
-    }
-  },
-
-  async createSalary(userId, salaryData) {
-    try {
-      const { data } = await api.post(`/users/${userId}/salaries`, salaryData);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании зарплаты:", error);
-      throw error;
-    }
-  },
-
-  async updateSalary(userId, salaryId, salaryData) {
-    try {
-      const { data } = await api.put(`/users/${userId}/salaries/${salaryId}`, salaryData);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении зарплаты:", error);
-      throw error;
-    }
-  },
-
-  async deleteSalary(userId, salaryId) {
-    try {
-      const { data } = await api.delete(`/users/${userId}/salaries/${salaryId}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении зарплаты:", error);
-      throw error;
-    }
-  },
-
-  async getEmployeeBalance(userId) {
-    try {
-      const { data } = await api.get(`/users/${userId}/balance`);
-      return data.balance;
-    } catch (error) {
-      console.error("Ошибка при получении баланса сотрудника:", error);
-      throw error;
-    }
-  },
-
-  async getEmployeeBalanceHistory(userId) {
-    try {
-      const { data } = await api.get(`/users/${userId}/balance-history`);
-      const ClientBalanceHistoryDto = (await import("@/dto/client/ClientBalanceHistoryDto")).default;
-      return ClientBalanceHistoryDto.fromApiArray(data.history || []);
-    } catch (error) {
-      if (error?.response?.status !== 403) {
-        console.error("Ошибка при получении истории баланса сотрудника:", error);
-      }
-      throw error;
-    }
-  },
-};
-
-export default UsersController;
+    return {
+      requestData: payload,
+      headers: { "Content-Type": "application/json" }
+    };
+  }
+}

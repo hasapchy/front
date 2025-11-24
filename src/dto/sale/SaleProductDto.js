@@ -70,6 +70,6 @@ export default class SaleProductDto {
             );
             dto.type = data.type || product.type;
             return dto;
-        }).filter(Boolean);
+        });
     }
 }

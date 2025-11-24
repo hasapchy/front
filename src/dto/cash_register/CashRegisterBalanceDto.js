@@ -21,6 +21,6 @@ export default class CashRegisterBalanceDto {
                 data.currency_symbol,
                 data.currency_code
             );
-        }).filter(Boolean);
+        });
     }
 }

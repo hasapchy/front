@@ -210,7 +210,7 @@ export default {
 
             this.sending = true;
             try {
-                const { comment } = await CommentController.create(this.type, this.id, body);
+                const { comment } = await CommentController.storeItem({ type: this.type, id: this.id, body });
                 this.newComment = '';
 
                 const newComment = {

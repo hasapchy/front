@@ -239,7 +239,6 @@ import CompaniesController from '@/api/CompaniesController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
-import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
@@ -396,8 +395,8 @@ export default {
                 }
 
                 this.$emit('saved');
-                // Отправляем событие об обновлении компании
-                eventBus.emit('company-updated');
+                // Обновляем компанию через store action
+                await this.$store.dispatch('handleCompanyUpdated');
                 this.clearForm();
             } catch (error) {
                 const errorMessage = this.getApiErrorMessage(error);

@@ -30,32 +30,25 @@ export default {
         }
     },
     emits: ['perPageChange'],
-    data() {
-        return {
-            selectedPerPage: this.getStoredPerPage()
+    computed: {
+        selectedPerPage: {
+            get() {
+                return this.$store.getters.perPage || this.perPage;
+            },
+            set(value) {
+                this.$store.dispatch('setPerPage', value);
+            }
         }
-    },
-    mounted() {
-        this.loadStoredPerPage();
     },
     watch: {
         perPage(newVal) {
-            this.selectedPerPage = newVal;
+            if (this.selectedPerPage !== newVal) {
+                this.selectedPerPage = newVal;
+            }
         }
     },
     methods: {
-        getStoredPerPage() {
-            const stored = localStorage.getItem(this.storageKey);
-            return stored ? parseInt(stored) : this.perPage;
-        },
-        loadStoredPerPage() {
-            const stored = this.getStoredPerPage();
-            if (stored !== this.perPage) {
-                this.$emit('perPageChange', stored);
-            }
-        },
         handlePerPageChange() {
-            localStorage.setItem(this.storageKey, this.selectedPerPage.toString());
             this.$emit('perPageChange', this.selectedPerPage);
         }
     }

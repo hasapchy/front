@@ -55,7 +55,6 @@
 
 <script>
 import UserCompanyController from '@/api/UserCompanyController';
-import { eventBus } from '@/eventBus';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 
 export default {

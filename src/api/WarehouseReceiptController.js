@@ -1,75 +1,55 @@
-import api from "./axiosInstance";
-import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
+import BaseController from "./BaseController";
 import WarehouseReceiptDto from "@/dto/warehouse/WarehouseReceiptDto";
 
+/**
+ * Контроллер для работы с поступлениями на склад
+ * @class WarehouseReceiptController
+ */
 export default class WarehouseReceiptController {
+  /**
+   * Получить список поступлений на склад с пагинацией
+   * @param {number} [page=1] - Номер страницы
+   * @param {number} [per_page=20] - Количество элементов на странице
+   * @returns {Promise<PaginatedResponse>} Объект с пагинированными данными
+   */
   static async getItems(page = 1, per_page = 20) {
-    try {
-      const response = await api.get(`/warehouse_receipts?page=${page}&per_page=${per_page}`);
-      const data = response.data;
-
-      const items = WarehouseReceiptDto.fromApiArray(data.items);
-
-      const paginatedResponse = new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
-      );
-
-      return paginatedResponse;
-    } catch (error) {
-      console.error("Ошибка при получении оприходований:", error);
-      throw error;
-    }
+    return BaseController.getItems('/warehouse_receipts', WarehouseReceiptDto, page, per_page);
   }
 
-  static async getStocks(page = 1, per_page = 20) {
-    return this.getItems(page, per_page);
-  }
-
+  /**
+   * Создать новое поступление на склад
+   * @param {Object} item - Данные поступления
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async storeItem(item) {
-    try {
-      const { data } = await api.post("/warehouse_receipts", item);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании оприходования:", error);
-      throw error;
-    }
+    return BaseController.storeItem('/warehouse_receipts', item);
   }
 
+  /**
+   * Обновить поступление на склад
+   * @param {number|string} id - ID поступления
+   * @param {Object} item - Данные поступления
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async updateItem(id, item) {
-    try {
-      const { data } = await api.put(`/warehouse_receipts/${id}`, item);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении оприходования:", error);
-      throw error;
-    }
+    return BaseController.updateItem('/warehouse_receipts', id, item);
   }
 
-
+  /**
+   * Удалить поступление на склад
+   * @param {number|string} id - ID поступления
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/warehouse_receipts/${id}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении оприходования:", error);
-      throw error;
-    }
+    return BaseController.deleteItem('/warehouse_receipts', id);
   }
 
-
+  /**
+   * Получить поступление на склад по ID
+   * @param {number|string} id - ID поступления
+   * @returns {Promise<WarehouseReceiptDto|null>} Поступление или null
+   */
   static async getItem(id) {
-    try {
-      const { data } = await api.get(`/warehouse_receipts/${id}`);
-      const item = data.item;
-      return WarehouseReceiptDto.fromApiArray([item])[0] || null;
-    } catch (error) {
-      console.error("Ошибка при получении оприходования:", error);
-      throw error;
-    }
+    return BaseController.getItem('/warehouse_receipts', WarehouseReceiptDto, id);
   }
 }
-

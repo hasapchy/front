@@ -1,10 +1,10 @@
-import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrency } from "@/utils/numberUtils";
 import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
+import BaseDto from "@/dto/BaseDto";
 import ClientDto from "@/dto/client/ClientDto";
 import WarehouseReceiptProductDto from "./WarehouseReceiptProductDto";
 
-export default class WarehouseReceiptDto {
+export default class WarehouseReceiptDto extends BaseDto {
   constructor(
     id,
     warehouseId,
@@ -47,7 +47,7 @@ export default class WarehouseReceiptDto {
     return createProductsHtmlList(this.products);
   }
   cashNameDisplay() {
-    return this.cashName || "Не указана";
+    return this.cashName ?? "Не указана";
   }
   
   paymentTypeDisplay() {
@@ -55,47 +55,34 @@ export default class WarehouseReceiptDto {
   }
 
   priceInfo() {
-    const symbol = this.currencySymbol || "m";
-    const total = this.totalPrice ?? this.amount ?? this.price ?? 0;
-    return formatCurrency(total, symbol);
-  }
-
-  formatDate() {
-    return dtoDateFormatters.formatDate(this.date);
-  }
-
-  formatCreatedAt() {
-    return dtoDateFormatters.formatCreatedAt(this.createdAt);
-  }
-
-  formatUpdatedAt() {
-    return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
+    const symbol = this.currencySymbol ?? "m";
+    return formatCurrency(this.amount ?? 0, symbol);
   }
 
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
-      const client = data.supplier ? ClientDto.fromApiArray([data.supplier])[0] || null : null;
+      const client = data.supplier ? ClientDto.fromApiArray([data.supplier])[0] : null;
       const products = data.products ? WarehouseReceiptProductDto.fromApiArray(data.products) : null;
-      const currencySymbol = data.cash_register?.currency?.symbol || 'm';
+      const currencySymbol = data.cash_register?.currency?.symbol ?? 'm';
       
       return new WarehouseReceiptDto(
         data.id,
         data.warehouse_id,
-        data.warehouse?.name || '',
+        data.warehouse?.name ?? '',
         data.amount,
         client,
         products,
         data.note,
         data.user_id,
-        data.user?.name || '',
+        data.user?.name ?? '',
         data.date,
         data.created_at,
         data.updated_at,
         data.cash_id,
-        data.cash_register?.name || '',
+        data.cash_register?.name ?? '',
         data.project_id,
         currencySymbol
       );
-    }).filter(Boolean);
+    });
   }
 }

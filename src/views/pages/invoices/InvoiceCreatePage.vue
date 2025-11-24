@@ -124,7 +124,6 @@ import ClientDto from "@/dto/client/ClientDto";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import formChangesMixin from "@/mixins/formChangesMixin";
-import { eventBus } from "@/eventBus";
 import { generateInvoicePdf, InvoicePdfGenerator } from "@/utils/pdfUtils";
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';

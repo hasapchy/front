@@ -93,7 +93,6 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import MutualSettlementsBalanceWrapper from './MutualSettlementsBalanceWrapper.vue';
-import { eventBus } from '@/eventBus';
 import searchMixin from '@/mixins/searchMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 
@@ -119,9 +118,6 @@ export default {
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
         
-        // Подписываемся на событие глобального поиска
-        eventBus.on('global-search', this.handleSearch);
-        
         // Сбрасываем фильтры взаиморасчетов при инициализации страницы
         this.clientId = '';
         
@@ -137,9 +133,12 @@ export default {
         this.loadClientBalances();
     },
     
-    beforeUnmount() {
-        // Отписываемся от события при размонтировании компонента
-        eventBus.off('global-search', this.handleSearch);
+    watch: {
+        '$store.getters.globalSearchQuery'(newQuery) {
+            if (newQuery !== undefined) {
+                this.handleSearch(newQuery);
+            }
+        }
     },
 
     methods: {

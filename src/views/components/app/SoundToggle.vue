@@ -28,8 +28,6 @@ export default {
         const toggleSound = () => {
             const newState = soundManager.toggleSound();
             store.commit('SET_SOUND_ENABLED', newState);
-            // Сохраняем настройку в localStorage
-            localStorage.setItem('soundEnabled', newState.toString());
         };
         
         return {

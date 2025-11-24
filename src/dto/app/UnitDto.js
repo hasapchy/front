@@ -1,6 +1,6 @@
 import { createFromApiArray } from "@/utils/dtoUtils";
 
-class UnitDto {
+export default class UnitDto {
     constructor(id, name, shortName) {
         this.id = id;
         this.name = name;
@@ -14,8 +14,6 @@ class UnitDto {
                 data.name,
                 data.short_name
             );
-        }).filter(Boolean);
+        });
     }
 }
-
-export default UnitDto;

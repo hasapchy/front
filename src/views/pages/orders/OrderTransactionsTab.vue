@@ -130,7 +130,7 @@ export default {
             this.transactionModal = false;
             this.fetchTransactions();
             this.fetchPaidTotal();
-            // Кэш клиентов инвалидируется автоматически через CacheInvalidator.onCreate('transactions')
+            // Кэш транзакций инвалидируется автоматически через store.dispatch('onDataCreate', { type: 'transactions' })
             // Перезагружаем клиентов в store для обновления баланса
             if (this.client?.id) {
                 await this.$store.dispatch('loadClients');

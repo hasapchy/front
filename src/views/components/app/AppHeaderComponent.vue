@@ -44,7 +44,6 @@ import CompanySwitcher from './CompanySwitcher.vue';
 import SoundToggle from './SoundToggle.vue';
 import UserProfileDropdown from './UserProfileDropdown.vue';
 import ClearCacheButton from './ClearCacheButton.vue';
-import { eventBus } from '@/eventBus';
 
 export default {
     components: {
@@ -135,7 +134,7 @@ export default {
             return iconMap[path] || 'fas fa-circle';
         },
         toggleMobileMenu() {
-            eventBus.emit('toggleMobileMenu');
+            this.$store.dispatch('toggleMobileMenu');
         }
     },
     

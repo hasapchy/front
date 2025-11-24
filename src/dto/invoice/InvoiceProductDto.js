@@ -65,6 +65,6 @@ export default class InvoiceProductDto {
         data.unit_id,
         data.unit
       );
-    }).filter(Boolean);
+    });
   }
 }

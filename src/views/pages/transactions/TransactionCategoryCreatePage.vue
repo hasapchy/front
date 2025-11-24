@@ -4,22 +4,19 @@
         <div class="space-y-4">
             <div>
                 <label class="required">{{ $t('name') }}</label>
-                <input type="text" v-model="name" :disabled="!canEdit">
+                <input type="text" v-model="name">
             </div>
             <div>
                 <label class="required">{{ $t('type') }}</label>
-                <select v-model="type" :disabled="!canEdit">
+                <select v-model="type">
                     <option value="1">{{ $t('income') }}</option>
                     <option value="0">{{ $t('expense') }}</option>
                 </select>
             </div>
-            <div v-if="!canEdit" class="text-sm text-orange-600 bg-orange-100 p-2 rounded">
-                🔒 {{ $t('systemCategoryProtected') }}
-            </div>
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null && editingItem.canBeDeleted()" :onclick="showDeleteDialog" :is-danger="true"
+        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-trash"
             :disabled="!$store.getters.hasPermission('transaction_categories_delete')">
         </PrimaryButton>
@@ -64,12 +61,7 @@ export default {
         });
     },
     computed: {
-        canEdit() {
-            return this.editingItem ? this.editingItem.canBeEdited() : true;
-        },
         canSave() {
-            if (!this.canEdit) return false;
-            
             if (this.editingItemId != null) {
                 return this.$store.getters.hasPermission('transaction_categories_update');
             } else {
@@ -81,8 +73,7 @@ export default {
         getFormState() {
             return {
                 name: this.name,
-                type: this.type,
-                canEdit: this.canEdit
+                type: this.type
             };
         },
         async save() {

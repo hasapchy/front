@@ -1,63 +1,54 @@
-import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
+import BaseController from "./BaseController";
 import TransactionCategoryDto from "@/dto/transaction/TransactionCategoryDto";
-import api from "./axiosInstance";
 
+/**
+ * Контроллер для работы с категориями транзакций
+ * @class TransactionCategoryController
+ */
 export default class TransactionCategoryController {
+  /**
+   * Получить список категорий транзакций с пагинацией
+   * @param {number} [page=1] - Номер страницы
+   * @param {number} [per_page=20] - Количество элементов на странице
+   * @returns {Promise<PaginatedResponse>} Объект с пагинированными данными
+   */
   static async getItems(page = 1, per_page = 20) {
-    try {
-      const response = await api.get(`/transaction_categories?page=${page}&per_page=${per_page}`);
-      const data = response.data;
-      const items = TransactionCategoryDto.fromApiArray(data.items);
-      return new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
-      );
-    } catch (error) {
-      console.error("Ошибка при получении категорий транзакций:", error);
-      throw error;
-    }
+    return BaseController.getItems('/transaction_categories', TransactionCategoryDto, page, per_page);
   }
 
+  /**
+   * Получить все категории транзакций без пагинации
+   * @returns {Promise<Array<TransactionCategoryDto>>} Массив категорий
+   */
   static async getAllItems() {
-    try {
-      const response = await api.get(`/transaction_categories/all`);
-      return TransactionCategoryDto.fromApiArray(response.data);
-    } catch (error) {
-      console.error("Ошибка при получении категорий транзакций:", error);
-      throw error;
-    }
+    return BaseController.getAllItems('/transaction_categories', TransactionCategoryDto);
   }
 
+  /**
+   * Создать новую категорию транзакции
+   * @param {Object} item - Данные категории
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async storeItem(item) {
-    try {
-      const { data } = await api.post("/transaction_categories", item);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании категории транзакций:", error);
-      throw error;
-    }
+    return BaseController.storeItem('/transaction_categories', item);
   }
 
+  /**
+   * Обновить категорию транзакции
+   * @param {number|string} id - ID категории
+   * @param {Object} item - Данные категории
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async updateItem(id, item) {
-    try {
-      const { data } = await api.put(`/transaction_categories/${id}`, item);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении категории транзакций:", error);
-      throw error;
-    }
+    return BaseController.updateItem('/transaction_categories', id, item);
   }
 
+  /**
+   * Удалить категорию транзакции
+   * @param {number|string} id - ID категории
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/transaction_categories/${id}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении категории транзакций:", error);
-      throw error;
-    }
+    return BaseController.deleteItem('/transaction_categories', id);
   }
 }

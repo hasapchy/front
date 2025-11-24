@@ -1,92 +1,96 @@
 import api from "./axiosInstance";
 import CurrencyHistoryDto from "@/dto/currency/CurrencyHistoryDto";
 
+/**
+ * Контроллер для работы с историей валют
+ * @class CurrencyHistoryController
+ */
 export default class CurrencyHistoryController {
-  // Получение всех валют с их текущими курсами
+  /**
+   * Получить валюты с курсами
+   * @returns {Promise<Array>} Массив валют с курсами
+   */
   static async getCurrenciesWithRates() {
-    try {
-      const response = await api.get("/currency-history/currencies");
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching currencies with rates:", error);
-      throw error;
-    }
+    const response = await api.get("/currency-history/currencies");
+    return response.data;
   }
 
-  // Получение истории курсов для конкретной валюты
+  /**
+   * Получить историю валюты с пагинацией
+   * @param {number|string} currencyId - ID валюты
+   * @param {number} [page=1] - Номер страницы
+   * @param {number} [per_page=20] - Количество элементов на странице
+   * @returns {Promise<Object>} Объект с историей валюты и пагинацией
+   */
   static async getCurrencyHistory(currencyId, page = 1, per_page = 20) {
-    try {
-      const response = await api.get(`/currency-history/${currencyId}?page=${page}&per_page=${per_page}`);
-      const data = response.data;
-      
-      return {
-        currency: data.currency,
-        history: CurrencyHistoryDto.fromApiArray(data.history),
-        currentPage: data.current_page,
-        lastPage: data.last_page,
-        total: data.total
-      };
-    } catch (error) {
-      console.error("Error fetching currency history:", error);
-      throw error;
-    }
+    const response = await api.get(`/currency-history/${currencyId}`, {
+      params: { page, per_page }
+    });
+    const data = response.data;
+
+    return {
+      currency: data.currency,
+      history: CurrencyHistoryDto.fromApiArray(data.history),
+      currentPage: data.current_page,
+      lastPage: data.last_page,
+      total: data.total,
+    };
   }
 
+  /**
+   * Создать новую запись в истории валюты
+   * @param {number|string} currencyId - ID валюты
+   * @param {Object} item - Данные истории (exchangeRate, startDate, endDate)
+   * @returns {Promise<Object>} Ответ от сервера с созданной записью
+   */
   static async storeItem(currencyId, item) {
-    try {
-      const response = await api.post(`/currency-history/${currencyId}`, {
-        exchange_rate: item.exchangeRate,
-        start_date: item.startDate,
-        end_date: item.endDate || null
-      });
-      
-      return {
-        message: response.data.message,
-        history: CurrencyHistoryDto.fromApiArray([response.data.history])[0] || null
-      };
-    } catch (error) {
-      console.error("Error creating currency history item:", error);
-      throw error;
-    }
+    const response = await api.post(`/currency-history/${currencyId}`, {
+      exchange_rate: item.exchangeRate,
+      start_date: item.startDate,
+      end_date: item.endDate || null,
+    });
+
+    return {
+      message: response.data.message || null,
+      history:
+        CurrencyHistoryDto.fromApiArray([response.data])[0] || null,
+    };
   }
 
-  static async createHistoryItem(currencyId, data) {
-    return this.storeItem(currencyId, data);
-  }
-
+  /**
+   * Обновить запись в истории валюты
+   * @param {number|string} currencyId - ID валюты
+   * @param {number|string} historyId - ID записи истории
+   * @param {Object} item - Данные истории (exchangeRate, startDate, endDate)
+   * @returns {Promise<Object>} Ответ от сервера с обновленной записью
+   */
   static async updateItem(currencyId, historyId, item) {
-    try {
-      const response = await api.put(`/currency-history/${currencyId}/${historyId}`, {
+    const response = await api.put(
+      `/currency-history/${currencyId}/${historyId}`,
+      {
         exchange_rate: item.exchangeRate,
         start_date: item.startDate,
-        end_date: item.endDate || null
-      });
-      
-      return {
-        message: response.data.message,
-        history: CurrencyHistoryDto.fromApiArray([response.data.history])[0] || null
-      };
-    } catch (error) {
-      console.error("Error updating currency history item:", error);
-      throw error;
-    }
+        end_date: item.endDate || null,
+      }
+    );
+
+    return {
+      message: response.data.message || null,
+      history:
+        CurrencyHistoryDto.fromApiArray([response.data.history])[0] || null,
+    };
   }
 
-  static async updateHistoryItem(currencyId, historyId, data) {
-    return this.updateItem(currencyId, historyId, data);
-  }
-
+  /**
+   * Удалить запись из истории валюты
+   * @param {number|string} currencyId - ID валюты
+   * @param {number|string} historyId - ID записи истории
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async deleteItem(currencyId, historyId) {
-    try {
-      const response = await api.delete(`/currency-history/${currencyId}/${historyId}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error deleting currency history item:", error);
-      throw error;
-    }
-  }
-
-  static async deleteHistoryItem(currencyId, historyId) {
-    return this.deleteItem(currencyId, historyId);
+    const response = await api.delete(
+      `/currency-history/${currencyId}/${historyId}`
+    );
+    return response.data;
   }
 }

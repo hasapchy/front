@@ -1,50 +1,40 @@
-import CacheInvalidator from "@/utils/cache";
-
 export default {
   data() {
-    let perPage = 10;
-    try {
-      const savedPerPage = localStorage.getItem("perPage");
-      if (savedPerPage) {
-        const parsed = parseInt(savedPerPage, 10);
-        if (!isNaN(parsed) && parsed > 0 && parsed <= 100) {
-          perPage = parsed;
-        } else if (parsed > 100) {
-          localStorage.removeItem("perPage");
-        }
-      }
-    } catch (e) {
-      console.warn("localStorage недоступен:", e);
-    }
-
     return {
       data: null,
       loading: false,
-      perPage: perPage,
       perPageOptions: [10, 25, 50, 100],
     };
+  },
+  computed: {
+    perPage() {
+      return this.$store.getters.perPage || 10;
+    },
   },
   watch: {
     perPage(newValue) {
       if (newValue > 100) {
         return;
       }
-      try {
-        localStorage.setItem("perPage", newValue.toString());
-      } catch (e) {
-        console.warn("Не удалось сохранить perPage:", e);
-      }
+      this.$store.dispatch('setPerPage', newValue);
     },
   },
   methods: {
     invalidateCache(action) {
-      if (
-        this.cacheInvalidationType &&
-        CacheInvalidator[action] &&
-        typeof CacheInvalidator[action] === "function"
-      ) {
+      if (this.cacheInvalidationType) {
         const companyId = this.$store.state.currentCompany?.id;
-        CacheInvalidator[action](this.cacheInvalidationType, companyId);
+        const actionMap = {
+          onCreate: 'onDataCreate',
+          onUpdate: 'onDataUpdate',
+          onDelete: 'onDataDelete'
+        };
+        const storeAction = actionMap[action];
+        if (storeAction) {
+          this.$store.dispatch(storeAction, {
+            type: this.cacheInvalidationType,
+            companyId
+          });
+        }
       }
     },
     refreshDataAfterOperation() {
@@ -57,6 +47,18 @@ export default {
         this.shouldRestoreScrollOnClose = false;
         this.closeModal(true);
       }
+    },
+    normalizeErrorMessages(error, defaultMessage) {
+      let messages = this.getApiErrorMessage(error);
+      if (Array.isArray(messages) && messages.length === 0) {
+        messages = null;
+      }
+      if (!messages) {
+        messages = [defaultMessage];
+      } else if (!Array.isArray(messages)) {
+        messages = [messages];
+      }
+      return messages;
     },
     handleSaved() {
       this.showNotification(
@@ -72,16 +74,8 @@ export default {
         this.onAfterSaved();
       }
     },
-    handleSavedError(m) {
-      let messages = this.getApiErrorMessage(m);
-      if (Array.isArray(messages) && messages.length === 0) {
-        messages = null;
-      }
-      if (!messages) {
-        messages = ["Ошибка сохранения"];
-      } else if (!Array.isArray(messages)) {
-        messages = [messages];
-      }
+    handleSavedError(error) {
+      const messages = this.normalizeErrorMessages(error, "Ошибка сохранения");
       this.showNotification(
         this.savedErrorText || "Ошибка сохранения",
         messages,
@@ -102,16 +96,8 @@ export default {
         this.onAfterDeleted();
       }
     },
-    handleDeletedError(m) {
-      let messages = this.getApiErrorMessage(m);
-      if (Array.isArray(messages) && messages.length === 0) {
-        messages = null;
-      }
-      if (!messages) {
-        messages = ["Ошибка удаления"];
-      } else if (!Array.isArray(messages)) {
-        messages = [messages];
-      }
+    handleDeletedError(error) {
+      const messages = this.normalizeErrorMessages(error, "Ошибка удаления");
       this.showNotification(
         this.deletedErrorText || "Ошибка удаления",
         messages,

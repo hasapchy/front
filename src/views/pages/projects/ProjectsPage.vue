@@ -121,7 +121,6 @@ import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vu
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import { markRaw } from 'vue';
 import debounce from "lodash.debounce";
-import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
@@ -130,7 +129,6 @@ export default {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
             // selectedIds - из batchActionsMixin
-            viewMode: 'kanban', // 'table' или 'kanban'
             statusFilter: '',
             statuses: [],
             clientFilter: '',
@@ -147,6 +145,16 @@ export default {
             allKanbanItems: [],
         }
     },
+    computed: {
+        viewMode: {
+            get() {
+                return this.$store.getters.projectsViewMode || 'table';
+            },
+            set(value) {
+                this.$store.dispatch('setProjectsViewMode', value);
+            }
+        }
+    },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
     },
@@ -158,46 +166,33 @@ export default {
         // Клиенты уже загружаются глобально в App.vue через loadCompanyData
         this.clients = this.$store.getters.clients;
         
-        // Восстанавливаем режим просмотра из localStorage
-        const savedViewMode = localStorage.getItem('projects_viewMode');
-        let shouldFetch = true;
-        
-        if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
-            // Если режим изменяется, watch вызовет fetchItems, поэтому не нужно вызывать здесь
-            if (this.viewMode !== savedViewMode) {
-                shouldFetch = false;
-            }
-            this.viewMode = savedViewMode;
-            
-            if (savedViewMode === 'kanban') {
-                this.perPage = 50;
-                this.allKanbanItems = [];
-                this.kanbanCurrentPage = 1;
-            }
-        } else {
-            if (this.viewMode === 'kanban') {
-                this.perPage = 50;
-                this.allKanbanItems = [];
-                this.kanbanCurrentPage = 1;
-            }
+        if (this.viewMode === 'kanban') {
+            this.perPage = 50;
+            this.allKanbanItems = [];
+            this.kanbanCurrentPage = 1;
         }
         
-        // Вызываем fetchItems только если viewMode не изменился (чтобы не было двойного вызова)
-        if (shouldFetch) {
-            this.fetchItems();
-        }
-        
-        // Слушаем события инвалидации кэша
-        eventBus.on('cache:invalidate', this.handleCacheInvalidate);
+        this.fetchItems();
     },
     beforeUnmount() {
         // Очищаем таймер при уничтожении компонента
         if (this.debounceTimer) {
             clearTimeout(this.debounceTimer);
         }
-        
-        // Отписываемся от события
-        eventBus.off('cache:invalidate', this.handleCacheInvalidate);
+    },
+    watch: {
+        // Отслеживаем инвалидацию кэша через store action
+        // Компоненты могут вызывать: this.$store.dispatch('invalidateCache', { type: 'projects' })
+        // Или использовать watch на projects в store
+        '$store.getters.projects': {
+            handler() {
+                // Если проекты изменились, обновляем список
+                if (this.fetchItems) {
+                    this.fetchItems();
+                }
+            },
+            deep: true
+        }
     },
     methods: {
         itemMapper(i, c) {
@@ -433,22 +428,17 @@ export default {
     watch: {
         viewMode: {
             handler(newMode) {
-                // Сохраняем режим просмотра в localStorage
-                localStorage.setItem('projects_viewMode', newMode);
-                
                 if (newMode === 'kanban') {
                     this.perPage = 50;
                     this.allKanbanItems = [];
                     this.kanbanCurrentPage = 1;
                     this.fetchItems(1, false);
                 } else {
-                    const savedPerPage = localStorage.getItem('projectsPerPage');
-                    this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
                     this.allKanbanItems = [];
                     this.fetchItems(1, false);
                 }
             },
-            immediate: false // Не вызывать при инициализации, только при изменениях
+            immediate: false
         }
     },
     computed: {

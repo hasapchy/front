@@ -3,23 +3,32 @@ import ProductDto from "@/dto/product/ProductDto";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
 import basementApi from "./basementAxiosInstance";
 
+/**
+ * Контроллер для работы с продуктами в Basement
+ * @class BasementProductController
+ */
 export default class BasementProductController {
+  /**
+   * Получить список продуктов/услуг с пагинацией
+   * @param {number} [page=1] - Номер страницы
+   * @param {boolean} [products=true] - true для продуктов, false для услуг
+   * @param {Object} [params={}] - Дополнительные параметры фильтрации
+   * @param {number} [per_page=20] - Количество элементов на странице
+   * @returns {Promise<PaginatedResponse>} Объект с пагинированными данными
+   */
   static async getItems(page = 1, products = true, params = {}, per_page = 20) {
-    const queryParams = new URLSearchParams();
-    queryParams.append('page', page);
-    queryParams.append('per_page', per_page);
+    const requestParams = {
+      page,
+      per_page,
+      ...Object.fromEntries(
+        Object.entries(params).filter(([_, value]) => value != null && value !== '')
+      )
+    };
     
-    Object.keys(params).forEach(key => {
-      if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
-        queryParams.append(key, params[key]);
-      }
+    const response = await basementApi.get(`/${products ? "products" : "services"}`, {
+      params: requestParams
     });
-    
-    const endpoint = `/${products ? "products" : "services"}?${queryParams.toString()}`;
-    
-    const response = await basementApi.get(endpoint);
     const data = response.data;
-    
     const items = ProductDto.fromApiArray(data.items);
 
     return new PaginatedResponse(
@@ -31,19 +40,23 @@ export default class BasementProductController {
     );
   }
 
-  static async searchItems($search_term, params = {}) {
+  /**
+   * Поиск продуктов
+   * @param {string} searchTerm - Поисковый запрос
+   * @param {Object} [params={}] - Дополнительные параметры поиска
+   * @returns {Promise<Array<ProductSearchDto>>} Массив найденных продуктов
+   */
+  static async searchItems(searchTerm, params = {}) {
     const searchParams = {
       ...params,
-      search: $search_term,
+      search: searchTerm,
       products_only: true
     };
     
     const response = await basementApi.get("/products/search", {
       params: searchParams,
     });
-    const data = response.data;
-    
-    return ProductSearchDto.fromApiArray(data);
+    return ProductSearchDto.fromApiArray(response.data.data);
   }
 }
 

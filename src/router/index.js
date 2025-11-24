@@ -504,23 +504,19 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
-  const token = localStorage.getItem("token");
-  const user = localStorage.getItem("user");
-
-  let userData = null;
+  const token = store.getters.token;
+  const userFromStore = store.getters.user;
+  
+  let userData = userFromStore;
   let isBasementWorker = false;
   let isAdmin = false;
 
-  // Парсим данные пользователя
-  try {
-    if (user) {
-      userData = JSON.parse(user);
-      isBasementWorker =
-        userData.roles && userData.roles.includes("basement_worker");
-      isAdmin = userData.roles && userData.roles.includes("admin");
-    }
-  } catch {
-    userData = null;
+  // Пользователь должен быть в store (загружается из persistedstate)
+
+  if (userData) {
+    isBasementWorker =
+      userData.roles && userData.roles.includes("basement_worker");
+    isAdmin = userData.roles && userData.roles.includes("admin");
   }
 
   // Проверка для basement маршрутов
@@ -559,25 +555,8 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.meta.permission) {
-    if (!store.state.permissionsLoaded || (store.state.permissionsLoaded && store.state.permissions?.length === 0)) {
-      await new Promise((resolve) => {
-        let attempts = 0;
-        const maxAttempts = 100;
-        const checkPermissions = () => {
-          const hasPermissions = store.state.permissionsLoaded && 
-                                 store.state.permissions && 
-                                 store.state.permissions.length > 0;
-          if (hasPermissions) {
-            resolve();
-          } else if (attempts >= maxAttempts) {
-            resolve();
-          } else {
-            attempts++;
-            setTimeout(checkPermissions, 50);
-          }
-        };
-        checkPermissions();
-      });
+    if (!store.state.auth.permissionsLoaded) {
+      return next({ path: "/" });
     }
 
     if (!store.getters.hasPermission(to.meta.permission)) {

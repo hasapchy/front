@@ -1,8 +1,8 @@
-import { dtoDateFormatters } from '@/utils/dateUtils';
 import { formatCurrency } from '@/utils/numberUtils';
 import { createFromApiArray } from '@/utils/dtoUtils';
+import BaseDto from "@/dto/BaseDto";
 
-class ProjectContractDto {
+export default class ProjectContractDto extends BaseDto {
     constructor(
         id,
         projectId,
@@ -29,7 +29,7 @@ class ProjectContractDto {
         this.currencySymbol = currencySymbol;
         this.date = date;
         this.returned = returned;
-        this.files = files || [];
+        this.files = files ?? [];
         this.note = note;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -37,11 +37,7 @@ class ProjectContractDto {
 
 
     formatAmount() {
-        return formatCurrency(this.amount || 0, this.currencySymbol || '', null, true);
-    }
-
-    formatDate() {
-        return dtoDateFormatters.formatDate(this.date);
+        return formatCurrency(this.amount ?? 0, this.currencySymbol ?? '', null, true);
     }
 
     getReturnedStatus() {
@@ -65,22 +61,20 @@ class ProjectContractDto {
         return createFromApiArray(dataArray, data => {
             return new ProjectContractDto(
                 data.id,
-                data.project_id || data.projectId,
+                data.project_id,
                 data.number,
                 data.amount,
-                data.currency_id || data.currencyId,
-                data.currency_name || data.currencyName,
-                data.currency_code || data.currencyCode,
-                data.currency_symbol || data.currencySymbol,
+                data.currency_id,
+                data.currency_name,
+                data.currency_code,
+                data.currency_symbol,
                 data.date,
                 data.returned,
                 data.files,
                 data.note,
-                data.created_at || data.createdAt,
-                data.updated_at || data.updatedAt
+                data.created_at,
+                data.updated_at
             );
-        }).filter(Boolean);
+        });
     }
 }
-
-export default ProjectContractDto;

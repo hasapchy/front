@@ -1,56 +1,46 @@
-import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
-import api from "./axiosInstance";
+import BaseController from "./BaseController";
 import TransferDto from "@/dto/transfer/TransferDto";
 
+/**
+ * Контроллер для работы с переводами
+ * @class TransferController
+ */
 export default class TransferController {
+  /**
+   * Получить список переводов с пагинацией
+   * @param {number} [page=1] - Номер страницы
+   * @param {number} [per_page=20] - Количество элементов на странице
+   * @returns {Promise<PaginatedResponse>} Объект с пагинированными данными
+   */
   static async getItems(page = 1, per_page = 20) {
-    try {
-      const response = await api.get(`/transfers?page=${page}&per_page=${per_page}`);
-      const data = response.data;
-      const items = TransferDto.fromApiArray(data.items);
-
-      const paginatedResponse = new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
-      );
-
-      return paginatedResponse;
-    } catch (error) {
-      console.error("Ошибка при получении трансферов:", error);
-      throw error;
-    }
+    return BaseController.getItems('/transfers', TransferDto, page, per_page);
   }
 
+  /**
+   * Создать новый перевод
+   * @param {Object} item - Данные перевода
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async storeItem(item) {
-    try {
-      const { data } = await api.post("/transfers", item);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании трансфера:", error);
-      throw error;
-    }
+    return BaseController.storeItem('/transfers', item);
   }
 
+  /**
+   * Обновить перевод
+   * @param {number|string} id - ID перевода
+   * @param {Object} item - Данные перевода
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async updateItem(id, item) {
-    try {
-      const { data } = await api.put(`/transfers/${id}`, item);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении трансфера:", error);
-      throw error;
-    }
+    return BaseController.updateItem('/transfers', id, item);
   }
 
+  /**
+   * Удалить перевод
+   * @param {number|string} id - ID перевода
+   * @returns {Promise<Object>} Ответ от сервера
+   */
   static async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/transfers/${id}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении трансфера:", error);
-      throw error;
-    }
+    return BaseController.deleteItem('/transfers', id);
   }
 }

@@ -25,6 +25,10 @@ export const CACHE_TTL = {
   transactionCategories: 12 * 60 * 60 * 1000,   // ⬇️ 12 часов (было 24)
   productStatuses: 12 * 60 * 60 * 1000,         // ⬇️ 12 часов (было 24)
   
+  // Специальные кэши
+  lastProductsData: 5 * 60 * 1000,              // 5 минут
+  queryCache: 2 * 60 * 1000,                    // 2 минуты
+  
   // По умолчанию
   default: 10 * 60 * 1000                       // 10 минут
 };
