@@ -78,6 +78,7 @@ export default {
   categories: 'Product Categories',
   orders: 'Orders',
   sales: 'Sales',
+  tasks: 'Tasks',
   warehouses: 'Warehouses',
   finance: 'Finance',
   transactions: 'Transactions',
@@ -432,4 +433,31 @@ export default {
     present: 'to present',
     bonus: 'Add Bonus',
     penalty: 'Issue Penalty',
+
+    // Common fields
+    title: 'Title',
+    description: 'Description',
+    status: 'Status',
+    project: 'Project',
+    deadline: 'Due date',
+    enterDescription: 'Enter description',
+
+    // Task statuses
+    pending: 'Pending',
+    inProgress: 'In Progress',
+    completed: 'Completed',
+    postponed: 'Postponed',
+
+    // Tasks
+    createTask: 'Create Task',
+    editTask: 'Edit Task',
+    taskSuccessfullyAdded: 'Task successfully created',
+    taskSuccessfullyUpdated: 'Task successfully updated',
+    taskSuccessfullyDeleted: 'Task successfully deleted',
+    errorSavingTask: 'Error saving task',
+    errorGettingTaskList: 'Error loading task list',
+    titleRequired: 'Task title is required',
+    supervisor: 'Supervisor',
+    executor: 'Executor',
+    creator: 'Creator',
 }
