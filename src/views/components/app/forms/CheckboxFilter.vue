@@ -1,31 +1,50 @@
 <template>
-    <div class="relative">
-        <div class="relative">
-            <button @click="toggleDropdown" type="button" class="custom-dropdown-button">
-                <span>
-                    {{ getFilterText() }}
-                </span>
-                <i class="fas fa-chevron-down"></i>
-            </button>
+    <div ref="root" class="relative w-full">
+        <button
+            type="button"
+            class="custom-dropdown-button checkbox-filter__trigger"
+            @click="toggleDropdown"
+        >
+            <div class="checkbox-filter__selection">
+                <template v-if="localValue.length === 0">
+                    <span class="checkbox-filter__placeholder">{{ $t(placeholder) }}</span>
+                </template>
+                <template v-else>
+                    <span
+                        v-for="option in selectedOptions"
+                        :key="option.value"
+                        class="checkbox-filter__pill"
+                        :title="option.label"
+                    >
+                        {{ option.label }}
+                    </span>
+                </template>
+            </div>
+            <i class="fas fa-chevron-down"></i>
+        </button>
 
-
-            <div v-if="showDropdown" class="absolute z-10 mt-1 w-48 bg-white border rounded-md shadow-lg">
-                <div class="p-2 space-y-2">
+        <transition name="fade">
+            <div
+                v-if="showDropdown"
+                class="checkbox-filter__dropdown"
+            >
+                <div class="checkbox-filter__list">
                     <label
                         v-for="option in options"
                         :key="option.value"
-                        class="flex items-center space-x-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">
-                        <input 
-                            type="checkbox" 
-                            :value="option.value" 
-                            v-model="localValue" 
+                        class="checkbox-filter__option"
+                    >
+                        <input
+                            type="checkbox"
+                            :value="option.value"
+                            v-model="localValue"
                             @change="handleChange"
                         >
                         <span>{{ option.label }}</span>
                     </label>
                 </div>
             </div>
-        </div>
+        </transition>
     </div>
 </template>
 
@@ -40,7 +59,6 @@ export default {
         options: {
             type: Array,
             required: true,
-
         },
         placeholder: {
             type: String,
@@ -51,6 +69,16 @@ export default {
         return {
             showDropdown: false,
             localValue: [...this.modelValue]
+        }
+    },
+    computed: {
+        selectedOptions() {
+            if (!Array.isArray(this.localValue) || this.localValue.length === 0) {
+                return [];
+            }
+            return this.localValue
+                .map(value => this.options.find(option => option.value === value))
+                .filter(Boolean);
         }
     },
     watch: {
@@ -71,22 +99,15 @@ export default {
         toggleDropdown() {
             this.showDropdown = !this.showDropdown;
         },
-        getFilterText() {
-            if (this.localValue.length === 0) {
-                return this.$t(this.placeholder);
-            }
-            return this.localValue.map(value => {
-                const option = this.options.find(opt => opt.value === value);
-                return option ? option.label : value;
-            }).join(', ');
-        },
         handleChange() {
             this.$emit('update:modelValue', [...this.localValue]);
             this.$emit('change', [...this.localValue]);
         },
         handleClickOutside(event) {
-            const dropdown = event.target.closest('.relative');
-            if (!dropdown || !dropdown.contains(event.target)) {
+            if (!this.$refs.root) {
+                return;
+            }
+            if (!this.$refs.root.contains(event.target)) {
                 this.showDropdown = false;
             }
         }
@@ -95,5 +116,81 @@ export default {
 </script>
 
 <style scoped>
+.checkbox-filter__trigger {
+    min-height: 40px;
+    text-align: left;
+    padding-right: 2.5rem;
+}
 
+.checkbox-filter__selection {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+}
+
+.checkbox-filter__placeholder {
+    color: #9ca3af;
+    font-size: 0.875rem;
+}
+
+.checkbox-filter__pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 10px;
+    border-radius: 9999px;
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    font-size: 0.75rem;
+    line-height: 1.75rem;
+    height: 1.75rem;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.checkbox-filter__dropdown {
+    position: absolute;
+    z-index: 50;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 100%;
+    min-width: 12rem;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.checkbox-filter__list {
+    max-height: 16rem;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.checkbox-filter__option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.checkbox-filter__option:hover {
+    background-color: #f3f4f6;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+}
 </style>

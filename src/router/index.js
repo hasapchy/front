@@ -216,10 +216,16 @@ const routes = [
         name: "Warehouses",
         component: WarehousesPage,
         meta: {
-          title: "warehouses",
+          title: "stock",
           requiresAuth: true,
           showSearch: true,
-          permission: "warehouses_view",
+          permission: "warehouse_stocks_view",
+          binded: [
+            {
+              name: "warehouses",
+              path: "/admin/warehouses",
+            },
+          ],
         },
       },
       {
@@ -269,7 +275,17 @@ const routes = [
         path: "/admin/warehouses",
         name: "Admin-Warehouses",
         component: AdminWarehousesPage,
-        meta: { title: "warehouses", requiresAuth: true },
+        meta: {
+          title: "warehouses",
+          requiresAuth: true,
+          permission: "warehouses_view",
+          binded: [
+            {
+              name: "stock",
+              path: "/warehouses",
+            },
+          ],
+        },
       },
       {
         path: "/categories",

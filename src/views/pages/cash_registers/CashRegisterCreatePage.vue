@@ -23,8 +23,8 @@
         </div>
         <div class="mt-4">
             <label>{{ $t('assignUsers') }}</label>
-            <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
-                <label v-for="user in users" :key="user.id"
+            <div v-if="assignableUsers.length" class="flex flex-wrap gap-2">
+                <label v-for="user in assignableUsers" :key="user.id"
                     class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
                     <input type="checkbox" :value="user.id" v-model="selectedUsers" :id="'user-' + user.id">
                     <span class="text-black">{{ user.name }}</span>
@@ -91,6 +91,12 @@ export default {
     computed: {
         selectedCurrency() {
             return this.currencies.find(currency => currency.id == this.currency_id);
+        },
+        assignableUsers() {
+            if (!Array.isArray(this.users)) {
+                return [];
+            }
+            return this.users.filter(this.userHasCashAccess);
         }
     },
     methods: {
@@ -103,15 +109,30 @@ export default {
             };
         },
         async fetchUsers() {
-            // ✅ Используем данные из store (кэш!)
             await this.$store.dispatch('loadUsers');
-            // ✅ Используем геттер usersForCurrentCompany - автоматически фильтрует по текущей компании
             this.users = this.$store.getters.usersForCurrentCompany;
+            this.filterSelectedUsers();
         },
         async fetchCurrencies() {
             // Используем данные из store
             await this.$store.dispatch('loadCurrencies');
             this.currencies = this.$store.getters.currencies;
+        },
+        userHasCashAccess(user) {
+            if (!user || !Array.isArray(user.permissions)) {
+                return false;
+            }
+            return user.permissions.some(permission => permission === 'cash_registers_view' || permission.startsWith('cash_registers_view_'));
+        },
+        filterSelectedUsers() {
+            if (!Array.isArray(this.users) || this.users.length === 0) {
+                return;
+            }
+            const availableIds = new Set(this.assignableUsers.map(user => user.id));
+            const filtered = this.selectedUsers.filter(id => availableIds.has(id));
+            if (filtered.length !== this.selectedUsers.length) {
+                this.selectedUsers = filtered;
+            }
         },
         async save() {
             this.saveLoading = true;
@@ -193,6 +214,7 @@ export default {
                     this.currency_id = '';
                     this.editingItemId = null;
                 }
+                this.filterSelectedUsers();
                 this.$nextTick(() => {
                     this.saveInitialState();
                 });

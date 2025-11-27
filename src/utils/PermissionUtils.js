@@ -3,6 +3,9 @@ export function permissionIcon(name) {
     const settingsIconMap = {
       'settings_edit_any_date': 'fas fa-pen',
       'settings_project_budget_view': 'fas fa-eye',
+      'settings_project_files_view': 'fas fa-folder-open',
+      'settings_project_balance_view': 'fas fa-wallet',
+      'settings_project_contracts_view': 'fas fa-file-contract',
       'settings_currencies_view': 'fas fa-eye',
       'settings_cash_balance_view': 'fas fa-wallet',
       'settings_client_balance_view': 'fas fa-user-circle',
@@ -80,6 +83,9 @@ export function permissionLabel(name) {
     const settingsMap = {
       'settings_edit_any_date': 'Изменение любой даты',
       'settings_project_budget_view': 'Просмотр бюджета проекта',
+      'settings_project_files_view': 'Просмотр файлов проекта',
+      'settings_project_balance_view': 'Просмотр баланса проекта',
+      'settings_project_contracts_view': 'Просмотр контрактов проекта',
       'settings_currencies_view': 'Просмотр других валют',
       'settings_cash_balance_view': 'Просмотр баланса касс',
       'settings_client_balance_view': 'Просмотр баланса клиентов',

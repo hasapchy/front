@@ -39,13 +39,13 @@
 
                                     <div>
                                         <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
-                                        <select :value="clientTypeFilter" @change="handleClientTypeChange($event.target.value)" class="w-full">
-                                            <option value="all">{{ $t('all') }}</option>
-                                            <option value="individual">{{ $t('individual') }}</option>
-                                            <option value="company">{{ $t('company') }}</option>
-                                            <option value="employee">{{ $t('employee') }}</option>
-                                            <option value="investor">{{ $t('investor') }}</option>
-                                        </select>
+                                        <CheckboxFilter
+                                            class="w-full"
+                                            :model-value="clientTypeFilter"
+                                            :options="clientTypeOptions"
+                                            placeholder="all"
+                                            @update:modelValue="handleClientTypeChange"
+                                        />
                                     </div>
                                 </FiltersContainer>
                             </template>
@@ -96,6 +96,7 @@ import NotificationToast from '@/views/components/app/dialog/NotificationToast.v
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
+import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
@@ -114,7 +115,7 @@ import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
     mixins: [notificationMixin, modalMixin, companyChangeMixin, searchMixin, crudEventMixin, getApiErrorMessageMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
     data() {
         return {
             allClients: [],
@@ -134,16 +135,12 @@ export default {
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', true);
         
-        // Подписываемся на событие глобального поиска
         eventBus.on('global-search', this.handleSearch);
-        
-        // Сбрасываем фильтры взаиморасчетов при инициализации страницы
+
         this.clientId = '';
         
-        // Сбрасываем clientTypeFilter при входе на страницу взаиморасчетов
-        // чтобы он не показывался как активный фильтр, если был сохранен из другой страницы
-        if (this.$store.state.clientTypeFilter && String(this.$store.state.clientTypeFilter).trim() !== 'all') {
-            this.$store.dispatch('setClientTypeFilter', 'all');
+        if (!Array.isArray(this.$store.state.clientTypeFilter)) {
+            this.$store.dispatch('setClientTypeFilter', []);
         }
     },
 
@@ -153,7 +150,6 @@ export default {
     },
     
     beforeUnmount() {
-        // Отписываемся от события при размонтировании компонента
         eventBus.off('global-search', this.handleSearch);
     },
 
@@ -194,11 +190,11 @@ export default {
             if (this.clientId) {
                 filteredClients = this.allClientsRaw.filter(client => client.id == this.clientId);
             }
-            // Фильтр по типу клиента
-            if (this.clientTypeFilter && this.clientTypeFilter !== 'all') {
+            const typeFilters = Array.isArray(this.clientTypeFilter) ? this.clientTypeFilter : [];
+            if (typeFilters.length) {
                 filteredClients = filteredClients.filter(client => {
                     const type = client.clientType || client.client_type || 'individual';
-                    return type === this.clientTypeFilter;
+                    return typeFilters.includes(type);
                 });
             }
 
@@ -316,7 +312,7 @@ export default {
 
         resetFilters() {
             this.clientId = '';
-            this.$store.dispatch('setClientTypeFilter', 'all');
+            this.$store.dispatch('setClientTypeFilter', []);
             // Очищаем поисковый запрос
             this.$store.dispatch('setSearchQuery', '');
             this.applyFilters();
@@ -324,12 +320,13 @@ export default {
         getActiveFiltersCount() {
             let count = 0;
             if (this.clientId !== '') count++;
-            if (this.clientTypeFilter !== 'all') count++;
+            if (Array.isArray(this.clientTypeFilter) && this.clientTypeFilter.length) count++;
             if (this.searchQuery && this.searchQuery.trim() !== '') count++;
             return count;
         },
         handleClientTypeChange(value) {
-            this.$store.dispatch('setClientTypeFilter', value);
+            const selected = Array.isArray(value) ? value : [];
+            this.$store.dispatch('setClientTypeFilter', selected);
             this.applyFilters();
         },
 
@@ -363,18 +360,25 @@ export default {
             return trimmed;
         },
         clientTypeFilter() {
-            const filter = this.$store.state.clientTypeFilter;
-            return filter || 'all';
+            const filter = this.$store.getters.clientTypeFilter;
+            return Array.isArray(filter) ? filter : [];
+        },
+        clientTypeOptions() {
+            return [
+                { value: 'individual', label: this.$t('individual') },
+                { value: 'company', label: this.$t('company') },
+                { value: 'employee', label: this.$t('employee') },
+                { value: 'investor', label: this.$t('investor') },
+            ];
         },
         hasActiveFilters() {
             // Проверяем clientId - должен быть непустой строкой (локальный фильтр страницы)
             const clientIdValue = String(this.clientId || '').trim();
             const hasClientId = clientIdValue !== '' && clientIdValue !== '0' && clientIdValue !== 'null' && clientIdValue !== 'undefined';
             
-            // Проверяем clientTypeFilter - должен быть не 'all' (локальный фильтр страницы)
-            // После сброса в created() он должен быть 'all', но проверяем на всякий случай
-            const clientTypeValue = String(this.clientTypeFilter || 'all').trim();
-            const hasClientType = clientTypeValue !== 'all' && clientTypeValue !== '' && clientTypeValue !== 'null' && clientTypeValue !== 'undefined';
+            // Проверяем clientTypeFilter - должен содержать выбранные значения (локальный фильтр страницы)
+            // После сброса в created() он очищается, но проверяем на всякий случай
+            const hasClientType = Array.isArray(this.clientTypeFilter) && this.clientTypeFilter.length > 0;
             
             // Не учитываем глобальный searchQuery как фильтр взаиморасчетов
             // так как это глобальный поиск, который используется на всех страницах

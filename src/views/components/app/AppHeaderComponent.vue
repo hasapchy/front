@@ -112,7 +112,9 @@ export default {
                 '/cash-registers': 'cash_registers_view',
                 '/invoices': 'invoices_view',
                 '/products': 'products_view',
-                '/services': 'products_view'
+                '/services': 'products_view',
+                '/warehouses': 'warehouse_stocks_view',
+                '/admin/warehouses': 'warehouses_view'
             };
             return permissionMap[path];
         },
@@ -130,7 +132,9 @@ export default {
                 '/services': 'fas fa-concierge-bell',
                 '/project_statuses': 'fas fa-project-diagram',
                 '/projects': 'fas fa-tasks',
-                '/categories': 'fas fa-tags'
+                '/categories': 'fas fa-tags',
+                '/warehouses': 'fas fa-box',
+                '/admin/warehouses': 'fas fa-warehouse'
             };
             return iconMap[path] || 'fas fa-circle';
         },

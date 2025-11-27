@@ -11,7 +11,7 @@
             ]">
                 <form class="bg-white flex items-center justify-center flex-col px-6 py-8 md:px-12 md:py-10 h-full text-center"
                     method="POST" action="/" @submit.prevent="login">
-                    <div class="mb-6 md:hidden">
+                    <div class="mb-6 w-full flex justify-center">
                         <img src="/logo.png" alt="Lebizli Tehnologiya Merkezi"
                             class="h-16 w-auto object-contain mx-auto" />
                     </div>
@@ -71,7 +71,7 @@
             ]">
                 <form class="bg-white flex items-center justify-center flex-col px-6 py-8 md:px-12 md:py-10 h-full text-center"
                     method="POST" action="/" @submit.prevent="handleSignUp">
-                    <div class="mb-6 md:hidden">
+                    <div class="mb-6 w-full flex justify-center">
                         <img src="/logo.png" alt="Lebizli Tehnologiya Merkezi"
                             class="h-16 w-auto object-contain mx-auto" />
                     </div>
@@ -129,10 +129,6 @@
                         'absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 right-0 transition-transform duration-600 ease-in-out',
                         isRightPanelActive ? 'translate-x-0' : 'translate-x-0'
                     ]">
-                        <div class="mb-8">
-                            <img src="/logo.png" alt="Lebizli Tehnologiya Merkezi"
-                                class="h-20 w-auto object-contain mx-auto" />
-                        </div>
                         <h1 class="font-bold text-3xl mb-5 mt-0 text-white">
                             Добро пожаловать!
                         </h1>
@@ -181,10 +177,6 @@
                         'absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 left-0 transition-transform duration-600 ease-in-out',
                         isRightPanelActive ? 'translate-x-0' : '-translate-x-1/5'
                     ]">
-                        <div class="mb-8">
-                            <img src="/logo.png" alt="Lebizli Tehnologiya Merkezi"
-                                class="h-20 w-auto object-contain mx-auto" />
-                        </div>
                         <h1 class="font-bold text-3xl mb-5 mt-0 text-white">
                             Привет, друг!
                         </h1>

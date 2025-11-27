@@ -513,6 +513,10 @@ export default {
   senderCashRegister: 'Kassa iberiji',
   receiverCashRegister: 'Kassa aljy',
   allWarehouses: 'Ähli ammarlar',
+  availability: 'Bar bolmagy',
+  allProducts: 'Ähli önümler',
+  inStock: 'Bar',
+  outOfStock: 'Ýok',
   warehouseSuccessfullyAdded: 'Ammar üstünlikli goşuldy',
   errorGettingWarehouseProducts: 'Ammar önümlerini almakda ýalňyşlyk',
   errorGettingWarehouses: 'Ammarlary almakda ýalňyşlyk',
@@ -720,6 +724,8 @@ export default {
   errorSavingTransaction: 'Tranzaksiyany saklamakda ýalňyşlyk',
   transactionSuccessfullyDeleted: 'Tranzaksiya üstünlikli pozuldy',
   errorDeletingTransaction: 'Tranzaksiyany pozmakda ýalňyşlyk',
+  transactionDeletedReadonly: 'Bu tranzaksiýa pozuldy we üýtgedip bolmaýar',
+  transactionReadonlyDueToSource: 'Bu tranzaksiýa transfere, sargyta ýa-da satuwa baglanyşan we üýtgedip bolmaýar',
   
   // Трансферы
   errorGettingTransferList: 'Transfer sanawyny almakda ýalňyşlyk',
@@ -968,6 +974,7 @@ export default {
   paidOrdersFilter: 'Tölenen sargytlaryň filtr',
   clickToFilterDebts: 'Karzlary filter etmek üçin basyň',
   clickToFilterTransactions: 'Tranzaksiyalary filter etmek üçin basyň',
+  transactionDeletedReadonly: 'Bu tranzaksiýa pozuldy we üýtgedip bolmaýar',
   
   // Файлы
   noFilesUploaded: 'Faýllar ýüklenmedi',
@@ -1083,6 +1090,9 @@ export default {
   settings: 'Sazlamalar',
     settings_edit_any_date: 'Islendik senäni üýtget',
     settings_project_budget_view: 'Proýekt büdjetini gör',
+    settings_project_files_view: 'Proýekt faýllaryny gör',
+    settings_project_balance_view: 'Proýekt balansyny gör',
+    settings_project_contracts_view: 'Proýekt şertnamalaryny gör',
     settings_currencies_view: 'Başga walýutalary gör',
     settings_cash_balance_view: 'Kassa balansyny gör',
     settings_client_balance_view: 'Müşderi balansyny gör',

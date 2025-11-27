@@ -354,10 +354,18 @@ export default {
                 // Добавляем custom permissions в соответствующие группы
                 const customPerms = [];
                 if (groupKey === 'projects') {
-                    const projectBudgetPermission = this.allPermissions.find(p => p && p.name === 'settings_project_budget_view');
-                    if (projectBudgetPermission) {
-                        customPerms.push(projectBudgetPermission);
-                    }
+                    const projectSettingsPermissions = [
+                        'settings_project_budget_view',
+                        'settings_project_balance_view',
+                        'settings_project_files_view',
+                        'settings_project_contracts_view',
+                    ];
+                    projectSettingsPermissions.forEach(name => {
+                        const permission = this.allPermissions.find(p => p && p.name === name);
+                        if (permission) {
+                            customPerms.push(permission);
+                        }
+                    });
                 }
                 if (groupKey === 'cash') {
                     const cashBalancePermission = this.allPermissions.find(p => p && p.name === 'settings_cash_balance_view');
@@ -424,13 +432,19 @@ export default {
             return sortedGroups;
         },
         customPermissions() {
+            const excludedSettings = [
+                'settings_project_budget_view',
+                'settings_project_balance_view',
+                'settings_project_files_view',
+                'settings_project_contracts_view',
+                'settings_cash_balance_view',
+                'settings_currencies_view',
+                'settings_client_balance_view',
+                'settings_client_balance_adjustment',
+            ];
             return this.allPermissions.filter(perm => 
                 perm && perm.name && (perm.name.startsWith('settings_') || perm.name.includes('_edit_')) 
-                && perm.name !== 'settings_project_budget_view'
-                && perm.name !== 'settings_cash_balance_view'
-                && perm.name !== 'settings_currencies_view'
-                && perm.name !== 'settings_client_balance_view'
-                && perm.name !== 'settings_client_balance_adjustment'
+                && !excludedSettings.includes(perm.name)
             );
         },
         selectAllChecked: {
@@ -561,6 +575,9 @@ export default {
             const defaultLabels = {
                 'settings_edit_any_date': 'Редактирование любой даты',
                 'settings_project_budget_view': 'Просмотр бюджета проекта',
+                'settings_project_balance_view': 'Просмотр баланса проекта',
+                'settings_project_files_view': 'Просмотр файлов проекта',
+                'settings_project_contracts_view': 'Просмотр контрактов проекта',
                 'settings_currencies_view': 'Просмотр валют',
                 'settings_cash_balance_view': 'Просмотр баланса кассы',
                 'settings_client_balance_view': 'Просмотр баланса клиентов',

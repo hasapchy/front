@@ -69,6 +69,34 @@ const FIELDS_WITH_TIMESTAMP = [
   "allProductsData",
 ];
 
+const CLIENT_TYPE_FILTER_VALUES = [
+  "individual",
+  "company",
+  "employee",
+  "investor",
+];
+
+const normalizeClientTypeFilter = (value) => {
+  if (!value || value === "all") {
+    return [];
+  }
+
+  let rawValues = [];
+  if (Array.isArray(value)) {
+    rawValues = value;
+  } else if (typeof value === "string") {
+    rawValues = value.split(",");
+  } else {
+    return [];
+  }
+
+  const normalized = rawValues
+    .map((item) => String(item).trim())
+    .filter((item) => CLIENT_TYPE_FILTER_VALUES.includes(item));
+
+  return Array.from(new Set(normalized));
+};
+
 async function retryWithExponentialBackoff(
   fn,
   maxRetries = 3,
@@ -439,7 +467,7 @@ const store = createStore({
     // ✅ Флаг синхронизации компании, пришедшей из другой вкладки
     isSyncingCompanyFromOtherTab: false,
     // Фильтр по типу клиента для взаиморасчетов/финансов
-    clientTypeFilter: "all",
+    clientTypeFilter: [],
     // Версия логотипа для инвалидации кэша изображений
     logoVersion: 0,
     // Кэш пагинированных запросов API
@@ -621,7 +649,7 @@ const store = createStore({
       state.isSyncingCompanyFromOtherTab = value;
     },
     SET_CLIENT_TYPE_FILTER(state, value) {
-      state.clientTypeFilter = value || "all";
+      state.clientTypeFilter = normalizeClientTypeFilter(value);
     },
     SET_ORDER_STATUSES_CUSTOM_ORDER(state, order) {
       state.orderStatusesCustomOrder = order;
@@ -682,7 +710,7 @@ const store = createStore({
       commit("SET_SEARCH_QUERY", query);
     },
     setClientTypeFilter({ commit }, value) {
-      commit("SET_CLIENT_TYPE_FILTER", value || "all");
+      commit("SET_CLIENT_TYPE_FILTER", value);
     },
     setUser({ commit }, user) {
       commit("SET_USER", user);
@@ -1722,13 +1750,6 @@ const store = createStore({
           permission: "mutual_settlements_view",
         },
         {
-          id: "warehouses-admin",
-          to: "/admin/warehouses",
-          icon: "fa-solid fa-warehouse mr-2",
-          label: "warehouses",
-          permission: "warehouses_view",
-        },
-        {
           id: "products",
           to: "/products",
           icon: "fa-solid fa-box mr-2",
@@ -1765,7 +1786,6 @@ const store = createStore({
         "companies",
         "cash-registers",
         "mutual-settlements",
-        "warehouses-admin",
         "products",
         "services",
         "currency-history",
@@ -2066,7 +2086,7 @@ const store = createStore({
     },
     roundingQuantityCustomThreshold: (state) =>
       state.currentCompany?.rounding_quantity_custom_threshold ?? 0.5,
-    clientTypeFilter: (state) => state.clientTypeFilter || "all",
+    clientTypeFilter: (state) => normalizeClientTypeFilter(state.clientTypeFilter),
     mainMenuItems: (state, getters) => {
       if (!state.menuItems.main || state.menuItems.main.length === 0) {
         return [];
@@ -2258,5 +2278,9 @@ eventBus.on("company-updated", async () => {
 eventBus.on("cache:invalidate", ({ type, companyId = null }) => {
   store.dispatch("invalidateCache", { type, companyId, skipEventBus: true });
 });
+
+store.state.clientTypeFilter = normalizeClientTypeFilter(
+  store.state.clientTypeFilter
+);
 
 export default store;

@@ -373,7 +373,7 @@ export default {
                     try {
                         const ClientController = (await import('@/api/ClientController')).default;
                         const clients = await ClientController.getAllItems();
-                        const clientTypeFilter = (this.$store && this.$store.state && this.$store.state.clientTypeFilter) ? this.$store.state.clientTypeFilter : 'all';
+                        const clientTypeFilter = (this.$store && this.$store.getters && this.$store.getters.clientTypeFilter) ? this.$store.getters.clientTypeFilter : [];
                         
                         // Рассчитываем общий дебет и кредит из балансов клиентов
                         let totalDebt = 0;    // Нам должны (положительный баланс)
@@ -381,9 +381,9 @@ export default {
                         
                         clients
                             .filter(client => {
-                                if (!clientTypeFilter || clientTypeFilter === 'all') return true;
+                                if (!Array.isArray(clientTypeFilter) || clientTypeFilter.length === 0) return true;
                                 const type = client.clientType || 'individual';
-                                return type === clientTypeFilter;
+                                return clientTypeFilter.includes(type);
                             })
                             .forEach(client => {
                             const balance = parseFloat(client.balance) || 0;

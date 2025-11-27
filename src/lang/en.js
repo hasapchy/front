@@ -345,6 +345,7 @@ export default {
   notDebt: 'Not Credit',
   clickToFilterDebts: 'Click to filter credits',
   clickToFilterTransactions: 'Click to filter transactions',
+  transactionDeletedReadonly: 'This transaction has been deleted and cannot be modified',
   
   // Product Categories
   productCategory: 'Product Category',
@@ -364,6 +365,9 @@ export default {
     settings: 'Settings',
     settings_edit_any_date: 'Edit Any Date',
     settings_project_budget_view: 'View Project Budget',
+    settings_project_files_view: 'View Project Files',
+    settings_project_balance_view: 'View Project Balance',
+    settings_project_contracts_view: 'View Project Contracts',
     settings_currencies_view: 'View Other Currencies',
     settings_cash_balance_view: 'View Cash Balance',
     settings_client_balance_view: 'View Client Balance',

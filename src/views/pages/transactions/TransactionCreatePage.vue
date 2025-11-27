@@ -114,15 +114,18 @@
             </template>
         </div>
     </div>
+    <div v-if="readOnlyReason" class="mt-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700">
+        {{ readOnlyReason }}
+    </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('transactions_delete')">
+            :disabled="isDeletedTransaction || !$store.getters.hasPermission('transactions_delete')">
         </PrimaryButton>
         <PrimaryButton v-if="editingItem != null" :onclick="copyTransaction" icon="fas fa-copy"
-            :disabled="!$store.getters.hasPermission('transactions_create')">
+            :disabled="isDeletedTransaction || !$store.getters.hasPermission('transactions_create')">
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('transactions_update')) ||
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="isDeletedTransaction || (editingItemId != null && !$store.getters.hasPermission('transactions_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('transactions_create'))">
         </PrimaryButton>
     </div>
@@ -229,6 +232,28 @@ export default {
                 return this.headerText;
             }
             return this.editingItem ? this.$t('editTransaction') : this.$t('createTransaction');
+        },
+        isDeletedTransaction() {
+            return !!(this.editingItem && (this.editingItem.isDeleted || this.editingItem.is_deleted));
+        },
+        isSourceRestricted() {
+            if (!this.editingItem) {
+                return false;
+            }
+            if (this.editingItem.isTransfer === 1 || this.editingItem.isTransfer === true) {
+                return true;
+            }
+            const source = this.editingItem.sourceType || '';
+            return Boolean(source && (source.includes('Order') || source.includes('Sale') || source.includes('WhReceipt')));
+        },
+        readOnlyReason() {
+            if (this.isDeletedTransaction) {
+                return this.$t('transactionDeletedReadonly');
+            }
+            if (this.isSourceRestricted) {
+                return this.$t('transactionReadonlyDueToSource');
+            }
+            return '';
         },
         currencyIdComputed: {
             get() {
@@ -365,6 +390,14 @@ export default {
         });
     },
     methods: {
+        ensureEditable(eventName = 'saved-error') {
+            if (!this.isDeletedTransaction && !this.isSourceRestricted) {
+                return true;
+            }
+            const message = this.readOnlyReason || this.$t('transactionDeletedReadonly');
+            this.$emit(eventName, message);
+            return false;
+        },
         fieldConfig(name) {
             const baseConfig = {
                 visible: true,
@@ -476,6 +509,9 @@ export default {
             }
         },
         async save() {
+            if (!this.ensureEditable('saved-error')) {
+                return;
+            }
             // Если выбран проект — клиент должен соответствовать клиенту проекта
             if (this.initialProjectId) {
                 const project = this.allProjects.find(p => p.id === this.projectId) || null;
@@ -498,7 +534,7 @@ export default {
             }
 
             this.saveLoading = true;
-            const projectIdForSubmit = this.isFieldVisible('project') ? this.projectId : null;
+            const projectIdForSubmit = this.projectId || this.initialProjectId || null;
 
             try {
                 if (this.editingItemId != null) {
@@ -552,6 +588,9 @@ export default {
 
         },
         async deleteItem() {
+            if (!this.ensureEditable('deleted-error')) {
+                return;
+            }
             this.closeDeleteDialog();
             if (this.editingItemId == null) {
                 return;
@@ -575,7 +614,7 @@ export default {
             this.note = '';
             this.isDebt = this.fieldConfig('debt').enforcedValue ?? false;
             this.categoryId = 4; // Устанавливаем id = 4 для типа income по умолчанию
-            this.projectId = this.isFieldVisible('project') ? (this.initialProjectId || '') : null;
+            this.projectId = this.initialProjectId || '';
             this.date = new Date().toISOString().substring(0, 16);
             this.selectedClient = this.initialClient || null;
             this.selectedSource = null;
@@ -587,12 +626,18 @@ export default {
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
+            if (!this.ensureEditable('deleted-error')) {
+                return;
+            }
             this.deleteDialog = true;
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
         copyTransaction() {
+            if (!this.ensureEditable('saved-error')) {
+                return;
+            }
             // DRY: используем метод clone() из TransactionDto
             const copiedTransaction = this.editingItem.clone();
 
@@ -701,9 +746,6 @@ export default {
         initialProjectId: {
             handler(newProjectId) {
                 if (!this.isFieldVisible('project')) return;
-                // Применяем initialProjectId если:
-                // 1. Это создание новой транзакции ИЛИ
-                // 2. Это редактирование, но у транзакции нет проекта
                 if (newProjectId && (!this.editingItemId || !this.projectId)) {
                     this.projectId = newProjectId;
                 }

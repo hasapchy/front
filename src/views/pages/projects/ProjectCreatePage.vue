@@ -65,16 +65,16 @@
 
             </div>
         </div>
-        <div v-show="currentTab === 'files' && editingItem">
+        <div v-if="currentTab === 'files' && editingItem && canViewProjectFiles">
             <FileUploader ref="fileUploader" :files="editingItem ? editingItem.getFormattedFiles() : []"
                 :uploading="uploading" :upload-progress="uploadProgress" :disabled="!editingItemId"
                 :deleting="deletingFiles" @file-change="handleFileChange" @delete-file="showDeleteFileDialog"
                 @delete-multiple-files="showDeleteMultipleFilesDialog" />
         </div>
-        <div v-show="currentTab === 'balance' && editingItem">
+        <div v-if="currentTab === 'balance' && editingItem && canViewProjectBalance">
             <ProjectBalanceTab :editing-item="editingItem" />
         </div>
-        <div v-show="currentTab === 'contracts' && editingItem">
+        <div v-if="currentTab === 'contracts' && editingItem && canViewProjectContracts">
             <ProjectContractsTab :editing-item="editingItem" />
         </div>
     </div>
@@ -149,9 +149,9 @@ export default {
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'info' },
-                { name: 'files', label: 'files' },
-                { name: "balance", label: "balance" },
-                { name: "contracts", label: "contracts" },
+                { name: 'files', label: 'files', permission: 'settings_project_files_view' },
+                { name: 'balance', label: 'balance', permission: 'settings_project_balance_view' },
+                { name: 'contracts', label: 'contracts', permission: 'settings_project_contracts_view' },
             ],
 
 
@@ -159,10 +159,21 @@ export default {
         }
     },
     computed: {
+        canViewProjectFiles() {
+            return this.$store.getters.hasPermission('settings_project_files_view');
+        },
+        canViewProjectBalance() {
+            return this.$store.getters.hasPermission('settings_project_balance_view');
+        },
+        canViewProjectContracts() {
+            return this.$store.getters.hasPermission('settings_project_contracts_view');
+        },
+        visibleTabs() {
+            const baseTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name === 'info');
+            return baseTabs.filter(tab => !tab.permission || this.$store.getters.hasPermission(tab.permission));
+        },
         translatedTabs() {
-            const availableTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name === 'info');
-
-            return availableTabs.map(tab => ({
+            return this.visibleTabs.map(tab => ({
                 ...tab,
                 label: this.$t(tab.label)
             }));
@@ -214,7 +225,7 @@ export default {
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         changeTab(tabName) {
-            if ((tabName === 'files' || tabName === 'balance' || tabName === 'contracts') && !this.editingItem) {
+            if (!this.visibleTabs.find(tab => tab.name === tabName)) {
                 return;
             }
             this.currentTab = tabName;
@@ -507,6 +518,19 @@ export default {
     },
 
     watch: {
+        visibleTabs: {
+            handler(tabs) {
+                if (!tabs || !tabs.length) {
+                    this.currentTab = 'info';
+                    return;
+                }
+                if (!tabs.find(tab => tab.name === this.currentTab)) {
+                    this.currentTab = tabs[0].name;
+                }
+            },
+            immediate: true,
+            deep: true,
+        },
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
