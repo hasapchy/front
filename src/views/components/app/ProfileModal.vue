@@ -88,6 +88,10 @@
         <div v-show="currentTab === 'balance'">
             <UserClientBalanceTab :editingItem="currentClientAccount" />
         </div>
+        
+        <div v-show="currentTab === 'salary'">
+            <UserSalaryTab :editingItem="currentUser" />
+        </div>
     </div>
     <div v-show="currentTab === 'info'" class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
@@ -121,17 +125,22 @@ const UserClientBalanceTab = defineAsyncComponent(() =>
     import('@/views/components/app/UserBalanceTab.vue')
 );
 
+const UserSalaryTab = defineAsyncComponent(() => 
+    import('@/views/pages/users/UserSalaryTab.vue')
+);
+
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, userPhotoMixin],
     emits: ['saved', 'saved-error', 'close-request'],
-    components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, UserClientBalanceTab },
+    components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, UserClientBalanceTab, UserSalaryTab },
     data() {
         return {
             saveLoading: false,
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'profileInfo' },
-                { name: 'balance', label: 'balance' }
+                { name: 'balance', label: 'balance' },
+                { name: 'salary', label: 'salaries' }
             ],
             form: {
                 name: '',
@@ -156,18 +165,29 @@ export default {
             return null;
         },
         translatedTabs() {
-            // Показываем вкладку баланса только если у пользователя есть клиентский аккаунт
+            const visibleTabs = [];
+            
+            visibleTabs.push(this.tabs[0]);
+            
             if (this.hasClientAccount) {
-                return this.tabs.map(tab => ({
-                    ...tab,
-                    label: this.$t(tab.label)
-                }));
+                visibleTabs.push(this.tabs[1]);
             }
-            // Если нет клиентского аккаунта, показываем только вкладку информации
-            return [this.tabs[0]].map(tab => ({
+            
+            visibleTabs.push(this.tabs[2]);
+            
+            return visibleTabs.map(tab => ({
                 ...tab,
                 label: this.$t(tab.label)
             }));
+        },
+        currentUser() {
+            if (!this.$store.state.user) return null;
+            
+            return {
+                id: this.$store.state.user.id,
+                name: this.$store.state.user.name,
+                email: this.$store.state.user.email
+            };
         },
         hasClientAccount() {
             // Проверяем есть ли у пользователя активные клиентские аккаунты

@@ -111,10 +111,20 @@ export default {
     },
     computed: {
         canSave() {
-            return this.form.start_date && this.form.amount && this.form.currency_id;
+            const hasFormData = this.form.start_date && this.form.amount && this.form.currency_id;
+            if (this.editingItem) {
+                return hasFormData && (
+                    this.$store.getters.hasPermission('employee_salaries_update_all') ||
+                    this.$store.getters.hasPermission('employee_salaries_update_own')
+                );
+            }
+            return hasFormData && this.$store.getters.hasPermission('employee_salaries_create');
         },
         canDelete() {
-            return this.editingItem != null;
+            return this.editingItem != null && (
+                this.$store.getters.hasPermission('employee_salaries_delete_all') ||
+                this.$store.getters.hasPermission('employee_salaries_delete_own')
+            );
         }
     },
     watch: {

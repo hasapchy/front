@@ -481,6 +481,11 @@ export default {
       this.emails.splice(index, 1);
     },
     async save() {
+      if ((this.clientType === 'employee' || this.clientType === 'investor') && !this.employeeId) {
+        this.showNotification(this.$t('error') || 'Ошибка', this.$t('selectEmployee') || 'Необходимо выбрать сотрудника', true);
+        return;
+      }
+
       this.saveLoading = true;
       try {
         const clientData = {
@@ -577,7 +582,6 @@ export default {
           this.lastName = newEditingItem.lastName || "";
           this.contactPerson = newEditingItem.contactPerson || "";
           this.clientType = newEditingItem.clientType || "individual";
-          this.employeeId = newEditingItem.employeeId || null;
           this.address = newEditingItem.address || "";
           this.note = newEditingItem.note || "";
           this.status = newEditingItem.status || false;
@@ -598,14 +602,15 @@ export default {
           this.emails = newEditingItem.emails.map((email) => email.email) || [];
           this.discountType = newEditingItem.discountType ?? "fixed";
           this.discount = newEditingItem.discount ?? 0;
+          this.$nextTick(() => {
+            this.employeeId = newEditingItem.employeeId || null;
+            this.saveInitialState();
+          });
           this.currentTab = "info";
         } else {
           this.clearForm();
           this.currentTab = "info";
         }
-        this.$nextTick(() => {
-          this.saveInitialState();
-        });
       },
       deep: true,
       immediate: true,
@@ -631,8 +636,6 @@ export default {
           const selectedUser = this.users.find(user => user.id === newEmployeeId);
           if (selectedUser) {
             this.firstName = selectedUser.name || "";
-          } else {
-            this.employeeId = null;
           }
         }
       },

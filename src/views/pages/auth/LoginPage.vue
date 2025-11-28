@@ -22,7 +22,8 @@
                         'bg-gray-100 border-none py-3 px-4 my-2 w-full text-sm focus:outline-none',
                         v$.email.$error ? 'border-2 border-red-500 bg-red-50' : ''
                     ]" name="email" required autocomplete="email" v-model="email" autofocus />
-                    <ValidationErrorMessage :show="v$.email.$error" :messages="v$.email.$errors" />
+                    <ValidationErrorMessage :show="v$.email.$error" :messages="v$.email.$errors"
+                     />
 
                     <div class="relative w-full">
                         <input id="password" :type="showPassword ? 'text' : 'password'" placeholder="Пароль"

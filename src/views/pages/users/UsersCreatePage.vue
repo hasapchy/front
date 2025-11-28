@@ -168,7 +168,7 @@
                     <div v-else class="text-gray-500 text-sm">{{ $t('noCompaniesAvailable') }}</div>
                 </div>
             </div>
-            <div v-show="currentTab === 'salaries' && editingItem" class="mt-4">
+            <div v-show="currentTab === 'salaries' && editingItem && canViewSalariesTab" class="mt-4">
                 <UserSalaryTab :editing-item="editingItem" />
             </div>
             <div v-show="currentTab === 'balance' && editingItem && $store.getters.hasPermission('settings_client_balance_view')" class="mt-4">
@@ -263,10 +263,29 @@ export default {
             let visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab =>
                 tab.name !== 'salaries' && tab.name !== 'balance'
             );
+            if (!this.canViewSalariesTab) {
+                visibleTabs = visibleTabs.filter(tab => tab.name !== 'salaries');
+            }
             return visibleTabs.map(tab => ({
                 ...tab,
                 label: this.$t(tab.label)
             }));
+        },
+        canViewSalariesTab() {
+            if (!this.$store.getters.hasPermission('employee_salaries_view')) {
+                return false;
+            }
+            
+            if (this.$store.getters.hasPermission('employee_salaries_view_all')) {
+                return true;
+            }
+            
+            if (this.editingItem) {
+                const currentUser = this.$store.getters.user;
+                return currentUser && currentUser.id === this.editingItem.id;
+            }
+            
+            return false;
         },
         selectedCompanies() {
             if (this.form.companies && this.form.companies.length > 0) {

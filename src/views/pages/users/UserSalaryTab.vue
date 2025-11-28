@@ -2,7 +2,7 @@
     <div class="mt-4">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-md font-semibold">{{ $t('salaries') || 'Зарплаты' }}</h3>
-            <div class="flex gap-2">
+            <div class="flex gap-2" v-if="canCreateSalary && canViewSalary">
                 <PrimaryButton 
                     icon="fas fa-plus" 
                     :onclick="openCreateModal"
@@ -13,17 +13,22 @@
             </div>
         </div>
 
-        <div v-if="salariesLoading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="!salaries || salaries.length === 0" class="text-gray-500">
-            {{ $t('noSalaries') || 'Нет зарплат' }}
+        <div v-if="!canViewSalary" class="text-gray-500">
+            {{ $t('noPermission') || 'Нет прав на просмотр зарплат' }}
         </div>
-        <DraggableTable 
-            v-if="!salariesLoading && salaries && salaries.length > 0"
-            table-key="user.salaries"
-            :columns-config="columnsConfig" 
-            :table-data="salaries" 
-            :item-mapper="itemMapper"
-            :onItemClick="handleSalaryClick" />
+        <template v-else>
+            <div v-if="salariesLoading" class="text-gray-500">{{ $t('loading') }}</div>
+            <div v-else-if="!salaries || salaries.length === 0" class="text-gray-500">
+                {{ $t('noSalaries') || 'Нет зарплат' }}
+            </div>
+            <DraggableTable 
+                v-if="!salariesLoading && salaries && salaries.length > 0"
+                table-key="user.salaries"
+                :columns-config="columnsConfig" 
+                :table-data="salaries" 
+                :item-mapper="itemMapper"
+                :onItemClick="canUpdateSalary ? handleSalaryClick : null" />
+        </template>
 
         <SideModalDialog :showForm="modalOpen" :onclose="closeModal">
             <UserSalaryCreatePage 
@@ -83,21 +88,44 @@ export default {
             ],
         };
     },
+    computed: {
+        canViewSalary() {
+            return this.$store.getters.hasPermission('employee_salaries_view');
+        },
+        canCreateSalary() {
+            return this.$store.getters.hasPermission('employee_salaries_create');
+        },
+        canUpdateSalary() {
+            return this.$store.getters.hasPermission('employee_salaries_update');
+        },
+        canDeleteSalary() {
+            return this.$store.getters.hasPermission('employee_salaries_delete');
+        },
+    },
     async mounted() {
-        if (this.editingItem && this.editingItem.id) {
+        if (this.canViewSalary && this.editingItem && this.editingItem.id) {
             await this.fetchSalaries();
         }
     },
     watch: {
         'editingItem.id': {
             handler(newId) {
-                if (newId) {
+                if (newId && this.canViewSalary) {
                     this.fetchSalaries();
                 } else {
                     this.salaries = [];
                 }
             },
             immediate: true,
+        },
+        canViewSalary: {
+            handler(newVal) {
+                if (newVal && this.editingItem && this.editingItem.id) {
+                    this.fetchSalaries();
+                } else if (!newVal) {
+                    this.salaries = [];
+                }
+            }
         }
     },
     methods: {
@@ -136,7 +164,9 @@ export default {
             await this.fetchSalaries();
         },
         handleSalaryClick(salary) {
-            this.openEditModal(salary);
+            if (this.canUpdateSalary) {
+                this.openEditModal(salary);
+            }
         },
         itemMapper(item, column) {
             switch (column) {
