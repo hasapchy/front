@@ -17,6 +17,7 @@ import createPersistedState from "vuex-persistedstate";
 import { eventBus } from "@/eventBus";
 import { PermissionParser, PERMISSIONS_CONFIG, hasPermission as checkPermission, isAdmin } from "@/permissions";
 import { STORE_CONFIG } from "./config";
+import TokenUtils from "@/utils/tokenUtils";
 
 const CLEAR_MUTATIONS_MAPPING = STORE_CONFIG.clearMutationsMapping;
 const GLOBAL_REFERENCE_FIELDS = STORE_CONFIG.globalReferenceFields;
@@ -1102,7 +1103,6 @@ const store = createStore({
       commit("SET_PERMISSIONS_LOADED", false);
       await dispatch("setPermissions", []);
 
-      const TokenUtils = (await import("@/utils/tokenUtils")).default;
       const { isBasementWorkerOnly, getUserFromStorage } = await import(
         "@/utils/userUtils"
       );
