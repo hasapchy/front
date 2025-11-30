@@ -1,80 +1,67 @@
 <template>
-        <!-- Статистика балансов -->
-        <MutualSettlementsBalanceWrapper 
-            :data="clientBalances" 
-            :loading="clientBalancesLoading" />
+    <!-- Статистика балансов -->
+    <MutualSettlementsBalanceWrapper :data="clientBalances" :loading="clientBalancesLoading" />
 
-        <!-- Таблица клиентов -->
-        <transition name="fade" mode="out-in">
-            <div v-if="clientBalances != null && !clientBalancesLoading" :key="`table-${$i18n.locale}`">
-                <DraggableTable table-key="mutual_settlements.clients" :columns-config="columnsConfig" 
-                    :table-data="clientBalances" :item-mapper="itemMapper" :onItemClick="handleRowClick">
-                    <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                        <TableControlsBar
-                            :show-filters="true"
-                            :has-active-filters="hasActiveFilters"
-                            :active-filters-count="getActiveFiltersCount()"
-                            :on-filters-reset="resetFilters"
-                            :show-pagination="false"
-                            :resetColumns="resetColumns"
-                            :columns="columns"
-                            :toggleVisible="toggleVisible"
-                            :log="log">
-                            <template #left>
-                                <FiltersContainer 
-                                    :has-active-filters="hasActiveFilters"
-                                    :active-filters-count="getActiveFiltersCount()"
-                                    @reset="resetFilters">
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
-                                        <CheckboxFilter
-                                            class="w-full"
-                                            :model-value="clientTypeFilter"
-                                            :options="clientTypeOptions"
-                                            placeholder="all"
-                                            @update:modelValue="handleClientTypeChange"
-                                        />
-                                    </div>
-                                </FiltersContainer>
-                            </template>
+    <!-- Таблица клиентов -->
+    <transition name="fade" mode="out-in">
+        <div v-if="clientBalances != null && !clientBalancesLoading" :key="`table-${$i18n.locale}`">
+            <DraggableTable table-key="mutual_settlements.clients" :columns-config="columnsConfig"
+                :table-data="clientBalances" :item-mapper="itemMapper" :onItemClick="handleRowClick">
+                <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+                    <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
+                        :show-pagination="false" :resetColumns="resetColumns" :columns="columns"
+                        :toggleVisible="toggleVisible" :log="log">
+                        <template #left>
+                            <FiltersContainer :has-active-filters="hasActiveFilters"
+                                :active-filters-count="getActiveFiltersCount()" @reset="resetFilters">
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
+                                    <CheckboxFilter class="w-full" :model-value="clientTypeFilter"
+                                        :options="clientTypeOptions" placeholder="all"
+                                        @update:modelValue="handleClientTypeChange" />
+                                </div>
+                            </FiltersContainer>
+                        </template>
 
-                            <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                                <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
-                                    <ul>
-                                        <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
-                                            @change="log">
-                                            <li v-for="(element, index) in columns" :key="element.name"
-                                                @click="toggleVisible(index)"
-                                                class="flex items-center hover:bg-gray-100 p-2 rounded">
-                                                <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                                                    <div>
-                                                        <i class="text-sm mr-2 text-[#337AB7]"
-                                                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                                        {{ $te(element.label) ? $t(element.label) : element.label }}
-                                                    </div>
-                                                    <div><i
-                                                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
-                                                    </div>
+                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+                                <ul>
+                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
+                                        @change="log">
+                                        <li v-for="(element, index) in columns" :key="element.name"
+                                            @click="toggleVisible(index)"
+                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                <div>
+                                                    <i class="text-sm mr-2 text-[#337AB7]"
+                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
                                                 </div>
-                                            </li>
-                                        </draggable>
-                                    </ul>
-                                </TableFilterButton>
-                            </template>
-                        </TableControlsBar>
-                    </template>
-                </DraggableTable>
-            </div>
-            <div v-else key="loader" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
-            </div>
-        </transition>
-    
+                                                <div><i
+                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </draggable>
+                                </ul>
+                            </TableFilterButton>
+                        </template>
+                    </TableControlsBar>
+                </template>
+            </DraggableTable>
+        </div>
+        <div v-else key="loader" class="flex justify-center items-center h-64">
+            <SpinnerIcon />
+        </div>
+    </transition>
+
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <ClientCreatePage v-if="modalDialog" ref="clientForm" @saved="handleSaved" @saved-error="handleSavedError" 
-            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
+        <ClientCreatePage v-if="modalDialog" ref="clientForm" @saved="handleSaved" @saved-error="handleSavedError"
+            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
+            :editingItem="editingItem" />
     </SideModalDialog>
-    
+
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
 </template>
@@ -121,15 +108,14 @@ export default {
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', true);
-        
+
         eventBus.on('global-search', this.handleSearch);
     },
 
     mounted() {
-        console.log('[MutualSettlementsPage] mounted, clientTypeFilter из store:', this.$store.getters.clientTypeFilter);
         this.loadClientBalances();
     },
-    
+
     beforeUnmount() {
         eventBus.off('global-search', this.handleSearch);
     },
@@ -158,7 +144,7 @@ export default {
                 const clients = await ClientController.getAllItems(true);
                 this.allClientsRaw = clients;
                 this.allClients = clients;
-                
+
                 this.applyFilters();
             } catch (error) {
                 console.error('Ошибка загрузки балансов клиентов:', error);
@@ -166,13 +152,13 @@ export default {
                 this.clientBalancesLoading = false;
             }
         },
-        
+
         applyFilters() {
             if (!this.allClientsRaw || this.allClientsRaw.length === 0) {
                 this.clientBalances = [];
                 return;
             }
-        
+
             let filteredClients = this.allClientsRaw;
             if (this.clientTypeFilter.length) {
                 filteredClients = filteredClients.filter(client => {
@@ -198,18 +184,18 @@ export default {
                         }
                         return phoneStr.toLowerCase().includes(searchLower);
                     });
-                    return firstName.includes(searchLower) || 
-                           lastName.includes(searchLower) || 
-                           fullName.includes(searchLower) || 
-                           hasMatchingPhone;
+                    return firstName.includes(searchLower) ||
+                        lastName.includes(searchLower) ||
+                        fullName.includes(searchLower) ||
+                        hasMatchingPhone;
                 });
             }
-            
-    
+
+
             this.clientBalances = filteredClients
                 .map(client => {
                     const balance = parseFloat(client.balance) || 0;
-                    
+
                     return {
                         id: client.id,
                         clientType: this.getClientType(client),
@@ -227,18 +213,11 @@ export default {
                 })
                 .filter(client => client.debt_amount !== 0 || client.credit_amount !== 0);
         },
-        
+
 
         async handleRowClick(item) {
-            // Загружаем полные данные клиента для редактирования
             try {
-                console.log('[MutualSettlementsPage] handleRowClick item:', item);
                 const client = await ClientController.getItem(item.id);
-                console.log('[MutualSettlementsPage] loaded client:', client);
-                console.log('[MutualSettlementsPage] client.constructor.name:', client.constructor.name);
-                console.log('[MutualSettlementsPage] client firstName:', client.firstName);
-                console.log('[MutualSettlementsPage] client lastName:', client.lastName);
-                console.log('[MutualSettlementsPage] client type:', typeof client);
                 this.editingItem = client;
                 this.modalDialog = true;
             } catch (error) {
@@ -246,7 +225,7 @@ export default {
                 this.showNotification('Ошибка', 'Не удалось загрузить данные клиента', true);
             }
         },
-        
+
         itemMapper(i, c) {
             const search = this.searchQuery;
             switch (c) {
@@ -280,11 +259,11 @@ export default {
                     return i[c];
             }
         },
-        
+
         async onAfterSaved() {
             await this.loadClientBalances();
         },
-        
+
         async onAfterDeleted() {
             await this.loadClientBalances();
         },
@@ -308,13 +287,13 @@ export default {
         async handleCompanyChanged(companyId) {
             this.$store.dispatch('setClientTypeFilter', []);
             this.$store.dispatch('setSearchQuery', '');
-            
+
             this.allClients = [];
             this.allClientsRaw = [];
             this.clientBalances = [];
-            
+
             await this.loadClientBalances();
-            
+
             this.$store.dispatch('showNotification', {
                 title: 'Компания изменена',
                 isDanger: false

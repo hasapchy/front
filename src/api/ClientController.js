@@ -117,9 +117,13 @@ export default class ClientController {
     }
   }
 
-  static async getBalanceHistory(id) {
+  static async getBalanceHistory(id, excludeDebt = null) {
     try {
-      const response = await api.get(`/clients/${id}/balance-history`);
+      const params = {};
+      if (excludeDebt === true) {
+        params.exclude_debt = true;
+      }
+      const response = await api.get(`/clients/${id}/balance-history`, { params });
       const data = response.data;
       const historyArray = data.history;
       const items = ClientBalanceHistoryDto.fromApiArray(historyArray);

@@ -219,12 +219,11 @@ export default {
             this.paymentsLoading = true;
             try {
                 const data = await ClientController.getBalanceHistory(
-                    this.editingItem.id
+                    this.editingItem.id,
+                    true
                 );
                 
-                this.paymentsHistory = (data || []).filter(item => 
-                    item.is_debt !== 1 && item.is_debt !== true && item.is_debt !== '1'
-                );
+                this.paymentsHistory = data || [];
                 
                 this.totalPayments = this.paymentsHistory.reduce((sum, item) => {
                     const amount = parseFloat(item.amount || 0);
