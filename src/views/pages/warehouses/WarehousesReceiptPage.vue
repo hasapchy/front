@@ -77,6 +77,7 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import WarehousesReceiptCreatePage from '@/views/pages/warehouses/WarehousesReceiptCreatePage.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
+import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -123,7 +124,14 @@ export default {
                 { name: 'client', label: 'client', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, }) },
                 { name: 'warehouseName', label: 'warehouse' },
                 { name: 'cashName', label: 'cashRegister' },
-                { name: 'products', label: 'products', html: true },
+                {
+                    name: 'products',
+                    label: 'products',
+                    component: markRaw(ProductsListCell),
+                    props: (item) => ({
+                        products: item.products || []
+                    })
+                },
                 { name: 'amount', label: 'totalAmount' },
                 { name: 'note', label: 'note' },
             ]
@@ -142,7 +150,8 @@ export default {
                 case 'cashName':
                     return i.cashNameDisplay();
                 case 'products':
-                    return createProductsHtmlList(i.products, null, 3);
+                    // Возвращаем количество продуктов для сортировки (отображение через компонент ProductsListCell)
+                    return (i.products || []).length;
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
                 case 'amount':

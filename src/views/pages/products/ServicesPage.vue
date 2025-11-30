@@ -99,7 +99,6 @@ import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vu
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import ProductController from '@/api/ProductController';
-import CategoryController from '@/api/CategoryController';
 import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import { eventBus } from '@/eventBus';
 import notificationMixin from '@/mixins/notificationMixin';

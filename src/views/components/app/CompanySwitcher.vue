@@ -9,7 +9,7 @@
              :alt="currentCompany?.name" 
              class="w-6 h-6 object-contain rounded">
       </div>
-      <span class="company-name hidden sm:inline">
+      <span class="company-name">
         <span v-if="isLoadingCompanyData" class="flex items-center gap-1">
           <SpinnerIcon size-class="text-xs" />
           {{ currentCompanyName }}
@@ -117,8 +117,8 @@ export default {
         await this.$store.dispatch('loadUserCompanies');
       }
       
-      if (!this.currentCompany) {
-        await this.$store.dispatch('loadCurrentCompany');
+      if (!this.currentCompany && !this.$store.state.loadingFlags.currentCompany) {
+        await this.$store.dispatch('loadCurrentCompany', { skipPermissionRefresh: true });
       }
       
       if (!this.selectedCompanyId && this.companies.length > 0) {

@@ -83,6 +83,7 @@ import LanguageSwitcher from '@/views/components/app/LanguageSwitcher.vue'
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue'
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue'
 import companyChangeMixin from '@/mixins/companyChangeMixin'
+import TokenUtils from '@/utils/tokenUtils'
 
 export default {
   name: 'BasementLayout',
@@ -105,8 +106,8 @@ export default {
       return this.$store.state.loadingFlags?.companyData || false
     }
   },
-  async created() {
-    const token = localStorage.getItem('token')
+  created() {
+    const token = TokenUtils.getToken();
     if (!token || !this.$store.state.user) {
       this.$router.push('/auth/login')
       return

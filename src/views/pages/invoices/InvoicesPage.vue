@@ -131,6 +131,7 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import InvoiceController from "@/api/InvoiceController";
 import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
+import ProductsListCell from "@/views/components/app/buttons/ProductsListCell.vue";
 import { markRaw } from "vue";
 import BatchButton from "@/views/components/app/buttons/BatchButton.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
@@ -181,7 +182,14 @@ export default {
                 { name: "invoiceDate", label: 'invoiceDate' },
                 { name: "client", label: 'client', component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, }), },
                 { name: "status", label: 'status', html: true },
-                { name: "products", label: 'products', html: true },
+                {
+                    name: "products",
+                    label: 'products',
+                    component: markRaw(ProductsListCell),
+                    props: (item) => ({
+                        products: item.products || []
+                    })
+                },
                 { name: "totalAmount", label: 'amount' },
                 { name: "ordersCount", label: 'ordersCount' },
                 { name: "note", label: 'note' },
@@ -231,10 +239,11 @@ export default {
     methods: {
         itemMapper(i, c) {
             switch (c) {
-                case "products":
-                    return i.productsHtmlList();
                 case "invoiceDate":
                     return i.formatDate();
+                case "products":
+                    // Возвращаем количество продуктов для сортировки (отображение через компонент ProductsListCell)
+                    return (i.products || []).length;
                 case "client":
                     if (!i.client) return '<span class="text-gray-500">' + this.$t('notSpecified') + '</span>';
                     const name = i.client.fullName();

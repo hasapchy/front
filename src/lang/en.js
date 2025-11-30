@@ -143,6 +143,15 @@ export default {
   paid: 'Paid',
   total: 'Total',
   cashRegister: 'Cash Register',
+  createCashRegister: 'Cash Register',
+  editCashRegister: 'Cash Register',
+  cashRegisterMustHaveAtLeastOneUser: 'Cash register must have at least one user',
+  createWarehouse: 'Warehouse',
+  editWarehouse: 'Edit Warehouse',
+  warehouseMustHaveAtLeastOneUser: 'Warehouse must have at least one user',
+  createCategory: 'Category',
+  editCategory: 'Edit Category',
+  categoryMustHaveAtLeastOneUser: 'Category must have at least one user',
   warehouse: 'Warehouse',
   stock: 'Stock',
   leftovers: 'Leftovers',
@@ -371,6 +380,7 @@ export default {
     settings_currencies_view: 'View Other Currencies',
     settings_cash_balance_view: 'View Cash Balance',
     settings_client_balance_view: 'View Client Balance',
+    settings_client_balance_adjustment: 'Client Balance Adjustment',
     settings_view: 'View Settings',
     mutual_settlements_view: 'View Mutual Settlements',
     
@@ -408,6 +418,7 @@ export default {
     
     // Project Statuses
     projectStatuses: 'Project Statuses',
+    project_statuses: 'Project Statuses',
     projectStatus: 'Project Status',
     createProjectStatus: 'Create Project Status',
     editProjectStatus: 'Edit Project Status',
@@ -422,6 +433,7 @@ export default {
     // Salaries
     salary: 'Salary',
     salaries: 'Salaries',
+    employee_salaries: 'Employee Salaries',
     addSalary: 'Add Salary',
     editSalary: 'Edit Salary',
     salarySaved: 'Salary saved',
@@ -436,6 +448,7 @@ export default {
     present: 'to present',
     bonus: 'Add Bonus',
     penalty: 'Issue Penalty',
+    accrueSalary: 'Accrue Salary',
     employeeClientNotFound: 'Client for employee not found',
     employeeClientNotFoundDescription: 'To work with employee balance, you need to create a linked client with employee_id matching this employee\'s ID.',
 }

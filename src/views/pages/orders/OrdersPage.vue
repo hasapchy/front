@@ -343,6 +343,7 @@ import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import TransactionController from "@/api/TransactionController";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
+import ProductsListCell from "@/views/components/app/buttons/ProductsListCell.vue";
 import OrderStatusController from "@/api/OrderStatusController";
 import ProjectController from "@/api/ProjectController";
 import ClientController from "@/api/ClientController";
@@ -399,7 +400,14 @@ export default {
                 { name: "dateUser", label: 'dateUser' },
                 { name: "client", label: 'client', component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, searchQuery: this.searchQuery }), },
                 { name: "projectName", label: 'project' },
-                { name: "products", label: 'products', html: true },
+                {
+                    name: "products",
+                    label: 'products',
+                    component: markRaw(ProductsListCell),
+                    props: (item) => ({
+                        products: item.products || []
+                    })
+                },
                 { name: "note", label: 'note', html: true },
                 { name: "description", label: 'description' },
                 { name: "totalPrice", label: 'orderAmount' },
@@ -475,10 +483,11 @@ export default {
             const search = this.searchQuery;
             
             switch (c) {
-                case "products":
-                    return i.productsHtmlList();
                 case "dateUser":
                     return `${i.formatDate()} / ${i.userName}`;
+                case "products":
+                    // Возвращаем количество продуктов для сортировки (отображение через компонент ProductsListCell)
+                    return (i.products || []).length;
                 case "client":
                     if (!i.client) return '<span class="text-gray-500">' + this.$t('notSpecified') + '</span>';
                     const name = i.client.fullName();

@@ -15,7 +15,7 @@
 
 <script>
 import CacheController from '@/api/CacheController';
-import CacheInvalidator from '@/utils/cache';
+import { CacheInvalidator } from '@/cache';
 
 export default {
   name: 'ClearCacheButton',
@@ -39,8 +39,6 @@ export default {
         const preservedKeys = [
           'token',
           'refresh_token',
-          'token_expires_at',
-          'refresh_token_expires_at',
           'user',
           'vuex',
           'current_company',
@@ -58,7 +56,7 @@ export default {
         await CacheController.clearAllCache();
 
         // 2. Очищаем локальные кэши (Frontend)
-        CacheInvalidator.invalidateAll();
+        await CacheInvalidator.invalidateAll();
         
         // 3. Очищаем весь остальной localStorage, не трогая сохранённые ключи
         Object.keys(localStorage).forEach(key => {

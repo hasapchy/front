@@ -1,35 +1,31 @@
 <template>
     <div class="shadow-sm px-4 py-1.5 mb-5 bg-white rounded">
         <div class="flex items-center justify-between">
-                <!-- Mobile Menu Button -->
-                <button 
-                    @click="toggleMobileMenu"
-                    class="lg:hidden mr-4 p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
-                    aria-label="Toggle menu">
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
-                
-                <div class="flex items-center gap-4">
-                    <router-link 
-                        v-for="tab in binded" 
-                        :key="tab.path" 
-                        :to="tab.path"
-                        class="flex items-center justify-center gap-2 text-[#337AB7] hover:text-[#3571A4] hover:underline font-semibold transition-all"
-                        :title="tab.name">
-                        <i :class="getTabIcon(tab.path)" class="text-lg"></i>
-                        <span class="tab-label">{{ tab.name }}</span>
-                    </router-link>
-                </div>
+            <!-- Mobile Menu Button -->
+            <button @click="toggleMobileMenu"
+                class="lg:hidden mr-4 p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
+                aria-label="Toggle menu">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
 
-                <div class="flex items-center gap-4">
-                    <Search v-if="showSearch" />
-                    <ClearCacheButton />
-                    <SoundToggle />
-                    <CompanySwitcher @company-changed="onCompanyChanged" />
-                    <LanguageSwitcher @language-changed="onLanguageChanged" />
-                    <UserProfileDropdown v-if="$store.state.user" />
-                </div>
+            <div class="flex items-center gap-4">
+                <router-link v-for="tab in binded" :key="tab.path" :to="tab.path"
+                    class="flex items-center justify-center gap-2 text-[#337AB7] hover:text-[#3571A4] hover:underline font-semibold transition-all"
+                    :title="tab.name">
+                    <i :class="getTabIcon(tab.path)" class="text-lg"></i>
+                    <span class="tab-label">{{ tab.name }}</span>
+                </router-link>
             </div>
+
+            <div class="flex items-center gap-4">
+                <Search v-if="showSearch" />
+                <ClearCacheButton />
+                <SoundToggle />
+                <CompanySwitcher @company-changed="onCompanyChanged" />
+                <LanguageSwitcher @language-changed="onLanguageChanged" />
+                <UserProfileDropdown v-if="$store.state.user" />
+            </div>
+        </div>
     </div>
 </template>
 
@@ -59,19 +55,19 @@ export default {
         const route = useRoute();
         const title = computed(() => route.meta.title ? this.$t(route.meta.title) : this.$t('accountingSystem'));
         const binded = computed(() => {
-          if (route.meta.binded) {
-            return route.meta.binded
-              .filter(tab => {
-                // Проверяем права доступа для каждого таба
-                const routePermission = this.getRoutePermission(tab.path);
-                return !routePermission || this.$store.getters.hasPermission(routePermission);
-              })
-              .map(tab => ({
-                ...tab,
-                name: this.$t(tab.name)
-              }));
-          }
-          return [];
+            if (route.meta.binded) {
+                return route.meta.binded
+                    .filter(tab => {
+                        // Проверяем права доступа для каждого таба
+                        const routePermission = this.getRoutePermission(tab.path);
+                        return !routePermission || this.$store.getters.hasPermission(routePermission);
+                    })
+                    .map(tab => ({
+                        ...tab,
+                        name: this.$t(tab.name)
+                    }));
+            }
+            return [];
         });
         const showSearch = computed(() => route.meta.showSearch || false);
         return {
@@ -80,19 +76,19 @@ export default {
             showSearch
         };
     },
-    
-    
+
+
     methods: {
         async logout() {
             await AuthController.logout();
             this.$store.state.user = null;
             this.$router.push('/auth/login');
         },
-        
+
         onLanguageChanged(locale) {
             this.$forceUpdate();
         },
-        
+
         onCompanyChanged(companyId) {
             this.$forceUpdate();
         },
@@ -142,7 +138,7 @@ export default {
             eventBus.emit('toggleMobileMenu');
         }
     },
-    
+
     computed: {
         displayTitle() {
             // Если мы на главной странице, показываем "Моя компания"

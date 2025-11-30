@@ -1,119 +1,32 @@
 <template>
     <div class="flex flex-col md:flex-row gap-2 md:gap-4 mb-4">
-        <!-- Balance Cards -->
         <div class="flex-1">
             <transition name="fade" mode="out-in">
-                <div v-if="data != null && !loading && data.length > 0" key="table">
-                    <!-- Slider для касс, если их больше 3 -->
-                    <div v-if="data.length > 3" class="relative">
-                        <div class="cash-register-slider-container overflow-hidden">
-                            <div 
-                                class="cash-register-slider flex gap-2 md:gap-4 transition-transform duration-300 ease-in-out"
-                                :style="{ transform: `translateX(-${currentSlide * (isMobile ? 100 : 100 / 3)}%)` }"
-                            >
-                                <div 
-                                    v-for="item in data" 
-                                    :key="item.id" 
-                                    class="cash-register-slide flex-shrink-0 bg-white p-2 md:p-3 rounded-lg shadow-md"
-                                    :style="{ width: isMobile ? 'calc(100% - 1rem)' : 'calc((100% - 2rem) / 3)' }"
-                                >
-                                    <div class="text-center mb-2 md:mb-3">
-                                        <span class="text-xs md:text-sm font-semibold">
-                                            {{ translateCashRegisterName(item.name) }}
-                                            <span class="text-xs md:text-sm font-bold text-black ml-1">({{ item.currencySymbol || item.currencyCode || '' }})</span>
-                                        </span>
-                                    </div>
-                            <div v-if="$store.getters.hasPermission('settings_cash_balance_view')" :class="getGridClass(item.balance)">
-                                <div v-for="balance in getVisibleBalanceItems(item.balance)" :key="balance.title" 
-                                     class="text-center balance-item"
-                                     :class="{
-                                         'clickable-balance': balance.type === 'income' || balance.type === 'outcome',
-                                         'hover-income': balance.type === 'income',
-                                         'hover-outcome': balance.type === 'outcome'
-                                     }"
-                                     :title="(balance.type === 'income' || balance.type === 'outcome') ? $t('clickToFilterTransactions') : ''"
-                                     @click="handleBalanceClick(item, balance)">
-                                    <div class="mb-1 flex items-center justify-center space-x-1">
-                                        <span class="text-xs font-medium text-gray-700">{{ translateBalanceTitle(balance.title) }}</span>
-                                        <i :class="{
-                                            'fas fa-arrow-up text-green-500': balance.type === 'income',
-                                            'fas fa-arrow-down text-red-500': balance.type === 'outcome',
-                                            'fas fa-exclamation-triangle text-orange-500': balance.type === 'debt',
-                                            'fas fa-calculator text-blue-500': balance.type === 'default',
-                                            'fas fa-chart-line text-orange-500': balance.type === 'project_income'
-                                        }" class="text-xs"></i>
-                                    </div>
-                                    <div :class="{
-                                        'text-green-600': balance.type === 'income',
-                                        'text-red-600': balance.type === 'outcome',
-                                        'text-orange-600': balance.type === 'debt',
-                                        'text-blue-600': balance.type === 'default',
-                                        'text-orange-600': balance.type === 'project_income',
-                                        'font-bold text-sm': true
-                                    }" class="leading-tight">
-                                        <div class="balance-amount ">{{ formatBalanceValue(balance) }}</div>
-                                    </div>
-                                </div>
-                            </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Кнопки навигации -->
-                        <button 
-                            v-if="currentSlide > 0"
-                            @click="prevSlide"
-                            class="absolute left-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors z-10"
-                            :disabled="currentSlide === 0"
-                        >
-                            <i class="fas fa-chevron-left text-gray-700"></i>
-                        </button>
-                        <button 
-                            v-if="currentSlide < maxSlide"
-                            @click="nextSlide"
-                            class="absolute right-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors z-10"
-                            :disabled="currentSlide >= maxSlide"
-                        >
-                            <i class="fas fa-chevron-right text-gray-700"></i>
-                        </button>
-                    </div>
-                    <!-- Обычный grid для 3 касс и меньше -->
-                    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 xxl:grid-cols-3 gap-2 md:gap-4">
-                        <div v-for="item in data" :key="item.id" class="bg-white p-2 md:p-3 rounded-lg shadow-md">
-                            <div class="text-center mb-2 md:mb-3">
-                                <span class="text-xs md:text-sm font-semibold">
-                                    {{ translateCashRegisterName(item.name) }}
-                                    <span class="text-xs md:text-sm font-bold text-black ml-1">({{ item.currencySymbol || item.currencyCode || '' }})</span>
+                <div v-if="data && !loading && displayCashRegisters.length > 0" key="table">
+                    <div class="cash-registers-grid">
+                        <div v-for="item in displayCashRegisters" :key="item.id" class="cash-register-card">
+                            <div class="cash-register-title">
+                                <span class="cash-register-name">
+                                    {{ translateName(item.name) }}
+                                    <span class="cash-register-currency">({{ item.currencySymbol || item.currencyCode ||
+                                        '' }})</span>
                                 </span>
                             </div>
-                            <div v-if="$store.getters.hasPermission('settings_cash_balance_view')" :class="getGridClass(item.balance)">
-                                <div v-for="balance in getVisibleBalanceItems(item.balance)" :key="balance.title" 
-                                     class="text-center balance-item"
-                                     :class="{
-                                         'clickable-balance': balance.type === 'income' || balance.type === 'outcome',
-                                         'hover-income': balance.type === 'income',
-                                         'hover-outcome': balance.type === 'outcome'
-                                     }"
-                                     :title="(balance.type === 'income' || balance.type === 'outcome') ? $t('clickToFilterTransactions') : ''"
-                                     @click="handleBalanceClick(item, balance)">
-                                    <div class="mb-1 flex items-center justify-center space-x-1">
-                                        <span class="text-xs font-medium text-gray-700">{{ translateBalanceTitle(balance.title) }}</span>
-                                        <i :class="{
-                                            'fas fa-arrow-up text-green-500': balance.type === 'income',
-                                            'fas fa-arrow-down text-red-500': balance.type === 'outcome',
-                                            'fas fa-exclamation-triangle text-orange-500': balance.type === 'debt',
-                                            'fas fa-calculator text-blue-500': balance.type === 'default',
-                                            'fas fa-chart-line text-orange-500': balance.type === 'project_income'
-                                        }" class="text-xs"></i>
+                            <div v-if="canViewCashBalance" :class="getGridClass(item.balance)">
+                                <div v-for="balance in visibleBalanceItems(item.balance)" :key="balance.title"
+                                    class="balance-item" :class="{
+                                        'clickable-balance': isClickable(balance.type),
+                                        'hover-income': balance.type === 'income',
+                                        'hover-outcome': balance.type === 'outcome',
+                                        [`balance-${balance.type}`]: true
+                                    }" :title="isClickable(balance.type) ? $t('clickToFilterTransactions') : ''"
+                                    @click="handleBalanceClick(item, balance)">
+                                    <div class="balance-header">
+                                        <span class="balance-title">{{ translateTitle(balance.title) }}</span>
+                                        <i :class="getBalanceIconClass(balance.type)"></i>
                                     </div>
-                                    <div :class="{
-                                        'text-green-600': balance.type === 'income',
-                                        'text-red-600': balance.type === 'outcome',
-                                        'text-orange-600': balance.type === 'debt',
-                                        'text-blue-600': balance.type === 'default',
-                                        'text-orange-600': balance.type === 'project_income',
-                                        'font-bold text-sm': true
-                                    }" class="leading-tight">
-                                        <div class="balance-amount ">{{ formatBalanceValue(balance) }}</div>
+                                    <div class="balance-value" :class="`balance-value-${balance.type}`">
+                                        <div class="balance-amount">{{ formatBalanceValue(balance) }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -125,48 +38,22 @@
                 </div>
             </transition>
         </div>
-        
-        <!-- Debt Balance -->
-        <div v-if="$store.getters.hasPermission('settings_client_balance_view')" class="w-full md:w-auto md:ml-auto mt-4 md:mt-0">
+
+        <div v-if="canViewClientBalance" class="w-full md:w-auto md:ml-auto mt-4 md:mt-0">
             <transition name="fade" mode="out-in">
-                <div v-if="data != null && !loading" key="table">
+                <div v-if="data && !loading" key="table">
                     <div class="bg-white p-2 md:p-3 rounded-lg shadow-md">
                         <div class="text-center mb-3">
-                            <span class="text-sm font-semibold">{{ $t('clientDebts') }}</span>
+                            <span class="text-sm font-semibold">{{ clientDebtsTitle }}</span>
                         </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="text-center balance-item"
-                                 :class="{
-                                     'clickable-balance': false,
-                                     'hover-income': false,
-                                     'hover-outcome': false
-                                 }">
-                                <div class="mb-1 flex items-center justify-center space-x-1">
-                                    <span class="text-xs font-medium text-gray-700">{{ $t('oweUs') }}</span>
-                                    <i class="fas fa-arrow-trend-down text-green-500 text-xs"></i>
+                        <div class="debts-grid">
+                            <div v-for="debt in displayDebts" :key="debt.id" class="balance-item debt-item">
+                                <div class="balance-header">
+                                    <span class="balance-title">{{ debt.title }}</span>
+                                    <i :class="debt.iconClass"></i>
                                 </div>
-                                <div :class="{
-                                    'text-green-600': true,
-                                    'font-bold text-sm': true
-                                }" class="leading-tight">
-                                    <div class="balance-amount ">{{ formatBalanceValue({ value: clientDebts.positive, type: 'debt' }) }}</div>
-                                </div>
-                            </div>
-                            <div class="text-center balance-item"
-                                 :class="{
-                                     'clickable-balance': false,
-                                     'hover-income': false,
-                                     'hover-outcome': false
-                                 }">
-                                <div class="mb-1 flex items-center justify-center space-x-1">
-                                    <span class="text-xs font-medium text-gray-700">{{ $t('weOwe') }}</span>
-                                    <i class="fas fa-arrow-trend-up text-red-500 text-xs"></i>
-                                </div>
-                                <div :class="{
-                                    'text-red-600': true,
-                                    'font-bold text-sm': true
-                                }" class="leading-tight">
-                                    <div class="balance-amount ">{{ formatBalanceValue({ value: Math.abs(clientDebts.negative), type: 'debt' }) }}</div>
+                                <div class="balance-value" :class="debt.textClass">
+                                    <div class="balance-amount">{{ debt.value }}</div>
                                 </div>
                             </div>
                         </div>
@@ -187,6 +74,22 @@ import utc from 'dayjs/plugin/utc';
 
 dayjs.extend(utc);
 
+const BALANCE_ICONS = {
+    income: 'fas fa-arrow-up balance-icon-income',
+    outcome: 'fas fa-arrow-down balance-icon-outcome',
+    debt: 'fas fa-exclamation-triangle balance-icon-debt',
+    default: 'fas fa-calculator balance-icon-default',
+    project_income: 'fas fa-chart-line balance-icon-project'
+};
+
+const TITLE_TRANSLATIONS = {
+    'Приход': 'income',
+    'Расход': 'outcome',
+    'Долг': 'debt',
+    'Итого': 'итого',
+    'Главная касса': 'mainCashRegister'
+};
+
 export default {
     props: {
         cashRegisterId: { type: Number, default: null },
@@ -203,19 +106,11 @@ export default {
             fetchDebounceTimer: null,
             clientDebts: {
                 positive: 0,
-                negative: 0,
-                balance: 0
-            },
-            currentSlide: 0,
-            isMobile: false
+                negative: 0
+            }
         };
     },
-    mounted() {
-        this.checkMobile();
-        window.addEventListener('resize', this.checkMobile);
-    },
     computed: {
-        // Вычисляемое свойство для отслеживания всех фильтров
         filters() {
             return {
                 cashRegisterId: this.cashRegisterId,
@@ -226,319 +121,220 @@ export default {
                 sourceFilter: this.sourceFilter
             };
         },
-        // Максимальный слайд для слайдера
-        maxSlide() {
-            if (!this.data || this.data.length <= 3) return 0;
-            const itemsPerView = this.isMobile ? 1 : 3;
-            return Math.ceil(this.data.length / itemsPerView) - 1;
-        },
         canViewCashBalance() {
             return this.$store.getters.hasPermission('settings_cash_balance_view');
+        },
+        canViewClientBalance() {
+            return this.$store.getters.hasPermission('settings_client_balance_view');
+        },
+        displayCashRegisters() {
+            return this.data || [];
+        },
+        displayDebts() {
+            return [
+                {
+                    id: 'oweUs',
+                    title: this.$t('oweUs'),
+                    iconClass: 'fas fa-arrow-trend-down text-green-500',
+                    textClass: 'text-green-600 font-bold text-sm',
+                    value: this.formatBalanceValue({ value: this.clientDebts.positive, type: 'debt' })
+                },
+                {
+                    id: 'weOwe',
+                    title: this.$t('weOwe'),
+                    iconClass: 'fas fa-arrow-trend-up text-red-500',
+                    textClass: 'text-red-600 font-bold text-sm',
+                    value: this.formatBalanceValue({ value: Math.abs(this.clientDebts.negative), type: 'debt' })
+                }
+            ];
+        },
+        clientDebtsTitle() {
+            const clientTypeFilter = this.$store.getters.clientTypeFilter || [];
+            const hasFilter = Array.isArray(clientTypeFilter) && clientTypeFilter.length > 0;
+
+            if (!hasFilter) {
+                return this.$t('clientDebts');
+            }
+
+            const typeLabels = {
+                individual: this.$t('individual'),
+                company: this.$t('company'),
+                employee: this.$t('employee'),
+                investor: this.$t('investor')
+            };
+
+            const selectedTypes = clientTypeFilter
+                .map(type => typeLabels[type])
+                .filter(Boolean);
+
+            if (selectedTypes.length === 0) {
+                return this.$t('clientDebts');
+            }
+
+            return `${this.$t('clientDebts')}: ${selectedTypes.join(', ').toLowerCase()}`;
         }
     },
     methods: {
         formatBalanceValue(balance) {
             return this.$formatNumberForCompany(balance.value, true);
         },
+        isClickable(type) {
+            return type === 'income' || type === 'outcome';
+        },
         handleBalanceClick(cashRegister, balance) {
-            // Только для прихода и расхода
-            if (balance.type === 'income' || balance.type === 'outcome') {
+            if (this.isClickable(balance.type)) {
                 this.$emit('balance-click', {
                     cashRegisterId: cashRegister.id,
                     transactionType: balance.type
                 });
             }
         },
-        getVisibleBalanceItems(balanceItems) {
-            // Полностью убираем кредиты из основного баланса - они показываются отдельно справа
+        visibleBalanceItems(balanceItems) {
             return balanceItems.filter(item => item.type !== 'debt');
         },
         getGridClass(balanceItems) {
-            const visibleItems = this.getVisibleBalanceItems(balanceItems);
-            const itemCount = visibleItems.length;
-            
-            if (itemCount === 1) return 'grid grid-cols-1 gap-2';
-            if (itemCount === 2) return 'grid grid-cols-2 gap-2';
-            if (itemCount === 3) return 'grid grid-cols-3 gap-2';
-            return 'grid grid-cols-4 gap-2';
+            const count = this.visibleBalanceItems(balanceItems).length;
+            return `balance-grid balance-grid-${Math.min(count, 4)}`;
         },
-        translateBalanceTitle(title) {
-            const translations = {
-                'Приход': 'income',
-                'Расход': 'outcome', 
-                'Долг': 'debt',
-                'Итого': 'итого',
-                'Главная касса': 'mainCashRegister'
+        getBalanceIconClass(type) {
+            return BALANCE_ICONS[type] || BALANCE_ICONS.default;
+        },
+        translateTitle(title) {
+            const key = TITLE_TRANSLATIONS[title];
+            return key ? this.$t(key) : title;
+        },
+        translateName(name) {
+            return name === 'Главная касса' ? this.$t('mainCashRegister') : name;
+        },
+        getDateRange() {
+            const base = dayjs().utc().add(5, 'hour');
+            let start = null;
+            let end = null;
+
+            switch (this.dateFilter) {
+                case 'today':
+                    start = end = base.format('DD.MM.YYYY');
+                    break;
+                case 'yesterday':
+                    start = end = base.subtract(1, 'day').format('DD.MM.YYYY');
+                    break;
+                case 'this_week':
+                    start = base.startOf('isoWeek').format('DD.MM.YYYY');
+                    end = base.endOf('isoWeek').format('DD.MM.YYYY');
+                    break;
+                case 'last_week':
+                    const lastWeek = base.subtract(1, 'week');
+                    start = lastWeek.startOf('isoWeek').format('DD.MM.YYYY');
+                    end = lastWeek.endOf('isoWeek').format('DD.MM.YYYY');
+                    break;
+                case 'this_month':
+                    start = base.startOf('month').format('DD.MM.YYYY');
+                    end = base.endOf('month').format('DD.MM.YYYY');
+                    break;
+                case 'last_month':
+                    const lastMonth = base.subtract(1, 'month');
+                    start = lastMonth.startOf('month').format('DD.MM.YYYY');
+                    end = lastMonth.endOf('month').format('DD.MM.YYYY');
+                    break;
+                case 'custom':
+                    start = this.startDate ? dayjs(this.startDate).format('DD.MM.YYYY') : null;
+                    end = this.endDate ? dayjs(this.endDate).format('DD.MM.YYYY') : null;
+                    break;
+            }
+
+            return { start, end };
+        },
+        buildParams(start, end) {
+            const params = {
+                cash_register_ids: this.cashRegisterId !== null ? String(this.cashRegisterId) : undefined,
+                start_date: start,
+                end_date: end,
+                transaction_type: this.transactionTypeFilter || undefined,
+                source: this.sourceFilter || undefined
             };
-            
-            const translationKey = translations[title];
-            if (translationKey) {
-                return this.$t(translationKey);
+
+            return Object.fromEntries(
+                Object.entries(params).filter(([_, value]) => value !== undefined)
+            );
+        },
+        calculateClientDebts(clients) {
+            const clientTypeFilter = this.$store.getters.clientTypeFilter || [];
+            const hasFilter = Array.isArray(clientTypeFilter) && clientTypeFilter.length > 0;
+
+            let positive = 0;
+            let negative = 0;
+
+            clients
+                .filter(client => {
+                    if (!hasFilter) return true;
+                    const type = client.clientType || client.client_type || 'individual';
+                    return clientTypeFilter.includes(type);
+                })
+                .forEach(client => {
+                    const balance = parseFloat(client.balance) || 0;
+                    if (balance > 0) {
+                        positive += balance;
+                    } else if (balance < 0) {
+                        negative += Math.abs(balance);
+                    }
+                });
+
+            return { positive, negative };
+        },
+        async loadClientDebts() {
+            if (!this.canViewClientBalance) {
+                this.clientDebts = { positive: 0, negative: 0 };
+                return;
             }
-            
-            return title;
-        },
-        translateCashRegisterName(name) {
-            const translations = {
-                'Главная касса': 'mainCashRegister'
-            };
-            
-            const translationKey = translations[name];
-            if (translationKey) {
-                return this.$t(translationKey);
-            }
-            
-            return name;
-        },
-        checkMobile() {
-            this.isMobile = window.innerWidth < 768;
-        },
-        nextSlide() {
-            if (this.currentSlide < this.maxSlide) {
-                this.currentSlide++;
-            }
-        },
-        prevSlide() {
-            if (this.currentSlide > 0) {
-                this.currentSlide--;
+
+            try {
+                await this.$store.dispatch('loadClients');
+                const clients = this.$store.getters.clients || [];
+                this.clientDebts = this.calculateClientDebts(clients);
+            } catch (error) {
+                console.error('Ошибка при загрузке балансов клиентов:', error);
+                this.clientDebts = { positive: 0, negative: 0 };
             }
         },
         async fetchItems() {
             if (!this.canViewCashBalance) {
-                this.loading = false;
                 this.data = [];
-                this.clientDebts = { positive: 0, negative: 0, balance: 0 };
+                this.clientDebts = { positive: 0, negative: 0 };
                 return;
             }
 
             this.loading = true;
-            this.currentSlide = 0; // Сбрасываем слайдер при обновлении данных
             try {
-                let start = null, end = null;
-                switch (this.dateFilter) {
-                    case 'today':
-                        start = end = dayjs().utc().add(5, 'hour').format('DD.MM.YYYY'); // UTC+5 для Asia/Ashgabat
-                        break;
-                    case 'yesterday':
-                        start = end = dayjs().utc().add(5, 'hour').subtract(1, 'day').format('DD.MM.YYYY');
-                        break;
-                    case 'this_week':
-                        start = dayjs().utc().add(5, 'hour').startOf('isoWeek').format('DD.MM.YYYY');
-                        end = dayjs().utc().add(5, 'hour').endOf('isoWeek').format('DD.MM.YYYY');
-                        break;
-                    case 'last_week':
-                        start = dayjs().utc().add(5, 'hour').subtract(1, 'week').startOf('isoWeek').format('DD.MM.YYYY');
-                        end = dayjs().utc().add(5, 'hour').subtract(1, 'week').endOf('isoWeek').format('DD.MM.YYYY');
-                        break;
-                    case 'this_month':
-                        start = dayjs().utc().add(5, 'hour').startOf('month').format('DD.MM.YYYY');
-                        end = dayjs().utc().add(5, 'hour').endOf('month').format('DD.MM.YYYY');
-                        break;
-                    case 'last_month':
-                        start = dayjs().utc().add(5, 'hour').subtract(1, 'month').startOf('month').format('DD.MM.YYYY');
-                        end = dayjs().utc().add(5, 'hour').subtract(1, 'month').endOf('month').format('DD.MM.YYYY');
-                        break;
-                    case 'custom':
-                        start = this.startDate ? dayjs(this.startDate).format('DD.MM.YYYY') : null;
-                        end = this.endDate ? dayjs(this.endDate).format('DD.MM.YYYY') : null;
-                        break;
-                    case 'all_time':
-                    default:
-                }
+                const { start, end } = this.getDateRange();
                 const cashIds = this.cashRegisterId !== null ? [this.cashRegisterId] : [];
+                const params = this.buildParams(start, end);
 
-                const params = {
-                    cash_register_ids: cashIds.join(','),
-                    start_date: start,
-                    end_date: end,
-                    transaction_type: this.transactionTypeFilter || undefined,
-                    source: this.sourceFilter || undefined
-                };
-
-                Object.keys(params).forEach(key => {
-                    if (params[key] === undefined) {
-                        delete params[key];
-                    }
-                });
-
-                this.data = await CashRegisterController.getCashBalance(
-                    cashIds,
-                    start,
-                    end,
-                    params
-                );
-
-                // Загружаем балансы клиентов только если есть право на просмотр баланса клиентов
-                if (this.$store.getters.hasPermission('settings_client_balance_view')) {
-                    try {
-                        const ClientController = (await import('@/api/ClientController')).default;
-                        const clients = await ClientController.getAllItems();
-                        const clientTypeFilter = (this.$store && this.$store.getters && this.$store.getters.clientTypeFilter) ? this.$store.getters.clientTypeFilter : [];
-                        
-                        // Рассчитываем общий дебет и кредит из балансов клиентов
-                        let totalDebt = 0;    // Нам должны (положительный баланс)
-                        let totalCredit = 0;  // Мы должны (отрицательный баланс)
-                        
-                        clients
-                            .filter(client => {
-                                if (!Array.isArray(clientTypeFilter) || clientTypeFilter.length === 0) return true;
-                                const type = client.clientType || 'individual';
-                                return clientTypeFilter.includes(type);
-                            })
-                            .forEach(client => {
-                            const balance = parseFloat(client.balance) || 0;
-                            if (balance > 0) {
-                                totalDebt += balance;
-                            } else if (balance < 0) {
-                                totalCredit += Math.abs(balance);
-                            }
-                            });
-                        
-                        this.clientDebts = {
-                            positive: totalDebt,
-                            negative: totalCredit,
-                            balance: totalDebt - totalCredit
-                        };
-                    } catch (error) {
-                        console.error('Ошибка при загрузке балансов клиентов:', error);
-                        this.clientDebts = { positive: 0, negative: 0, balance: 0 };
-                    }
-                } else {
-                    this.clientDebts = { positive: 0, negative: 0, balance: 0 };
-                }
+                this.data = await CashRegisterController.getCashBalance(cashIds, start, end, params);
+                await this.loadClientDebts();
             } finally {
                 this.loading = false;
             }
         }
     },
     watch: {
-        // ✅ Объединяем все фильтры в один watch для предотвращения дублей
         filters: {
             handler() {
-                // Очищаем предыдущий таймер
                 if (this.fetchDebounceTimer) {
                     clearTimeout(this.fetchDebounceTimer);
                 }
-                
-                // Устанавливаем новый таймер (100ms debounce)
+
                 this.fetchDebounceTimer = setTimeout(() => {
                     this.fetchItems();
                 }, 100);
             },
             immediate: true,
             deep: true
-        }
+        },
     },
     beforeUnmount() {
-        // Очищаем таймер при уничтожении компонента
         if (this.fetchDebounceTimer) {
             clearTimeout(this.fetchDebounceTimer);
         }
     }
 }
 </script>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.2s;
-}
-
-.fade-enter,
-.fade-leave-to {
-    opacity: 0;
-}
-
-/* Базовые стили для всех элементов баланса */
-.balance-item {
-    border: 1px solid transparent !important;
-    border-radius: 0.5rem !important;
-    padding: 0.375rem 0.25rem !important;
-    min-height: 50px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    transition: all 0.2s ease !important;
-}
-
-@media (min-width: 768px) {
-    .balance-item {
-        padding: 0.5rem !important;
-        min-height: 60px !important;
-    }
-}
-
-.balance-amount {
-    white-space: nowrap;
-    font-weight: 700;
-    font-size: 0.875rem;
-    line-height: 1.2;
-}
-
-@media (min-width: 768px) {
-    .balance-amount {
-        font-size: 1.1rem;
-    }
-}
-
-@media (max-width: 768px) {
-    .balance-amount {
-        font-size: 0.9rem;
-    }
-}
-
-@media (min-width: 769px) and (max-width: 1024px) {
-    .balance-amount {
-        font-size: 1rem;
-    }
-}
-
-@media (min-width: 1025px) {
-    .balance-amount {
-        font-size: 1.2rem;
-    }
-}
-
-/* Стили для кликабельных элементов баланса */
-.clickable-balance {
-    cursor: pointer !important;
-}
-
-.clickable-balance.hover-income:hover {
-    border: 1px dashed #22c55e !important;
-    background-color: rgba(34, 197, 94, 0.05) !important;
-}
-
-.clickable-balance.hover-outcome:hover {
-    border: 1px dashed #ef4444 !important;
-    background-color: rgba(239, 68, 68, 0.05) !important;
-}
-
-/* Debt clickable styling */
-.clickable-debt:hover {
-    background-color: rgba(249, 115, 22, 0.05);
-    border-left-width: 6px;
-}
-
-/* Стили для слайдера касс */
-.cash-register-slider-container {
-    position: relative;
-    width: 100%;
-}
-
-.cash-register-slider {
-    display: flex;
-    gap: 1rem;
-}
-
-.cash-register-slide {
-    min-width: 0;
-}
-
-@media (max-width: 768px) {
-    .cash-register-slide {
-        width: 100% !important;
-    }
-}
-</style>
-

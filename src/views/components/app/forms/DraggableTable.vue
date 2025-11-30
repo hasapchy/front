@@ -1,6 +1,7 @@
 <template>
-    <div class="w-full">
-    <slot name="tableControlsBar" :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
+  <div class="w-full">
+    <slot name="tableControlsBar" :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible"
+      :log="log">
       <div class="flex items-center justify-between gap-2 mb-4 flex-wrap">
         <slot name="tableSettingsAdditional"></slot>
         <div class="flex items-center gap-2">
@@ -30,70 +31,68 @@
     <div class="desktop-table overflow-x-auto">
       <div class="overflow-x-auto w-full">
         <table class="min-w-full bg-white shadow-md rounded mb-6" style="font-size: 12px;">
-    <thead class="bg-gray-100 rounded-t-sm">
-      <draggable v-if="columns.length" tag="tr" class="dragArea list-group w-full" :list="columns" @change="log">
-        <th v-for="(element, index) in columns" :key="element.name"
-          :class="{ hidden: !element.visible, relative: true }"
-          class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium cursor-pointer select-none whitespace-nowrap"
-          :style="getColumnStyle(element)" @dblclick.prevent="sortBy(element.name)"
-          :title="$t('doubleClickToSort') + ' ' + ($te(element.label) ? $t(element.label) : element.label)">
-          <template v-if="element.name === 'select'">
-            <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" style="cursor:pointer;" />
-          </template>
-          <template v-else>
-            <span>{{ $te(element.label) ? $t(element.label) : element.label }}</span>
-            <span v-if="sortKey === element.name" class="ml-1">
-              <i v-if="sortOrder === 1" class="fas fa-sort-up"></i>
-              <i v-else class="fas fa-sort-down"></i>
-            </span>
-            <span v-else class="ml-1 text-gray-300">
-              <i class="fas fa-sort"></i>
-            </span>
-            <span v-if="element.visible" class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize"
-              @mousedown.prevent="startResize($event, index)"></span>
-          </template>
-        </th>
-      </draggable>
-      </thead>
-      <tbody>
-        <tr v-if="sortedData.length === 0" class="text-center">
-          <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300" :colspan="columns.length">
-            {{ $t('noData') }}
-          </td>
-        </tr>
-        <tr v-for="(item, idx) in sortedData" :key="idx" class="cursor-pointer hover:bg-gray-100 transition-all"
-          :class="{ 
-            'border-b border-gray-300': idx !== sortedData.length - 1,
-            'opacity-50': item.isDeleted || item.is_deleted 
-          }" @dblclick="(e) => itemClick(item, e)">
-          <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`" 
-            class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300"
-            :class="{ 
-              hidden: !column.visible,
-              'note-cell': column.name === 'note'
-            }" 
-            :style="getColumnStyle(column)"
-            :title="column.name === 'note' ? getNoteTitle(item, column) : null">
-            <template v-if="column.name === 'select'">
-              <input type="checkbox" :checked="selectedIds.includes(item.id)" @change.stop="toggleSelectRow(item.id)"
-                class="cursor-pointer" />
-            </template>
-            <template v-if="column.component">
-              <component :is="column.component" v-bind="column.props?.(item)" />
-            </template>
-            <template v-else-if="column.image && itemMapper(item, column.name) !== null">
-              <img :src="itemMapper(item, column.name)" width="50" height="50" class="rounded object-cover" />
-            </template>
-            <template v-else-if="column.html">
-              <span v-html="itemMapper(item, column.name)" @click="(e) => handleHtmlClick(e, item, column)"
-                :class="{ 'line-through': item.isDeleted || item.is_deleted }"></span>
-            </template>
-            <template v-else>
-              <span :class="{ 'line-through': item.isDeleted || item.is_deleted }">{{ itemMapper(item, column.name) }}</span>
-            </template>
-          </td>
-        </tr>
-      </tbody>
+          <thead class="bg-gray-100 rounded-t-sm">
+            <draggable v-if="columns.length" tag="tr" class="dragArea list-group w-full" :list="columns" @change="log">
+              <th v-for="(element, index) in columns" :key="element.name"
+                :class="{ hidden: !element.visible, relative: true }"
+                class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium cursor-pointer select-none whitespace-nowrap"
+                :style="getColumnStyle(element)" @dblclick.prevent="sortBy(element.name)"
+                :title="$t('doubleClickToSort') + ' ' + ($te(element.label) ? $t(element.label) : element.label)">
+                <template v-if="element.name === 'select'">
+                  <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" style="cursor:pointer;" />
+                </template>
+                <template v-else>
+                  <span>{{ $te(element.label) ? $t(element.label) : element.label }}</span>
+                  <span v-if="sortKey === element.name" class="ml-1">
+                    <i v-if="sortOrder === 1" class="fas fa-sort-down"></i>
+                    <i v-else class="fas fa-sort-up"></i>
+                  </span>
+                  <span v-else class="ml-1 text-gray-300">
+                    <i class="fas fa-sort"></i>
+                  </span>
+                  <span v-if="element.visible" class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize"
+                    @mousedown.prevent="startResize($event, index)"></span>
+                </template>
+              </th>
+            </draggable>
+          </thead>
+          <tbody>
+            <tr v-if="sortedData.length === 0" class="text-center">
+              <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300" :colspan="columns.length">
+                {{ $t('noData') }}
+              </td>
+            </tr>
+            <tr v-for="(item, idx) in sortedData" :key="idx" class="cursor-pointer hover:bg-gray-100 transition-all"
+              :class="{
+                'border-b border-gray-300': idx !== sortedData.length - 1,
+                'opacity-50': item.isDeleted || item.is_deleted
+              }" @dblclick="(e) => itemClick(item, e)">
+              <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`"
+                class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300" :class="{
+                  hidden: !column.visible,
+                  'note-cell': column.name === 'note'
+                }" :style="getColumnStyle(column)" :title="column.name === 'note' ? getNoteTitle(item, column) : null">
+                <template v-if="column.name === 'select'">
+                  <input type="checkbox" :checked="selectedIds.includes(item.id)"
+                    @change.stop="toggleSelectRow(item.id)" class="cursor-pointer" />
+                </template>
+                <template v-if="column.component">
+                  <component :is="column.component" v-bind="column.props?.(item)" />
+                </template>
+                <template v-else-if="column.image && itemMapper(item, column.name) !== null">
+                  <img :src="itemMapper(item, column.name)" width="50" height="50" class="rounded object-cover" />
+                </template>
+                <template v-else-if="column.html">
+                  <span v-html="itemMapper(item, column.name)" @click="(e) => handleHtmlClick(e, item, column)"
+                    :class="{ 'line-through': item.isDeleted || item.is_deleted }"></span>
+                </template>
+                <template v-else>
+                  <span :class="{ 'line-through': item.isDeleted || item.is_deleted }">{{ itemMapper(item, column.name)
+                    }}</span>
+                </template>
+              </td>
+            </tr>
+          </tbody>
         </table>
       </div>
     </div>
@@ -103,12 +102,9 @@
       <div v-if="sortedData.length === 0" class="bg-white shadow-md rounded-lg p-4 text-center text-sm text-gray-500">
         {{ $t('noData') }}
       </div>
-      <div v-for="(item, idx) in sortedData" :key="idx" 
-        @click="(e) => itemClick(item, e)"
-        :class="{ 
-          'opacity-50': item.isDeleted || item.is_deleted 
-        }"
-        class="bg-white shadow-md rounded-lg p-4 cursor-pointer hover:shadow-lg transition-shadow">
+      <div v-for="(item, idx) in sortedData" :key="idx" @click="(e) => itemClick(item, e)" :class="{
+        'opacity-50': item.isDeleted || item.is_deleted
+      }" class="bg-white shadow-md rounded-lg p-4 cursor-pointer hover:shadow-lg transition-shadow">
         <div class="space-y-3">
           <div v-for="(column, cIndex) in visibleColumns" :key="`${cIndex}_${idx}`"
             class="flex flex-col border-b border-gray-100 pb-2 last:border-0 last:pb-0">
@@ -164,7 +160,7 @@ export default {
       columns: [],
       resizing: false,
       sortKey: null,
-      sortOrder: 1,
+      sortOrder: -1, // Начальное значение: от большего к меньшему
       resizingColumn: null,
       startX: 0,
       startWidth: 0,
@@ -184,9 +180,9 @@ export default {
             this.sortOrder
           );
         }
-        
+
         // Специальная обработка для числовых полей с HTML форматированием
-        
+
         // Баланс клиентов и взаиморасчетов
         if (this.sortKey === 'balance') {
           // Используем balance_value если есть (взаиморасчеты), иначе balance (клиенты)
@@ -198,25 +194,7 @@ export default {
             return (na - nb) * this.sortOrder;
           }
         }
-        
-        // Сумма транзакций
-        if (this.sortKey === 'cashAmount') {
-          const na = this.normalizeNumber(a.cashAmount);
-          const nb = this.normalizeNumber(b.cashAmount);
-          if (na !== null && nb !== null) {
-            return (na - nb) * this.sortOrder;
-          }
-        }
-        
-        // Оригинальная сумма транзакций
-        if (this.sortKey === 'origAmount') {
-          const na = this.normalizeNumber(a.origAmount);
-          const nb = this.normalizeNumber(b.origAmount);
-          if (na !== null && nb !== null) {
-            return (na - nb) * this.sortOrder;
-          }
-        }
-        
+
         const va = this.itemMapper(a, this.sortKey);
         const vb = this.itemMapper(b, this.sortKey);
         const na = this.normalizeNumber(va);
@@ -367,7 +345,7 @@ export default {
         this.sortOrder = -this.sortOrder;
       } else {
         this.sortKey = key;
-        this.sortOrder = 1;
+        this.sortOrder = -1; // Начинаем с сортировки от большего к меньшему
       }
       this.saveSort();
     },
@@ -384,12 +362,12 @@ export default {
       const dx = e.clientX - this.startX;
       const column = this.columns[this.resizingColumn];
       let newWidth = Math.max(50, this.startWidth + dx);
-      
+
       // Для колонок с примечаниями ограничиваем максимальную ширину 200px
       if (column && column.name === 'note') {
         newWidth = Math.min(newWidth, 200);
       }
-      
+
       this.columns[this.resizingColumn].size = newWidth;
     },
     stopResize() {
@@ -454,7 +432,7 @@ export default {
       const style = {
         width: column.size ? column.size + 'px' : 'auto'
       };
-      
+
       // Для колонок с примечаниями всегда устанавливаем ограничение максимальной ширины
       // Это предотвращает растягивание колонки из-за длинного текста
       if (column.name === 'note') {
@@ -462,20 +440,20 @@ export default {
         // Пользователь может изменить размер через resize-handle, но не более 200px
         style.maxWidth = '200px';
       }
-      
+
       return style;
     },
     getNoteTitle(item, column) {
       const noteValue = this.itemMapper(item, column.name);
       if (!noteValue) return null;
-      
+
       // Если это HTML, извлекаем чистый текст
       if (column.html) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = noteValue;
         return tempDiv.textContent || tempDiv.innerText || '';
       }
-      
+
       return String(noteValue);
     },
   },
@@ -556,7 +534,7 @@ export default {
   white-space: nowrap;
 }
 
-.note-cell > span {
+.note-cell>span {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;

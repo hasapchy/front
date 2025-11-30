@@ -83,6 +83,8 @@ import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
+import { markRaw } from 'vue';
 
 
 export default {
@@ -104,7 +106,14 @@ export default {
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'dateUser', label: 'dateUser' },
                 { name: 'warehouseName', label: 'warehouse' },
-                { name: 'products', label: 'products', html: true },
+                {
+                    name: 'products',
+                    label: 'products',
+                    component: markRaw(ProductsListCell),
+                    props: (item) => ({
+                        products: item.products || []
+                    })
+                },
                 { name: 'note', label: 'note' },
             ]
         }
@@ -121,10 +130,11 @@ export default {
     methods: {
         itemMapper(i, c) {
             switch (c) {
-                case 'products':
-                    return i.productsHtmlList();
                 case 'dateUser':
                     return `${i.formatCreatedAt()} / ${i.userName}`;
+                case 'products':
+                    // Возвращаем количество продуктов для сортировки (отображение через компонент ProductsListCell)
+                    return (i.products || []).length;
                 default:
                     return i[c];
             }

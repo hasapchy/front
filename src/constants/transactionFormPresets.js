@@ -52,6 +52,13 @@ export const TRANSACTION_FORM_PRESETS = {
         type: { visible: false, enforcedValue: 'outcome', readonly: true },
         category: { visible: false, enforcedValue: 27 },
     },
+    employeeSalaryAccrual: {
+        client: { visible: false },
+        project: { visible: false },
+        debt: { visible: false, enforcedValue: true },
+        type: { visible: false, enforcedValue: 'outcome', readonly: true },
+        category: { visible: false, enforcedValue: 24 },
+    },
     full: {
         client: { visible: true },
         project: { visible: true },

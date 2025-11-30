@@ -93,6 +93,7 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'ID', size: 60 },
                 { name: 'name', label: 'firstName' },
+                { name: 'surname', label: 'lastName' },
                 { name: 'email', label: 'email' },
                 { name: 'position', label: 'position' },
                 { name: 'roles', label: 'roles' },

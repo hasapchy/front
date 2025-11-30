@@ -1,20 +1,10 @@
 import api from "./axiosInstance";
 import SaleDto from "@/dto/sale/SaleDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
-import { queryCache } from "@/utils/cacheHelper";
 
 export default class SaleController {
   static async getItems(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, per_page = 20) {
     try {
-      const cacheKey = 'sales_list';
-      const cacheParams = { page, per_page, search, dateFilter, startDate, endDate };
-      const cached = await queryCache.get(cacheKey, cacheParams);
-      
-      if (cached && cached.items && cached.items.length > 0 && cached.items[0] instanceof SaleDto) {
-        console.log('📦 Загружено из кэша: sales', cacheParams);
-        return cached;
-      }
-
       const params = { page: page, per_page: per_page };
       if (search) {
         params.search = search;
@@ -38,7 +28,6 @@ export default class SaleController {
         data.total
       );
 
-      queryCache.set(cacheKey, cacheParams, paginatedResponse);
       return paginatedResponse;
     } catch (error) {
       console.error("Ошибка при получении списка продаж:", error);
@@ -48,7 +37,6 @@ export default class SaleController {
   static async storeItem(item) {
     try {
       const { data } = await api.post("/sales", item);
-      queryCache.invalidate('sales_list');
       return data;
     } catch (error) {
       console.error("Ошибка при создании продажи:", error);
@@ -59,7 +47,6 @@ export default class SaleController {
   static async updateItem(id, item) {
     try {
       const { data } = await api.put(`/sales/${id}`, item);
-      queryCache.invalidate('sales_list');
       return data;
     } catch (error) {
       console.error("Ошибка при обновлении продажи:", error);
@@ -70,7 +57,6 @@ export default class SaleController {
   static async deleteItem(id) {
     try {
       const { data } = await api.delete(`/sales/${id}`);
-      queryCache.invalidate('sales_list');
       return data;
     } catch (error) {
       console.error("Ошибка при удалении продажи:", error);

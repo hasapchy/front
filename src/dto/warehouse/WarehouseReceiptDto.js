@@ -43,9 +43,6 @@ export default class WarehouseReceiptDto {
     this.type = this.cashId ? 'cash' : 'balance';
   }
 
-  productsHtmlList() {
-    return createProductsHtmlList(this.products);
-  }
   cashNameDisplay() {
     return this.cashName || "Не указана";
   }

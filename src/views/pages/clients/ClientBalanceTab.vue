@@ -72,6 +72,9 @@ import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
+import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
+import OperationTypeCell from "@/views/components/app/buttons/OperationTypeCell.vue";
+import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import { defineAsyncComponent, markRaw } from 'vue';
@@ -122,7 +125,15 @@ export default {
             columnsConfig: [
                 { name: "id", label: "№", size: 60 },
                 { name: "dateUser", label: this.$t("date"), size: 120 },
-                { name: "operationType", label: this.$t("type"), size: 150, html: true },
+                {
+                    name: "operationType",
+                    label: this.$t("type"),
+                    size: 150,
+                    component: markRaw(OperationTypeCell),
+                    props: (item) => ({
+                        item: item
+                    })
+                },
                 {
                     name: "sourceType", 
                     label: "Источник", 
@@ -148,9 +159,28 @@ export default {
                     }
                 },
                 { name: "note", label: this.$t("note"), size: 200 },
-                { name: "debt", label: "Долг", size: 80, html: true },
+                {
+                    name: "debt",
+                    label: "Долг",
+                    size: 80,
+                    component: markRaw(DebtCell),
+                    props: (item) => ({
+                        isDebt: item.is_debt,
+                        variant: 'text'
+                    })
+                },
                 { name: "userName", label: this.$t("user"), size: 120 },
-                { name: "clientImpact", label: this.$t("impact"), size: 130, html: true },
+                {
+                    name: "clientImpact",
+                    label: this.$t("impact"),
+                    size: 130,
+                    component: markRaw(ClientImpactCell),
+                    props: (item) => ({
+                        item: item,
+                        currencyCode: this.currencyCode,
+                        formatNumberFn: this.$formatNumber
+                    })
+                },
             ],
             ENTITY_CONFIG: {
                 transaction: {
@@ -188,7 +218,7 @@ export default {
             this.showNotification(this.$t('error'), errorMessage, true);
         },
         isDebtOperation(item) {
-            return item.is_debt === 1 || item.is_debt === true || item.is_debt === '1';
+            return item.is_debt == 1;
         },
         formatBalance(balance) {
             return `${this.$formatNumber(balance, null, true)} ${this.currencyCode}`;
@@ -296,18 +326,15 @@ export default {
             switch (c) {
                 case "id":
                     return i.sourceId || '-';
-                case "operationType":
-                    return i.getOperationTypeHtml ? i.getOperationTypeHtml() : '-';
                 case "dateUser":
                     return i.dateUser || (i.formatDate ? i.formatDate() : '');
                 case "userName":
                     return i.userName || i.user_name || '-';
                 case "note":
                     return i.note || '-';
-                case "debt":
-                    return i.getDebtHtml ? i.getDebtHtml() : '-';
                 case "clientImpact":
-                    return i.getClientImpactHtml ? i.getClientImpactHtml(i.currencySymbol || this.currencyCode, this.$formatNumber) : '-';
+                    // Возвращаем числовое значение для сортировки (отображение через компонент ClientImpactCell)
+                    return parseFloat(i.amount || 0);
                 default:
                     return i[c];
             }

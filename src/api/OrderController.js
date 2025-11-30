@@ -1,7 +1,6 @@
 import api from "./axiosInstance";
 import OrderDto from "@/dto/order/OrderDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
-import { queryCache } from "@/utils/cacheHelper";
 
 export default class OrderController {
   static async getItems(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, statusFilter = '', projectFilter = '', clientFilter = '', per_page = 20, unpaidOnly = false) {
@@ -53,7 +52,6 @@ export default class OrderController {
       const { data } = await api.post("/orders", {
         ...item,
       });
-      queryCache.invalidate('orders_list');
       return data;
     } catch (error) {
       console.error("Ошибка при создании заказа:", error);
@@ -67,8 +65,6 @@ export default class OrderController {
       const { data } = await api.put(`/orders/${id}`, {
         ...item,
       });
-
-      queryCache.invalidate('orders_list');
       return data;
     } catch (error) {
       console.error("Ошибка при обновлении заказа:", error);
@@ -79,7 +75,6 @@ export default class OrderController {
   static async deleteItem(id) {
     try {
       const { data } = await api.delete(`/orders/${id}`);
-      queryCache.invalidate('orders_list');
       return data;
     } catch (error) {
       console.error("Ошибка при удалении заказа:", error);
@@ -92,7 +87,6 @@ export default class OrderController {
         ids,
         status_id,
       });
-      queryCache.invalidate('orders_list');
       return data;
     } catch (e) {
       console.error("Ошибка пакетного обновления статуса:", e);
@@ -124,8 +118,6 @@ export default class OrderController {
       const { data } = await api.post(`/orders/${orderId}/transactions`, {
         transaction_id: transactionId
       });
-      queryCache.invalidate('orders_list');
-      queryCache.invalidate('transactions_list');
       return data;
     } catch (error) {
       console.error("Ошибка при связывании транзакции с заказом:", error);
@@ -136,8 +128,6 @@ export default class OrderController {
   static async unlinkTransactionFromOrder(orderId, transactionId) {
     try {
       const { data } = await api.delete(`/orders/${orderId}/transactions/${transactionId}`);
-      queryCache.invalidate('orders_list');
-      queryCache.invalidate('transactions_list');
       return data;
     } catch (error) {
       console.error("Ошибка при отвязывании транзакции от заказа:", error);

@@ -1,8 +1,7 @@
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import api from "./axiosInstance";
 import TransactionDto from "@/dto/transaction/TransactionDto";
-import { queryCache } from "@/utils/cacheHelper";
-import CacheInvalidator from "@/utils/cache";
+import { CacheInvalidator } from "@/cache";
 
 export default class TransactionController {
   static async getItems(
@@ -20,15 +19,6 @@ export default class TransactionController {
     is_debt = null
   ) {
     try {
-      const cacheKey = 'transactions_list';
-      const cacheParams = { page, cash_id, date_filter_type, order_id, search, transaction_type, source, project_id, per_page, start_date, end_date, is_debt };
-      const cached = await queryCache.get(cacheKey, cacheParams);
-      
-      if (cached && cached.items && cached.items.length > 0 && cached.items[0] instanceof TransactionDto) {
-        console.log('📦 Загружено из кэша: transactions', cacheParams);
-        return cached;
-      }
-
       const response = await api.get("/transactions", {
         params: {
           page: page,
@@ -56,7 +46,6 @@ export default class TransactionController {
         data.total
       );
 
-      queryCache.set(cacheKey, cacheParams, paginatedResponse);
       return paginatedResponse;
     } catch (error) {
       console.error("Ошибка при получении транзакций:", error);
@@ -90,7 +79,7 @@ export default class TransactionController {
   static async storeItem(item) {
     try {
       const { data } = await api.post("/transactions", item);
-      CacheInvalidator.onCreate('transactions');
+      await CacheInvalidator.onCreate('transactions');
       return data;
     } catch (error) {
       console.error("Ошибка при создании транзакции:", error);
@@ -104,14 +93,13 @@ export default class TransactionController {
       order_id: orderId
     };
     const result = await this.storeItem(item);
-    queryCache.invalidate('orders_list');
     return result;
   }
 
   static async updateItem(id, item) {
     try {
       const { data } = await api.put(`/transactions/${id}`, item);
-      CacheInvalidator.onUpdate('transactions');
+      await CacheInvalidator.onUpdate('transactions');
       return data;
     } catch (error) {
       console.error("Ошибка при обновлении транзакции:", error);
@@ -122,7 +110,7 @@ export default class TransactionController {
   static async deleteItem(id) {
     try {
       const { data } = await api.delete(`/transactions/${id}`);
-      CacheInvalidator.onDelete('transactions');
+      await CacheInvalidator.onDelete('transactions');
       return data;
     } catch (error) {
       console.error("Ошибка при удалении транзакции:", error);

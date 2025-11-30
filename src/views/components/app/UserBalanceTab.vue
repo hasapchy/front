@@ -4,6 +4,13 @@
             <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
             <div class="flex gap-2">
                 <PrimaryButton 
+                    icon="fas fa-money-bill-wave" 
+                    :onclick="handleSalaryAccrual"
+                    :is-success="true"
+                    :disabled="buttonsDisabled">
+                    {{ $t('accrueSalary') || 'Начислить зарплату' }}
+                </PrimaryButton>
+                <PrimaryButton 
                     icon="fas fa-gift" 
                     :onclick="handleBonus"
                     :is-success="true"
@@ -68,7 +75,7 @@
                 ref="transactionForm"
                 :form-config="transactionFormConfig"
                 :initial-client="employeeClient"
-                :header-text="transactionModalType === 'bonus' ? ($t('bonus') || 'Премия') : ($t('penalty') || 'Штраф')"
+                :header-text="getTransactionModalHeader()"
                 @saved="handleTransactionSaved"
                 @saved-error="handleTransactionError" />
         </SideModalDialog>
@@ -110,6 +117,8 @@ import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
+import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
+import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import ClientController from "@/api/ClientController";
 import TransactionController from "@/api/TransactionController";
@@ -172,6 +181,8 @@ export default {
                 return TRANSACTION_FORM_PRESETS.employeeBonus;
             } else if (this.transactionModalType === 'penalty') {
                 return TRANSACTION_FORM_PRESETS.employeePenalty;
+            } else if (this.transactionModalType === 'salaryAccrual') {
+                return TRANSACTION_FORM_PRESETS.employeeSalaryAccrual;
             }
             return {};
         },
@@ -206,8 +217,27 @@ export default {
                 },
                 { name: "note", label: this.$t("note"), size: 200 },
                 { name: "categoryName", label: this.$t("category"), size: 150 },
-                { name: "debt", label: "Долг", size: 80, html: true },
-                { name: "clientImpact", label: this.$t("impact"), size: 130, html: true },
+                {
+                    name: "debt",
+                    label: "Долг",
+                    size: 80,
+                    component: markRaw(DebtCell),
+                    props: (item) => ({
+                        isDebt: item.isDebt ?? item.is_debt ?? false,
+                        variant: 'text'
+                    })
+                },
+                {
+                    name: "clientImpact",
+                    label: this.$t("impact"),
+                    size: 130,
+                    component: markRaw(ClientImpactCell),
+                    props: (item) => ({
+                        item: item,
+                        currencyCode: this.currencyCode,
+                        formatNumberFn: this.$formatNumber
+                    })
+                },
             ];
         }
     },
@@ -254,10 +284,9 @@ export default {
                     return i.note || '-';
                 case "categoryName":
                     return i.categoryName || i.category_name || '-';
-                case "debt":
-                    return i.getDebtHtml ? i.getDebtHtml() : '-';
                 case "clientImpact":
-                    return i.getClientImpactHtml ? i.getClientImpactHtml(i.currencySymbol || this.currencyCode, this.$formatNumber) : '-';
+                    // Возвращаем числовое значение для сортировки (отображение через компонент ClientImpactCell)
+                    return parseFloat(i.amount || 0);
                 default:
                     return i[c];
             }
@@ -359,6 +388,19 @@ export default {
         async handlePenalty() {
             await this.openTransactionModal('penalty');
         },
+        async handleSalaryAccrual() {
+            await this.openTransactionModal('salaryAccrual');
+        },
+        getTransactionModalHeader() {
+            if (this.transactionModalType === 'bonus') {
+                return this.$t('bonus') || 'Премия';
+            } else if (this.transactionModalType === 'penalty') {
+                return this.$t('penalty') || 'Штраф';
+            } else if (this.transactionModalType === 'salaryAccrual') {
+                return this.$t('accrueSalary') || 'Начисление зарплаты';
+            }
+            return '';
+        },
         async openTransactionModal(type) {
             if (!this.editingItem || !this.editingItem.id) return;
             
@@ -391,7 +433,8 @@ export default {
                 }
 
                 const userId = Number(this.editingItem.id);
-                const clients = await ClientController.getAllItems();
+                await this.$store.dispatch('loadClients');
+                const clients = this.$store.getters.clients || [];
                 const client = clients.find(c => {
                     const clientEmployeeId = c.employeeId ? Number(c.employeeId) : null;
                     return clientEmployeeId === userId;

@@ -36,6 +36,12 @@
                 </div>
 
                 <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('lastName') }}</label>
+                    <input type="text" v-model="form.surname"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+
+                <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('email') }}</label>
                     <input type="email" v-model="form.email"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -221,6 +227,7 @@ export default {
         return {
             form: {
                 name: '',
+                surname: '',
                 email: '',
                 password: '',
                 confirmPassword: '',
@@ -316,6 +323,7 @@ export default {
         getFormState() {
             return {
                 name: this.form.name,
+                surname: this.form.surname,
                 email: this.form.email,
                 password: this.form.password,
                 confirmPassword: this.form.confirmPassword,
@@ -389,6 +397,7 @@ export default {
         },
         clearForm() {
             this.form.name = '';
+            this.form.surname = '';
             this.form.email = '';
             this.form.password = '';
             this.form.confirmPassword = '';
@@ -531,6 +540,7 @@ export default {
         prepareUserData() {
             const data = {
                 name: this.form.name,
+                surname: this.form.surname,
                 email: this.form.email,
                 position: this.form.position,
                 hire_date: this.form.hire_date,
@@ -577,6 +587,7 @@ export default {
             handler(newEditingItem, oldEditingItem) {
                 if (newEditingItem) {
                     this.form.name = newEditingItem.name || '';
+                    this.form.surname = newEditingItem.surname || '';
                     this.form.email = newEditingItem.email || '';
                     this.form.position = newEditingItem.position || '';
                     this.form.hire_date = newEditingItem.hireDate

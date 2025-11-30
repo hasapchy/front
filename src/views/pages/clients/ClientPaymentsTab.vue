@@ -68,7 +68,10 @@ import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
-import { defineAsyncComponent } from 'vue';
+import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
+import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vue";
+import OperationTypeCell from "@/views/components/app/buttons/OperationTypeCell.vue";
+import { defineAsyncComponent, markRaw } from 'vue';
 
 const TransactionCreatePage = defineAsyncComponent(() => 
     import("@/views/pages/transactions/TransactionCreatePage.vue")
@@ -87,6 +90,8 @@ export default {
         PrimaryButton,
         NotificationToast,
         TransactionCreatePage,
+        SourceButtonCell,
+        OperationTypeCell,
     },
     emits: ['payments-updated'],
     props: {
@@ -113,11 +118,39 @@ export default {
             columnsConfig: [
                 { name: "id", label: "№", size: 60 },
                 { name: "dateUser", label: this.$t("date"), size: 120 },
-                { name: "operationType", label: this.$t("type"), size: 150, html: true },
-                { name: "sourceType", label: "Источник", size: 120, html: true },
+                {
+                    name: "operationType",
+                    label: this.$t("type"),
+                    size: 150,
+                    component: markRaw(OperationTypeCell),
+                    props: (item) => ({
+                        item: item,
+                        variant: 'payment'
+                    })
+                },
+                {
+                    name: "sourceType",
+                    label: "Источник",
+                    size: 120,
+                    component: markRaw(SourceButtonCell),
+                    props: (item) => ({
+                        source: item.source
+                    })
+                },
                 { name: "note", label: this.$t("note"), size: 200 },
                 { name: "user_name", label: this.$t("user"), size: 120 },
-                { name: "clientImpact", label: this.$t("amount"), size: 130, html: true },
+                {
+                    name: "clientImpact",
+                    label: this.$t("amount"),
+                    size: 130,
+                    component: markRaw(ClientImpactCell),
+                    props: (item) => ({
+                        item: item,
+                        currencyCode: this.currencyCode,
+                        formatNumberFn: this.$formatNumber,
+                        variant: 'payment'
+                    })
+                },
             ],
         };
     },
@@ -265,10 +298,6 @@ export default {
             switch (c) {
                 case "id":
                     return i.sourceId || '-';
-                case "operationType":
-                    return i.getPaymentOperationTypeHtml ? i.getPaymentOperationTypeHtml() : '-';
-                case "sourceType":
-                    return i.getSourceTypeHtml ? i.getSourceTypeHtml() : '-';
                 case "dateUser":
                     return i.dateUser || (i.formatDate ? i.formatDate() : '');
                 case "user_name":
@@ -276,7 +305,8 @@ export default {
                 case "note":
                     return i.note || '-';
                 case "clientImpact":
-                    return i.getPaymentImpactHtml ? i.getPaymentImpactHtml(this.currencyCode, this.$formatNumber) : '-';
+                    // Возвращаем числовое значение для сортировки (отображение через компонент ClientImpactCell)
+                    return parseFloat(i.amount || 0);
                 default:
                     return i[c];
             }

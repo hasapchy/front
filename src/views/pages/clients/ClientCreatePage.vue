@@ -67,14 +67,11 @@
               :required="true" ref="phoneInputRef" />
             <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" />
           </div>
-          <div v-for="(phone, index) in phones" :key="`phone-${index}-${phone}`" class="flex items-stretch space-x-2 mt-2">
-            <PhoneInputWithCountry 
-              v-model="editingPhones[index]" 
-              :default-country="getPhoneCountryId(phone)"
+          <div v-for="(phone, index) in phones" :key="`phone-${index}-${phone}`"
+            class="flex items-stretch space-x-2 mt-2">
+            <PhoneInputWithCountry v-model="editingPhones[index]" :default-country="getPhoneCountryId(phone)"
               @country-change="(country) => handlePhoneCountryChange(index, country)"
-              @blur="() => handleEditPhoneBlur(index)"
-              @keyup.enter="() => savePhoneEdit(index)"
-              class="flex-1" />
+              @blur="() => handleEditPhoneBlur(index)" @keyup.enter="() => savePhoneEdit(index)" class="flex-1" />
             <PrimaryButton icon="fas fa-check" :is-info="true" :onclick="() => savePhoneEdit(index)" />
             <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" />
           </div>
@@ -105,7 +102,9 @@
           </div>
         </div>
       </div>
-      <div v-show="currentTab === 'balance' && editingItem && $store.getters.hasPermission('settings_client_balance_view')" class="mt-4">
+      <div
+        v-show="currentTab === 'balance' && editingItem && $store.getters.hasPermission('settings_client_balance_view')"
+        class="mt-4">
         <ClientBalanceTab :editing-item="editingItem" />
       </div>
       <div v-show="currentTab === 'payments' && editingItem" class="mt-4">
@@ -410,7 +409,7 @@ export default {
       const currentPhone = this.phones[index];
       const currentFormatted = this.formatPhoneForInput(currentPhone);
       const currentCleaned = currentFormatted.replace(/\D/g, "");
-      
+
       if (cleanedPhone === currentCleaned) {
         return;
       }
@@ -464,7 +463,7 @@ export default {
 
       this.phones[index] = phoneToSave;
       this.editingPhones[index] = this.formatPhoneForInput(phoneToSave);
-      
+
       if (dialCode === "7") {
         this.editingPhoneCountries[index] = { dialCode: "7", id: "ru" };
       } else {

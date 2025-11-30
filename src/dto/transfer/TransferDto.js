@@ -24,10 +24,6 @@ export default class TransferDto {
         this.note = note;
     }
 
-    amountDescription() {
-        return `<i class="fas fa-right-long text-[#EE4F47] mr-2"></i><span class="font-semibold">${formatCurrency(this.amount, this.currencyFromSymbol)}</span><i class="fas fa-right-long text-[#5CB85C] ml-2"></i>`;
-    }
-
     formatDate() {
      return dtoDateFormatters.formatDate(this.date);
    }

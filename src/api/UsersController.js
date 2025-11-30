@@ -24,7 +24,12 @@ const UsersController = {
   async getAllItems() {
     try {
       const { data } = await api.get(`/users/all`);
-      return UserDto.fromApiArray(data);
+      const users = UserDto.fromApiArray(data);
+      // Отладочная проверка: проверяем, что surname присутствует
+      if (users.length > 0 && users[0].surname === undefined) {
+        console.warn('⚠️ Внимание: surname отсутствует в данных пользователя. Проверьте API ответ:', data[0]);
+      }
+      return users;
     } catch (error) {
       console.error("Ошибка при получении всех пользователей:", error);
       throw error;

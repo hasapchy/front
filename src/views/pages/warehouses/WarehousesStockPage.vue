@@ -186,10 +186,18 @@ export default {
     },
     methods: {
         async fetchAllCategories() {
-            this.allCategories = await CategoryController.getAllItems();
+            if (this.$store.getters.categories && this.$store.getters.categories.length > 0) {
+                this.allCategories = this.$store.getters.categories;
+                return;
+            }
+            await this.$store.dispatch('loadCategories');
+            this.allCategories = this.$store.getters.categories;
         },
         async fetchAllWarehouses() {
-            // Используем данные из store
+            if (this.$store.getters.warehouses && this.$store.getters.warehouses.length > 0) {
+                this.allWarehouses = this.$store.getters.warehouses;
+                return;
+            }
             await this.$store.dispatch('loadWarehouses');
             this.allWarehouses = this.$store.getters.warehouses;
         },

@@ -93,9 +93,12 @@ export default {
             };
         },
         async fetchAllWarehouses() {
-            // Используем данные из store
-            await this.$store.dispatch('loadWarehouses');
-            this.allWarehouses = this.$store.getters.warehouses;
+            if (this.$store.getters.warehouses && this.$store.getters.warehouses.length > 0) {
+                this.allWarehouses = this.$store.getters.warehouses;
+            } else {
+                await this.$store.dispatch('loadWarehouses');
+                this.allWarehouses = this.$store.getters.warehouses;
+            }
             if (!this.warehouseId && !this.editingItem && this.allWarehouses.length > 0) {
                 this.warehouseId = this.allWarehouses[0].id;
             }

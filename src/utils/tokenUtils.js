@@ -1,8 +1,19 @@
 export const TokenUtils = {
+  getToken() {
+    return localStorage.getItem('token');
+  },
+
+  getRefreshToken() {
+    return localStorage.getItem('refresh_token');
+  },
+
+  setTokens({ accessToken, refreshToken }) {
+    if (accessToken) localStorage.setItem('token', accessToken);
+    if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
+  },
+
   isAuthenticated() {
-    const token = localStorage.getItem('token');
-    const tokenExpiresAt = localStorage.getItem('token_expires_at');
-    return token && tokenExpiresAt && Date.now() <= parseInt(tokenExpiresAt);
+    return !!this.getToken();
   },
 
   clearAuthData() {

@@ -133,12 +133,24 @@
                                 <span>{{ $t('deleteOwn') }}</span>
                             </label>
                         </div>
+                        
+                        <!-- Custom permissions для ресурса -->
+                        <div v-if="resource.customPermissions && resource.customPermissions.length > 0" class="mt-3 pt-3 border-t border-gray-200">
+                            <div class="grid grid-cols-1 gap-2 text-xs">
+                                <div v-for="perm in resource.customPermissions" :key="perm.name" class="flex items-center gap-2">
+                                    <input type="checkbox" :value="perm.name" v-model="form.permissions"
+                                        class="rounded border-gray-300" />
+                                    <i :class="[permissionIcon(perm.name), permissionColor(perm.name)]" />
+                                    <span>{{ getCustomPermissionLabel(perm.name) }}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                         </div>
                     </div>
                     
                     <!-- Custom permissions для групп -->
-                    <div v-if="(groupKey === 'projects' || groupKey === 'cash' || groupKey === 'clients') && groupedResources[groupKey] && groupedResources[groupKey].customPermissions && groupedResources[groupKey].customPermissions.length > 0" class="ml-4 mt-4 pt-4 border-t border-gray-200">
+                    <div v-if="(groupKey === 'projects' || groupKey === 'clients' || groupKey === 'finance') && groupedResources[groupKey] && groupedResources[groupKey].customPermissions && groupedResources[groupKey].customPermissions.length > 0" class="ml-4 mt-4 pt-4 border-t border-gray-200">
                         <div class="grid grid-cols-1 gap-2 text-xs">
                             <div v-for="perm in groupedResources[groupKey].customPermissions" :key="perm.name" class="flex items-center gap-2">
                                 <input type="checkbox" :value="perm.name" v-model="form.permissions"
@@ -190,7 +202,9 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 import {
     permissionIcon,
     permissionColor,
-} from '@/utils/PermissionUtils';
+    PermissionParser,
+    PERMISSIONS_CONFIG,
+} from '@/permissions';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
@@ -215,124 +229,63 @@ export default {
     },
     computed: {
         resourcesWithoutUserId() {
-            return [
-                'categories',
-                'products',
-                'companies',
-                'warehouses',
-                'cash_registers',
-                'projects',
-                'order_statuses',
-                'order_statuscategories',
-                'transaction_categories',
-                'project_statuses',
-                'currency_history',
-                'roles',
-            ];
+            return Object.keys(PERMISSIONS_CONFIG.resources)
+                .filter(key => !PERMISSIONS_CONFIG.resources[key].has_user_id);
         },
         resourcesWithManyToMany() {
-            return [
-                'warehouses',
-                'cash_registers',
-                'projects',
-            ];
+            return Object.keys(PERMISSIONS_CONFIG.resources)
+                .filter(key => PERMISSIONS_CONFIG.resources[key].check_strategy === 'many_to_many');
         },
         permissionGroups() {
-            return {
-                finance: {
-                    label: 'finance',
-                    resources: ['transactions', 'mutual_settlements', 'transaction_categories', 'invoices']
-                },
-                warehouses: {
-                    label: 'warehouses',
-                    resources: ['warehouses', 'warehouse_stocks', 'warehouse_receipts', 'warehouse_writeoffs', 'warehouse_movements']
-                },
-                cash: {
-                    label: 'cash_registers',
-                    resources: ['cash_registers', 'transfers']
-                },
-                orders: {
-                    label: 'orders',
-                    resources: ['orders', 'order_statuses', 'order_statuscategories']
-                },
-                products: {
-                    label: 'products',
-                    resources: ['products', 'categories']
-                },
-                clients: {
-                    label: 'clients',
-                    resources: ['clients']
-                },
-                sales: {
-                    label: 'sales',
-                    resources: ['sales']
-                },
-                projects: {
-                    label: 'projects',
-                    resources: ['projects', 'project_statuses']
-                },
-                companies: {
-                    label: 'companies',
-                    resources: ['companies']
-                },
-                currency_history: {
-                    label: 'currency_history',
-                    resources: ['currency_history']
-                },
-                users: {
-                    label: 'users',
-                    resources: ['users', 'roles']
-                },
-            };
+            return PERMISSIONS_CONFIG.groups;
         },
         resourcesPermissions() {
-            const resources = {};
-            const scopeActions = ['view', 'update', 'delete'];
-
             if (!Array.isArray(this.allPermissions)) {
-                return resources;
+                return {};
             }
 
-            this.allPermissions.forEach((perm) => {
-                if (!perm || !perm.name) {
-                    return;
-                }
+            const parsed = PermissionParser.parsePermissions(
+                this.allPermissions.filter(p => p && p.name && PermissionParser.isStandard(p.name))
+            );
 
-                if (perm.name.startsWith('settings_') || perm.name.includes('_edit_')) {
-                    return;
-                }
+            const resources = {};
+            const config = PERMISSIONS_CONFIG.resources;
 
-                const parts = perm.name.split('_');
-                if (parts.length < 2) return;
+            Object.keys(parsed.resources).forEach(resourceKey => {
+                const resourceConfig = config[resourceKey];
+                if (!resourceConfig) return;
 
-                let resourceKey, action, scope;
+                const resource = parsed.resources[resourceKey];
+                const hasUserId = resourceConfig.has_user_id;
+                const scopeActions = resourceConfig.scope_actions || [];
 
-                if (parts[parts.length - 1] === 'all' || parts[parts.length - 1] === 'own') {
-                    scope = parts.pop();
-                    action = parts.pop();
-                    resourceKey = parts.join('_');
-                } else if (parts[parts.length - 1] === 'create') {
-                    action = 'create';
-                    resourceKey = parts.slice(0, -1).join('_');
-                } else {
-                    return;
-                }
+                resources[resourceKey] = {};
 
-                if (!resources[resourceKey]) {
-                    resources[resourceKey] = {};
-                }
-
-                const hasUserId = !this.resourcesWithoutUserId.includes(resourceKey);
-
-                if (scopeActions.includes(action)) {
-                    if (!resources[resourceKey][action]) {
+                Object.keys(resource).forEach(action => {
+                    if (scopeActions.includes(action)) {
                         resources[resourceKey][action] = {};
+                        if (resource[action].all) {
+                            resources[resourceKey][action].all = resource[action].all;
+                        }
+                        if (hasUserId && resource[action].own) {
+                            resources[resourceKey][action].own = resource[action].own;
+                        }
+                    } else if (action === 'create') {
+                        resources[resourceKey][action] = resource[action];
                     }
-                    if (hasUserId || scope === 'all') {
-                        resources[resourceKey][action][scope] = perm;
+                });
+
+                if (resourceConfig.custom_permissions) {
+                    const customPerms = [];
+                    Object.values(resourceConfig.custom_permissions).forEach(permName => {
+                        const perm = this.allPermissions.find(p => p && p.name === permName);
+                        if (perm) {
+                            customPerms.push(perm);
+                        }
+                    });
+                    if (customPerms.length > 0) {
+                        resources[resourceKey].customPermissions = customPerms;
                     }
-                } else if (action === 'create') {
-                    resources[resourceKey][action] = perm;
                 }
             });
 
@@ -351,42 +304,14 @@ export default {
                     }
                 });
                 
-                // Добавляем custom permissions в соответствующие группы
                 const customPerms = [];
-                if (groupKey === 'projects') {
-                    const projectSettingsPermissions = [
-                        'settings_project_budget_view',
-                        'settings_project_balance_view',
-                        'settings_project_files_view',
-                        'settings_project_contracts_view',
-                    ];
-                    projectSettingsPermissions.forEach(name => {
-                        const permission = this.allPermissions.find(p => p && p.name === name);
-                        if (permission) {
-                            customPerms.push(permission);
-                        }
-                    });
-                }
-                if (groupKey === 'cash') {
-                    const cashBalancePermission = this.allPermissions.find(p => p && p.name === 'settings_cash_balance_view');
-                    if (cashBalancePermission) {
-                        customPerms.push(cashBalancePermission);
+                const groupCustomPerms = PERMISSIONS_CONFIG.group_custom_permissions[groupKey] || [];
+                groupCustomPerms.forEach(permName => {
+                    const permission = this.allPermissions.find(p => p && p.name === permName);
+                    if (permission) {
+                        customPerms.push(permission);
                     }
-                    const currenciesPermission = this.allPermissions.find(p => p && p.name === 'settings_currencies_view');
-                    if (currenciesPermission) {
-                        customPerms.push(currenciesPermission);
-                    }
-                }
-                if (groupKey === 'clients') {
-                    const clientBalanceViewPermission = this.allPermissions.find(p => p && p.name === 'settings_client_balance_view');
-                    if (clientBalanceViewPermission) {
-                        customPerms.push(clientBalanceViewPermission);
-                    }
-                    const clientBalanceAdjustmentPermission = this.allPermissions.find(p => p && p.name === 'settings_client_balance_adjustment');
-                    if (clientBalanceAdjustmentPermission) {
-                        customPerms.push(clientBalanceAdjustmentPermission);
-                    }
-                }
+                });
                 
                 if (Object.keys(groupResources).length > 0 || customPerms.length > 0) {
                     groups[groupKey] = {
@@ -432,19 +357,20 @@ export default {
             return sortedGroups;
         },
         customPermissions() {
-            const excludedSettings = [
-                'settings_project_budget_view',
-                'settings_project_balance_view',
-                'settings_project_files_view',
-                'settings_project_contracts_view',
-                'settings_cash_balance_view',
-                'settings_currencies_view',
-                'settings_client_balance_view',
-                'settings_client_balance_adjustment',
-            ];
+            const excluded = new Set();
+            
+            Object.values(PERMISSIONS_CONFIG.group_custom_permissions).forEach(perms => {
+                perms.forEach(perm => excluded.add(perm));
+            });
+            
+            Object.values(PERMISSIONS_CONFIG.resources).forEach(config => {
+                if (config.custom_permissions) {
+                    Object.values(config.custom_permissions).forEach(perm => excluded.add(perm));
+                }
+            });
+
             return this.allPermissions.filter(perm => 
-                perm && perm.name && (perm.name.startsWith('settings_') || perm.name.includes('_edit_')) 
-                && !excludedSettings.includes(perm.name)
+                perm && perm.name && PermissionParser.isCustom(perm.name) && !excluded.has(perm.name)
             );
         },
         selectAllChecked: {
@@ -582,6 +508,15 @@ export default {
                 'settings_cash_balance_view': 'Просмотр баланса кассы',
                 'settings_client_balance_view': 'Просмотр баланса клиентов',
                 'settings_client_balance_adjustment': 'Корректировка баланса клиента',
+                'transactions_view_sale': 'Просмотр транзакций из продаж',
+                'transactions_view_order': 'Просмотр транзакций из заказов',
+                'transactions_view_receipt': 'Просмотр транзакций из оприходований',
+                'transactions_view_salary': 'Просмотр зарплатных транзакций',
+                'transactions_view_other': 'Просмотр остальных транзакций',
+                'mutual_settlements_view_individual': 'Просмотр взаиморасчетов с физ. лицами',
+                'mutual_settlements_view_company': 'Просмотр взаиморасчетов с компаниями',
+                'mutual_settlements_view_employee': 'Просмотр взаиморасчетов с сотрудниками',
+                'mutual_settlements_view_investor': 'Просмотр взаиморасчетов с инвесторами',
             };
 
             const translation = this.getTranslation(permissionName);

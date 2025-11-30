@@ -1,7 +1,6 @@
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import api from "./axiosInstance";
 import ProjectDto from "@/dto/project/ProjectDto";
-import { queryCache } from "@/utils/cacheHelper";
 
 export default class ProjectController {
   static async getItems(page = 1, params = {}, per_page = 20) {
@@ -57,8 +56,6 @@ export default class ProjectController {
   static async storeItem(item) {
     try {
       const { data } = await api.post("/projects", item);
-      // Инвалидируем кэш списков проектов
-      queryCache.invalidate("projects_list");
       return data;
     } catch (error) {
       console.error("Ошибка при создании проекта:", error);
@@ -69,8 +66,6 @@ export default class ProjectController {
   static async updateItem(id, item) {
     try {
       const { data } = await api.put(`/projects/${id}`, item);
-      // Инвалидируем кэш списков проектов
-      queryCache.invalidate("projects_list");
       return data;
     } catch (error) {
       console.error("Ошибка при обновлении проекта:", error);
@@ -81,8 +76,6 @@ export default class ProjectController {
   static async deleteItem(id) {
     try {
       const { data } = await api.delete(`/projects/${id}`);
-      // Инвалидируем кэш списков проектов
-      queryCache.invalidate("projects_list");
       return data;
     } catch (error) {
       console.error("Ошибка при удалении проекта:", error);
@@ -170,8 +163,6 @@ export default class ProjectController {
   static async batchUpdateStatus(data) {
     try {
       const { data: response } = await api.post("/projects/batch-status", data);
-      // Инвалидируем кэш списков проектов после массового обновления
-      queryCache.invalidate("projects_list");
       return response;
     } catch (error) {
       console.error("Ошибка при обновлении статуса проектов:", error);

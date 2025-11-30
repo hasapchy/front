@@ -750,6 +750,7 @@ export default {
   errorDeletingUser: 'Işgäri pozmakda ýalňyşlyk',
   salary: 'Mukafaty',
   salaries: 'Mukafatlar',
+  employee_salaries: 'Işgär mukafatlary',
   addSalary: 'Mukafat goş',
   editSalary: 'Mukafaty redaktirle',
   salarySaved: 'Mukafat saklandy',
@@ -764,6 +765,7 @@ export default {
   present: 'häzirki wagta çenli',
   bonus: 'Premiýa tabşyr',
   penalty: 'Jäza çykar',
+  accrueSalary: 'Mukafat hasapla',
   employeeClientNotFound: 'Işgär üçin müşderi tapylmady',
   employeeClientNotFoundDescription: 'Işgäriň balansy bilen işlemek üçin, bu işgäriň ID-sine gabat gelýän employee_id bilen baglanyşykly müşderi döretmeli.',
   
@@ -809,6 +811,7 @@ export default {
   // Фразы для категорий
   createCategory: 'Kategoriýany döret',
   editCategory: 'Kategoriýany redaktir et',
+  categoryMustHaveAtLeastOneUser: 'Kategoriýa iň az bir ulanyjy bolmaly',
   categoryCreated: 'Kategoriýa döredildi',
   categoryAdded: 'Kategoriýa goşuldy',
   categoryUpdated: 'Kategoriýa täzelendi',
@@ -878,11 +881,13 @@ export default {
   // Фразы для касс
   createCashRegister: 'Kassa',
   editCashRegister: 'Kassa',
+  cashRegisterMustHaveAtLeastOneUser: 'Kassa iň az bir ulanyjy bolmaly',
   cashRegister: 'Kassa',
   
   // Фразы для складов
   createWarehouse: 'Ammary döret',
   editWarehouse: 'Ammary redaktir et',
+  warehouseMustHaveAtLeastOneUser: 'Ammar iň az bir ulanyjy bolmaly',
   
   // Фразы для продаж
   createSale: 'Satuw',
@@ -989,6 +994,7 @@ export default {
   transfer: 'Geçirim',
   projectStatus: 'Proýekt ýagdaýy',
   projectStatuses: 'Proýekt ýagdaýlary',
+  project_statuses: 'Proýekt ýagdaýlary',
   projectStatusSuccessfullyAdded: 'Proýekt ýagdaýy üstünlikli goşuldy',
   projectStatusSuccessfullyDeleted: 'Proýekt ýagdaýy üstünlikli pozuldy',
   errorSavingProjectStatus: 'Proýekt ýagdaýyny saklamakda ýalňyşlyk',
@@ -1096,6 +1102,7 @@ export default {
     settings_currencies_view: 'Başga walýutalary gör',
     settings_cash_balance_view: 'Kassa balansyny gör',
     settings_client_balance_view: 'Müşderi balansyny gör',
+    settings_client_balance_adjustment: 'Müşderi balansyny düzetmek',
     settings_view: 'Sazlamalary gör',
     mutual_settlements_view: 'Özara hasaplaşyklary gör',
   

@@ -285,7 +285,7 @@ export default {
             });
         },
         getDefaultIcon(item) {
-            const isProduct = item.type === 1 || item.type === '1' || item.type === true;
+            const isProduct = item.type == 1;
             return isProduct
                 ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
                 : '<i class="fas fa-concierge-bell text-[#3571A4]" title="Услуга"></i>';

@@ -120,7 +120,10 @@ export default {
             };
         },
         async fetchAllWarehouses() {
-            // Используем данные из store
+            if (this.$store.getters.warehouses && this.$store.getters.warehouses.length > 0) {
+                this.allWarehouses = this.$store.getters.warehouses;
+                return;
+            }
             await this.$store.dispatch('loadWarehouses');
             this.allWarehouses = this.$store.getters.warehouses;
         },

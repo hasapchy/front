@@ -7,7 +7,8 @@
         <div class="relative">
             <label class="block mb-1 font-medium text-gray-700">Товары на складе</label>
             <input type="text" ref="productInput" v-model="productSearch" :placeholder="$t('enterProductNameOrCode')"
-                class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" @focus="onFocus" @blur="handleProductBlur" :disabled="disabled" />
+                class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                @focus="onFocus" @blur="handleProductBlur" :disabled="disabled" />
 
             <!-- Результаты поиска товаров -->
             <transition name="appear">
@@ -15,34 +16,37 @@
                     class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-50">
                     <li v-if="productSearchLoading" class="p-2 text-gray-500">{{ $t('loading') }}</li>
                     <template v-else-if="productSearch.length === 0">
-                        <li v-if="!lastProducts || lastProducts.length === 0" class="p-2 text-gray-500">{{ $t('noData') }}</li>
+                        <li v-if="!lastProducts || lastProducts.length === 0" class="p-2 text-gray-500">{{ $t('noData')
+                        }}</li>
                         <template v-else>
                             <li class="p-2 bg-gray-50 text-xs text-gray-600 border-b border-gray-300 sticky top-0">
                                 <i class="fas fa-box-open mr-1"></i>
                                 Все товары и услуги ({{ lastProducts.length }})
                             </li>
-                            <li v-for="product in lastProducts" :key="product.id" @mousedown.prevent="selectProduct(product)"
+                            <li v-for="product in lastProducts" :key="product.id"
+                                @mousedown.prevent="selectProduct(product)"
                                 class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center">
-                                    <div class="w-7 h-7 flex items-center justify-center mr-2">
-                                        <img v-if="product.imgUrl()" :src="product.imgUrl()" alt="icon"
-                                            class="w-7 h-7 object-cover rounded" loading="lazy" />
-                                        <span v-else v-html="product.icons()"></span>
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <div class="w-7 h-7 flex items-center justify-center mr-2">
+                                            <img v-if="product.imgUrl()" :src="product.imgUrl()" alt="icon"
+                                                class="w-7 h-7 object-cover rounded" loading="lazy" />
+                                            <span v-else v-html="product.icons()"></span>
+                                        </div>
+                                        {{ product.name }}
                                     </div>
-                                    {{ product.name }}
-                                </div>
-                                <div class="text-[#337AB7] text-xs flex flex-col items-end min-w-[90px]">
-                                    <div>
-                                        {{ product.stockQuantity }}
-                                        {{ product.unitShortName || product.unitName || '' }}
+                                    <div class="text-[#337AB7] text-xs flex flex-col items-end min-w-[90px]">
+                                        <div>
+                                            {{ product.stockQuantity }}
+                                            {{ product.unitShortName || product.unitName || '' }}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </li>
+                            </li>
                         </template>
                     </template>
-                    <li v-else-if="productSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}</li>
+                    <li v-else-if="productSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}
+                    </li>
                     <li v-else-if="productResults.length === 0" class="p-2 text-gray-500">{{ $t('notFound') }}</li>
                     <li v-else v-for="product in productResults" :key="product.id"
                         @mousedown.prevent="selectProduct(product)"
@@ -67,7 +71,7 @@
         </div>
 
         <label class="block mt-4 mb-1">{{ $t('specifiedProductsAndServices') }}</label>
-        
+
         <!-- Предупреждения -->
         <div v-if="hasZeroQuantityProducts || hasExceededStock" class="mb-2 space-y-2">
             <!-- Предупреждение о товарах с нулевым количеством -->
@@ -79,7 +83,7 @@
                     </span>
                 </div>
             </div>
-            
+
             <!-- Предупреждение о превышении остатков (только для товаров, не для услуг) -->
             <div v-if="hasExceededStock" class="p-2 bg-orange-50 border border-orange-200 rounded-md">
                 <div class="flex items-center">
@@ -96,7 +100,8 @@
                 <thead class="bg-gray-100 rounded-t-sm">
                     <tr>
                         <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">Название</th>
-                        <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">Количество / Размеры</th>
+                        <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">Количество / Размеры
+                        </th>
                         <th class="text-left border border-gray-300 py-2 px-4 font-medium w-24">Цена</th>
                         <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
                     </tr>
@@ -109,70 +114,65 @@
                                 <div class="w-7 h-7 flex items-center justify-center mr-2">
                                     <img v-if="product.imgUrl && product.imgUrl()" :src="product.imgUrl()" alt="icon"
                                         class="w-7 h-7 object-cover rounded" loading="lazy" />
-                                    <span v-else v-html="product.icons ? product.icons() : getDefaultIcon(product)"></span>
+                                    <span v-else
+                                        v-html="product.icons ? product.icons() : getDefaultIcon(product)"></span>
                                 </div>
                                 {{ product.productName || product.name }}
                             </div>
                         </td>
-                        
+
                         <!-- Количество / Размеры -->
                         <td class="py-2 px-4 border-x border-gray-300">
                             <!-- Если м² - показываем ширину и длину -->
                             <div v-if="isSquareMeter(product)" class="space-y-2">
                                 <div class="flex items-center space-x-2">
                                     <span class="text-xs text-gray-600 w-16">Ширина:</span>
-                                    <input type="number" 
-                                        :value="getProductWidth(product)" 
-                                        @input="setProductWidth(product, $event.target.value); calculateQuantity(product);" 
+                                    <input type="number" :value="getProductWidth(product)"
+                                        @input="setProductWidth(product, $event.target.value); calculateQuantity(product);"
                                         class="flex-1 p-1 text-right border border-gray-300 rounded text-sm"
-                                        :disabled="disabled" min="0" step="0.01"
-                                        placeholder="0" />
+                                        :disabled="disabled" min="0" step="0.01" placeholder="0" />
                                     <span class="text-xs text-gray-600">м</span>
                                 </div>
                                 <div class="flex items-center space-x-2">
                                     <span class="text-xs text-gray-600 w-16">Длина:</span>
-                                    <input type="number" 
-                                        :value="getProductLength(product)" 
-                                        @input="setProductLength(product, $event.target.value); calculateQuantity(product);" 
+                                    <input type="number" :value="getProductLength(product)"
+                                        @input="setProductLength(product, $event.target.value); calculateQuantity(product);"
                                         class="flex-1 p-1 text-right border border-gray-300 rounded text-sm"
-                                        :disabled="disabled" min="0" step="0.01"
-                                        placeholder="0" />
+                                        :disabled="disabled" min="0" step="0.01" placeholder="0" />
                                     <span class="text-xs text-gray-600">м</span>
                                 </div>
                                 <div class="text-right text-sm font-medium bg-gray-100 p-1 rounded">
                                     = {{ product.quantity || 0 }} {{ product.unitShortName || product.unitName || '' }}
                                 </div>
-                                <div v-if="!isService(product)" class="text-xs text-right mt-1" :class="getStockQuantityClass(product)">
+                                <div v-if="!isService(product)" class="text-xs text-right mt-1"
+                                    :class="getStockQuantityClass(product)">
                                     Остаток: {{ product.stockQuantity || 0 }}
                                 </div>
                             </div>
                             <!-- Для остальных единиц - просто количество -->
                             <div v-else>
-                                <input type="number" v-model.number="product.quantity" 
-                                    @blur="roundQuantity(product)"
-                                    class="w-full p-1 text-right border border-gray-300 rounded"
-                                    :disabled="disabled" min="0" step="0.01"
+                                <input type="number" v-model.number="product.quantity" @blur="roundQuantity(product)"
+                                    class="w-full p-1 text-right border border-gray-300 rounded" :disabled="disabled"
+                                    min="0" step="0.01"
                                     :placeholder="'0 ' + (product.unitShortName || product.unitName || '')" />
-                                <div v-if="!isService(product)" class="text-xs mt-1 text-right" :class="getStockQuantityClass(product)">
+                                <div v-if="!isService(product)" class="text-xs mt-1 text-right"
+                                    :class="getStockQuantityClass(product)">
                                     Остаток: {{ product.stockQuantity || 0 }}
                                 </div>
                             </div>
                         </td>
-                        
+
                         <!-- Цена -->
                         <td class="py-2 px-4 border-x border-gray-300">
                             <div class="w-full p-1 text-right bg-gray-50 border border-gray-300 rounded text-sm">
                                 {{ (Number(product.price) || 0).toFixed(2) }} m
                             </div>
                         </td>
-                        
+
                         <!-- Действия -->
                         <td class="px-4 border-x border-gray-300">
-                            <button 
-                                @click="removeSelectedProduct(index)"
-                                class="text-red-500 text-2xl cursor-pointer" 
-                                :disabled="disabled"
-                            >
+                            <button @click="removeSelectedProduct(index)" class="text-red-500 text-2xl cursor-pointer"
+                                :disabled="disabled">
                                 ×
                             </button>
                         </td>
@@ -180,13 +180,13 @@
                 </tbody>
             </table>
         </div>
-        
+
         <!-- Пустое состояние -->
         <div v-else class="text-center py-8 text-gray-500 bg-gray-50 rounded-lg mb-6">
             <i class="fas fa-box-open text-4xl mb-2"></i>
             <p>Добавьте товары в заказ</p>
         </div>
-        
+
     </div>
 </template>
 
@@ -248,36 +248,36 @@ export default {
             set(value) {
                 value.forEach(product => {
                     if (product.productId && !this.productDimensions[product.productId]) {
-                        this.productDimensions[product.productId] = { 
-                            width: product.width || 0, 
-                            length: product.height || 0 
+                        this.productDimensions[product.productId] = {
+                            width: product.width || 0,
+                            length: product.height || 0
                         };
                     }
                 });
                 this.$emit('update:modelValue', value);
             },
         },
-        
+
         filteredServices() {
             return this.services;
         },
-        
+
         hasZeroQuantityProducts() {
             return this.products.some(product => !product.quantity || product.quantity <= 0);
         },
-        
+
         hasExceededStock() {
             return this.products.some(product => {
                 if (this.isService(product)) {
                     return false;
                 }
-                
+
                 const stockQuantity = product.stockQuantity || 0;
                 const orderQuantity = product.quantity || 0;
                 return orderQuantity > stockQuantity && stockQuantity > 0;
             });
         },
-        
+
         lastProducts() {
             return this.lastProductsList;
         }
@@ -285,7 +285,7 @@ export default {
     async created() {
         await this.fetchLastProducts();
         await this.loadServices();
-        
+
         // Создаем debounced метод поиска
         this.performSearch = debounce(async (searchTerm) => {
             if (searchTerm && searchTerm.length >= 3) {
@@ -314,24 +314,24 @@ export default {
                 let currentPage = 1;
                 let hasMorePages = true;
                 const perPage = 1000;
-                
+
                 while (hasMorePages) {
                     const prodPage = await BasementProductController.getItems(currentPage, true, {}, perPage);
                     const products = prodPage.items || [];
-                    
+
                     if (this.onlyProducts) {
                         allProducts.push(...products.filter(p => Boolean(p.type)));
                     } else {
                         allProducts.push(...products);
                     }
-                    
+
                     if (prodPage.nextPage && currentPage < prodPage.lastPage) {
                         currentPage++;
                     } else {
                         hasMorePages = false;
                     }
                 }
-                
+
                 this.lastProductsList = allProducts
                     .sort((a, b) => {
                         const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
@@ -382,11 +382,11 @@ export default {
                     }
                     productDto.type = product.type || 1;
                     productDto.stockQuantity = product.stockQuantity || 0;
-                    
+
                     const unitShortName = productDto.unitShortName || '';
                     const unitName = productDto.unitName || '';
                     const isSquareMeter = unitShortName === 'м²' || unitName === 'Квадратный метр';
-                    
+
                     if (isSquareMeter) {
                         this.productDimensions[product.id] = { width: 0, length: 0 };
                         productDto.width = 0;
@@ -416,11 +416,11 @@ export default {
                     }
                     productDto.type = service.type || 0;
                     productDto.stockQuantity = service.stockQuantity || 0;
-                    
+
                     const unitShortName = productDto.unitShortName || '';
                     const unitName = productDto.unitName || '';
                     const isSquareMeter = unitShortName === 'м²' || unitName === 'Квадратный метр';
-                    
+
                     if (isSquareMeter) {
                         this.productDimensions[service.id] = { width: 0, length: 0 };
                         productDto.width = 0;
@@ -440,14 +440,14 @@ export default {
         removeSelectedProduct(index) {
             const productToRemove = this.products[index];
             if (productToRemove) {
-                const remainingProductsWithSameId = this.products.filter((p, i) => 
+                const remainingProductsWithSameId = this.products.filter((p, i) =>
                     i !== index && p.productId === productToRemove.productId
                 );
                 if (remainingProductsWithSameId.length === 0) {
                     delete this.productDimensions[productToRemove.productId];
                 }
             }
-            
+
             this.products = this.products.filter((_, i) => i !== index);
             this.updateTotals();
         },
@@ -455,8 +455,6 @@ export default {
             requestAnimationFrame(() => {
                 this.showProductDropdown = false;
             });
-        },
-        updateTotals() {
         },
         roundQuantity(product) {
             if (product && product.quantity !== null && product.quantity !== undefined) {
@@ -467,23 +465,23 @@ export default {
             }
         },
         getDefaultIcon(product) {
-            const isProduct = product.type === 1 || product.type === '1' || product.type === true;
+            const isProduct = product.type == 1;
             return isProduct
                 ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
                 : '<i class="fas fa-concierge-bell text-[#3571A4]" title="Услуга"></i>';
         },
-        
+
         getProductWidth(product) {
             if (product.width !== undefined && product.width !== null) {
                 return product.width;
             }
-            
+
             if (!this.productDimensions[product.productId]) {
                 this.productDimensions[product.productId] = { width: 0, length: 0 };
             }
             return this.productDimensions[product.productId].width;
         },
-        
+
         setProductWidth(product, value) {
             if (!this.productDimensions[product.productId]) {
                 this.productDimensions[product.productId] = { width: 0, length: 0 };
@@ -491,18 +489,18 @@ export default {
             this.productDimensions[product.productId].width = value;
             product.width = value;
         },
-        
+
         getProductLength(product) {
             if (product.height !== undefined && product.height !== null) {
                 return product.height;
             }
-            
+
             if (!this.productDimensions[product.productId]) {
                 this.productDimensions[product.productId] = { width: 0, length: 0 };
             }
             return this.productDimensions[product.productId].length;
         },
-        
+
         setProductLength(product, value) {
             if (!this.productDimensions[product.productId]) {
                 this.productDimensions[product.productId] = { width: 0, length: 0 };
@@ -510,49 +508,49 @@ export default {
             this.productDimensions[product.productId].length = value;
             product.height = value;
         },
-        
-        
+
+
         calculateQuantity(product) {
             // Расчет количества только для м²
             if (!this.isSquareMeter(product)) {
                 return; // Для не-м² единиц количество вводится напрямую
             }
-            
+
             // Инициализируем размеры для товара, если их нет
             if (!this.productDimensions[product.productId]) {
                 this.productDimensions[product.productId] = { width: 0, length: 0 };
             }
-            
+
             // Используем значения из самого продукта или из локального хранилища
             const width = Number(product.width || this.productDimensions[product.productId].width) || 0;
             const length = Number(product.height || this.productDimensions[product.productId].length) || 0;
-            
+
             // Проверяем, что оба поля заполнены и больше 0
             if (!width || !length || width <= 0 || length <= 0) {
                 product.quantity = 0; // Минимум для API
                 return;
             }
-            
+
             // Проверяем, что числа валидны
             if (isNaN(width) || isNaN(length)) {
                 product.quantity = 0; // Минимум для API
                 return;
             }
-            
+
             // Для м² - площадь (ширина × длина)
             // Применяем правила округления компании для количества товара
             const rawQuantity = width * length;
             product.quantity = roundQuantityValue(rawQuantity);
-            
+
             this.updateTotals();
         },
-        
+
         validateInput(product, field) {
             // Инициализируем размеры для товара, если их нет
             if (!this.productDimensions[product.productId]) {
                 this.productDimensions[product.productId] = { width: 0, length: 0 };
             }
-            
+
             // Проверяем значение в самом продукте
             const value = product[field];
             if (value < 0) {
@@ -561,38 +559,38 @@ export default {
             }
             this.calculateQuantity(product);
         },
-        
+
         isService(product) {
             const isServiceType = product.type === 0 || product.type === '0' || product.type === false;
-            
-            const hasNoStockInfo = product.stockQuantity === undefined || 
-                                  product.stockQuantity === null || 
-                                  product.stockQuantity === '';
-            
+
+            const hasNoStockInfo = product.stockQuantity === undefined ||
+                product.stockQuantity === null ||
+                product.stockQuantity === '';
+
             return isServiceType || (!product.type && hasNoStockInfo);
         },
-        
+
         isSquareMeter(product) {
             const unitShortName = product.unitShortName || '';
             const unitName = product.unitName || '';
             return unitShortName === 'м²' || unitName === 'Квадратный метр';
         },
-        
+
         getStockDisplayValue(product) {
             if (this.isService(product)) {
                 return '∞';
             }
             return product.stockQuantity || 0;
         },
-        
+
         getStockQuantityClass(product) {
             if (this.isService(product)) {
                 return 'text-gray-400';
             }
-            
+
             const stockQuantity = product.stockQuantity || 0;
             const orderQuantity = product.quantity || 0;
-            
+
             if (stockQuantity === 0) {
                 return 'text-red-600 font-medium';
             } else if (orderQuantity > stockQuantity) {
@@ -603,7 +601,7 @@ export default {
                 return 'text-gray-600'; // Нормальный остаток
             }
         },
-        
+
     },
     watch: {
         productSearch: {
@@ -616,9 +614,9 @@ export default {
                 if (newProducts && newProducts.length > 0) {
                     newProducts.forEach(product => {
                         if (product.productId && !this.productDimensions[product.productId]) {
-                            this.productDimensions[product.productId] = { 
-                                width: product.width || 0, 
-                                length: product.height || 0 
+                            this.productDimensions[product.productId] = {
+                                width: product.width || 0,
+                                length: product.height || 0
                             };
                         }
                     });

@@ -6,18 +6,12 @@
                 :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar
-                        :show-create-button="true"
-                        :on-create-click="() => showModal(null)"
+                    <TableControlsBar :show-create-button="true" :on-create-click="() => showModal(null)"
                         :create-button-disabled="!$store.getters.hasPermission('warehouse_movements_create')"
                         :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                        :on-page-change="fetchItems"
-                        :on-per-page-change="handlePerPageChange"
-                        :resetColumns="resetColumns"
-                        :columns="columns"
-                        :toggleVisible="toggleVisible"
-                        :log="log">
+                        :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
                         <template #right>
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
@@ -56,13 +50,15 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <WarehousesMovementCreatePage v-if="modalDialog" ref="warehousesmovementcreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
+        <WarehousesMovementCreatePage v-if="modalDialog" ref="warehousesmovementcreatepageForm" @saved="handleSaved"
+            @saved-error="handleSavedError" @deleted="handleDeleted" @deleted-error="handleDeletedError"
+            @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
-                  :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
+        :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
+        @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -82,12 +78,15 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import WarehouseDirectionCell from '@/views/components/app/buttons/WarehouseDirectionCell.vue';
+import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import { markRaw } from 'vue';
 
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, ],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, WarehousesMovementCreatePage, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,],
+    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, WarehousesMovementCreatePage, BatchButton, AlertDialog, WarehouseDirectionCell, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -103,8 +102,22 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'dateUser', label: 'dateUser' },
-                { name: 'direction', label: 'direction', html: true },
-                { name: 'products', label: 'products', html: true },
+                {
+                    name: 'direction',
+                    label: 'direction',
+                    component: markRaw(WarehouseDirectionCell),
+                    props: (item) => ({
+                        movement: item
+                    })
+                },
+                {
+                    name: 'products',
+                    label: 'products',
+                    component: markRaw(ProductsListCell),
+                    props: (item) => ({
+                        products: item.products || []
+                    })
+                },
                 { name: 'note', label: 'note' },
             ]
         }
@@ -121,12 +134,11 @@ export default {
     methods: {
         itemMapper(i, c) {
             switch (c) {
-                case 'direction':
-                    return i.direction();
-                case 'products':
-                    return i.productsHtmlList();
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
+                case 'products':
+                    // Возвращаем количество продуктов для сортировки (отображение через компонент ProductsListCell)
+                    return (i.products || []).length;
                 default:
                     return i[c];
             }
@@ -140,9 +152,9 @@ export default {
                 this.loading = true;
             }
             try {
-               
+
                 const per_page = this.perPage;
-                
+
                 const new_data = await WarehouseMovementController.getItems(page, per_page);
                 this.data = new_data;
             } catch (error) {

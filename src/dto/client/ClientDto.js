@@ -71,13 +71,10 @@ export default class ClientDto {
   }
 
   icons() {
-    const typeIcons = {
-      company: '<i class="fas fa-building text-[#3571A4] mr-2" title="Компания"></i>',
-      employee: '<i class="fas fa-id-badge text-[#3571A4] mr-2" title="Сотрудник"></i>',
-      investor: '<i class="fas fa-hand-holding-usd text-[#3571A4] mr-2" title="Инвестор"></i>'
-    };
+    let res = this.clientType === "company"
+      ? '<i class="fas fa-building text-[#3571A4] mr-2" title="Компания"></i>'
+      : '<i class="fas fa-user text-[#3571A4] mr-2" title="Индивидуальный клиент"></i>';
     
-    let res = typeIcons[this.clientType] || '<i class="fas fa-user text-[#3571A4] mr-2" title="Индивидуальный клиент"></i>';
     if (this.isConflict) {
       res += '<i class="fas fa-exclamation-triangle text-[#D53935] mr-2" title="Проблемный клиент"></i>';
     }
@@ -85,26 +82,6 @@ export default class ClientDto {
       res += '<i class="fas fa-truck text-[#3571A4] mr-2" title="Поставщик"></i>';
     }
     return res;
-  }
-
-  statusIcon() {
-    return this.status
-      ? '<i class="fas fa-circle-check text-[#5CB85C]" title="Активен"></i>'
-      : '<i class="fas fa-times text-[#D53935]" title="Неактивен"></i>';
-  }
-
-  _createHtmlList(items, getValue) {
-    if (!items?.length) return '';
-    const listItems = items.map(item => `<li>${getValue(item)}</li>`).join('');
-    return `<ul>${listItems}</ul>`;
-  }
-
-  phonesHtmlList() {
-    return this._createHtmlList(this.phones, phone => phone.phone);
-  }
-
-  emailsHtmlList() {
-    return this._createHtmlList(this.emails, email => email.email);
   }
 
   discountFormatted() {

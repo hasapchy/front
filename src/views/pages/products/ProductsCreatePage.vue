@@ -54,84 +54,18 @@
         </div>
         <div class="mt-2">
             <label class="block mb-1 required">{{ $t('category') }}</label>
-
-            <!-- Каскадный селектор -->
-            <div class="space-y-2">
-                <!-- Селектор для выбора основной категории -->
-                <div class="flex items-center space-x-2">
-                    <select v-model="selectedParentCategory" @change="onParentCategoryChange" class="flex-1">
-                        <option value="">{{ $t('selectMainCategory') }}</option>
-                        <option v-for="parent in parentCategories" :key="parent.id" :value="parent.id">
-                            {{ parent.name }}
-                        </option>
-                    </select>
-                    <PrimaryButton icon="fas fa-plus" :is-info="true" :onclick="showModal"
-                        :disabled="!$store.getters.hasPermission('categories_create')" />
+            <div class="flex items-center space-x-2">
+                <div class="flex-1">
+                    <CheckboxFilter
+                        v-if="categoryOptions.length"
+                        v-model="selectedCategoryIds"
+                        :options="categoryOptions"
+                        :placeholder="'selectCategories'"
+                        @update:modelValue="onCategoriesChange"
+                    />
                 </div>
-
-                <!-- Компактное отображение подкатегорий -->
-                <div v-if="selectedParentCategory && childCategories.length > 0"
-                    class="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="text-sm font-medium text-blue-800">
-                            <i class="fas fa-folder-tree mr-1"></i>
-                            {{ $t('subCategories') }}: {{ getParentCategoryName(selectedParentCategory) }}
-                        </label>
-                        <div class="flex space-x-1">
-                            <button @click="selectAllSubCategories"
-                                class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors">
-                                <i class="fas fa-check-double mr-1"></i>{{ $t('selectAll') }}
-                            </button>
-                            <button @click="deselectAllSubCategories"
-                                class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors">
-                                <i class="fas fa-times mr-1"></i>{{ $t('deselectAll') }}
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Компактная сетка подкатегорий -->
-                    <div
-                        class="grid grid-cols-3 gap-1 max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                        <label v-for="child in childCategories" :key="child.id"
-                            class="flex items-center space-x-1 text-xs cursor-pointer hover:bg-blue-100 p-1 rounded transition-colors"
-                            :class="{ 'bg-blue-200': selectedSubCategories.includes(child.id) }">
-                            <input type="checkbox" :value="child.id" v-model="selectedSubCategories"
-                                @change="onSubCategoryChange" class="text-blue-600 w-3 h-3">
-                            <span class="truncate" :title="child.name">{{ child.name }}</span>
-                        </label>
-                    </div>
-
-                    <!-- Счетчик выбранных -->
-                    <div v-if="selectedSubCategories.length > 0" class="mt-2 text-xs text-blue-600">
-                        <i class="fas fa-info-circle mr-1"></i>
-                        Выбрано: {{ selectedSubCategories.length }} из {{ childCategories.length }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Компактное отображение выбранных категорий -->
-            <div v-if="selectedCategories.length > 0" class="mt-3">
-                <div class="flex items-center justify-between mb-2">
-                    <label class="text-sm font-medium text-gray-700">
-                        <i class="fas fa-tags mr-1"></i>{{ $t('selectedCategories') }}
-                    </label>
-                    <span class="text-xs text-gray-500">{{ selectedCategories.length }} {{ $t('categoriesCount')
-                        }}</span>
-                </div>
-                <div class="flex flex-wrap gap-1">
-                    <div v-for="(category, index) in selectedCategories" :key="category.id"
-                        class="flex items-center bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 px-2 py-1 rounded-full text-xs border border-blue-200">
-                        <span v-if="category.is_primary"
-                            class="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded-full mr-1 font-medium">
-                            <i class="fas fa-star mr-0.5"></i>Основная
-                        </span>
-                        <span class="truncate max-w-32" :title="category.name">{{ category.name }}</span>
-                        <button @click="removeCategory(index)"
-                            class="ml-1 text-red-500 hover:text-red-700 transition-colors">
-                            <i class="fas fa-times text-xs"></i>
-                        </button>
-                    </div>
-                </div>
+                <PrimaryButton icon="fas fa-plus" :is-info="true" :onclick="showModal"
+                    :disabled="!$store.getters.hasPermission('categories_create')" />
             </div>
         </div>
         <div class=" mt-2">
@@ -206,23 +140,21 @@
 
 
 <script>
-import AppController from '@/api/AppController';
 import ProductController from '@/api/ProductController';
-import CategoryController from '@/api/CategoryController';
-import ProductDto from '@/dto/product/ProductDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import AdminCategoryCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
+import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
 import JsBarcode from "jsbarcode";
-import CacheInvalidator from '@/utils/cache';
+import { CacheInvalidator } from '@/cache';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
-    components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage },
+    components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage, CheckboxFilter },
     props: {
         editingItem: { type: Object, required: false, default: null },
         defaultType: { type: String, required: false, default: 'product' },
@@ -237,16 +169,14 @@ export default {
             image: '',
             selected_image: null,
             category_id: '',
-            selectedParentCategory: '', // Выбранная родительская категория
-            selectedSubCategories: [], // Выбранные подкатегории (массив ID)
-            selectedCategories: [], // Массив выбранных категорий
+            selectedCategoryIds: [], // Массив ID выбранных категорий для CheckboxFilter
+            selectedCategories: [], // Массив выбранных категорий с метаданными
             unit_id: '',
             barcode: '',
             retail_price: 0,
             wholesale_price: 0,
             purchase_price: 0,
             editingItemId: null,
-            currencies: [],
             units: [],
             allCategories: [],
             saveLoading: false,
@@ -259,7 +189,6 @@ export default {
         this.$nextTick(async () => {
             await Promise.all([
                 this.fetchUnits(),
-                this.fetchCurrencies(),
                 this.fetchAllCategories()
             ]);
 
@@ -267,37 +196,21 @@ export default {
         });
     },
     computed: {
-        selectedUnit() {
-            return this.units.find(unit => unit.id == this.unit_id);
-        },
-
-        // Разделяем категории на родительские и дочерние
-        parentCategories() {
-            const parents = this.allCategories.filter(cat => {
-                // Используем правильное поле parentId из CategoryDto
-                const parentId = cat.parentId;
-                return parentId === null || 
-                       parentId === undefined || 
-                       parentId === 0 || 
-                       parentId === '0' ||
-                       parentId === 'null' || 
-                       parentId === '' ||
-                       parentId === false;
+        categoryOptions() {
+            return this.allCategories.map(cat => {
+                const parent = cat.parentId ? this.allCategories.find(c => c.id == cat.parentId) : null;
+                const label = parent ? `${cat.name} (${parent.name})` : cat.name;
+                return {
+                    value: cat.id.toString(),
+                    label: label
+                };
             });
-            return parents;
-        },
-        
-        childCategories() {
-            if (!this.selectedParentCategory) return [];
-            const children = this.allCategories.filter(cat => cat.parentId == this.selectedParentCategory);
-            return children;
         },
 
-        // Валидация формы
         isFormValid() {
             const isValid = this.name && this.name.trim() !== '' && 
                            this.sku && this.sku.trim() !== '' &&
-                           this.selectedCategories.length > 0;
+                           this.selectedCategoryIds.length > 0;
             return isValid;
         },
     },
@@ -311,146 +224,26 @@ export default {
                 this.units = this.$store.getters.units;
             }
         },
-        async fetchCurrencies() {
-            // Используем данные из store
-            if (this.$store.getters.currencies.length > 0) {
-                this.currencies = this.$store.getters.currencies;
-            } else {
-                await this.$store.dispatch('loadCurrencies');
-                this.currencies = this.$store.getters.currencies;
-            }
-        },
         async fetchAllCategories() {
+            if (this.$store.getters.categories && this.$store.getters.categories.length > 0) {
+                this.allCategories = this.$store.getters.categories;
+                return;
+            }
             await this.$store.dispatch('loadCategories');
             this.allCategories = this.$store.getters.categories;
         },
 
-        // Методы для работы с каскадным выбором категорий
-        onParentCategoryChange() {
-            if (this.selectedParentCategory) {
-                // Автоматически добавляем основную категорию
-                this.addParentCategory();
-                // Автоматически выбираем все подкатегории
-                this.selectAllSubCategories();
-            } else {
-                // Сбрасываем выбор подкатегорий при смене родительской
-                this.selectedSubCategories = [];
-            }
-        },
-
-        addParentCategory() {
-            if (this.selectedParentCategory && !this.selectedCategories.find(cat => cat.id == this.selectedParentCategory)) {
-                const category = this.allCategories.find(cat => cat.id == this.selectedParentCategory);
-                if (category) {
-                    // Родительская категория всегда основная
-                    this.selectedCategories.push({
-                        id: parseInt(category.id),
-                        name: category.name,
-                        is_primary: true // Родительская категория всегда основная
-                    });
-                }
-            }
-        },
-
-        onSubCategoryChange() {
-            // Если выбрана хотя бы одна подкатегория, добавляем основную категорию
-            if (this.selectedSubCategories.length > 0) {
-                this.addParentCategory();
-            }
-            // Обновляем выбранные подкатегории
-            this.updateSelectedCategories();
-        },
-
-        selectAllSubCategories() {
-            this.selectedSubCategories = this.childCategories.map(cat => cat.id);
-            this.updateSelectedCategories();
-        },
-
-        deselectAllSubCategories() {
-            this.selectedSubCategories = [];
-            this.updateSelectedCategories();
-        },
-
-        updateSelectedCategories() {
-            // Удаляем все подкатегории выбранной родительской категории
-            this.selectedCategories = this.selectedCategories.filter(cat => {
-                const category = this.allCategories.find(c => c.id == cat.id);
-                return !category || category.parentId != this.selectedParentCategory;
-            });
-
-            // Добавляем выбранные подкатегории (всегда не основные)
-            this.selectedSubCategories.forEach(subCategoryId => {
-                const category = this.allCategories.find(cat => cat.id == subCategoryId);
-                if (category && !this.selectedCategories.find(cat => cat.id == category.id)) {
-                    this.selectedCategories.push({
-                        id: parseInt(category.id),
-                        name: category.name,
-                        is_primary: false // Подкатегории никогда не основные
-                    });
-                }
-            });
-        },
-
-        updateSelectedSubCategoriesFromSelected() {
-            // Обновляем selectedSubCategories на основе selectedCategories
-            const subCategories = this.selectedCategories.filter(cat => {
-                const category = this.allCategories.find(c => c.id == cat.id);
-                return category && category.parentId;
-            });
-
-            this.selectedSubCategories = subCategories.map(cat => cat.id);
-
-            // Обновляем selectedParentCategory если есть подкатегории
-            if (subCategories.length > 0) {
-                const firstSubCategory = this.allCategories.find(cat => cat.id == subCategories[0].id);
-                if (firstSubCategory) {
-                    this.selectedParentCategory = firstSubCategory.parentId;
-                }
-            }
-        },
-
-        getParentCategoryName(parentId) {
-            const parent = this.allCategories.find(cat => cat.id == parentId);
-            return parent ? parent.name : '';
-        },
-
-        removeCategory(index) {
-            const removedCategory = this.selectedCategories[index];
-
-            // Если удалили основную категорию (родительскую), удаляем ВСЕ её подкатегории
-            if (removedCategory.is_primary) {
-                // Находим ID родительской категории
-                const parentId = removedCategory.id;
-
-                // Удаляем основную категорию
-                this.selectedCategories.splice(index, 1);
-
-                // Удаляем все её подкатегории
-                this.selectedCategories = this.selectedCategories.filter(cat => {
-                    const category = this.allCategories.find(c => c.id == cat.id);
-                    return !category || category.parentId != parentId;
-                });
-
-                // Сбрасываем выбор подкатегорий в интерфейсе
-                this.selectedSubCategories = [];
-                this.selectedParentCategory = '';
-
-                // Обновляем selectedSubCategories на основе оставшихся selectedCategories
-                this.updateSelectedSubCategoriesFromSelected();
-            } else {
-                // Если удалили подкатегорию, просто удаляем её
-                this.selectedCategories.splice(index, 1);
-
-                // Обновляем selectedSubCategories
-                this.updateSelectedSubCategoriesFromSelected();
-            }
-        },
-
-        setPrimaryCategory(index) {
-            // Убираем флаг основной со всех категорий
-            this.selectedCategories.forEach(cat => cat.is_primary = false);
-            // Устанавливаем новую основную
-            this.selectedCategories[index].is_primary = true;
+        onCategoriesChange(selectedIds) {
+            this.selectedCategoryIds = selectedIds;
+            this.selectedCategories = selectedIds.map((id, index) => {
+                const category = this.allCategories.find(cat => cat.id.toString() === id.toString());
+                if (!category) return null;
+                return {
+                    id: parseInt(category.id),
+                    name: category.name,
+                    is_primary: index === 0
+                };
+            }).filter(Boolean);
         },
 
         onFileChange(event) {
@@ -474,10 +267,8 @@ export default {
                     name: this.name,
                     description: this.description,
                     sku: this.sku,
-                    // Для обратной совместимости отправляем основную категорию
-                    category_id: this.selectedCategories.find(cat => cat.is_primary)?.id || this.category_id,
-                    // Отправляем массив категорий
-                    categories: this.selectedCategories.length > 0 ? this.selectedCategories.map(cat => cat.id) : [],
+                    category_id: this.selectedCategoryIds.length > 0 ? parseInt(this.selectedCategoryIds[0]) : this.category_id,
+                    categories: this.selectedCategoryIds.map(id => parseInt(id)),
                     unit_id: this.unit_id,
                     barcode: this.barcode,
                     retail_price: parseFloat(this.retail_price) || 0,
@@ -570,8 +361,7 @@ export default {
             this.image = null;
             this.selected_image = null;
             this.category_id = '';
-            this.selectedParentCategory = '';
-            this.selectedSubCategories = [];
+            this.selectedCategoryIds = [];
             this.selectedCategories = [];
             this.unit_id = '';
             this.barcode = '';
@@ -599,8 +389,8 @@ export default {
                 image: this.image,
                 selected_image: this.selected_image,
                 category_id: this.category_id,
-                selectedParentCategory: this.selectedParentCategory,
-                selectedCategories: this.selectedCategories,
+                selectedCategoryIds: [...this.selectedCategoryIds],
+                selectedCategories: [...this.selectedCategories],
                 unit_id: this.unit_id,
                 barcode: this.barcode,
                 retail_price: this.retail_price,
@@ -622,7 +412,7 @@ export default {
         },
         async handleSaved() {
             const companyId = this.$store.state.currentCompany?.id || null;
-            CacheInvalidator.onUpdate('categories', companyId);
+            await CacheInvalidator.onUpdate('categories', companyId);
             await this.fetchAllCategories();
             this.closeModal();
             this.$emit('saved');
@@ -663,34 +453,24 @@ export default {
                     this.category_id = newEditingItem.category_id || newEditingItem.categoryId || '';
 
                     const purchasePriceValue = newEditingItem.purchasePrice ?? 0;
-                    // Загружаем множественные категории
-                    console.log('Editing item categories:', newEditingItem.categories);
-                    console.log('Editing item purchase price:', purchasePriceValue);
                     if (newEditingItem.categories && newEditingItem.categories.length > 0) {
-                        // Просто добавляем все категории как выбранные
-                        this.selectedCategories = newEditingItem.categories.map(cat => ({
+                        this.selectedCategoryIds = newEditingItem.categories.map(cat => cat.id.toString());
+                        this.selectedCategories = newEditingItem.categories.map((cat, index) => ({
                             id: parseInt(cat.id),
                             name: cat.name,
-                            is_primary: true // Все категории считаем основными для простоты
+                            is_primary: index === 0
                         }));
-                        console.log('Selected categories set:', this.selectedCategories);
-
-                        // Устанавливаем первую категорию для селектора
-                        if (this.selectedCategories.length > 0) {
-                            this.selectedParentCategory = this.selectedCategories[0].id;
-                        }
+                    } else if (this.category_id) {
+                        const category = this.allCategories.find(cat => cat.id == this.category_id);
+                        this.selectedCategoryIds = [this.category_id.toString()];
+                        this.selectedCategories = [{
+                            id: parseInt(this.category_id),
+                            name: category?.name || 'Категория',
+                            is_primary: true
+                        }];
                     } else {
-                        // Для обратной совместимости
+                        this.selectedCategoryIds = [];
                         this.selectedCategories = [];
-                        if (this.category_id) {
-                            // Просто добавляем категорию как выбранную
-                            this.selectedCategories = [{
-                                id: parseInt(this.category_id),
-                                name: this.category_name || 'Категория',
-                                is_primary: true
-                            }];
-                            this.selectedParentCategory = this.category_id;
-                        }
                     }
 
                     this.unit_id = newEditingItem.unit_id || newEditingItem.unitId || '';
@@ -706,7 +486,7 @@ export default {
                     this.sku = '';
                     this.image = '';
                     this.category_id = '';
-                    this.selectedParentCategory = '';
+                    this.selectedCategoryIds = [];
                     this.selectedCategories = [];
                     this.unit_id = '';
                     this.barcode = '';

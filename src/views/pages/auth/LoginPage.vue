@@ -252,13 +252,11 @@ export default {
 
                 if (isBasementWorkerOnly(loginData.user)) {
                     this.$store.dispatch('setUser', loginData.user);
-                    console.log('[Auth] Current user:', loginData.user);
                     this.$store.dispatch('setPermissions', loginData.user?.permissions || []);
                     this.$router.push('/basement/orders');
                 } else {
                     const userData = await AuthController.getUser();
                     this.$store.dispatch('setUser', userData.user);
-                    console.log('[Auth] Current user:', userData.user);
                     this.$store.dispatch('setPermissions', userData.permissions);
                     this.$router.push('/');
                 }

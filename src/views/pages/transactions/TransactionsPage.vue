@@ -170,6 +170,8 @@ import ProjectController from '@/api/ProjectController';
 import TransactionsBalanceWrapper from '@/views/pages/transactions/TransactionsBalanceWrapper.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import SourceButtonCell from '@/views/components/app/buttons/SourceButtonCell.vue';
+import TransactionTypeCell from '@/views/components/app/buttons/TransactionTypeCell.vue';
+import TransactionAmountCell from '@/views/components/app/buttons/TransactionAmountCell.vue';
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -186,7 +188,7 @@ import TRANSACTION_FORM_PRESETS from '@/constants/transactionFormPresets';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin],
-    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, BatchButton, FiltersContainer, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
+    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -212,7 +214,14 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'dateUser', label: 'date' },
-                { name: 'type', label: 'type', html: true },
+                {
+                    name: 'type',
+                    label: 'type',
+                    component: markRaw(TransactionTypeCell),
+                    props: (item) => ({
+                        transaction: item
+                    })
+                },
                 {
                     name: 'source',
                     label: 'source',
@@ -238,7 +247,14 @@ export default {
                 { name: 'projectName', label: 'project' },
                 { name: 'categoryName', label: 'category' },
                 { name: 'note', label: 'note', html: true, size: 200 },
-                { name: 'cashAmount', label: 'amount', html: true },
+                {
+                    name: 'cashAmount',
+                    label: 'amount',
+                    component: markRaw(TransactionAmountCell),
+                    props: (item) => ({
+                        transaction: item
+                    })
+                },
                 { name: 'origAmount', label: 'originalAmount', visible: false },
             ],
             sourceOptions: [
@@ -274,14 +290,16 @@ export default {
             const search = this.searchQuery;
 
             switch (c) {
-                case 'type':
-                    return i.typeCell();
                 case 'cashName':
                     return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
                 case 'cashAmount':
-                    return i.cashAmountData();
+                    // Возвращаем числовое значение для сортировки (отображение через компонент TransactionAmountCell)
+                    // Учитываем знак: для прихода (type == 1) положительное, для расхода отрицательное
+                    const isPositive = i.type == 1;
+                    return parseFloat(i.cashAmount || 0) * (isPositive ? 1 : -1);
                 case 'origAmount':
-                    return i.origAmountData();
+                    // Возвращаем числовое значение для сортировки (отображение через компонент TransactionAmountCell)
+                    return parseFloat(i.origAmount || 0);
                 case 'note':
                     if (!i.note) return '';
                     return search ? highlightMatches(i.note, search) : i.note;
@@ -330,7 +348,7 @@ export default {
         },
         showModal(item = null) {
             this.editingItem = null;
-            if (item?.isTransfer === 1 || item?.isTransfer === true) {
+            if (item?.isTransfer == 1) {
                 this.showNotification(this.$t('cannotEditTransfer'), this.$t('transferTransaction'), true);
                 return;
             }
@@ -446,7 +464,7 @@ export default {
             // Фильтруем выбранные элементы, исключая трансферы
             const nonTransferIds = this.selectedIds.filter(id => {
                 const item = this.data?.items?.find(i => i.id === id);
-                return item && item.isTransfer !== 1 && item.isTransfer !== true;
+                return item && item.isTransfer != 1;
             });
 
             const hasTransfers = this.selectedIds.length > nonTransferIds.length;

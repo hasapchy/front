@@ -170,19 +170,28 @@ export default {
             };
         },
         async fetchAllWarehouses() {
-            // Используем данные из store
+            if (this.$store.getters.warehouses && this.$store.getters.warehouses.length > 0) {
+                this.allWarehouses = this.$store.getters.warehouses;
+                return;
+            }
             await this.$store.dispatch('loadWarehouses');
             this.allWarehouses = this.$store.getters.warehouses;
         },
         async fetchCurrencies() {
-            // Используем данные из store
+            if (this.$store.getters.currencies && this.$store.getters.currencies.length > 0) {
+                this.currencies = this.$store.getters.currencies;
+                return;
+            }
             await this.$store.dispatch('loadCurrencies');
             this.currencies = this.$store.getters.currencies;
         },
         async fetchAllCashRegisters() {
-            // Используем данные из store
-            await this.$store.dispatch('loadCashRegisters');
-            this.allCashRegisters = this.$store.getters.cashRegisters;
+            if (this.$store.getters.cashRegisters && this.$store.getters.cashRegisters.length > 0) {
+                this.allCashRegisters = this.$store.getters.cashRegisters;
+            } else {
+                await this.$store.dispatch('loadCashRegisters');
+                this.allCashRegisters = this.$store.getters.cashRegisters;
+            }
             if (!this.cashId && this.allCashRegisters.length) {
                 this.cashId = this.allCashRegisters[0].id;
             }

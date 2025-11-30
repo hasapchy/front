@@ -62,9 +62,6 @@ export default class InvoiceDto {
     return formatCurrency(this.totalAmount, currencySymbol);
   }
 
-  productsHtmlList() {
-    return createProductsTooltipList(this.products, null, (product) => product.unitName || '');
-  }
 
   formatDate() {
     return dtoDateFormatters.formatDate(this.invoiceDate);

@@ -202,16 +202,6 @@ export default {
         }
     },
     mounted() {
-        this.$watch('editingItem', async (newItem, oldItem) => {
-            if (newItem !== oldItem) {
-                await this.handleEditingItemChange(newItem);
-            }
-        }, { immediate: true });
-        
-        if (this.editingItem) {
-            this.handleEditingItemChange(this.editingItem);
-        }
-        
         this.$nextTick(() => {
             this.saveInitialState();
         });
@@ -727,7 +717,7 @@ export default {
                             width: p.width ?? null,
                             height: p.height ?? null,
                             icons() {
-                                const isProduct = p.product_type == 1 || p.product_type === '1' || p.type == 1 || p.type === '1';
+                                const isProduct = p.product_type == 1 || p.type == 1;
                                 return isProduct
                                     ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
                                     : '<i class="fas fa-concierge-bell text-[#EAB308]" title="Услуга"></i>';

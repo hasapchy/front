@@ -1,5 +1,4 @@
 import { dtoDateFormatters } from '@/utils/dateUtils';
-import { formatAmountWithColor } from '@/utils/dtoUtils';
 import { formatNumber } from '@/utils/numberUtils';
 
 export default class ProjectTransactionDto {
@@ -87,12 +86,4 @@ export default class ProjectTransactionDto {
         return 'Приход';
     }
 
-    formatAmountWithColor() {
-        return formatAmountWithColor(this.amount, {
-            positiveColor: "text-green-600",
-            showSign: true,
-            formatFn: () => this.formatAmountWithCurrency(),
-            className: "font-semibold"
-        });
-    }
 }

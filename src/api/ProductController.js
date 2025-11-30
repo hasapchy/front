@@ -2,20 +2,10 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import ProductDto from "@/dto/product/ProductDto";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
 import api from "./axiosInstance";
-import { queryCache } from "@/utils/cacheHelper";
 
 export default class ProductController {
   static async getItems(page = 1, products = true, params = {}, per_page = 20) {
     try {
-      const cacheKey = products ? 'products_list' : 'services_list';
-      const cacheParams = { page, per_page, products, ...params };
-      const cached = await queryCache.get(cacheKey, cacheParams);
-      
-      if (cached && cached.items && cached.items.length > 0 && cached.items[0] instanceof ProductDto) {
-        console.log(`📦 Загружено из кэша: ${products ? 'products' : 'services'}`, cacheParams);
-        return cached;
-      }
-
       const queryParams = new URLSearchParams();
       queryParams.append('page', page);
       queryParams.append('per_page', per_page);
@@ -41,7 +31,6 @@ export default class ProductController {
         data.total
       );
 
-      queryCache.set(cacheKey, cacheParams, paginatedResponse);
       return paginatedResponse;
     } catch (error) {
       console.error("Ошибка при получении товаров или услуг:", error);
@@ -90,8 +79,6 @@ export default class ProductController {
           "Content-Type": "multipart/form-data",
         },
       });
-      queryCache.invalidate('products_list');
-      queryCache.invalidate('services_list');
       return { item: data.item, message: data.message };
     } catch (error) {
       console.error("Ошибка при создании товара или услуги:", error);
@@ -113,8 +100,6 @@ export default class ProductController {
           "Content-Type": "multipart/form-data",
         },
       });
-      queryCache.invalidate('products_list');
-      queryCache.invalidate('services_list');
       return { item: data.item, message: data.message };
     } catch (error) {
       console.error("Ошибка при обновлении товара или услуги:", error);
@@ -125,8 +110,6 @@ export default class ProductController {
   static async deleteItem(id) {
     try {
       const { data } = await api.delete(`/products/${id}`);
-      queryCache.invalidate('products_list');
-      queryCache.invalidate('services_list');
       return { item: data.item, message: data.message };
     } catch (error) {
       console.error("Ошибка при удалении товара или услуги:", error);

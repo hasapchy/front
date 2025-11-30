@@ -116,6 +116,7 @@ import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import SaleController from '@/api/SaleController';
 import SaleCreatePage from '@/views/pages/sales/SaleCreatePage.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
+import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
 import { markRaw } from 'vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -152,7 +153,14 @@ export default {
                 { name: 'cashName', label: 'cashRegister' },
                 { name: 'warehouseName', label: 'warehouse' },
                 { name: 'client', label: 'buyer', component: markRaw(ClientButtonCell), props: (item) => ({ client: item.client, searchQuery: this.searchQuery }) },
-                { name: 'products', label: 'products', html: true },
+                {
+                    name: 'products',
+                    label: 'products',
+                    component: markRaw(ProductsListCell),
+                    props: (item) => ({
+                        products: item.products || []
+                    })
+                },
                 { name: 'note', label: 'note' },
                 { name: 'price', label: 'saleAmount' },
             ],
@@ -182,10 +190,11 @@ export default {
                 return i.warehouseNameDisplay();
             }
             switch (c) {
-                case 'products':
-                    return i.productsHtmlList();
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
+                case 'products':
+                    // Возвращаем количество продуктов для сортировки (отображение через компонент ProductsListCell)
+                    return (i.products || []).length;
                 case 'price':
                     return i.priceInfo();
                 case 'client':

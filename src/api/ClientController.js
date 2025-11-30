@@ -3,7 +3,6 @@ import api from "./axiosInstance";
 import ClientDto from "@/dto/client/ClientDto";
 import ClientSearchDto from "@/dto/client/ClientSearchDto";
 import ClientBalanceHistoryDto from "@/dto/client/ClientBalanceHistoryDto";
-import { queryCache } from "@/utils/cacheHelper";
 
 export default class ClientController {
 
@@ -20,15 +19,6 @@ export default class ClientController {
 
   static async getItems(page = 1, search = null, includeInactive = false, statusFilter = null, typeFilter = null, per_page = 20) {
     try {
-      const cacheKey = 'clients_list';
-      const cacheParams = { page, per_page, search, includeInactive, statusFilter, typeFilter };
-      const cached = await queryCache.get(cacheKey, cacheParams);
-      
-      if (cached && cached.items && cached.items.length > 0 && cached.items[0] instanceof ClientDto) {
-        console.log('📦 Загружено из кэша: clients', cacheParams);
-        return cached;
-      }
-
       const params = { page: page, per_page: per_page };
       if (search) {
         params.search = search;
@@ -55,7 +45,6 @@ export default class ClientController {
         data.total
       );
 
-      queryCache.set(cacheKey, cacheParams, paginatedResponse);
       return paginatedResponse;
     } catch (error) {
       console.error("Ошибка при получении клиентов:", error);
@@ -76,9 +65,13 @@ export default class ClientController {
     }
   }
 
-  static async getAllItems() {
+  static async getAllItems(forMutualSettlements = false) {
     try {
-      const response = await api.get(`/clients/all`);
+      const params = {};
+      if (forMutualSettlements) {
+        params.for_mutual_settlements = true;
+      }
+      const response = await api.get(`/clients/all`, { params });
       const data = response.data;
       const items = ClientDto.fromApiArray(data);
       return items;
@@ -91,7 +84,6 @@ export default class ClientController {
   static async storeItem(item) {
     try {
       const response = await api.post("/clients", item);
-      queryCache.invalidate('clients_list');
       const data = response.data;
       return { item: data.item, message: data.message || 'Client created successfully' };
     } catch (error) {
@@ -103,7 +95,6 @@ export default class ClientController {
   static async updateItem(id, item) {
     try {
       const { data } = await api.put(`/clients/${id}`, item);
-      queryCache.invalidate('clients_list');
       return data;
     } catch (error) {
       if (error?.response?.status !== 422) {
@@ -116,7 +107,6 @@ export default class ClientController {
   static async deleteItem(id) {
     try {
       const { data } = await api.delete(`/clients/${id}`);
-      queryCache.invalidate('clients_list');
       return data;
     } catch (error) {
       const serverMessage = error?.response?.data?.message;

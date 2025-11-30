@@ -76,7 +76,9 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import TransferAmountCell from '@/views/components/app/buttons/TransferAmountCell.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import { markRaw } from 'vue';
 
 
 export default {
@@ -90,6 +92,7 @@ export default {
         TransferCreatePage,
         BatchButton,
         AlertDialog,
+        TransferAmountCell,
         TableControlsBar,
         TableFilterButton,
         draggable: VueDraggableNext
@@ -108,7 +111,14 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'cashFromName', label: 'senderCashRegister' },
-                { name: 'amount', label: 'transferAmount', html: true },
+                {
+                    name: 'amount',
+                    label: 'transferAmount',
+                    component: markRaw(TransferAmountCell),
+                    props: (item) => ({
+                        transfer: item
+                    })
+                },
                 { name: 'cashToName', label: 'destination' },
                 { name: 'note', label: 'note' },
                 { name: 'dateUser', label: 'date' },
@@ -125,8 +135,6 @@ export default {
     methods: {
         itemMapper(i, c) {
             switch (c) {
-                case 'amount':
-                    return i.amountDescription();
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
                 default:

@@ -1,20 +1,10 @@
 import api from "./axiosInstance";
 import InvoiceDto from "@/dto/invoice/InvoiceDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
-import { queryCache } from "@/utils/cacheHelper";
 
 export default class InvoiceController {
   static async getItems(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, typeFilter = null, statusFilter = null, per_page = 20) {
     try {
-      const cacheKey = 'invoices_list';
-      const cacheParams = { page, per_page, search, dateFilter, startDate, endDate, typeFilter, statusFilter };
-      const cached = await queryCache.get(cacheKey, cacheParams);
-      
-      if (cached && cached.items && cached.items.length > 0 && cached.items[0] instanceof InvoiceDto) {
-        console.log('📦 Загружено из кэша: invoices', cacheParams);
-        return cached;
-      }
-
       const params = { page: page, per_page: per_page };
       if (search) {
         params.search = search;
@@ -43,7 +33,6 @@ export default class InvoiceController {
         data.total
       );
 
-      queryCache.set(cacheKey, cacheParams, paginatedResponse);
       return paginatedResponse;
     } catch (error) {
       console.error("Ошибка при получении списка счетов:", error);
@@ -56,7 +45,6 @@ export default class InvoiceController {
       const { data } = await api.post("/invoices", {
         ...item,
       });
-      queryCache.invalidate('invoices_list');
       return data;
     } catch (error) {
       console.error("Ошибка при создании счета:", error);
@@ -69,7 +57,6 @@ export default class InvoiceController {
       const { data } = await api.put(`/invoices/${id}`, {
         ...item,
       });
-      queryCache.invalidate('invoices_list');
       return data;
     } catch (error) {
       console.error("Ошибка при обновлении счета:", error);
@@ -80,7 +67,6 @@ export default class InvoiceController {
   static async deleteItem(id) {
     try {
       const { data } = await api.delete(`/invoices/${id}`);
-      queryCache.invalidate('invoices_list');
       return data;
     } catch (error) {
       console.error("Ошибка при удалении счета:", error);

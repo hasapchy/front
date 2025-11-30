@@ -85,6 +85,7 @@ export default {
                 { name: 'amount', label: 'amount', size: 150, html: true },
                 { name: 'startDate', label: 'startDate', size: 120 },
                 { name: 'endDate', label: 'endDate', size: 120, html: true },
+                { name: 'note', label: 'note', size: 200 },
             ],
         };
     },
@@ -101,11 +102,6 @@ export default {
         canDeleteSalary() {
             return this.$store.getters.hasPermission('employee_salaries_delete');
         },
-    },
-    async mounted() {
-        if (this.canViewSalary && this.editingItem && this.editingItem.id) {
-            await this.fetchSalaries();
-        }
     },
     watch: {
         'editingItem.id': {
@@ -183,6 +179,8 @@ export default {
                         return `<span class="text-gray-500">${this.$t('present') || 'по н.в.'}</span>`;
                     }
                     return new Date(item.end_date).toLocaleDateString('ru-RU');
+                case 'note':
+                    return item.note || '-';
                 default:
                     return item[column] || '-';
             }

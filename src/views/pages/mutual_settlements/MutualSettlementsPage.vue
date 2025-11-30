@@ -26,18 +26,6 @@
                                     :active-filters-count="getActiveFiltersCount()"
                                     @reset="resetFilters">
                                     <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент' }}</label>
-                                        <select v-model="clientId" @change="applyFilters" class="w-full">
-                                            <option value="">{{ $t('allClients') }}</option>
-                                            <template v-if="allClients.length">
-                                                <option v-for="client in allClients" :key="client.id" :value="client.id">
-                                                    {{ ((client.firstName || client.first_name || '') + ' ' + (client.lastName || client.last_name || '')).trim() || 'Клиент без имени' }}
-                                                </option>
-                                            </template>
-                                        </select>
-                                    </div>
-
-                                    <div>
                                         <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
                                         <CheckboxFilter
                                             class="w-full"
@@ -119,10 +107,9 @@ export default {
     data() {
         return {
             allClients: [],
-            allClientsRaw: [], // Сохраняем исходные данные для фильтрации
+            allClientsRaw: [],
             clientBalances: [],
             clientBalancesLoading: false,
-            clientId: '',
             editingItem: null,
             columnsConfig: [
                 { name: 'id', label: 'number', size: 60 },
@@ -136,16 +123,10 @@ export default {
         this.$store.commit('SET_SETTINGS_OPEN', true);
         
         eventBus.on('global-search', this.handleSearch);
-
-        this.clientId = '';
-        
-        if (!Array.isArray(this.$store.state.clientTypeFilter)) {
-            this.$store.dispatch('setClientTypeFilter', []);
-        }
     },
 
     mounted() {
-        this.loadClients();
+        console.log('[MutualSettlementsPage] mounted, clientTypeFilter из store:', this.$store.getters.clientTypeFilter);
         this.loadClientBalances();
     },
     
@@ -153,25 +134,31 @@ export default {
         eventBus.off('global-search', this.handleSearch);
     },
 
-    methods: {
-        async loadClients() {
-            try {
-                const response = await ClientController.getAllItems();
-                this.allClients = response;
-            } catch (error) {
-                console.error('Ошибка загрузки клиентов:', error);
+    watch: {
+        clientTypeFilter() {
+            if (this.allClientsRaw && this.allClientsRaw.length > 0) {
+                this.applyFilters();
             }
+        },
+        searchQuery() {
+            if (this.allClientsRaw && this.allClientsRaw.length > 0) {
+                this.applyFilters();
+            }
+        }
+    },
+
+    methods: {
+        getClientType(client) {
+            return client.clientType || client.client_type || 'individual';
         },
 
         async loadClientBalances() {
             this.clientBalancesLoading = true;
             try {
-                // Получаем всех клиентов с их балансами
-                const clients = await ClientController.getAllItems();
-                // Сохраняем исходные данные для фильтрации
+                const clients = await ClientController.getAllItems(true);
                 this.allClientsRaw = clients;
+                this.allClients = clients;
                 
-                // Применяем фильтры
                 this.applyFilters();
             } catch (error) {
                 console.error('Ошибка загрузки балансов клиентов:', error);
@@ -187,14 +174,9 @@ export default {
             }
         
             let filteredClients = this.allClientsRaw;
-            if (this.clientId) {
-                filteredClients = this.allClientsRaw.filter(client => client.id == this.clientId);
-            }
-            const typeFilters = Array.isArray(this.clientTypeFilter) ? this.clientTypeFilter : [];
-            if (typeFilters.length) {
+            if (this.clientTypeFilter.length) {
                 filteredClients = filteredClients.filter(client => {
-                    const type = client.clientType || client.client_type || 'individual';
-                    return typeFilters.includes(type);
+                    return this.clientTypeFilter.includes(this.getClientType(client));
                 });
             }
 
@@ -226,25 +208,24 @@ export default {
     
             this.clientBalances = filteredClients
                 .map(client => {
-                    // Пока используем простую логику - баланс клиента
                     const balance = parseFloat(client.balance) || 0;
                     
                     return {
                         id: client.id,
-                        clientType: client.clientType || client.client_type || 'individual',
+                        clientType: this.getClientType(client),
                         firstName: client.firstName || client.first_name,
                         lastName: client.lastName || client.last_name,
                         first_name: client.firstName || client.first_name,
                         last_name: client.lastName || client.last_name,
                         contactPerson: client.contactPerson || client.contact_person,
                         contact_person: client.contactPerson || client.contact_person,
-                        currency_symbol: 'TMT', // Можно получить из настроек
-                        debt_amount: balance > 0 ? balance : 0, // Нам должны
-                        credit_amount: balance < 0 ? Math.abs(balance) : 0, // Мы должны
-                        balance_value: balance, // Числовое значение для сортировки
+                        currency_symbol: 'TMT',
+                        debt_amount: balance > 0 ? balance : 0,
+                        credit_amount: balance < 0 ? Math.abs(balance) : 0,
+                        balance_value: balance,
                     };
                 })
-                .filter(client => client.debt_amount !== 0 || client.credit_amount !== 0); // Показываем только с ненулевым балансом
+                .filter(client => client.debt_amount !== 0 || client.credit_amount !== 0);
         },
         
 
@@ -301,51 +282,39 @@ export default {
         },
         
         async onAfterSaved() {
-            await this.loadClients();
             await this.loadClientBalances();
         },
         
         async onAfterDeleted() {
-            await this.loadClients();
             await this.loadClientBalances();
         },
 
         resetFilters() {
-            this.clientId = '';
             this.$store.dispatch('setClientTypeFilter', []);
-            // Очищаем поисковый запрос
             this.$store.dispatch('setSearchQuery', '');
             this.applyFilters();
         },
         getActiveFiltersCount() {
             let count = 0;
-            if (this.clientId !== '') count++;
-            if (Array.isArray(this.clientTypeFilter) && this.clientTypeFilter.length) count++;
-            if (this.searchQuery && this.searchQuery.trim() !== '') count++;
+            if (this.clientTypeFilter.length) count++;
+            if (this.searchQuery.trim()) count++;
             return count;
         },
         handleClientTypeChange(value) {
             const selected = Array.isArray(value) ? value : [];
             this.$store.dispatch('setClientTypeFilter', selected);
-            this.applyFilters();
         },
 
         async handleCompanyChanged(companyId) {
-            // Очищаем фильтры
-            this.clientId = '';
-            // Очищаем поисковый запрос
+            this.$store.dispatch('setClientTypeFilter', []);
             this.$store.dispatch('setSearchQuery', '');
             
-            // Очищаем данные
             this.allClients = [];
             this.allClientsRaw = [];
             this.clientBalances = [];
             
-            // Принудительно перезагружаем данные
-            await this.loadClients();
             await this.loadClientBalances();
             
-            // Уведомляем пользователя о смене компании
             this.$store.dispatch('showNotification', {
                 title: 'Компания изменена',
                 isDanger: false
@@ -372,18 +341,7 @@ export default {
             ];
         },
         hasActiveFilters() {
-            // Проверяем clientId - должен быть непустой строкой (локальный фильтр страницы)
-            const clientIdValue = String(this.clientId || '').trim();
-            const hasClientId = clientIdValue !== '' && clientIdValue !== '0' && clientIdValue !== 'null' && clientIdValue !== 'undefined';
-            
-            // Проверяем clientTypeFilter - должен содержать выбранные значения (локальный фильтр страницы)
-            // После сброса в created() он очищается, но проверяем на всякий случай
-            const hasClientType = Array.isArray(this.clientTypeFilter) && this.clientTypeFilter.length > 0;
-            
-            // Не учитываем глобальный searchQuery как фильтр взаиморасчетов
-            // так как это глобальный поиск, который используется на всех страницах
-            
-            return hasClientId || hasClientType;
+            return this.clientTypeFilter.length > 0;
         }
     },
 }

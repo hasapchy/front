@@ -81,9 +81,6 @@ export default class OrderDto {
     return isNaN(num) || !quantity ? '0.00' : formatNumber(quantity, 2, true);
   }
 
-  productsHtmlList() {
-    return createProductsTooltipList(this.products, (qty) => this.formatQuantity(qty), (product) => product.unitShortName);
-  }
 
   formatDate() {
     return dtoDateFormatters.formatDate(this.date);

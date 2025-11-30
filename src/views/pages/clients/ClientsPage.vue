@@ -120,10 +120,14 @@ import { VueDraggableNext } from 'vue-draggable-next';
 
 import { highlightMatches } from '@/utils/searchUtils';
 import searchMixin from '@/mixins/searchMixin';
+import ClientNameCell from '@/views/components/app/buttons/ClientNameCell.vue';
+import StatusIconCell from '@/views/components/app/buttons/StatusIconCell.vue';
+import ListCell from '@/views/components/app/buttons/ListCell.vue';
+import { markRaw } from 'vue';
 
 export default {
     mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, searchMixin, getApiErrorMessageMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog, FiltersContainer, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog, FiltersContainer, TableControlsBar, TableFilterButton, ClientNameCell, StatusIconCell, ListCell, draggable: VueDraggableNext },
     data() {
         return {
             controller: ClientController,
@@ -151,33 +155,13 @@ export default {
 
     methods: {
         itemMapper(i, c) {
-            const search = this.searchQuery;
             switch (c) {
-                case 'firstName':
-                    const parts = [];
-                    if (i.firstName) parts.push(i.firstName);
-                    if (i.lastName) parts.push(i.lastName);
-                    let name = parts.join(' ');
-                    if (i.contactPerson) {
-                        name += ` (${i.contactPerson})`;
-                    }
-                    const highlightedName = search ? highlightMatches(name.trim(), search) : name.trim();
-                    return i.icons() + highlightedName;
-                case 'phones':
-                    const phonesHtml = i.phonesHtmlList();
-                    return search ? highlightMatches(phonesHtml, search) : phonesHtml;
-                case 'emails':
-                    const emailsHtml = i.emailsHtmlList();
-                    return search ? highlightMatches(emailsHtml, search) : emailsHtml;
                 case 'discount':
                     return i.discountFormatted();
                 case 'balance':
                     return i.balanceFormatted();
-                case 'status':
-                    return i.statusIcon();
                 case 'dateUser':
                     return i.formatCreatedAt();
-
                 default:
                     return i[c];
             }
@@ -238,14 +222,45 @@ export default {
             return [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
-                { name: 'firstName', label: 'fullNameCompany', html: true },
-                { name: 'phones', label: 'phoneNumber', html: true },
-                { name: 'emails', label: 'email', html: true },
+                {
+                    name: 'firstName',
+                    label: 'fullNameCompany',
+                    component: markRaw(ClientNameCell),
+                    props: (item) => ({
+                        client: item,
+                        searchQuery: this.searchQuery
+                    })
+                },
+                {
+                    name: 'phones',
+                    label: 'phoneNumber',
+                    component: markRaw(ListCell),
+                    props: (item) => ({
+                        items: item.phones || [],
+                        getValue: (phone) => phone.phone
+                    })
+                },
+                {
+                    name: 'emails',
+                    label: 'email',
+                    component: markRaw(ListCell),
+                    props: (item) => ({
+                        items: item.emails || [],
+                        getValue: (email) => email.email
+                    })
+                },
                 { name: 'address', label: 'address' },
                 { name: 'note', label: 'note' },
                 { name: 'discount', label: 'discount' },
                 ...(this.$store.getters.hasPermission('settings_client_balance_view') ? [{ name: 'balance', label: 'balance' }] : []),
-                { name: 'status', label: 'status', html: true },
+                {
+                    name: 'status',
+                    label: 'status',
+                    component: markRaw(StatusIconCell),
+                    props: (item) => ({
+                        status: item.status
+                    })
+                },
                 { name: 'dateUser', label: 'dateUser' },
             ];
         },

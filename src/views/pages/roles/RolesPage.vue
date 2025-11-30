@@ -4,18 +4,11 @@
             <DraggableTable table-key="admin.roles" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="(i) => showModal(i)">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar
-                        :show-create-button="true"
-                        :on-create-click="() => showModal(null)"
-                        :create-button-disabled="!$store.getters.hasPermission('users_create')"
-                        :show-pagination="true"
+                    <TableControlsBar :show-create-button="true" :on-create-click="() => showModal(null)"
+                        :create-button-disabled="!$store.getters.hasPermission('roles_create')" :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                        :on-page-change="fetchItems"
-                        :on-per-page-change="handlePerPageChange"
-                        :resetColumns="resetColumns"
-                        :columns="columns"
-                        :toggleVisible="toggleVisible"
-                        :log="log">
+                        :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
                         <template #right>
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
@@ -60,8 +53,9 @@
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
-        :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
+        :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
+        @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -84,7 +78,18 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
     mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, RolesCreatePage, Pagination, DraggableTable, AlertDialog },
+    components: { 
+        NotificationToast, 
+        PrimaryButton, 
+        SideModalDialog, 
+        RolesCreatePage, 
+        Pagination, 
+        DraggableTable, 
+        TableControlsBar,
+        TableFilterButton,
+        AlertDialog,
+        draggable: VueDraggableNext
+    },
     data() {
         return {
             controller: RolesController,
@@ -109,7 +114,7 @@ export default {
     mounted() {
         this.fetchItems();
     },
-
+    
     methods: {
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
@@ -139,15 +144,6 @@ export default {
             setTimeout(async () => {
                 try {
                     await this.$store.dispatch('refreshUserPermissions');
-                    console.log('=== ПРАВА ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ (после обновления) ===');
-                    console.log('Права:', this.$store.state.permissions);
-                    console.log('Количество прав:', this.$store.state.permissions?.length || 0);
-                    console.log('Есть clients_view:', this.$store.getters.hasPermission('clients_view'));
-                    console.log('Есть projects_view:', this.$store.getters.hasPermission('projects_view'));
-                    console.log('Есть orders_view:', this.$store.getters.hasPermission('orders_view'));
-                    console.log('Есть users_view:', this.$store.getters.hasPermission('users_view'));
-                    console.log('Есть roles_view:', this.$store.getters.hasPermission('roles_view'));
-                    console.log('==================================================');
                 } catch (error) {
                     console.error('Ошибка обновления прав:', error);
                 }
@@ -156,4 +152,3 @@ export default {
     },
 };
 </script>
-

@@ -1,6 +1,6 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrencyWithRounding } from "@/utils/numberUtils";
-import { formatAmountWithColor, createFromApiArray } from "@/utils/dtoUtils";
+import { createFromApiArray } from "@/utils/dtoUtils";
 import ClientDto from "@/dto/client/ClientDto";
 
 export default class TransactionDto {
@@ -81,53 +81,6 @@ export default class TransactionDto {
 
   typeName() {
     return this.type == 1 ? "income" : "outcome";
-  }
-
-  typeCell() {
-    if (this.isTransfer == 1) {
-      return '<i class="fas fa-right-left text-[#337AB7] mr-2"></i> Трансфер';
-    }
-    return this.type == 1
-      ? '<i class="fas fa-circle-down text-[#5CB85C] mr-2"></i> Приход'
-      : '<i class="fas fa-circle-up text-[#EE4F47] mr-2"></i> Расход';
-  }
-
-  sourceCell() {
-    if (this.sourceType && this.sourceId) {
-      const sourceMap = {
-        'Sale': { icon: 'fa-shopping-cart', text: 'Продажа' },
-        'Order': { icon: 'fa-file-invoice', text: 'Заказ' },
-        'WhReceipt': { icon: 'fa-box', text: 'Оприходование' }
-      };
-      
-      const source = Object.entries(sourceMap).find(([key]) => this.sourceType.includes(key))?.[1] || { icon: 'fa-link', text: 'Связь' };
-      return `<i class="fas ${source.icon} text-[#337AB7] mr-2 cursor-pointer hover:text-[#3571A4]" data-source-type="${this.sourceType}" data-source-id="${this.sourceId}" title="Открыть ${source.text} #${this.sourceId}"></i> ${source.text}`;
-    }
-    
-    if (this.isSale == 1) {
-      return '<i class="fas fa-shopping-cart text-[#5CB85C] mr-2"></i> Продажа';
-    }
-    if (this.isReceipt == 1) {
-      return '<i class="fas fa-box text-[#FFA500] mr-2"></i> Оприходование';
-    }
-    return '<i class="fas fa-circle text-[#6C757D] mr-2"></i> Транзакция';
-  }
-
-  debtCell() {
-    return this.isDebt == 1
-      ? '<i class="fas fa-check text-green-500"></i>'
-      : '<i class="fas fa-times text-red-500"></i>';
-  }
-
-  cashAmountData() {
-    const isPositive = this.type == 1;
-    return formatAmountWithColor(this.cashAmount * (isPositive ? 1 : -1), {
-      positiveColor: "text-[#5CB85C]",
-      negativeColor: "text-[#EE4F47]",
-      showSign: true,
-      formatFn: (val) => formatCurrencyWithRounding(Math.abs(val), this.cashCurrencySymbol, true),
-      className: "font-semibold"
-    });
   }
   origAmountData() {
     return formatCurrencyWithRounding(this.origAmount, this.origCurrencySymbol, true);

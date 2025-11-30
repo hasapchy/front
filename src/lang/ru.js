@@ -880,6 +880,7 @@ export default {
   present: 'по н.в.',
   bonus: 'Начислить премию',
   penalty: 'Выписать штраф',
+  accrueSalary: 'Начислить зарплату',
   employeeClientNotFound: 'Клиент для сотрудника не найден',
   employeeClientNotFoundDescription: 'Для работы с балансом сотрудника необходимо создать связанного клиента с employee_id, соответствующим ID этого сотрудника.',
   
@@ -931,6 +932,7 @@ export default {
   // Фразы для категорий
   createCategory: 'Категория',
   editCategory: 'Редактировать категорию',
+  categoryMustHaveAtLeastOneUser: 'Категория должна иметь хотя бы одного пользователя',
   categoryCreated: 'Категория создана',
   categoryAdded: 'Категория добавлена',
   categoryUpdated: 'Категория обновлена',
@@ -1015,10 +1017,12 @@ export default {
   createCashRegister: 'Касса',
   editCashRegister: 'Касса',
   cashRegister: 'Касса',
+  cashRegisterMustHaveAtLeastOneUser: 'Касса должна иметь хотя бы одного пользователя',
   
   // Фразы для складов
   createWarehouse: 'Склад',
   editWarehouse: 'Редактировать склад',
+  warehouseMustHaveAtLeastOneUser: 'Склад должен иметь хотя бы одного пользователя',
   
   // Фразы для продаж
   createSale: 'Продажа',
@@ -1216,7 +1220,10 @@ export default {
   invoices: 'Счета',
   transfers: 'Трансферы по кассам',
   projectStatuses: 'Статусы проектов',
+  project_statuses: 'Статусы проектов',
   transaction_categories: 'Категории транзакций',
+  employee_salaries: 'Зарплаты сотрудников',
+  settings_client_balance_adjustment: 'Корректировка баланса клиента',
 
   projectStatusSuccessfullyAdded: 'Статус проекта успешно добавлен',
   projectStatusSuccessfullyDeleted: 'Статус проекта успешно удален',

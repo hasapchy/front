@@ -1,25 +1,27 @@
+import { PermissionParser } from './parser';
+
 export function permissionIcon(name) {
   if (name.startsWith('settings_')) {
     const settingsIconMap = {
       'settings_edit_any_date': 'fas fa-pen',
       'settings_project_budget_view': 'fas fa-eye',
-      'settings_project_files_view': 'fas fa-folder-open',
-      'settings_project_balance_view': 'fas fa-wallet',
-      'settings_project_contracts_view': 'fas fa-file-contract',
+      'settings_project_files_view': 'fas fa-eye',
+      'settings_project_balance_view': 'fas fa-eye',
+      'settings_project_contracts_view': 'fas fa-eye',
       'settings_currencies_view': 'fas fa-eye',
-      'settings_cash_balance_view': 'fas fa-wallet',
-      'settings_client_balance_view': 'fas fa-user-circle',
-      'settings_view': 'fas fa-cog',
+      'settings_cash_balance_view': 'fas fa-eye',
+      'settings_client_balance_view': 'fas fa-eye',
+      'settings_view': 'fas fa-eye',
     };
     return settingsIconMap[name] || 'fas fa-cog';
   }
 
-  const parts = name.split("_");
-  const action = parts[parts.length - 1] === 'all' || parts[parts.length - 1] === 'own' 
-    ? parts[parts.length - 2] 
-    : parts[parts.length - 1];
+  const parsed = PermissionParser.parse(name);
+  if (!parsed || !parsed.action) {
+    return "fas fa-dot-circle";
+  }
 
-  switch (action) {
+  switch (parsed.action) {
     case "view":
       return "fas fa-eye";
     case "create":
@@ -108,6 +110,30 @@ export function permissionLabel(name) {
     return 'Просмотр взаиморасчетов';
   }
 
+  if (name.startsWith('mutual_settlements_view_')) {
+    const clientType = name.replace('mutual_settlements_view_', '');
+    const typeLabels = {
+      'individual': 'Индивидуальный',
+      'company': 'Компания',
+      'employee': 'Сотрудник',
+      'investor': 'Инвестор'
+    };
+    
+    if (typeof window !== 'undefined' && window.i18n && window.i18n.global && window.i18n.global.t) {
+      try {
+        const typeTranslation = window.i18n.global.t(clientType);
+        if (typeTranslation !== clientType) {
+          return `Просмотр взаиморасчетов (${typeTranslation})`;
+        }
+      } catch (error) {
+        console.warn('i18n translation failed:', error);
+      }
+    }
+    
+    const label = typeLabels[clientType] || clientType;
+    return `Просмотр взаиморасчетов (${label})`;
+  }
+
   const action = name.split("_").at(-1);
 
   if (typeof window !== 'undefined' && window.i18n && window.i18n.global && window.i18n.global.t) {
@@ -138,12 +164,12 @@ export function permissionLabel(name) {
 }
 
 export function permissionColor(name) {
-  const parts = name.split("_");
-  const action = parts[parts.length - 1] === 'all' || parts[parts.length - 1] === 'own' 
-    ? parts[parts.length - 2] 
-    : parts[parts.length - 1];
+  const parsed = PermissionParser.parse(name);
+  if (!parsed || !parsed.action) {
+    return "text-gray-600";
+  }
 
-  switch (action) {
+  switch (parsed.action) {
     case "view":
       return "text-blue-500";
     case "create":
@@ -160,13 +186,15 @@ export function permissionColor(name) {
 }
 
 export function getPermissionPrefix(name) {
-  const knownActions = ["view", "create", "update", "delete"];
-  const parts = name.split("_");
+  const parsed = PermissionParser.parse(name);
+  if (!parsed) {
+    return "settings";
+  }
 
-  const actionIndex = parts.findIndex((p) => knownActions.includes(p));
-  if (actionIndex > 0) {
-    return parts.slice(0, actionIndex).join("_");
+  if (parsed.resource) {
+    return parsed.resource;
   }
 
   return "settings";
 }
+
