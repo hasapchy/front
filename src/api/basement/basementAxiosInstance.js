@@ -1,8 +1,8 @@
 import axios from "axios";
 import { BasementAuthController } from "./BasementAuthController";
 import store from "@/store";
+import TokenUtils from "@/utils/tokenUtils";
 
-// Создаем инстанс axios для basement
 const basementApi = axios.create({
   baseURL: `${import.meta.env.VITE_APP_BASE_URL}/api/basement`,
   headers: {
@@ -12,7 +12,6 @@ const basementApi = axios.create({
 
 basementApi.interceptors.request.use(
   async (config) => {
-    const TokenUtils = (await import("@/utils/tokenUtils")).default;
     const token = TokenUtils.getToken();
     
     if (token) {
@@ -41,7 +40,6 @@ basementApi.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       try {
-        const TokenUtils = (await import("@/utils/tokenUtils")).default;
         const refreshToken = TokenUtils.getRefreshToken();
         
         if (refreshToken) {

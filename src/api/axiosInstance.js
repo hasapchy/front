@@ -1,8 +1,8 @@
 import axios from "axios";
 import AuthController from "./AuthController";
 import { startApiCall, endApiCall, getStore } from "@/store/storeManager";
+import TokenUtils from "@/utils/tokenUtils";
 
-// Создаем инстанс axios
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_APP_BASE_URL || 'http://192.168.0.119'}/api`,
   headers: {
@@ -14,7 +14,6 @@ api.interceptors.request.use(
   async (config) => {
     startApiCall();
     
-    const TokenUtils = (await import("@/utils/tokenUtils")).default;
     const token = TokenUtils.getToken();
     
     if (token) {
@@ -57,7 +56,6 @@ api.interceptors.response.use(
     
     if (error.response?.status === 401) {
       try {
-        const TokenUtils = (await import("@/utils/tokenUtils")).default;
         const refreshToken = TokenUtils.getRefreshToken();
         
         if (refreshToken) {
@@ -69,7 +67,6 @@ api.interceptors.response.use(
         }
       } catch (refreshError) {
         console.error("Ошибка при обновлении токена", refreshError);
-        const TokenUtils = (await import("@/utils/tokenUtils")).default;
         TokenUtils.clearAuthData();
         
         if (window.location.pathname !== '/auth/login') {
