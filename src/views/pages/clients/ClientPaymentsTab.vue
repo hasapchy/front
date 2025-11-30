@@ -11,11 +11,16 @@
             </PrimaryButton>
         </div>
 
-        <div v-if="!paymentsLoading && editingItem && totalPayments > 0" class="mb-4">
+        <div v-if="!paymentsLoading && editingItem && (totalIncome > 0 || totalExpense > 0)" class="mb-4 space-y-2">
             <div class="flex items-center gap-2">
-                <i class="fas fa-money-bill text-green-500"></i>
-                <span class="text-sm text-gray-600">{{ $t('totalPayments') }}:</span>
-                <b class="text-[#5CB85C]">{{ formatBalance(totalPayments) }}</b>
+                <i class="fas fa-arrow-up text-green-500"></i>
+                <span class="text-sm text-gray-600">{{ $t('totalIncome') || 'Приходы' }}:</span>
+                <b class="text-[#5CB85C]">{{ formatBalance(totalIncome) }}</b>
+            </div>
+            <div class="flex items-center gap-2">
+                <i class="fas fa-arrow-down text-red-500"></i>
+                <span class="text-sm text-gray-600">{{ $t('totalExpense') || 'Расходы' }}:</span>
+                <b class="text-red-600">{{ formatBalance(totalExpense) }}</b>
             </div>
         </div>
 
@@ -110,7 +115,8 @@ export default {
             paymentsHistory: [],
             lastFetchedClientId: null,
             forceRefresh: false,
-            totalPayments: 0,
+            totalIncome: 0,
+            totalExpense: 0,
             editingTransactionItem: null,
             selectedEntity: null,
             entityModalOpen: false,
@@ -208,7 +214,8 @@ export default {
             
             if (!this.$store.getters.hasPermission('settings_client_balance_view')) {
                 this.paymentsHistory = [];
-                this.totalPayments = 0;
+                this.totalIncome = 0;
+                this.totalExpense = 0;
                 return;
             }
             
@@ -225,16 +232,28 @@ export default {
                 
                 this.paymentsHistory = data || [];
                 
-                this.totalPayments = this.paymentsHistory.reduce((sum, item) => {
+                // Раздельно считаем приходы (положительные) и расходы (отрицательные)
+                let income = 0;
+                let expense = 0;
+                
+                this.paymentsHistory.forEach(item => {
                     const amount = parseFloat(item.amount || 0);
-                    return sum + Math.abs(amount);
-                }, 0);
+                    if (amount > 0) {
+                        income += amount;
+                    } else if (amount < 0) {
+                        expense += Math.abs(amount);
+                    }
+                });
+                
+                this.totalIncome = income;
+                this.totalExpense = expense;
                 
                 this.lastFetchedClientId = this.editingItem.id;
                 this.forceRefresh = false;
             } catch (e) {
                 this.paymentsHistory = [];
-                this.totalPayments = 0;
+                this.totalIncome = 0;
+                this.totalExpense = 0;
             } finally {
                 this.paymentsLoading = false;
             }
@@ -322,7 +341,8 @@ export default {
                     this.selectedEntity = null;
                     this.entityModalOpen = false;
                     this.entityLoading = false;
-                    this.totalPayments = 0;
+                    this.totalIncome = 0;
+                    this.totalExpense = 0;
                 }
             },
             immediate: true,
