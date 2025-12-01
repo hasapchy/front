@@ -246,6 +246,10 @@ export default {
             if (this.v$.$error) {
                 return;
             }
+            console.info('Login attempt', {
+                email: this.email,
+                remember: this.remember
+            });
             this.loading = true;
             try {
                 const loginData = await AuthController.login(this.email, this.password, this.remember);
@@ -261,6 +265,12 @@ export default {
                     this.$router.push('/');
                 }
             } catch (error) {
+                console.error('Login error debug', {
+                    email: this.email,
+                    status: error?.response?.status,
+                    backendError: error?.response?.data,
+                    message: error?.message
+                });
                 let errorTitle = 'Ошибка авторизации';
                 let errorMessage = 'Неверный email или пароль';
 
