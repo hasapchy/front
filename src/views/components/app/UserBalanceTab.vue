@@ -11,6 +11,13 @@
                     {{ $t('accrueSalary') || 'Начислить зарплату' }}
                 </PrimaryButton>
                 <PrimaryButton 
+                    icon="fas fa-hand-holding-usd" 
+                    :onclick="handleSalaryPayment"
+                    :is-success="true"
+                    :disabled="buttonsDisabled">
+                    {{ $t('paySalary') || 'Выплатить зарплату' }}
+                </PrimaryButton>
+                <PrimaryButton 
                     icon="fas fa-gift" 
                     :onclick="handleBonus"
                     :is-success="true"
@@ -183,6 +190,8 @@ export default {
                 return TRANSACTION_FORM_PRESETS.employeePenalty;
             } else if (this.transactionModalType === 'salaryAccrual') {
                 return TRANSACTION_FORM_PRESETS.employeeSalaryAccrual;
+            } else if (this.transactionModalType === 'salaryPayment') {
+                return TRANSACTION_FORM_PRESETS.employeeSalaryPayment;
             }
             return {};
         },
@@ -391,6 +400,9 @@ export default {
         async handleSalaryAccrual() {
             await this.openTransactionModal('salaryAccrual');
         },
+        async handleSalaryPayment() {
+            await this.openTransactionModal('salaryPayment');
+        },
         getTransactionModalHeader() {
             if (this.transactionModalType === 'bonus') {
                 return this.$t('bonus') || 'Премия';
@@ -398,6 +410,8 @@ export default {
                 return this.$t('penalty') || 'Штраф';
             } else if (this.transactionModalType === 'salaryAccrual') {
                 return this.$t('accrueSalary') || 'Начисление зарплаты';
+            } else if (this.transactionModalType === 'salaryPayment') {
+                return this.$t('paySalary') || 'Выплата зарплаты';
             }
             return '';
         },
