@@ -766,6 +766,9 @@ export default {
   bonus: 'Premiýa tabşyr',
   penalty: 'Jäza çykar',
   accrueSalary: 'Mukafat hasapla',
+  paySalary: 'Mukafat töle',
+  salaryDifferenceHelpTitle: 'Tapawudy näme?',
+  salaryDifferenceHelp: 'Mukafat hasaplamak — bu işgäriň eden işi üçin pul (borç ýazgysy, işgär bize borçly). Mukafat tölemek — bu işgäre hakyky pul tölegi (borç däl, işgäriň borçyny azaldýar).',
   employeeClientNotFound: 'Işgär üçin müşderi tapylmady',
   employeeClientNotFoundDescription: 'Işgäriň balansy bilen işlemek üçin, bu işgäriň ID-sine gabat gelýän employee_id bilen baglanyşykly müşderi döretmeli.',
   

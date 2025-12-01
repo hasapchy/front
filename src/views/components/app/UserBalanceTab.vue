@@ -34,6 +34,20 @@
             </div>
         </div>
 
+        <!-- Подсказка о разнице между начислением и выплатой зарплаты -->
+        <div v-if="!balanceLoading && editingItem && editingItem.id && employeeClient" 
+             class="mb-4 relative group">
+            <div class="flex items-center gap-2 cursor-help">
+                <i class="fas fa-question-circle text-gray-400 hover:text-blue-600 transition-colors"></i>
+                <span class="text-xs text-gray-600">{{ $t('salaryDifferenceHelpTitle') || 'В чем разница?' }}</span>
+            </div>
+            <div class="absolute left-0 top-6 z-10 w-80 p-3 bg-blue-50 border border-blue-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                <p class="text-xs text-blue-800">
+                    {{ $t('salaryDifferenceHelp') || 'Начисление зарплаты — это деньги за проделанную работу сотрудником (запись о долге, сотрудник нам должен). Выплата зарплаты — это фактическая выплата денег сотруднику (не в долг, уменьшает долг сотрудника).' }}
+                </p>
+            </div>
+        </div>
+
         <!-- Предупреждение о том, что клиент не найден -->
         <div v-if="!balanceLoading && editingItem && editingItem.id && !employeeClient && !clientCheckLoading" 
              class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
