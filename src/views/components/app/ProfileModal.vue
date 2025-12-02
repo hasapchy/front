@@ -360,11 +360,11 @@ export default {
                     birthday: this.form.birthday,
                 };
                 
-                if (this.form.currentPassword) {
+                if (this.form.currentPassword && this.form.currentPassword.trim() !== '') {
                     updateData.current_password = this.form.currentPassword;
                 }
                 
-                if (this.form.newPassword) {
+                if (this.form.newPassword && this.form.newPassword.trim() !== '') {
                     updateData.password = this.form.newPassword;
                 }
                 

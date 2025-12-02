@@ -151,14 +151,6 @@
               </PrimaryButton>
             </router-link>
             <PrimaryButton
-              v-if="isEditing && canDelete"
-              :is-danger="true"
-              icon="fas fa-trash"
-              :onclick="() => { deleteDialog = true }"
-            >
-              {{ $t('delete') }}
-            </PrimaryButton>
-            <PrimaryButton
               :is-loading="loading"
               :disabled="!canSave"
               icon="fas fa-save"
@@ -216,15 +208,6 @@
       </div>
     </div>
 
-    <AlertDialog
-      v-if="isEditing"
-      :dialog="deleteDialog"
-      :descr="$t('confirmDelete')"
-      :confirm-text="$t('delete')"
-      :leave-text="$t('cancel')"
-      @confirm="deleteOrder"
-      @leave="deleteDialog = false"
-    />
   </div>
 </template>
 
@@ -232,7 +215,6 @@
 import basementApi from '@/api/basement/basementAxiosInstance'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'
-import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue'
 import BasementClientSearch from '@/views/components/basement/BasementClientSearch.vue'
 import BasementProductSearch from '@/views/components/basement/BasementProductSearch.vue'
 import BasementStockSearch from '@/views/components/basement/BasementStockSearch.vue'
@@ -248,7 +230,6 @@ export default {
   components: {
     PrimaryButton,
     DraggableTable,
-    AlertDialog,
     BasementClientSearch,
     BasementProductSearch,
     BasementStockSearch,
@@ -285,8 +266,7 @@ export default {
       savedSuccessText: 'Заказ успешно создан',
       savedErrorText: 'Ошибка создания заказа',
       deletedSuccessText: 'Заказ успешно удален',
-      deletedErrorText: 'Ошибка удаления заказа',
-      deleteDialog: false
+      deletedErrorText: 'Ошибка удаления заказа'
     }
   },
   computed: {
@@ -312,15 +292,6 @@ export default {
              this.form.warehouse_id && 
              this.hasValidProducts && 
              !this.loading
-    },
-    canDelete() {
-      if (!this.isEditing) {
-        return false
-      }
-      if (!this.$store || !this.$store.getters || typeof this.$store.getters.hasPermission !== 'function') {
-        return true
-      }
-      return this.$store.getters.hasPermission('orders_delete')
     },
     totalAmount() {
       // Подсчитываем итоговую сумму по всем товарам и услугам
@@ -556,6 +527,8 @@ export default {
             quantity: item.quantity,
             price: item.price || 0,
             unit_id: item.unit_id || null,
+            width: item.width || null,
+            height: item.height || null,
           }))
         
         const orderData = {
@@ -640,6 +613,8 @@ export default {
             quantity: item.quantity,
             price: item.price || 0,
             unit_id: item.unit_id || null,
+            width: item.width || null,
+            height: item.height || null,
           }))
         
         const orderData = {
@@ -758,15 +733,16 @@ export default {
         // Загружаем temp_products в stockItems
         this.form.stockItems = tempProducts.map(product => ({
           name: product.product_name,
-          description: '',
+          description: product.description || '',
           quantity: product.quantity,
           price: product.price,
           unit_id: product.unit_id,
           unit_short_name: product.unit_short_name || product.unit_name || '',
           unit_name: product.unit_name || '',
-          width: 0,
-          height: 0,
-          isTempProduct: true
+          width: product.width || 0,
+          height: product.height || 0,
+          isTempProduct: true,
+          type: product.type || 1
         }))
       }
     },
@@ -801,41 +777,6 @@ export default {
     },
     formatTotalAmount() {
       return formatNumber(this.totalAmount, null, true)
-    },
-    async deleteOrder() {
-      if (!this.isEditing) {
-        return
-      }
-      const orderId = this.editingItem?.id || (this.orderId ? parseInt(this.orderId) : null)
-      if (!orderId) {
-        return
-      }
-      this.deleteDialog = false
-      this.loading = true
-      try {
-        await basementApi.delete(`/orders/${orderId}`)
-        this.$store.dispatch('showNotification', {
-          title: this.deletedSuccessText,
-          subtitle: '',
-          isDanger: false
-        })
-        if (this.orderId) {
-          this.$router.push('/basement/orders')
-        } else {
-          this.$emit('deleted')
-          this.$emit('close-request')
-        }
-      } catch (error) {
-        const errorMessage = this.getApiErrorMessage(error)
-        this.$store.dispatch('showNotification', {
-          title: this.deletedErrorText,
-          subtitle: errorMessage,
-          isDanger: true
-        })
-        this.$emit('deleted-error', error)
-      } finally {
-        this.loading = false
-      }
     }
   },
   watch: {

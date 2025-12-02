@@ -772,6 +772,7 @@ export default {
   startWithAddingClient: 'Начните с добавления нового клиента',
   backToOrders: 'Назад к заказам',
   orderNotePlaceholder: 'Дополнительная информация о заказе',
+  orderItems: 'Товары в заказе',
   creating: 'Создание...',
   create: 'Создать',
   errorCreatingOrder: 'Ошибка создания заказа',

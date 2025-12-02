@@ -658,6 +658,7 @@ export default {
   startWithAddingClient: 'Täze müşderi goşmakdan başlaň',
   backToOrders: 'Sargytlara dolan',
   orderNotePlaceholder: 'Sargyt hakynda goşmaça maglumat',
+  orderItems: 'Sargytdaky harytlar',
   creating: 'Döredilýär...',
   create: 'Döret',
   errorCreatingOrder: 'Sargyt döretmekde ýalňyşlyk',

@@ -297,6 +297,7 @@ export default {
   startWithAddingClient: 'Start by adding a new client',
   backToOrders: 'Back to Orders',
   orderNotePlaceholder: 'Additional information about the order',
+  orderItems: 'Order Items',
   creating: 'Creating...',
   create: 'Create',
   errorCreatingOrder: 'Error creating order',
