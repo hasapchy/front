@@ -174,7 +174,6 @@ const UsersController = {
       
       return data;
     } catch (error) {
-      console.error("Ошибка при обновлении профиля:", error);
       throw error;
     }
   },

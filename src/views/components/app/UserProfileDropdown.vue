@@ -50,9 +50,11 @@ import AuthController from '@/api/AuthController';
 import PrimaryButton from './buttons/PrimaryButton.vue';
 import SideModalDialog from './dialog/SideModalDialog.vue';
 import ProfileModal from './ProfileModal.vue';
+import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 
 export default {
     name: 'UserProfileDropdown',
+    mixins: [getApiErrorMessageMixin],
     components: {
         PrimaryButton,
         SideModalDialog,
@@ -102,22 +104,12 @@ export default {
             showProfileModal.value = false;
         };
 
-
         const handleProfileSaved = () => {
             closeProfileModal();
             store.dispatch('showNotification', {
                 title: t('success'),
                 subtitle: t('profileUpdatedSuccessfully'),
                 isDanger: false
-            });
-        };
-
-        const handleProfileSavedError = (error) => {
-            console.error('Error updating profile:', error);
-            store.dispatch('showNotification', {
-                title: t('error'),
-                subtitle: t('failedToUpdateProfile'),
-                isDanger: true
             });
         };
 
@@ -131,7 +123,6 @@ export default {
             }
         };
 
-        // Close dropdown when clicking outside
         const handleClickOutside = (event) => {
             if (!event.target.closest('.user-profile-dropdown')) {
                 closeDropdown();
@@ -159,9 +150,27 @@ export default {
             openProfileModal,
             closeProfileModal,
             handleProfileSaved,
-            handleProfileSavedError,
             logout
         };
+    },
+    methods: {
+        handleProfileSavedError(error) {
+            let messages = this.getApiErrorMessage(error);
+            if (Array.isArray(messages) && messages.length === 0) {
+                messages = null;
+            }
+            if (!messages) {
+                messages = [this.$t('failedToUpdateProfile')];
+            } else if (!Array.isArray(messages)) {
+                messages = [messages];
+            }
+            
+            this.$store.dispatch('showNotification', {
+                title: this.$t('error'),
+                subtitle: messages,
+                isDanger: true
+            });
+        }
     }
 };
 </script>

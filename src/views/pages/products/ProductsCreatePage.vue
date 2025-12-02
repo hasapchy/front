@@ -4,7 +4,7 @@
 
         <div class="mt-2 flex items-start">
             <div class="flex-1">
-                <div class="mt-2">
+                <div class="mt-2" v-if="!defaultType">
                     <label class="block mb-1 required">{{ $t('type') }}</label>
                     <select v-model="type">
                         <option value="">{{ $t('selectType') }}</option>
@@ -262,8 +262,9 @@ export default {
         async save() {
             this.saveLoading = true;
             try {
+                const typeToUse = this.defaultType || this.type;
                 var item = {
-                    type: this.type == "product" ? 1 : 0,
+                    type: typeToUse == "product" ? 1 : 0,
                     name: this.name,
                     description: this.description,
                     sku: this.sku,
@@ -445,7 +446,11 @@ export default {
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
-                    this.type = newEditingItem.typeName ? newEditingItem.typeName() : 'product';
+                    if (this.defaultType) {
+                        this.type = this.defaultType;
+                    } else {
+                        this.type = newEditingItem.typeName ? newEditingItem.typeName() : 'product';
+                    }
                     this.name = newEditingItem.name || newEditingItem.productName || '';
                     this.description = newEditingItem.description || '';
                     this.sku = newEditingItem.sku || '';
@@ -480,7 +485,7 @@ export default {
                     this.purchase_price = purchasePriceValue ?? 0;
                     this.editingItemId = newEditingItem.id || newEditingItem.productId || null;
                 } else {
-                    this.type = 'product';
+                    this.type = this.defaultType || 'product';
                     this.name = '';
                     this.description = '';
                     this.sku = '';
@@ -502,6 +507,11 @@ export default {
             },
             deep: true,
             immediate: true
+        },
+        defaultType(newVal) {
+            if (newVal) {
+                this.type = newVal;
+            }
         }
     }
 }

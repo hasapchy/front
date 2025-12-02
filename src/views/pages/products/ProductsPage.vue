@@ -81,7 +81,7 @@
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
         <ProductsCreatePage v-if="modalDialog" ref="productForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
+            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" :defaultType="'product'" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />

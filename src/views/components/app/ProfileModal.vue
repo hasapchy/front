@@ -63,23 +63,32 @@
             <!-- Current Password -->
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('currentPassword') }}</label>
-                <input 
-                    v-model="form.currentPassword" 
-                    type="password" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    :placeholder="$t('enterCurrentPassword')"
-                />
+                <div class="flex items-center space-x-2">
+                    <input 
+                        v-model="form.currentPassword" 
+                        :type="showCurrentPassword ? 'text' : 'password'" 
+                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        :placeholder="$t('enterCurrentPassword')"
+                    />
+                    <PrimaryButton :onclick="toggleCurrentPasswordVisibility"
+                        :icon="showCurrentPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
+                </div>
             </div>
 
             <!-- New Password -->
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('newPassword') }}</label>
-                <input 
-                    v-model="form.newPassword" 
-                    type="password" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    :placeholder="$t('enterNewPassword')"
-                />
+                <div class="flex items-center space-x-2">
+                    <input 
+                        v-model="form.newPassword" 
+                        :type="showNewPassword ? 'text' : 'password'" 
+                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        :placeholder="$t('enterNewPassword')"
+                    />
+                    <PrimaryButton :onclick="toggleNewPasswordVisibility"
+                        :icon="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
+                    <PrimaryButton :onclick="generateNewPassword" :icon="'fas fa-dice'" class="px-2 py-1" />
+                </div>
             </div>
 
         </form>
@@ -155,6 +164,8 @@ export default {
             tempImageSrc: '',
             croppedFile: null,
             userClientAccount: null,
+            showCurrentPassword: false,
+            showNewPassword: false,
         };
     },
     computed: {
@@ -313,6 +324,8 @@ export default {
             this.croppedFile = null;
             this.showCropperModal = false;
             this.tempImageSrc = '';
+            this.showCurrentPassword = false;
+            this.showNewPassword = false;
             if (this.$refs.imageInput) {
                 this.$refs.imageInput.value = null;
             }
@@ -320,6 +333,24 @@ export default {
         },
 
 
+        toggleCurrentPasswordVisibility() {
+            this.showCurrentPassword = !this.showCurrentPassword;
+        },
+        toggleNewPasswordVisibility() {
+            this.showNewPassword = !this.showNewPassword;
+        },
+        generateNewPassword() {
+            this.form.newPassword = this.generateRandomPassword();
+        },
+        generateRandomPassword() {
+            const length = 12;
+            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+            let password = "";
+            for (let i = 0; i < length; i++) {
+                password += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            return password;
+        },
         async save() {
             this.saveLoading = true;
             try {
@@ -355,6 +386,8 @@ export default {
                     : '';
                 this.form.currentPassword = '';
                 this.form.newPassword = '';
+                this.showCurrentPassword = false;
+                this.showNewPassword = false;
                 
                 if (savedUser.user && savedUser.user.photo) {
                     this.selected_image = this.getUserPhotoSrc(savedUser.user);
