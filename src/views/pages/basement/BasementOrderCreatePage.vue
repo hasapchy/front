@@ -48,12 +48,20 @@
               <!-- Проект -->
               <div>
                 <label class="block text-sm font-medium text-gray-700">{{ $t('project') }}</label>
-                <select v-model="form.project_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <select 
+                  v-model="form.project_id" 
+                  :disabled="isProjectLocked"
+                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  :class="{ 'bg-gray-100 cursor-not-allowed': isProjectLocked }"
+                >
                   <option value="">{{ $t('no') }}</option>
                   <option v-for="project in allProjects" :key="project.id" :value="project.id">
                     {{ project.name }}
                   </option>
                 </select>
+                <p v-if="isProjectLocked" class="mt-1 text-xs text-gray-500">
+                  Проект нельзя указать, если он не был указан при создании заказа
+                </p>
               </div>
             </div>
 
@@ -262,6 +270,7 @@ export default {
         phone: ''
       },
       clientLoading: false,
+      originalProjectId: null,
       // Тексты для уведомлений
       savedSuccessText: 'Заказ успешно создан',
       savedErrorText: 'Ошибка создания заказа',
@@ -275,6 +284,9 @@ export default {
     },
     isEditing() {
       return !!this.editingItem || !!this.orderId
+    },
+    isProjectLocked() {
+      return this.isEditing && (this.originalProjectId === null || this.originalProjectId === '')
     },
     hasValidProducts() {
       // Проверяем, что есть товары с количеством больше 0
@@ -617,9 +629,11 @@ export default {
             height: item.height || null,
           }))
         
+        const projectId = this.isProjectLocked ? null : (this.form.project_id || null)
+        
         const orderData = {
           client_id: this.form.client_id || null,
-          project_id: this.form.project_id || null,
+          project_id: projectId,
           cash_id: this.form.cash_id,
           warehouse_id: this.form.warehouse_id,
           currency_id: 1,
@@ -628,7 +642,7 @@ export default {
           products: validProducts,
           temp_products: tempProducts
         }
-
+        
         const orderId = this.editingItem?.id || (this.orderId ? parseInt(this.orderId) : null)
         
         if (!orderId) {
@@ -694,12 +708,27 @@ export default {
           })
           this.$router.push('/basement/orders')
         }
+      } else {
+        // Создание нового заказа - сбрасываем форму
+        this.form = {
+          client_id: '',
+          project_id: '',
+          products: [],
+          stockItems: [],
+          note: '',
+          cash_id: 1,
+          warehouse_id: 1,
+          category_id: null
+        }
+        this.selectedClient = null
+        this.originalProjectId = null
       }
     },
     fillFormWithOrderData(orderData) {
       // Заполняем форму данными заказа
       this.form.client_id = orderData.client_id || ''
       this.form.project_id = orderData.project_id || ''
+      this.originalProjectId = orderData.project_id || null
       this.form.cash_id = orderData.cash_id || 1
       this.form.warehouse_id = orderData.warehouse_id || 1
       this.form.category_id = orderData.category_id || this.form.category_id
