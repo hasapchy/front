@@ -32,9 +32,17 @@
           <label>{{ $t('lastName') }}</label>
           <input type="text" v-model="lastName" />
         </div>
+        <div v-if="clientType === 'individual'">
+          <label>{{ $t('patronymic') }}</label>
+          <input type="text" v-model="patronymic" />
+        </div>
         <div v-if="clientType === 'company'">
           <label>{{ $t('contactPerson') }}</label>
           <input type="text" v-model="contactPerson" />
+        </div>
+        <div v-if="clientType === 'company'">
+          <label>{{ $t('position') }}</label>
+          <input type="text" v-model="position" />
         </div>
         <div>
           <label>{{ $t('address') }}</label>
@@ -161,7 +169,9 @@ export default {
         ? this.editingItem.firstName
         : this.defaultFirstName || "",
       lastName: this.editingItem ? this.editingItem.lastName : "",
+      patronymic: this.editingItem ? this.editingItem.patronymic : "",
       contactPerson: this.editingItem ? this.editingItem.contactPerson : "",
+      position: this.editingItem ? this.editingItem.position : "",
       clientType: this.editingItem ? this.editingItem.clientType : "individual",
       employeeId: this.editingItem ? this.editingItem.employeeId : null,
       address: this.editingItem ? this.editingItem.address : "",
@@ -263,7 +273,9 @@ export default {
       return {
         firstName: this.firstName,
         lastName: this.lastName,
+        patronymic: this.patronymic,
         contactPerson: this.contactPerson,
+        position: this.position,
         clientType: this.clientType,
         employeeId: this.employeeId,
         address: this.address,
@@ -490,7 +502,9 @@ export default {
         const clientData = {
           first_name: this.firstName,
           last_name: this.lastName,
+          patronymic: this.patronymic,
           contact_person: this.contactPerson,
+          position: this.position,
           client_type: this.clientType,
           employee_id: this.employeeId,
           address: this.address,
@@ -541,7 +555,9 @@ export default {
     clearForm() {
       this.firstName = "";
       this.lastName = "";
+      this.patronymic = "";
       this.contactPerson = "";
+      this.position = "";
       this.clientType = "individual";
       this.employeeId = null;
       this.address = "";
@@ -579,7 +595,9 @@ export default {
         if (newEditingItem) {
           this.firstName = newEditingItem.firstName || "";
           this.lastName = newEditingItem.lastName || "";
+          this.patronymic = newEditingItem.patronymic || "";
           this.contactPerson = newEditingItem.contactPerson || "";
+          this.position = newEditingItem.position || "";
           this.clientType = newEditingItem.clientType || "individual";
           this.address = newEditingItem.address || "";
           this.note = newEditingItem.note || "";
@@ -635,6 +653,8 @@ export default {
           const selectedUser = this.users.find(user => user.id === newEmployeeId);
           if (selectedUser) {
             this.firstName = selectedUser.name || "";
+            this.lastName = selectedUser.surname || "";
+            this.position = selectedUser.position || "";
           }
         }
       },

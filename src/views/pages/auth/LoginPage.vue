@@ -272,7 +272,7 @@ export default {
                     message: error?.message
                 });
                 let errorTitle = 'Ошибка авторизации';
-                let errorMessage = 'Неверный email или пароль';
+                let errorMessage = 'Неверный логин или пароль';
 
                 if (error.response?.status === 429) {
                     errorTitle = 'Слишком много попыток';
@@ -280,8 +280,12 @@ export default {
                 } else if (error.response?.status === 403) {
                     errorTitle = 'Доступ запрещен';
                     errorMessage = error.response?.data?.message || 'Аккаунт отключен';
+                } else if (error.response?.status === 401) {
+                    errorMessage = error.response?.data?.message || error.response?.data?.error || 'Неверный логин или пароль';
                 } else if (error.response?.data?.error) {
                     errorMessage = error.response.data.error;
+                } else if (error.response?.data?.message) {
+                    errorMessage = error.response.data.message;
                 } else if (error.message) {
                     errorMessage = error.message;
                 }

@@ -26,14 +26,11 @@ export default {
     },
     computed: {
         name() {
-            const parts = [];
-            if (this.client.firstName) parts.push(this.client.firstName);
-            if (this.client.lastName) parts.push(this.client.lastName);
-            let name = parts.join(' ');
-            if (this.client.contactPerson) {
-                name += ` (${this.client.contactPerson})`;
+            if (!this.client) return '';
+            if (typeof this.client.fullName === 'function') {
+                return this.client.fullName();
             }
-            return name.trim();
+            return this.client.firstName || '';
         },
         highlightedName() {
             return this.searchQuery && this.searchQuery.trim()

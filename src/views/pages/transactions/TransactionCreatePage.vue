@@ -266,8 +266,24 @@ export default {
             }
         },
         filteredCategories() {
-            const wanted = this.type === 'income' ? 1 : 0; // 1 для income, 0 для outcome
-            const filtered = this.allCategories.filter(cat => cat.type === wanted);
+            const wanted = this.type === 'income' ? 1 : 0;
+            let filtered = this.allCategories.filter(cat => cat.type === wanted);
+            
+            const categoryConfig = this.fieldConfig('category');
+            
+            if (categoryConfig.excludedIds && Array.isArray(categoryConfig.excludedIds)) {
+                filtered = filtered.filter(cat => {
+                    if (categoryConfig.excludedIds.includes(cat.id) && cat.id !== this.categoryId) {
+                        return false;
+                    }
+                    return true;
+                });
+            }
+            
+            if (categoryConfig.allowedIds && Array.isArray(categoryConfig.allowedIds)) {
+                filtered = filtered.filter(cat => categoryConfig.allowedIds.includes(cat.id));
+            }
+            
             return filtered;
         },
         allProjects() {
@@ -563,24 +579,28 @@ export default {
 
             try {
                 if (this.editingItemId != null) {
-                    var resp = await TransactionController.updateItem(
-                        this.editingItemId,
-                        {
-                            category_id: this.categoryId,
-                            project_id: projectIdForSubmit,
-                            date: this.date,
-                            client_id: this.selectedClient?.id,
-                            orig_amount: this.origAmount, // обновления не трогаем
-                            currency_id: this.currencyIdComputed,
-                            note: this.note,
-                            is_debt: this.isDebt,
-                            source_type: this.getSourceTypeForBackend(),
-                            source_id: this.selectedSource?.id || null
-                        });
+                    const updateData = {
+                        category_id: this.categoryId,
+                        project_id: projectIdForSubmit,
+                        date: this.date,
+                        client_id: this.selectedClient?.id,
+                        orig_amount: this.origAmount,
+                        currency_id: this.currencyIdComputed,
+                        note: this.note,
+                        is_debt: this.isDebt,
+                    };
+                    
+                    const sourceType = this.getSourceTypeForBackend();
+                    if (sourceType) {
+                        updateData.source_type = sourceType;
+                        updateData.source_id = this.selectedSource?.id || null;
+                    }
+                    
+                    var resp = await TransactionController.updateItem(this.editingItemId, updateData);
                 } else {
                     // Только для НОВЫХ записей применяем реальное округление согласно настройкам компании
                     const roundedAmount = roundValue(this.origAmount);
-                    var resp = await TransactionController.storeItem({
+                    const requestData = {
                         type: this.type == "income" ? 1 : this.type == "outcome" ? 0 : null,
                         cash_id: this.cashId,
                         orig_amount: roundedAmount,
@@ -592,9 +612,15 @@ export default {
                         client_id: this.selectedClient?.id,
                         order_id: this.orderId,
                         is_debt: this.isDebt,
-                        source_type: this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : null),
-                        source_id: this.selectedSource?.id || this.orderId || null
-                    });
+                    };
+                    
+                    const sourceType = this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : null);
+                    if (sourceType) {
+                        requestData.source_type = sourceType;
+                        requestData.source_id = this.selectedSource?.id || this.orderId || null;
+                    }
+                    
+                    var resp = await TransactionController.storeItem(requestData);
                 }
                 if (resp.message) {
                     // Проверяем, нужно ли закрыть заказ (только для модалки доплаты)

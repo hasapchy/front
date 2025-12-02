@@ -765,6 +765,7 @@ export default {
   present: 'häzirki wagta çenli',
   bonus: 'Premiýa tabşyr',
   penalty: 'Jäza çykar',
+  advance: 'Awans ber',
   accrueSalary: 'Mukafat hasapla',
   paySalary: 'Mukafat töle',
   salaryDifferenceHelpTitle: 'Tapawudy näme?',

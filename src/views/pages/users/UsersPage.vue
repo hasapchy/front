@@ -100,8 +100,8 @@ export default {
                 { name: 'companies', label: 'companies' },
                 { name: 'isActive', label: 'active', size: 80 },
                 { name: 'isAdmin', label: 'admin', size: 80 },
-                { name: 'lastLoginAt', label: 'lastLogin' },
-                { name: 'createdAt', label: 'created' },
+                { name: 'lastLoginAt', label: 'lastLogin', visible: false },
+                { name: 'createdAt', label: 'created', visible: false },
             ]
         };
     },

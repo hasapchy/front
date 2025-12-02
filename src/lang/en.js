@@ -448,6 +448,7 @@ export default {
     present: 'to present',
     bonus: 'Add Bonus',
     penalty: 'Issue Penalty',
+    advance: 'Issue Advance',
     accrueSalary: 'Accrue Salary',
     paySalary: 'Pay Salary',
     salaryDifferenceHelpTitle: 'What\'s the difference?',

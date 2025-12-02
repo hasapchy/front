@@ -87,27 +87,34 @@ export default {
             if (typeof client.fullName === 'function') {
                 return client.fullName();
             }
-            const contactPerson = client.contactPerson || client.contact_person;
+            const clientType = client.clientType || client.client_type;
             const firstName = client.firstName || client.first_name || '';
             const lastName = client.lastName || client.last_name || '';
+            const patronymic = client.patronymic || '';
+            const position = client.position || '';
+            const contactPerson = client.contactPerson || client.contact_person || '';
             
-            // Если нет имени и фамилии, но есть contactPerson
-            if (!firstName && !lastName && contactPerson) {
-                return contactPerson;
+            if (clientType === 'company') {
+                const baseName = [firstName, lastName].filter(Boolean).join(' ').trim();
+                if (!baseName && !contactPerson) return '';
+                if (!baseName) return contactPerson;
+                
+                let result = baseName;
+                if (position) {
+                    result += ` (${position})`;
+                }
+                if (contactPerson && contactPerson !== baseName) {
+                    result += ` (${contactPerson})`;
+                }
+                return result;
+            } else {
+                const baseName = [firstName, lastName].filter(Boolean).join(' ').trim();
+                if (!baseName) return '';
+                if (position) {
+                    return `${baseName} (${position})`;
+                }
+                return baseName;
             }
-            
-            // Если есть только имя
-            if (firstName && !lastName) {
-                return contactPerson ? `${firstName} (${contactPerson})` : firstName;
-            }
-            
-            // Если есть имя и фамилия
-            if (firstName && lastName) {
-                return contactPerson ? `${firstName} ${lastName} (${contactPerson})` : `${firstName} ${lastName}`;
-            }
-            
-            // Если ничего нет, возвращаем пустую строку
-            return '';
         },
         clientPhones() {
             const client = this.localSelectedClient || this.selectedClient;

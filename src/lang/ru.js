@@ -880,6 +880,7 @@ export default {
   present: 'по н.в.',
   bonus: 'Начислить премию',
   penalty: 'Выписать штраф',
+  advance: 'Выдать аванс',
   accrueSalary: 'Начислить зарплату',
   paySalary: 'Выплатить зарплату',
   salaryDifferenceHelpTitle: 'В чем разница?',

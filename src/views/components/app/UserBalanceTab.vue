@@ -31,6 +31,13 @@
                     :disabled="buttonsDisabled">
                     {{ $t('penalty') || 'Выписать штраф' }}
                 </PrimaryButton>
+                <PrimaryButton 
+                    icon="fas fa-money-check-alt" 
+                    :onclick="handleAdvance"
+                    :is-success="true"
+                    :disabled="buttonsDisabled">
+                    {{ $t('advance') || 'Выдать аванс' }}
+                </PrimaryButton>
             </div>
         </div>
 
@@ -206,6 +213,8 @@ export default {
                 return TRANSACTION_FORM_PRESETS.employeeSalaryAccrual;
             } else if (this.transactionModalType === 'salaryPayment') {
                 return TRANSACTION_FORM_PRESETS.employeeSalaryPayment;
+            } else if (this.transactionModalType === 'advance') {
+                return TRANSACTION_FORM_PRESETS.employeeAdvance;
             }
             return {};
         },
@@ -417,6 +426,9 @@ export default {
         async handleSalaryPayment() {
             await this.openTransactionModal('salaryPayment');
         },
+        async handleAdvance() {
+            await this.openTransactionModal('advance');
+        },
         getTransactionModalHeader() {
             if (this.transactionModalType === 'bonus') {
                 return this.$t('bonus') || 'Премия';
@@ -426,6 +438,8 @@ export default {
                 return this.$t('accrueSalary') || 'Начисление зарплаты';
             } else if (this.transactionModalType === 'salaryPayment') {
                 return this.$t('paySalary') || 'Выплата зарплаты';
+            } else if (this.transactionModalType === 'advance') {
+                return this.$t('advance') || 'Аванс';
             }
             return '';
         },
