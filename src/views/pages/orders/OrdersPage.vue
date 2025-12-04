@@ -105,14 +105,15 @@
                         </template>
 
                         <template #right>
-                            <OrderPaymentFilter 
+                            <!-- Временно отключена логика оплаты для производительности -->
+                            <!-- <OrderPaymentFilter 
                                 v-model="paidOrdersFilter"
                                 :orders="data ? data.items : []"
                                 :statusId="4"
                                 :currencySymbol="currencySymbol"
                                 :unpaidOrdersTotal="unpaidOrdersTotal"
                                 @change="handlePaidOrdersFilterChange"
-                            />
+                            /> -->
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
                                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
@@ -236,14 +237,15 @@
                     </div>
                 </template>
                 <template #right>
-                    <OrderPaymentFilter 
+                    <!-- Временно отключена логика оплаты для производительности -->
+                    <!-- <OrderPaymentFilter 
                         v-model="paidOrdersFilter"
                         :orders="data ? data.items : []"
                         :statusId="4"
                         :currencySymbol="currencySymbol"
                         :unpaidOrdersTotal="unpaidOrdersTotal"
                         @change="handlePaidOrdersFilterChange"
-                    />
+                    /> -->
                 </template>
             </TableControlsBar>
             
@@ -411,7 +413,8 @@ export default {
                 { name: "note", label: 'note', html: true },
                 { name: "description", label: 'description' },
                 { name: "totalPrice", label: 'orderAmount' },
-                { name: "paymentStatus", label: 'paymentStatus', html: true },
+                // Временно отключена логика оплаты для производительности
+                // { name: "paymentStatus", label: 'paymentStatus', html: true },
             ],
             dateFilter: 'all_time',
             startDate: null,
@@ -512,61 +515,63 @@ export default {
                     return i.description || "";
                 case "projectName":
                     return i.projectName || "-";
-                case "paymentStatus":
-                    const statusText = typeof i.getPaymentStatusText === 'function' 
-                        ? i.getPaymentStatusText() 
-                        : (i.paymentStatusText || this.getPaymentStatusText(i));
-                    const statusClass = typeof i.getPaymentStatusClass === 'function' 
-                        ? i.getPaymentStatusClass() 
-                        : (i.paymentStatusClass || this.getPaymentStatusClass(i));
-                    const statusIcon = typeof i.getPaymentStatusIcon === 'function' 
-                        ? i.getPaymentStatusIcon() 
-                        : (i.paymentStatusIcon || this.getPaymentStatusIcon(i));
-                    return `<div class="flex items-center space-x-1">
-                        <i class="${statusIcon} ${statusClass}"></i>
-                        <span class="${statusClass}">${statusText}</span>
-                    </div>`;
+                // Временно отключена логика оплаты для производительности
+                // case "paymentStatus":
+                //     const statusText = typeof i.getPaymentStatusText === 'function' 
+                //         ? i.getPaymentStatusText() 
+                //         : (i.paymentStatusText || this.getPaymentStatusText(i));
+                //     const statusClass = typeof i.getPaymentStatusClass === 'function' 
+                //         ? i.getPaymentStatusClass() 
+                //         : (i.paymentStatusClass || this.getPaymentStatusClass(i));
+                //     const statusIcon = typeof i.getPaymentStatusIcon === 'function' 
+                //         ? i.getPaymentStatusIcon() 
+                //         : (i.paymentStatusIcon || this.getPaymentStatusIcon(i));
+                //     return `<div class="flex items-center space-x-1">
+                //         <i class="${statusIcon} ${statusClass}"></i>
+                //         <span class="${statusClass}">${statusText}</span>
+                //     </div>`;
 
                 default:
                     return i[c];
             }
         },
-        getPaymentStatusText(order) {
-            const paidAmount = parseFloat(order?.paidAmount || 0);
-            const totalPrice = parseFloat(order?.totalPrice || 0);
-            
-            if (paidAmount <= 0) {
-                return 'Не оплачено';
-            } else if (paidAmount < totalPrice) {
-                return 'Частично оплачено';
-            } else {
-                return 'Оплачено';
-            }
-        },
-        getPaymentStatusClass(order) {
-            const paidAmount = parseFloat(order?.paidAmount || 0);
-            const totalPrice = parseFloat(order?.totalPrice || 0);
-            
-            if (paidAmount <= 0) {
-                return 'text-red-600';
-            } else if (paidAmount < totalPrice) {
-                return 'text-yellow-600';
-            } else {
-                return 'text-green-600';
-            }
-        },
-        getPaymentStatusIcon(order) {
-            const paidAmount = parseFloat(order?.paidAmount || 0);
-            const totalPrice = parseFloat(order?.totalPrice || 0);
-            
-            if (paidAmount <= 0) {
-                return 'fas fa-times-circle';
-            } else if (paidAmount < totalPrice) {
-                return 'fas fa-exclamation-circle';
-            } else {
-                return 'fas fa-check-circle';
-            }
-        },
+        // Временно отключена логика оплаты для производительности
+        // getPaymentStatusText(order) {
+        //     const paidAmount = parseFloat(order?.paidAmount || 0);
+        //     const totalPrice = parseFloat(order?.totalPrice || 0);
+        //     
+        //     if (paidAmount <= 0) {
+        //         return 'Не оплачено';
+        //     } else if (paidAmount < totalPrice) {
+        //         return 'Частично оплачено';
+        //     } else {
+        //         return 'Оплачено';
+        //     }
+        // },
+        // getPaymentStatusClass(order) {
+        //     const paidAmount = parseFloat(order?.paidAmount || 0);
+        //     const totalPrice = parseFloat(order?.totalPrice || 0);
+        //     
+        //     if (paidAmount <= 0) {
+        //         return 'text-red-600';
+        //     } else if (paidAmount < totalPrice) {
+        //         return 'text-yellow-600';
+        //     } else {
+        //         return 'text-green-600';
+        //     }
+        // },
+        // getPaymentStatusIcon(order) {
+        //     const paidAmount = parseFloat(order?.paidAmount || 0);
+        //     const totalPrice = parseFloat(order?.totalPrice || 0);
+        //     
+        //     if (paidAmount <= 0) {
+        //         return 'fas fa-times-circle';
+        //     } else if (paidAmount < totalPrice) {
+        //         return 'fas fa-exclamation-circle';
+        //     } else {
+        //         return 'fas fa-check-circle';
+        //     }
+        // },
 
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
@@ -607,7 +612,8 @@ export default {
                     this.projectFilter,
                     this.clientFilter,
                     perPage,
-                    this.paidOrdersFilter
+                    // Временно отключена логика оплаты для производительности
+                    false // this.paidOrdersFilter
                 );
 
                 this.data = response;

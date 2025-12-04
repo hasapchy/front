@@ -97,12 +97,13 @@
                     {{ formatTotalPrice() }}
                 </span>
             </div>
-            <div class="flex items-center space-x-1">
+            <!-- Временно отключена логика оплаты для производительности -->
+            <!-- <div class="flex items-center space-x-1">
                 <i :class="`${getPaymentStatusIcon()} ${getPaymentStatusClass()}`"></i>
                 <span class="text-xs font-medium" :class="getPaymentStatusClass()">
                     {{ getPaymentStatusText() }}
                 </span>
-            </div>
+            </div> -->
         </div>
     </div>
 </template>
