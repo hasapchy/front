@@ -183,6 +183,14 @@ export default {
         },
         handleCompanyChanged() {
             this.fetchItems();
+        },
+        async onAfterSaved() {
+            await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            await this.$store.dispatch('loadClients');
+        },
+        async onAfterDeleted() {
+            await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            await this.$store.dispatch('loadClients');
         }
     },
     computed: {

@@ -408,11 +408,15 @@ export default {
                 isDanger: false
             });
         },
-        onAfterSaved() {
+        async onAfterSaved() {
             this.updateBalace();
+            await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            await this.$store.dispatch('loadClients');
         },
-        onAfterDeleted() {
+        async onAfterDeleted() {
             this.updateBalace();
+            await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            await this.$store.dispatch('loadClients');
         },
         handleCopyTransaction(copiedTransaction) {
             // Закрываем текущее модальное окно
@@ -447,7 +451,9 @@ export default {
 
             if (deletedCount > 0) {
                 this.showNotification?.(`Удалено ${deletedCount} элементов`);
-                this.updateBalace(); // Обновляем баланс касс после пакетного удаления
+                this.updateBalace();
+                await this.$store.dispatch('invalidateCache', { type: 'clients' });
+                await this.$store.dispatch('loadClients');
             }
 
             if (errors.length > 0) {

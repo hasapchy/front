@@ -579,10 +579,16 @@ export default {
             }
         },
 
-        onAfterSaved() {
+        async onAfterSaved() {
             if (this.$refs.timelinePanel && !this.timelineCollapsed) {
                 this.$refs.timelinePanel.refreshTimeline();
             }
+            await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            await this.$store.dispatch('loadClients');
+        },
+        async onAfterDeleted() {
+            await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            await this.$store.dispatch('loadClients');
         },
 
         
@@ -605,6 +611,9 @@ export default {
                 
                 await this.fetchItems(this.data.currentPage, true);
                 this.showNotification(this.$t('statusUpdated'), "", false);
+                
+                await this.$store.dispatch('invalidateCache', { type: 'clients' });
+                await this.$store.dispatch('loadClients');
                 
                 if (this.editingItem && ids.includes(this.editingItem.id) && this.$refs.timelinePanel && !this.timelineCollapsed) {
                     this.$refs.timelinePanel.refreshTimeline();

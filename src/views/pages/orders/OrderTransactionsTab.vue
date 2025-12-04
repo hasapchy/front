@@ -150,20 +150,15 @@ export default {
             this.transactionModal = false;
             this.fetchTransactions();
             this.fetchPaidTotal();
-            // Кэш клиентов инвалидируется автоматически через CacheInvalidator.onCreate('transactions')
-            // Перезагружаем клиентов в store для обновления баланса
-            if (this.client?.id) {
-                await this.$store.dispatch('loadClients');
-            }
+            await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            await this.$store.dispatch('loadClients');
         },
         async handleTransactionDeleted() {
             this.transactionModal = false;
             this.fetchTransactions();
             this.fetchPaidTotal();
-            // Перезагружаем клиентов в store для обновления баланса
-            if (this.client?.id) {
-                await this.$store.dispatch('loadClients');
-            }
+            await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            await this.$store.dispatch('loadClients');
         },
         handleTransactionError(error) {
             let message;

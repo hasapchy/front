@@ -310,9 +310,11 @@ export default {
             this.selectedEntity = null;
             this.entityLoading = false;
         },
-        onEntitySaved() {
+        async onEntitySaved() {
             this.closeEntityModal();
             if (this.editingItem && this.editingItem.id) {
+                await this.$store.dispatch('invalidateCache', { type: 'clients' });
+                await this.$store.dispatch('loadClients');
                 this.lastFetchedFilter = null;
                 this.fetchData();
             }
@@ -320,9 +322,11 @@ export default {
         onEntitySavedError(error) {
             console.error('Error saving entity:', error);
         },
-        onEntityDeleted() {
+        async onEntityDeleted() {
             this.closeEntityModal();
             if (this.editingItem && this.editingItem.id) {
+                await this.$store.dispatch('invalidateCache', { type: 'clients' });
+                await this.$store.dispatch('loadClients');
                 this.lastFetchedFilter = null;
                 this.fetchData();
             }

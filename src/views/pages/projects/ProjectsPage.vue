@@ -344,10 +344,14 @@ export default {
             }
         },
         async handleCacheInvalidate({ type }) {
-            // Перезагружаем статусы проектов при инвалидации их кэша
             if (type === 'projectStatuses') {
                 console.log('[ProjectsPage] Перезагрузка статусов проектов из-за инвалидации кэша');
                 await this.fetchProjectStatuses();
+            } else if (type === 'projects') {
+                await this.$store.dispatch('loadProjects');
+                if (this.fetchItems) {
+                    await this.fetchItems(this.data?.currentPage || 1, true);
+                }
             }
         },
         handlePerPageChange(newPerPage) {
@@ -403,6 +407,8 @@ export default {
             this.loading = true;
             try {
                 await ProjectController.batchUpdateStatus({ ids, status_id: statusId });
+                await this.$store.dispatch('invalidateCache', { type: 'projects' });
+                await this.$store.dispatch('loadProjects');
                 await this.fetchItems(this.data.currentPage, true);
                 this.showNotification(this.$t('statusUpdated'), "", false);
                 this.selectedIds = []; // Очищаем выбранные элементы
@@ -490,8 +496,10 @@ export default {
                 promises.push(promise);
             });
             
-            // Показываем уведомление после всех обновлений
-            Promise.all(promises).then(() => {
+            // Показываем уведомление после всех обновлений и перезагружаем проекты в store
+            Promise.all(promises).then(async () => {
+                await this.$store.dispatch('invalidateCache', { type: 'projects' });
+                await this.$store.dispatch('loadProjects');
                 this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
             });
         }, 500),

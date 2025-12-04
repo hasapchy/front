@@ -294,6 +294,8 @@ export default {
             this.entityModalOpen = false;
             this.isAdjustmentMode = false;
             if (this.editingItem && this.editingItem.id) {
+                await this.$store.dispatch('invalidateCache', { type: 'clients' });
+                await this.$store.dispatch('loadClients');
                 await this.updateClientData();
                 this.forceRefresh = true;
                 await this.fetchBalanceHistory();
@@ -307,6 +309,8 @@ export default {
             this.entityModalOpen = false;
             this.isAdjustmentMode = false;
             if (this.editingItem && this.editingItem.id) {
+                await this.$store.dispatch('invalidateCache', { type: 'clients' });
+                await this.$store.dispatch('loadClients');
                 await this.updateClientData();
                 this.forceRefresh = true;
                 await this.fetchBalanceHistory();

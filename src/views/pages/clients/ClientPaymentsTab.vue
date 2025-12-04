@@ -286,6 +286,8 @@ export default {
         async onEntitySaved() {
             this.entityModalOpen = false;
             if (this.editingItem && this.editingItem.id) {
+                await this.$store.dispatch('invalidateCache', { type: 'clients' });
+                await this.$store.dispatch('loadClients');
                 await this.updateClientData();
                 this.forceRefresh = true;
                 await this.fetchPaymentsHistory();
@@ -298,6 +300,8 @@ export default {
         async onEntityDeleted() {
             this.entityModalOpen = false;
             if (this.editingItem && this.editingItem.id) {
+                await this.$store.dispatch('invalidateCache', { type: 'clients' });
+                await this.$store.dispatch('loadClients');
                 await this.updateClientData();
                 this.forceRefresh = true;
                 await this.fetchPaymentsHistory();

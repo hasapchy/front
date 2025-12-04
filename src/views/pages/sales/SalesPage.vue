@@ -257,6 +257,14 @@ export default {
             if (this.startDate !== null && this.startDate !== '') count++;
             if (this.endDate !== null && this.endDate !== '') count++;
             return count;
+        },
+        async onAfterSaved() {
+            await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            await this.$store.dispatch('loadClients');
+        },
+        async onAfterDeleted() {
+            await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            await this.$store.dispatch('loadClients');
         }
     },
     computed: {

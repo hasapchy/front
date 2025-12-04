@@ -45,7 +45,7 @@
 
             <div>
                 <div class="flex justify-between items-center mb-2">
-                    <label class="required">{{ $t('assignUsers') }}</label>
+                    <label>{{ $t('assignUsers') }}</label>
                     <div v-if="users != null && users.length > 0">
                         <PrimaryButton :onclick="toggleAllUsers" :is-info="!allUsersSelected"
                             :is-light="allUsersSelected"
