@@ -67,7 +67,7 @@ export const CACHE_CONFIG = {
   dependencies: {
     sales: ["clients", "projects"],
     orders: ["clients", "projects"],
-    transactions: ["clients", "projects", "cashRegisters"],
+    transactions: ["clients", "projects", "cashRegisters", "orders"],
     receipts: ["clients"],
     writeoffs: [],
     movements: [],

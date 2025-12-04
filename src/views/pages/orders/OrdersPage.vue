@@ -411,6 +411,7 @@ export default {
                 { name: "note", label: 'note', html: true },
                 { name: "description", label: 'description' },
                 { name: "totalPrice", label: 'orderAmount' },
+                { name: "paymentStatus", label: 'paymentStatus', html: true },
             ],
             dateFilter: 'all_time',
             startDate: null,
@@ -511,9 +512,59 @@ export default {
                     return i.description || "";
                 case "projectName":
                     return i.projectName || "-";
+                case "paymentStatus":
+                    const statusText = typeof i.getPaymentStatusText === 'function' 
+                        ? i.getPaymentStatusText() 
+                        : (i.paymentStatusText || this.getPaymentStatusText(i));
+                    const statusClass = typeof i.getPaymentStatusClass === 'function' 
+                        ? i.getPaymentStatusClass() 
+                        : (i.paymentStatusClass || this.getPaymentStatusClass(i));
+                    const statusIcon = typeof i.getPaymentStatusIcon === 'function' 
+                        ? i.getPaymentStatusIcon() 
+                        : (i.paymentStatusIcon || this.getPaymentStatusIcon(i));
+                    return `<div class="flex items-center space-x-1">
+                        <i class="${statusIcon} ${statusClass}"></i>
+                        <span class="${statusClass}">${statusText}</span>
+                    </div>`;
 
                 default:
                     return i[c];
+            }
+        },
+        getPaymentStatusText(order) {
+            const paidAmount = parseFloat(order?.paidAmount || 0);
+            const totalPrice = parseFloat(order?.totalPrice || 0);
+            
+            if (paidAmount <= 0) {
+                return 'Не оплачено';
+            } else if (paidAmount < totalPrice) {
+                return 'Частично оплачено';
+            } else {
+                return 'Оплачено';
+            }
+        },
+        getPaymentStatusClass(order) {
+            const paidAmount = parseFloat(order?.paidAmount || 0);
+            const totalPrice = parseFloat(order?.totalPrice || 0);
+            
+            if (paidAmount <= 0) {
+                return 'text-red-600';
+            } else if (paidAmount < totalPrice) {
+                return 'text-yellow-600';
+            } else {
+                return 'text-green-600';
+            }
+        },
+        getPaymentStatusIcon(order) {
+            const paidAmount = parseFloat(order?.paidAmount || 0);
+            const totalPrice = parseFloat(order?.totalPrice || 0);
+            
+            if (paidAmount <= 0) {
+                return 'fas fa-times-circle';
+            } else if (paidAmount < totalPrice) {
+                return 'fas fa-exclamation-circle';
+            } else {
+                return 'fas fa-check-circle';
             }
         },
 
@@ -745,11 +796,11 @@ export default {
             this.showNotification(this.$t('error'), error, true);
         },
 
-        handleTransactionSaved() {
+        async handleTransactionSaved() {
             this.showNotification(this.$t('success'), this.$t('transactionSaved'), false);
             this.transactionModal = false;
             this.editingTransaction = null;
-            this.fetchItems(this.data.currentPage, true);
+            await this.fetchItems(this.data.currentPage, true);
         },
 
         async openTransactionFromTimeline(transactionId) {
@@ -762,22 +813,22 @@ export default {
             }
         },
 
-        handleTransactionViewSaved() {
+        async handleTransactionViewSaved() {
             this.viewTransactionModal = false;
             this.editingTransactionItem = null;
             if (this.$refs.timelinePanel && !this.timelineCollapsed) {
                 this.$refs.timelinePanel.refreshTimeline();
             }
-            this.fetchItems(this.data.currentPage, true);
+            await this.fetchItems(this.data.currentPage, true);
         },
 
-        handleTransactionViewDeleted() {
+        async handleTransactionViewDeleted() {
             this.viewTransactionModal = false;
             this.editingTransactionItem = null;
             if (this.$refs.timelinePanel && !this.timelineCollapsed) {
                 this.$refs.timelinePanel.refreshTimeline();
             }
-            this.fetchItems(this.data.currentPage, true);
+            await this.fetchItems(this.data.currentPage, true);
         },
 
         handleTransactionSavedError(error) {

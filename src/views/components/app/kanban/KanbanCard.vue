@@ -43,17 +43,16 @@
                 <span>{{ formatDate(order.date) }}</span>
                 <span class="text-gray-400">•</span>
                 <div class="flex items-center space-x-1">
-                    <!-- Фотография пользователя -->
                     <div class="w-4 h-4 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                         <img 
-                            v-if="getUserPhotoSrc({ photo: order.userPhoto })" 
-                            :src="getUserPhotoSrc({ photo: order.userPhoto })" 
-                            :alt="order.userName || $t('notSpecified')"
+                            v-if="creatorPhoto" 
+                            :src="creatorPhoto" 
+                            :alt="creatorName"
                             class="w-full h-full object-cover"
                         >
                         <i v-else class="fas fa-user text-gray-400 text-xs"></i>
                     </div>
-                    <span>{{ order.userName || $t('notSpecified') }}</span>
+                    <span>{{ creatorName }}</span>
                 </div>
             </div>
         </div>
@@ -89,13 +88,19 @@
 
         <!-- Сумма заказа (только для заказов) -->
         <div v-if="!isProjectMode" class="mt-3 pt-3 border-t border-gray-100">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center space-x-1">
                     <i class="fas fa-money-bill-wave text-green-600 text-xs"></i>
                     <span class="text-xs text-gray-500">{{ $t('total') }}:</span>
                 </div>
                 <span class="text-sm font-bold text-green-700">
                     {{ formatTotalPrice() }}
+                </span>
+            </div>
+            <div class="flex items-center space-x-1">
+                <i :class="`${getPaymentStatusIcon()} ${getPaymentStatusClass()}`"></i>
+                <span class="text-xs font-medium" :class="getPaymentStatusClass()">
+                    {{ getPaymentStatusText() }}
                 </span>
             </div>
         </div>
@@ -125,6 +130,15 @@ export default {
         }
     },
     emits: ['dblclick', 'select-toggle'],
+    computed: {
+        creatorName() {
+            return this.order?.userName || this.order?.creator?.name || this.$t('notSpecified');
+        },
+        creatorPhoto() {
+            const photo = this.order?.userPhoto || this.order?.creator?.photo || null;
+            return photo ? this.getUserPhotoSrc({ photo }) : null;
+        }
+    },
     methods: {
         handleDoubleClick() {
             this.$emit('dblclick', this.order);
@@ -192,6 +206,63 @@ export default {
             } catch (e) {
                 const symbol = this.order?.currency?.symbol || this.order?.currencySymbol || '';
                 return `${this.order?.budget ?? 0} ${symbol}`.trim();
+            }
+        },
+        getPaymentStatusText() {
+            if (typeof this.order?.getPaymentStatusText === 'function') {
+                return this.order.getPaymentStatusText();
+            }
+            const paidAmount = parseFloat(this.order?.paidAmount || 0);
+            const totalPrice = parseFloat(this.order?.totalPrice || 0);
+            const paymentStatus = this.order?.paymentStatus;
+            
+            if (paymentStatus) {
+                switch (paymentStatus) {
+                    case 'unpaid':
+                        return 'Не оплачено';
+                    case 'partially_paid':
+                        return 'Частично оплачено';
+                    case 'paid':
+                        return 'Оплачено';
+                }
+            }
+            
+            if (paidAmount <= 0) {
+                return 'Не оплачено';
+            } else if (paidAmount < totalPrice) {
+                return 'Частично оплачено';
+            } else {
+                return 'Оплачено';
+            }
+        },
+        getPaymentStatusClass() {
+            if (typeof this.order?.getPaymentStatusClass === 'function') {
+                return this.order.getPaymentStatusClass();
+            }
+            const paidAmount = parseFloat(this.order?.paidAmount || 0);
+            const totalPrice = parseFloat(this.order?.totalPrice || 0);
+            
+            if (paidAmount <= 0) {
+                return 'text-red-600';
+            } else if (paidAmount < totalPrice) {
+                return 'text-yellow-600';
+            } else {
+                return 'text-green-600';
+            }
+        },
+        getPaymentStatusIcon() {
+            if (typeof this.order?.getPaymentStatusIcon === 'function') {
+                return this.order.getPaymentStatusIcon();
+            }
+            const paidAmount = parseFloat(this.order?.paidAmount || 0);
+            const totalPrice = parseFloat(this.order?.totalPrice || 0);
+            
+            if (paidAmount <= 0) {
+                return 'fas fa-times-circle';
+            } else if (paidAmount < totalPrice) {
+                return 'fas fa-exclamation-circle';
+            } else {
+                return 'fas fa-check-circle';
             }
         }
     }

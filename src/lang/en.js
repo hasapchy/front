@@ -431,6 +431,14 @@ export default {
     errorDeletingProjectStatus: 'Error deleting project status',
     errorGettingProjectStatuses: 'Error getting project statuses list',
     
+    // Order Statuses
+    statusName: 'Status name',
+    statusCategory: 'Status category',
+    statusCategoryName: 'Status category name',
+    isActive: 'Active',
+    protectedStatusCannotBeDisabled: 'This status cannot be disabled',
+    statusCannotBeDisabledWithOrders: 'Cannot disable status that has orders',
+    
     // Salaries
     salary: 'Salary',
     salaries: 'Salaries',
