@@ -105,15 +105,14 @@
                         </template>
 
                         <template #right>
-                            <!-- Временно отключена логика оплаты для производительности -->
-                            <!-- <OrderPaymentFilter 
+                            <OrderPaymentFilter 
                                 v-model="paidOrdersFilter"
                                 :orders="data ? data.items : []"
                                 :statusId="4"
                                 :currencySymbol="currencySymbol"
                                 :unpaidOrdersTotal="unpaidOrdersTotal"
                                 @change="handlePaidOrdersFilterChange"
-                            /> -->
+                            />
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
                                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
@@ -237,15 +236,14 @@
                     </div>
                 </template>
                 <template #right>
-                    <!-- Временно отключена логика оплаты для производительности -->
-                    <!-- <OrderPaymentFilter 
+                    <OrderPaymentFilter 
                         v-model="paidOrdersFilter"
                         :orders="data ? data.items : []"
                         :statusId="4"
                         :currencySymbol="currencySymbol"
                         :unpaidOrdersTotal="unpaidOrdersTotal"
                         @change="handlePaidOrdersFilterChange"
-                    /> -->
+                    />
                 </template>
             </TableControlsBar>
             
@@ -345,7 +343,6 @@ import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import TransactionController from "@/api/TransactionController";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
-import ProductsListCell from "@/views/components/app/buttons/ProductsListCell.vue";
 import OrderStatusController from "@/api/OrderStatusController";
 import ProjectController from "@/api/ProjectController";
 import ClientController from "@/api/ClientController";
@@ -402,19 +399,10 @@ export default {
                 { name: "dateUser", label: 'dateUser' },
                 { name: "client", label: 'client', component: markRaw(ClientButtonCell), props: (i) => ({ client: i.client, searchQuery: this.searchQuery }), },
                 { name: "projectName", label: 'project' },
-                {
-                    name: "products",
-                    label: 'products',
-                    component: markRaw(ProductsListCell),
-                    props: (item) => ({
-                        products: item.products || []
-                    })
-                },
+                { name: "products", label: 'products', html: true },
                 { name: "note", label: 'note', html: true },
                 { name: "description", label: 'description' },
                 { name: "totalPrice", label: 'orderAmount' },
-                // Временно отключена логика оплаты для производительности
-                // { name: "paymentStatus", label: 'paymentStatus', html: true },
             ],
             dateFilter: 'all_time',
             startDate: null,
@@ -487,11 +475,10 @@ export default {
             const search = this.searchQuery;
             
             switch (c) {
+                case "products":
+                    return i.productsHtmlList();
                 case "dateUser":
                     return `${i.formatDate()} / ${i.userName}`;
-                case "products":
-                    // Возвращаем количество продуктов для сортировки (отображение через компонент ProductsListCell)
-                    return (i.products || []).length;
                 case "client":
                     if (!i.client) return '<span class="text-gray-500">' + this.$t('notSpecified') + '</span>';
                     const name = i.client.fullName();
@@ -515,63 +502,11 @@ export default {
                     return i.description || "";
                 case "projectName":
                     return i.projectName || "-";
-                // Временно отключена логика оплаты для производительности
-                // case "paymentStatus":
-                //     const statusText = typeof i.getPaymentStatusText === 'function' 
-                //         ? i.getPaymentStatusText() 
-                //         : (i.paymentStatusText || this.getPaymentStatusText(i));
-                //     const statusClass = typeof i.getPaymentStatusClass === 'function' 
-                //         ? i.getPaymentStatusClass() 
-                //         : (i.paymentStatusClass || this.getPaymentStatusClass(i));
-                //     const statusIcon = typeof i.getPaymentStatusIcon === 'function' 
-                //         ? i.getPaymentStatusIcon() 
-                //         : (i.paymentStatusIcon || this.getPaymentStatusIcon(i));
-                //     return `<div class="flex items-center space-x-1">
-                //         <i class="${statusIcon} ${statusClass}"></i>
-                //         <span class="${statusClass}">${statusText}</span>
-                //     </div>`;
 
                 default:
                     return i[c];
             }
         },
-        // Временно отключена логика оплаты для производительности
-        // getPaymentStatusText(order) {
-        //     const paidAmount = parseFloat(order?.paidAmount || 0);
-        //     const totalPrice = parseFloat(order?.totalPrice || 0);
-        //     
-        //     if (paidAmount <= 0) {
-        //         return 'Не оплачено';
-        //     } else if (paidAmount < totalPrice) {
-        //         return 'Частично оплачено';
-        //     } else {
-        //         return 'Оплачено';
-        //     }
-        // },
-        // getPaymentStatusClass(order) {
-        //     const paidAmount = parseFloat(order?.paidAmount || 0);
-        //     const totalPrice = parseFloat(order?.totalPrice || 0);
-        //     
-        //     if (paidAmount <= 0) {
-        //         return 'text-red-600';
-        //     } else if (paidAmount < totalPrice) {
-        //         return 'text-yellow-600';
-        //     } else {
-        //         return 'text-green-600';
-        //     }
-        // },
-        // getPaymentStatusIcon(order) {
-        //     const paidAmount = parseFloat(order?.paidAmount || 0);
-        //     const totalPrice = parseFloat(order?.totalPrice || 0);
-        //     
-        //     if (paidAmount <= 0) {
-        //         return 'fas fa-times-circle';
-        //     } else if (paidAmount < totalPrice) {
-        //         return 'fas fa-exclamation-circle';
-        //     } else {
-        //         return 'fas fa-check-circle';
-        //     }
-        // },
 
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
@@ -612,8 +547,7 @@ export default {
                     this.projectFilter,
                     this.clientFilter,
                     perPage,
-                    // Временно отключена логика оплаты для производительности
-                    false // this.paidOrdersFilter
+                    this.paidOrdersFilter
                 );
 
                 this.data = response;
@@ -636,16 +570,10 @@ export default {
             }
         },
 
-        async onAfterSaved() {
+        onAfterSaved() {
             if (this.$refs.timelinePanel && !this.timelineCollapsed) {
                 this.$refs.timelinePanel.refreshTimeline();
             }
-            await this.$store.dispatch('invalidateCache', { type: 'clients' });
-            await this.$store.dispatch('loadClients');
-        },
-        async onAfterDeleted() {
-            await this.$store.dispatch('invalidateCache', { type: 'clients' });
-            await this.$store.dispatch('loadClients');
         },
 
         
@@ -668,9 +596,6 @@ export default {
                 
                 await this.fetchItems(this.data.currentPage, true);
                 this.showNotification(this.$t('statusUpdated'), "", false);
-                
-                await this.$store.dispatch('invalidateCache', { type: 'clients' });
-                await this.$store.dispatch('loadClients');
                 
                 if (this.editingItem && ids.includes(this.editingItem.id) && this.$refs.timelinePanel && !this.timelineCollapsed) {
                     this.$refs.timelinePanel.refreshTimeline();
@@ -802,11 +727,11 @@ export default {
             this.showNotification(this.$t('error'), error, true);
         },
 
-        async handleTransactionSaved() {
+        handleTransactionSaved() {
             this.showNotification(this.$t('success'), this.$t('transactionSaved'), false);
             this.transactionModal = false;
             this.editingTransaction = null;
-            await this.fetchItems(this.data.currentPage, true);
+            this.fetchItems(this.data.currentPage, true);
         },
 
         async openTransactionFromTimeline(transactionId) {
@@ -819,22 +744,22 @@ export default {
             }
         },
 
-        async handleTransactionViewSaved() {
+        handleTransactionViewSaved() {
             this.viewTransactionModal = false;
             this.editingTransactionItem = null;
             if (this.$refs.timelinePanel && !this.timelineCollapsed) {
                 this.$refs.timelinePanel.refreshTimeline();
             }
-            await this.fetchItems(this.data.currentPage, true);
+            this.fetchItems(this.data.currentPage, true);
         },
 
-        async handleTransactionViewDeleted() {
+        handleTransactionViewDeleted() {
             this.viewTransactionModal = false;
             this.editingTransactionItem = null;
             if (this.$refs.timelinePanel && !this.timelineCollapsed) {
                 this.$refs.timelinePanel.refreshTimeline();
             }
-            await this.fetchItems(this.data.currentPage, true);
+            this.fetchItems(this.data.currentPage, true);
         },
 
         handleTransactionSavedError(error) {
