@@ -414,7 +414,7 @@ export default {
   },
   methods: {
     setCategoryByUser() {
-      // Хардкод соответствия: юзер 6 = категория 2, 7 = 3, 8 = 14
+      // Хардкод соответствия: юзер 6 = категория 2, 7 = 3, 8 = 14, 12 = 14
       try {
         const userStr = localStorage.getItem('user');
         if (userStr) {
@@ -424,7 +424,8 @@ export default {
           const basementCategoryMap = {
             6: 2,
             7: 3,
-            8: 14
+            8: 14,
+            12: 14
           };
           
           this.form.category_id = basementCategoryMap[userId] || null;

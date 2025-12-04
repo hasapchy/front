@@ -2,7 +2,17 @@
     <div class="mb-4">
         <transition name="fade" mode="out-in">
             <div v-if="data && !loading && sortedBalanceCards.length > 0" key="table">
-                <div class="overflow-x-auto">
+                <div class="mb-2 flex items-center justify-end gap-2">
+                    <button
+                        @click="toggleRowsCount"
+                        class="text-xs border rounded px-3 py-1.5 bg-white hover:bg-gray-50 transition-colors flex items-center gap-2"
+                        :title="rowsCount === 1 ? 'Переключить на 2 ряда' : 'Переключить на 1 ряд'"
+                    >
+                        <i :class="rowsCount === 1 ? 'fas fa-th-large' : 'fas fa-th'" class="text-gray-600"></i>
+                        <span class="text-gray-600">{{ rowsCount === 1 ? '1 ряд' : '2 ряда' }}</span>
+                    </button>
+                </div>
+                <div :class="rowsCount === 1 ? 'overflow-x-auto' : ''">
                     <draggable
                         :list="sortedBalanceCards"
                         group="balance-cards"
@@ -11,8 +21,8 @@
                         drag-class="dragging-balance-card"
                         handle=".balance-drag-handle"
                         @change="handleBalanceReorder"
-                        class="flex space-x-4 pb-1"
-                        style="min-width: max-content;"
+                        :class="['pb-1', rowsCount === 2 ? 'flex flex-wrap gap-4' : 'flex space-x-4']"
+                        :style="rowsCount === 1 ? 'min-width: max-content;' : ''"
                     >
                         <div
                             v-for="(card, index) in sortedBalanceCards"
@@ -154,7 +164,8 @@ export default {
             resizing: false,
             resizingCard: null,
             startX: 0,
-            startWidth: 0
+            startWidth: 0,
+            rowsCount: 1
         };
     },
     computed: {
@@ -300,7 +311,7 @@ export default {
         handleBalanceClick(cashRegister, balance) {
             if (this.isClickable(balance.type)) {
                 this.$emit('balance-click', {
-                    cashRegisterId: cashRegister.id,
+                    cashRegisterId: cashRegister.cashRegisterId,
                     transactionType: balance.type
                 });
             }
@@ -413,7 +424,7 @@ export default {
             }
         },
         getLocalStorageKey() {
-            return 'transactions_balance_cards_data';
+            return 'ui_transactions_balance_cards_layout';
         },
         getSavedData() {
             try {
@@ -439,7 +450,8 @@ export default {
                             size: this.cardSizes[card.id] || card.size || defaultSize,
                             visible: card.visible
                         };
-                    })
+                    }),
+                    rowsCount: this.rowsCount
                 };
                 localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(data));
             } catch (error) {
@@ -448,6 +460,10 @@ export default {
         handleBalanceReorder() {
             const order = this.sortedBalanceCards.map(card => card.id);
             this.balanceCardOrder = order;
+            this.saveData();
+        },
+        toggleRowsCount() {
+            this.rowsCount = this.rowsCount === 1 ? 2 : 1;
             this.saveData();
         },
         getCardStyle(card) {
@@ -562,6 +578,9 @@ export default {
                     }
                 });
             }
+            if (savedData.rowsCount !== undefined) {
+                this.rowsCount = savedData.rowsCount;
+            }
         }
         this.updateSortedBalanceCards();
     },
@@ -600,6 +619,7 @@ export default {
 
 .balance-card-wrapper {
     transition: transform 0.2s ease;
+    flex-shrink: 0;
 }
 
 .balance-drag-handle {

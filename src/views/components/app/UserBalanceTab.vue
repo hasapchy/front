@@ -232,7 +232,8 @@ export default {
                     component: markRaw(SourceButtonCell),
                     props: (item) => {
                         const sourceType = item.sourceType || null;
-                        const isTransaction = sourceType && sourceType.includes('Transaction');
+                        const source = item.source || null;
+                        const isTransaction = source === 'transaction' || (sourceType && sourceType.includes('Transaction'));
                         const sourceId = isTransaction ? item.sourceId : (item.sourceSourceId || item.sourceId);
                         
                         return {
@@ -328,12 +329,11 @@ export default {
             
             try {
                 this.entityLoading = true;
-                const sourceId = item?.sourceSourceId || item?.sourceId;
-                if (!sourceId) {
+                if (!item.sourceId) {
                     console.warn('No source ID found for item:', item);
                     return;
                 }
-                const data = await this.ENTITY_CONFIG.transaction.fetch(sourceId);
+                const data = await this.ENTITY_CONFIG.transaction.fetch(item.sourceId);
                 this.editingTransactionItem = data;
                 
                 this.entityModalOpen = true;

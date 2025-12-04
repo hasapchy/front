@@ -80,7 +80,7 @@ export const TRANSACTION_FORM_PRESETS = {
         type: { visible: true },
         category: {
             visible: true,
-            excludedIds: [6, 7, 17, 20, 21, 22, 23, 24, 25, 26, 27],
+            excludedIds: [ 7, 17, 20, 21, 22, 23, 24, 25, 26, 27],
         },
         source: { visible: true },
         note: { required: false },
