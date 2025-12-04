@@ -1,6 +1,6 @@
 import { dtoDateFormatters } from "@/utils/dateUtils";
 import { formatCurrency, formatNumber } from "@/utils/numberUtils";
-import { createProductsTooltipList, createFromApiArray } from "@/utils/dtoUtils";
+import { createProductsTooltipList, createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import OrderProductDto from "./OrderProductDto";
 
@@ -85,6 +85,9 @@ export default class OrderDto {
     return isNaN(num) || !quantity ? '0.00' : formatNumber(quantity, 2, true);
   }
 
+  productsHtmlList() {
+    return createProductsHtmlList(this.products, (quantity) => this.formatQuantity(quantity));
+  }
 
   formatDate() {
     return dtoDateFormatters.formatDate(this.date);
