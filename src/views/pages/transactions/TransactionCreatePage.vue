@@ -554,7 +554,7 @@ export default {
                 return;
             }
             // Если выбран проект — клиент должен соответствовать клиенту проекта
-            if (this.initialProjectId) {
+            if (this.initialProjectId && !this.fieldConfig('client').excludeFromRequest) {
                 const project = this.allProjects.find(p => p.id === this.projectId) || null;
                 if (project && project.client) {
                     // Форсируем клиента проекта перед сохранением
@@ -583,12 +583,14 @@ export default {
                         category_id: this.categoryId,
                         project_id: projectIdForSubmit,
                         date: this.date,
-                        client_id: this.selectedClient?.id,
                         orig_amount: this.origAmount,
                         currency_id: this.currencyIdComputed,
                         note: this.note,
                         is_debt: this.isDebt,
                     };
+                    if (!this.fieldConfig('client').excludeFromRequest) {
+                        updateData.client_id = this.selectedClient?.id;
+                    }
                     
                     const sourceType = this.getSourceTypeForBackend();
                     if (sourceType) {
@@ -609,10 +611,12 @@ export default {
                         note: this.note,
                         project_id: projectIdForSubmit,
                         date: this.date,
-                        client_id: this.selectedClient?.id,
                         order_id: this.orderId,
                         is_debt: this.isDebt,
                     };
+                    if (!this.fieldConfig('client').excludeFromRequest) {
+                        requestData.client_id = this.selectedClient?.id;
+                    }
                     
                     const sourceType = this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : null);
                     if (sourceType) {

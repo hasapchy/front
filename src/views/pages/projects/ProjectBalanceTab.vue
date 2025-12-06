@@ -57,7 +57,6 @@
                 v-if="!transactionLoading"
                 :editingItem="editingTransactionItem"
                 :initialProjectId="editingItem?.id"
-                :initialClient="editingItem?.client"
                 :form-config="projectFormConfig"
                 :header-text="'Транзакция — проект'"
                 @saved="handleTransactionSaved"
