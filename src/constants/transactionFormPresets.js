@@ -45,7 +45,7 @@ export const TRANSACTION_FORM_PRESETS = {
         },
     },
     projectBalance: {
-        client: { visible: false },
+        client: { visible: false, excludeFromRequest: true },
         project: { visible: false },
         debt: { visible: false, enforcedValue: false },
         source: { visible: true },
