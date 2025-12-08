@@ -14,10 +14,7 @@
                                 {{ category.name }}
                             </option>
                         </select>
-                        <PrimaryButton 
-                            icon="fas fa-add" 
-                            :is-info="true" 
-                            :onclick="showProductCategoryModal"
+                        <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showProductCategoryModal"
                             :disabled="!$store.getters.hasPermission('categories_create')" />
                     </div>
                 </div>
@@ -29,8 +26,7 @@
                 </div>
                 <div>
                     <label>{{ $t('description') }}</label>
-                    <textarea v-model="description"
-                        class="w-full border rounded p-2"></textarea>
+                    <textarea v-model="description" class="w-full border rounded p-2"></textarea>
                 </div>
                 <div>
                     <label>{{ $t('project') }}</label>
@@ -40,10 +36,7 @@
                             <option v-for="parent in allProjects" :key="parent.id" :value="parent.id">{{ parent.name }}
                             </option>
                         </select>
-                        <PrimaryButton 
-                            icon="fas fa-add" 
-                            :is-info="true" 
-                            :onclick="showProjectModal"
+                        <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showProjectModal"
                             :disabled="!$store.getters.hasPermission('projects_create')" />
                     </div>
                 </div>
@@ -58,13 +51,16 @@
                         <label class="required">{{ $t('warehouse') }}</label>
                         <select v-model="warehouseId" required>
                             <option value="">{{ $t('no') }}</option>
-                            <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">{{ parent.name }}
+                            <option v-for="parent in allWarehouses" :key="parent.id" :value="parent.id">{{ parent.name
+                                }}
                             </option>
                         </select>
                     </div>
-                    <ProductSearch ref="productSearch" v-model="products" :show-quantity="true" :show-price="true" :show-price-type="false"
-                        :is-sale="true" :currency-symbol="currencySymbol" :warehouse-id="warehouseId"
-                        :project-id="projectId" :allow-temp-product="true" v-model:discount="discount" v-model:discountType="discountType" required @product-removed="onProductRemoved" />
+                    <ProductSearch ref="productSearch" v-model="products" :show-quantity="true" :show-price="true"
+                        :show-price-type="false" :is-sale="true" :currency-symbol="currencySymbol"
+                        :warehouse-id="warehouseId" :project-id="projectId" :allow-temp-product="true"
+                        v-model:discount="discount" v-model:discountType="discountType" required
+                        @product-removed="onProductRemoved" />
                 </template>
             </div>
             <div v-show="currentTab === 'transactions'">
@@ -82,7 +78,8 @@
     </div>
     <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
         <div class="flex items-center space-x-2">
-            <PrimaryButton v-if="editingItemId" icon="fas fa-check" :onclick="saveWithoutClose" :is-loading="saveLoading">
+            <PrimaryButton v-if="editingItemId" icon="fas fa-check" :onclick="saveWithoutClose"
+                :is-loading="saveLoading">
             </PrimaryButton>
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
             </PrimaryButton>
@@ -92,21 +89,28 @@
         </div>
 
         <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
-            <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(roundedTotalPrice, currencySymbol, 2, true) }}</span></div>
-            <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, 2, true) }}</span></div>
-            <div>{{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{ formatCurrency(remainingAmount, currencySymbol, 2, true) }}</span></div>
+            <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(roundedTotalPrice, currencySymbol, 2,
+                    true)
+                    }}</span></div>
+            <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, 2, true)
+                    }}</span></div>
+            <div>{{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{
+                formatCurrency(remainingAmount,
+                    currencySymbol, 2, true) }}</span></div>
         </div>
     </div>
 
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
+        :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
+        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     <SideModalDialog :showForm="projectModalDialog" :onclose="closeProjectModal" :level="1">
-        <ProjectCreatePage v-if="projectModalDialog" @saved="handleProjectSaved" @saved-error="handleProjectSavedError" />
+        <ProjectCreatePage v-if="projectModalDialog" @saved="handleProjectSaved"
+            @saved-error="handleProjectSavedError" />
     </SideModalDialog>
     <SideModalDialog :showForm="productCategoryModalDialog" :onclose="closeProductCategoryModal" :level="1">
-        <CategoriesCreatePage v-if="productCategoryModalDialog" @saved="handleProductCategorySaved" @saved-error="handleProductCategorySavedError" />
+        <CategoriesCreatePage v-if="productCategoryModalDialog" @saved="handleProductCategorySaved"
+            @saved-error="handleProductCategorySavedError" />
     </SideModalDialog>
 </template>
 
@@ -115,14 +119,8 @@ import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import CashRegisterController from '@/api/CashRegisterController';
 import OrderController from '@/api/OrderController';
-import WarehouseController from '@/api/WarehouseController';
-import ProjectController from '@/api/ProjectController';
-import AppController from '@/api/AppController';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
-import OrderStatusController from '@/api/OrderStatusController';
-import CategoriesController from '@/api/CategoriesController';
 import OrderTransactionsTab from '@/views/pages/orders/OrderTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
@@ -187,7 +185,7 @@ export default {
             this.fetchCurrencies(),
             this.fetchOrderStatuses()
         ]);
-        
+
         if (!this.editingItem) {
             if (this.allWarehouses.length > 0 && !this.warehouseId) {
                 this.warehouseId = this.allWarehouses[0].id;
@@ -290,39 +288,39 @@ export default {
         },
         async fetchAllWarehouses() {
             await this.$store.dispatch('loadWarehouses');
-            
+
             let attempts = 0;
             while (this.$store.getters.warehouses.length === 0 && attempts < 30) {
                 await new Promise(resolve => setTimeout(resolve, 100));
                 attempts++;
             }
-            
+
             this.allWarehouses = this.$store.getters.warehouses;
         },
-    async fetchAllProjects() {
-      if (this.allProjects.length > 0) return;
-      
-      await this.$store.dispatch('loadProjects');
-      const allProjectsFromStore = this.$store.getters.projects;
-      
-      if (this.editingItem && this.editingItem.projectId && this.editingItem.projectName) {
-        const hasProject = allProjectsFromStore.some(p => p.id === this.editingItem.projectId);
-        if (!hasProject) {
-          this.allProjects = [
-            ...allProjectsFromStore,
-            { id: this.editingItem.projectId, name: this.editingItem.projectName }
-          ];
-          return;
-        }
-      }
-      
-      this.allProjects = allProjectsFromStore;
-    },
+        async fetchAllProjects() {
+            if (this.allProjects.length > 0) return;
+
+            await this.$store.dispatch('loadProjects');
+            const allProjectsFromStore = this.$store.getters.projects;
+
+            if (this.editingItem && this.editingItem.projectId && this.editingItem.projectName) {
+                const hasProject = allProjectsFromStore.some(p => p.id === this.editingItem.projectId);
+                if (!hasProject) {
+                    this.allProjects = [
+                        ...allProjectsFromStore,
+                        { id: this.editingItem.projectId, name: this.editingItem.projectName }
+                    ];
+                    return;
+                }
+            }
+
+            this.allProjects = allProjectsFromStore;
+        },
         async fetchAllProductCategories() {
             try {
                 await this.$store.dispatch('loadCategories');
                 const allCategories = this.$store.getters.categories;
-                
+
                 this.allProductCategories = allCategories.filter(c => !c.parentId);
             } catch (error) {
                 this.allProductCategories = [];
@@ -334,13 +332,13 @@ export default {
         },
         async fetchAllCashRegisters() {
             await this.$store.dispatch('loadCashRegisters');
-            
+
             let attempts = 0;
             while (this.$store.getters.cashRegisters.length === 0 && attempts < 30) {
                 await new Promise(resolve => setTimeout(resolve, 100));
                 attempts++;
             }
-            
+
             this.allCashRegisters = this.$store.getters.cashRegisters;
         },
         async fetchOrderStatuses() {
@@ -349,7 +347,7 @@ export default {
         },
         changeTab(tabName) {
             this.currentTab = tabName;
-            
+
             if (tabName === 'products' && !this.productsTabVisited) {
                 this.productsTabVisited = true;
             }
@@ -377,18 +375,18 @@ export default {
             if (calculatedDiscount > this.subtotal) {
                 validationErrors.push('Скидка не может превышать сумму заказа');
             }
-            
+
             if (validationErrors.length > 0) {
                 this.$emit('saved-error', validationErrors.join('\n'));
                 return;
             }
-            
+
             this.saveLoading = true;
             try {
                 const formData = this.getFormState();
                 formData.client_id = this.selectedClient?.id || null;
                 formData.cash_id = this.cashId || null;
-                
+
                 formData.products = this.products
                     .filter(p => !p.isTempProduct)
                     .map(p => ({
@@ -433,7 +431,7 @@ export default {
 
         async saveWithoutClose() {
             const validationErrors = [];
-            
+
             if (!this.selectedClient) {
                 validationErrors.push('Поле "Клиент" обязательно для заполнения');
             }
@@ -452,12 +450,12 @@ export default {
             if (calculatedDiscount > this.subtotal) {
                 validationErrors.push('Скидка не может превышать сумму заказа');
             }
-            
+
             if (validationErrors.length > 0) {
                 this.$emit('saved-error', validationErrors.join('\n'));
                 return;
             }
-            
+
             this.saveLoading = true;
             try {
                 const formData = this.getFormState();
@@ -486,7 +484,7 @@ export default {
                         height: p.height ?? null
                     }));
                 formData.remove_temp_products = this.removedTempProducts;
-                
+
                 let resp;
                 if (this.editingItemId) {
                     resp = await OrderController.updateItem(this.editingItemId, formData);
@@ -494,7 +492,7 @@ export default {
                     resp = await OrderController.storeItem(formData);
                     this.editingItemId = resp?.id || null;
                 }
-                
+
                 if (resp.message) {
                     await this.refreshSelectedClientData();
                     this.$emit('saved-silent');
@@ -677,7 +675,7 @@ export default {
                         this.productsTabVisited = true;
                         this.transactionsTabVisited = true;
                     }
-                    
+
                     this.selectedClient = newEditingItem.client || null;
                     this.projectId = newEditingItem.projectId || '';
                     this.warehouseId = newEditingItem.warehouseId || (this.allWarehouses.length ? this.allWarehouses[0].id : '');

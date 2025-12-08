@@ -2,6 +2,19 @@ import { eventBus } from "@/eventBus";
 import { indexedDBStorage } from "./storage";
 import { CACHE_CONFIG } from "./config";
 
+const PRESERVED_PREFIXES = ["tableColumns_", "tableSort_", "cashRegisters_"];
+const PRESERVED_KEYS = [
+  "hasap_references_cache",
+  "hasap_vuex_cache",
+  "hasap_user_settings",
+  "orders_viewMode",
+  "projects_viewMode",
+  "kanban_column_order_orders",
+  "kanban_column_order_projects",
+  "ui_transactions_balance_cards_layout",
+  "menuItems",
+];
+
 export const CACHE_KEY_PREFIXES = CACHE_CONFIG.keyPrefixes;
 export const CACHE_PLAIN_KEYS = CACHE_CONFIG.plainKeys;
 
@@ -80,6 +93,12 @@ export class CacheInvalidator {
       const isPrefixPattern = pattern.endsWith("_");
 
       allKeys.forEach((key) => {
+        if (PRESERVED_KEYS.includes(key)) {
+          return;
+        }
+        if (PRESERVED_PREFIXES.some((prefix) => key.startsWith(prefix))) {
+          return;
+        }
         const matches = isPrefixPattern
           ? key.startsWith(pattern)
           : key === pattern || key.startsWith(pattern);
@@ -118,6 +137,13 @@ export class CacheInvalidator {
     let removedCount = 0;
 
     CACHE_KEY_PREFIXES.forEach((pattern) => {
+      const candidate = `${pattern}${companyId}`;
+      if (PRESERVED_KEYS.includes(candidate)) {
+        return;
+      }
+      if (PRESERVED_PREFIXES.some((prefix) => `${pattern}${companyId}`.startsWith(prefix))) {
+        return;
+      }
       removedCount += this.removeKeyAndTimestamp(`${pattern}${companyId}`);
     });
 
@@ -137,6 +163,9 @@ export class CacheInvalidator {
 
       cacheKeys.forEach((key) => {
         try {
+          if (PRESERVED_KEYS.includes(key)) {
+            return;
+          }
           if (localStorage.getItem(key)) {
             localStorage.removeItem(key);
             removedCount++;
@@ -172,6 +201,12 @@ export class CacheInvalidator {
   static getCacheKeys() {
     try {
       return Object.keys(localStorage).filter((key) => {
+        if (PRESERVED_KEYS.includes(key)) {
+          return false;
+        }
+        if (PRESERVED_PREFIXES.some((prefix) => key.startsWith(prefix))) {
+          return false;
+        }
         if (key.includes("_cache") || key.includes("_timestamp")) {
           return true;
         }

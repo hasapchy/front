@@ -1,89 +1,49 @@
-import api from "./axiosInstance";
-
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
+import RoleDto from "@/dto/role/RoleDto";
+import BaseController from "./BaseController";
 
-const RolesController = {
-  async getItems(page = 1, per_page = 20, search = null) {
-    try {
-      let url = `/roles?page=${page}&per_page=${per_page}`;
-      if (search) {
-        url += `&search=${encodeURIComponent(search)}`;
-      }
-      const { data } = await api.get(url);
-      const items = data.items || [];
-      return new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
-      );
-    } catch (error) {
-      console.error("Ошибка при получении ролей:", error);
-      throw error;
-    }
-  },
+export default class RolesController extends BaseController {
+  static async getItems(page = 1, per_page = 20, search = null) {
+    const params = search ? { search } : {};
+    const data = await super.getItems("/roles", page, per_page, params);
+    const items = RoleDto.fromApiArray(data.items || []);
+    return new PaginatedResponse(
+      items,
+      data.current_page,
+      data.next_page,
+      data.last_page,
+      data.total
+    );
+  }
 
-  async getAllItems() {
-    try {
-      const { data } = await api.get(`/roles/all`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при получении всех ролей:", error);
-      throw error;
-    }
-  },
+  static async getListItems() {
+    const data = await super.getListItems("/roles");
+    return RoleDto.fromApiArray(data);
+  }
 
-  async getItem(id) {
-    try {
-      const { data } = await api.get(`/roles/${id}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при получении роли:", error);
-      throw error;
-    }
-  },
+  static async getItem(id) {
+    const data = await super.getItem("/roles", id);
+    return RoleDto.fromApiArray([data.item])[0] || null;
+  }
 
-  async storeItem(payload) {
-    try {
-      const { data } = await api.post("/roles", payload, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+  static async storeItem(payload) {
+    return super.storeItem("/roles", payload, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  }
 
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании роли:", error);
-      throw error;
-    }
-  },
+  static async updateItem(id, payload) {
+    return super.updateItem("/roles", id, payload, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  }
 
-  async updateItem(id, payload) {
-    try {
-      const { data } = await api.put(`/roles/${id}`, payload, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении роли:", error);
-      throw error;
-    }
-  },
-
-  async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/roles/${id}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении роли:", error);
-      throw error;
-    }
-  },
-};
-
-export default RolesController;
+  static async deleteItem(id) {
+    return super.deleteItem("/roles", id);
+  }
+}
 

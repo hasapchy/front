@@ -1,39 +1,29 @@
 <template>
-    <BatchButton v-if="selectedIds.length && viewMode === 'table'" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
-        :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
+    <BatchButton v-if="selectedIds.length && viewMode === 'table'" :selected-ids="selectedIds"
+        :batch-actions="getBatchActions()" :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
         :handle-change-status="handleChangeStatus" :show-status-select="true" />
-    
+
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.orders" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" :onItemClick="(i) => showModal(i)" @selectionChange="selectedIds = $event">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar
-                        :show-filters="true"
-                        :has-active-filters="hasActiveFilters"
-                        :active-filters-count="getActiveFiltersCount()"
-                        :on-filters-reset="resetFilters"
+                    <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
                         :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                        :on-page-change="fetchItems"
-                        :on-per-page-change="handlePerPageChange"
-                        :resetColumns="resetColumns"
-                        :columns="columns"
-                        :toggleVisible="toggleVisible"
-                        :log="log">
+                        :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
                         <template #left>
-                            <PrimaryButton 
-                                :onclick="() => showModal(null)" 
-                                icon="fas fa-plus"
+                            <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
                                 :disabled="!$store.getters.hasPermission('orders_create')">
                             </PrimaryButton>
-                            
-                            <FiltersContainer 
-                                :has-active-filters="hasActiveFilters"
-                                :active-filters-count="getActiveFiltersCount()"
-                                @reset="resetFilters">
+
+                            <FiltersContainer :has-active-filters="hasActiveFilters"
+                                :active-filters-count="getActiveFiltersCount()" @reset="resetFilters">
                                 <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период'
+                                        }}</label>
                                     <select v-model="dateFilter" @change="() => fetchItems(1)" class="w-full">
                                         <option value="all_time">{{ $t('allTime') }}</option>
                                         <option value="today">{{ $t('today') }}</option>
@@ -58,7 +48,8 @@
                                 </div>
 
                                 <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус'
+                                        }}</label>
                                     <select v-model="statusFilter" @change="() => fetchItems(1)" class="w-full">
                                         <option value="">{{ $t('allStatuses') }}</option>
                                         <option v-for="status in statuses" :key="status.id" :value="status.id">
@@ -68,7 +59,8 @@
                                 </div>
 
                                 <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('project') || 'Проект' }}</label>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('project') || 'Проект'
+                                        }}</label>
                                     <select v-model="projectFilter" @change="() => fetchItems(1)" class="w-full">
                                         <option value="">{{ $t('allProjects') }}</option>
                                         <option v-for="project in projects" :key="project.id" :value="project.id">
@@ -78,7 +70,8 @@
                                 </div>
 
                                 <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент' }}</label>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент'
+                                        }}</label>
                                     <select v-model="clientFilter" @change="() => fetchItems(1)" class="w-full">
                                         <option value="">{{ $t('allClients') }}</option>
                                         <option v-for="client in clients" :key="client.id" :value="client.id">
@@ -89,14 +82,12 @@
                             </FiltersContainer>
 
                             <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                                <button 
-                                    @click="changeViewMode('table')"
+                                <button @click="changeViewMode('table')"
                                     class="px-3 py-2 transition-colors cursor-pointer"
                                     :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
                                     <i class="fas fa-table"></i>
                                 </button>
-                                <button 
-                                    @click="changeViewMode('kanban')"
+                                <button @click="changeViewMode('kanban')"
                                     class="px-3 py-2 transition-colors cursor-pointer"
                                     :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
                                     <i class="fas fa-columns"></i>
@@ -105,14 +96,9 @@
                         </template>
 
                         <template #right>
-                            <OrderPaymentFilter 
-                                v-model="paidOrdersFilter"
-                                :orders="data ? data.items : []"
-                                :statusId="4"
-                                :currencySymbol="currencySymbol"
-                                :unpaidOrdersTotal="unpaidOrdersTotal"
-                                @change="handlePaidOrdersFilterChange"
-                            />
+                            <OrderPaymentFilter v-model="paidOrdersFilter" :orders="data ? data.items : []"
+                                :statusId="4" :currencySymbol="currencySymbol" :unpaidOrdersTotal="unpaidOrdersTotal"
+                                @change="handlePaidOrdersFilterChange" />
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
                                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
@@ -147,23 +133,16 @@
         </div>
 
         <div v-else-if="data && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
-            <TableControlsBar
-                :show-filters="true"
-                :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()"
-                :on-filters-reset="resetFilters"
+            <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
+                :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
                 :show-pagination="false">
                 <template #left>
-                    <PrimaryButton 
-                        :onclick="() => showModal(null)" 
-                        icon="fas fa-plus"
+                    <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
                         :disabled="!$store.getters.hasPermission('orders_create')">
                     </PrimaryButton>
-                    
-                    <FiltersContainer 
-                        :has-active-filters="hasActiveFilters"
-                        :active-filters-count="getActiveFiltersCount()"
-                        @reset="resetFilters">
+
+                    <FiltersContainer :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()" @reset="resetFilters">
                         <div>
                             <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
                             <select v-model="dateFilter" @change="() => fetchItems(1)" class="w-full">
@@ -221,48 +200,29 @@
                     </FiltersContainer>
 
                     <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                        <button 
-                            @click="changeViewMode('table')"
-                            class="px-3 py-2 transition-colors cursor-pointer"
+                        <button @click="changeViewMode('table')" class="px-3 py-2 transition-colors cursor-pointer"
                             :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
                             <i class="fas fa-table"></i>
                         </button>
-                        <button 
-                            @click="changeViewMode('kanban')"
-                            class="px-3 py-2 transition-colors cursor-pointer"
+                        <button @click="changeViewMode('kanban')" class="px-3 py-2 transition-colors cursor-pointer"
                             :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
                             <i class="fas fa-columns"></i>
                         </button>
                     </div>
                 </template>
                 <template #right>
-                    <OrderPaymentFilter 
-                        v-model="paidOrdersFilter"
-                        :orders="data ? data.items : []"
-                        :statusId="4"
-                        :currencySymbol="currencySymbol"
-                        :unpaidOrdersTotal="unpaidOrdersTotal"
-                        @change="handlePaidOrdersFilterChange"
-                    />
+                    <OrderPaymentFilter v-model="paidOrdersFilter" :orders="data ? data.items : []" :statusId="4"
+                        :currencySymbol="currencySymbol" :unpaidOrdersTotal="unpaidOrdersTotal"
+                        @change="handlePaidOrdersFilterChange" />
                 </template>
             </TableControlsBar>
-            
-            <KanbanBoard
-                :orders="allKanbanItems"
-                :statuses="statuses"
-                :projects="projects"
-                :selected-ids="selectedIds"
-                :loading="loading"
-                :currency-symbol="currencySymbol"
-                :batch-status-id="batchStatusId"
-                @order-moved="handleOrderMoved"
-                @card-dblclick="showModal"
-                @card-select-toggle="toggleSelectRow"
-                @column-select-toggle="handleColumnSelectToggle"
-                @batch-status-change="handleBatchStatusChangeFromToolbar"
-                @batch-delete="() => deleteItems(selectedIds)"
-                @clear-selection="() => selectedIds = []"
-            />
+
+            <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :projects="projects" :selected-ids="selectedIds"
+                :loading="loading || kanbanLoadingMore" :currency-symbol="currencySymbol" :batch-status-id="batchStatusId"
+                :has-more="kanbanHasMore" @order-moved="handleOrderMoved" @card-dblclick="showModal"
+                @card-select-toggle="toggleSelectRow" @column-select-toggle="handleColumnSelectToggle"
+                @batch-status-change="handleBatchStatusChangeFromToolbar" @batch-delete="() => deleteItems(selectedIds)"
+                @clear-selection="() => selectedIds = []" @load-more="loadMoreKanbanItems" />
         </div>
 
         <div v-else key="loader" class="flex justify-center items-center h-64">
@@ -270,60 +230,46 @@
         </div>
     </transition>
 
-    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed" 
+    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed"
         :showTimelineButton="!!editingItem" @toggle-timeline="toggleTimeline">
-        <OrderCreatePage v-if="modalDialog" ref="ordercreatepageForm" @saved="handleSaved" @saved-silent="handleSavedSilent" @saved-error="handleSavedError"
-            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
+        <OrderCreatePage v-if="modalDialog" ref="ordercreatepageForm" @saved="handleSaved"
+            @saved-silent="handleSavedSilent" @saved-error="handleSavedError" @deleted="handleDeleted"
+            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
 
         <template #timeline>
-            <TimelinePanel v-if="editingItem && !timelineCollapsed" ref="timelinePanel" :type="'order'" :id="editingItem.id" @toggle-timeline="toggleTimeline" @open-transaction="openTransactionFromTimeline" />
+            <TimelinePanel v-if="editingItem && !timelineCollapsed" ref="timelinePanel" :type="'order'"
+                :id="editingItem.id" @toggle-timeline="toggleTimeline"
+                @open-transaction="openTransactionFromTimeline" />
         </template>
     </SideModalDialog>
 
     <SideModalDialog :showForm="invoiceModalDialog" :onclose="handleInvoiceModalClose">
-        <InvoiceCreatePage 
-            v-if="invoiceModalDialog"
-            ref="invoiceCreateForm" 
-            @saved="handleInvoiceSaved" 
-            @saved-error="handleInvoiceSavedError"
-            @close-request="closeInvoiceModal" 
-            :preselectedOrderIds="selectedIds"
-        />
+        <InvoiceCreatePage v-if="invoiceModalDialog" ref="invoiceCreateForm" @saved="handleInvoiceSaved"
+            @saved-error="handleInvoiceSavedError" @close-request="closeInvoiceModal"
+            :preselectedOrderIds="selectedIds" />
     </SideModalDialog>
 
-    <SideModalDialog :showForm="viewTransactionModal" :onclose="() => { viewTransactionModal = false; editingTransactionItem = null; }">
-        <TransactionCreatePage 
-            v-if="viewTransactionModal"
-            :editingItem="editingTransactionItem"
-            @saved="handleTransactionViewSaved"
-            @saved-error="handleTransactionSavedError"
-            @deleted="handleTransactionViewDeleted"
-            @deleted-error="handleTransactionSavedError"
-            @close-request="() => { viewTransactionModal = false; editingTransactionItem = null; }"
-        />
+    <SideModalDialog :showForm="viewTransactionModal"
+        :onclose="() => { viewTransactionModal = false; editingTransactionItem = null; }">
+        <TransactionCreatePage v-if="viewTransactionModal" :editingItem="editingTransactionItem"
+            @saved="handleTransactionViewSaved" @saved-error="handleTransactionSavedError"
+            @deleted="handleTransactionViewDeleted" @deleted-error="handleTransactionSavedError"
+            @close-request="() => { viewTransactionModal = false; editingTransactionItem = null; }" />
     </SideModalDialog>
 
     <SideModalDialog :showForm="transactionModal" :onclose="() => transactionModal = false">
-        <TransactionCreatePage 
-            v-if="editingTransaction"
-            :editingItem="null"
-            :initial-client="editingTransaction.client"
-            :initial-project-id="editingTransaction.projectId"
-            :order-id="editingTransaction.orderId"
-            :default-cash-id="editingTransaction.cashId"
-            :prefill-amount="editingTransaction.prefillAmount"
-            :is-payment-modal="true"
-            :form-config="orderTransactionFormConfig"
-            @saved="handleTransactionSaved"
-            @saved-error="handleTransactionSavedError"
-            @close-request="() => transactionModal = false"
-        />
+        <TransactionCreatePage v-if="editingTransaction" :editingItem="null" :initial-client="editingTransaction.client"
+            :initial-project-id="editingTransaction.projectId" :order-id="editingTransaction.orderId"
+            :default-cash-id="editingTransaction.cashId" :prefill-amount="editingTransaction.prefillAmount"
+            :is-payment-modal="true" :form-config="orderTransactionFormConfig" @saved="handleTransactionSaved"
+            @saved-error="handleTransactionSavedError" @close-request="() => transactionModal = false" />
     </SideModalDialog>
 
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
-                  :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
+        :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
+        @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -366,7 +312,7 @@ import { highlightMatches } from "@/utils/searchUtils";
 import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 
-const TimelinePanel = defineAsyncComponent(() => 
+const TimelinePanel = defineAsyncComponent(() =>
     import("@/views/components/app/dialog/TimelinePanel.vue")
 );
 
@@ -414,12 +360,16 @@ export default {
             unpaidOrdersTotal: 0,
             transactionModal: false,
             editingTransaction: null,
-        viewTransactionModal: false,
-        editingTransactionItem: null,
+            viewTransactionModal: false,
+            editingTransactionItem: null,
             savedCurrencySymbol: '',
             pendingStatusUpdates: new Map(),
             batchStatusId: '',
             allKanbanItems: [],
+            kanbanCurrentPage: 1,
+            kanbanFetchPerPage: 50,
+            kanbanHasMore: false,
+            kanbanLoadingMore: false,
         };
     },
     created() {
@@ -447,12 +397,12 @@ export default {
         },
         hasActiveFilters() {
             return this.dateFilter !== 'all_time' ||
-                   (this.startDate !== null && this.startDate !== '') ||
-                   (this.endDate !== null && this.endDate !== '') ||
-                   this.statusFilter !== '' ||
-                   this.projectFilter !== '' ||
-                   this.clientFilter !== '' ||
-                   this.paidOrdersFilter !== false;
+                (this.startDate !== null && this.startDate !== '') ||
+                (this.endDate !== null && this.endDate !== '') ||
+                this.statusFilter !== '' ||
+                this.projectFilter !== '' ||
+                this.clientFilter !== '' ||
+                this.paidOrdersFilter !== false;
         },
         orderTransactionFormConfig() {
             return TRANSACTION_FORM_PRESETS.orderPayment;
@@ -473,7 +423,7 @@ export default {
     methods: {
         itemMapper(i, c) {
             const search = this.searchQuery;
-            
+
             switch (c) {
                 case "products":
                     return i.productsHtmlList();
@@ -523,19 +473,25 @@ export default {
             this.batchStatusId = '';
             this.paidOrdersFilter = false;
             this.allKanbanItems = [];
-            this.kanbanFetchPerPage = 1000;
-            
+            this.kanbanCurrentPage = 1;
+            this.kanbanHasMore = false;
+
             await this.fetchItems(1, false);
-            
+
             this.$store.dispatch('showNotification', {
-              title: 'Компания изменена',
-              isDanger: false
+                title: 'Компания изменена',
+                isDanger: false
             });
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
+            
+            if (this.viewMode === 'kanban' && page === 1) {
+                this.resetKanbanPagination();
+            }
+            
             try {
-                const perPage = this.viewMode === 'kanban' ? 1000 : this.perPage;
+                const perPage = this.viewMode === 'kanban' ? this.kanbanFetchPerPage : this.perPage;
 
                 const response = await OrderController.getItems(
                     page,
@@ -551,7 +507,15 @@ export default {
                 );
 
                 this.data = response;
-                this.allKanbanItems = [...response.items];
+                
+                if (this.viewMode === 'kanban') {
+                    this.allKanbanItems = [...response.items];
+                    this.kanbanCurrentPage = response.currentPage;
+                    this.kanbanHasMore = response.nextPage !== null;
+                } else {
+                    this.allKanbanItems = [];
+                }
+                
                 this.unpaidOrdersTotal = response.unpaidOrdersTotal || 0;
 
                 if (response.items && response.items.length > 0 && response.items[0].currencySymbol) {
@@ -561,6 +525,36 @@ export default {
                 this.showNotification(this.$t('errorGettingOrderList'), error.message, true);
             }
             if (!silent) this.loading = false;
+        },
+        async loadMoreKanbanItems() {
+            if (this.kanbanLoadingMore || !this.kanbanHasMore || this.viewMode !== 'kanban') {
+                return;
+            }
+            
+            this.kanbanLoadingMore = true;
+            try {
+                const nextPage = this.kanbanCurrentPage + 1;
+                const response = await OrderController.getItems(
+                    nextPage,
+                    this.searchQuery,
+                    this.dateFilter,
+                    this.startDate,
+                    this.endDate,
+                    this.statusFilter,
+                    this.projectFilter,
+                    this.clientFilter,
+                    this.kanbanFetchPerPage,
+                    this.paidOrdersFilter
+                );
+                
+                this.allKanbanItems = [...this.allKanbanItems, ...response.items];
+                this.kanbanCurrentPage = response.currentPage;
+                this.kanbanHasMore = response.nextPage !== null;
+            } catch (error) {
+                this.showNotification(this.$t('errorGettingOrderList'), error.message, true);
+            } finally {
+                this.kanbanLoadingMore = false;
+            }
         },
         handleSavedSilent() {
             this.showNotification(this.$t('orderSaved'), "", false);
@@ -576,7 +570,7 @@ export default {
             }
         },
 
-        
+
         async fetchStatuses() {
             await this.$store.dispatch('loadOrderStatuses');
             this.statuses = this.$store.getters.orderStatuses;
@@ -587,16 +581,16 @@ export default {
             this.loading = true;
             try {
                 const result = await OrderController.batchUpdateStatus({ ids, status_id: statusId });
-                
+
                 if (result && result.needs_payment) {
                     this.showPaymentModal(result);
                     this.loading = false;
                     return;
                 }
-                
+
                 await this.fetchItems(this.data.currentPage, true);
                 this.showNotification(this.$t('statusUpdated'), "", false);
-                
+
                 if (this.editingItem && ids.includes(this.editingItem.id) && this.$refs.timelinePanel && !this.timelineCollapsed) {
                     this.$refs.timelinePanel.refreshTimeline();
                 }
@@ -618,11 +612,11 @@ export default {
             const order = items.find(item => item.id === paymentData.order_id);
             if (order) {
                 this.showNotification(
-                    this.$t('orderNeedsPayment'), 
-                    `${this.$t('remainingAmount')}: ${paymentData.remaining_amount} ${order.currencySymbol || ''}`, 
+                    this.$t('orderNeedsPayment'),
+                    `${this.$t('remainingAmount')}: ${paymentData.remaining_amount} ${order.currencySymbol || ''}`,
                     true
                 );
-                
+
                 this.editingTransaction = {
                     orderId: order.id,
                     client: order.client,
@@ -656,6 +650,9 @@ export default {
             this.projectFilter = '';
             this.clientFilter = '';
             this.paidOrdersFilter = false;
+            if (this.viewMode === 'kanban') {
+                this.resetKanbanPagination();
+            }
             this.fetchItems();
         },
         getActiveFiltersCount() {
@@ -671,6 +668,9 @@ export default {
         },
         handlePaidOrdersFilterChange(isActive) {
             this.paidOrdersFilter = isActive;
+            if (this.viewMode === 'kanban') {
+                this.resetKanbanPagination();
+            }
             this.fetchItems();
         },
 
@@ -679,7 +679,7 @@ export default {
                 this.showNotification(this.$t('error'), this.$t('selectOrdersFirst'), true);
                 return;
             }
-            
+
             this.invoiceModalDialog = true;
         },
 
@@ -700,11 +700,11 @@ export default {
                     disabled: this.loadingBatch,
                 },
                 {
-                    label: this.$t('changeStatus'), 
+                    label: this.$t('changeStatus'),
                     icon: "fas fa-edit",
                     type: "light",
-                    action: null, 
-                    render: true, 
+                    action: null,
+                    render: true,
                 },
             ];
         },
@@ -778,11 +778,11 @@ export default {
                             order.statusName = status.name;
                         }
                     }
-                    
+
                     this.pendingStatusUpdates.set(updateData.orderId, updateData.statusId);
-                    
+
                     this.debouncedStatusUpdate();
-                    
+
                 } else if (updateData.type === 'project') {
                     const items = this.viewMode === 'kanban' ? this.allKanbanItems : this.data.items;
                     const order = items.find(o => o.id === updateData.orderId);
@@ -793,7 +793,7 @@ export default {
                             order.projectName = project.name;
                         }
                     }
-                    
+
                     OrderController.updateItem(updateData.orderId, {
                         project_id: updateData.projectId
                     }).then(() => {
@@ -811,9 +811,9 @@ export default {
             }
         },
 
-        debouncedStatusUpdate: debounce(function() {
+        debouncedStatusUpdate: debounce(function () {
             if (this.pendingStatusUpdates.size === 0) return;
-            
+
             const updatesByStatus = new Map();
             this.pendingStatusUpdates.forEach((statusId, orderId) => {
                 if (!updatesByStatus.has(statusId)) {
@@ -821,14 +821,14 @@ export default {
                 }
                 updatesByStatus.get(statusId).push(orderId);
             });
-            
+
             this.pendingStatusUpdates.clear();
-            
+
             const promises = [];
             updatesByStatus.forEach((orderIds, statusId) => {
-                const promise = OrderController.batchUpdateStatus({ 
-                    ids: orderIds, 
-                    status_id: statusId 
+                const promise = OrderController.batchUpdateStatus({
+                    ids: orderIds,
+                    status_id: statusId
                 }).then(() => {
                     if (this.editingItem && orderIds.includes(this.editingItem.id) && this.$refs.timelinePanel && !this.timelineCollapsed) {
                         this.$refs.timelinePanel.refreshTimeline();
@@ -840,7 +840,7 @@ export default {
                 });
                 promises.push(promise);
             });
-            
+
             Promise.all(promises).then(() => {
                 this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
             });
@@ -870,7 +870,7 @@ export default {
 
         handleBatchStatusChange() {
             if (!this.batchStatusId || this.selectedIds.length === 0) return;
-            
+
             this.handleChangeStatus(this.selectedIds, this.batchStatusId);
             this.batchStatusId = '';
             this.selectedIds = [];
@@ -878,7 +878,7 @@ export default {
 
         handleBatchStatusChangeFromToolbar(statusId) {
             if (!statusId || this.selectedIds.length === 0) return;
-            
+
             this.handleChangeStatus(this.selectedIds, statusId);
             this.batchStatusId = '';
             this.selectedIds = [];
@@ -889,6 +889,12 @@ export default {
                 return;
             }
             this.viewMode = mode;
+        },
+        resetKanbanPagination() {
+            this.allKanbanItems = [];
+            this.kanbanCurrentPage = 1;
+            this.kanbanHasMore = false;
+            this.kanbanLoadingMore = false;
         }
     },
     watch: {
@@ -901,9 +907,7 @@ export default {
                 }
                 
                 if (newMode === 'kanban') {
-                    this.kanbanFetchPerPage = 1000;
-                    this.allKanbanItems = [];
-                    this.kanbanCurrentPage = 1;
+                    this.resetKanbanPagination();
                     this.$nextTick(() => {
                         this.fetchItems(1, false);
                     });
@@ -921,15 +925,13 @@ export default {
         }
     },
     mounted() {
-        try {
+            try {
             const savedViewMode = localStorage.getItem('orders_viewMode');
             if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
                 this.viewMode = savedViewMode;
                 
                 if (savedViewMode === 'kanban') {
-                    this.kanbanFetchPerPage = 1000;
-                    this.allKanbanItems = [];
-                    this.kanbanCurrentPage = 1;
+                    this.resetKanbanPagination();
                 } else {
                     const savedPerPage = localStorage.getItem('perPage');
                     this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
@@ -941,9 +943,7 @@ export default {
                     console.warn('Failed to save default view mode to localStorage:', error);
                 }
                 if (this.viewMode === 'kanban') {
-                    this.kanbanFetchPerPage = 1000;
-                    this.allKanbanItems = [];
-                    this.kanbanCurrentPage = 1;
+                    this.resetKanbanPagination();
                 } else {
                     const savedPerPage = localStorage.getItem('perPage');
                     this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;

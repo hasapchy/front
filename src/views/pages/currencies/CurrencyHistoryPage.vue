@@ -235,7 +235,7 @@ export default {
                 const currency = this.currencies.find(c => c.id == this.selectedCurrencyId);
                 this.selectedCurrency = currency;
 
-                const historyData = await CurrencyHistoryController.getCurrencyHistory(this.selectedCurrencyId, page, this.perPage);
+                const historyData = await CurrencyHistoryController.getItems(this.selectedCurrencyId, page, this.perPage);
 
                 this.data = {
                     items: historyData.history,

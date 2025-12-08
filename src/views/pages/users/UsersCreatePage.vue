@@ -150,8 +150,8 @@
                                     {{ $t('clear') || 'Очистить' }}
                                 </button>
                             </div>
-                            <div v-if="allRoles && allRoles.length > 0" class="max-h-48 overflow-y-auto">
-                                <div v-for="role in allRoles" :key="role.id" class="flex items-center space-x-2 mb-2">
+                            <div v-if="getRolesForCompany(company.id).length > 0" class="max-h-48 overflow-y-auto">
+                                <div v-for="role in getRolesForCompany(company.id)" :key="role.id" class="flex items-center space-x-2 mb-2">
                                     <input 
                                         type="radio" 
                                         :id="`role-${company.id}-${role.id}`" 
@@ -389,7 +389,7 @@ export default {
         },
         async fetchRoles() {
             try {
-                this.allRoles = await RolesController.getAllItems();
+                this.allRoles = await RolesController.getListItems();
             } catch (error) {
                 console.error('Error fetching roles:', error);
                 this.allRoles = [];
@@ -517,6 +517,12 @@ export default {
         },
         changeTab(tab) {
             this.currentTab = tab;
+        },
+        getRolesForCompany(companyId) {
+            if (!this.allRoles || this.allRoles.length === 0) {
+                return [];
+            }
+            return this.allRoles.filter(role => role.companyId === null || role.companyId === companyId);
         },
         updateCompanyRole(companyId, roleName) {
             let companyRole = this.form.company_roles.find(cr => cr.company_id === companyId);

@@ -101,6 +101,7 @@ export default {
   warehouseReceipt: 'Оприходование',
   warehouses: 'Склады',
   transactions: 'Операции',
+  rent: 'Аренда',
   projects: 'Проекты',
   users: 'Сотрудники',
   settings: 'Кастомные права',
@@ -166,6 +167,7 @@ export default {
   
   // Действия
   add: 'Добавить',
+  selectIncomeForRentIncome: 'Приход — если платят нам за аренду (кат. 28). Расход — если платим за аренду (кат. 9).',
   
   // Создание и редактирование
   createProject: 'Создать проект',

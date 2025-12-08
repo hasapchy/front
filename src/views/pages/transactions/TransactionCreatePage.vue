@@ -475,6 +475,13 @@ export default {
             // Просто отмечаем изменение формы - сохранение произойдет при нажатии "Сохранить"
             // Никаких API вызовов не делаем
         },
+        async createRentTransactions(baseData) {
+            const debtData = { ...baseData, is_debt: true };
+            const cashData = { ...baseData, is_debt: false };
+            const debtResp = await TransactionController.storeItem(debtData);
+            const cashResp = await TransactionController.storeItem(cashData);
+            return cashResp || debtResp;
+        },
         getFormState() {
             return {
                 selectedClient: this.selectedClient?.id || null,
@@ -600,8 +607,12 @@ export default {
                 } else {
                     // Только для НОВЫХ записей применяем реальное округление согласно настройкам компании
                     const roundedAmount = roundValue(this.origAmount);
+                    const typeValue = this.type == "income" ? 1 : this.type == "outcome" ? 0 : null;
+                    if (typeValue === null) {
+                        throw new Error('Выберите тип транзакции');
+                    }
                     const requestData = {
-                        type: this.type == "income" ? 1 : this.type == "outcome" ? 0 : null,
+                        type: typeValue,
                         cash_id: this.cashId,
                         orig_amount: roundedAmount,
                         currency_id: this.currencyIdComputed,
@@ -620,7 +631,11 @@ export default {
                         requestData.source_id = this.selectedSource?.id || this.orderId || null;
                     }
                     
-                    var resp = await TransactionController.storeItem(requestData);
+                    if (this.formConfig?.options?.createRentPair) {
+                        var resp = await this.createRentTransactions(requestData);
+                    } else {
+                        var resp = await TransactionController.storeItem(requestData);
+                    }
                 }
                 if (resp.message) {
                     // Проверяем, нужно ли закрыть заказ (только для модалки доплаты)
@@ -781,14 +796,14 @@ export default {
 
             try {
                 // Получаем общую сумму оплат по заказу через существующий API
-                const paidTotalData = await TransactionController.getTotalByOrderId(this.orderId);
+                const paidTotalData = await TransactionController.getTotalPaidByOrderId(this.orderId);
                 const totalPaid = parseFloat(paidTotalData.total) || 0;
                 const orderTotal = parseFloat(this.orderInfo.totalPrice) || 0;
 
                 // Если оплачено достаточно, закрываем заказ
                 if (totalPaid >= orderTotal) {
                     // Находим статус "закрытый" (обычно это статус с category_id = 4)
-                    const statuses = await OrderStatusController.getAllItems();
+                    const statuses = await OrderStatusController.getListItems();
 
                     const closedStatus = statuses.find(status => status.categoryId === 4);
 

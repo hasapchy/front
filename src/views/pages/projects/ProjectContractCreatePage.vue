@@ -1,7 +1,7 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editContract') : $t('addContract') }}</h2>
-        
+
         <div>
             <div>
                 <label class="required">{{ $t('contractNumber') }}</label>
@@ -36,20 +36,6 @@
                 <label>{{ $t('note') }}</label>
                 <textarea v-model="note" :placeholder="$t('enterNote')" rows="3"></textarea>
             </div>
-            
-            <!-- Файлы -->
-            <!-- <div class="mt-4">
-                <FileUploader
-                    :files="formattedFiles"
-                    :uploading="uploading"
-                    :upload-progress="uploadProgress"
-                    :disabled="false"
-                    accepted-file-types=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                    @file-change="handleFileUpload"
-                    @delete-file="removeFileByPath"
-                    @delete-multiple-files="removeMultipleFiles"
-                />
-            </div> -->
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -59,16 +45,14 @@
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
         </PrimaryButton>
     </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" 
-        :descr="$t('deleteContract')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('deleteContract')"
+        :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
+        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 <script>
 import ProjectContractController from '@/api/ProjectContractController';
-import AppController from '@/api/AppController';
-// import FileUploader from '@/views/components/app/forms/FileUploader.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
@@ -105,36 +89,9 @@ export default {
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
-            // uploading: false,
-            // uploadProgress: 0,
-            // files: []
+
         };
     },
-    // computed: {
-    //     formattedFiles() {
-    //         if (!Array.isArray(this.form.files)) {
-    //             return [];
-    //         }
-    //         return this.form.files.map((file, index) => {
-    //             if (typeof file === 'string') {
-    //                 return {
-    //                     name: file,
-    //                     path: file,
-    //                     size: 0,
-    //                     url: '#',
-    //                     icon: 'fas fa-file'
-    //                 };
-    //             }
-    //             return {
-    //                 name: file.name,
-    //                 path: file.name,
-    //                 size: file.size || 0,
-    //                 url: URL.createObjectURL(file.file || file),
-    //                 icon: this.getFileIcon(file.name)
-    //             };
-    //         });
-    //     }
-    // },
     async mounted() {
         await this.fetchCurrencies();
         if (this.editingItem) {
@@ -175,7 +132,6 @@ export default {
             }
         },
         populateForm() {
-            // Форматируем дату для input type="datetime-local"
             let formattedDate = new Date().toISOString().substring(0, 16);
             if (this.editingItem.date) {
                 const date = new Date(this.editingItem.date);
@@ -183,7 +139,7 @@ export default {
                     formattedDate = date.toISOString().substring(0, 16);
                 }
             }
-            
+
             this.number = this.editingItem.number || '';
             this.amount = this.editingItem.amount || '';
             this.currencyId = this.editingItem.currencyId || '';
@@ -191,14 +147,13 @@ export default {
             this.returned = this.editingItem.returned || false;
             this.note = this.editingItem.note || '';
             this.editingItemId = this.editingItem.id || null;
-            // this.files = this.editingItem.files || [];
         },
         async save() {
             if (!this.projectId && !this.editingItem) {
                 this.showNotification('Ошибка', 'Не указан ID проекта', true);
                 return;
             }
-            
+
             this.saveLoading = true;
             try {
                 const formData = {
@@ -210,7 +165,7 @@ export default {
                     returned: this.returned,
                     note: this.note
                 };
-                
+
                 // Получаем информацию о валюте
                 const selectedCurrency = this.currencies.find(c => c.id == formData.currencyId);
                 if (selectedCurrency) {
@@ -226,114 +181,55 @@ export default {
                     response = await ProjectContractController.storeItem(this.projectId, formData);
                 }
 
-        if (response.success) {
-            this.$emit('saved', response.item);
-            this.showNotification('Успех', response.message, false);
-            if (!this.editingItem) {
-                this.clearForm();
-            }
-            this.resetFormChanges();
-        } else {
-                    this.$emit('saved-error', response.error);
-                    this.showNotification('Ошибка', response.error, true);
+                this.$emit('saved', response.item);
+                this.showNotification('Успех', response.message || 'Контракт успешно сохранен', false);
+                if (!this.editingItem) {
+                    this.clearForm();
                 }
+                this.resetFormChanges();
             } catch (error) {
                 console.error('Error saving contract:', error);
-                this.$emit('saved-error', error);
-                this.showNotification('Ошибка', 'Ошибка при сохранении контракта', true);
+                const errorMessage = error?.response?.data?.message || error?.message || 'Ошибка при сохранении контракта';
+                this.$emit('saved-error', errorMessage);
+                this.showNotification('Ошибка', errorMessage, true);
             } finally {
                 this.saveLoading = false;
             }
         },
-        // handleFileUpload(files) {
-        //     if (!files || !files.length) return;
-            
-        //     this.uploading = true;
-        //     this.uploadProgress = 0;
-            
-        //     // Симуляция прогресса загрузки
-        //     const progressInterval = setInterval(() => {
-        //         if (this.uploadProgress < 90) {
-        //             this.uploadProgress += Math.random() * 10;
-        //         }
-        //     }, 200);
-            
-        //     setTimeout(() => {
-        //         clearInterval(progressInterval);
-        //         this.uploadProgress = 100;
-                
-        //         // Добавляем файлы в форму
-        //         const newFiles = files.map(file => ({
-        //             name: file.name,
-        //             file: file
-        //         }));
-        //         this.form.files = [...this.form.files, ...newFiles];
-                
-        //         setTimeout(() => {
-        //             this.uploading = false;
-        //             this.uploadProgress = 0;
-        //         }, 500);
-        //     }, 1000);
-        // },
-        // removeFileByPath(filePath) {
-        //     const index = this.form.files.findIndex(file => 
-        //         (typeof file === 'string' ? file : file.name) === filePath
-        //     );
-        //     if (index !== -1) {
-        //         this.form.files.splice(index, 1);
-        //     }
-        // },
-        // removeMultipleFiles(filePaths) {
-        //     this.form.files = this.form.files.filter(file => 
-        //         !filePaths.includes(typeof file === 'string' ? file : file.name)
-        //     );
-        // },
-        // getFileIcon(filename) {
-        //     if (!filename) return 'fas fa-file';
-        //     const ext = filename.split('.').pop().toLowerCase();
-        //     const iconMap = {
-        //         'pdf': 'fas fa-file-pdf',
-        //         'doc': 'fas fa-file-word',
-        //         'docx': 'fas fa-file-word',
-        //         'jpg': 'fas fa-file-image',
-        //         'jpeg': 'fas fa-file-image',
-        //         'png': 'fas fa-file-image',
-        //         'gif': 'fas fa-file-image'
-        //     };
-        //     return iconMap[ext] || 'fas fa-file';
-        // },
+
         showDeleteDialog() {
             this.deleteDialog = true;
         },
+
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
+
         async deleteItem() {
             if (!this.editingItemId) return;
 
             this.deleteLoading = true;
             try {
                 const response = await ProjectContractController.deleteItem(this.editingItemId);
-                
-                if (response.success) {
-                    this.showNotification('Успех', response.message || 'Контракт успешно удален', false);
-                    this.$emit('saved'); // Используем тот же эмит, что и при сохранении, чтобы обновить список
-                    this.closeDeleteDialog();
-                    this.clearForm();
-                } else {
-                    this.showNotification('Ошибка', response.error, true);
-                }
+
+                this.showNotification('Успех', response.message || 'Контракт успешно удален', false);
+                this.$emit('saved'); // Используем тот же эмит, что и при сохранении, чтобы обновить список
+                this.closeDeleteDialog();
+                this.clearForm();
             } catch (error) {
                 console.error('Error deleting contract:', error);
-                this.showNotification('Ошибка', 'Ошибка при удалении контракта', true);
+                const errorMessage = error?.response?.data?.message || error?.message || 'Ошибка при удалении контракта';
+                this.showNotification('Ошибка', errorMessage, true);
             } finally {
                 this.deleteLoading = false;
             }
         },
+
         handleCloseRequest() {
             this.$emit('close-request');
         }
     },
+
     watch: {
         editingItem: {
             handler(newValue) {

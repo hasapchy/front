@@ -59,7 +59,7 @@ export default class BasementClientController {
     }
   }
 
-  static async getAllItems() {
+  static async getListItems() {
     try {
       const response = await basementApi.get(`/clients/all`);
       const data = response.data;

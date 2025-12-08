@@ -1,8 +1,8 @@
 import basementApi from "./basementAxiosInstance";
 import TokenUtils from "@/utils/tokenUtils";
 
-export const BasementAuthController = {
-  async getBasementUser() {
+export class BasementAuthController {
+  static async getBasementUser() {
     const token = TokenUtils.getToken();
     if (!token) {
       return null;
@@ -11,35 +11,31 @@ export const BasementAuthController = {
     try {
       const { data } = await basementApi.get("/user/me");
 
-      // Проверяем, что данные пользователя есть
       if (!data.user) {
         BasementAuthController.logout();
         return null;
       }
 
-      // Проверяем роль пользователя
       if (!data.user.roles || !data.user.roles.includes("basement_worker")) {
         BasementAuthController.logout();
         return null;
       }
 
-      // Обновляем данные в localStorage
       localStorage.setItem("user", JSON.stringify(data.user));
 
       return data;
     } catch (error) {
       console.error("BasementAuth: Error getting user data:", error);
-      // Если токен недействителен, удаляем его
       BasementAuthController.logout();
       return null;
     }
-  },
+  }
 
-  logout() {
+  static logout() {
     TokenUtils.clearAuthData();
-  },
+  }
 
-  isAuthenticated() {
+  static isAuthenticated() {
     const token = TokenUtils.getToken();
     const user = localStorage.getItem("user");
     if (!token || !user) return false;
@@ -50,9 +46,9 @@ export const BasementAuthController = {
     } catch {
       return false;
     }
-  },
+  }
 
-  getToken() {
+  static getToken() {
     return TokenUtils.getToken();
-  },
-};
+  }
+}

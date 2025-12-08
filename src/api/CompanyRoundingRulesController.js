@@ -1,24 +1,21 @@
 import api from "./axiosInstance";
+import CompanyRoundingRuleDto from "@/dto/CompanyRoundingRuleDto";
+import BaseController from "./BaseController";
 
-export default class CompanyRoundingRulesController {
+export default class CompanyRoundingRulesController extends BaseController {
   static async getItems() {
-    try {
-      const response = await api.get("/company-rounding-rules");
-      return response.data;
-    } catch (error) {
-      console.error("Ошибка при получении правил округления:", error);
-      throw error;
-    }
+    return super.handleRequest(
+      async () => {
+        const response = await api.get("/company-rounding-rules");
+        return CompanyRoundingRuleDto.fromApiArray(response.data);
+      },
+      "Ошибка при получении правил округления:"
+    );
   }
 
   static async storeItem(item) {
-    try {
-      const response = await api.post("/company-rounding-rules", item);
-      return response.data.rule;
-    } catch (error) {
-      console.error("Ошибка при сохранении правил округления:", error);
-      throw error;
-    }
+    const data = await super.storeItem("/company-rounding-rules", item);
+    return data.rule;
   }
 }
 

@@ -1,6 +1,6 @@
 <template>
     <transition name="fade" mode="out-in">
-        <div v-if="data && !loading" :key="`table-${$i18n.locale}`">
+        <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.users" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="(i) => showModal(i)">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
@@ -12,7 +12,7 @@
                         <template #right>
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-                                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                                @changePage="(page) => fetchItems(page)" @perPageChange="handlePerPageChange" />
                         </template>
 
                         <template #gear="{ resetColumns, columns, toggleVisible, log }">
@@ -115,14 +115,18 @@ export default {
 
     methods: {
         async fetchItems(page = 1, silent = false) {
-            if (!silent) this.loading = true;
+            if (!silent) {
+                this.loading = true;
+            }
             try {
                 const per_page = this.perPage;
                 this.data = await UsersController.getItems(page, per_page);
             } catch (error) {
                 this.showNotification(this.$t('errorLoadingUsers'), error.message, true);
             }
-            if (!silent) this.loading = false;
+            if (!silent) {
+                this.loading = false;
+            }
         },
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;

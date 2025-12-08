@@ -99,7 +99,7 @@ export default {
             };
         },
         async fetchAllCategories() {
-            this.allCategories = await OrderStatusCategoryController.getAllItems();
+            this.allCategories = await OrderStatusCategoryController.getListItems();
         },
         async save() {
             this.saveLoading = true;

@@ -89,6 +89,7 @@ export default {
     totalBalance: 'Total',
     source: 'Source',
   projects: 'Projects',
+  rent: 'Rent',
   users: 'Employees',
   settings: 'Settings',
   generalSettings: 'Settings',
@@ -103,6 +104,7 @@ export default {
   
   // Actions
   add: 'Add',
+  selectIncomeForRentIncome: 'Income — when we receive rent (cat. 28). Outcome — when we pay rent (cat. 9).',
   
   // Forms
   name: 'Name',

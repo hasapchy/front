@@ -2,11 +2,8 @@
     <div class="mt-4">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-md font-semibold">{{ $t('contracts') }}</h3>
-            <PrimaryButton 
-                v-if="$store.getters.hasPermission('projects_create')"
-                icon="fas fa-plus" 
-                :onclick="showAddContractModal" 
-                :is-small="true">
+            <PrimaryButton v-if="$store.getters.hasPermission('projects_create')" icon="fas fa-plus"
+                :onclick="showAddContractModal" :is-small="true">
                 {{ $t('addContract') }}
             </PrimaryButton>
         </div>
@@ -19,16 +16,9 @@
             :columns-config="columnsConfig" :table-data="contracts" :item-mapper="itemMapper"
             @selectionChange="selectedIds = $event" :onItemClick="handleContractClick" />
 
-        <!-- Модальное окно для создания/редактирования контракта -->
-        <SideModalDialog 
-            :showForm="contractModalOpen" 
-            :onclose="closeContractModal">
-            <ProjectContractCreatePage 
-                v-if="!contractLoading && editingItem?.id"
-                :editingItem="editingContractItem"
-                :projectId="editingItem.id"
-                @saved="handleContractSaved"
-                @saved-error="handleContractSavedError"
+        <SideModalDialog :showForm="contractModalOpen" :onclose="closeContractModal">
+            <ProjectContractCreatePage v-if="!contractLoading && editingItem?.id" :editingItem="editingContractItem"
+                :projectId="editingItem.id" @saved="handleContractSaved" @saved-error="handleContractSavedError"
                 @close-request="closeContractModal" />
             <div v-else-if="contractLoading" class="p-4 text-center">
                 {{ $t('loading') }}...
@@ -80,30 +70,26 @@ export default {
             if (!this.editingItem) return;
             this.loading = true;
             try {
-                const response = await ProjectContractController.getAllItems(this.editingItem.id);
-                if (response.success) {
-                    this.contracts = response.items.map(contract => ({
-                        ...contract,
-                        formatAmount() {
-                            return contract.formatAmount();
-                        },
-                        formatDate() {
-                            return contract.formatDate();
-                        },
-                        formatReturnedStatus() {
-                            const status = contract.getReturnedStatus();
-                            const color = contract.returned ? '#5CB85C' : '#EE4F47';
-                            return `<span style="color:${color};font-weight:bold">${status}</span>`;
-                        },
-                        formatFiles() {
-                            const count = contract.files ? contract.files.length : 0;
-                            if (count === 0) return '-';
-                            return `<span class="text-blue-600"><i class="fas fa-file"></i> ${count}</span>`;
-                        }
-                    }));
-                } else {
-                    this.contracts = [];
-                }
+                const items = await ProjectContractController.getListItems(this.editingItem.id);
+                this.contracts = items.map(contract => ({
+                    ...contract,
+                    formatAmount() {
+                        return contract.formatAmount();
+                    },
+                    formatDate() {
+                        return contract.formatDate();
+                    },
+                    formatReturnedStatus() {
+                        const status = contract.getReturnedStatus();
+                        const color = contract.returned ? '#5CB85C' : '#EE4F47';
+                        return `<span style="color:${color};font-weight:bold">${status}</span>`;
+                    },
+                    formatFiles() {
+                        const count = contract.files ? contract.files.length : 0;
+                        if (count === 0) return '-';
+                        return `<span class="text-blue-600"><i class="fas fa-file"></i> ${count}</span>`;
+                    }
+                }));
             } catch (error) {
                 console.error('Error fetching contracts:', error);
                 this.contracts = [];
@@ -133,16 +119,13 @@ export default {
         async handleContractClick(item) {
             try {
                 this.contractLoading = true;
-                const response = await ProjectContractController.getItem(item.id);
-                if (response.success) {
-                    this.editingContractItem = response.item;
-                    this.contractModalOpen = true;
-                } else {
-                    this.showNotification('Ошибка при загрузке контракта', response.error, true);
-                }
+                const contractItem = await ProjectContractController.getItem(item.id);
+                this.editingContractItem = contractItem;
+                this.contractModalOpen = true;
             } catch (error) {
                 console.error('Error loading contract:', error);
-                this.showNotification('Ошибка при загрузке контракта', error.message || error, true);
+                const errorMessage = error?.response?.data?.message || error?.message || 'Ошибка при загрузке контракта';
+                this.showNotification('Ошибка при загрузке контракта', errorMessage, true);
             } finally {
                 this.contractLoading = false;
             }

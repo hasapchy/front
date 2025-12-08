@@ -631,7 +631,7 @@ const store = createStore({
         fetchFn: async () => {
           const UsersController = (await import("@/api/UsersController"))
             .default;
-          return await UsersController.getAllItems();
+          return await UsersController.getListItems();
         },
       });
     },
@@ -650,7 +650,7 @@ const store = createStore({
           const WarehouseController = (
             await import("@/api/WarehouseController")
           ).default;
-          return await WarehouseController.getAllItems();
+          return await WarehouseController.getListItems();
         },
         errorName: "складов",
         onError: handleLoadError,
@@ -671,7 +671,7 @@ const store = createStore({
           const CashRegisterController = (
             await import("@/api/CashRegisterController")
           ).default;
-          return await CashRegisterController.getAllItems();
+          return await CashRegisterController.getListItems();
         },
         errorName: "касс",
         onError: handleLoadError,
@@ -781,7 +781,7 @@ const store = createStore({
         fetchData: async () => {
           const CategoryController = (await import("@/api/CategoryController"))
             .default;
-          return await CategoryController.getAllItems();
+          return await CategoryController.getListItems();
         },
         errorName: "категорий",
         onError: handleLoadError,
@@ -852,7 +852,7 @@ const store = createStore({
         const ProjectDto = (await import("@/dto/project/ProjectDto")).default;
 
         const data = await retryWithExponentialBackoff(
-          () => ProjectController.getAllItems(),
+          () => ProjectController.getListItems(),
           3
         );
         const plainData = data.map((project) => ({ ...project }));
@@ -955,7 +955,7 @@ const store = createStore({
           const OrderStatusController = (
             await import("@/api/OrderStatusController")
           ).default;
-          return await OrderStatusController.getAllItems();
+          return await OrderStatusController.getListItems();
         },
         transformFn: (data) => {
           if (state.orderStatusesCustomOrder) {
@@ -980,7 +980,7 @@ const store = createStore({
           const ProjectStatusController = (
             await import("@/api/ProjectStatusController")
           ).default;
-          return await ProjectStatusController.getAllItems();
+          return await ProjectStatusController.getListItems();
         },
       });
     },
@@ -995,7 +995,7 @@ const store = createStore({
           const TransactionCategoryController = (
             await import("@/api/TransactionCategoryController")
           ).default;
-          return await TransactionCategoryController.getAllItems();
+          return await TransactionCategoryController.getListItems();
         },
       });
     },

@@ -2,7 +2,7 @@ import CategoryDto from "@/dto/category/CategoryDto";
 import basementApi from "./basementAxiosInstance";
 
 export default class BasementCategoryController {
-  static async getAllItems() {
+  static async getListItems() {
     try {
       const response = await basementApi.get("/categories/all");
       const data = response.data;

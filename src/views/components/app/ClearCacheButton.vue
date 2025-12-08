@@ -41,9 +41,19 @@ export default {
           'refresh_token',
           'user',
           'vuex',
+          'hasap_vuex_cache',
+          'hasap_references_cache',
+          'hasap_user_settings',
+          'orders_viewMode',
+          'projects_viewMode',
+          'kanban_column_order_orders',
+          'kanban_column_order_projects',
+          'ui_transactions_balance_cards_layout',
+          'menuItems',
           'current_company',
           'locale'
         ];
+        const preservedPrefixes = ['tableColumns_', 'tableSort_', 'cashRegisters_'];
         const preservedValues = preservedKeys.reduce((acc, key) => {
           const value = localStorage.getItem(key);
           if (value !== null) {
@@ -60,7 +70,8 @@ export default {
         
         // 3. Очищаем весь остальной localStorage, не трогая сохранённые ключи
         Object.keys(localStorage).forEach(key => {
-          if (!preservedKeys.includes(key)) {
+          const isPreservedPrefix = preservedPrefixes.some((prefix) => key.startsWith(prefix));
+          if (!preservedKeys.includes(key) && !isPreservedPrefix) {
             localStorage.removeItem(key);
           }
         });

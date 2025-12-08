@@ -141,11 +141,9 @@ export default {
     },
     methods: {
         getStatusColumns() {
-            // Создаем колонки на основе статусов заказов
             return this.statuses.map(status => {
                 const statusOrders = this.orders.filter(order => order.statusId === status.id);
                 return {
-                    // Передаем весь объект status со всеми полями (включая category)
                     ...status,
                     orders: statusOrders,
                     type: 'status'
@@ -229,7 +227,7 @@ export default {
             if (scrollLeft + clientWidth >= scrollWidth - 200) {
                 this.$emit('load-more');
             }
-        }, 200)
+        }, 200),
     },
     watch: {
         isProjectMode() {
@@ -250,10 +248,7 @@ export default {
         }
     },
     mounted() {
-        // Загружаем порядок колонок
         this.loadColumnOrder();
-        
-        // Инициализируем отсортированные колонки
         this.updateSortedColumns();
     }
 };

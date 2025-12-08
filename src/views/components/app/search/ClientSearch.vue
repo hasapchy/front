@@ -231,7 +231,7 @@ export default {
             if (this.clientSearch.length >= 3) {
                 this.clientSearchLoading = true;
                 try {
-                    const results = await ClientController.search(this.clientSearch);
+                    const results = await ClientController.searchItems(this.clientSearch);
 
                     this.clientResults = this.onlySuppliers
                         ? results.filter((client) => client.isSupplier)

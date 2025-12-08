@@ -21,7 +21,7 @@
                         <template #right>
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-                                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                                @changePage="(page) => fetchItems(page)" @perPageChange="handlePerPageChange" />
                         </template>
 
                         <template #gear="{ resetColumns, columns, toggleVisible, log }">
@@ -128,16 +128,18 @@ export default {
             this.fetchItems(1, false);
         },
         async fetchItems(page = 1, silent = false) {
-            if (!silent) this.loading = true;
+            if (!silent) {
+                this.loading = true;
+            }
             try {
-               
                 const per_page = this.perPage;
-                
                 this.data = await TransactionCategoryController.getItems(page, per_page);
             } catch (error) {
                 this.showNotification('Ошибка получения списка категорий транзакций', error.message, true);
             }
-            if (!silent) this.loading = false;
+            if (!silent) {
+                this.loading = false;
+            }
         }
     }
 }

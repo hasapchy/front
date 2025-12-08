@@ -194,7 +194,7 @@ export default {
             if (scrollTop + clientHeight >= scrollHeight - 100) {
                 this.$emit('load-more');
             }
-        }, 200),
+        }, 200)
     },
 };
 </script>

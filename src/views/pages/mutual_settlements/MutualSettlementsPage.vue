@@ -141,7 +141,7 @@ export default {
         async loadClientBalances() {
             this.clientBalancesLoading = true;
             try {
-                const clients = await ClientController.getAllItems(true);
+                const clients = await ClientController.getListItems(true);
                 this.allClientsRaw = clients;
                 this.allClients = clients;
 

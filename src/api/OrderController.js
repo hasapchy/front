@@ -1,137 +1,88 @@
 import api from "./axiosInstance";
 import OrderDto from "@/dto/order/OrderDto";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
+import { CacheInvalidator } from "@/cache";
+import BaseController from "./BaseController";
 
-export default class OrderController {
-  static async getItems(page = 1, search = null, dateFilter = 'all_time', startDate = null, endDate = null, statusFilter = '', projectFilter = '', clientFilter = '', per_page = 20, unpaidOnly = false) {
-    try {
-      const params = { page: page, per_page: per_page };
-      if (search) {
-        params.search = search;
-      }
-      if (dateFilter && dateFilter !== 'all_time') {
-        params.date_filter_type = dateFilter;
-        if (dateFilter === 'custom' && startDate && endDate) {
-          params.start_date = startDate;
-          params.end_date = endDate;
-        }
-      }
-      if (statusFilter) {
-        params.status_id = statusFilter;
-      }
-      if (projectFilter) {
-        params.project_id = projectFilter;
-      }
-      if (clientFilter) {
-        params.client_id = clientFilter;
-      }
-      if (unpaidOnly) {
-        params.unpaid_only = true;
-      }
-      const response = await api.get("/orders", { params });
-      const data = response.data;
-      const items = OrderDto.fromApiArray(data.items);
-      const paginatedResponse = new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total,
-        data.unpaid_orders_total || 0
-      );
-
-      return paginatedResponse;
-    } catch (error) {
-      console.error("Ошибка при получении списка заказов:", error);
-      throw error;
+export default class OrderController extends BaseController {
+  static async getItems(
+    page = 1,
+    search = null,
+    dateFilter = "all_time",
+    startDate = null,
+    endDate = null,
+    statusFilter = "",
+    projectFilter = "",
+    clientFilter = "",
+    per_page = 20,
+    unpaidOnly = false
+  ) {
+    const params = {};
+    if (search) {
+      params.search = search;
     }
+    if (dateFilter && dateFilter !== "all_time") {
+      params.date_filter_type = dateFilter;
+      if (dateFilter === "custom" && startDate && endDate) {
+        params.start_date = startDate;
+        params.end_date = endDate;
+      }
+    }
+    if (statusFilter) {
+      params.status_id = statusFilter;
+    }
+    if (projectFilter) {
+      params.project_id = projectFilter;
+    }
+    if (clientFilter) {
+      params.client_id = clientFilter;
+    }
+    if (unpaidOnly) {
+      params.unpaid_only = true;
+    }
+
+    const data = await super.getItems("/orders", page, per_page, params);
+    const items = OrderDto.fromApiArray(data.items || []);
+    return new PaginatedResponse(
+      items,
+      data.current_page,
+      data.next_page,
+      data.last_page,
+      data.total,
+      data.unpaid_orders_total || 0
+    );
   }
 
   static async storeItem(item) {
-    try {
-      const { data } = await api.post("/orders", {
-        ...item,
-      });
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании заказа:", error);
-      throw error;
-    }
+    const data = await super.storeItem("/orders", item);
+    await CacheInvalidator.onCreate("orders");
+    return data;
   }
 
   static async updateItem(id, item) {
-    try {
-
-      const { data } = await api.put(`/orders/${id}`, {
-        ...item,
-      });
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении заказа:", error);
-      throw error;
-    }
+    const data = await super.updateItem("/orders", id, item);
+    await CacheInvalidator.onUpdate("orders");
+    return data;
   }
 
   static async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/orders/${id}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении заказа:", error);
-      throw error;
-    }
+    const data = await super.deleteItem("/orders", id);
+    await CacheInvalidator.onDelete("orders");
+    return data;
   }
+
   static async batchUpdateStatus({ ids, status_id }) {
-    try {
+    return super.handleRequest(async () => {
       const { data } = await api.post("/orders/batch-status", {
         ids,
         status_id,
       });
       return data;
-    } catch (e) {
-      console.error("Ошибка пакетного обновления статуса:", e);
-      throw e;
-    }
+    }, "Ошибка пакетного обновления статуса:");
   }
 
   static async getItem(id) {
-    const { data } = await api.get(`/orders/${id}`);
-    const item = data.item;
-    
-    return OrderDto.fromApiArray([item])[0] || null;
-  }
-
-  static async getOrderTransactions(orderId) {
-    try {
-      const response = await api.get(`/transactions`, {
-        params: { order_id: orderId }
-      });
-      return response.data.transactions;
-    } catch (error) {
-      console.error("Ошибка при получении транзакций заказа:", error);
-      throw error;
-    }
-  }
-
-  static async linkTransactionToOrder(orderId, transactionId) {
-    try {
-      const { data } = await api.post(`/orders/${orderId}/transactions`, {
-        transaction_id: transactionId
-      });
-      return data;
-    } catch (error) {
-      console.error("Ошибка при связывании транзакции с заказом:", error);
-      throw error;
-    }
-  }
-
-  static async unlinkTransactionFromOrder(orderId, transactionId) {
-    try {
-      const { data } = await api.delete(`/orders/${orderId}/transactions/${transactionId}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при отвязывании транзакции от заказа:", error);
-      throw error;
-    }
+    const data = await super.getItem("/orders", id);
+    return OrderDto.fromApiArray([data.item])[0] || null;
   }
 }
