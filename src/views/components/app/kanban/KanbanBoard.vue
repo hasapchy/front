@@ -5,69 +5,42 @@
             <div class="text-sm text-gray-600">
                 <span>{{ $t('selected') }}: <strong>{{ selectedIds.length }}</strong></span>
             </div>
-            
-            <PrimaryButton 
-                :onclick="() => $emit('clear-selection')"
-                icon="fas fa-times"
-                :isLight="true"
-                :title="$t('clearSelection')"
-            />
-            
+
+            <PrimaryButton :onclick="() => $emit('clear-selection')" icon="fas fa-times" :isLight="true"
+                :title="$t('clearSelection')" />
+
             <div class="w-px h-4 bg-gray-300"></div>
-            
-            <select 
-                :value="batchStatusId"
-                @change="$emit('batch-status-change', $event.target.value)"
+
+            <select :value="batchStatusId" @change="$emit('batch-status-change', $event.target.value)"
                 class="px-3 py-1 border border-gray-300 rounded bg-white text-sm">
                 <option value="">{{ $t('changeStatus') }}</option>
                 <option v-for="status in statuses" :key="status.id" :value="status.id">
                     {{ status.name }}
                 </option>
             </select>
-            <PrimaryButton 
-                :onclick="() => $emit('batch-delete')"
-                icon="fas fa-trash"
-                :isLight="true"
-                :title="$t('delete')"
-            />
+            <PrimaryButton :onclick="() => $emit('batch-delete')" icon="fas fa-trash" :isLight="true"
+                :title="$t('delete')" />
         </div>
 
         <!-- Канбан доска - контейнер со скроллом -->
-        <div class="kanban-board-container" ref="boardContainer" @scroll="handleScroll">
+        <div class="kanban-board-container">
             <div class="kanban-board">
-                <draggable
-                    :list="sortedColumns"
-                    group="columns"
-                    :animation="200"
-                    ghost-class="ghost-column"
-                    drag-class="dragging-column"
-                    handle=".column-drag-handle"
-                    @change="handleColumnReorder"
-                    class="kanban-columns flex space-x-4"
-                >
-                    <KanbanColumn
-                        v-for="column in sortedColumns"
-                        :key="column.id"
-                        :status="column"
-                        :orders="column.orders"
-                        :selected-ids="selectedIds"
-                        :disabled="loading"
-                        :currency-symbol="currencySymbol"
-                        :is-project-mode="isProjectMode"
-                        :has-more="hasMore"
-                        :loading="loading"
-                        @change="handleOrderMove($event, column.id)"
-                        @card-dblclick="handleCardDoubleClick"
-                        @card-select-toggle="handleCardSelectToggle"
-                        @column-select-toggle="handleColumnSelectToggle"
-                        @load-more="$emit('load-more')"
-                    />
+                <draggable :list="sortedColumns" group="columns" :animation="200" ghost-class="ghost-column"
+                    drag-class="dragging-column" handle=".column-drag-handle" @change="handleColumnReorder"
+                    class="kanban-columns flex space-x-4">
+                    <KanbanColumn v-for="column in sortedColumns" :key="column.id" :status="column"
+                        :orders="column.orders" :selected-ids="selectedIds" :disabled="loading"
+                        :currency-symbol="currencySymbol" :is-project-mode="isProjectMode" :has-more="hasMore"
+                        :loading="loading" @change="handleOrderMove($event, column.id)"
+                        @card-dblclick="handleCardDoubleClick" @card-select-toggle="handleCardSelectToggle"
+                        @column-select-toggle="handleColumnSelectToggle" @load-more="$emit('load-more')" />
                 </draggable>
             </div>
         </div>
 
         <!-- Индикатор загрузки -->
-        <div v-if="loading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg z-10">
+        <div v-if="loading"
+            class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg z-10">
             <SpinnerIcon />
         </div>
     </div>
@@ -78,7 +51,6 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanColumn from './KanbanColumn.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
-import debounce from 'lodash.debounce';
 
 export default {
     name: 'KanbanBoard',
@@ -141,20 +113,22 @@ export default {
     },
     methods: {
         getStatusColumns() {
-            return this.statuses.map(status => {
-                const statusOrders = this.orders.filter(order => order.statusId === status.id);
-                return {
-                    ...status,
-                    orders: statusOrders,
-                    type: 'status'
-                };
-            });
+            return this.statuses
+                .filter(status => status.isActive !== false)
+                .map(status => {
+                    const statusOrders = this.orders.filter(order => order.statusId === status.id);
+                    return {
+                        ...status,
+                        orders: statusOrders,
+                        type: 'status'
+                    };
+                });
         },
         handleOrderMove(evt, targetColumnId) {
             if (!evt.added) return;
 
             const movedOrder = evt.added.element;
-            
+
             // Перемещение всегда изменяет статус заказа
             const updateData = {
                 orderId: movedOrder.id,
@@ -192,42 +166,28 @@ export default {
         },
         updateSortedColumns() {
             const statusColumns = this.getStatusColumns();
-            
+
             if (!this.columnOrder || this.columnOrder.length === 0) {
                 this.sortedColumns = statusColumns;
                 return;
             }
-            
+
             const orderedColumns = [];
             const columnMap = new Map(statusColumns.map(col => [col.id, col]));
-            
+
             this.columnOrder.forEach(id => {
                 if (columnMap.has(id)) {
                     orderedColumns.push(columnMap.get(id));
                     columnMap.delete(id);
                 }
             });
-            
+
             columnMap.forEach(col => {
                 orderedColumns.push(col);
             });
-            
+
             this.sortedColumns = orderedColumns;
         },
-        handleScroll: debounce(function() {
-            if (!this.hasMore || this.loading) return;
-            
-            const container = this.$refs.boardContainer;
-            if (!container) return;
-            
-            const scrollLeft = container.scrollLeft;
-            const scrollWidth = container.scrollWidth;
-            const clientWidth = container.clientWidth;
-            
-            if (scrollLeft + clientWidth >= scrollWidth - 200) {
-                this.$emit('load-more');
-            }
-        }, 200),
     },
     watch: {
         isProjectMode() {
@@ -263,6 +223,7 @@ export default {
 /* Контейнер для канбана - скроллится горизонтально */
 .kanban-board-container {
     width: 100%;
+    
     overflow-x: auto;
     overflow-y: visible;
     scrollbar-width: thin;
@@ -305,4 +266,3 @@ export default {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 </style>
-

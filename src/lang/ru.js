@@ -113,6 +113,7 @@ export default {
   withoutProject: 'Без проекта',
   noOrders: 'Нет заказов',
   orderUpdated: 'Заказ обновлен',
+  kanbanCardFields: 'Поля карточки',
   
   // Дополнительные навигационные элементы
   finance: 'Финансы',

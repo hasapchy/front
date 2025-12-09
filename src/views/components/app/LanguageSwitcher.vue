@@ -5,15 +5,8 @@
       @click="toggleDropdown"
       class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border-0 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
     >
-      <div class="flag-icon">
-        <img v-if="currentLocale === 'tm'" 
-             src="/flags/640px-Flag_of_Turkmenistan.svg.png" 
-             alt="TM" 
-             class="w-6 h-5 object-contain rounded">
-        <img v-else 
-             src="/flags/640px-Flag_of_Russia.svg.webp" 
-             alt="RU" 
-             class="w-6 h-5 object-contain rounded">
+      <div class="flag-icon" :class="`flag-${currentLocale}`">
+        <span class="flag-text">{{ currentLanguageName }}</span>
       </div>
       <span class="language-name hidden sm:inline">{{ currentLanguageName }}</span>
       <svg class="w-4 h-4 transition-transform hidden sm:block" :class="{ 'rotate-180': isOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,10 +26,8 @@
           class="language-option w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
           :class="{ 'bg-blue-50 text-blue-700': currentLocale === 'tm' }"
         >
-          <div class="flag-icon">
-            <img src="/flags/640px-Flag_of_Turkmenistan.svg.png" 
-                 alt="TM" 
-                 class="w-6 h-5 object-contain rounded">
+          <div class="flag-icon flag-tm">
+            <span class="flag-text">TM</span>
           </div>
           <span class="text-sm">TM</span>
         </button>
@@ -46,12 +37,21 @@
           class="language-option w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
           :class="{ 'bg-blue-50 text-blue-700': currentLocale === 'ru' }"
         >
-          <div class="flag-icon">
-            <img src="/flags/640px-Flag_of_Russia.svg.webp" 
-                 alt="RU" 
-                 class="w-6 h-5 object-contain rounded">
+          <div class="flag-icon flag-ru">
+            <span class="flag-text">RU</span>
           </div>
           <span class="text-sm">RU</span>
+        </button>
+        
+        <button 
+          @click="changeLanguage('en')"
+          class="language-option w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 transition-colors"
+          :class="{ 'bg-blue-50 text-blue-700': currentLocale === 'en' }"
+        >
+          <div class="flag-icon flag-en">
+            <span class="flag-text">EN</span>
+          </div>
+          <span class="text-sm">EN</span>
         </button>
       </div>
     </div>
@@ -73,7 +73,9 @@ export default {
     },
 
     currentLanguageName() {
-      return this.currentLocale === 'tm' ? 'TM' : 'RU'
+      if (this.currentLocale === 'tm') return 'TM'
+      if (this.currentLocale === 'en') return 'EN'
+      return 'RU'
     }
   },
   mounted() {
@@ -138,10 +140,15 @@ export default {
     },
     
     showLanguageNotification(locale) {
-      const languageName = locale === 'tm' ? this.$t('turkmen') : this.$t('russian')
-      const message = locale === 'tm' 
-        ? `${this.$t('languageChanged')}: ${languageName}`
-        : `${this.$t('languageChanged')}: ${languageName}`
+      let languageName
+      if (locale === 'tm') {
+        languageName = this.$t('turkmen')
+      } else if (locale === 'en') {
+        languageName = 'English'
+      } else {
+        languageName = this.$t('russian')
+      }
+      const message = `${this.$t('languageChanged')}: ${languageName}`
       
       const notification = document.createElement('div')
       notification.className = 'language-notification'
@@ -228,18 +235,33 @@ export default {
 }
 
 .flag-icon {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-.flag-icon img {
-  border-radius: 2px;
+  width: 32px;
+  height: 22px;
+  border-radius: 4px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border: 1px solid #e5e7eb;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
+}
+
+.flag-text {
+  line-height: 1;
+}
+
+.flag-tm {
+  background: linear-gradient(135deg, #01796f, #0ca678);
+}
+
+.flag-ru {
+  background: linear-gradient(135deg, #d32f2f, #1565c0);
+}
+
+.flag-en {
+  background: linear-gradient(135deg, #1e3a8a, #dc2626);
 }
 
 @keyframes fadeIn {

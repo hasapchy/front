@@ -475,13 +475,6 @@ export default {
             // Просто отмечаем изменение формы - сохранение произойдет при нажатии "Сохранить"
             // Никаких API вызовов не делаем
         },
-        async createRentTransactions(baseData) {
-            const debtData = { ...baseData, is_debt: true };
-            const cashData = { ...baseData, is_debt: false };
-            const debtResp = await TransactionController.storeItem(debtData);
-            const cashResp = await TransactionController.storeItem(cashData);
-            return cashResp || debtResp;
-        },
         getFormState() {
             return {
                 selectedClient: this.selectedClient?.id || null,
@@ -635,11 +628,7 @@ export default {
                         requestData.source_id = this.selectedSource?.id || this.orderId || null;
                     }
                     
-                    if (this.formConfig?.options?.createRentPair) {
-                        var resp = await this.createRentTransactions(requestData);
-                    } else {
-                        var resp = await TransactionController.storeItem(requestData);
-                    }
+                    var resp = await TransactionController.storeItem(requestData);
                 }
                 if (resp.message) {
                     // Проверяем, нужно ли закрыть заказ (только для модалки доплаты)

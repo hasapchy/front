@@ -16,23 +16,6 @@ export const TRANSACTION_FORM_PRESETS = {
             showBalancePreview: true,
         },
     },
-    rent: {
-        client: { visible: true },
-        project: { visible: false },
-        debt: { visible: false },
-        source: { visible: false },
-        category: {
-            visible: false,
-            enforcedByType: {
-                income: 28,
-                outcome: 9,
-            },
-        },
-        type: { visible: true },
-        options: {
-            createRentPair: true,
-        },
-    },
     orderPayment: {
         type: { visible: false },
         client: { visible: false },

@@ -21,6 +21,12 @@
                                         :options="clientTypeOptions" placeholder="all"
                                         @update:modelValue="handleClientTypeChange" />
                                 </div>
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') || 'Касса' }}</label>
+                                    <CheckboxFilter class="w-full" :model-value="cashRegisterFilter"
+                                        :options="cashRegisterOptions" placeholder="all"
+                                        @update:modelValue="handleCashRegisterChange" />
+                                </div>
                             </FiltersContainer>
                         </template>
 
@@ -122,9 +128,10 @@ export default {
 
     watch: {
         clientTypeFilter() {
-            if (this.allClientsRaw && this.allClientsRaw.length > 0) {
-                this.applyFilters();
-            }
+            this.loadClientBalances();
+        },
+        cashRegisterFilter() {
+            this.loadClientBalances();
         },
         searchQuery() {
             if (this.allClientsRaw && this.allClientsRaw.length > 0) {
@@ -141,7 +148,8 @@ export default {
         async loadClientBalances() {
             this.clientBalancesLoading = true;
             try {
-                const clients = await ClientController.getListItems(true);
+                const cashRegisterIds = this.cashRegisterFilter.length > 0 ? this.cashRegisterFilter : null;
+                const clients = await ClientController.getListItems(true, cashRegisterIds);
                 this.allClientsRaw = clients;
                 this.allClients = clients;
 
@@ -270,12 +278,14 @@ export default {
 
         resetFilters() {
             this.$store.dispatch('setClientTypeFilter', []);
+            this.$store.dispatch('setCashRegisterFilter', []);
             this.$store.dispatch('setSearchQuery', '');
-            this.applyFilters();
+            this.loadClientBalances();
         },
         getActiveFiltersCount() {
             let count = 0;
             if (this.clientTypeFilter.length) count++;
+            if (this.cashRegisterFilter.length) count++;
             if (this.searchQuery.trim()) count++;
             return count;
         },
@@ -283,9 +293,14 @@ export default {
             const selected = Array.isArray(value) ? value : [];
             this.$store.dispatch('setClientTypeFilter', selected);
         },
+        handleCashRegisterChange(value) {
+            const selected = Array.isArray(value) ? value : [];
+            this.$store.dispatch('setCashRegisterFilter', selected);
+        },
 
         async handleCompanyChanged(companyId) {
             this.$store.dispatch('setClientTypeFilter', []);
+            this.$store.dispatch('setCashRegisterFilter', []);
             this.$store.dispatch('setSearchQuery', '');
 
             this.allClients = [];
@@ -319,8 +334,19 @@ export default {
                 { value: 'investor', label: this.$t('investor') },
             ];
         },
+        cashRegisterFilter() {
+            const filter = this.$store.getters.cashRegisterFilter;
+            return Array.isArray(filter) ? filter : [];
+        },
+        cashRegisterOptions() {
+            const cashRegisters = this.$store.getters.cashRegisters || [];
+            return cashRegisters.map(cash => ({
+                value: cash.id,
+                label: `${cash.name} (${cash.currencySymbol || cash.currencyCode || ''})`
+            }));
+        },
         hasActiveFilters() {
-            return this.clientTypeFilter.length > 0;
+            return this.clientTypeFilter.length > 0 || this.cashRegisterFilter.length > 0;
         }
     },
 }

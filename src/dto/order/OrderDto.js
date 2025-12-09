@@ -86,7 +86,7 @@ export default class OrderDto {
   }
 
   productsHtmlList() {
-    return createProductsHtmlList(this.products, (quantity) => this.formatQuantity(quantity));
+    return createProductsHtmlList(this.products, (quantity) => this.formatQuantity(quantity), 3);
   }
 
   formatDate() {

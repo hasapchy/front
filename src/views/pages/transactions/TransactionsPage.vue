@@ -21,10 +21,6 @@
                                     icon="fas fa-plus"
                                     :disabled="!$store.getters.hasPermission('transactions_create')">
                                 </PrimaryButton>
-                                <PrimaryButton icon="fas fa-building" :onclick="showRentModal"
-                                    :disabled="!$store.getters.hasPermission('transactions_create')">
-                                    {{ $t('rent') || 'Аренда' }}
-                                </PrimaryButton>
                                 <FiltersContainer
                                     :has-active-filters="hasActiveFilters"
                                     :active-filters-count="getActiveFiltersCount()"
@@ -363,9 +359,6 @@ export default {
             }
             this.modalDialog = true;
             this.editingItem = item;
-        },
-        showRentModal() {
-            this.showModal(null, TRANSACTION_FORM_PRESETS.rent);
         },
         handleBalanceClick(data) {
             // Проверяем, установлены ли уже такие же фильтры

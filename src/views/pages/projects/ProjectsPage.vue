@@ -158,6 +158,9 @@
                         </button>
                     </div>
                 </template>
+                <template #right>
+                    <KanbanFieldsButton mode="projects" />
+                </template>
             </TableControlsBar>
             
             <KanbanBoard
@@ -221,10 +224,11 @@ import { markRaw } from 'vue';
 import debounce from "lodash.debounce";
 import { eventBus } from '@/eventBus';
 import { VueDraggableNext } from 'vue-draggable-next';
+import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell, TableControlsBar, TableFilterButton, FiltersContainer, draggable: VueDraggableNext },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell, TableControlsBar, TableFilterButton, FiltersContainer, KanbanFieldsButton, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin

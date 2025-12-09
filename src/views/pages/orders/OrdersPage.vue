@@ -81,17 +81,40 @@
                                 </div>
                             </FiltersContainer>
 
-                            <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                                <button @click="changeViewMode('table')"
-                                    class="px-3 py-2 transition-colors cursor-pointer"
-                                    :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                                    <i class="fas fa-table"></i>
-                                </button>
-                                <button @click="changeViewMode('kanban')"
-                                    class="px-3 py-2 transition-colors cursor-pointer"
-                                    :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                                    <i class="fas fa-columns"></i>
-                                </button>
+                            <div class="flex items-center gap-2">
+                                <div class="flex items-center border border-gray-300 rounded overflow-hidden">
+                                    <button @click="changeViewMode('table')"
+                                        class="px-3 py-2 transition-colors cursor-pointer"
+                                        :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                                        <i class="fas fa-table"></i>
+                                    </button>
+                                    <button @click="changeViewMode('kanban')"
+                                        class="px-3 py-2 transition-colors cursor-pointer"
+                                        :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                                        <i class="fas fa-columns"></i>
+                                    </button>
+                                </div>
+                                <TableFilterButton v-if="viewMode === 'table'" :onReset="resetColumns">
+                                    <ul>
+                                        <draggable v-if="columns && columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
+                                            <li v-for="(element, index) in columns" :key="element.name"
+                                                @click="toggleVisible(index)"
+                                                class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                                <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                    <div>
+                                                        <i class="text-sm mr-2 text-[#337AB7]"
+                                                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                        {{ $te(element.label) ? $t(element.label) : element.label }}
+                                                    </div>
+                                                    <div><i
+                                                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </draggable>
+                                    </ul>
+                                </TableFilterButton>
+                                <KanbanFieldsButton v-else-if="viewMode === 'kanban'" mode="orders" />
                             </div>
                         </template>
 
@@ -104,28 +127,7 @@
                                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
                         </template>
 
-                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
-                                <ul>
-                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
-                                        @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name"
-                                            @click="toggleVisible(index)"
-                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
-                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                                                <div>
-                                                    <i class="text-sm mr-2 text-[#337AB7]"
-                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
-                                                </div>
-                                                <div><i
-                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    </draggable>
-                                </ul>
-                            </TableFilterButton>
+                        <template #gear>
                         </template>
                     </TableControlsBar>
                 </template>
@@ -214,6 +216,7 @@
                     <OrderPaymentFilter v-model="paidOrdersFilter" :orders="data ? data.items : []" :statusId="4"
                         :currencySymbol="currencySymbol" :unpaidOrdersTotal="unpaidOrdersTotal"
                         @change="handlePaidOrdersFilterChange" />
+                    <KanbanFieldsButton mode="orders" />
                 </template>
             </TableControlsBar>
 
@@ -311,6 +314,7 @@ import { formatCurrency } from "@/utils/numberUtils";
 import { highlightMatches } from "@/utils/searchUtils";
 import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
+import KanbanFieldsButton from "@/views/components/app/kanban/KanbanFieldsButton.vue";
 
 const TimelinePanel = defineAsyncComponent(() =>
     import("@/views/components/app/dialog/TimelinePanel.vue")
@@ -318,7 +322,7 @@ const TimelinePanel = defineAsyncComponent(() =>
 
 export default {
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon, FiltersContainer, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, draggable: VueDraggableNext },
     data() {
         return {
             viewMode: 'kanban',

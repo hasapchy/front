@@ -50,6 +50,30 @@ const normalizeClientTypeFilter = (value) => {
   return Array.from(new Set(normalized));
 };
 
+const normalizeCashRegisterFilter = (value) => {
+  if (!value || value === "all") {
+    return [];
+  }
+
+  let rawValues = [];
+  if (Array.isArray(value)) {
+    rawValues = value;
+  } else if (typeof value === "string") {
+    rawValues = value.split(",");
+  } else {
+    return [];
+  }
+
+  const normalized = rawValues
+    .map((item) => {
+      const num = parseInt(String(item).trim(), 10);
+      return isNaN(num) ? null : num;
+    })
+    .filter((item) => item !== null);
+
+  return Array.from(new Set(normalized));
+};
+
 
 function handleLoadError(dispatch, title, error) {
   console.error(`❌ Ошибка загрузки ${title} после всех попыток:`, error);
@@ -303,12 +327,35 @@ const store = createStore({
     isSyncingCompanyFromOtherTab: false,
     // Фильтр по типу клиента для взаиморасчетов/финансов
     clientTypeFilter: [],
+    // Фильтр по кассе для взаиморасчетов
+    cashRegisterFilter: [],
     // Версия логотипа для инвалидации кэша изображений
     logoVersion: 0,
     // Настройки меню
     menuItems: {
       main: [],
       available: [],
+    },
+    // Настройки полей карточек канбана
+    kanbanCardFields: {
+      orders: {
+        cashRegister: false,
+        warehouse: false,
+        client: true,
+        project: true,
+        products: false,
+        note: false,
+        description: false,
+        date: true,
+        totalPrice: true,
+      },
+      projects: {
+        description: true,
+        date: true,
+        client: true,
+        user: true,
+        budget: true,
+      },
     },
   },
 
@@ -459,6 +506,10 @@ const store = createStore({
       const normalized = normalizeClientTypeFilter(value);
       state.clientTypeFilter = normalized;
     },
+    SET_CASH_REGISTER_FILTER(state, value) {
+      const normalized = normalizeCashRegisterFilter(value);
+      state.cashRegisterFilter = normalized;
+    },
     SET_ORDER_STATUSES_CUSTOM_ORDER(state, order) {
       state.orderStatusesCustomOrder = order;
     },
@@ -469,6 +520,14 @@ const store = createStore({
     UPDATE_MENU_ITEMS(state, { type, items }) {
       if (type === "main" || type === "available") {
         state.menuItems[type] = items;
+      }
+    },
+    SET_KANBAN_CARD_FIELDS(state, fields) {
+      state.kanbanCardFields = fields;
+    },
+    UPDATE_KANBAN_CARD_FIELDS(state, { mode, fields }) {
+      if (mode === "orders" || mode === "projects") {
+        state.kanbanCardFields[mode] = { ...state.kanbanCardFields[mode], ...fields };
       }
     },
   },
@@ -498,6 +557,9 @@ const store = createStore({
     },
     setClientTypeFilter({ commit }, value) {
       commit("SET_CLIENT_TYPE_FILTER", value);
+    },
+    setCashRegisterFilter({ commit }, value) {
+      commit("SET_CASH_REGISTER_FILTER", value);
     },
     setUser({ commit }, user) {
       commit("SET_USER", user);
@@ -1686,7 +1748,7 @@ const store = createStore({
     categories: (state) => state.categories,
     projects: (state) => state.projects,
     activeProjects: (state) =>
-      state.projects.filter((p) => p.statusId !== 3 && p.statusId !== 4),
+      state.projects.filter((p) => p.statusId !== 4 && p.statusId !== 5),
     orderStatuses: (state) => state.orderStatuses,
     projectStatuses: (state) => state.projectStatuses,
     transactionCategories: (state) => state.transactionCategories,
@@ -1780,6 +1842,8 @@ const store = createStore({
       state.currentCompany?.rounding_quantity_custom_threshold ?? 0.5,
     clientTypeFilter: (state) =>
       normalizeClientTypeFilter(state.clientTypeFilter),
+    cashRegisterFilter: (state) =>
+      normalizeCashRegisterFilter(state.cashRegisterFilter),
     mainMenuItems: (state, getters) => {
       if (!state.menuItems.main || state.menuItems.main.length === 0) {
         return [];
@@ -1954,6 +2018,11 @@ const store = createStore({
           } else if (parsed.clientTypeFilter === undefined) {
             parsed.clientTypeFilter = [];
           }
+          if (parsed.cashRegisterFilter !== undefined && parsed.cashRegisterFilter !== null) {
+            parsed.cashRegisterFilter = normalizeCashRegisterFilter(parsed.cashRegisterFilter);
+          } else if (parsed.cashRegisterFilter === undefined) {
+            parsed.cashRegisterFilter = [];
+          }
           return parsed;
         } catch (error) {
           console.error('[Store] Ошибка загрузки userSettings из localStorage:', error);
@@ -1964,7 +2033,7 @@ const store = createStore({
         const userSettings = {};
         USER_SETTINGS_FIELDS.forEach((field) => {
           if (state[field] !== undefined) {
-            if (field === 'clientTypeFilter') {
+            if (field === 'clientTypeFilter' || field === 'cashRegisterFilter') {
               userSettings[field] = Array.isArray(state[field]) ? state[field] : [];
             } else {
               userSettings[field] = state[field];

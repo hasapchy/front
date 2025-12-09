@@ -101,6 +101,7 @@ export default {
   withoutProject: 'Without project',
   noOrders: 'No orders',
   orderUpdated: 'Order updated',
+  kanbanCardFields: 'Card Fields',
   
   // Actions
   add: 'Add',

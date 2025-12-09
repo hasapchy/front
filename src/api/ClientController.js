@@ -58,8 +58,14 @@ export default class ClientController extends BaseController {
     );
   }
 
-  static async getListItems(forMutualSettlements = false) {
-    const params = forMutualSettlements ? { for_mutual_settlements: true } : {};
+  static async getListItems(forMutualSettlements = false, cashRegisterIds = null) {
+    const params = {};
+    if (forMutualSettlements) {
+      params.for_mutual_settlements = true;
+    }
+    if (cashRegisterIds && Array.isArray(cashRegisterIds) && cashRegisterIds.length > 0) {
+      params.cash_register_ids = cashRegisterIds;
+    }
     const data = await super.getListItems("/clients", params);
     return ClientDto.fromApiArray(data);
   }

@@ -53,7 +53,7 @@ export default {
           'current_company',
           'locale'
         ];
-        const preservedPrefixes = ['tableColumns_', 'tableSort_', 'cashRegisters_'];
+        const preservedPrefixes = ['tableColumns_', 'tableSort_', 'cashRegisters_', 'kanbanCardFields_'];
         const preservedValues = preservedKeys.reduce((acc, key) => {
           const value = localStorage.getItem(key);
           if (value !== null) {

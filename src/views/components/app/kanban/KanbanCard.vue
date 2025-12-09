@@ -6,21 +6,44 @@
     >
         <!-- Заголовок с чекбоксом и номером/названием -->
         <div class="flex items-start justify-between mb-3">
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center space-x-2 min-w-0 flex-1">
                 <input 
                     type="checkbox" 
                     :checked="isSelected" 
                     @click.stop="handleSelectToggle"
-                    class="cursor-pointer"
+                    class="cursor-pointer flex-shrink-0"
                 />
-                <span class="text-sm font-bold text-gray-800">
-                    {{ isProjectMode ? order.name : `№${order.id}` }}
+                <span class="text-sm font-bold text-gray-800 truncate">
+                    {{ isProjectMode ? `№${order.id}` : `№${order.id}` }}
                 </span>
             </div>
         </div>
 
+        <!-- Название проекта (только для проектов, всегда видимо) -->
+        <div v-if="isProjectMode && order.name" class="mb-2">
+            <div class="text-sm font-semibold text-gray-800 truncate">
+                {{ order.name }}
+            </div>
+        </div>
+
+        <!-- Касса (только для заказов) -->
+        <div v-if="!isProjectMode && showField('cashRegister') && order.cashName" class="mb-2">
+            <div class="flex items-center space-x-1 text-xs text-gray-600">
+                <i class="fas fa-cash-register text-gray-400 text-xs"></i>
+                <span class="truncate">{{ order.cashName }}</span>
+            </div>
+        </div>
+
+        <!-- Склад (только для заказов) -->
+        <div v-if="!isProjectMode && showField('warehouse') && order.warehouseName" class="mb-2">
+            <div class="flex items-center space-x-1 text-xs text-gray-600">
+                <i class="fas fa-warehouse text-gray-400 text-xs"></i>
+                <span class="truncate">{{ order.warehouseName }}</span>
+            </div>
+        </div>
+
         <!-- Клиент -->
-        <div v-if="!isProjectMode" class="mb-2">
+        <div v-if="!isProjectMode && showField('client')" class="mb-2">
             <div class="flex items-center space-x-1 text-sm">
                 <i :class="getClientIconClass()"></i>
                 <span class="font-medium text-gray-800 truncate">
@@ -30,35 +53,30 @@
         </div>
 
         <!-- Описание проекта (только для проектов) -->
-        <div v-if="isProjectMode && order.description" class="mb-2">
+        <div v-if="isProjectMode && order.description && showField('description')" class="mb-2">
             <div class="text-xs text-gray-600 line-clamp-2">
                 {{ order.description }}
             </div>
         </div>
 
-        <!-- Дата создания и создатель -->
-        <div class="mb-2">
+        <!-- Дата создания -->
+        <div v-if="showField('date')" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-calendar text-gray-400"></i>
                 <span>{{ formatDate(order.date) }}</span>
-                <span class="text-gray-400">•</span>
-                <div class="flex items-center space-x-1">
-                    <div class="w-4 h-4 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                        <img 
-                            v-if="creatorPhoto" 
-                            :src="creatorPhoto" 
-                            :alt="creatorName"
-                            class="w-full h-full object-cover"
-                        >
-                        <i v-else class="fas fa-user text-gray-400 text-xs"></i>
-                    </div>
-                    <span>{{ creatorName }}</span>
-                </div>
+            </div>
+        </div>
+
+        <!-- Пользователь (только для заказов) -->
+        <div v-if="!isProjectMode && showField('user') && order.userName" class="mb-2">
+            <div class="flex items-center space-x-1 text-xs text-gray-600">
+                <i class="fas fa-user text-gray-400"></i>
+                <span class="truncate">{{ order.userName }}</span>
             </div>
         </div>
 
         <!-- Проект (только для заказов) -->
-        <div v-if="!isProjectMode && order.projectId" class="mb-2">
+        <div v-if="!isProjectMode && order.projectId && showField('project')" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-folder text-purple-500 text-xs"></i>
                 <span class="truncate">{{ order.projectName }}</span>
@@ -66,15 +84,47 @@
         </div>
 
         <!-- Клиент (только для проектов) -->
-        <div v-if="isProjectMode && order.client" class="mb-2">
+        <div v-if="isProjectMode && order.client && showField('client')" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i :class="getClientIconClass()"></i>
                 <span class="truncate">{{ getClientName() }}</span>
             </div>
         </div>
 
+        <!-- Пользователь (только для проектов) -->
+        <div v-if="isProjectMode && showField('user')" class="mb-2">
+            <div class="flex items-center space-x-1 text-xs text-gray-600">
+                <i class="fas fa-user text-gray-400"></i>
+                <span class="truncate">{{ order.userName || order.user_name || (order.creator && order.creator.name) || '-' }}</span>
+            </div>
+        </div>
+
+        <!-- Товары (только для заказов) -->
+        <div v-if="!isProjectMode && showField('products') && order.products && order.products.length > 0" class="mb-2">
+            <div class="text-xs text-gray-600">
+                <div v-html="getProductsHtml()"></div>
+            </div>
+        </div>
+
+        <!-- Примечание (только для заказов) -->
+        <div v-if="!isProjectMode && showField('note') && order.note" class="mb-2">
+            <div class="text-xs text-gray-600">
+                <div class="flex items-start space-x-1">
+                    <i class="fas fa-sticky-note text-gray-400 text-xs mt-0.5"></i>
+                    <span class="line-clamp-2" v-html="order.note"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Описание (только для заказов) -->
+        <div v-if="!isProjectMode && showField('description') && order.description" class="mb-2">
+            <div class="text-xs text-gray-600 line-clamp-2">
+                {{ order.description }}
+            </div>
+        </div>
+
         <!-- Бюджет проекта (только для проектов с permission) -->
-        <div v-if="isProjectMode && $store.getters.hasPermission('settings_project_budget_view') && order.budget" class="mt-3 pt-3 border-t border-gray-100">
+        <div v-if="isProjectMode && $store.getters.hasPermission('settings_project_budget_view') && order.budget && showField('budget')" class="mt-3 pt-3 border-t border-gray-100">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-1">
                     <i class="fas fa-money-bill-wave text-gray-700 text-xs"></i>
@@ -87,7 +137,7 @@
         </div>
 
         <!-- Сумма заказа (только для заказов) -->
-        <div v-if="!isProjectMode" class="mt-3 pt-3 border-t border-gray-100">
+        <div v-if="!isProjectMode && showField('totalPrice')" class="mt-3 pt-3 border-t border-gray-100">
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center space-x-1">
                     <i class="fas fa-money-bill-wave text-green-600 text-xs"></i>
@@ -111,11 +161,9 @@
 <script>
 import { dayjsDateTime } from '@/utils/dateUtils';
 import { formatNumber } from '@/utils/numberUtils';
-import userPhotoMixin from '@/mixins/userPhotoMixin';
 
 export default {
     name: 'KanbanCard',
-    mixins: [userPhotoMixin],
     props: {
         order: {
             type: Object,
@@ -132,15 +180,15 @@ export default {
     },
     emits: ['dblclick', 'select-toggle'],
     computed: {
-        creatorName() {
-            return this.order?.userName || this.order?.creator?.name || this.$t('notSpecified');
-        },
-        creatorPhoto() {
-            const photo = this.order?.userPhoto || this.order?.creator?.photo || null;
-            return photo ? this.getUserPhotoSrc({ photo }) : null;
+        kanbanFields() {
+            const mode = this.isProjectMode ? 'projects' : 'orders';
+            return this.$store.state.kanbanCardFields[mode] || {};
         }
     },
     methods: {
+        showField(fieldName) {
+            return this.kanbanFields[fieldName] !== false;
+        },
         handleDoubleClick() {
             this.$emit('dblclick', this.order);
         },
@@ -265,6 +313,12 @@ export default {
             } else {
                 return 'fas fa-check-circle';
             }
+        },
+        getProductsHtml() {
+            if (this.order.productsHtmlList && typeof this.order.productsHtmlList === 'function') {
+                return this.order.productsHtmlList();
+            }
+            return '';
         }
     }
 };

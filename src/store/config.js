@@ -96,7 +96,9 @@ export const STORE_CONFIG = {
     "soundEnabled",
     "orderStatusesCustomOrder",
     "clientTypeFilter",
+    "cashRegisterFilter",
     "menuItems",
+    "kanbanCardFields",
   ],
 
   loadingFlagsToReset: [
