@@ -18,6 +18,25 @@ import { eventBus } from "@/eventBus";
 import { PermissionParser, PERMISSIONS_CONFIG, hasPermission as checkPermission, isAdmin } from "@/permissions";
 import { STORE_CONFIG } from "./config";
 import TokenUtils from "@/utils/tokenUtils";
+import AuthController from "@/api/AuthController";
+import { BasementAuthController } from "@/api/basement/BasementAuthController";
+import BasementProductController from "@/api/basement/BasementProductController";
+import ProductController from "@/api/ProductController";
+import UsersController from "@/api/UsersController";
+import WarehouseController from "@/api/WarehouseController";
+import CashRegisterController from "@/api/CashRegisterController";
+import ClientController from "@/api/ClientController";
+import CategoryController from "@/api/CategoryController";
+import ProjectController from "@/api/ProjectController";
+import OrderStatusController from "@/api/OrderStatusController";
+import ProjectStatusController from "@/api/ProjectStatusController";
+import TransactionCategoryController from "@/api/TransactionCategoryController";
+import AppController from "@/api/AppController";
+import CurrencyDto from "@/dto/app/CurrencyDto";
+import ClientDto from "@/dto/client/ClientDto";
+import ProjectDto from "@/dto/project/ProjectDto";
+import ProductSearchDto from "@/dto/product/ProductSearchDto";
+import { isBasementWorkerOnly, getUserFromStorage } from "@/utils/userUtils";
 
 const CLEAR_MUTATIONS_MAPPING = STORE_CONFIG.clearMutationsMapping;
 const GLOBAL_REFERENCE_FIELDS = STORE_CONFIG.globalReferenceFields;
@@ -119,10 +138,6 @@ async function loadCompanyDataIfNeeded(dispatch, state) {
 async function loadProductsForSearch(getters, isProducts, limit = 10) {
   try {
     if (getters.isBasementMode) {
-      const BasementProductController = (
-        await import("@/api/basement/BasementProductController")
-      ).default;
-
       if (isProducts === true) {
         const productsResult = await retryWithExponentialBackoff(
           () => BasementProductController.getItems(1, true, {}, limit),
@@ -162,8 +177,6 @@ async function loadProductsForSearch(getters, isProducts, limit = 10) {
         };
       }
     } else {
-      const ProductController = (await import("@/api/ProductController"))
-        .default;
       return await retryWithExponentialBackoff(
         () =>
           ProductController.getItems(
@@ -655,16 +668,15 @@ const store = createStore({
         if (hasAccessToOtherCurrencies && onlyDefaultInCache) {
           commit("SET_CURRENCIES", []);
         } else {
-          if (
-            state.currencies[0]?.is_default &&
-            !state.currencies[0]?.isDefault
-          ) {
-            const CurrencyDto = (await import("@/dto/app/CurrencyDto")).default;
-            commit(
-              "SET_CURRENCIES",
-              CurrencyDto.fromApiArray(state.currencies)
-            );
-          }
+        if (
+          state.currencies[0]?.is_default &&
+          !state.currencies[0]?.isDefault
+        ) {
+          commit(
+            "SET_CURRENCIES",
+            CurrencyDto.fromApiArray(state.currencies)
+          );
+        }
           return;
         }
       }
@@ -678,7 +690,6 @@ const store = createStore({
         fetchFn: async () => {
           const apiInstance = getters.isBasementMode ? basementApi : api;
           const response = await apiInstance.get("/app/currency");
-          const CurrencyDto = (await import("@/dto/app/CurrencyDto")).default;
           return CurrencyDto.fromApiArray(response.data);
         },
       });
@@ -691,8 +702,6 @@ const store = createStore({
         loadingFlag: "users",
         logName: "👥 Сотрудники",
         fetchFn: async () => {
-          const UsersController = (await import("@/api/UsersController"))
-            .default;
           return await UsersController.getListItems();
         },
       });
@@ -709,9 +718,6 @@ const store = createStore({
         logEmoji: "📦",
         logName: "Склады",
         fetchData: async () => {
-          const WarehouseController = (
-            await import("@/api/WarehouseController")
-          ).default;
           return await WarehouseController.getListItems();
         },
         errorName: "складов",
@@ -730,9 +736,6 @@ const store = createStore({
         logEmoji: "💰",
         logName: "Кассы",
         fetchData: async () => {
-          const CashRegisterController = (
-            await import("@/api/CashRegisterController")
-          ).default;
           return await CashRegisterController.getListItems();
         },
         errorName: "касс",
@@ -780,7 +783,6 @@ const store = createStore({
           commit("SET_CLIENTS_DATA", []);
           commit("SET_CLIENTS", []);
         } else {
-          const ClientDto = (await import("@/dto/client/ClientDto")).default;
           const clients = ClientDto.fromApiArray(state.clientsData);
           commit("SET_CLIENTS", clients);
           return;
@@ -805,10 +807,6 @@ const store = createStore({
       commit("SET_LOADING_FLAG", { type: "clients", loading: true });
 
       try {
-        const ClientController = (await import("@/api/ClientController")).default;
-        const ClientDto = (await import("@/dto/client/ClientDto")).default;
-        const api = (await import("@/api/axiosInstance")).default;
-
         const response = await retryWithExponentialBackoff(async () => {
           const res = await api.get(`/clients/all`);
           return res.data;
@@ -841,8 +839,6 @@ const store = createStore({
         logEmoji: "✅",
         logName: "Категории",
         fetchData: async () => {
-          const CategoryController = (await import("@/api/CategoryController"))
-            .default;
           return await CategoryController.getListItems();
         },
         errorName: "категорий",
@@ -884,7 +880,6 @@ const store = createStore({
         state.projectsDataCompanyId === companyId &&
         isFreshByKey(cacheKey, ttl)
       ) {
-        const ProjectDto = (await import("@/dto/project/ProjectDto")).default;
         const projects = ProjectDto.fromApiArray(state.projectsData);
         commit("SET_PROJECTS", projects);
         return;
@@ -909,10 +904,6 @@ const store = createStore({
       commit("SET_LOADING_FLAG", { type: "projects", loading: true });
 
       try {
-        const ProjectController = (await import("@/api/ProjectController"))
-          .default;
-        const ProjectDto = (await import("@/dto/project/ProjectDto")).default;
-
         const data = await retryWithExponentialBackoff(
           () => ProjectController.getListItems(),
           3
@@ -951,9 +942,6 @@ const store = createStore({
           Array.isArray(state[stateKey]) &&
           state[stateKey].length === 0
         ) {
-          const ProductSearchDto = (
-            await import("@/dto/product/ProductSearchDto")
-          ).default;
           const products = ProductSearchDto.fromApiArray(state[dataKey]);
           commit(setProductsMutation, products);
           return;
@@ -970,9 +958,6 @@ const store = createStore({
           isProductsOnly,
           limit
         );
-        const ProductSearchDto = (
-          await import("@/dto/product/ProductSearchDto")
-        ).default;
         const products = ProductSearchDto.fromApiArray(results.items || []);
         commit(setProductsMutation, products);
         commit(
@@ -1165,10 +1150,6 @@ const store = createStore({
       commit("SET_PERMISSIONS_LOADED", false);
       await dispatch("setPermissions", []);
 
-      const { isBasementWorkerOnly, getUserFromStorage } = await import(
-        "@/utils/userUtils"
-      );
-
       if (!TokenUtils.isAuthenticated()) {
         TokenUtils.clearAuthData();
         await dispatch("setUser", null);
@@ -1182,11 +1163,6 @@ const store = createStore({
         const isBasementWorker = isBasementWorkerOnly(userFromStorage);
 
         commit("SET_CURRENT_COMPANY", null);
-
-        const AuthController = (await import("@/api/AuthController")).default;
-        const { BasementAuthController } = await import(
-          "@/api/basement/BasementAuthController"
-        );
 
         const userData = isBasementWorker
           ? await BasementAuthController.getBasementUser()
