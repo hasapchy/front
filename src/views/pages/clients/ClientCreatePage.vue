@@ -32,9 +32,17 @@
           <label>{{ $t('lastName') }}</label>
           <input type="text" v-model="lastName" />
         </div>
+        <div v-if="clientType === 'individual'">
+          <label>{{ $t('patronymic') }}</label>
+          <input type="text" v-model="patronymic" />
+        </div>
         <div v-if="clientType === 'company'">
           <label>{{ $t('contactPerson') }}</label>
           <input type="text" v-model="contactPerson" />
+        </div>
+        <div v-if="clientType === 'company'">
+          <label>{{ $t('position') }}</label>
+          <input type="text" v-model="position" />
         </div>
         <div>
           <label>{{ $t('address') }}</label>
@@ -67,14 +75,11 @@
               :required="true" ref="phoneInputRef" />
             <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" />
           </div>
-          <div v-for="(phone, index) in phones" :key="`phone-${index}-${phone}`" class="flex items-stretch space-x-2 mt-2">
-            <PhoneInputWithCountry 
-              v-model="editingPhones[index]" 
-              :default-country="getPhoneCountryId(phone)"
+          <div v-for="(phone, index) in phones" :key="`phone-${index}-${phone}`"
+            class="flex items-stretch space-x-2 mt-2">
+            <PhoneInputWithCountry v-model="editingPhones[index]" :default-country="getPhoneCountryId(phone)"
               @country-change="(country) => handlePhoneCountryChange(index, country)"
-              @blur="() => handleEditPhoneBlur(index)"
-              @keyup.enter="() => savePhoneEdit(index)"
-              class="flex-1" />
+              @blur="() => handleEditPhoneBlur(index)" @keyup.enter="() => savePhoneEdit(index)" class="flex-1" />
             <PrimaryButton icon="fas fa-check" :is-info="true" :onclick="() => savePhoneEdit(index)" />
             <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" />
           </div>
@@ -105,7 +110,9 @@
           </div>
         </div>
       </div>
-      <div v-show="currentTab === 'balance' && editingItem && $store.getters.hasPermission('settings_client_balance_view')" class="mt-4">
+      <div
+        v-show="currentTab === 'balance' && editingItem && $store.getters.hasPermission('settings_client_balance_view')"
+        class="mt-4">
         <ClientBalanceTab :editing-item="editingItem" />
       </div>
       <div v-show="currentTab === 'payments' && editingItem" class="mt-4">
@@ -162,7 +169,9 @@ export default {
         ? this.editingItem.firstName
         : this.defaultFirstName || "",
       lastName: this.editingItem ? this.editingItem.lastName : "",
+      patronymic: this.editingItem ? this.editingItem.patronymic : "",
       contactPerson: this.editingItem ? this.editingItem.contactPerson : "",
+      position: this.editingItem ? this.editingItem.position : "",
       clientType: this.editingItem ? this.editingItem.clientType : "individual",
       employeeId: this.editingItem ? this.editingItem.employeeId : null,
       address: this.editingItem ? this.editingItem.address : "",
@@ -264,7 +273,9 @@ export default {
       return {
         firstName: this.firstName,
         lastName: this.lastName,
+        patronymic: this.patronymic,
         contactPerson: this.contactPerson,
+        position: this.position,
         clientType: this.clientType,
         employeeId: this.employeeId,
         address: this.address,
@@ -410,7 +421,7 @@ export default {
       const currentPhone = this.phones[index];
       const currentFormatted = this.formatPhoneForInput(currentPhone);
       const currentCleaned = currentFormatted.replace(/\D/g, "");
-      
+
       if (cleanedPhone === currentCleaned) {
         return;
       }
@@ -464,7 +475,7 @@ export default {
 
       this.phones[index] = phoneToSave;
       this.editingPhones[index] = this.formatPhoneForInput(phoneToSave);
-      
+
       if (dialCode === "7") {
         this.editingPhoneCountries[index] = { dialCode: "7", id: "ru" };
       } else {
@@ -481,12 +492,19 @@ export default {
       this.emails.splice(index, 1);
     },
     async save() {
+      if ((this.clientType === 'employee' || this.clientType === 'investor') && !this.employeeId) {
+        this.showNotification(this.$t('error') || 'Ошибка', this.$t('selectEmployee') || 'Необходимо выбрать сотрудника', true);
+        return;
+      }
+
       this.saveLoading = true;
       try {
         const clientData = {
           first_name: this.firstName,
           last_name: this.lastName,
+          patronymic: this.patronymic,
           contact_person: this.contactPerson,
+          position: this.position,
           client_type: this.clientType,
           employee_id: this.employeeId,
           address: this.address,
@@ -537,7 +555,9 @@ export default {
     clearForm() {
       this.firstName = "";
       this.lastName = "";
+      this.patronymic = "";
       this.contactPerson = "";
+      this.position = "";
       this.clientType = "individual";
       this.employeeId = null;
       this.address = "";
@@ -575,9 +595,10 @@ export default {
         if (newEditingItem) {
           this.firstName = newEditingItem.firstName || "";
           this.lastName = newEditingItem.lastName || "";
+          this.patronymic = newEditingItem.patronymic || "";
           this.contactPerson = newEditingItem.contactPerson || "";
+          this.position = newEditingItem.position || "";
           this.clientType = newEditingItem.clientType || "individual";
-          this.employeeId = newEditingItem.employeeId || null;
           this.address = newEditingItem.address || "";
           this.note = newEditingItem.note || "";
           this.status = newEditingItem.status || false;
@@ -598,14 +619,15 @@ export default {
           this.emails = newEditingItem.emails.map((email) => email.email) || [];
           this.discountType = newEditingItem.discountType ?? "fixed";
           this.discount = newEditingItem.discount ?? 0;
+          this.$nextTick(() => {
+            this.employeeId = newEditingItem.employeeId || null;
+            this.saveInitialState();
+          });
           this.currentTab = "info";
         } else {
           this.clearForm();
           this.currentTab = "info";
         }
-        this.$nextTick(() => {
-          this.saveInitialState();
-        });
       },
       deep: true,
       immediate: true,
@@ -631,8 +653,8 @@ export default {
           const selectedUser = this.users.find(user => user.id === newEmployeeId);
           if (selectedUser) {
             this.firstName = selectedUser.name || "";
-          } else {
-            this.employeeId = null;
+            this.lastName = selectedUser.surname || "";
+            this.position = selectedUser.position || "";
           }
         }
       },

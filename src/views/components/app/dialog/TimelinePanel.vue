@@ -130,7 +130,7 @@
 import { dayjsDateTime } from '@/utils/dateUtils';
 import CommentController from '@/api/CommentController';
 import { translateField, formatFieldValue as formatFieldValueUtil } from '@/utils/fieldTranslations';
-import { formatQuantity as formatQuantityUtil, formatCurrency as formatCurrencyUtil } from '@/utils/numberUtils';
+import { formatNumber as formatNumberUtil, formatCurrency as formatCurrencyUtil } from '@/utils/numberUtils';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 
@@ -248,9 +248,6 @@ export default {
             return true;
         },
         translateField,
-        formatQuantity(value) {
-            return formatQuantityUtil(value);
-        },
         formatCurrency(value, symbol) {
             return formatCurrencyUtil(value, symbol);
         },
@@ -277,7 +274,8 @@ export default {
                     const currencySymbol = (meta && meta.product_currency_symbol) || this.defaultCurrencySymbol || '₽';
                     return formatCurrencyUtil(value, currencySymbol);
                 case 'quantity':
-                    const formattedQuantity = typeof value === 'number' ? formatQuantity(value) : value;
+                    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+                    const formattedQuantity = !isNaN(numValue) ? formatNumberUtil(numValue) : value;
                     if (meta && meta.product_unit) {
                         return `${formattedQuantity} ${meta.product_unit}`.trim();
                     }

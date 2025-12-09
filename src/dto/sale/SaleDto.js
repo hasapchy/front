@@ -68,9 +68,6 @@ export default class SaleDto {
     return `${formatCurrency(this.totalPrice, symbol)} (скидка: ${formatCurrency(this.discount, symbol)})`;
   }
 
-  productsHtmlList() {
-    return createProductsHtmlList(this.products);
-  }
 
   cashNameDisplay() {
     return this.cashName || "";

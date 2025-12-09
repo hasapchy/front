@@ -7,6 +7,7 @@ export default class OrderStatusDto {
     name,
     categoryId,
     category = null,
+    isActive = true,
     createdAt = "",
     updatedAt = ""
   ) {
@@ -14,6 +15,7 @@ export default class OrderStatusDto {
     this.name = name;
     this.categoryId = categoryId;
     this.category = category;
+    this.isActive = isActive;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
@@ -38,6 +40,7 @@ export default class OrderStatusDto {
         data.name,
         data.category_id,
         category,
+        data.is_active !== undefined ? data.is_active : true,
         data.created_at,
         data.updated_at
       );

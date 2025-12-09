@@ -1,35 +1,34 @@
 import api from './axiosInstance';
+import BaseController from './BaseController';
 
-class UserCompanyController {
-    async getCurrentCompany() {
-        try {
-            const response = await api.get('/user/current-company');
-            return response.data;
-        } catch (error) {
-            console.error('Ошибка при получении текущей компании:', error);
-            throw error;
-        }
+export default class UserCompanyController extends BaseController {
+    static async getCurrentCompany() {
+        return super.handleRequest(
+            async () => {
+                const response = await api.get('/user/current-company');
+                return response.data;
+            },
+            'Ошибка при получении текущей компании:'
+        );
     }
 
-    async setCurrentCompany(companyId) {
-        try {
-            const response = await api.post('/user/set-company', { company_id: companyId });
-            return response.data;
-        } catch (error) {
-            console.error('Ошибка при установке компании:', error);
-            throw error;
-        }
+    static async setCurrentCompany(companyId) {
+        return super.handleRequest(
+            async () => {
+                const response = await api.post('/user/set-company', { company_id: companyId });
+                return response.data;
+            },
+            'Ошибка при установке компании:'
+        );
     }
 
-    async getUserCompanies() {
-        try {
-            const response = await api.get('/user/companies');
-            return response.data;
-        } catch (error) {
-            console.error('Ошибка при получении компаний пользователя:', error);
-            throw error;
-        }
+    static async getUserCompanies() {
+        return super.handleRequest(
+            async () => {
+                const response = await api.get('/user/companies');
+                return response.data;
+            },
+            'Ошибка при получении компаний пользователя:'
+        );
     }
 }
-
-export default new UserCompanyController();

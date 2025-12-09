@@ -26,9 +26,6 @@ export default class WarehouseWriteoffDto {
     this.updatedAt = updatedAt;
   }
 
-  productsHtmlList() {
-    return createProductsHtmlList(this.products);
-  }
 
   formatCreatedAt() {
     return dtoDateFormatters.formatCreatedAt(this.createdAt);

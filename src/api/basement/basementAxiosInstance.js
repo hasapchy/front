@@ -1,8 +1,8 @@
 import axios from "axios";
 import { BasementAuthController } from "./BasementAuthController";
 import store from "@/store";
+import TokenUtils from "@/utils/tokenUtils";
 
-// Создаем инстанс axios для basement
 const basementApi = axios.create({
   baseURL: `${import.meta.env.VITE_APP_BASE_URL}/api/basement`,
   headers: {
@@ -11,19 +11,8 @@ const basementApi = axios.create({
 });
 
 basementApi.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    const tokenExpiresAt = localStorage.getItem("token_expires_at");
-    
-    
-    // Проверяем, не истек ли токен
-    if (token && tokenExpiresAt && Date.now() > parseInt(tokenExpiresAt)) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem("token_expires_at");
-      localStorage.removeItem("refresh_token_expires_at");
-      localStorage.removeItem("user");
-    }
+  async (config) => {
+    const token = TokenUtils.getToken();
     
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -51,25 +40,18 @@ basementApi.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       try {
-        const refreshToken = localStorage.getItem("refresh_token");
-        const refreshTokenExpiresAt = localStorage.getItem("refresh_token_expires_at");
+        const refreshToken = TokenUtils.getRefreshToken();
         
-        if (refreshToken && refreshTokenExpiresAt && Date.now() <= parseInt(refreshTokenExpiresAt)) {
-          // Попытка обновить токен
+        if (refreshToken) {
           const response = await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/user/refresh`, {}, {
             headers: { Authorization: `Bearer ${refreshToken}` }
           });
           
           if (response.data && response.data.access_token) {
-            localStorage.setItem("token", response.data.access_token);
-            localStorage.setItem("refresh_token", response.data.refresh_token);
-            
-            if (response.data.expires_in) {
-              localStorage.setItem("token_expires_at", (Date.now() + response.data.expires_in * 1000).toString());
-            }
-            if (response.data.refresh_expires_in) {
-              localStorage.setItem("refresh_token_expires_at", (Date.now() + response.data.refresh_expires_in * 1000).toString());
-            }
+            TokenUtils.setTokens({
+              accessToken: response.data.access_token,
+              refreshToken: response.data.refresh_token
+            });
             
             error.config.headers.Authorization = `Bearer ${response.data.access_token}`;
             return axios(error.config);

@@ -4,6 +4,7 @@ export default {
   cancel: 'Отмена',
   delete: 'Удалить',
   copy: 'Копировать',
+  clear: 'Очистить',
   loading: 'Загрузка...',
   logout: 'Выйти',
   info: 'Информация',
@@ -63,6 +64,7 @@ export default {
   info: 'Информация',
   settings: 'Доп. меню',
   additionalMenu: 'Дополнительное меню',
+  noAvailableMenuItems: 'Нет доступных элементов меню',
   roundingSettings: 'Настройки округления',
   enableRounding: 'Включить округление',
   decimalPlaces: 'Количество знаков после запятой',
@@ -100,6 +102,7 @@ export default {
   warehouseReceipt: 'Оприходование',
   warehouses: 'Склады',
   transactions: 'Операции',
+  rent: 'Аренда',
   projects: 'Проекты',
   users: 'Сотрудники',
   settings: 'Кастомные права',
@@ -111,6 +114,7 @@ export default {
   withoutProject: 'Без проекта',
   noOrders: 'Нет заказов',
   orderUpdated: 'Заказ обновлен',
+  kanbanCardFields: 'Поля карточки',
   
   // Дополнительные навигационные элементы
   finance: 'Финансы',
@@ -165,6 +169,7 @@ export default {
   
   // Действия
   add: 'Добавить',
+  selectIncomeForRentIncome: 'Приход — если платят нам за аренду (кат. 28). Расход — если платим за аренду (кат. 9).',
   
   // Создание и редактирование
   createProject: 'Создать проект',
@@ -224,6 +229,9 @@ export default {
   settings_edit_any_date: 'Изменение любой даты',
   settings_project: 'Настройки проекта',
   settings_project_budget_view: 'Просмотр бюджета проекта',
+  settings_project_files_view: 'Просмотр файлов проекта',
+  settings_project_balance_view: 'Просмотр баланса проекта',
+  settings_project_contracts_view: 'Просмотр контрактов проекта',
   settings_currencies_view: 'Просмотр других валют',
   settings_cash_balance_view: 'Просмотр баланса касс',
   settings_client_balance_view: 'Просмотр баланса клиентов',
@@ -363,6 +371,7 @@ export default {
   selectEmployee: 'Выберите сотрудника',
   firstName: 'Имя',
   lastName: 'Фамилия',
+  patronymic: 'Отчество',
   contactPerson: 'Контактное лицо',
   characteristics: 'Характеристики',
   clientCategories: 'Категории клиентов',
@@ -513,6 +522,9 @@ export default {
   statusName: 'Название статуса',
   statusCategory: 'Категория статуса',
   statusCategoryName: 'Название категории статуса',
+  isActive: 'Активен',
+  protectedStatusCannotBeDisabled: 'Этот статус нельзя отключить',
+  statusCannotBeDisabledWithOrders: 'Нельзя отключить статус, на котором есть заказы',
   projectName: 'Название проекта',
   projectDate: 'Дата проекта',
   projectFiles: 'Файлы проекта',
@@ -609,6 +621,10 @@ export default {
   senderCashRegister: 'Касса отправитель',
   receiverCashRegister: 'Касса получатель',
   allWarehouses: 'Все склады',
+  availability: 'Наличие',
+  allProducts: 'Все товары',
+  inStock: 'В наличии',
+  outOfStock: 'Нет в наличии',
   warehouseSuccessfullyAdded: 'Склад успешно добавлен',
   errorGettingWarehouseProducts: 'Ошибка получения списка товаров на складе',
   errorGettingWarehouses: 'Ошибка получения списка складов',
@@ -764,6 +780,7 @@ export default {
   startWithAddingClient: 'Начните с добавления нового клиента',
   backToOrders: 'Назад к заказам',
   orderNotePlaceholder: 'Дополнительная информация о заказе',
+  orderItems: 'Товары в заказе',
   creating: 'Создание...',
   create: 'Создать',
   errorCreatingOrder: 'Ошибка создания заказа',
@@ -832,6 +849,8 @@ export default {
   errorDeletingTransaction: 'Ошибка удаления транзакции',
   clickToFilterDebts: 'Нажмите, чтобы отфильтровать кредиты',
   clickToFilterTransactions: 'Нажмите, чтобы отфильтровать транзакции',
+  transactionDeletedReadonly: 'Транзакция удалена и недоступна для изменения',
+  transactionReadonlyDueToSource: 'Транзакция привязана к трансферу, заказу или продаже и недоступна для изменения',
   
   // Трансферы
   errorGettingTransferList: 'Ошибка получения списка трансферов',
@@ -870,6 +889,13 @@ export default {
   present: 'по н.в.',
   bonus: 'Начислить премию',
   penalty: 'Выписать штраф',
+  advance: 'Выдать аванс',
+  accrueSalary: 'Начислить зарплату',
+  paySalary: 'Выплатить зарплату',
+  salaryDifferenceHelpTitle: 'В чем разница?',
+  salaryDifferenceHelp: 'Начисление зарплаты — это деньги за проделанную работу сотрудником (запись о долге, сотрудник нам должен). Выплата зарплаты — это фактическая выплата денег сотруднику (не в долг, уменьшает долг сотрудника).',
+  employeeClientNotFound: 'Клиент для сотрудника не найден',
+  employeeClientNotFoundDescription: 'Для работы с балансом сотрудника необходимо создать связанного клиента с employee_id, соответствующим ID этого сотрудника.',
   
   // Кассы
   addCashRegister: 'Добавить кассу',
@@ -919,6 +945,7 @@ export default {
   // Фразы для категорий
   createCategory: 'Категория',
   editCategory: 'Редактировать категорию',
+  categoryMustHaveAtLeastOneUser: 'Категория должна иметь хотя бы одного пользователя',
   categoryCreated: 'Категория создана',
   categoryAdded: 'Категория добавлена',
   categoryUpdated: 'Категория обновлена',
@@ -1003,10 +1030,12 @@ export default {
   createCashRegister: 'Касса',
   editCashRegister: 'Касса',
   cashRegister: 'Касса',
+  cashRegisterMustHaveAtLeastOneUser: 'Касса должна иметь хотя бы одного пользователя',
   
   // Фразы для складов
   createWarehouse: 'Склад',
   editWarehouse: 'Редактировать склад',
+  warehouseMustHaveAtLeastOneUser: 'Склад должен иметь хотя бы одного пользователя',
   
   // Фразы для продаж
   createSale: 'Продажа',
@@ -1175,6 +1204,9 @@ export default {
   new: 'Новый',
   inProgress: 'В работе',
   paid: 'Оплачен',
+  paymentStatus: 'Статус оплаты',
+  unpaid: 'Не оплачено',
+  partiallyPaid: 'Частично оплачено',
   cancelled: 'Отменен',
   allStatuses: 'Все статусы',
   
@@ -1204,7 +1236,10 @@ export default {
   invoices: 'Счета',
   transfers: 'Трансферы по кассам',
   projectStatuses: 'Статусы проектов',
+  project_statuses: 'Статусы проектов',
   transaction_categories: 'Категории транзакций',
+  employee_salaries: 'Зарплаты сотрудников',
+  settings_client_balance_adjustment: 'Корректировка баланса клиента',
 
   projectStatusSuccessfullyAdded: 'Статус проекта успешно добавлен',
   projectStatusSuccessfullyDeleted: 'Статус проекта успешно удален',

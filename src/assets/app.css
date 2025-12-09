@@ -446,3 +446,236 @@ select.with-icons {
 select.with-icons option {
     padding-left: 24px;
 }
+
+.cash-registers-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+    .cash-registers-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .cash-registers-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1280px) {
+    .cash-registers-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1536px) {
+    .cash-registers-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.cash-register-card {
+    background: white;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    position: relative;
+}
+
+@media (min-width: 768px) {
+    .cash-register-card {
+        padding: 0.75rem;
+    }
+}
+
+.cash-register-title {
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+@media (min-width: 768px) {
+    .cash-register-title {
+        margin-bottom: 0.75rem;
+    }
+}
+
+.cash-register-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+@media (min-width: 768px) {
+    .cash-register-name {
+        font-size: 0.875rem;
+    }
+}
+
+.cash-register-currency {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: black;
+    margin-left: 0.25rem;
+}
+
+@media (min-width: 768px) {
+    .cash-register-currency {
+        font-size: 0.875rem;
+    }
+}
+
+.balance-grid {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.balance-grid-1 {
+    grid-template-columns: repeat(1, 1fr);
+}
+
+.balance-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.balance-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.balance-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.balance-item {
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.25rem;
+    min-height: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+@media (min-width: 768px) {
+    .balance-item {
+        padding: 0.5rem;
+        min-height: 60px;
+    }
+}
+
+.balance-item.debt-item {
+    position: relative;
+}
+
+.balance-header {
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.balance-title {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.balance-icon-income {
+    color: #22c55e;
+    font-size: 0.75rem;
+}
+
+.balance-icon-outcome {
+    color: #ef4444;
+    font-size: 0.75rem;
+}
+
+.balance-icon-debt {
+    color: #f97316;
+    font-size: 0.75rem;
+}
+
+.balance-icon-default {
+    color: #3b82f6;
+    font-size: 0.75rem;
+}
+
+.balance-icon-project {
+    color: #f97316;
+    font-size: 0.75rem;
+}
+
+.balance-value {
+    line-height: 1.2;
+}
+
+.balance-value-income {
+    color: #16a34a;
+}
+
+.balance-value-outcome {
+    color: #dc2626;
+}
+
+.balance-value-debt {
+    color: #ea580c;
+}
+
+.balance-value-default {
+    color: #2563eb;
+}
+
+.balance-amount {
+    white-space: nowrap;
+    font-weight: 700;
+    font-size: 0.875rem;
+}
+
+@media (min-width: 768px) {
+    .balance-amount {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .balance-amount {
+        font-size: 0.9rem;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .balance-amount {
+        font-size: 1rem;
+    }
+}
+
+@media (min-width: 1025px) {
+    .balance-amount {
+        font-size: 1.2rem;
+    }
+}
+
+.clickable-balance {
+    cursor: pointer;
+}
+
+.clickable-balance.hover-income:hover {
+    border: 1px dashed #22c55e;
+    background-color: rgba(34, 197, 94, 0.05);
+}
+
+.clickable-balance.hover-outcome:hover {
+    border: 1px dashed #ef4444;
+    background-color: rgba(239, 68, 68, 0.05);
+}
+
+.debts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+}

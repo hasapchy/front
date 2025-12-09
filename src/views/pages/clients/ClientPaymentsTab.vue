@@ -11,11 +11,16 @@
             </PrimaryButton>
         </div>
 
-        <div v-if="!paymentsLoading && editingItem && totalPayments > 0" class="mb-4">
+        <div v-if="!paymentsLoading && editingItem && (totalIncome > 0 || totalExpense > 0)" class="mb-4 space-y-2">
             <div class="flex items-center gap-2">
-                <i class="fas fa-money-bill text-green-500"></i>
-                <span class="text-sm text-gray-600">{{ $t('totalPayments') }}:</span>
-                <b class="text-[#5CB85C]">{{ formatBalance(totalPayments) }}</b>
+                <i class="fas fa-arrow-up text-green-500"></i>
+                <span class="text-sm text-gray-600">{{ $t('totalIncome') || 'Приходы' }}:</span>
+                <b class="text-[#5CB85C]">{{ formatBalance(totalIncome) }}</b>
+            </div>
+            <div class="flex items-center gap-2">
+                <i class="fas fa-arrow-down text-red-500"></i>
+                <span class="text-sm text-gray-600">{{ $t('totalExpense') || 'Расходы' }}:</span>
+                <b class="text-red-600">{{ formatBalance(totalExpense) }}</b>
             </div>
         </div>
 
@@ -68,7 +73,10 @@ import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
-import { defineAsyncComponent } from 'vue';
+import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
+import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vue";
+import OperationTypeCell from "@/views/components/app/buttons/OperationTypeCell.vue";
+import { defineAsyncComponent, markRaw } from 'vue';
 
 const TransactionCreatePage = defineAsyncComponent(() => 
     import("@/views/pages/transactions/TransactionCreatePage.vue")
@@ -87,6 +95,8 @@ export default {
         PrimaryButton,
         NotificationToast,
         TransactionCreatePage,
+        SourceButtonCell,
+        OperationTypeCell,
     },
     emits: ['payments-updated'],
     props: {
@@ -105,7 +115,8 @@ export default {
             paymentsHistory: [],
             lastFetchedClientId: null,
             forceRefresh: false,
-            totalPayments: 0,
+            totalIncome: 0,
+            totalExpense: 0,
             editingTransactionItem: null,
             selectedEntity: null,
             entityModalOpen: false,
@@ -113,11 +124,39 @@ export default {
             columnsConfig: [
                 { name: "id", label: "№", size: 60 },
                 { name: "dateUser", label: this.$t("date"), size: 120 },
-                { name: "operationType", label: this.$t("type"), size: 150, html: true },
-                { name: "sourceType", label: "Источник", size: 120, html: true },
+                {
+                    name: "operationType",
+                    label: this.$t("type"),
+                    size: 150,
+                    component: markRaw(OperationTypeCell),
+                    props: (item) => ({
+                        item: item,
+                        variant: 'payment'
+                    })
+                },
+                {
+                    name: "sourceType",
+                    label: "Источник",
+                    size: 120,
+                    component: markRaw(SourceButtonCell),
+                    props: (item) => ({
+                        source: item.source
+                    })
+                },
                 { name: "note", label: this.$t("note"), size: 200 },
                 { name: "user_name", label: this.$t("user"), size: 120 },
-                { name: "clientImpact", label: this.$t("amount"), size: 130, html: true },
+                {
+                    name: "clientImpact",
+                    label: this.$t("amount"),
+                    size: 130,
+                    component: markRaw(ClientImpactCell),
+                    props: (item) => ({
+                        item: item,
+                        currencyCode: this.currencyCode,
+                        formatNumberFn: this.$formatNumber,
+                        variant: 'payment'
+                    })
+                },
             ],
         };
     },
@@ -175,7 +214,8 @@ export default {
             
             if (!this.$store.getters.hasPermission('settings_client_balance_view')) {
                 this.paymentsHistory = [];
-                this.totalPayments = 0;
+                this.totalIncome = 0;
+                this.totalExpense = 0;
                 return;
             }
             
@@ -186,23 +226,34 @@ export default {
             this.paymentsLoading = true;
             try {
                 const data = await ClientController.getBalanceHistory(
-                    this.editingItem.id
+                    this.editingItem.id,
+                    true
                 );
                 
-                this.paymentsHistory = (data || []).filter(item => 
-                    item.is_debt !== 1 && item.is_debt !== true && item.is_debt !== '1'
-                );
+                this.paymentsHistory = data || [];
                 
-                this.totalPayments = this.paymentsHistory.reduce((sum, item) => {
+                // Раздельно считаем приходы (положительные) и расходы (отрицательные)
+                let income = 0;
+                let expense = 0;
+                
+                this.paymentsHistory.forEach(item => {
                     const amount = parseFloat(item.amount || 0);
-                    return sum + Math.abs(amount);
-                }, 0);
+                    if (amount > 0) {
+                        income += amount;
+                    } else if (amount < 0) {
+                        expense += Math.abs(amount);
+                    }
+                });
+                
+                this.totalIncome = income;
+                this.totalExpense = expense;
                 
                 this.lastFetchedClientId = this.editingItem.id;
                 this.forceRefresh = false;
             } catch (e) {
                 this.paymentsHistory = [];
-                this.totalPayments = 0;
+                this.totalIncome = 0;
+                this.totalExpense = 0;
             } finally {
                 this.paymentsLoading = false;
             }
@@ -235,6 +286,8 @@ export default {
         async onEntitySaved() {
             this.entityModalOpen = false;
             if (this.editingItem && this.editingItem.id) {
+                await this.$store.dispatch('invalidateCache', { type: 'clients' });
+                await this.$store.dispatch('loadClients');
                 await this.updateClientData();
                 this.forceRefresh = true;
                 await this.fetchPaymentsHistory();
@@ -247,6 +300,8 @@ export default {
         async onEntityDeleted() {
             this.entityModalOpen = false;
             if (this.editingItem && this.editingItem.id) {
+                await this.$store.dispatch('invalidateCache', { type: 'clients' });
+                await this.$store.dispatch('loadClients');
                 await this.updateClientData();
                 this.forceRefresh = true;
                 await this.fetchPaymentsHistory();
@@ -265,10 +320,6 @@ export default {
             switch (c) {
                 case "id":
                     return i.sourceId || '-';
-                case "operationType":
-                    return i.getPaymentOperationTypeHtml ? i.getPaymentOperationTypeHtml() : '-';
-                case "sourceType":
-                    return i.getSourceTypeHtml ? i.getSourceTypeHtml() : '-';
                 case "dateUser":
                     return i.dateUser || (i.formatDate ? i.formatDate() : '');
                 case "user_name":
@@ -276,7 +327,8 @@ export default {
                 case "note":
                     return i.note || '-';
                 case "clientImpact":
-                    return i.getPaymentImpactHtml ? i.getPaymentImpactHtml(this.currencyCode, this.$formatNumber) : '-';
+                    // Возвращаем числовое значение для сортировки (отображение через компонент ClientImpactCell)
+                    return parseFloat(i.amount || 0);
                 default:
                     return i[c];
             }
@@ -293,7 +345,8 @@ export default {
                     this.selectedEntity = null;
                     this.entityModalOpen = false;
                     this.entityLoading = false;
-                    this.totalPayments = 0;
+                    this.totalIncome = 0;
+                    this.totalExpense = 0;
                 }
             },
             immediate: true,

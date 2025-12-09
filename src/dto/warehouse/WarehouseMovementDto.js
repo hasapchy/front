@@ -32,13 +32,6 @@ export default class WarehouseMovementDto {
     this.updatedAt = updatedAt;
   }
 
-  direction() {
-    return `${this.warehouseFromName} <i class="fas fa-right-long text-[#5CB85C] mr-2"></i>${this.warehouseToName}`;
-  }
-
-  productsHtmlList() {
-    return createProductsHtmlList(this.products);
-  }
   formatDate() {
     return dtoDateFormatters.formatDate(this.date);
   }

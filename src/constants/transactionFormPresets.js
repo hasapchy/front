@@ -28,7 +28,7 @@ export const TRANSACTION_FORM_PRESETS = {
         },
     },
     projectBalance: {
-        client: { visible: false },
+        client: { visible: false, excludeFromRequest: true },
         project: { visible: false },
         debt: { visible: false, enforcedValue: false },
         source: { visible: true },
@@ -37,6 +37,53 @@ export const TRANSACTION_FORM_PRESETS = {
         client: { visible: false },
         debt: { visible: false, enforcedValue: false },
         project: { visible: false },
+    },
+    employeeBonus: {
+        client: { visible: false },
+        project: { visible: false },
+        debt: { visible: false, enforcedValue: true },
+        type: { visible: false, enforcedValue: 'outcome', readonly: true },
+        category: { visible: false, enforcedValue: 26 },
+    },
+    employeePenalty: {
+        client: { visible: false },
+        project: { visible: false },
+        debt: { visible: false, enforcedValue: true },
+        type: { visible: false, enforcedValue: 'income', readonly: true },
+        category: { visible: false, enforcedValue: 27 },
+    },
+    employeeSalaryAccrual: {
+        client: { visible: false },
+        project: { visible: false },
+        debt: { visible: false, enforcedValue: true },
+        type: { visible: false, enforcedValue: 'outcome', readonly: true },
+        category: { visible: false, enforcedValue: 24 },
+    },
+    employeeSalaryPayment: {
+        client: { visible: false },
+        project: { visible: false },
+        debt: { visible: false, enforcedValue: false },
+        type: { visible: false, enforcedValue: 'outcome', readonly: true },
+        category: { visible: false, enforcedValue: 7 },
+    },
+    employeeAdvance: {
+        client: { visible: false },
+        project: { visible: false },
+        debt: { visible: false, enforcedValue: false },
+        type: { visible: false, enforcedValue: 'outcome', readonly: true },
+        category: { visible: false, enforcedValue: 23 },
+    },
+    full: {
+        client: { visible: true },
+        project: { visible: true },
+        debt: { visible: true },
+        type: { visible: true },
+        category: {
+            visible: true,
+            excludedIds: [ 7, 17, 20, 21, 22, 23, 24, 25, 26, 27],
+        },
+        source: { visible: true },
+        note: { required: false },
     },
 };
 

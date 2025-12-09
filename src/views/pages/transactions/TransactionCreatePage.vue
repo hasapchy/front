@@ -114,15 +114,18 @@
             </template>
         </div>
     </div>
+    <div v-if="readOnlyReason" class="mt-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700">
+        {{ readOnlyReason }}
+    </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('transactions_delete')">
+            :disabled="isDeletedTransaction || !$store.getters.hasPermission('transactions_delete')">
         </PrimaryButton>
         <PrimaryButton v-if="editingItem != null" :onclick="copyTransaction" icon="fas fa-copy"
-            :disabled="!$store.getters.hasPermission('transactions_create')">
+            :disabled="isDeletedTransaction || !$store.getters.hasPermission('transactions_create')">
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('transactions_update')) ||
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="isDeletedTransaction || (editingItemId != null && !$store.getters.hasPermission('transactions_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('transactions_create'))">
         </PrimaryButton>
     </div>
@@ -162,6 +165,8 @@ export default {
         defaultCashId: { type: Number, default: null, required: false },
         // Предзаполненная сумма для оплаты заказа
         prefillAmount: { type: [Number, String], default: null },
+        // Предзаполненная валюта
+        prefillCurrencyId: { type: [Number, String], default: null },
         // Флаг модалки оплаты заказа
         isPaymentModal: { type: Boolean, default: false },
         // Конфигурация отображения полей формы
@@ -186,7 +191,7 @@ export default {
             cashAmount: this.editingItem ? this.editingItem.cashAmount : null,
             cashCurrencyId: this.editingItem ? this.editingItem.cashCurrencyId : null,
             origAmount: this.editingItem ? this.editingItem.origAmount : (this.prefillAmount != null && this.prefillAmount !== '' ? parseFloat(this.prefillAmount) || 0 : 0),
-            currencyId: this.editingItem ? this.editingItem.origCurrencyId : '',
+            currencyId: this.editingItem ? this.editingItem.origCurrencyId : (this.prefillCurrencyId || ''),
             categoryId: this.editingItem ? this.editingItem.categoryId : 4, // По умолчанию id = 4 для типа income
             projectId: this.editingItem ? this.editingItem.projectId : (this.initialProjectId || ''),
             date: (() => {
@@ -230,6 +235,28 @@ export default {
             }
             return this.editingItem ? this.$t('editTransaction') : this.$t('createTransaction');
         },
+        isDeletedTransaction() {
+            return !!(this.editingItem && (this.editingItem.isDeleted || this.editingItem.is_deleted));
+        },
+        isSourceRestricted() {
+            if (!this.editingItem) {
+                return false;
+            }
+            if (this.editingItem.isTransfer == 1) {
+                return true;
+            }
+            const source = this.editingItem.sourceType || '';
+            return Boolean(source && (source.includes('Order') || source.includes('Sale') || source.includes('WhReceipt')));
+        },
+        readOnlyReason() {
+            if (this.isDeletedTransaction) {
+                return this.$t('transactionDeletedReadonly');
+            }
+            if (this.isSourceRestricted) {
+                return this.$t('transactionReadonlyDueToSource');
+            }
+            return '';
+        },
         currencyIdComputed: {
             get() {
                 return this.currencyId;
@@ -239,8 +266,24 @@ export default {
             }
         },
         filteredCategories() {
-            const wanted = this.type === 'income' ? 1 : 0; // 1 для income, 0 для outcome
-            const filtered = this.allCategories.filter(cat => cat.type === wanted);
+            const wanted = this.type === 'income' ? 1 : 0;
+            let filtered = this.allCategories.filter(cat => cat.type === wanted);
+            
+            const categoryConfig = this.fieldConfig('category');
+            
+            if (categoryConfig.excludedIds && Array.isArray(categoryConfig.excludedIds)) {
+                filtered = filtered.filter(cat => {
+                    if (categoryConfig.excludedIds.includes(cat.id) && cat.id !== this.categoryId) {
+                        return false;
+                    }
+                    return true;
+                });
+            }
+            
+            if (categoryConfig.allowedIds && Array.isArray(categoryConfig.allowedIds)) {
+                filtered = filtered.filter(cat => categoryConfig.allowedIds.includes(cat.id));
+            }
+            
             return filtered;
         },
         allProjects() {
@@ -329,7 +372,9 @@ export default {
                 this.loadOrderInfo()
             ]);
 
-            await this.$store.dispatch('loadProjects');
+            if (!this.$store.getters.projects || this.$store.getters.projects.length === 0) {
+                await this.$store.dispatch('loadProjects');
+            }
 
             if (!this.editingItem) {
                 if (this.defaultCashId && this.allCashRegisters.length > 0) {
@@ -356,6 +401,11 @@ export default {
                         this.origAmount = amount;
                     }
                 }
+                
+                // Устанавливаем предзаполненную валюту если она есть
+                if (this.prefillCurrencyId && !this.currencyId) {
+                    this.currencyId = this.prefillCurrencyId;
+                }
             }
 
             this.saveInitialState();
@@ -365,6 +415,14 @@ export default {
         });
     },
     methods: {
+        ensureEditable(eventName = 'saved-error') {
+            if (!this.isDeletedTransaction && !this.isSourceRestricted) {
+                return true;
+            }
+            const message = this.readOnlyReason || this.$t('transactionDeletedReadonly');
+            this.$emit(eventName, message);
+            return false;
+        },
         fieldConfig(name) {
             const baseConfig = {
                 visible: true,
@@ -446,21 +504,34 @@ export default {
         },
         displaySourceTypeLabel() {
             if (this.orderId) return 'Заказ';
+            if (this.sourceType) {
+                if (this.sourceType.includes('Order')) return 'Заказ';
+                if (this.sourceType.includes('Sale')) return 'Продажа';
+                if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) return 'Оприходование';
+                if (this.sourceType.includes('EmployeeSalary')) return 'Зарплата';
+            }
             const labelMap = {
                 'order': 'Заказ',
                 'sale': 'Продажа',
-                'warehouse_receipt': 'Оприходование'
+                'warehouse_receipt': 'Оприходование',
+                'salary': 'Зарплата'
             };
             return labelMap[this.sourceType] || (this.$t('source') || 'Источник');
         },
         async fetchCurrencies() {
-            // Используем данные из store
+            if (this.$store.getters.currencies && this.$store.getters.currencies.length > 0) {
+                this.currencies = this.$store.getters.currencies;
+                return;
+            }
             await this.$store.dispatch('loadCurrencies');
             this.currencies = this.$store.getters.currencies;
         },
         async fetchAllCategories() {
             try {
-                // Используем данные из store
+                if (this.$store.getters.transactionCategories && this.$store.getters.transactionCategories.length > 0) {
+                    this.allCategories = this.$store.getters.transactionCategories;
+                    return;
+                }
                 await this.$store.dispatch('loadTransactionCategories');
                 this.allCategories = this.$store.getters.transactionCategories;
             } catch (error) {
@@ -468,16 +539,22 @@ export default {
             }
         },
         async fetchAllCashRegisters() {
-            // Используем данные из store
-            await this.$store.dispatch('loadCashRegisters');
-            this.allCashRegisters = this.$store.getters.cashRegisters;
+            if (this.$store.getters.cashRegisters && this.$store.getters.cashRegisters.length > 0) {
+                this.allCashRegisters = this.$store.getters.cashRegisters;
+            } else {
+                await this.$store.dispatch('loadCashRegisters');
+                this.allCashRegisters = this.$store.getters.cashRegisters;
+            }
             if (this.allCashRegisters.length && !this.cashId && !this.defaultCashId) {
                 this.cashId = this.allCashRegisters[0].id;
             }
         },
         async save() {
+            if (!this.ensureEditable('saved-error')) {
+                return;
+            }
             // Если выбран проект — клиент должен соответствовать клиенту проекта
-            if (this.initialProjectId) {
+            if (this.initialProjectId && !this.fieldConfig('client').excludeFromRequest) {
                 const project = this.allProjects.find(p => p.id === this.projectId) || null;
                 if (project && project.client) {
                     // Форсируем клиента проекта перед сохранением
@@ -498,29 +575,39 @@ export default {
             }
 
             this.saveLoading = true;
-            const projectIdForSubmit = this.isFieldVisible('project') ? this.projectId : null;
+            const projectIdForSubmit = this.projectId || this.initialProjectId || null;
 
             try {
                 if (this.editingItemId != null) {
-                    var resp = await TransactionController.updateItem(
-                        this.editingItemId,
-                        {
-                            category_id: this.categoryId,
-                            project_id: projectIdForSubmit,
-                            date: this.date,
-                            client_id: this.selectedClient?.id,
-                            orig_amount: this.origAmount, // обновления не трогаем
-                            currency_id: this.currencyIdComputed,
-                            note: this.note,
-                            is_debt: this.isDebt,
-                            source_type: this.getSourceTypeForBackend(),
-                            source_id: this.selectedSource?.id || null
-                        });
+                    const updateData = {
+                        category_id: this.categoryId,
+                        project_id: projectIdForSubmit,
+                        date: this.date,
+                        orig_amount: this.origAmount,
+                        currency_id: this.currencyIdComputed,
+                        note: this.note,
+                        is_debt: this.isDebt,
+                    };
+                    if (!this.fieldConfig('client').excludeFromRequest) {
+                        updateData.client_id = this.selectedClient?.id;
+                    }
+                    
+                    const sourceType = this.getSourceTypeForBackend();
+                    if (sourceType) {
+                        updateData.source_type = sourceType;
+                        updateData.source_id = this.selectedSource?.id || null;
+                    }
+                    
+                    var resp = await TransactionController.updateItem(this.editingItemId, updateData);
                 } else {
                     // Только для НОВЫХ записей применяем реальное округление согласно настройкам компании
                     const roundedAmount = roundValue(this.origAmount);
-                    var resp = await TransactionController.storeItem({
-                        type: this.type == "income" ? 1 : this.type == "outcome" ? 0 : null,
+                    const typeValue = this.type == "income" ? 1 : this.type == "outcome" ? 0 : null;
+                    if (typeValue === null) {
+                        throw new Error('Выберите тип транзакции');
+                    }
+                    const requestData = {
+                        type: typeValue,
                         cash_id: this.cashId,
                         orig_amount: roundedAmount,
                         currency_id: this.currencyIdComputed,
@@ -528,12 +615,20 @@ export default {
                         note: this.note,
                         project_id: projectIdForSubmit,
                         date: this.date,
-                        client_id: this.selectedClient?.id,
                         order_id: this.orderId,
                         is_debt: this.isDebt,
-                        source_type: this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : null),
-                        source_id: this.selectedSource?.id || this.orderId || null
-                    });
+                    };
+                    if (!this.fieldConfig('client').excludeFromRequest) {
+                        requestData.client_id = this.selectedClient?.id;
+                    }
+                    
+                    const sourceType = this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : null);
+                    if (sourceType) {
+                        requestData.source_type = sourceType;
+                        requestData.source_id = this.selectedSource?.id || this.orderId || null;
+                    }
+                    
+                    var resp = await TransactionController.storeItem(requestData);
                 }
                 if (resp.message) {
                     // Проверяем, нужно ли закрыть заказ (только для модалки доплаты)
@@ -552,6 +647,9 @@ export default {
 
         },
         async deleteItem() {
+            if (!this.ensureEditable('deleted-error')) {
+                return;
+            }
             this.closeDeleteDialog();
             if (this.editingItemId == null) {
                 return;
@@ -575,7 +673,7 @@ export default {
             this.note = '';
             this.isDebt = this.fieldConfig('debt').enforcedValue ?? false;
             this.categoryId = 4; // Устанавливаем id = 4 для типа income по умолчанию
-            this.projectId = this.isFieldVisible('project') ? (this.initialProjectId || '') : null;
+            this.projectId = this.initialProjectId || '';
             this.date = new Date().toISOString().substring(0, 16);
             this.selectedClient = this.initialClient || null;
             this.selectedSource = null;
@@ -587,12 +685,18 @@ export default {
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         showDeleteDialog() {
+            if (!this.ensureEditable('deleted-error')) {
+                return;
+            }
             this.deleteDialog = true;
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
         copyTransaction() {
+            if (!this.ensureEditable('saved-error')) {
+                return;
+            }
             // DRY: используем метод clone() из TransactionDto
             const copiedTransaction = this.editingItem.clone();
 
@@ -634,6 +738,49 @@ export default {
                 this.sourceType = '';
             }
         },
+        async checkAndPrefillSalary(client) {
+            if (!this.editingItemId && client && client.employeeId && this.categoryId === 24) {
+                try {
+                    const UsersController = (await import("@/api/UsersController")).default;
+                    const salaries = await UsersController.getSalaries(client.employeeId);
+                    
+                    if (salaries && salaries.length > 0) {
+                        const activeSalary = salaries.find(s => !s.end_date) || salaries[0];
+                        if (activeSalary) {
+                            if (!this.origAmount || this.origAmount === 0) {
+                                this.origAmount = parseFloat(activeSalary.amount) || 0;
+                            }
+                            if (!this.currencyId) {
+                                this.currencyId = activeSalary.currency_id || '';
+                            }
+                            
+                            if (!this.note) {
+                                const transactionDate = this.date ? new Date(this.date) : new Date();
+                                const monthNames = [
+                                    'январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
+                                    'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'
+                                ];
+                                
+                                let monthIndex = transactionDate.getMonth();
+                                let year = transactionDate.getFullYear();
+                                
+                                if (monthIndex === 0) {
+                                    monthIndex = 11;
+                                    year -= 1;
+                                } else {
+                                    monthIndex -= 1;
+                                }
+                                
+                                const month = monthNames[monthIndex];
+                                this.note = `Зарплата за ${month} ${year}`;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching salary for accrual:', error);
+                }
+            }
+        },
         // Проверяем, нужно ли закрыть заказ после создания транзакции
         async checkAndCloseOrder() {
             if (!this.isPaymentModal || !this.orderId || !this.orderInfo) {
@@ -642,14 +789,14 @@ export default {
 
             try {
                 // Получаем общую сумму оплат по заказу через существующий API
-                const paidTotalData = await TransactionController.getTotalByOrderId(this.orderId);
+                const paidTotalData = await TransactionController.getTotalPaidByOrderId(this.orderId);
                 const totalPaid = parseFloat(paidTotalData.total) || 0;
                 const orderTotal = parseFloat(this.orderInfo.totalPrice) || 0;
 
                 // Если оплачено достаточно, закрываем заказ
                 if (totalPaid >= orderTotal) {
                     // Находим статус "закрытый" (обычно это статус с category_id = 4)
-                    const statuses = await OrderStatusController.getAllItems();
+                    const statuses = await OrderStatusController.getListItems();
 
                     const closedStatus = statuses.find(status => status.categoryId === 4);
 
@@ -701,9 +848,6 @@ export default {
         initialProjectId: {
             handler(newProjectId) {
                 if (!this.isFieldVisible('project')) return;
-                // Применяем initialProjectId если:
-                // 1. Это создание новой транзакции ИЛИ
-                // 2. Это редактирование, но у транзакции нет проекта
                 if (newProjectId && (!this.editingItemId || !this.projectId)) {
                     this.projectId = newProjectId;
                 }

@@ -1,26 +1,4 @@
 <template>
-    <div class="flex justify-between items-center mb-4">
-        <div class="flex items-center space-x-4">
-            <PrimaryButton
-                v-if="selectedCurrency"
-                :onclick="() => showModal(null)"
-                :disabled="!$store.getters.hasPermission('currency_history_create')"
-                icon="fas fa-plus">
-            </PrimaryButton>
-            <div class="flex items-center space-x-2">
-                <select v-model="selectedCurrencyId" @change="onCurrencyChange" class="px-3 py-1 border rounded">
-                    <option value="">{{ $t('selectCurrency') }}</option>
-                    <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
-                        {{ currency.symbol }} - {{ currency.name }} ({{ currency.current_rate }})
-                    </option>
-                </select>
-            </div>
-        </div>
-        <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-    </div>
-
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
 
     <transition name="fade" mode="out-in">
@@ -31,8 +9,73 @@
                 :table-data="data.items"
                 :item-mapper="itemMapper"
                 :onItemClick="(i) => { showModal(i) }"
-                @selectionChange="selectedIds = $event"
-            />
+                @selectionChange="selectedIds = $event">
+                <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+                    <TableControlsBar
+                        :show-create-button="true"
+                        :on-create-click="() => showModal(null)"
+                        :create-button-disabled="!selectedCurrency || !$store.getters.hasPermission('currency_history_create')"
+                        :show-filters="true"
+                        :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()"
+                        :on-filters-reset="resetFilters"
+                        :show-pagination="true"
+                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+                        :on-page-change="fetchItems"
+                        :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns"
+                        :columns="columns"
+                        :toggleVisible="toggleVisible"
+                        :log="log">
+                        <template #left>
+                            <FiltersContainer
+                                :has-active-filters="hasActiveFilters"
+                                :active-filters-count="getActiveFiltersCount()"
+                                @reset="resetFilters">
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('currency') || 'Валюта' }}</label>
+                                    <select v-model="selectedCurrencyId" @change="onCurrencyChange" class="w-full">
+                                        <option value="">{{ $t('selectCurrency') }}</option>
+                                        <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
+                                            {{ currency.symbol }} - {{ currency.name }} ({{ currency.current_rate }})
+                                        </option>
+                                    </select>
+                                </div>
+                            </FiltersContainer>
+                        </template>
+
+                        <template #right>
+                            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
+                                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+                                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                        </template>
+
+                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+                                <ul>
+                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
+                                        @change="log">
+                                        <li v-for="(element, index) in columns" :key="element.name"
+                                            @click="toggleVisible(index)"
+                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                <div>
+                                                    <i class="text-sm mr-2 text-[#337AB7]"
+                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
+                                                </div>
+                                                <div><i
+                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </draggable>
+                                </ul>
+                            </TableFilterButton>
+                        </template>
+                    </TableControlsBar>
+                </template>
+            </DraggableTable>
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <SpinnerIcon />
@@ -76,6 +119,10 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
+import { VueDraggableNext } from 'vue-draggable-next';
 import CurrencyHistoryController from '@/api/CurrencyHistoryController';
 import CurrencyHistoryCreatePage from './CurrencyHistoryCreatePage.vue';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
@@ -96,7 +143,11 @@ export default {
         DraggableTable,
         CurrencyHistoryCreatePage,
         BatchButton,
-        AlertDialog
+        AlertDialog,
+        TableControlsBar,
+        TableFilterButton,
+        FiltersContainer,
+        draggable: VueDraggableNext
     },
     data() {
         return {
@@ -126,10 +177,14 @@ export default {
     },
     async mounted() {
         await this.fetchCurrencies();
-        // Автоматически выбираем первую валюту по умолчанию
         if (this.currencies.length > 0) {
             this.selectedCurrencyId = this.currencies[0].id;
-            await this.onCurrencyChange();
+            await this.fetchItems(1, false);
+        }
+    },
+    computed: {
+        hasActiveFilters() {
+            return this.selectedCurrencyId !== '';
         }
     },
     methods: {
@@ -142,30 +197,7 @@ export default {
         },
 
         async onCurrencyChange() {
-            if (!this.selectedCurrencyId) {
-                this.selectedCurrency = null;
-                this.data = null;
-                return;
-            }
-
-            try {
-                this.loading = true;
-                const currency = this.currencies.find(c => c.id == this.selectedCurrencyId);
-                this.selectedCurrency = currency;
-
-                const historyData = await CurrencyHistoryController.getCurrencyHistory(this.selectedCurrencyId, 1, this.perPage);
-
-                // Преобразуем в формат для таблицы
-                this.data = {
-                    items: historyData.history,
-                    currentPage: historyData.currentPage,
-                    lastPage: historyData.lastPage
-                };
-            } catch (error) {
-                this.showNotification(this.$t('errorLoadingHistory'), error.message, true);
-            } finally {
-                this.loading = false;
-            }
+            await this.fetchItems(1, false);
         },
 
         itemMapper(i, c) {
@@ -193,9 +225,39 @@ export default {
         },
 
         async fetchItems(page = 1, silent = false) {
-            // Для истории курсов пагинация не нужна, так как это история одной валюты
-            await this.onCurrencyChange();
-        }
+            if (!this.selectedCurrencyId) {
+                return;
+            }
+            if (!silent) {
+                this.loading = true;
+            }
+            try {
+                const currency = this.currencies.find(c => c.id == this.selectedCurrencyId);
+                this.selectedCurrency = currency;
+
+                const historyData = await CurrencyHistoryController.getItems(this.selectedCurrencyId, page, this.perPage);
+
+                this.data = {
+                    items: historyData.history,
+                    currentPage: historyData.currentPage,
+                    lastPage: historyData.lastPage
+                };
+            } catch (error) {
+                this.showNotification(this.$t('errorLoadingHistory'), error.message, true);
+            } finally {
+                if (!silent) {
+                    this.loading = false;
+                }
+            }
+        },
+        resetFilters() {
+            this.selectedCurrencyId = '';
+            this.selectedCurrency = null;
+            this.data = null;
+        },
+        getActiveFiltersCount() {
+            return this.selectedCurrencyId !== '' ? 1 : 0;
+        },
     }
 }
 </script>

@@ -1,10 +1,10 @@
-import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import api from "./axiosInstance";
+import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import TransactionDto from "@/dto/transaction/TransactionDto";
-import { queryCache } from "@/utils/cacheHelper";
-import CacheInvalidator from "@/utils/cache";
+import { CacheInvalidator } from "@/cache";
+import BaseController from "./BaseController";
 
-export default class TransactionController {
+export default class TransactionController extends BaseController {
   static async getItems(
     page = 1,
     cash_id = null,
@@ -19,118 +19,60 @@ export default class TransactionController {
     end_date = null,
     is_debt = null
   ) {
-    try {
-      const cacheKey = 'transactions_list';
-      const cacheParams = { page, cash_id, date_filter_type, order_id, search, transaction_type, source, project_id, per_page, start_date, end_date, is_debt };
-      const cached = await queryCache.get(cacheKey, cacheParams);
-      
-      if (cached && cached.items && cached.items.length > 0 && cached.items[0] instanceof TransactionDto) {
-        console.log('📦 Загружено из кэша: transactions', cacheParams);
-        return cached;
-      }
+    const params = {
+      cash_id,
+      date_filter_type,
+      order_id,
+      search,
+      transaction_type,
+      source,
+      project_id,
+      start_date,
+      end_date,
+      is_debt,
+    };
 
-      const response = await api.get("/transactions", {
-        params: {
-          page: page,
-          cash_id: cash_id,
-          date_filter_type: date_filter_type,
-          order_id: order_id,
-          search: search,
-          transaction_type: transaction_type,
-          source: source,
-          project_id: project_id,
-          per_page: per_page,
-          start_date: start_date,
-          end_date: end_date,
-          is_debt: is_debt,
-        },
-      });
-      const data = response.data;
-      const items = TransactionDto.fromApiArray(data.items);
+    const data = await super.getItems("/transactions", page, per_page, params);
+    const items = TransactionDto.fromApiArray(data.items || []);
 
-      const paginatedResponse = new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
-      );
-
-      queryCache.set(cacheKey, cacheParams, paginatedResponse);
-      return paginatedResponse;
-    } catch (error) {
-      console.error("Ошибка при получении транзакций:", error);
-      throw error;
-    }
+    return new PaginatedResponse(
+      items,
+      data.current_page,
+      data.next_page,
+      data.last_page,
+      data.total
+    );
   }
+
   static async getItem(id) {
-    try {
-      const { data } = await api.get(`/transactions/${id}`);
-      const item = data.item;
-      
-      return TransactionDto.fromApiArray([item])[0] || null;
-    } catch (error) {
-      console.error("Ошибка при получении транзакции:", error);
-      throw error;
-    }
+    const data = await super.getItem("/transactions", id);
+    return TransactionDto.fromApiArray([data.item])[0] || null;
   }
 
   static async getTotalPaidByOrderId(orderId) {
-    try {
+    return super.handleRequest(async () => {
       const response = await api.get(`/transactions/total`, {
         params: { order_id: orderId },
       });
       return response.data;
-    } catch (error) {
-      console.error("Ошибка при получении оплаченной суммы:", error);
-      throw error;
-    }
+    }, "Ошибка при получении оплаченной суммы:");
   }
 
   static async storeItem(item) {
-    try {
-      const { data } = await api.post("/transactions", item);
-      CacheInvalidator.onCreate('transactions');
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании транзакции:", error);
-      throw error;
-    }
-  }
-
-  static async createTransactionForOrder(orderId, transactionData) {
-    const item = {
-      ...transactionData,
-      order_id: orderId
-    };
-    const result = await this.storeItem(item);
-    queryCache.invalidate('orders_list');
-    return result;
+    const data = await super.storeItem("/transactions", item);
+    await CacheInvalidator.onCreate("transactions");
+    return data;
   }
 
   static async updateItem(id, item) {
-    try {
-      const { data } = await api.put(`/transactions/${id}`, item);
-      CacheInvalidator.onUpdate('transactions');
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении транзакции:", error);
-      throw error;
-    }
+    const data = await super.updateItem("/transactions", id, item);
+    await CacheInvalidator.onUpdate("transactions");
+    return data;
   }
 
   static async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/transactions/${id}`);
-      CacheInvalidator.onDelete('transactions');
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении транзакции:", error);
-      throw error;
-    }
-  }
-
-  static async getTotalByOrderId(orderId) {
-    return this.getTotalPaidByOrderId(orderId);
+    const data = await super.deleteItem("/transactions", id);
+    await CacheInvalidator.onDelete("transactions");
+    return data;
   }
 }

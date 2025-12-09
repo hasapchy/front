@@ -58,12 +58,8 @@
                         </div>
                     </div>
                 </div>
-                <div v-else-if="loading" key="loading" class="text-center text-gray-500 py-8">
-                    <svg class="animate-spin h-8 w-8 text-gray-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
-                    <div class="mt-2">{{ $t('loading') }}</div>
+                <div v-else-if="loading" key="loader" class="flex justify-center items-center h-20">
+                    <SpinnerIcon />
                 </div>
             </transition>
         </div>
@@ -71,8 +67,13 @@
 </template>
 
 <script>
+import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
+
 export default {
     name: 'MutualSettlementsBalanceWrapper',
+    components: {
+        SpinnerIcon
+    },
     props: {
         data: {
             type: Array,

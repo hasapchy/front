@@ -86,7 +86,7 @@ private function addCompanyFilter($query) {
 ## 📱 Компоненты используют store
 ```javascript
 // ❌ Старый способ:
-this.warehouses = await WarehouseController.getAllItems();
+this.warehouses = await WarehouseController.getListItems();
 
 // ✅ Новый способ:
 this.warehouses = this.$store.getters.warehouses;

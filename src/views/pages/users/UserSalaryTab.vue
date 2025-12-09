@@ -2,26 +2,33 @@
     <div class="mt-4">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-md font-semibold">{{ $t('salaries') || 'Зарплаты' }}</h3>
-            <PrimaryButton 
-                icon="fas fa-plus" 
-                :onclick="openCreateModal"
-                :is-success="true"
-                :disabled="!editingItem || !editingItem.id">
-                {{ $t('addSalary') || 'Добавить зарплату' }}
-            </PrimaryButton>
+            <div class="flex gap-2" v-if="canCreateSalary && canViewSalary">
+                <PrimaryButton 
+                    icon="fas fa-plus" 
+                    :onclick="openCreateModal"
+                    :is-success="true"
+                    :disabled="!editingItem || !editingItem.id">
+                    {{ $t('addSalary') || 'Добавить зарплату' }}
+                </PrimaryButton>
+            </div>
         </div>
 
-        <div v-if="salariesLoading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="!salaries || salaries.length === 0" class="text-gray-500">
-            {{ $t('noSalaries') || 'Нет зарплат' }}
+        <div v-if="!canViewSalary" class="text-gray-500">
+            {{ $t('noPermission') || 'Нет прав на просмотр зарплат' }}
         </div>
-        <DraggableTable 
-            v-if="!salariesLoading && salaries && salaries.length > 0"
-            table-key="user.salaries"
-            :columns-config="columnsConfig" 
-            :table-data="salaries" 
-            :item-mapper="itemMapper"
-            :onItemClick="handleSalaryClick" />
+        <template v-else>
+            <div v-if="salariesLoading" class="text-gray-500">{{ $t('loading') }}</div>
+            <div v-else-if="!salaries || salaries.length === 0" class="text-gray-500">
+                {{ $t('noSalaries') || 'Нет зарплат' }}
+            </div>
+            <DraggableTable 
+                v-if="!salariesLoading && salaries && salaries.length > 0"
+                table-key="user.salaries"
+                :columns-config="columnsConfig" 
+                :table-data="salaries" 
+                :item-mapper="itemMapper"
+                :onItemClick="canUpdateSalary ? handleSalaryClick : null" />
+        </template>
 
         <SideModalDialog :showForm="modalOpen" :onclose="closeModal">
             <UserSalaryCreatePage 
@@ -78,25 +85,43 @@ export default {
                 { name: 'amount', label: 'amount', size: 150, html: true },
                 { name: 'startDate', label: 'startDate', size: 120 },
                 { name: 'endDate', label: 'endDate', size: 120, html: true },
-                { name: 'period', label: 'period', size: 200 },
+                { name: 'note', label: 'note', size: 200 },
             ],
         };
     },
-    async mounted() {
-        if (this.editingItem && this.editingItem.id) {
-            await this.fetchSalaries();
-        }
+    computed: {
+        canViewSalary() {
+            return this.$store.getters.hasPermission('employee_salaries_view');
+        },
+        canCreateSalary() {
+            return this.$store.getters.hasPermission('employee_salaries_create');
+        },
+        canUpdateSalary() {
+            return this.$store.getters.hasPermission('employee_salaries_update');
+        },
+        canDeleteSalary() {
+            return this.$store.getters.hasPermission('employee_salaries_delete');
+        },
     },
     watch: {
         'editingItem.id': {
             handler(newId) {
-                if (newId) {
+                if (newId && this.canViewSalary) {
                     this.fetchSalaries();
                 } else {
                     this.salaries = [];
                 }
             },
             immediate: true,
+        },
+        canViewSalary: {
+            handler(newVal) {
+                if (newVal && this.editingItem && this.editingItem.id) {
+                    this.fetchSalaries();
+                } else if (!newVal) {
+                    this.salaries = [];
+                }
+            }
         }
     },
     methods: {
@@ -135,7 +160,9 @@ export default {
             await this.fetchSalaries();
         },
         handleSalaryClick(salary) {
-            this.openEditModal(salary);
+            if (this.canUpdateSalary) {
+                this.openEditModal(salary);
+            }
         },
         itemMapper(item, column) {
             switch (column) {
@@ -152,15 +179,8 @@ export default {
                         return `<span class="text-gray-500">${this.$t('present') || 'по н.в.'}</span>`;
                     }
                     return new Date(item.end_date).toLocaleDateString('ru-RU');
-                case 'period':
-                    const start = item.start_date ? new Date(item.start_date).toLocaleDateString('ru-RU') : '';
-                    const end = item.end_date ? new Date(item.end_date).toLocaleDateString('ru-RU') : '';
-                    if (start && end) {
-                        return `${start} - ${end}`;
-                    } else if (start) {
-                        return `${start} - ${this.$t('present') || 'по н.в.'}`;
-                    }
-                    return '-';
+                case 'note':
+                    return item.note || '-';
                 default:
                     return item[column] || '-';
             }

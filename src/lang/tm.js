@@ -97,6 +97,7 @@ export default {
   withoutProject: 'Proýeksiz',
   noOrders: 'Sargyt ýok',
   orderUpdated: 'Sargyt täzelendi',
+  kanbanCardFields: 'Kart meýdanlary',
   fieldName: 'Meýdan ady',
   fieldType: 'Meýdan görnüşi',
   fieldRequired: 'Meýdan hökmany',
@@ -422,6 +423,9 @@ export default {
   statusName: 'Ýagdaý ady',
   statusCategory: 'Ýagdaý kategoriýasy',
   statusCategoryName: 'Ýagdaý kategoriýa ady',
+  isActive: 'Işjeň',
+  protectedStatusCannotBeDisabled: 'Bu ýagdaýy öçürip bolmaýar',
+  statusCannotBeDisabledWithOrders: 'Sargytlary bar ýagdaýy öçürip bolmaýar',
   projectName: 'Proýekt ady',
   projectDate: 'Proýekt senesi',
   projectFiles: 'Proýekt faýllary',
@@ -514,6 +518,10 @@ export default {
   senderCashRegister: 'Kassa iberiji',
   receiverCashRegister: 'Kassa aljy',
   allWarehouses: 'Ähli ammarlar',
+  availability: 'Bar bolmagy',
+  allProducts: 'Ähli önümler',
+  inStock: 'Bar',
+  outOfStock: 'Ýok',
   warehouseSuccessfullyAdded: 'Ammar üstünlikli goşuldy',
   errorGettingWarehouseProducts: 'Ammar önümlerini almakda ýalňyşlyk',
   errorGettingWarehouses: 'Ammarlary almakda ýalňyşlyk',
@@ -655,6 +663,7 @@ export default {
   startWithAddingClient: 'Täze müşderi goşmakdan başlaň',
   backToOrders: 'Sargytlara dolan',
   orderNotePlaceholder: 'Sargyt hakynda goşmaça maglumat',
+  orderItems: 'Sargytdaky harytlar',
   creating: 'Döredilýär...',
   create: 'Döret',
   errorCreatingOrder: 'Sargyt döretmekde ýalňyşlyk',
@@ -721,6 +730,8 @@ export default {
   errorSavingTransaction: 'Tranzaksiyany saklamakda ýalňyşlyk',
   transactionSuccessfullyDeleted: 'Tranzaksiya üstünlikli pozuldy',
   errorDeletingTransaction: 'Tranzaksiyany pozmakda ýalňyşlyk',
+  transactionDeletedReadonly: 'Bu tranzaksiýa pozuldy we üýtgedip bolmaýar',
+  transactionReadonlyDueToSource: 'Bu tranzaksiýa transfere, sargyta ýa-da satuwa baglanyşan we üýtgedip bolmaýar',
   
   // Трансферы
   errorGettingTransferList: 'Transfer sanawyny almakda ýalňyşlyk',
@@ -745,6 +756,7 @@ export default {
   errorDeletingUser: 'Işgäri pozmakda ýalňyşlyk',
   salary: 'Mukafaty',
   salaries: 'Mukafatlar',
+  employee_salaries: 'Işgär mukafatlary',
   addSalary: 'Mukafat goş',
   editSalary: 'Mukafaty redaktirle',
   salarySaved: 'Mukafat saklandy',
@@ -759,6 +771,13 @@ export default {
   present: 'häzirki wagta çenli',
   bonus: 'Premiýa tabşyr',
   penalty: 'Jäza çykar',
+  advance: 'Awans ber',
+  accrueSalary: 'Mukafat hasapla',
+  paySalary: 'Mukafat töle',
+  salaryDifferenceHelpTitle: 'Tapawudy näme?',
+  salaryDifferenceHelp: 'Mukafat hasaplamak — bu işgäriň eden işi üçin pul (borç ýazgysy, işgär bize borçly). Mukafat tölemek — bu işgäre hakyky pul tölegi (borç däl, işgäriň borçyny azaldýar).',
+  employeeClientNotFound: 'Işgär üçin müşderi tapylmady',
+  employeeClientNotFoundDescription: 'Işgäriň balansy bilen işlemek üçin, bu işgäriň ID-sine gabat gelýän employee_id bilen baglanyşykly müşderi döretmeli.',
   
   // Кассы
   addCashRegister: 'Kassany goşuň',
@@ -802,6 +821,7 @@ export default {
   // Фразы для категорий
   createCategory: 'Kategoriýany döret',
   editCategory: 'Kategoriýany redaktir et',
+  categoryMustHaveAtLeastOneUser: 'Kategoriýa iň az bir ulanyjy bolmaly',
   categoryCreated: 'Kategoriýa döredildi',
   categoryAdded: 'Kategoriýa goşuldy',
   categoryUpdated: 'Kategoriýa täzelendi',
@@ -871,11 +891,13 @@ export default {
   // Фразы для касс
   createCashRegister: 'Kassa',
   editCashRegister: 'Kassa',
+  cashRegisterMustHaveAtLeastOneUser: 'Kassa iň az bir ulanyjy bolmaly',
   cashRegister: 'Kassa',
   
   // Фразы для складов
   createWarehouse: 'Ammary döret',
   editWarehouse: 'Ammary redaktir et',
+  warehouseMustHaveAtLeastOneUser: 'Ammar iň az bir ulanyjy bolmaly',
   
   // Фразы для продаж
   createSale: 'Satuw',
@@ -967,6 +989,7 @@ export default {
   paidOrdersFilter: 'Tölenen sargytlaryň filtr',
   clickToFilterDebts: 'Karzlary filter etmek üçin basyň',
   clickToFilterTransactions: 'Tranzaksiyalary filter etmek üçin basyň',
+  transactionDeletedReadonly: 'Bu tranzaksiýa pozuldy we üýtgedip bolmaýar',
   
   // Файлы
   noFilesUploaded: 'Faýllar ýüklenmedi',
@@ -981,6 +1004,7 @@ export default {
   transfer: 'Geçirim',
   projectStatus: 'Proýekt ýagdaýy',
   projectStatuses: 'Proýekt ýagdaýlary',
+  project_statuses: 'Proýekt ýagdaýlary',
   projectStatusSuccessfullyAdded: 'Proýekt ýagdaýy üstünlikli goşuldy',
   projectStatusSuccessfullyDeleted: 'Proýekt ýagdaýy üstünlikli pozuldy',
   errorSavingProjectStatus: 'Proýekt ýagdaýyny saklamakda ýalňyşlyk',
@@ -1082,9 +1106,13 @@ export default {
   settings: 'Sazlamalar',
     settings_edit_any_date: 'Islendik senäni üýtget',
     settings_project_budget_view: 'Proýekt büdjetini gör',
+    settings_project_files_view: 'Proýekt faýllaryny gör',
+    settings_project_balance_view: 'Proýekt balansyny gör',
+    settings_project_contracts_view: 'Proýekt şertnamalaryny gör',
     settings_currencies_view: 'Başga walýutalary gör',
     settings_cash_balance_view: 'Kassa balansyny gör',
     settings_client_balance_view: 'Müşderi balansyny gör',
+    settings_client_balance_adjustment: 'Müşderi balansyny düzetmek',
     settings_view: 'Sazlamalary gör',
     mutual_settlements_view: 'Özara hasaplaşyklary gör',
   

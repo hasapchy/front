@@ -1,147 +1,82 @@
+import api from "./axiosInstance";
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import ProductDto from "@/dto/product/ProductDto";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
-import api from "./axiosInstance";
-import { queryCache } from "@/utils/cacheHelper";
+import { CacheInvalidator } from "@/cache";
+import BaseController from "./BaseController";
 
-export default class ProductController {
+export default class ProductController extends BaseController {
   static async getItems(page = 1, products = true, params = {}, per_page = 20) {
-    try {
-      const cacheKey = products ? 'products_list' : 'services_list';
-      const cacheParams = { page, per_page, products, ...params };
-      const cached = await queryCache.get(cacheKey, cacheParams);
-      
-      if (cached && cached.items && cached.items.length > 0 && cached.items[0] instanceof ProductDto) {
-        console.log(`📦 Загружено из кэша: ${products ? 'products' : 'services'}`, cacheParams);
-        return cached;
+    const endpoint = `/${products ? "products" : "services"}`;
+    const cleanParams = {};
+    Object.keys(params).forEach(key => {
+      if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+        cleanParams[key] = params[key];
       }
+    });
 
-      const queryParams = new URLSearchParams();
-      queryParams.append('page', page);
-      queryParams.append('per_page', per_page);
-      
-      // Добавляем дополнительные параметры
-      Object.keys(params).forEach(key => {
-        if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
-          queryParams.append(key, params[key]);
-        }
-      });
-      
-      const response = await api.get(
-        `/${products ? "products" : "services"}?${queryParams.toString()}`
-      );
-      const data = response.data;
-      const items = ProductDto.fromApiArray(data.items);
+    const data = await super.getItems(endpoint, page, per_page, cleanParams);
+    const items = ProductDto.fromApiArray(data.items || []);
 
-      const paginatedResponse = new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
-      );
-
-      queryCache.set(cacheKey, cacheParams, paginatedResponse);
-      return paginatedResponse;
-    } catch (error) {
-      console.error("Ошибка при получении товаров или услуг:", error);
-      throw error;
-    }
+    return new PaginatedResponse(
+      items,
+      data.current_page,
+      data.next_page,
+      data.last_page,
+      data.total
+    );
   }
-  static async searchItems($search_term, productsOnly = null, warehouseId = null) {
-    try {
-      const searchParams = {
-        search: $search_term,
-      };
-      
-      if (productsOnly !== null) {
-        searchParams.products_only = productsOnly;
-      }
-      
-      if (warehouseId) {
-        searchParams.warehouse_id = warehouseId;
-      }
-      
-      const response = await api.get("/products/search", {
-        params: searchParams,
-      });
-      const data = response.data;
-      const items = ProductSearchDto.fromApiArray(data);
 
-      return items;
-    } catch (error) {
-      console.error("Ошибка при поиске товаров или услуг:", error);
-      throw error;
-    }
+  static async searchItems($search_term, productsOnly = null, warehouseId = null) {
+    return super.handleRequest(
+      async () => {
+        const searchParams = {
+          search: $search_term,
+        };
+        
+        if (productsOnly !== null) {
+          searchParams.products_only = productsOnly;
+        }
+        
+        if (warehouseId) {
+          searchParams.warehouse_id = warehouseId;
+        }
+        
+        const response = await api.get("/products/search", {
+          params: searchParams,
+        });
+        return ProductSearchDto.fromApiArray(response.data);
+      },
+      "Ошибка при поиске товаров или услуг:"
+    );
   }
 
   static async storeItem(item, imageFile) {
-    try {
-      const formData = new FormData();
-      Object.keys(item).forEach((key) => {
-        formData.append(key, item[key]);
-      });
-      if (imageFile) {
-        formData.append("image", imageFile);
-      }
-
-      const { data } = await api.post("/products", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      queryCache.invalidate('products_list');
-      queryCache.invalidate('services_list');
-      return { item: data.item, message: data.message };
-    } catch (error) {
-      console.error("Ошибка при создании товара или услуги:", error);
-      throw error;
-    }
+    const data = await super.storeItem("/products", item, {
+      file: imageFile,
+      fileField: "image"
+    });
+    await CacheInvalidator.onCreate('products');
+    return { item: data.item, message: data.message };
   }
-  static async updateItem(id, item, imageFile) {
-    try {
-      const formData = new FormData();
-      Object.keys(item).forEach((key) => {
-        formData.append(key, item[key]);
-      });
-      if (imageFile) {
-        formData.append("image", imageFile);
-      }
 
-      const { data } = await api.post(`/products/${id}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      queryCache.invalidate('products_list');
-      queryCache.invalidate('services_list');
-      return { item: data.item, message: data.message };
-    } catch (error) {
-      console.error("Ошибка при обновлении товара или услуги:", error);
-      throw error;
-    }
+  static async updateItem(id, item, imageFile) {
+    const data = await super.updateItem("/products", id, item, {
+      file: imageFile,
+      fileField: "image"
+    });
+    await CacheInvalidator.onUpdate('products');
+    return { item: data.item, message: data.message };
   }
 
   static async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/products/${id}`);
-      queryCache.invalidate('products_list');
-      queryCache.invalidate('services_list');
-      return { item: data.item, message: data.message };
-    } catch (error) {
-      console.error("Ошибка при удалении товара или услуги:", error);
-      throw error;
-    }
+    const data = await super.deleteItem("/products", id);
+    await CacheInvalidator.onDelete('products');
+    return { item: data.item, message: data.message };
   }
 
   static async getItem(id) {
-    try {
-      const response = await api.get(`/products/${id}`);
-      const item = response.data;
-      return ProductDto.fromApiArray([item])[0] || null;
-    } catch (error) {
-      console.error("Ошибка при получении товара по ID:", error);
-      throw error;
-    }
+    const data = await super.getItem("/products", id);
+    return ProductDto.fromApiArray([data.item])[0] || null;
   }
 }

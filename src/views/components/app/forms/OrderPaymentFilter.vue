@@ -3,14 +3,17 @@
     <button
       :onclick="toggleFilter"
       :class="[
-        'flex items-center space-x-2 px-3 py-2 rounded transition duration-300 focus:outline-none focus:shadow-outline',
+        'flex items-center space-x-2 px-2 sm:px-3 py-2 rounded transition duration-300 focus:outline-none focus:shadow-outline cursor-pointer',
         isActive 
-          ? 'bg-black text-white hover:bg-gray-800' 
+          ? 'bg-blue-600 text-white hover:bg-blue-700' 
           : 'bg-black text-white hover:bg-gray-800'
       ]"
     >
-      <i class="fas fa-shopping-cart"></i>
-      <span>{{ $t('toPay') }}: {{ formatAmount(totalAmount) }}</span>
+      <i class="fas fa-shopping-cart text-sm sm:text-base"></i>
+      <span class="text-xs sm:text-sm whitespace-nowrap">
+        <span class="hidden sm:inline">{{ $t('toPay') }}: </span>
+        <span>{{ formatAmount(totalAmount) }}</span>
+      </span>
     </button>
   </div>
 </template>
@@ -22,7 +25,8 @@ export default {
     modelValue: { type: Boolean, default: false },
     orders: { type: Array, default: () => [] },
     statusId: { type: Number, default: 4 },
-    currencySymbol: { type: String, default: '' }
+    currencySymbol: { type: String, default: '' },
+    unpaidOrdersTotal: { type: Number, default: 0 }
   },
   emits: ['update:modelValue', 'change'],
   computed: {
@@ -30,9 +34,7 @@ export default {
       return this.modelValue;
     },
     totalAmount() {
-      if (!this.orders || this.orders.length === 0) return 0;
-      const paidOrders = this.orders.filter(order => order.statusId === this.statusId);
-      return paidOrders.reduce((total, order) => total + (parseFloat(order.totalPrice) || 0), 0);
+      return this.unpaidOrdersTotal || 0;
     }
   },
   methods: {

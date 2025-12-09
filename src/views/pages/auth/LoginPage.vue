@@ -1,24 +1,29 @@
 <template>
-    <div class="flex justify-center items-center flex-col min-h-screen bg-gray-100 p-5">
+    <div class="flex justify-center items-center flex-col min-h-screen bg-gray-100 p-3 md:p-5">
         <div ref="container" :class="[
-            'bg-white rounded-xl shadow-2xl relative overflow-hidden w-full max-w-4xl min-h-[480px]',
+            'bg-white rounded-xl shadow-2xl relative overflow-hidden w-full max-w-4xl min-h-[400px] md:min-h-[480px]',
             isRightPanelActive ? 'right-panel-active' : ''
         ]">
             <!-- Sign In Form -->
             <div :class="[
-                'absolute top-0 left-0 w-1/2 h-full transition-all duration-600 ease-in-out z-20',
-                isRightPanelActive ? 'translate-x-full' : ''
+                'relative md:absolute top-0 left-0 w-full md:w-1/2 h-full transition-all duration-600 ease-in-out',
+                isRightPanelActive ? 'hidden md:block md:translate-x-full z-10' : 'z-20'
             ]">
-                <form class="bg-white flex items-center justify-center flex-col px-12 py-10 h-full text-center"
+                <form class="bg-white flex items-center justify-center flex-col px-6 py-8 md:px-12 md:py-10 h-full text-center"
                     method="POST" action="/" @submit.prevent="login">
-                    <h1 class="font-bold text-3xl mb-2.5 mt-0">Войти</h1>
+                    <div class="mb-6 w-full flex justify-center">
+                        <img src="/logo.png" alt="Lebizli Tehnologiya Merkezi"
+                            class="h-16 w-auto object-contain mx-auto" />
+                    </div>
+                    <h1 class="font-bold text-2xl md:text-3xl mb-2.5 mt-0">Войти</h1>
                     <span class="text-xs text-gray-500 mb-5">или используйте ваш аккаунт</span>
 
                     <input id="email" type="email" placeholder="Email" @input="clearErrors" :class="[
                         'bg-gray-100 border-none py-3 px-4 my-2 w-full text-sm focus:outline-none',
                         v$.email.$error ? 'border-2 border-red-500 bg-red-50' : ''
                     ]" name="email" required autocomplete="email" v-model="email" autofocus />
-                    <ValidationErrorMessage :show="v$.email.$error" :messages="v$.email.$errors" />
+                    <ValidationErrorMessage :show="v$.email.$error" :messages="v$.email.$errors"
+                     />
 
                     <div class="relative w-full">
                         <input id="password" :type="showPassword ? 'text' : 'password'" placeholder="Пароль"
@@ -54,17 +59,24 @@
                         class="rounded-full border border-[#337AB7] bg-[#337AB7] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform duration-80 cursor-pointer mt-2.5 w-full disabled:opacity-60 disabled:cursor-not-allowed active:scale-95 focus:outline-none hover:bg-[#3571A4] hover:border-[#3571A4]">
                         {{ loading ? 'Вход...' : 'Войти' }}
                     </button>
+                    <button type="button" @click="togglePanel" class="md:hidden mt-4 text-xs text-gray-500 hover:text-gray-700 focus:outline-none">
+                        Нет аккаунта? Зарегистрироваться
+                    </button>
                 </form>
             </div>
 
             <!-- Sign Up Form (Заглушка) -->
             <div :class="[
-                'absolute top-0 left-0 w-1/2 h-full transition-all duration-600 ease-in-out opacity-0 z-10',
-                isRightPanelActive ? 'translate-x-full opacity-100 z-50 animate-show' : ''
+                'relative md:absolute top-0 left-0 w-full md:w-1/2 h-full transition-all duration-600 ease-in-out z-10',
+                isRightPanelActive ? 'block opacity-100 z-50 md:translate-x-full md:animate-show' : 'hidden md:block opacity-0 md:opacity-0'
             ]">
-                <form class="bg-white flex items-center justify-center flex-col px-12 py-10 h-full text-center"
+                <form class="bg-white flex items-center justify-center flex-col px-6 py-8 md:px-12 md:py-10 h-full text-center"
                     method="POST" action="/" @submit.prevent="handleSignUp">
-                    <h1 class="font-bold text-3xl mb-2.5 mt-0">Создать аккаунт</h1>
+                    <div class="mb-6 w-full flex justify-center">
+                        <img src="/logo.png" alt="Lebizli Tehnologiya Merkezi"
+                            class="h-16 w-auto object-contain mx-auto" />
+                    </div>
+                    <h1 class="font-bold text-2xl md:text-3xl mb-2.5 mt-0">Создать аккаунт</h1>
                     <span class="text-xs text-gray-500 mb-5">или используйте email для регистрации</span>
 
                     <input type="text" placeholder="Имя" v-model="signUpForm.name"
@@ -98,12 +110,15 @@
                         class="rounded-full border border-[#337AB7] bg-[#337AB7] text-white text-xs font-bold py-3 px-11 uppercase tracking-wider transition-transform duration-80 cursor-pointer mt-2.5 w-full active:scale-95 focus:outline-none hover:bg-[#3571A4] hover:border-[#3571A4]">
                         Зарегистрироваться
                     </button>
+                    <button type="button" @click="togglePanel" class="md:hidden mt-4 text-xs text-gray-500 hover:text-gray-700 focus:outline-none">
+                        Уже есть аккаунт? Войти
+                    </button>
                 </form>
             </div>
 
             <!-- Overlay -->
-            <div :class="[
-                'absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-600 ease-in-out z-100',
+            <div id="login-overlay" :class="[
+                'hidden md:block absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-600 ease-in-out z-100',
                 isRightPanelActive ? '-translate-x-full' : ''
             ]">
                 <div :class="[
@@ -115,10 +130,6 @@
                         'absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 right-0 transition-transform duration-600 ease-in-out',
                         isRightPanelActive ? 'translate-x-0' : 'translate-x-0'
                     ]">
-                        <div class="mb-8">
-                            <img src="/logo.png" alt="Lebizli Tehnologiya Merkezi"
-                                class="h-20 w-auto object-contain mx-auto" />
-                        </div>
                         <h1 class="font-bold text-3xl mb-5 mt-0 text-white">
                             Добро пожаловать!
                         </h1>
@@ -167,10 +178,6 @@
                         'absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 left-0 transition-transform duration-600 ease-in-out',
                         isRightPanelActive ? 'translate-x-0' : '-translate-x-1/5'
                     ]">
-                        <div class="mb-8">
-                            <img src="/logo.png" alt="Lebizli Tehnologiya Merkezi"
-                                class="h-20 w-auto object-contain mx-auto" />
-                        </div>
                         <h1 class="font-bold text-3xl mb-5 mt-0 text-white">
                             Привет, друг!
                         </h1>
@@ -239,25 +246,33 @@ export default {
             if (this.v$.$error) {
                 return;
             }
+            console.info('Login attempt', {
+                email: this.email,
+                remember: this.remember
+            });
             this.loading = true;
             try {
                 const loginData = await AuthController.login(this.email, this.password, this.remember);
 
                 if (isBasementWorkerOnly(loginData.user)) {
                     this.$store.dispatch('setUser', loginData.user);
-                    console.log('[Auth] Current user:', loginData.user);
                     this.$store.dispatch('setPermissions', loginData.user?.permissions || []);
                     this.$router.push('/basement/orders');
                 } else {
                     const userData = await AuthController.getUser();
                     this.$store.dispatch('setUser', userData.user);
-                    console.log('[Auth] Current user:', userData.user);
                     this.$store.dispatch('setPermissions', userData.permissions);
                     this.$router.push('/');
                 }
             } catch (error) {
+                console.error('Login error debug', {
+                    email: this.email,
+                    status: error?.response?.status,
+                    backendError: error?.response?.data,
+                    message: error?.message
+                });
                 let errorTitle = 'Ошибка авторизации';
-                let errorMessage = 'Неверный email или пароль';
+                let errorMessage = 'Неверный логин или пароль';
 
                 if (error.response?.status === 429) {
                     errorTitle = 'Слишком много попыток';
@@ -265,8 +280,12 @@ export default {
                 } else if (error.response?.status === 403) {
                     errorTitle = 'Доступ запрещен';
                     errorMessage = error.response?.data?.message || 'Аккаунт отключен';
+                } else if (error.response?.status === 401) {
+                    errorMessage = error.response?.data?.message || error.response?.data?.error || 'Неверный логин или пароль';
                 } else if (error.response?.data?.error) {
                     errorMessage = error.response.data.error;
+                } else if (error.response?.data?.message) {
+                    errorMessage = error.response.data.message;
                 } else if (error.message) {
                     errorMessage = error.message;
                 }
@@ -323,6 +342,16 @@ export default {
 
     .overlay-container {
         display: none;
+    }
+
+    #login-overlay {
+        display: none !important;
+    }
+}
+
+@media (min-width: 768px) {
+    #login-overlay {
+        display: block !important;
     }
 }
 </style>

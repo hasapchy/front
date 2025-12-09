@@ -5,102 +5,75 @@ import CacheInvalidator, {
   companyScopedKey,
   isFreshByKey,
   touchKey,
-} from "@/utils/cache";
+  indexedDBStorage,
+  loadGlobalReference,
+  loadCompanyScopedData,
+  retryWithExponentialBackoff,
+  assertStorageAvailable,
+} from "@/cache";
 import { CompanyDto } from "@/dto/companies/CompanyDto";
 import CACHE_TTL from "@/constants/cacheTTL";
 import createPersistedState from "vuex-persistedstate";
 import { eventBus } from "@/eventBus";
+import { PermissionParser, PERMISSIONS_CONFIG, hasPermission as checkPermission, isAdmin } from "@/permissions";
+import { STORE_CONFIG } from "./config";
+import TokenUtils from "@/utils/tokenUtils";
 
-// DRY: единый маппинг для очистки state по типу данных
-const CLEAR_MUTATIONS_MAPPING = {
-  currencies: "SET_CURRENCIES",
-  units: "SET_UNITS",
-  users: "SET_USERS",
-  orderStatuses: "SET_ORDER_STATUSES",
-  projectStatuses: "SET_PROJECT_STATUSES",
-  transactionCategories: "SET_TRANSACTION_CATEGORIES",
-  productStatuses: "SET_PRODUCT_STATUSES",
-  warehouses: "SET_WAREHOUSES",
-  cashRegisters: "SET_CASH_REGISTERS",
-  clients: "SET_CLIENTS",
-  products: "SET_PRODUCTS",
-  services: "SET_SERVICES",
-  categories: "SET_CATEGORIES",
-  projects: "SET_PROJECTS",
+const CLEAR_MUTATIONS_MAPPING = STORE_CONFIG.clearMutationsMapping;
+const GLOBAL_REFERENCE_FIELDS = STORE_CONFIG.globalReferenceFields;
+const COMPANY_DATA_FIELDS = STORE_CONFIG.companyDataFields;
+const FIELDS_WITH_TIMESTAMP = STORE_CONFIG.fieldsWithTimestamp;
+const CLIENT_TYPE_FILTER_VALUES = STORE_CONFIG.clientTypeFilterValues;
+const REFERENCES_CACHE_FIELDS = STORE_CONFIG.referencesCacheFields;
+const USER_SETTINGS_FIELDS = STORE_CONFIG.userSettingsFields;
+const LOADING_FLAGS_TO_RESET = STORE_CONFIG.loadingFlagsToReset;
+
+
+const normalizeClientTypeFilter = (value) => {
+  if (!value || value === "all") {
+    return [];
+  }
+
+  let rawValues = [];
+  if (Array.isArray(value)) {
+    rawValues = value;
+  } else if (typeof value === "string") {
+    rawValues = value.split(",");
+  } else {
+    return [];
+  }
+
+  const normalized = rawValues
+    .map((item) => String(item).trim())
+    .filter((item) => CLIENT_TYPE_FILTER_VALUES.includes(item));
+
+  return Array.from(new Set(normalized));
 };
 
-// DRY: глобальные справочники (не зависят от компании)
-const GLOBAL_REFERENCE_FIELDS = [
-  "units",
-  "currencies",
-  "users",
-  "orderStatuses",
-  "projectStatuses",
-  "transactionCategories",
-  "productStatuses",
-];
-
-// DRY: поля данных компании, которые нужно очищать при смене компании/очистке кэша
-const COMPANY_DATA_FIELDS = [
-  "warehouses",
-  "cashRegisters",
-  "clients",
-  "clientsData",
-  "products",
-  "services",
-  "lastProducts",
-  "allProducts",
-  "lastProductsData",
-  "allProductsData",
-  "categories",
-  "projects",
-  "projectsData",
-];
-
-// DRY: поля с timestamp для persistedState (включает глобальные и данные компании)
-const FIELDS_WITH_TIMESTAMP = [
-  ...GLOBAL_REFERENCE_FIELDS,
-  "warehouses",
-  "cashRegisters",
-  "clientsData",
-  "categories",
-  "projectsData",
-  "lastProductsData",
-  "allProductsData",
-];
-
-async function retryWithExponentialBackoff(
-  fn,
-  maxRetries = 3,
-  initialDelay = 1000
-) {
-  let lastError;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-      if (attempt < maxRetries) {
-        const delay = initialDelay * Math.pow(2, attempt);
-        console.warn(
-          `⚠️ Попытка ${attempt + 1} не удалась, повторяю через ${delay}ms...`
-        );
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-    }
+const normalizeCashRegisterFilter = (value) => {
+  if (!value || value === "all") {
+    return [];
   }
-  throw lastError;
-}
 
-function isCompanyChanged(state, companyId) {
-  return state.lastCompanyId !== null && state.lastCompanyId !== companyId;
-}
+  let rawValues = [];
+  if (Array.isArray(value)) {
+    rawValues = value;
+  } else if (typeof value === "string") {
+    rawValues = value.split(",");
+  } else {
+    return [];
+  }
 
-function shouldUseCache(state, dataKey, companyId) {
-  const isChanged = isCompanyChanged(state, companyId);
-  const hasData = state[dataKey]?.length > 0;
-  return hasData && !isChanged;
-}
+  const normalized = rawValues
+    .map((item) => {
+      const num = parseInt(String(item).trim(), 10);
+      return isNaN(num) ? null : num;
+    })
+    .filter((item) => item !== null);
+
+  return Array.from(new Set(normalized));
+};
+
 
 function handleLoadError(dispatch, title, error) {
   console.error(`❌ Ошибка загрузки ${title} после всех попыток:`, error);
@@ -111,24 +84,8 @@ function handleLoadError(dispatch, title, error) {
   });
 }
 
-function generateQueryCacheKey(prefix, params, companyId) {
-  const sortedParams = Object.keys(params || {})
-    .sort()
-    .reduce((acc, key) => {
-      acc[key] = params[key];
-      return acc;
-    }, {});
-  const paramsKey = JSON.stringify(sortedParams);
-  const companyKey = companyId ? `_company_${companyId}` : "";
-  return `${prefix}_${paramsKey}${companyKey}`;
-}
-
 function logRoundingGetter(name, value, state) {
-  console.log(`[Store] ${name}:`, {
-    companyId: state.currentCompany?.id,
-    companyName: state.currentCompany?.name,
-    value,
-  });
+  // Логирование отключено
 }
 
 function logCompanyRoundingSettings(company) {
@@ -151,7 +108,6 @@ function logCompanyRoundingSettings(company) {
       customThreshold: company.rounding_quantity_custom_threshold,
     },
   };
-  console.log("[Company] Rounding settings:", payload);
 }
 
 async function loadCompanyDataIfNeeded(dispatch, state) {
@@ -161,144 +117,77 @@ async function loadCompanyDataIfNeeded(dispatch, state) {
 }
 
 async function loadProductsForSearch(getters, isProducts, limit = 10) {
-  if (getters.isBasementMode) {
-    const BasementProductController = (
-      await import("@/api/basement/BasementProductController")
-    ).default;
-
-    if (isProducts === true) {
-      const productsResult = await BasementProductController.getItems(
-        1,
-        true,
-        {},
-        limit
-      );
-      return {
-        items: productsResult.items || [],
-      };
-    } else if (isProducts === false) {
-      const servicesResult = await BasementProductController.getItems(
-        1,
-        false,
-        {},
-        limit
-      );
-      return {
-        items: servicesResult.items || [],
-      };
-    } else {
-      const [productsResult, servicesResult] = await Promise.all([
-        BasementProductController.getItems(1, true, {}, limit),
-        BasementProductController.getItems(1, false, {}, limit),
-      ]);
-      return {
-        items: [
-          ...(productsResult.items || []),
-          ...(servicesResult.items || []),
-        ],
-      };
-    }
-  } else {
-    const ProductController = (await import("@/api/ProductController")).default;
-    return await ProductController.getItems(
-      1,
-      isProducts ? null : isProducts,
-      {},
-      limit
-    );
-  }
-}
-
-async function loadCompanyScopedData({ commit, state, dispatch }, config) {
-  const {
-    loadingFlagKey,
-    companyId,
-    cacheKeyPrefix,
-    cacheTtl,
-    clearMutations,
-    loggedFlagKey,
-    logEmoji,
-    logName,
-    fetchData,
-    errorName,
-    stateKey,
-  } = config;
-
-  if (state.loadingFlags[loadingFlagKey]) {
-    return dispatch("waitForLoading", loadingFlagKey);
-  }
-
-  if (!companyId) {
-    clearMutations.forEach((mutation) => commit(mutation, []));
-    return;
-  }
-
-  const cacheKey = companyScopedKey(cacheKeyPrefix, companyId);
-  const ttl = cacheTtl;
-
-  if (!isFreshByKey(cacheKey, ttl)) {
-    clearMutations.forEach((mutation) => commit(mutation, []));
-  }
-
-  const isChanged = isCompanyChanged(state, companyId);
-  if (isChanged && state[stateKey]?.length > 0) {
-    clearMutations.forEach((mutation) => commit(mutation, []));
-  }
-
-  if (shouldUseCache(state, stateKey, companyId)) {
-    if (!state.loggedDataFlags[loggedFlagKey]) {
-      console.log(
-        `  ${logEmoji} ${logName} (${state[stateKey].length}) - из кэша`
-      );
-      commit("SET_LOGGED_DATA_FLAG", { type: loggedFlagKey, logged: true });
-    }
-    return;
-  }
-
-  commit("SET_LOADING_FLAG", { type: loadingFlagKey, loading: true });
-
   try {
-    const data = await retryWithExponentialBackoff(fetchData, 3);
-    commit(clearMutations[0], data);
-    console.log(`  ${logEmoji} ${logName} (${data.length})`);
-    touchKey(cacheKey);
+    if (getters.isBasementMode) {
+      const BasementProductController = (
+        await import("@/api/basement/BasementProductController")
+      ).default;
+
+      if (isProducts === true) {
+        const productsResult = await retryWithExponentialBackoff(
+          () => BasementProductController.getItems(1, true, {}, limit),
+          3
+        );
+        return {
+          items: productsResult.items || [],
+        };
+      } else if (isProducts === false) {
+        const servicesResult = await retryWithExponentialBackoff(
+          () => BasementProductController.getItems(1, false, {}, limit),
+          3
+        );
+        return {
+          items: servicesResult.items || [],
+        };
+      } else {
+        const [productsResult, servicesResult] = await Promise.allSettled([
+          retryWithExponentialBackoff(
+            () => BasementProductController.getItems(1, true, {}, limit),
+            3
+          ),
+          retryWithExponentialBackoff(
+            () => BasementProductController.getItems(1, false, {}, limit),
+            3
+          ),
+        ]);
+        return {
+          items: [
+            ...(productsResult.status === "fulfilled"
+              ? productsResult.value.items || []
+              : []),
+            ...(servicesResult.status === "fulfilled"
+              ? servicesResult.value.items || []
+              : []),
+          ],
+        };
+      }
+    } else {
+      const ProductController = (await import("@/api/ProductController"))
+        .default;
+      return await retryWithExponentialBackoff(
+        () =>
+          ProductController.getItems(
+            1,
+            isProducts ? null : isProducts,
+            {},
+            limit
+          ),
+        3
+      );
+    }
   } catch (error) {
-    clearMutations.forEach((mutation) => commit(mutation, []));
-    handleLoadError(dispatch, errorName, error);
-  } finally {
-    commit("SET_LOADING_FLAG", { type: loadingFlagKey, loading: false });
+    console.error("Ошибка загрузки товаров для поиска:", error);
+    return { items: [] };
   }
 }
 
-function clearOldCompanyCache(oldCompanyId) {
-  setTimeout(async () => {
-    CacheInvalidator.invalidateByCompany(oldCompanyId);
 
-    const persistKey = "hasap_vuex_cache";
-    const stored = JSON.parse(localStorage.getItem(persistKey) || "{}");
-    COMPANY_DATA_FIELDS.forEach((field) => {
-      if (stored[field]) delete stored[field];
-    });
-    localStorage.setItem(persistKey, JSON.stringify(stored));
-
-    const preservePrefixes = ["tableColumns_", "tableSort_"];
-    const shouldPreserve = (key) =>
-      preservePrefixes.some((prefix) => key?.startsWith(prefix));
-    const keysToRemove = [];
-
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (
-        key &&
-        !shouldPreserve(key) &&
-        (key.includes("transaction") || key.includes("balance"))
-      ) {
-        keysToRemove.push(key);
-      }
-    }
-
-    keysToRemove.forEach((key) => localStorage.removeItem(key));
-  }, 0);
+async function clearAllCacheOnCompanyChange() {
+  try {
+    await CacheInvalidator.invalidateAll();
+  } catch (error) {
+    console.error("Error clearing cache on company change:", error);
+  }
 }
 
 // ✅ Listener для синхронизации между вкладками
@@ -307,8 +196,13 @@ function initializeStorageSync(_store) {
   let debounceTimer = null;
 
   window.addEventListener("storage", (e) => {
-    // ✅ Слушаем ТОЛЬКО события от ДРУГИХ вкладок (не от этой вкладки)
-    if (e.key !== "hasap_vuex_cache") return;
+    // Слушаем изменения в настройках пользователя (где хранится currentCompany)
+    if (
+      e.key !== STORE_CONFIG.localStorageKeys.userSettings &&
+      e.key !== STORE_CONFIG.localStorageKeys.persistKey
+    ) {
+      return;
+    }
 
     try {
       const newState = JSON.parse(e.newValue || "{}");
@@ -344,6 +238,8 @@ function initializeStorageSync(_store) {
 
             const updatedCompany = new CompanyDto(newState.currentCompany);
             _store.commit("SET_CURRENT_COMPANY", updatedCompany);
+            await clearAllCacheOnCompanyChange();
+            _store.commit("CLEAR_COMPANY_DATA");
             await _store.dispatch("loadCompanyData");
             lastEmittedCompanyId = updatedCompany.id;
             eventBus.emit("company-changed", updatedCompany.id);
@@ -373,7 +269,6 @@ const store = createStore({
     notificationIsDanger: false,
     notificationDuration: 10000, // Длительность уведомления в миллисекундах
     notificationTimeoutId: null, // ID таймера для возможности отмены
-    isLoading: false, // Состояние загрузки для блокировки навигации (отключено)
     activeApiCalls: 0, // Счетчик активных API вызовов
     units: [], // Единицы измерения
     currencies: [], // Валюты
@@ -385,8 +280,6 @@ const store = createStore({
       warehouses: false,
       cashRegisters: false,
       clients: false,
-      products: false,
-      services: false,
       categories: false,
       projects: false,
       orderStatuses: false,
@@ -394,6 +287,9 @@ const store = createStore({
       transactionCategories: false,
       productStatuses: false,
       companyData: false,
+      userCompanies: false,
+      userPermissions: false,
+      currentCompany: false,
     },
     // ✅ Флаги для отслеживания уже залогированных данных (чтобы не спамить логи)
     loggedDataFlags: {
@@ -408,8 +304,6 @@ const store = createStore({
     cashRegisters: [], // Кассы
     clients: [], // Клиенты (DTO с методами)
     clientsData: [], // Plain data для кэширования
-    products: [], // Товары
-    services: [], // Услуги
     lastProducts: [], // Последние 10 товаров для ProductSearch (DTO с методами)
     lastProductsData: [], // Plain data для кэширования
     allProducts: [], // ВСЕ товары и услуги для ProductSearch (DTO с методами)
@@ -428,26 +322,40 @@ const store = createStore({
     // Кэш данных по компаниям (удаляем, используем только localStorage)
     // companyDataCache: {}, // { companyId: { warehouses: [], clients: [], ... } }
     soundEnabled: true,
-    tokenInfo: {
-      accessTokenExpiresAt: null,
-      refreshTokenExpiresAt: null,
-      needsRefresh: false,
-    },
     orderStatusesCustomOrder: null,
-    // ✅ Флаг для предотвращения цикла между вкладками
-    isChangingCompanyFromThisTab: false,
     // ✅ Флаг синхронизации компании, пришедшей из другой вкладки
     isSyncingCompanyFromOtherTab: false,
     // Фильтр по типу клиента для взаиморасчетов/финансов
-    clientTypeFilter: "all",
+    clientTypeFilter: [],
+    // Фильтр по кассе для взаиморасчетов
+    cashRegisterFilter: [],
     // Версия логотипа для инвалидации кэша изображений
     logoVersion: 0,
-    // Кэш пагинированных запросов API
-    queryCache: {},
     // Настройки меню
     menuItems: {
       main: [],
       available: [],
+    },
+    // Настройки полей карточек канбана
+    kanbanCardFields: {
+      orders: {
+        cashRegister: false,
+        warehouse: false,
+        client: true,
+        project: true,
+        products: false,
+        note: false,
+        description: false,
+        date: true,
+        totalPrice: true,
+      },
+      projects: {
+        description: true,
+        date: true,
+        client: true,
+        user: true,
+        budget: true,
+      },
     },
   },
 
@@ -468,17 +376,11 @@ const store = createStore({
     SET_SEARCH_QUERY(state, query) {
       state.searchQuery = query;
     },
-    SET_LOADING(state, isLoading) {
-      state.isLoading = isLoading;
-    },
     INCREMENT_API_CALLS(state) {
-      // Отключаем блокировку навигации: только считаем активные вызовы
       state.activeApiCalls++;
-      state.isLoading = false;
     },
     DECREMENT_API_CALLS(state) {
       state.activeApiCalls = Math.max(0, state.activeApiCalls - 1);
-      state.isLoading = false;
     },
     SHOW_NOTIFICATION(state, { title, subtitle, isDanger, duration }) {
       state.notificationTitle = title;
@@ -492,17 +394,6 @@ const store = createStore({
     },
     SET_NOTIFICATION_TIMEOUT_ID(state, timeoutId) {
       state.notificationTimeoutId = timeoutId;
-    },
-    SET_TOKEN_INFO(state, tokenInfo) {
-      state.tokenInfo = { ...state.tokenInfo, ...tokenInfo };
-    },
-    UPDATE_TOKEN_EXPIRATION(
-      state,
-      { accessTokenExpiresAt, refreshTokenExpiresAt }
-    ) {
-      state.tokenInfo.accessTokenExpiresAt = accessTokenExpiresAt;
-      state.tokenInfo.refreshTokenExpiresAt = refreshTokenExpiresAt;
-      state.tokenInfo.needsRefresh = false;
     },
     SET_UNITS(state, units) {
       state.units = units;
@@ -524,12 +415,6 @@ const store = createStore({
     },
     SET_CLIENTS_DATA(state, clientsData) {
       state.clientsData = clientsData;
-    },
-    SET_PRODUCTS(state, products) {
-      state.products = products;
-    },
-    SET_SERVICES(state, services) {
-      state.services = services;
     },
     SET_LAST_PRODUCTS(state, lastProducts) {
       state.lastProducts = lastProducts;
@@ -614,38 +499,19 @@ const store = createStore({
     SET_LOGGED_DATA_FLAG(state, { type, logged }) {
       state.loggedDataFlags[type] = logged;
     },
-    SET_IS_CHANGING_COMPANY(state, value) {
-      state.isChangingCompanyFromThisTab = value;
-    },
     SET_IS_SYNCING_COMPANY_FROM_OTHER_TAB(state, value) {
       state.isSyncingCompanyFromOtherTab = value;
     },
     SET_CLIENT_TYPE_FILTER(state, value) {
-      state.clientTypeFilter = value || "all";
+      const normalized = normalizeClientTypeFilter(value);
+      state.clientTypeFilter = normalized;
+    },
+    SET_CASH_REGISTER_FILTER(state, value) {
+      const normalized = normalizeCashRegisterFilter(value);
+      state.cashRegisterFilter = normalized;
     },
     SET_ORDER_STATUSES_CUSTOM_ORDER(state, order) {
       state.orderStatusesCustomOrder = order;
-    },
-    SET_QUERY_CACHE(state, { key, data }) {
-      state.queryCache[key] = { data, timestamp: Date.now() };
-    },
-    CLEAR_QUERY_CACHE(state, prefix = null) {
-      if (!prefix) {
-        state.queryCache = {};
-        return;
-      }
-      Object.keys(state.queryCache).forEach((key) => {
-        if (key.startsWith(prefix)) {
-          delete state.queryCache[key];
-        }
-      });
-    },
-    CLEAR_QUERY_CACHE_BY_COMPANY(state, companyId) {
-      Object.keys(state.queryCache).forEach((key) => {
-        if (key.includes(`_company_${companyId}`)) {
-          delete state.queryCache[key];
-        }
-      });
     },
     SET_MENU_ITEMS(state, { main, available }) {
       state.menuItems.main = main || [];
@@ -654,6 +520,14 @@ const store = createStore({
     UPDATE_MENU_ITEMS(state, { type, items }) {
       if (type === "main" || type === "available") {
         state.menuItems[type] = items;
+      }
+    },
+    SET_KANBAN_CARD_FIELDS(state, fields) {
+      state.kanbanCardFields = fields;
+    },
+    UPDATE_KANBAN_CARD_FIELDS(state, { mode, fields }) {
+      if (mode === "orders" || mode === "projects") {
+        state.kanbanCardFields[mode] = { ...state.kanbanCardFields[mode], ...fields };
       }
     },
   },
@@ -682,16 +556,16 @@ const store = createStore({
       commit("SET_SEARCH_QUERY", query);
     },
     setClientTypeFilter({ commit }, value) {
-      commit("SET_CLIENT_TYPE_FILTER", value || "all");
+      commit("SET_CLIENT_TYPE_FILTER", value);
+    },
+    setCashRegisterFilter({ commit }, value) {
+      commit("SET_CASH_REGISTER_FILTER", value);
     },
     setUser({ commit }, user) {
       commit("SET_USER", user);
     },
     setPermissions({ commit }, permissions) {
       commit("SET_PERMISSIONS", permissions);
-    },
-    setLoading({ commit }, isLoading) {
-      commit("SET_LOADING", isLoading);
     },
     startApiCall({ commit }) {
       commit("INCREMENT_API_CALLS");
@@ -743,56 +617,24 @@ const store = createStore({
         commit("SET_NOTIFICATION_TIMEOUT_ID", timeoutId);
       }
     },
-    updateTokenExpiration(
-      { commit },
-      { accessTokenExpiresAt, refreshTokenExpiresAt }
-    ) {
-      commit("UPDATE_TOKEN_EXPIRATION", {
-        accessTokenExpiresAt,
-        refreshTokenExpiresAt,
+    async loadUnits(context) {
+      await loadGlobalReference(context, {
+        cacheKey: "units",
+        ttl: CACHE_TTL.units,
+        mutation: "SET_UNITS",
+        loadingFlag: "units",
+        logName: "⚙️ Единицы",
+        fetchFn: async () => {
+          const apiInstance = context.getters.isBasementMode
+            ? basementApi
+            : api;
+          const response = await apiInstance.get("/app/units");
+          return response.data;
+        },
       });
     },
-    checkTokenStatus({ commit, state }) {
-      if (
-        state.tokenInfo.accessTokenExpiresAt &&
-        state.tokenInfo.refreshTokenExpiresAt
-      ) {
-        const now = Date.now();
-        const accessExpired = now > state.tokenInfo.accessTokenExpiresAt;
-        const refreshExpired = now > state.tokenInfo.refreshTokenExpiresAt;
-
-        commit("SET_TOKEN_INFO", {
-          needsRefresh: accessExpired && !refreshExpired,
-        });
-      }
-    },
-    async loadUnits({ commit, state, getters }) {
-      const cacheKey = "units";
-      const ttl = CACHE_TTL.units;
-
-      if (!isFreshByKey(cacheKey, ttl)) {
-        commit("SET_UNITS", []);
-      }
-
-      if (state.units.length > 0) {
-        return;
-      }
-
-      commit("SET_LOADING_FLAG", { type: "units", loading: true });
-
-      try {
-        const apiInstance = getters.isBasementMode ? basementApi : api;
-        const response = await apiInstance.get("/app/units");
-        commit("SET_UNITS", response.data);
-        touchKey(cacheKey);
-        console.log(`⚙️ Единицы (${response.data.length})`);
-      } catch (error) {
-        console.error("Ошибка загрузки единиц измерения:", error);
-      } finally {
-        commit("SET_LOADING_FLAG", { type: "units", loading: false });
-      }
-    },
-    async loadCurrencies({ commit, state, getters }) {
+    async loadCurrencies(context) {
+      const { commit, state, getters } = context;
       const cacheKey = "currencies";
       const ttl = CACHE_TTL.currencies;
 
@@ -800,10 +642,12 @@ const store = createStore({
         commit("SET_CURRENCIES", []);
       }
 
-      if (state.currencies.length > 0) {
-        const hasAccessToOtherCurrencies =
-          typeof getters.hasPermission === "function" &&
-          getters.hasPermission("settings_currencies_view");
+      if (Array.isArray(state.currencies) && state.currencies.length > 0) {
+        const hasAccessToOtherCurrencies = checkPermission(
+          "settings_currencies_view",
+          state.permissions,
+          state.user
+        );
         const onlyDefaultInCache = state.currencies.every(
           (c) => (c.isDefault || c.is_default) === true
         );
@@ -825,48 +669,33 @@ const store = createStore({
         }
       }
 
-      commit("SET_LOADING_FLAG", { type: "currencies", loading: true });
-
-      try {
-        const apiInstance = getters.isBasementMode ? basementApi : api;
-        const response = await apiInstance.get("/app/currency");
-        const CurrencyDto = (await import("@/dto/app/CurrencyDto")).default;
-        const converted = CurrencyDto.fromApiArray(response.data);
-        commit("SET_CURRENCIES", converted);
-        touchKey(cacheKey);
-        console.log(`💱 Валюты (${converted.length})`);
-      } catch (error) {
-        console.error("Ошибка загрузки валют:", error);
-      } finally {
-        commit("SET_LOADING_FLAG", { type: "currencies", loading: false });
-      }
+      await loadGlobalReference(context, {
+        cacheKey,
+        ttl,
+        mutation: "SET_CURRENCIES",
+        loadingFlag: "currencies",
+        logName: "💱 Валюты",
+        fetchFn: async () => {
+          const apiInstance = getters.isBasementMode ? basementApi : api;
+          const response = await apiInstance.get("/app/currency");
+          const CurrencyDto = (await import("@/dto/app/CurrencyDto")).default;
+          return CurrencyDto.fromApiArray(response.data);
+        },
+      });
     },
-    async loadUsers({ commit, state }) {
-      const cacheKey = "users";
-      const ttl = 24 * 60 * 60 * 1000;
-
-      if (!isFreshByKey(cacheKey, ttl)) {
-        commit("SET_USERS", []);
-      }
-
-      if (state.users.length > 0) {
-        return;
-      }
-
-      commit("SET_LOADING_FLAG", { type: "users", loading: true });
-
-      try {
-        const UsersController = (await import("@/api/UsersController")).default;
-        const data = await UsersController.getAllItems();
-        commit("SET_USERS", data);
-        touchKey(cacheKey);
-        console.log(`👥 Сотрудники (${data.length})`);
-      } catch (error) {
-        console.error("Ошибка загрузки сотрудников:", error);
-        commit("SET_USERS", []);
-      } finally {
-        commit("SET_LOADING_FLAG", { type: "users", loading: false });
-      }
+    async loadUsers(context) {
+      await loadGlobalReference(context, {
+        cacheKey: "users",
+        ttl: CACHE_TTL.users,
+        mutation: "SET_USERS",
+        loadingFlag: "users",
+        logName: "👥 Сотрудники",
+        fetchFn: async () => {
+          const UsersController = (await import("@/api/UsersController"))
+            .default;
+          return await UsersController.getListItems();
+        },
+      });
     },
     async loadWarehouses(context) {
       await loadCompanyScopedData(context, {
@@ -883,9 +712,10 @@ const store = createStore({
           const WarehouseController = (
             await import("@/api/WarehouseController")
           ).default;
-          return await WarehouseController.getAllItems();
+          return await WarehouseController.getListItems();
         },
         errorName: "складов",
+        onError: handleLoadError,
       });
     },
     async loadCashRegisters(context) {
@@ -903,9 +733,10 @@ const store = createStore({
           const CashRegisterController = (
             await import("@/api/CashRegisterController")
           ).default;
-          return await CashRegisterController.getAllItems();
+          return await CashRegisterController.getListItems();
         },
         errorName: "касс",
+        onError: handleLoadError,
       });
     },
     async loadClients({ commit, state, dispatch }) {
@@ -928,16 +759,12 @@ const store = createStore({
         commit("SET_CLIENTS_DATA", []);
       }
 
-      const isChanged = isCompanyChanged(state, companyId);
-      if (isChanged) {
-        commit("SET_CLIENTS", []);
-        commit("SET_CLIENTS_DATA", []);
-      }
-
       if (
+        Array.isArray(state.clientsData) &&
         state.clientsData.length > 0 &&
+        Array.isArray(state.clients) &&
         state.clients.length === 0 &&
-        !isChanged
+        isFreshByKey(cacheKey, ttl)
       ) {
         const firstClient = state.clientsData[0];
         const hasSnakeCase =
@@ -960,9 +787,16 @@ const store = createStore({
         }
       }
 
-      if (shouldUseCache(state, "clients", companyId)) {
+      if (
+        Array.isArray(state.clients) &&
+        state.clients.length > 0 &&
+        isFreshByKey(cacheKey, ttl)
+      ) {
         if (!state.loggedDataFlags.clients) {
-          console.log(`  👤 Клиенты (${state.clients.length}) - из кэша`);
+          const clientsLength = Array.isArray(state.clients)
+            ? state.clients.length
+            : 0;
+          console.log(`  👤 Клиенты (${clientsLength}) - из кэша`);
           commit("SET_LOGGED_DATA_FLAG", { type: "clients", logged: true });
         }
         return;
@@ -971,6 +805,7 @@ const store = createStore({
       commit("SET_LOADING_FLAG", { type: "clients", loading: true });
 
       try {
+        const ClientController = (await import("@/api/ClientController")).default;
         const ClientDto = (await import("@/dto/client/ClientDto")).default;
         const api = (await import("@/api/axiosInstance")).default;
 
@@ -980,47 +815,18 @@ const store = createStore({
         }, 3);
 
         const plainData = Array.isArray(response) ? response : [];
-        commit("SET_CLIENTS_DATA", plainData);
         const clients = ClientDto.fromApiArray(plainData);
+        
+        commit("SET_CLIENTS_DATA", plainData);
         commit("SET_CLIENTS", clients);
         touchKey(cacheKey);
-        console.log(`  👤 Клиенты (${plainData.length})`);
+        console.log(`  👤 Клиенты (${clients.length})`);
       } catch (error) {
         commit("SET_CLIENTS", []);
         commit("SET_CLIENTS_DATA", []);
         handleLoadError(dispatch, "клиентов", error);
       } finally {
         commit("SET_LOADING_FLAG", { type: "clients", loading: false });
-      }
-    },
-    async loadProducts({ commit, state }) {
-      if (state.products.length > 0) {
-        return;
-      }
-
-      try {
-        const ProductController = (await import("@/api/ProductController"))
-          .default;
-        const data = await ProductController.getItems(1, true);
-        commit("SET_PRODUCTS", data.items);
-      } catch (error) {
-        console.error("Ошибка загрузки товаров:", error);
-        commit("SET_PRODUCTS", []);
-      }
-    },
-    async loadServices({ commit, state }) {
-      if (state.services.length > 0) {
-        return;
-      }
-
-      try {
-        const ProductController = (await import("@/api/ProductController"))
-          .default;
-        const data = await ProductController.getItems(1, false);
-        commit("SET_SERVICES", data.items);
-      } catch (error) {
-        console.error("Ошибка загрузки услуг:", error);
-        commit("SET_SERVICES", []);
       }
     },
     async loadCategories(context) {
@@ -1037,9 +843,10 @@ const store = createStore({
         fetchData: async () => {
           const CategoryController = (await import("@/api/CategoryController"))
             .default;
-          return await CategoryController.getAllItems();
+          return await CategoryController.getListItems();
         },
         errorName: "категорий",
+        onError: handleLoadError,
       });
     },
     async loadProjects({ commit, state, dispatch }) {
@@ -1056,24 +863,26 @@ const store = createStore({
       if (!isFreshByKey(cacheKey, ttl)) {
         commit("SET_PROJECTS", []);
         commit("SET_PROJECTS_DATA", []);
+        commit("SET_PROJECTS_DATA_COMPANY_ID", companyId);
       }
 
-      const isChanged = isCompanyChanged(state, companyId);
       const isProjectsCompanyChanged =
         state.projectsDataCompanyId !== null &&
         state.projectsDataCompanyId !== companyId;
 
-      if (isChanged || isProjectsCompanyChanged) {
+      if (isProjectsCompanyChanged) {
         commit("SET_PROJECTS", []);
         commit("SET_PROJECTS_DATA", []);
         commit("SET_PROJECTS_DATA_COMPANY_ID", companyId);
       }
 
       if (
+        Array.isArray(state.projectsData) &&
         state.projectsData.length > 0 &&
+        Array.isArray(state.projects) &&
         state.projects.length === 0 &&
         state.projectsDataCompanyId === companyId &&
-        !isChanged
+        isFreshByKey(cacheKey, ttl)
       ) {
         const ProjectDto = (await import("@/dto/project/ProjectDto")).default;
         const projects = ProjectDto.fromApiArray(state.projectsData);
@@ -1082,12 +891,16 @@ const store = createStore({
       }
 
       if (
+        Array.isArray(state.projects) &&
         state.projects.length > 0 &&
         state.projectsDataCompanyId === companyId &&
-        !isChanged
+        isFreshByKey(cacheKey, ttl)
       ) {
         if (!state.loggedDataFlags.projects) {
-          console.log(`  📋 Проекты (${state.projects.length}) - из кэша`);
+          const projectsLength = Array.isArray(state.projects)
+            ? state.projects.length
+            : 0;
+          console.log(`  📋 Проекты (${projectsLength}) - из кэша`);
           commit("SET_LOGGED_DATA_FLAG", { type: "projects", logged: true });
         }
         return;
@@ -1101,7 +914,7 @@ const store = createStore({
         const ProjectDto = (await import("@/dto/project/ProjectDto")).default;
 
         const data = await retryWithExponentialBackoff(
-          () => ProjectController.getAllItems(),
+          () => ProjectController.getListItems(),
           3
         );
         const plainData = data.map((project) => ({ ...project }));
@@ -1117,210 +930,152 @@ const store = createStore({
         commit("SET_LOADING_FLAG", { type: "projects", loading: false });
       }
     },
-    async loadLastProducts({ commit, state, getters }) {
-      if (
-        state.lastProductsData.length > 0 &&
-        state.lastProducts.length === 0
-      ) {
-        const ProductSearchDto = (
-          await import("@/dto/product/ProductSearchDto")
-        ).default;
-        const lastProducts = ProductSearchDto.fromApiArray(
-          state.lastProductsData
-        );
-        commit("SET_LAST_PRODUCTS", lastProducts);
-        return;
-      }
+    async loadProductsForSearch(
+      { commit, state, getters },
+      { limit = 10, force = false, isProductsOnly = null }
+    ) {
+      const isLastProducts = limit === 10;
+      const stateKey = isLastProducts ? "lastProducts" : "allProducts";
+      const dataKey = isLastProducts ? "lastProductsData" : "allProductsData";
+      const setProductsMutation = isLastProducts
+        ? "SET_LAST_PRODUCTS"
+        : "SET_ALL_PRODUCTS";
+      const setProductsDataMutation = isLastProducts
+        ? "SET_LAST_PRODUCTS_DATA"
+        : "SET_ALL_PRODUCTS_DATA";
 
-      if (state.lastProducts.length > 0) {
-        return;
-      }
-
-      try {
-        const results = await loadProductsForSearch(getters, null, 10);
-        const ProductSearchDto = (
-          await import("@/dto/product/ProductSearchDto")
-        ).default;
-        const lastProducts = ProductSearchDto.fromApiArray(results.items || []);
-        commit("SET_LAST_PRODUCTS", lastProducts);
-        commit(
-          "SET_LAST_PRODUCTS_DATA",
-          (results.items || []).map((item) => ({ ...item }))
-        );
-      } catch (error) {
-        console.error("Ошибка загрузки последних товаров:", error);
-        commit("SET_LAST_PRODUCTS", []);
-        commit("SET_LAST_PRODUCTS_DATA", []);
-      }
-    },
-    async loadAllProducts({ commit, state, getters }) {
-      if (state.allProductsData.length > 0 && state.allProducts.length === 0) {
-        const ProductSearchDto = (
-          await import("@/dto/product/ProductSearchDto")
-        ).default;
-        const allProducts = ProductSearchDto.fromApiArray(
-          state.allProductsData
-        );
-        commit("SET_ALL_PRODUCTS", allProducts);
-        return;
-      }
-
-      if (state.allProducts.length > 0) {
-        return;
-      }
-
-      try {
-        const results = await loadProductsForSearch(getters, true, 1000);
-        const ProductSearchDto = (
-          await import("@/dto/product/ProductSearchDto")
-        ).default;
-        const allProducts = ProductSearchDto.fromApiArray(results.items || []);
-        commit("SET_ALL_PRODUCTS", allProducts);
-        commit(
-          "SET_ALL_PRODUCTS_DATA",
-          (results.items || []).map((item) => ({ ...item }))
-        );
-        console.log(
-          `✅ Загружено ${allProducts.length} товаров для поиска (кэш на 30 дней)`
-        );
-      } catch (error) {
-        console.error("Ошибка загрузки всех товаров:", error);
-        commit("SET_ALL_PRODUCTS", []);
-        commit("SET_ALL_PRODUCTS_DATA", []);
-      }
-    },
-    async loadOrderStatuses({ commit, state }) {
-      const cacheKey = "orderStatuses";
-      const ttl = CACHE_TTL.orderStatuses;
-
-      if (!isFreshByKey(cacheKey, ttl)) {
-        commit("SET_ORDER_STATUSES", []);
-      }
-
-      if (state.orderStatuses.length > 0) {
-        return;
-      }
-
-      commit("SET_LOADING_FLAG", { type: "orderStatuses", loading: true });
-
-      try {
-        const OrderStatusController = (
-          await import("@/api/OrderStatusController")
-        ).default;
-        const data = await OrderStatusController.getAllItems();
-
-        if (state.orderStatusesCustomOrder) {
-          const orderArray = state.orderStatusesCustomOrder;
-          const orderedData = orderArray
-            .map((id) => data.find((status) => status.id === id))
-            .filter(Boolean)
-            .concat(data.filter((status) => !orderArray.includes(status.id)));
-          commit("SET_ORDER_STATUSES", orderedData);
-        } else {
-          commit("SET_ORDER_STATUSES", data);
+      if (!force) {
+        if (
+          Array.isArray(state[dataKey]) &&
+          state[dataKey].length > 0 &&
+          Array.isArray(state[stateKey]) &&
+          state[stateKey].length === 0
+        ) {
+          const ProductSearchDto = (
+            await import("@/dto/product/ProductSearchDto")
+          ).default;
+          const products = ProductSearchDto.fromApiArray(state[dataKey]);
+          commit(setProductsMutation, products);
+          return;
         }
 
-        touchKey(cacheKey);
-        console.log(`📊 Статусы заказов (${data.length})`);
-      } catch (error) {
-        console.error("Ошибка загрузки статусов заказов:", error);
-      } finally {
-        commit("SET_LOADING_FLAG", { type: "orderStatuses", loading: false });
+        if (Array.isArray(state[stateKey]) && state[stateKey].length > 0) {
+          return;
+        }
       }
-    },
-    async loadProjectStatuses({ commit, state }) {
-      const cacheKey = "projectStatuses";
-      const ttl = CACHE_TTL.projectStatuses;
-
-      if (!isFreshByKey(cacheKey, ttl)) {
-        commit("SET_PROJECT_STATUSES", []);
-      }
-
-      if (state.projectStatuses.length > 0) {
-        return;
-      }
-
-      commit("SET_LOADING_FLAG", { type: "projectStatuses", loading: true });
 
       try {
-        const ProjectStatusController = (
-          await import("@/api/ProjectStatusController")
-        ).default;
-        const data = await ProjectStatusController.getAllItems();
-        commit("SET_PROJECT_STATUSES", data);
-        touchKey(cacheKey);
-        console.log(`🎯 Статусы проектов (${data.length})`);
-      } catch (error) {
-        console.error("Ошибка загрузки статусов проектов:", error);
-      } finally {
-        commit("SET_LOADING_FLAG", { type: "projectStatuses", loading: false });
-      }
-    },
-    async loadTransactionCategories({ commit, state }) {
-      const cacheKey = "transactionCategories";
-      const ttl = CACHE_TTL.transactionCategories;
-
-      if (!isFreshByKey(cacheKey, ttl)) {
-        commit("SET_TRANSACTION_CATEGORIES", []);
-      }
-
-      if (state.transactionCategories.length > 0) {
-        return;
-      }
-
-      commit("SET_LOADING_FLAG", {
-        type: "transactionCategories",
-        loading: true,
-      });
-
-      try {
-        const TransactionCategoryController = (
-          await import("@/api/TransactionCategoryController")
-        ).default;
-        const data = await TransactionCategoryController.getAllItems();
-        commit("SET_TRANSACTION_CATEGORIES", data);
-        touchKey(cacheKey);
-        console.log(`💳 Категории транзакций (${data.length})`);
-      } catch (error) {
-        console.error("Ошибка загрузки категорий транзакций:", error);
-      } finally {
-        commit("SET_LOADING_FLAG", {
-          type: "transactionCategories",
-          loading: false,
-        });
-      }
-    },
-    async loadProductStatuses({ commit, state }) {
-      const cacheKey = "productStatuses";
-      const ttl = CACHE_TTL.productStatuses;
-
-      if (!isFreshByKey(cacheKey, ttl)) {
-        commit("SET_PRODUCT_STATUSES", []);
-      }
-
-      if (state.productStatuses.length > 0) {
-        return;
-      }
-
-      commit("SET_LOADING_FLAG", { type: "productStatuses", loading: true });
-
-      try {
-        const AppController = (await import("@/api/AppController")).default;
-        const data = await retryWithExponentialBackoff(
-          () => AppController.getProductStatuses(),
-          3
+        const results = await loadProductsForSearch(
+          getters,
+          isProductsOnly,
+          limit
         );
-        commit("SET_PRODUCT_STATUSES", data);
-        touchKey(cacheKey);
-        console.log(`🏷️ Статусы товаров (${data.length})`);
+        const ProductSearchDto = (
+          await import("@/dto/product/ProductSearchDto")
+        ).default;
+        const products = ProductSearchDto.fromApiArray(results.items || []);
+        commit(setProductsMutation, products);
+        commit(
+          setProductsDataMutation,
+          (results.items || []).map((item) => ({ ...item }))
+        );
+        if (!isLastProducts) {
+          console.log(
+            `✅ Загружено ${products.length} товаров для поиска (кэш на 30 дней)`
+          );
+        }
       } catch (error) {
         console.error(
-          "❌ Ошибка загрузки статусов товаров после всех попыток:",
+          `Ошибка загрузки товаров для поиска (limit: ${limit}):`,
           error
         );
-      } finally {
-        commit("SET_LOADING_FLAG", { type: "productStatuses", loading: false });
+        commit(setProductsMutation, []);
+        commit(setProductsDataMutation, []);
       }
+    },
+    async loadLastProducts(context) {
+      return context.dispatch("loadProductsForSearch", {
+        limit: 10,
+        isProductsOnly: null,
+      });
+    },
+    async loadAllProducts(context) {
+      return context.dispatch("loadProductsForSearch", {
+        limit: 1000,
+        isProductsOnly: true,
+      });
+    },
+    async loadOrderStatuses(context) {
+      const { state } = context;
+      await loadGlobalReference(context, {
+        cacheKey: "orderStatuses",
+        ttl: CACHE_TTL.orderStatuses,
+        mutation: "SET_ORDER_STATUSES",
+        loadingFlag: "orderStatuses",
+        logName: "📊 Статусы заказов",
+        fetchFn: async () => {
+          const OrderStatusController = (
+            await import("@/api/OrderStatusController")
+          ).default;
+          return await OrderStatusController.getListItems();
+        },
+        transformFn: (data) => {
+          if (state.orderStatusesCustomOrder) {
+            const orderArray = state.orderStatusesCustomOrder;
+            return orderArray
+              .map((id) => data.find((status) => status.id === id))
+              .filter(Boolean)
+              .concat(data.filter((status) => !orderArray.includes(status.id)));
+          }
+          return data;
+        },
+      });
+    },
+    async loadProjectStatuses(context) {
+      await loadGlobalReference(context, {
+        cacheKey: "projectStatuses",
+        ttl: CACHE_TTL.projectStatuses,
+        mutation: "SET_PROJECT_STATUSES",
+        loadingFlag: "projectStatuses",
+        logName: "🎯 Статусы проектов",
+        fetchFn: async () => {
+          const ProjectStatusController = (
+            await import("@/api/ProjectStatusController")
+          ).default;
+          return await ProjectStatusController.getListItems();
+        },
+      });
+    },
+    async loadTransactionCategories(context) {
+      await loadGlobalReference(context, {
+        cacheKey: "transactionCategories",
+        ttl: CACHE_TTL.transactionCategories,
+        mutation: "SET_TRANSACTION_CATEGORIES",
+        loadingFlag: "transactionCategories",
+        logName: "💳 Категории транзакций",
+        fetchFn: async () => {
+          const TransactionCategoryController = (
+            await import("@/api/TransactionCategoryController")
+          ).default;
+          return await TransactionCategoryController.getListItems();
+        },
+      });
+    },
+    async loadProductStatuses(context) {
+      await loadGlobalReference(context, {
+        cacheKey: "productStatuses",
+        ttl: CACHE_TTL.productStatuses,
+        mutation: "SET_PRODUCT_STATUSES",
+        loadingFlag: "productStatuses",
+        logName: "🏷️ Статусы товаров",
+        fetchFn: async () => {
+          const AppController = (await import("@/api/AppController")).default;
+          return await retryWithExponentialBackoff(
+            () => AppController.getProductStatuses(),
+            3
+          );
+        },
+      });
     },
     // Загрузка всех данных компании
     async loadCompanyData({ dispatch, commit, state, rootGetters }) {
@@ -1356,9 +1111,13 @@ const store = createStore({
         const otherLoads = Promise.allSettled(otherLoadsPromises);
 
         // ✅ Запускаем все параллельно для максимальной скорости
-        const [criticalResults, otherResults] = await Promise.all([
+        // Используем allSettled чтобы один упавший промис не ломал все
+        const [criticalResults, otherResults] = await Promise.allSettled([
           criticalLoads,
           otherLoads,
+        ]).then((results) => [
+          results[0].status === "fulfilled" ? results[0].value : [],
+          results[1].status === "fulfilled" ? results[1].value : [],
         ]);
 
         const allResults = [...criticalResults, ...otherResults];
@@ -1394,55 +1153,144 @@ const store = createStore({
       }
     },
     async clearCache({ commit }) {
-      CacheInvalidator.invalidateAll();
+      await CacheInvalidator.invalidateAll();
       commit("CLEAR_COMPANY_DATA");
-      commit("CLEAR_QUERY_CACHE");
       GLOBAL_REFERENCE_FIELDS.forEach((type) => {
         if (CLEAR_MUTATIONS_MAPPING[type]) {
           commit(CLEAR_MUTATIONS_MAPPING[type], []);
         }
       });
     },
-    async loadUserCompanies({ commit }) {
+    async initializeApp({ commit, dispatch, state, rootGetters }) {
+      commit("SET_PERMISSIONS_LOADED", false);
+      await dispatch("setPermissions", []);
+
+      const { isBasementWorkerOnly, getUserFromStorage } = await import(
+        "@/utils/userUtils"
+      );
+
+      if (!TokenUtils.isAuthenticated()) {
+        TokenUtils.clearAuthData();
+        await dispatch("setUser", null);
+        await dispatch("setPermissions", []);
+        await dispatch("initializeMenu");
+        return { authenticated: false };
+      }
+
       try {
-        const response = await api.get("/user/companies");
+        const userFromStorage = getUserFromStorage();
+        const isBasementWorker = isBasementWorkerOnly(userFromStorage);
+
+        commit("SET_CURRENT_COMPANY", null);
+
+        const AuthController = (await import("@/api/AuthController")).default;
+        const { BasementAuthController } = await import(
+          "@/api/basement/BasementAuthController"
+        );
+
+        const userData = isBasementWorker
+          ? await BasementAuthController.getBasementUser()
+          : await AuthController.getUser();
+
+        if (!userData) {
+          throw new Error("Не удалось получить данные пользователя");
+        }
+
+        await dispatch("setUser", userData.user);
+        await dispatch("setPermissions", userData.permissions || []);
+        await dispatch("initializeMenu");
+
+        if (!isBasementWorker) {
+          await Promise.all([
+            dispatch("loadCurrencies"),
+            dispatch("loadUnits"),
+          ]);
+
+          try {
+            await dispatch("loadUserCompanies");
+            await dispatch("loadCurrentCompany", { skipPermissionRefresh: true });
+          } catch (error) {
+            console.error("Ошибка загрузки компаний:", error);
+          }
+        }
+
+        return { authenticated: true };
+      } catch (error) {
+        console.error("Ошибка получения пользователя:", error);
+        await dispatch("setUser", null);
+        await dispatch("setPermissions", []);
+        TokenUtils.clearAuthData();
+        throw error;
+      }
+    },
+    async loadUserCompanies({ commit, state }) {
+      if (state.loadingFlags.userCompanies) {
+        return state.userCompanies;
+      }
+
+      commit("SET_LOADING_FLAG", { type: "userCompanies", loading: true });
+      try {
+        const response = await retryWithExponentialBackoff(
+          () => api.get("/user/companies"),
+          3
+        );
         const companies = CompanyDto.fromApiArray(response.data);
         commit("SET_USER_COMPANIES", companies);
         return companies;
       } catch (error) {
         console.error("Ошибка загрузки компаний пользователя:", error);
         return [];
+      } finally {
+        commit("SET_LOADING_FLAG", { type: "userCompanies", loading: false });
       }
     },
-    async loadCurrentCompany({ commit, dispatch, state }) {
+    async loadCurrentCompany({ commit, dispatch, state }, options = {}) {
+      if (state.loadingFlags.currentCompany) {
+        return state.currentCompany;
+      }
+
+      commit("SET_LOADING_FLAG", { type: "currentCompany", loading: true });
       try {
         if (state.currentCompany?.id) {
           const normalized = new CompanyDto(state.currentCompany);
           commit("SET_CURRENT_COMPANY", normalized);
           await loadCompanyDataIfNeeded(dispatch, state);
-          await dispatch("refreshUserPermissions");
+          if (!options.skipPermissionRefresh) {
+            await dispatch("refreshUserPermissions", { skipIfAlreadyLoaded: true });
+          }
           return normalized;
         }
 
-        if (state.lastCompanyId && state.userCompanies?.length > 0) {
+        if (
+          state.lastCompanyId &&
+          Array.isArray(state.userCompanies) &&
+          state.userCompanies.length > 0
+        ) {
           const lastCompany = state.userCompanies.find(
             (c) => c.id === state.lastCompanyId
           );
           if (lastCompany) {
             commit("SET_CURRENT_COMPANY", lastCompany);
             await loadCompanyDataIfNeeded(dispatch, state);
-            await dispatch("refreshUserPermissions");
+            if (!options.skipPermissionRefresh) {
+              await dispatch("refreshUserPermissions");
+            }
             return lastCompany;
           }
         }
 
-        const response = await api.get("/user/current-company");
+        const response = await retryWithExponentialBackoff(
+          () => api.get("/user/current-company"),
+          3
+        );
         const company = new CompanyDto(response.data.company);
         commit("SET_CURRENT_COMPANY", company);
 
         if (company?.id) {
           await loadCompanyDataIfNeeded(dispatch, state);
-          await dispatch("refreshUserPermissions");
+          if (!options.skipPermissionRefresh) {
+            await dispatch("refreshUserPermissions", { skipIfAlreadyLoaded: true });
+          }
         }
 
         return company;
@@ -1452,6 +1300,8 @@ const store = createStore({
           error
         );
         return null;
+      } finally {
+        commit("SET_LOADING_FLAG", { type: "currentCompany", loading: false });
       }
     },
     async setCurrentCompany({ commit, dispatch }, companyId) {
@@ -1462,21 +1312,24 @@ const store = createStore({
           return this.state.currentCompany;
         }
 
-        const response = await api.post("/user/set-company", {
-          company_id: companyId,
-        });
+        const response = await retryWithExponentialBackoff(
+          () =>
+            api.post("/user/set-company", {
+              company_id: companyId,
+            }),
+          3
+        );
         const company = new CompanyDto(response.data.company);
 
         commit("SET_CURRENT_COMPANY", company);
 
         if (oldCompanyId && oldCompanyId !== companyId) {
-          clearOldCompanyCache(oldCompanyId);
-          dispatch("invalidateQueryCache", { companyId: oldCompanyId });
+          await clearAllCacheOnCompanyChange();
         }
 
         commit("CLEAR_COMPANY_DATA");
         await dispatch("loadCompanyData");
-        await dispatch("refreshUserPermissions");
+        await dispatch("refreshUserPermissions", { skipIfAlreadyLoaded: false });
         eventBus.emit("company-changed", companyId);
 
         return company;
@@ -1486,28 +1339,38 @@ const store = createStore({
         throw error;
       }
     },
-    // Принудительное обновление прав пользователя
-    async refreshUserPermissions({ commit, getters }) {
+    async refreshUserPermissions({ commit, getters, state }, options = {}) {
+      if (state.loadingFlags.userPermissions) {
+        return;
+      }
+
+      if (options.skipIfAlreadyLoaded && state.permissionsLoaded && state.permissions && state.permissions.length > 0) {
+        return;
+      }
+
+      commit("SET_LOADING_FLAG", { type: "userPermissions", loading: true });
       try {
         const apiInstance = getters.isBasementMode ? basementApi : api;
-        const response = await apiInstance.get("/user/me");
+        const response = await retryWithExponentialBackoff(
+          () => apiInstance.get("/user/me"),
+          3
+        );
         commit("SET_USER", response.data.user);
         commit("SET_PERMISSIONS", response.data.permissions);
         return response.data;
       } catch (error) {
         console.error("Ошибка обновления прав пользователя:", error);
         throw error;
+      } finally {
+        commit("SET_LOADING_FLAG", { type: "userPermissions", loading: false });
       }
     },
-    invalidateCache(
+    async invalidateCache(
       { commit, dispatch },
       { type, companyId = null, skipEventBus = false }
     ) {
       if (!skipEventBus) {
-        CacheInvalidator.invalidateByType(type, companyId);
-        if (companyId) {
-          CacheInvalidator.invalidateByCompany(companyId);
-        }
+        await CacheInvalidator.invalidateByType(type, companyId);
       }
 
       if (CLEAR_MUTATIONS_MAPPING[type]) {
@@ -1519,24 +1382,6 @@ const store = createStore({
         commit("SET_LAST_PRODUCTS_DATA", []);
         commit("SET_ALL_PRODUCTS", []);
         commit("SET_ALL_PRODUCTS_DATA", []);
-        dispatch("invalidateQueryCache", { prefix: "products_list" });
-        dispatch("invalidateQueryCache", { prefix: "services_list" });
-      }
-
-      const queryCachePrefixes = {
-        clients: "clients_list",
-        orders: "orders_list",
-        sales: "sales_list",
-        transactions: "transactions_list",
-        invoices: "invoices_list",
-        projects: "projects_list",
-      };
-
-      if (queryCachePrefixes[type]) {
-        dispatch("invalidateQueryCache", {
-          prefix: queryCachePrefixes[type],
-          companyId,
-        });
       }
     },
     onDataCreate({ dispatch }, { type, companyId = null }) {
@@ -1548,50 +1393,20 @@ const store = createStore({
     onDataDelete({ dispatch }, { type, companyId = null }) {
       dispatch("invalidateCache", { type, companyId });
     },
-    onCompanyChange({ commit, dispatch }, { oldCompanyId, newCompanyId }) {
-      CacheInvalidator.onCompanyChange(oldCompanyId, newCompanyId);
+    async onCompanyChange({ commit }, { oldCompanyId, newCompanyId }) {
+      await CacheInvalidator.invalidateAll();
       commit("CLEAR_COMPANY_DATA");
-      if (oldCompanyId) {
-        dispatch("invalidateQueryCache", { companyId: oldCompanyId });
-      }
     },
     // Инвалидация при смене пользователя
-    onUserChange({ commit }) {
-      CacheInvalidator.onUserChange();
+    async onUserChange({ commit }) {
+      await CacheInvalidator.onUserChange();
       commit("CLEAR_COMPANY_DATA");
-      commit("CLEAR_QUERY_CACHE");
       GLOBAL_REFERENCE_FIELDS.forEach((field) => {
         if (CLEAR_MUTATIONS_MAPPING[field]) {
           commit(CLEAR_MUTATIONS_MAPPING[field], []);
         }
       });
       commit("SET_USERS", []);
-    },
-    getQueryCache({ state }, { prefix, params, ttl = 120000 }) {
-      const companyId = state.currentCompany?.id;
-      const key = generateQueryCacheKey(prefix, params, companyId);
-
-      const cached = state.queryCache[key];
-      if (!cached) return null;
-
-      if (Date.now() - cached.timestamp > ttl) {
-        delete state.queryCache[key];
-        return null;
-      }
-
-      return cached.data;
-    },
-    setQueryCache({ commit, state }, { prefix, params, data }) {
-      const companyId = state.currentCompany?.id;
-      const key = generateQueryCacheKey(prefix, params, companyId);
-      commit("SET_QUERY_CACHE", { key, data });
-    },
-    invalidateQueryCache({ commit }, { prefix = null, companyId = null }) {
-      if (companyId) {
-        commit("CLEAR_QUERY_CACHE_BY_COMPANY", companyId);
-      } else {
-        commit("CLEAR_QUERY_CACHE", prefix);
-      }
     },
     initializeMenu({ commit }) {
       const storageKey = "menuItems";
@@ -1719,7 +1534,7 @@ const store = createStore({
           to: "/cash-registers",
           icon: "fa-solid fa-cash-register mr-2",
           label: "cashRegisters",
-          permission: "cash-registers_view",
+          permission: "cash_registers_view",
         },
         {
           id: "mutual-settlements",
@@ -1727,13 +1542,6 @@ const store = createStore({
           icon: "fa-solid fa-handshake mr-2",
           label: "mutualSettlements",
           permission: "mutual_settlements_view",
-        },
-        {
-          id: "warehouses-admin",
-          to: "/admin/warehouses",
-          icon: "fa-solid fa-warehouse mr-2",
-          label: "warehouses",
-          permission: "warehouses_view",
         },
         {
           id: "products",
@@ -1773,7 +1581,6 @@ const store = createStore({
         "companies",
         "cash-registers",
         "mutual-settlements",
-        "warehouses-admin",
         "products",
         "services",
         "currency-history",
@@ -1921,27 +1728,8 @@ const store = createStore({
     user: (state) => state.user,
     permissions: (state) => state.permissions,
     hasPermission: (state) => (perm) => {
-      if (!perm) {
-        return true;
-      }
-      if (perm.startsWith("settings_")) {
-        return state.permissions.includes(perm);
-      }
-      if (
-        perm.endsWith("_view") ||
-        perm.endsWith("_update") ||
-        perm.endsWith("_delete")
-      ) {
-        const allPerm = perm.replace(/_(view|update|delete)$/, "_$1_all");
-        const ownPerm = perm.replace(/_(view|update|delete)$/, "_$1_own");
-        return (
-          state.permissions.includes(allPerm) ||
-          state.permissions.includes(ownPerm)
-        );
-      }
-      return state.permissions.includes(perm);
+      return checkPermission(perm, state.permissions, state.user);
     },
-    isLoading: (state) => state.isLoading,
     activeApiCalls: (state) => state.activeApiCalls,
     notification: (state) => state.notification,
     notificationTitle: (state) => state.notificationTitle,
@@ -1949,8 +1737,6 @@ const store = createStore({
     notificationIsDanger: (state) => state.notificationIsDanger,
     notificationDuration: (state) => state.notificationDuration,
     notificationTimeoutId: (state) => state.notificationTimeoutId,
-    tokenInfo: (state) => state.tokenInfo,
-    isTokenExpired: (state) => state.tokenInfo.needsRefresh,
     isBasementMode: (state) => {
       // Проверяем, находимся ли мы в basement режиме по роли пользователя
       return (
@@ -1959,30 +1745,18 @@ const store = createStore({
         state.user.roles.includes("basement_worker")
       );
     },
-    accessTokenTimeLeft: (state) => {
-      if (!state.tokenInfo.accessTokenExpiresAt) return 0;
-      const timeLeft = state.tokenInfo.accessTokenExpiresAt - Date.now();
-      return Math.max(0, Math.floor(timeLeft / 60000));
-    },
-    refreshTokenTimeLeft: (state) => {
-      if (!state.tokenInfo.refreshTokenExpiresAt) return 0;
-      const timeLeft = state.tokenInfo.refreshTokenExpiresAt - Date.now();
-      return Math.max(0, Math.floor(timeLeft / (24 * 60 * 60 * 1000)));
-    },
     units: (state) => state.units,
     currencies: (state) => state.currencies,
     users: (state) => state.users,
     warehouses: (state) => state.warehouses,
     cashRegisters: (state) => state.cashRegisters,
     clients: (state) => state.clients,
-    products: (state) => state.products,
-    services: (state) => state.services,
     lastProducts: (state) => state.lastProducts,
     allProducts: (state) => state.allProducts,
     categories: (state) => state.categories,
     projects: (state) => state.projects,
     activeProjects: (state) =>
-      state.projects.filter((p) => p.statusId !== 3 && p.statusId !== 4), 
+      state.projects.filter((p) => p.statusId !== 4 && p.statusId !== 5),
     orderStatuses: (state) => state.orderStatuses,
     projectStatuses: (state) => state.projectStatuses,
     transactionCategories: (state) => state.transactionCategories,
@@ -2074,7 +1848,10 @@ const store = createStore({
     },
     roundingQuantityCustomThreshold: (state) =>
       state.currentCompany?.rounding_quantity_custom_threshold ?? 0.5,
-    clientTypeFilter: (state) => state.clientTypeFilter || "all",
+    clientTypeFilter: (state) =>
+      normalizeClientTypeFilter(state.clientTypeFilter),
+    cashRegisterFilter: (state) =>
+      normalizeCashRegisterFilter(state.cashRegisterFilter),
     mainMenuItems: (state, getters) => {
       if (!state.menuItems.main || state.menuItems.main.length === 0) {
         return [];
@@ -2106,127 +1883,278 @@ const store = createStore({
     },
   },
   plugins: [
+    // 1. Долгосрочный кэш справочников (localStorage)
+    // Исключаем allProductsData, clientsData, projectsData - они в IndexedDB
     createPersistedState({
-      key: "hasap_vuex_cache",
+      key: STORE_CONFIG.localStorageKeys.referencesCache,
+      storage: window.localStorage,
       paths: [
-        // DRY: глобальные справочники (используем константу)
         ...GLOBAL_REFERENCE_FIELDS,
-
-        // Данные компании (10 минут)
-        "warehouses",
-        "cashRegisters",
-        "clientsData", // ✅ Кэшируем plain data (без методов DTO)
-        "categories", // ← Нужно для фильтров
-        "projectsData", // ✅ Кэшируем plain data (без методов DTO)
-        "projectsDataCompanyId", // ✅ Для проверки соответствия компании
-        "lastProductsData", // ✅ Последние товары - plain data (5 минут)
-        "allProductsData", // ✅ ВСЕ товары - plain data (30 дней!)
-        // 'products',  // ← НЕ кэшируем глобально - каждая страница загружает свои данные
-        // 'services',  // ← НЕ кэшируем глобально - каждая страница загружает свои данные
-
-        // Текущая компания и настройки
-        "currentCompany",
-        "lastCompanyId",
-        "userCompanies",
-        "soundEnabled",
-        "tokenInfo",
-        "orderStatusesCustomOrder",
-        // Пользовательские UI фильтры
-        "clientTypeFilter",
-        // Кэш пагинированных запросов API (2 минуты TTL)
-        "queryCache",
-        // Настройки меню
-        "menuItems",
+        ...REFERENCES_CACHE_FIELDS.filter(
+          (field) =>
+            field !== "allProductsData" &&
+            field !== "clientsData" &&
+            field !== "projectsData" &&
+            field !== "projectsDataCompanyId"
+        ),
       ],
+      filter: (mutation) => {
+        // Исключаем временные флаги и loading состояния
+        if (!mutation?.type) return false;
+        return (
+          !mutation.type.includes("LOADING_FLAG") &&
+          !mutation.type.includes("LOGGED_DATA_FLAG") &&
+          !mutation.type.includes("IS_SYNCING")
+        );
+      },
+      reducer: (state) => {
+        // Используем paths автоматически - не нужно дублировать
+        const cacheData = {};
+        const fieldsToCache = [
+          ...GLOBAL_REFERENCE_FIELDS,
+          ...REFERENCES_CACHE_FIELDS.filter(
+            (field) =>
+              field !== "allProductsData" &&
+              field !== "clientsData" &&
+              field !== "projectsData" &&
+              field !== "projectsDataCompanyId"
+          ),
+        ];
 
-      // Кастомная логика для проверки TTL при восстановлении
-      getState: (key, storage) => {
-        const value = storage.getItem(key);
-        if (!value) return undefined;
-
-        try {
-          const state = JSON.parse(value);
-
-          // ✅ Проверяем соответствие данных компании текущей компании
-          const currentCompanyId = state.currentCompany?.id || null;
-          const projectsDataCompanyId = state.projectsDataCompanyId || null;
-
-          // Если projectsData принадлежит другой компании - очищаем
-          if (
-            projectsDataCompanyId &&
-            currentCompanyId &&
-            projectsDataCompanyId !== currentCompanyId
-          ) {
-            state.projectsData = [];
-            state.projectsDataCompanyId = null;
-            state.projects = [];
+        fieldsToCache.forEach((field) => {
+          if (state[field] !== undefined) {
+            cacheData[field] = state[field];
           }
+        });
 
+        // Исключаем projectsData - он в IndexedDB
+        delete cacheData.projectsData;
+        delete cacheData.projectsDataCompanyId;
+
+        return {
+          ...cacheData,
+          _meta: {
+            timestamp: Date.now(),
+            version: STORE_CONFIG.cacheVersion,
+          },
+        };
+      },
+      parser: (value) => {
+        try {
+          const parsed = JSON.parse(value);
           const now = Date.now();
-          const fieldsToCheck = {
-            ...GLOBAL_REFERENCE_FIELDS.reduce((acc, field) => {
-              acc[field] = CACHE_TTL[field] || CACHE_TTL.default;
-              return acc;
-            }, {}),
-            warehouses: CACHE_TTL.warehouses,
-            cashRegisters: CACHE_TTL.cashRegisters,
-            clientsData: CACHE_TTL.clients,
-            categories: CACHE_TTL.categories,
-            projectsData: CACHE_TTL.projects,
-            lastProductsData: 5 * 60 * 1000,
-            allProductsData: CACHE_TTL.products,
-            queryCache: 2 * 60 * 1000,
-          };
+          const meta = parsed._meta || { timestamp: 0 };
 
-          Object.keys(fieldsToCheck).forEach((field) => {
-            if (field === "queryCache") {
-              if (state[field] && typeof state[field] === "object") {
-                const cacheKeys = Object.keys(state[field]);
-                cacheKeys.forEach((key) => {
-                  const cached = state[field][key];
-                  if (
-                    cached &&
-                    cached.timestamp &&
-                    now - cached.timestamp > fieldsToCheck[field]
-                  ) {
-                    delete state[field][key];
-                  }
-                });
-              }
-            } else if (state[field]?.length > 0) {
-              const timestampKey = `${field}_timestamp`;
-              const timestamp = storage.getItem(timestampKey);
+          // projectsData теперь в IndexedDB - не проверяем здесь
 
-              if (
-                timestamp &&
-                now - parseInt(timestamp) > fieldsToCheck[field]
-              ) {
-                state[field] = [];
-                storage.removeItem(timestampKey);
+          // Проверка TTL для каждого поля
+          GLOBAL_REFERENCE_FIELDS.forEach((field) => {
+            const fieldData = parsed[field];
+            if (Array.isArray(fieldData) && fieldData.length > 0) {
+              const ttl = CACHE_TTL[field] || CACHE_TTL.default;
+              if (now - meta.timestamp > ttl) {
+                parsed[field] = [];
               }
             }
           });
 
-          return state;
+          Object.entries(STORE_CONFIG.fieldTTLMapping).forEach(
+            ([field, ttlKey]) => {
+              const fieldData = parsed[field];
+              if (Array.isArray(fieldData) && fieldData.length > 0) {
+                const ttl = CACHE_TTL[ttlKey] || CACHE_TTL.default;
+                if (now - meta.timestamp > ttl) {
+                  parsed[field] = [];
+                }
+              }
+            }
+          );
+
+          // Проверка TTL для lastProductsData
+          if (
+            Array.isArray(parsed.lastProductsData) &&
+            parsed.lastProductsData.length > 0 &&
+            now - meta.timestamp > STORE_CONFIG.cacheTTL.lastProductsData
+          ) {
+            parsed.lastProductsData = [];
+          }
+
+          // allProductsData, clientsData и projectsData теперь в IndexedDB - не проверяем здесь
+
+          delete parsed._meta;
+          return parsed;
         } catch {
-          // Ошибка парсинга state - возвращаем пустое состояние
+          return {};
+        }
+      },
+      rehydrated: (store) => {
+        // Валидация и очистка после восстановления
+        const state = store.state;
+
+        // Очистить временные флаги загрузки
+        LOADING_FLAGS_TO_RESET.forEach((flag) => {
+          store.commit("SET_LOADING_FLAG", { type: flag, loading: false });
+        });
+
+        // Сбросить флаги логирования
+        Object.keys(state.loggedDataFlags || {}).forEach((key) => {
+          store.commit("SET_LOGGED_DATA_FLAG", { type: key, logged: false });
+        });
+      },
+      assertStorage: (storage) =>
+        assertStorageAvailable(storage, [
+          STORE_CONFIG.localStorageKeys.referencesCache,
+          STORE_CONFIG.localStorageKeys.userSettings,
+        ], STORE_CONFIG.storageTestKey),
+    }),
+
+    // 3. Настройки пользователя (localStorage, всегда сохранять)
+    createPersistedState({
+      key: STORE_CONFIG.localStorageKeys.userSettings,
+      storage: window.localStorage,
+      assertStorage: (storage) => assertStorageAvailable(storage, [], STORE_CONFIG.storageTestKey),
+      paths: USER_SETTINGS_FIELDS,
+      getState: (key, storage) => {
+        try {
+          const value = storage.getItem(key);
+          if (!value) {
+            return undefined;
+          }
+          const parsed = JSON.parse(value);
+          if (parsed.clientTypeFilter !== undefined && parsed.clientTypeFilter !== null) {
+            parsed.clientTypeFilter = normalizeClientTypeFilter(parsed.clientTypeFilter);
+          } else if (parsed.clientTypeFilter === undefined) {
+            parsed.clientTypeFilter = [];
+          }
+          if (parsed.cashRegisterFilter !== undefined && parsed.cashRegisterFilter !== null) {
+            parsed.cashRegisterFilter = normalizeCashRegisterFilter(parsed.cashRegisterFilter);
+          } else if (parsed.cashRegisterFilter === undefined) {
+            parsed.cashRegisterFilter = [];
+          }
+          return parsed;
+        } catch (error) {
+          console.error('[Store] Ошибка загрузки userSettings из localStorage:', error);
           return undefined;
         }
       },
-
-      // Сохраняем timestamp при каждом изменении
-      setState: (key, state, storage) => {
-        storage.setItem(key, JSON.stringify(state));
-
-        // Сохраняем timestamp для каждого массива данных
-        const now = Date.now().toString();
-        // DRY: используем константу вместо ручного списка
-
-        FIELDS_WITH_TIMESTAMP.forEach((field) => {
-          if (state[field]?.length > 0) {
-            storage.setItem(`${field}_timestamp`, now);
+      reducer: (state) => {
+        const userSettings = {};
+        USER_SETTINGS_FIELDS.forEach((field) => {
+          if (state[field] !== undefined) {
+            if (field === 'clientTypeFilter' || field === 'cashRegisterFilter') {
+              userSettings[field] = Array.isArray(state[field]) ? state[field] : [];
+            } else {
+              userSettings[field] = state[field];
+            }
           }
         });
+        return userSettings;
+      },
+    }),
+
+    // 4. Большие данные (IndexedDB) - для allProductsData, clientsData, projectsData
+    createPersistedState({
+      key: "hasap_large_cache",
+      storage: indexedDBStorage,
+      paths: [
+        "allProductsData",
+        "clientsData",
+        "projectsData",
+        "projectsDataCompanyId",
+      ],
+      fetchBeforeUse: true,
+      filter: (mutation) => {
+        if (!mutation?.type) return false;
+        return (
+          mutation.type.includes("SET_ALL_PRODUCTS_DATA") ||
+          mutation.type.includes("SET_CLIENTS_DATA") ||
+          mutation.type.includes("SET_PROJECTS_DATA") ||
+          mutation.type.includes("SET_PROJECTS_DATA_COMPANY_ID")
+        );
+      },
+      reducer: (state) => ({
+        allProductsData: state.allProductsData || [],
+        clientsData: state.clientsData || [],
+        projectsData: state.projectsData || [],
+        projectsDataCompanyId: state.projectsDataCompanyId || null,
+        _meta: {
+          timestamp: Date.now(),
+          version: STORE_CONFIG.cacheVersion,
+        },
+      }),
+      parser: (value) => {
+        try {
+          const parsed = JSON.parse(value);
+          const now = Date.now();
+          const meta = parsed._meta || { timestamp: 0 };
+
+          // Проверка TTL для allProductsData
+          if (
+            Array.isArray(parsed.allProductsData) &&
+            parsed.allProductsData.length > 0 &&
+            now - meta.timestamp > CACHE_TTL.allProductsData
+          ) {
+            parsed.allProductsData = [];
+          }
+
+          // Проверка TTL для clientsData
+          if (
+            Array.isArray(parsed.clientsData) &&
+            parsed.clientsData.length > 0 &&
+            now - meta.timestamp > CACHE_TTL.clients
+          ) {
+            parsed.clientsData = [];
+          }
+
+          // Проверка TTL для projectsData
+          if (
+            Array.isArray(parsed.projectsData) &&
+            parsed.projectsData.length > 0 &&
+            now - meta.timestamp > CACHE_TTL.projects
+          ) {
+            parsed.projectsData = [];
+            parsed.projectsDataCompanyId = null;
+          }
+
+          // Проверка соответствия projectsData компании
+          try {
+            const userSettings = JSON.parse(
+              localStorage.getItem(
+                STORE_CONFIG.localStorageKeys.userSettings
+              ) || "{}"
+            );
+            const currentCompanyId = userSettings.currentCompany?.id || null;
+            const projectsDataCompanyId = parsed.projectsDataCompanyId || null;
+            if (
+              projectsDataCompanyId &&
+              currentCompanyId &&
+              projectsDataCompanyId !== currentCompanyId
+            ) {
+              parsed.projectsData = [];
+              parsed.projectsDataCompanyId = null;
+            }
+          } catch {
+            // Если не удалось прочитать настройки - пропускаем проверку
+          }
+
+          delete parsed._meta;
+          return parsed;
+        } catch {
+          return {
+            allProductsData: [],
+            clientsData: [],
+            projectsData: [],
+            projectsDataCompanyId: null,
+          };
+        }
+      },
+      assertStorage: (storage) => {
+        // Проверка доступности IndexedDB
+        if (!window.indexedDB) {
+          console.warn("IndexedDB not available");
+          return false;
+        }
+        return true;
       },
     }),
   ],
@@ -2242,7 +2170,10 @@ eventBus.on("company-updated", async () => {
   if (!currentCompanyId) return;
 
   try {
-    const response = await api.get("/user/current-company");
+    const response = await retryWithExponentialBackoff(
+      () => api.get("/user/current-company"),
+      3
+    );
     const updatedCompany = new CompanyDto(response.data.company);
     store.commit("SET_CURRENT_COMPANY", updatedCompany);
     store.commit("INCREMENT_LOGO_VERSION");

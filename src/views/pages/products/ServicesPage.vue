@@ -1,29 +1,78 @@
 <template>
-    <div class="flex justify-between items-center mb-4">
-        <div class="flex items-center space-x-4">
-            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"></PrimaryButton>
-            
-            <!-- Фильтр по категориям -->
-            <div class="flex items-center space-x-2">
-                <select v-model="selectedCategoryId" @change="onCategoryFilterChange" 
-                        class="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">{{ $t('allCategoriesFilter') }}</option>
-                    <option v-for="category in categories" :key="category.id" :value="category.id">
-                        {{ category.name }}
-                    </option>
-                </select>
-            </div>
-        </div>
-        <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-    </div>
     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.products" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="(i) => { showModal(i) }" />
+                :onItemClick="(i) => { showModal(i) }">
+                <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+                    <TableControlsBar
+                        :show-filters="true"
+                        :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()"
+                        :on-filters-reset="resetFilters"
+                        :show-pagination="true"
+                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+                        :on-page-change="fetchItems"
+                        :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns"
+                        :columns="columns"
+                        :toggleVisible="toggleVisible"
+                        :log="log">
+                        <template #left>
+                            <PrimaryButton 
+                                :onclick="() => { showModal(null) }" 
+                                icon="fas fa-plus">
+                            </PrimaryButton>
+                            
+                            <FiltersContainer
+                                :has-active-filters="hasActiveFilters"
+                                :active-filters-count="getActiveFiltersCount()"
+                                @reset="resetFilters">
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('category') || 'Категория' }}</label>
+                                    <select v-model="selectedCategoryId" @change="onCategoryFilterChange" class="w-full">
+                                        <option value="">{{ $t('allCategoriesFilter') }}</option>
+                                        <option v-for="category in categories" :key="category.id" :value="category.id">
+                                            {{ category.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </FiltersContainer>
+                        </template>
+
+                        <template #right>
+                            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
+                                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+                                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                        </template>
+
+                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+                                <ul>
+                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
+                                        @change="log">
+                                        <li v-for="(element, index) in columns" :key="element.name"
+                                            @click="toggleVisible(index)"
+                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                <div>
+                                                    <i class="text-sm mr-2 text-[#337AB7]"
+                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
+                                                </div>
+                                                <div><i
+                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </draggable>
+                                </ul>
+                            </TableFilterButton>
+                        </template>
+                    </TableControlsBar>
+                </template>
+            </DraggableTable>
         </div>
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <SpinnerIcon />
@@ -45,8 +94,11 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
+import { VueDraggableNext } from 'vue-draggable-next';
 import ProductController from '@/api/ProductController';
-import CategoryController from '@/api/CategoryController';
 import ProductsCreatePage from '@/views/pages/products/ProductsCreatePage.vue';
 import { eventBus } from '@/eventBus';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -63,7 +115,7 @@ import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,  companyChangeMixin, searchMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -175,7 +227,7 @@ export default {
                 }
                 
                
-                const per_page = this.perPage || 20;
+                const per_page = this.perPage;
                 
                 const new_data = await ProductController.getItems(page, false, params, per_page);
                 this.data = new_data;
@@ -185,12 +237,24 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
+        },
+        resetFilters() {
+            this.selectedCategoryId = '';
+            this.fetchItems(1);
+        },
+        getActiveFiltersCount() {
+            let count = 0;
+            if (this.selectedCategoryId !== '') count++;
+            return count;
         }
     },
     computed: {
         searchQuery() {
             return this.$store.state.searchQuery;
         },
+        hasActiveFilters() {
+            return this.selectedCategoryId !== '';
+        }
     },
 }
 </script>

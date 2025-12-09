@@ -1,7 +1,7 @@
 <template>
     <div class="relative inline-block" ref="dropdown">
 
-        <PrimaryButton :onclick="toggleMenu" :isLight="true" class="mb-2">
+        <PrimaryButton :onclick="toggleMenu" :isLight="true">
             <i class="fas fa-cog"></i>
         </PrimaryButton>
 

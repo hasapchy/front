@@ -18,6 +18,7 @@
                 :is-danger="$store.getters.notificationIsDanger"
                 @close="$store.dispatch('closeNotification')"
             />
+            <ScrollToTopButton />
             <!-- ✅ Полноэкранный спиннер при загрузке данных компании -->
             <!-- Временно отключен -->
             <!--
@@ -49,6 +50,7 @@ import AppSidebarComponent from '../components/app/sidebar/AppSidebarComponent.v
 import AppSettingsSidebarComponent from '../components/app/sidebar/AppSettingsSidebarComponent.vue';
 import NotificationToast from '../components/app/dialog/NotificationToast.vue';
 import SpinnerIcon from '../components/app/SpinnerIcon.vue';
+import ScrollToTopButton from '../components/app/ScrollToTopButton.vue';
 
 export default {
     components: {
@@ -56,7 +58,8 @@ export default {
         AppSidebarComponent,
         AppSettingsSidebarComponent,
         NotificationToast,
-        SpinnerIcon
+        SpinnerIcon,
+        ScrollToTopButton
     },
     data() {
         return {

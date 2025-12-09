@@ -90,6 +90,7 @@ export default {
     totalBalance: 'Total',
     source: 'Source',
   projects: 'Projects',
+  rent: 'Rent',
   users: 'Employees',
   settings: 'Settings',
   generalSettings: 'Settings',
@@ -101,9 +102,11 @@ export default {
   withoutProject: 'Without project',
   noOrders: 'No orders',
   orderUpdated: 'Order updated',
+  kanbanCardFields: 'Card Fields',
   
   // Actions
   add: 'Add',
+  selectIncomeForRentIncome: 'Income — when we receive rent (cat. 28). Outcome — when we pay rent (cat. 9).',
   
   // Forms
   name: 'Name',
@@ -144,6 +147,15 @@ export default {
   paid: 'Paid',
   total: 'Total',
   cashRegister: 'Cash Register',
+  createCashRegister: 'Cash Register',
+  editCashRegister: 'Cash Register',
+  cashRegisterMustHaveAtLeastOneUser: 'Cash register must have at least one user',
+  createWarehouse: 'Warehouse',
+  editWarehouse: 'Edit Warehouse',
+  warehouseMustHaveAtLeastOneUser: 'Warehouse must have at least one user',
+  createCategory: 'Category',
+  editCategory: 'Edit Category',
+  categoryMustHaveAtLeastOneUser: 'Category must have at least one user',
   warehouse: 'Warehouse',
   stock: 'Stock',
   leftovers: 'Leftovers',
@@ -289,6 +301,7 @@ export default {
   startWithAddingClient: 'Start by adding a new client',
   backToOrders: 'Back to Orders',
   orderNotePlaceholder: 'Additional information about the order',
+  orderItems: 'Order Items',
   creating: 'Creating...',
   create: 'Create',
   errorCreatingOrder: 'Error creating order',
@@ -346,6 +359,7 @@ export default {
   notDebt: 'Not Credit',
   clickToFilterDebts: 'Click to filter credits',
   clickToFilterTransactions: 'Click to filter transactions',
+  transactionDeletedReadonly: 'This transaction has been deleted and cannot be modified',
   
   // Product Categories
   productCategory: 'Product Category',
@@ -365,9 +379,13 @@ export default {
     settings: 'Settings',
     settings_edit_any_date: 'Edit Any Date',
     settings_project_budget_view: 'View Project Budget',
+    settings_project_files_view: 'View Project Files',
+    settings_project_balance_view: 'View Project Balance',
+    settings_project_contracts_view: 'View Project Contracts',
     settings_currencies_view: 'View Other Currencies',
     settings_cash_balance_view: 'View Cash Balance',
     settings_client_balance_view: 'View Client Balance',
+    settings_client_balance_adjustment: 'Client Balance Adjustment',
     settings_view: 'View Settings',
     mutual_settlements_view: 'View Mutual Settlements',
     
@@ -405,6 +423,7 @@ export default {
     
     // Project Statuses
     projectStatuses: 'Project Statuses',
+    project_statuses: 'Project Statuses',
     projectStatus: 'Project Status',
     createProjectStatus: 'Create Project Status',
     editProjectStatus: 'Edit Project Status',
@@ -416,9 +435,18 @@ export default {
     errorDeletingProjectStatus: 'Error deleting project status',
     errorGettingProjectStatuses: 'Error getting project statuses list',
     
+    // Order Statuses
+    statusName: 'Status name',
+    statusCategory: 'Status category',
+    statusCategoryName: 'Status category name',
+    isActive: 'Active',
+    protectedStatusCannotBeDisabled: 'This status cannot be disabled',
+    statusCannotBeDisabledWithOrders: 'Cannot disable status that has orders',
+    
     // Salaries
     salary: 'Salary',
     salaries: 'Salaries',
+    employee_salaries: 'Employee Salaries',
     addSalary: 'Add Salary',
     editSalary: 'Edit Salary',
     salarySaved: 'Salary saved',
@@ -433,6 +461,7 @@ export default {
     present: 'to present',
     bonus: 'Add Bonus',
     penalty: 'Issue Penalty',
+<<<<<<< HEAD
 
     // Common fields
     title: 'Title',
@@ -460,4 +489,13 @@ export default {
     supervisor: 'Supervisor',
     executor: 'Executor',
     creator: 'Creator',
+=======
+    advance: 'Issue Advance',
+    accrueSalary: 'Accrue Salary',
+    paySalary: 'Pay Salary',
+    salaryDifferenceHelpTitle: 'What\'s the difference?',
+    salaryDifferenceHelp: 'Salary accrual is money for work done by the employee (a debt record, employee owes us). Salary payment is the actual payment of money to the employee (not a debt, reduces employee debt).',
+    employeeClientNotFound: 'Client for employee not found',
+    employeeClientNotFoundDescription: 'To work with employee balance, you need to create a linked client with employee_id matching this employee\'s ID.',
+>>>>>>> origin/main
 }

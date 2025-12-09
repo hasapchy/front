@@ -57,7 +57,6 @@
                 v-if="!transactionLoading"
                 :editingItem="editingTransactionItem"
                 :initialProjectId="editingItem?.id"
-                :initialClient="editingItem?.client"
                 :form-config="projectFormConfig"
                 :header-text="'Транзакция — проект'"
                 @saved="handleTransactionSaved"
@@ -86,6 +85,8 @@ import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
+import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
+import ProjectAmountCell from "@/views/components/app/buttons/ProjectAmountCell.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import { defineAsyncComponent, markRaw } from 'vue';
@@ -153,8 +154,26 @@ export default {
                 },
                 { name: "note", label: this.$t("note"), size: 200 },
                 { name: "user_name", label: this.$t("user"), size: 120 },
-                { name: "is_debt", label: this.$t("debt"), size: 80, html: true },
-                { name: "amount", label: this.$t("amount"), size: 130, html: true },
+                {
+                    name: "is_debt",
+                    label: this.$t("debt"),
+                    size: 80,
+                    component: markRaw(DebtCell),
+                    props: (item) => ({
+                        isDebt: item.is_debt
+                    })
+                },
+                {
+                    name: "amount",
+                    label: this.$t("amount"),
+                    size: 130,
+                    component: markRaw(ProjectAmountCell),
+                    props: (item) => ({
+                        item: item,
+                        projectCurrency: this.editingItem?.currency?.symbol || this.currencyCode || 'Нет валюты',
+                        formatNumberFn: this.$formatNumber
+                    })
+                },
             ],
             ENTITY_CONFIG: {
                 transaction: {
@@ -270,15 +289,8 @@ export default {
                 // Определяем валюту проекта
                 const projectCurrency = this.editingItem?.currency?.symbol || this.currencyCode || 'Нет валюты';
                 
-                // DRY: используем методы DTO для форматирования
                 this.balanceHistory = (data.history || [])
-                    .filter(item => item.source !== 'project_income') // Исключаем project_income записи
-                    .map(item => {
-                        // Привязываем метод форматирования с валютой проекта
-                        const originalFormatAmount = item.formatAmountWithColor.bind(item);
-                        item.formatAmountWithColor = () => originalFormatAmount(projectCurrency, this.$formatNumber);
-                        return item;
-                    });
+                    .filter(item => item.source !== 'project_income'); // Исключаем project_income записи
                 this.balance = data.balance;
                 this.budget = data.budget;
                 
@@ -312,15 +324,13 @@ export default {
             switch (c) {
                 case "dateUser":
                     return i.dateUser || (i.formatDate ? i.formatDate() : '');
-                // case "source" - больше не нужен, используется компонент SourceButtonCel
                 case "note":
                     return i.note || '';
                 case "user_name":
                     return i.userName || '-';
-                case "is_debt":
-                    return i.getDebtHtml ? i.getDebtHtml() : '-';
                 case "amount":
-                    return i.formatAmountWithColor ? i.formatAmountWithColor() : '-';
+                    // Возвращаем числовое значение для сортировки (отображение через компонент ProjectAmountCell)
+                    return parseFloat(i.amount || 0);
                 default:
                     return i[c];
             }

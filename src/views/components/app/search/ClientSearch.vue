@@ -132,11 +132,35 @@ export default {
             if (typeof this.selectedClient.fullName === 'function') {
                 return this.selectedClient.fullName();
             }
-            const contactPerson = this.selectedClient.contactPerson || '';
-            const firstName = this.selectedClient.firstName || '';
-            const lastName = this.selectedClient.lastName || '';
-            const baseName = [firstName, lastName].filter(Boolean).join(' ');
-            return contactPerson ? [baseName, `(${contactPerson})`].filter(Boolean).join(' ').trim() : baseName.trim();
+            const client = this.selectedClient;
+            const clientType = client.clientType || client.client_type;
+            const firstName = client.firstName || client.first_name || '';
+            const lastName = client.lastName || client.last_name || '';
+            const patronymic = client.patronymic || '';
+            const position = client.position || '';
+            const contactPerson = client.contactPerson || client.contact_person || '';
+            
+            if (clientType === 'company') {
+                const baseName = [firstName, lastName].filter(Boolean).join(' ').trim();
+                if (!baseName && !contactPerson) return '';
+                if (!baseName) return contactPerson;
+                
+                let result = baseName;
+                if (position) {
+                    result += ` (${position})`;
+                }
+                if (contactPerson && contactPerson !== baseName) {
+                    result += ` (${contactPerson})`;
+                }
+                return result;
+            } else {
+                const baseName = [firstName, lastName].filter(Boolean).join(' ').trim();
+                if (!baseName) return '';
+                if (position) {
+                    return `${baseName} (${position})`;
+                }
+                return baseName;
+            }
         },
         clientBalance() {
             if (!this.selectedClient) return 0;
@@ -207,7 +231,7 @@ export default {
             if (this.clientSearch.length >= 3) {
                 this.clientSearchLoading = true;
                 try {
-                    const results = await ClientController.search(this.clientSearch);
+                    const results = await ClientController.searchItems(this.clientSearch);
 
                     this.clientResults = this.onlySuppliers
                         ? results.filter((client) => client.isSupplier)

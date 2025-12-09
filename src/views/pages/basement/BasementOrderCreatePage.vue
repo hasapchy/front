@@ -48,12 +48,20 @@
               <!-- Проект -->
               <div>
                 <label class="block text-sm font-medium text-gray-700">{{ $t('project') }}</label>
-                <select v-model="form.project_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <select 
+                  v-model="form.project_id" 
+                  :disabled="isProjectLocked"
+                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  :class="{ 'bg-gray-100 cursor-not-allowed': isProjectLocked }"
+                >
                   <option value="">{{ $t('no') }}</option>
                   <option v-for="project in allProjects" :key="project.id" :value="project.id">
                     {{ project.name }}
                   </option>
                 </select>
+                <p v-if="isProjectLocked" class="mt-1 text-xs text-gray-500">
+                  Проект нельзя указать, если он не был указан при создании заказа
+                </p>
               </div>
             </div>
 
@@ -262,6 +270,7 @@ export default {
         phone: ''
       },
       clientLoading: false,
+      originalProjectId: null,
       // Тексты для уведомлений
       savedSuccessText: 'Заказ успешно создан',
       savedErrorText: 'Ошибка создания заказа',
@@ -275,6 +284,9 @@ export default {
     },
     isEditing() {
       return !!this.editingItem || !!this.orderId
+    },
+    isProjectLocked() {
+      return this.isEditing && (this.originalProjectId === null || this.originalProjectId === '')
     },
     hasValidProducts() {
       // Проверяем, что есть товары с количеством больше 0
@@ -402,7 +414,7 @@ export default {
   },
   methods: {
     setCategoryByUser() {
-      // Хардкод соответствия: юзер 6 = категория 2, 7 = 3, 8 = 14
+      // Хардкод соответствия: юзер 6 = категория 2, 7 = 3, 8 = 14, 12 = 14
       try {
         const userStr = localStorage.getItem('user');
         if (userStr) {
@@ -412,7 +424,8 @@ export default {
           const basementCategoryMap = {
             6: 2,
             7: 3,
-            8: 14
+            8: 14,
+            12: 14
           };
           
           this.form.category_id = basementCategoryMap[userId] || null;
@@ -527,6 +540,8 @@ export default {
             quantity: item.quantity,
             price: item.price || 0,
             unit_id: item.unit_id || null,
+            width: item.width || null,
+            height: item.height || null,
           }))
         
         const orderData = {
@@ -611,11 +626,15 @@ export default {
             quantity: item.quantity,
             price: item.price || 0,
             unit_id: item.unit_id || null,
+            width: item.width || null,
+            height: item.height || null,
           }))
+        
+        const projectId = this.isProjectLocked ? null : (this.form.project_id || null)
         
         const orderData = {
           client_id: this.form.client_id || null,
-          project_id: this.form.project_id || null,
+          project_id: projectId,
           cash_id: this.form.cash_id,
           warehouse_id: this.form.warehouse_id,
           currency_id: 1,
@@ -624,7 +643,7 @@ export default {
           products: validProducts,
           temp_products: tempProducts
         }
-
+        
         const orderId = this.editingItem?.id || (this.orderId ? parseInt(this.orderId) : null)
         
         if (!orderId) {
@@ -690,12 +709,27 @@ export default {
           })
           this.$router.push('/basement/orders')
         }
+      } else {
+        // Создание нового заказа - сбрасываем форму
+        this.form = {
+          client_id: '',
+          project_id: '',
+          products: [],
+          stockItems: [],
+          note: '',
+          cash_id: 1,
+          warehouse_id: 1,
+          category_id: null
+        }
+        this.selectedClient = null
+        this.originalProjectId = null
       }
     },
     fillFormWithOrderData(orderData) {
       // Заполняем форму данными заказа
       this.form.client_id = orderData.client_id || ''
       this.form.project_id = orderData.project_id || ''
+      this.originalProjectId = orderData.project_id || null
       this.form.cash_id = orderData.cash_id || 1
       this.form.warehouse_id = orderData.warehouse_id || 1
       this.form.category_id = orderData.category_id || this.form.category_id
@@ -729,15 +763,16 @@ export default {
         // Загружаем temp_products в stockItems
         this.form.stockItems = tempProducts.map(product => ({
           name: product.product_name,
-          description: '',
+          description: product.description || '',
           quantity: product.quantity,
           price: product.price,
           unit_id: product.unit_id,
           unit_short_name: product.unit_short_name || product.unit_name || '',
           unit_name: product.unit_name || '',
-          width: 0,
-          height: 0,
-          isTempProduct: true
+          width: product.width || 0,
+          height: product.height || 0,
+          isTempProduct: true,
+          type: product.type || 1
         }))
       }
     },

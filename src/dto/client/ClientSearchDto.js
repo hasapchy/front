@@ -11,9 +11,13 @@ export default class ClientSearchDto {
     isConflict,
     firstName,
     lastName,
+    patronymic,
     contactPerson,
+    position,
     status,
-    phones = []
+    phones = [],
+    employeeId = null,
+    employee = null
   ) {
     this.id = id;
     this.clientType = clientType;
@@ -22,8 +26,12 @@ export default class ClientSearchDto {
     this.isConflict = Boolean(isConflict);
     this.firstName = firstName;
     this.lastName = lastName;
+    this.patronymic = patronymic;
     this.contactPerson = contactPerson;
+    this.position = position;
     this.status = Boolean(status);
+    this.employeeId = employeeId;
+    this.employee = employee;
     this.phones = (phones || []).map((phone) => {
       if (typeof phone === 'string') {
         return { phone };
@@ -40,14 +48,48 @@ export default class ClientSearchDto {
   }
 
   fullName() {
-    const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
-    const contactPerson = this.contactPerson || '';
-    
-    if (!baseName && !contactPerson) return '';
-    if (!baseName) return contactPerson;
-    if (!contactPerson) return baseName;
-    
-    return `${baseName} (${contactPerson})`;
+    if (this.clientType === 'employee' || this.clientType === 'investor') {
+      if (this.employee) {
+        const employeeName = this.employee.name || '';
+        const employeeSurname = this.employee.surname || '';
+        const employeePosition = this.employee.position || '';
+        const parts = [employeeName, employeeSurname].filter(Boolean);
+        let result = parts.join(' ').trim();
+        if (employeePosition) {
+          result += ` (${employeePosition})`;
+        }
+        return result || this.firstName || '';
+      }
+      return this.firstName || '';
+    } else if (this.clientType === 'company') {
+      const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
+      const position = this.position || '';
+      const contactPerson = this.contactPerson || '';
+      
+      if (!baseName && !contactPerson) return '';
+      if (!baseName) return contactPerson;
+      
+      let result = baseName;
+      if (position) {
+        result += ` (${position})`;
+      }
+      if (contactPerson && contactPerson !== baseName) {
+        result += ` (${contactPerson})`;
+      }
+      
+      return result;
+    } else {
+      const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
+      const position = this.position || '';
+      
+      if (!baseName) return '';
+      
+      if (position) {
+        return `${baseName} (${position})`;
+      }
+      
+      return baseName;
+    }
   }
 
   icons() {
@@ -74,9 +116,13 @@ export default class ClientSearchDto {
         data.is_conflict,
         data.first_name,
         data.last_name,
+        data.patronymic,
         data.contact_person,
+        data.position,
         data.status,
-        data.phones || []
+        data.phones || [],
+        data.employee_id,
+        data.employee
       );
     }).filter(Boolean);
   }

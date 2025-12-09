@@ -17,6 +17,15 @@
                 <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showModal" />
             </div>
         </div>
+        <div class="mt-4">
+            <label class="flex items-center space-x-2">
+                <input type="checkbox" v-model="isActive" :disabled="isProtectedStatus">
+                <span>{{ $t('isActive') || 'Активен' }}</span>
+            </label>
+            <p v-if="isProtectedStatus" class="text-xs text-gray-500 mt-1">
+                {{ $t('protectedStatusCannotBeDisabled') || 'Этот статус нельзя отключить' }}
+            </p>
+        </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
@@ -59,12 +68,19 @@ export default {
         return {
             name: this.editingItem ? this.editingItem.name : '',
             categoryId: this.editingItem ? this.editingItem.categoryId : '',
+            isActive: this.editingItem ? (this.editingItem.isActive !== undefined ? this.editingItem.isActive : true) : true,
             editingItemId: this.editingItem ? this.editingItem.id : null,
             allCategories: [],
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
             modalDialog: false
+        }
+    },
+    computed: {
+        isProtectedStatus() {
+            const protectedIds = [1, 5, 6]; // Новый, Завершено, Отменено
+            return this.editingItemId && protectedIds.includes(this.editingItemId);
         }
     },
     mounted() {
@@ -78,11 +94,12 @@ export default {
         getFormState() {
             return {
                 name: this.name,
-                categoryId: this.categoryId
+                categoryId: this.categoryId,
+                isActive: this.isActive
             };
         },
         async fetchAllCategories() {
-            this.allCategories = await OrderStatusCategoryController.getAllItems();
+            this.allCategories = await OrderStatusCategoryController.getListItems();
         },
         async save() {
             this.saveLoading = true;
@@ -91,12 +108,14 @@ export default {
                 if (this.editingItemId != null) {
                     resp = await OrderStatusController.updateItem(this.editingItemId, {
                         name: this.name,
-                        category_id: this.categoryId
+                        category_id: this.categoryId,
+                        is_active: this.isActive
                     });
                 } else {
                     resp = await OrderStatusController.storeItem({
                         name: this.name,
-                        category_id: this.categoryId
+                        category_id: this.categoryId,
+                        is_active: this.isActive
                     });
                 }
                 if (resp.message) {
@@ -126,6 +145,7 @@ export default {
         clearForm() {
             this.name = '';
             this.categoryId = '';
+            this.isActive = true;
             this.editingItemId = null;
             this.fetchAllCategories();
             this.resetFormChanges();
@@ -141,10 +161,12 @@ export default {
                 if (newEditingItem) {
                     this.name = newEditingItem.name || '';
                     this.categoryId = newEditingItem.categoryId || '';
+                    this.isActive = newEditingItem.isActive !== undefined ? newEditingItem.isActive : true;
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     this.name = '';
                     this.categoryId = '';
+                    this.isActive = true;
                     this.editingItemId = null;
                 }
             },

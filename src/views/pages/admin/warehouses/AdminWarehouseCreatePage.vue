@@ -8,13 +8,12 @@
 
         <div class="mt-4">
             <label>{{ $t('assignUsers') }}</label>
-            <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
-                <label v-for="user in users" :key="user.id"
-                    class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-                    <input type="checkbox" :value="user.id" v-model="selectedUsers" :id="'user-' + user.id">
-                    <span>{{ user.name }}</span>
-                </label>
-            </div>
+            <CheckboxFilter
+                v-if="assignableUsers.length"
+                v-model="selectedUsers"
+                :options="userOptions"
+                :placeholder="'all'"
+            />
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -22,7 +21,7 @@
             :is-loading="deleteLoading" icon="fas fa-trash"
             :disabled="!$store.getters.hasPermission('warehouses_delete')">
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItem != null && !$store.getters.hasPermission('warehouses_update')) ||
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!selectedUsers || selectedUsers.length === 0 || (editingItem != null && !$store.getters.hasPermission('warehouses_update')) ||
             (editingItem == null && !$store.getters.hasPermission('warehouses_create'))">
         </PrimaryButton>
     </div>
@@ -39,13 +38,15 @@ import WarehouseController from '@/api/WarehouseController';
 import WarehouseDto from '@/dto/warehouse/WarehouseDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
     components: {
         PrimaryButton,
-        AlertDialog
+        AlertDialog,
+        CheckboxFilter
     },
     props: {
         warehouse: {
@@ -71,14 +72,29 @@ export default {
             this.editingItem = this.warehouse;
         }
     },
-    mounted() {
-        this.$nextTick(async () => {
-            await this.fetchUsers();
-            
-            this.saveInitialState();
-        });
+    async mounted() {
+        await this.fetchUsers();
+        this.saveInitialState();
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
+    computed: {
+        assignableUsers() {
+            if (!Array.isArray(this.users)) {
+                return [];
+            }
+            return this.users.filter(this.userHasWarehouseAccess);
+        },
+        userOptions() {
+            return this.assignableUsers.map(user => {
+                const fullName = [user.name, user.surname].filter(Boolean).join(' ').trim() || user.name;
+                const position = user.position ? ` (${user.position})` : '';
+                return {
+                    value: user.id.toString(),
+                    label: `${fullName}${position}`
+                };
+            });
+        }
+    },
     methods: {
         getFormState() {
             return {
@@ -87,12 +103,37 @@ export default {
             };
         },
         async fetchUsers() {
-            // ✅ Используем данные из store (кэш!)
+            if (this.$store.getters.usersForCurrentCompany && this.$store.getters.usersForCurrentCompany.length > 0) {
+                this.users = this.$store.getters.usersForCurrentCompany;
+                this.filterSelectedUsers();
+                return;
+            }
             await this.$store.dispatch('loadUsers');
-            // ✅ Используем геттер usersForCurrentCompany - автоматически фильтрует по текущей компании
             this.users = this.$store.getters.usersForCurrentCompany;
+            this.filterSelectedUsers();
+        },
+        userHasWarehouseAccess(user) {
+            if (!user || !Array.isArray(user.permissions)) {
+                return false;
+            }
+            return user.permissions.some(permission => permission === 'warehouses_view' || permission === 'warehouses_view_all' || permission.startsWith('warehouses_view_'));
+        },
+        filterSelectedUsers() {
+            if (!Array.isArray(this.users) || this.users.length === 0) {
+                return;
+            }
+            const availableIds = new Set(this.assignableUsers.map(user => user.id.toString()));
+            const filtered = this.selectedUsers.filter(id => availableIds.has(id.toString()));
+            if (filtered.length !== this.selectedUsers.length) {
+                this.selectedUsers = filtered;
+            }
         },
         async save() {
+            if (!this.selectedUsers || this.selectedUsers.length === 0) {
+                this.$emit('saved-error', this.$t('warehouseMustHaveAtLeastOneUser'));
+                return;
+            }
+
             this.saveLoading = true;
             try {
                 if (this.editingItem?.id != null) {

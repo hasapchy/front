@@ -1,63 +1,34 @@
 import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import TransactionCategoryDto from "@/dto/transaction/TransactionCategoryDto";
-import api from "./axiosInstance";
+import BaseController from "./BaseController";
 
-export default class TransactionCategoryController {
+export default class TransactionCategoryController extends BaseController {
   static async getItems(page = 1, per_page = 20) {
-    try {
-      const response = await api.get(`/transaction_categories?page=${page}&per_page=${per_page}`);
-      const data = response.data;
-      const items = TransactionCategoryDto.fromApiArray(data.items);
-      return new PaginatedResponse(
-        items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
-      );
-    } catch (error) {
-      console.error("Ошибка при получении категорий транзакций:", error);
-      throw error;
-    }
+    const data = await super.getItems("/transaction_categories", page, per_page);
+    const items = TransactionCategoryDto.fromApiArray(data.items || []);
+    return new PaginatedResponse(
+      items,
+      data.current_page,
+      data.next_page,
+      data.last_page,
+      data.total
+    );
   }
 
-  static async getAllItems() {
-    try {
-      const response = await api.get(`/transaction_categories/all`);
-      return TransactionCategoryDto.fromApiArray(response.data);
-    } catch (error) {
-      console.error("Ошибка при получении категорий транзакций:", error);
-      throw error;
-    }
+  static async getListItems() {
+    const data = await super.getListItems("/transaction_categories");
+    return TransactionCategoryDto.fromApiArray(data);
   }
 
   static async storeItem(item) {
-    try {
-      const { data } = await api.post("/transaction_categories", item);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при создании категории транзакций:", error);
-      throw error;
-    }
+    return super.storeItem("/transaction_categories", item);
   }
 
   static async updateItem(id, item) {
-    try {
-      const { data } = await api.put(`/transaction_categories/${id}`, item);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при обновлении категории транзакций:", error);
-      throw error;
-    }
+    return super.updateItem("/transaction_categories", id, item);
   }
 
   static async deleteItem(id) {
-    try {
-      const { data } = await api.delete(`/transaction_categories/${id}`);
-      return data;
-    } catch (error) {
-      console.error("Ошибка при удалении категории транзакций:", error);
-      throw error;
-    }
+    return super.deleteItem("/transaction_categories", id);
   }
 }

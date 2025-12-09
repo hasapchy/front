@@ -232,44 +232,38 @@ export default {
                 this.stockSearch = '';
                 this.stockResults = [];
 
-                // Проверяем единицу измерения
-                const unitShortName = product.unit_short_name || product.unit_name || '';
-                const unitName = product.unit_name || '';
-                const isSquareMeter = unitShortName === 'м²' || unitName === 'Квадратный метр';
+                // DTO использует camelCase, проверяем оба варианта
+                const unitShortName = (product.unitShortName || product.unit_short_name || product.unitName || product.unit_name || '').trim();
+                const unitName = (product.unitName || product.unit_name || '').trim();
+                const isSquareMeter = unitShortName === 'м²' || unitShortName === 'м2' || unitName === 'Квадратный метр' || unitName.toLowerCase() === 'квадратный метр';
 
                 // Создаем временный товар с бесконечным остатком
                 let price;
                 // Если выбран проект, используем оптовую цену, иначе розничную
-                if (this.projectId && product.wholesale_price > 0) {
-                    price = product.wholesale_price || 0;
+                const wholesalePrice = product.wholesalePrice || product.wholesale_price;
+                const retailPrice = product.retailPrice || product.retail_price;
+                
+                if (this.projectId && wholesalePrice > 0) {
+                    price = wholesalePrice || 0;
                 } else {
-                    price = product.retail_price || 0;
+                    price = retailPrice || 0;
                 }
                 
                 const tempProduct = {
                     name: product.name,
                     description: product.description || '',
                     price: price,
-                    unit_id: product.unit_id,
+                    unit_id: product.unitId || product.unit_id,
                     unit_short_name: unitShortName,
                     unit_name: unitName,
-                    isTempProduct: true, // Помечаем как временный товар
+                    isTempProduct: true,
                     imgUrl: product.imgUrl ? product.imgUrl.bind(product) : null,
                     icons: product.icons ? product.icons.bind(product) : null,
-                    type: product.type || 1
+                    type: product.type || 1,
+                    width: 0,
+                    height: 0,
+                    quantity: 0
                 };
-                
-                if (isSquareMeter) {
-                    // Для м² инициализируем ширину и длину
-                    tempProduct.width = 0;
-                    tempProduct.height = 0;
-                    tempProduct.quantity = 0;
-                } else {
-                    // Для остальных единиц просто устанавливаем количество
-                    tempProduct.quantity = 0;
-                    tempProduct.width = 0;
-                    tempProduct.height = 0;
-                }
                 
                 this.stockItems = [...this.stockItems, tempProduct];
                 this.$refs.stockInput.blur();
@@ -285,17 +279,17 @@ export default {
             });
         },
         getDefaultIcon(item) {
-            const isProduct = item.type === 1 || item.type === '1' || item.type === true;
+            const isProduct = item.type == 1;
             return isProduct
                 ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
                 : '<i class="fas fa-concierge-bell text-[#3571A4]" title="Услуга"></i>';
         },
         
         isSquareMeter(item) {
-            // Проверяем, является ли единица измерения квадратным метром
-            const unitShortName = item.unit_short_name || '';
-            const unitName = item.unit_name || '';
-            return unitShortName === 'м²' || unitName === 'Квадратный метр';
+            if (!item) return false;
+            const unitShortName = (item.unit_short_name || item.unitShortName || '').trim();
+            const unitName = (item.unit_name || item.unitName || '').trim();
+            return unitShortName === 'м²' || unitShortName === 'м2' || unitName === 'Квадратный метр' || unitName.toLowerCase() === 'квадратный метр';
         },
         calculateQuantity(item) {
             // Расчет количества только для м²

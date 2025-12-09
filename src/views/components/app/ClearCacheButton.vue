@@ -2,20 +2,20 @@
   <button
     @click="clearCache"
     :disabled="isClearing"
-    class="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+    class="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     :title="$t('clearCache')"
   >
-    <span class="text-sm">
-      <SpinnerIcon v-if="isClearing" size-class="text-sm" />
+    <span class="text-xs sm:text-sm">
+      <SpinnerIcon v-if="isClearing" size-class="text-xs sm:text-sm" />
       <i v-else class="fas fa-broom"></i>
     </span>
-    <span class="text-sm hidden md:inline">{{ $t('clearCache') }}</span>
+    <span class="text-xs sm:text-sm hidden sm:inline">{{ $t('clearCache') }}</span>
   </button>
 </template>
 
 <script>
 import CacheController from '@/api/CacheController';
-import CacheInvalidator from '@/utils/cache';
+import { CacheInvalidator } from '@/cache';
 
 export default {
   name: 'ClearCacheButton',
@@ -39,13 +39,21 @@ export default {
         const preservedKeys = [
           'token',
           'refresh_token',
-          'token_expires_at',
-          'refresh_token_expires_at',
           'user',
           'vuex',
+          'hasap_vuex_cache',
+          'hasap_references_cache',
+          'hasap_user_settings',
+          'orders_viewMode',
+          'projects_viewMode',
+          'kanban_column_order_orders',
+          'kanban_column_order_projects',
+          'ui_transactions_balance_cards_layout',
+          'menuItems',
           'current_company',
           'locale'
         ];
+        const preservedPrefixes = ['tableColumns_', 'tableSort_', 'cashRegisters_', 'kanbanCardFields_'];
         const preservedValues = preservedKeys.reduce((acc, key) => {
           const value = localStorage.getItem(key);
           if (value !== null) {
@@ -58,11 +66,12 @@ export default {
         await CacheController.clearAllCache();
 
         // 2. Очищаем локальные кэши (Frontend)
-        CacheInvalidator.invalidateAll();
+        await CacheInvalidator.invalidateAll();
         
         // 3. Очищаем весь остальной localStorage, не трогая сохранённые ключи
         Object.keys(localStorage).forEach(key => {
-          if (!preservedKeys.includes(key)) {
+          const isPreservedPrefix = preservedPrefixes.some((prefix) => key.startsWith(prefix));
+          if (!preservedKeys.includes(key) && !isPreservedPrefix) {
             localStorage.removeItem(key);
           }
         });
@@ -101,7 +110,13 @@ export default {
 
 <style scoped>
 button {
-  min-width: 40px;
+  min-width: 36px;
+}
+
+@media (min-width: 640px) {
+  button {
+    min-width: 40px;
+  }
 }
 </style>
 

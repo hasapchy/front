@@ -44,6 +44,14 @@
                     </option>
                 </select>
             </div>
+
+            <div>
+                <label>{{ $t('note') || 'Примечание' }}</label>
+                <textarea 
+                    v-model="form.note"
+                    rows="3"
+                    class="w-full"></textarea>
+            </div>
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -105,16 +113,27 @@ export default {
                 end_date: '',
                 amount: 0,
                 currency_id: null,
+                note: '',
             },
             currencies: [],
         };
     },
     computed: {
         canSave() {
-            return this.form.start_date && this.form.amount && this.form.currency_id;
+            const hasFormData = this.form.start_date && this.form.amount && this.form.currency_id;
+            if (this.editingItem) {
+                return hasFormData && (
+                    this.$store.getters.hasPermission('employee_salaries_update_all') ||
+                    this.$store.getters.hasPermission('employee_salaries_update_own')
+                );
+            }
+            return hasFormData && this.$store.getters.hasPermission('employee_salaries_create');
         },
         canDelete() {
-            return this.editingItem != null;
+            return this.editingItem != null && (
+                this.$store.getters.hasPermission('employee_salaries_delete_all') ||
+                this.$store.getters.hasPermission('employee_salaries_delete_own')
+            );
         }
     },
     watch: {
@@ -125,6 +144,7 @@ export default {
                     this.form.end_date = newItem.end_date ? new Date(newItem.end_date).toISOString().split('T')[0] : '';
                     this.form.amount = newItem.amount || 0;
                     this.form.currency_id = newItem.currency_id || null;
+                    this.form.note = newItem.note || '';
                 } else {
                     this.clearForm();
                 }
@@ -133,25 +153,40 @@ export default {
             deep: true
         }
     },
-    async mounted() {
-        await this.fetchCurrencies();
+    mounted() {
+        this.$nextTick(async () => {
+            await this.fetchCurrencies();
+        });
     },
     methods: {
         async fetchCurrencies() {
             try {
-                await this.$store.dispatch('loadCurrencies');
-                this.currencies = this.$store.getters.currencies || [];
+                if (this.$store.getters.currencies && this.$store.getters.currencies.length > 0) {
+                    this.currencies = this.$store.getters.currencies;
+                } else {
+                    await this.$store.dispatch('loadCurrencies');
+                    this.currencies = this.$store.getters.currencies || [];
+                }
+                
+                if (!this.editingItem && !this.form.currency_id && this.currencies.length > 0) {
+                    const defaultCurrency = this.currencies.find(c => c.isDefault);
+                    if (defaultCurrency) {
+                        this.form.currency_id = defaultCurrency.id;
+                    }
+                }
             } catch (error) {
                 console.error('Error fetching currencies:', error);
                 this.currencies = [];
             }
         },
         clearForm() {
+            const defaultCurrency = this.currencies.find(c => c.isDefault);
             this.form = {
                 start_date: '',
                 end_date: '',
                 amount: 0,
-                currency_id: null,
+                currency_id: defaultCurrency ? defaultCurrency.id : null,
+                note: '',
             };
         },
         async save() {

@@ -45,7 +45,7 @@
 
             <div>
                 <div class="flex justify-between items-center mb-2">
-                    <label class="required">{{ $t('assignUsers') }}</label>
+                    <label>{{ $t('assignUsers') }}</label>
                     <div v-if="users != null && users.length > 0">
                         <PrimaryButton :onclick="toggleAllUsers" :is-info="!allUsersSelected"
                             :is-light="allUsersSelected"
@@ -65,16 +65,16 @@
 
             </div>
         </div>
-        <div v-show="currentTab === 'files' && editingItem">
+        <div v-if="currentTab === 'files' && editingItem && canViewProjectFiles">
             <FileUploader ref="fileUploader" :files="editingItem ? editingItem.getFormattedFiles() : []"
                 :uploading="uploading" :upload-progress="uploadProgress" :disabled="!editingItemId"
                 :deleting="deletingFiles" @file-change="handleFileChange" @delete-file="showDeleteFileDialog"
                 @delete-multiple-files="showDeleteMultipleFilesDialog" />
         </div>
-        <div v-show="currentTab === 'balance' && editingItem">
+        <div v-if="currentTab === 'balance' && editingItem && canViewProjectBalance">
             <ProjectBalanceTab :editing-item="editingItem" />
         </div>
-        <div v-show="currentTab === 'contracts' && editingItem">
+        <div v-if="currentTab === 'contracts' && editingItem && canViewProjectContracts">
             <ProjectContractsTab :editing-item="editingItem" />
         </div>
     </div>
@@ -149,9 +149,9 @@ export default {
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'info' },
-                { name: 'files', label: 'files' },
-                { name: "balance", label: "balance" },
-                { name: "contracts", label: "contracts" },
+                { name: 'files', label: 'files', permission: 'settings_project_files_view' },
+                { name: 'balance', label: 'balance', permission: 'settings_project_balance_view' },
+                { name: 'contracts', label: 'contracts', permission: 'settings_project_contracts_view' },
             ],
 
 
@@ -159,10 +159,21 @@ export default {
         }
     },
     computed: {
+        canViewProjectFiles() {
+            return this.$store.getters.hasPermission('settings_project_files_view');
+        },
+        canViewProjectBalance() {
+            return this.$store.getters.hasPermission('settings_project_balance_view');
+        },
+        canViewProjectContracts() {
+            return this.$store.getters.hasPermission('settings_project_contracts_view');
+        },
+        visibleTabs() {
+            const baseTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name === 'info');
+            return baseTabs.filter(tab => !tab.permission || this.$store.getters.hasPermission(tab.permission));
+        },
         translatedTabs() {
-            const availableTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name === 'info');
-
-            return availableTabs.map(tab => ({
+            return this.visibleTabs.map(tab => ({
                 ...tab,
                 label: this.$t(tab.label)
             }));
@@ -214,7 +225,7 @@ export default {
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         changeTab(tabName) {
-            if ((tabName === 'files' || tabName === 'balance' || tabName === 'contracts') && !this.editingItem) {
+            if (!this.visibleTabs.find(tab => tab.name === tabName)) {
                 return;
             }
             this.currentTab = tabName;
@@ -232,16 +243,17 @@ export default {
             };
         },
         async fetchCurrencies() {
-            // Используем данные из store
-            await this.$store.dispatch('loadCurrencies');
-            this.currencies = this.$store.getters.currencies;
+            if (this.$store.getters.currencies && this.$store.getters.currencies.length > 0) {
+                this.currencies = this.$store.getters.currencies;
+            } else {
+                await this.$store.dispatch('loadCurrencies');
+                this.currencies = this.$store.getters.currencies;
+            }
             
-            // ✅ При создании нового проекта устанавливаем дефолтную валюту
             if (!this.editingItem && !this.currencyId) {
                 const defaultCurrency = this.currencies.find(c => c.isDefault);
                 if (defaultCurrency) {
                     this.currencyId = defaultCurrency.id;
-                    // Для дефолтной валюты курс всегда 1
                     this.exchangeRate = 1;
                 }
             }
@@ -250,8 +262,6 @@ export default {
             if (this.currencyId) {
                 try {
                     const rateData = await AppController.getCurrencyExchangeRate(this.currencyId);
-                    // Если выбранная валюта не является дефолтной (манат), 
-                    // то курс должен быть 1/курс_валюты для конвертации в манаты
                     const selectedCurrency = this.currencies.find(c => c.id === this.currencyId);
                     if (selectedCurrency && !selectedCurrency.isDefault) {
                         // Для не-дефолтной валюты курс = 1/курс_валюты (сколько манат за 1 единицу валюты)
@@ -269,19 +279,17 @@ export default {
             }
         },
         async fetchUsers() {
-            // ✅ Используем данные из store (кэшированные!)
-            await this.$store.dispatch('loadUsers');
-            
-            // ✅ Используем геттер usersForCurrentCompany - автоматически фильтрует по текущей компании
-            this.users = this.$store.getters.usersForCurrentCompany;
+            if (this.$store.getters.usersForCurrentCompany && this.$store.getters.usersForCurrentCompany.length > 0) {
+                this.users = this.$store.getters.usersForCurrentCompany;
+            } else {
+                await this.$store.dispatch('loadUsers');
+                this.users = this.$store.getters.usersForCurrentCompany;
+            }
 
             if (this.editingItem && Array.isArray(this.editingItem.users)) {
-                // При редактировании существующего проекта - загружаем выбранных пользователей
-                // Фильтруем выбранных пользователей, оставляя только тех, кто доступен в текущей компании
                 const availableUserIds = this.users.map(u => u.id.toString());
                 this.selectedUsers = this.editingItem.getUserIds().filter(id => availableUserIds.includes(id));
             } else if (!this.editingItem) {
-                // При создании нового проекта - выбираем всех доступных пользователей по умолчанию
                 this.selectAllUsers();
             }
         },
@@ -507,6 +515,19 @@ export default {
     },
 
     watch: {
+        visibleTabs: {
+            handler(tabs) {
+                if (!tabs || !tabs.length) {
+                    this.currentTab = 'info';
+                    return;
+                }
+                if (!tabs.find(tab => tab.name === this.currentTab)) {
+                    this.currentTab = tabs[0].name;
+                }
+            },
+            immediate: true,
+            deep: true,
+        },
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {

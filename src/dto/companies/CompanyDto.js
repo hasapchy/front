@@ -56,19 +56,6 @@ export class CompanyDto {
         : true;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
-
-    console.log("[CompanyDto] Rounding fields:", {
-      companyId: this.id,
-      name: this.name,
-      rounding_decimals: this.rounding_decimals,
-      rounding_enabled: this.rounding_enabled,
-      rounding_direction: this.rounding_direction,
-      rounding_custom_threshold: this.rounding_custom_threshold,
-      rounding_quantity_decimals: this.rounding_quantity_decimals,
-      rounding_quantity_enabled: this.rounding_quantity_enabled,
-      rounding_quantity_direction: this.rounding_quantity_direction,
-      rounding_quantity_custom_threshold: this.rounding_quantity_custom_threshold,
-    });
   }
 
   logoUrl() {

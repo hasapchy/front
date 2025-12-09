@@ -13,7 +13,9 @@ export default class ClientDto {
     isConflict,
     firstName,
     lastName,
+    patronymic,
     contactPerson,
+    position,
     address,
     note,
     status,
@@ -35,7 +37,9 @@ export default class ClientDto {
     this.isConflict = Boolean(isConflict);
     this.firstName = firstName;
     this.lastName = lastName;
+    this.patronymic = patronymic;
     this.contactPerson = contactPerson;
+    this.position = position;
     this.address = address;
     this.note = note;
     this.status = Boolean(status);
@@ -60,24 +64,55 @@ export default class ClientDto {
   }
 
   fullName() {
-    const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
-    const contactPerson = this.contactPerson || '';
-    
-    if (!baseName && !contactPerson) return '';
-    if (!baseName) return contactPerson;
-    if (!contactPerson) return baseName;
-    
-    return `${baseName} (${contactPerson})`;
+    if (this.clientType === 'employee' || this.clientType === 'investor') {
+      if (this.employee) {
+        const employeeName = this.employee.name || '';
+        const employeeSurname = this.employee.surname || '';
+        const employeePosition = this.employee.position || '';
+        const parts = [employeeName, employeeSurname].filter(Boolean);
+        let result = parts.join(' ').trim();
+        if (employeePosition) {
+          result += ` (${employeePosition})`;
+        }
+        return result || this.firstName || '';
+      }
+      return this.firstName || '';
+    } else if (this.clientType === 'company') {
+      const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
+      const position = this.position || '';
+      const contactPerson = this.contactPerson || '';
+      
+      if (!baseName && !contactPerson) return '';
+      if (!baseName) return contactPerson;
+      
+      let result = baseName;
+      if (position) {
+        result += ` (${position})`;
+      }
+      if (contactPerson && contactPerson !== baseName) {
+        result += ` (${contactPerson})`;
+      }
+      
+      return result;
+    } else {
+      const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
+      const position = this.position || '';
+      
+      if (!baseName) return '';
+      
+      if (position) {
+        return `${baseName} (${position})`;
+      }
+      
+      return baseName;
+    }
   }
 
   icons() {
-    const typeIcons = {
-      company: '<i class="fas fa-building text-[#3571A4] mr-2" title="Компания"></i>',
-      employee: '<i class="fas fa-id-badge text-[#3571A4] mr-2" title="Сотрудник"></i>',
-      investor: '<i class="fas fa-hand-holding-usd text-[#3571A4] mr-2" title="Инвестор"></i>'
-    };
+    let res = this.clientType === "company"
+      ? '<i class="fas fa-building text-[#3571A4] mr-2" title="Компания"></i>'
+      : '<i class="fas fa-user text-[#3571A4] mr-2" title="Индивидуальный клиент"></i>';
     
-    let res = typeIcons[this.clientType] || '<i class="fas fa-user text-[#3571A4] mr-2" title="Индивидуальный клиент"></i>';
     if (this.isConflict) {
       res += '<i class="fas fa-exclamation-triangle text-[#D53935] mr-2" title="Проблемный клиент"></i>';
     }
@@ -85,26 +120,6 @@ export default class ClientDto {
       res += '<i class="fas fa-truck text-[#3571A4] mr-2" title="Поставщик"></i>';
     }
     return res;
-  }
-
-  statusIcon() {
-    return this.status
-      ? '<i class="fas fa-circle-check text-[#5CB85C]" title="Активен"></i>'
-      : '<i class="fas fa-times text-[#D53935]" title="Неактивен"></i>';
-  }
-
-  _createHtmlList(items, getValue) {
-    if (!items?.length) return '';
-    const listItems = items.map(item => `<li>${getValue(item)}</li>`).join('');
-    return `<ul>${listItems}</ul>`;
-  }
-
-  phonesHtmlList() {
-    return this._createHtmlList(this.phones, phone => phone.phone);
-  }
-
-  emailsHtmlList() {
-    return this._createHtmlList(this.emails, email => email.email);
   }
 
   discountFormatted() {
@@ -138,7 +153,9 @@ export default class ClientDto {
         data.is_conflict,
         data.first_name,
         data.last_name,
+        data.patronymic,
         data.contact_person,
+        data.position,
         data.address,
         data.note,
         data.status,

@@ -1,6 +1,6 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editUser') : $t('createUser') }}
+        <h2 class="text-lg font-bold mb-4">{{ editingItem ? (editingItem.name || $t('editUser')) : $t('createUser') }}
         </h2>
         <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
             changeTab(t);
@@ -33,6 +33,12 @@
                     <input type="text" v-model="form.name"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required />
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('lastName') }}</label>
+                    <input type="text" v-model="form.surname"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
 
                 <div class="mb-4">
@@ -144,8 +150,8 @@
                                     {{ $t('clear') || 'Очистить' }}
                                 </button>
                             </div>
-                            <div v-if="allRoles && allRoles.length > 0" class="max-h-48 overflow-y-auto">
-                                <div v-for="role in allRoles" :key="role.id" class="flex items-center space-x-2 mb-2">
+                            <div v-if="getRolesForCompany(company.id).length > 0" class="max-h-48 overflow-y-auto">
+                                <div v-for="role in getRolesForCompany(company.id)" :key="role.id" class="flex items-center space-x-2 mb-2">
                                     <input 
                                         type="radio" 
                                         :id="`role-${company.id}-${role.id}`" 
@@ -168,7 +174,7 @@
                     <div v-else class="text-gray-500 text-sm">{{ $t('noCompaniesAvailable') }}</div>
                 </div>
             </div>
-            <div v-show="currentTab === 'salaries' && editingItem" class="mt-4">
+            <div v-show="currentTab === 'salaries' && editingItem && canViewSalariesTab" class="mt-4">
                 <UserSalaryTab :editing-item="editingItem" />
             </div>
             <div v-show="currentTab === 'balance' && editingItem && $store.getters.hasPermission('settings_client_balance_view')" class="mt-4">
@@ -221,6 +227,7 @@ export default {
         return {
             form: {
                 name: '',
+                surname: '',
                 email: '',
                 password: '',
                 confirmPassword: '',
@@ -263,10 +270,29 @@ export default {
             let visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab =>
                 tab.name !== 'salaries' && tab.name !== 'balance'
             );
+            if (!this.canViewSalariesTab) {
+                visibleTabs = visibleTabs.filter(tab => tab.name !== 'salaries');
+            }
             return visibleTabs.map(tab => ({
                 ...tab,
                 label: this.$t(tab.label)
             }));
+        },
+        canViewSalariesTab() {
+            if (!this.$store.getters.hasPermission('employee_salaries_view')) {
+                return false;
+            }
+            
+            if (this.$store.getters.hasPermission('employee_salaries_view_all')) {
+                return true;
+            }
+            
+            if (this.editingItem) {
+                const currentUser = this.$store.getters.user;
+                return currentUser && currentUser.id === this.editingItem.id;
+            }
+            
+            return false;
         },
         selectedCompanies() {
             if (this.form.companies && this.form.companies.length > 0) {
@@ -297,6 +323,7 @@ export default {
         getFormState() {
             return {
                 name: this.form.name,
+                surname: this.form.surname,
                 email: this.form.email,
                 password: this.form.password,
                 confirmPassword: this.form.confirmPassword,
@@ -362,7 +389,7 @@ export default {
         },
         async fetchRoles() {
             try {
-                this.allRoles = await RolesController.getAllItems();
+                this.allRoles = await RolesController.getListItems();
             } catch (error) {
                 console.error('Error fetching roles:', error);
                 this.allRoles = [];
@@ -370,6 +397,7 @@ export default {
         },
         clearForm() {
             this.form.name = '';
+            this.form.surname = '';
             this.form.email = '';
             this.form.password = '';
             this.form.confirmPassword = '';
@@ -490,6 +518,12 @@ export default {
         changeTab(tab) {
             this.currentTab = tab;
         },
+        getRolesForCompany(companyId) {
+            if (!this.allRoles || this.allRoles.length === 0) {
+                return [];
+            }
+            return this.allRoles.filter(role => role.companyId === null || role.companyId === companyId);
+        },
         updateCompanyRole(companyId, roleName) {
             let companyRole = this.form.company_roles.find(cr => cr.company_id === companyId);
             
@@ -512,6 +546,7 @@ export default {
         prepareUserData() {
             const data = {
                 name: this.form.name,
+                surname: this.form.surname,
                 email: this.form.email,
                 position: this.form.position,
                 hire_date: this.form.hire_date,
@@ -558,6 +593,7 @@ export default {
             handler(newEditingItem, oldEditingItem) {
                 if (newEditingItem) {
                     this.form.name = newEditingItem.name || '';
+                    this.form.surname = newEditingItem.surname || '';
                     this.form.email = newEditingItem.email || '';
                     this.form.position = newEditingItem.position || '';
                     this.form.hire_date = newEditingItem.hireDate

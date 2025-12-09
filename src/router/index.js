@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import store from "@/store";
+import TokenUtils from "@/utils/tokenUtils";
 
 import SidebarLayout from "@/views/layouts/SidebarLayout.vue";
 import BlankLayout from "@/views/layouts/BlankLayout.vue";
@@ -236,10 +237,16 @@ const routes = [
         name: "Warehouses",
         component: WarehousesPage,
         meta: {
-          title: "warehouses",
+          title: "stock",
           requiresAuth: true,
           showSearch: true,
-          permission: "warehouses_view",
+          permission: "warehouse_stocks_view",
+          binded: [
+            {
+              name: "warehouses",
+              path: "/admin/warehouses",
+            },
+          ],
         },
       },
       {
@@ -289,7 +296,17 @@ const routes = [
         path: "/admin/warehouses",
         name: "Admin-Warehouses",
         component: AdminWarehousesPage,
-        meta: { title: "warehouses", requiresAuth: true },
+        meta: {
+          title: "warehouses",
+          requiresAuth: true,
+          permission: "warehouses_view",
+          binded: [
+            {
+              name: "stock",
+              path: "/warehouses",
+            },
+          ],
+        },
       },
       {
         path: "/categories",
@@ -524,7 +541,7 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
-  const token = localStorage.getItem("token");
+  const token = TokenUtils.getToken();
   const user = localStorage.getItem("user");
 
   let userData = null;
@@ -537,7 +554,9 @@ router.beforeEach(async (to, from, next) => {
       userData = JSON.parse(user);
       isBasementWorker =
         userData.roles && userData.roles.includes("basement_worker");
-      isAdmin = userData.roles && userData.roles.includes("admin");
+      isAdmin =
+        userData.isAdmin === true ||
+        (userData.roles && userData.roles.includes("admin"));
     }
   } catch {
     userData = null;
@@ -579,14 +598,18 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.meta.permission) {
-    if (!store.state.permissionsLoaded || (store.state.permissionsLoaded && store.state.permissions?.length === 0)) {
+    if (
+      !store.state.permissionsLoaded ||
+      (store.state.permissionsLoaded && store.state.permissions?.length === 0)
+    ) {
       await new Promise((resolve) => {
         let attempts = 0;
         const maxAttempts = 100;
         const checkPermissions = () => {
-          const hasPermissions = store.state.permissionsLoaded && 
-                                 store.state.permissions && 
-                                 store.state.permissions.length > 0;
+          const hasPermissions =
+            store.state.permissionsLoaded &&
+            store.state.permissions &&
+            store.state.permissions.length > 0;
           if (hasPermissions) {
             resolve();
           } else if (attempts >= maxAttempts) {
@@ -600,8 +623,15 @@ router.beforeEach(async (to, from, next) => {
       });
     }
 
-    if (!store.getters.hasPermission(to.meta.permission)) {
+    if (to.meta.permission === "mutual_settlements_view") {
+      if (store.getters.hasPermission(to.meta.permission)) {
+        return next();
+      }
       return next({ path: "/" });
+    } else {
+      if (!store.getters.hasPermission(to.meta.permission)) {
+        return next({ path: "/" });
+      }
     }
   }
 

@@ -613,7 +613,7 @@ export default {
             if (product.isTempProduct) {
                 return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>';
             }
-            const isProduct = product.type === 1 || product.type === '1' || product.type === true;
+            const isProduct = product.type == 1;
             return isProduct
                 ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
                 : '<i class="fas fa-concierge-bell text-[#3571A4]" title="Услуга"></i>';

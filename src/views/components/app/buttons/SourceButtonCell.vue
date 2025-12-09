@@ -1,13 +1,13 @@
 <template>
-    <div v-if="sourceType && sourceId" 
+    <div v-if="sourceType && sourceId && !isSalary" 
         class="w-full h-full cursor-pointer text-[#2a6496] hover:underline rounded flex items-center"
         @dblclick.stop="openSourceModal">
         <i :class="iconClass" class="mr-2"></i>
         <span v-html="displayText"></span>
     </div>
     <div v-else class="w-full h-full flex items-center">
-        <i class="fas fa-circle text-[#6C757D] mr-2"></i>
-        <span>{{ defaultText }}</span>
+        <i :class="iconClass" class="mr-2"></i>
+        <span :class="sourceInfo.color">{{ displayText }}</span>
     </div>
 
     <!-- Модальные окна с динамической загрузкой - избегаем циклических зависимостей -->
@@ -36,6 +36,10 @@ export default {
     props: {
         sourceType: String,
         sourceId: Number,
+        source: {
+            type: String,
+            default: null
+        },
         searchQuery: {
             type: String,
             default: ''
@@ -53,39 +57,79 @@ export default {
         };
     },
     computed: {
-        iconClass() {
-            if (this.sourceType.includes('Sale')) {
-                return 'fas fa-shopping-cart text-[#5CB85C]';
-            } else if (this.sourceType.includes('Order')) {
-                return 'fas fa-file-invoice text-[#337AB7]';
-            } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
-                return 'fas fa-box text-[#FFA500]';
-            } else if (this.sourceType.includes('Transaction')) {
-                return 'fas fa-exchange-alt text-[#6C757D]';
-            } else {
-                return 'fas fa-link text-[#337AB7]';
+        isSalary() {
+            return this.sourceType && this.sourceType.includes('EmployeeSalary');
+        },
+        normalizedSource() {
+            if (this.source) {
+                return this.source.toLowerCase();
             }
+            if (this.sourceType) {
+                if (this.sourceType.includes('Sale')) return 'sale';
+                if (this.sourceType.includes('Order')) return 'order';
+                if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) return 'receipt';
+                if (this.sourceType.includes('EmployeeSalary')) return 'salary';
+                if (this.sourceType.includes('Transaction')) return 'transaction';
+            }
+            return 'transaction';
+        },
+        sourceMap() {
+            return {
+                'sale': { icon: 'fa-shopping-cart', color: 'text-[#5CB85C]', text: 'Продажа' },
+                'order': { icon: 'fa-clipboard-list', color: 'text-[#337AB7]', text: 'Заказ' },
+                'receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
+                'wh_receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
+                'salary': { icon: 'fa-money-bill-wave', color: 'text-[#28A745]', text: 'Зарплата' },
+                'transaction': { icon: 'fa-circle', color: 'text-[#6C757D]', text: 'Прочее' }
+            };
+        },
+        sourceInfo() {
+            return this.sourceMap[this.normalizedSource] || this.sourceMap['transaction'];
+        },
+        iconClass() {
+            if (this.sourceType && this.sourceId) {
+                if (this.sourceType.includes('Sale')) {
+                    return 'fas fa-shopping-cart text-[#5CB85C]';
+                } else if (this.sourceType.includes('Order')) {
+                    return 'fas fa-file-invoice text-[#337AB7]';
+                } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
+                    return 'fas fa-box text-[#FFA500]';
+                } else if (this.sourceType.includes('EmployeeSalary')) {
+                    return 'fas fa-money-bill-wave text-[#28A745]';
+                } else if (this.sourceType.includes('Transaction')) {
+                    return 'fas fa-exchange-alt text-[#6C757D]';
+                } else {
+                    return 'fas fa-link text-[#337AB7]';
+                }
+            }
+            return `fas ${this.sourceInfo.icon} ${this.sourceInfo.color}`;
         },
         displayText() {
-            let text = '';
-            
-            if (this.sourceType.includes('Sale')) {
-                text = `Продажа #${this.sourceId}`;
-            } else if (this.sourceType.includes('Order')) {
-                text = `Заказ #${this.sourceId}`;
-            } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
-                text = `Оприходование #${this.sourceId}`;
-            } else if (this.sourceType.includes('Transaction')) {
-                text = `Транзакция #${this.sourceId}`;
-            } else {
-                text = `Связь #${this.sourceId}`;
-            }
-            
-            if (this.searchQuery && this.searchQuery.trim()) {
-                return highlightMatches(text, this.searchQuery);
-            }
+            if (this.sourceType && this.sourceId) {
+                let text = '';
+                
+                if (this.sourceType.includes('Sale')) {
+                    text = `Продажа #${this.sourceId}`;
+                } else if (this.sourceType.includes('Order')) {
+                    text = `Заказ #${this.sourceId}`;
+                } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
+                    text = `Оприходование #${this.sourceId}`;
+                } else if (this.sourceType.includes('EmployeeSalary')) {
+                    text = `Зарплата`;
+                } else if (this.sourceType.includes('Transaction')) {
+                    text = `Транзакция #${this.sourceId}`;
+                } else {
+                    text = `Связь #${this.sourceId}`;
+                }
+                
+                if (this.searchQuery && this.searchQuery.trim()) {
+                    return highlightMatches(text, this.searchQuery);
+                }
 
-            return text;
+                return text;
+            }
+            
+            return this.sourceInfo.text;
         },
         defaultText() {
             return 'Транзакция';
@@ -93,7 +137,7 @@ export default {
     },
     methods: {
         async openSourceModal() {
-            if (!this.sourceType || !this.sourceId) return;
+            if (!this.sourceType || !this.sourceId || this.isSalary) return;
             
             this.loading = true;
             try {

@@ -14,7 +14,7 @@
                 </div>
 
 
-                <div v-if="showTimelineButton" class="hidden md:flex w-12 bg-gray-100 border-l border-gray-200 flex-col items-center justify-center transition-all duration-300 ease-in-out">
+                <div v-if="showTimelineButton" class="flex w-12 bg-gray-100 border-l border-gray-200 flex-col items-center justify-center transition-all duration-300 ease-in-out">
                     <button @click="toggleTimeline" 
                             class="transform -rotate-90 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors duration-200 flex items-center space-x-2">
                         <i :class="timelineCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right'" class="text-xs transition-transform duration-200"></i>
@@ -23,7 +23,7 @@
                 </div>
 
 
-                <div class="hidden md:block transition-all duration-300 ease-in-out overflow-hidden" :style="{ width: timelineCollapsed ? '0px' : '420px' }">
+                <div class="block transition-all duration-300 ease-in-out overflow-hidden" :style="{ width: timelineCollapsed ? '0px' : '420px' }">
                     <slot name="timeline" />
                 </div>
             </div>

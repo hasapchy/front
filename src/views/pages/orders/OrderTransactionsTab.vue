@@ -35,6 +35,9 @@ import TransactionController from '@/api/TransactionController';
 import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import DebtCell from '@/views/components/app/buttons/DebtCell.vue';
+import TransactionAmountCell from '@/views/components/app/buttons/TransactionAmountCell.vue';
+import { markRaw } from 'vue';
 
 export default {
     mixins: [notificationMixin, getApiErrorMessage],
@@ -52,7 +55,9 @@ export default {
         PrimaryButton,
         DraggableTable,
         SideModalDialog,
-        TransactionCreatePage
+        TransactionCreatePage,
+        DebtCell,
+        TransactionAmountCell
     },
     data() {
         return {
@@ -62,8 +67,23 @@ export default {
             paidTotalAmount: 0,
             columnsConfig: [
                 { name: 'id', label: '№', size: 60 },
-                { name: 'debt', label: 'Долговая', html: true, size: 80 },
-                { name: 'amount', label: 'Сумма', html: true },
+                {
+                    name: 'debt',
+                    label: 'Долговая',
+                    size: 80,
+                    component: markRaw(DebtCell),
+                    props: (item) => ({
+                        isDebt: item.isDebt
+                    })
+                },
+                {
+                    name: 'amount',
+                    label: 'Сумма',
+                    component: markRaw(TransactionAmountCell),
+                    props: (item) => ({
+                        transaction: item
+                    })
+                },
                 { name: 'cashName', label: 'Касса' },
                 { name: 'date', label: 'Дата' },
                 { name: 'userName', label: 'Сотрудник' },
@@ -93,7 +113,7 @@ export default {
             try {
                 const response = await TransactionController.getItems(1, null, "all_time", this.orderId, null, null, null, null, 20);
                 this.transactions = response.items.filter(item => {
-                    return !(item.isDebt === 1 || item.isDebt === true || item.isDebt === '1');
+                    return item.isDebt != 1;
                 });
             } catch (error) {
                 this.transactions = [];
@@ -130,20 +150,15 @@ export default {
             this.transactionModal = false;
             this.fetchTransactions();
             this.fetchPaidTotal();
-            // Кэш клиентов инвалидируется автоматически через CacheInvalidator.onCreate('transactions')
-            // Перезагружаем клиентов в store для обновления баланса
-            if (this.client?.id) {
-                await this.$store.dispatch('loadClients');
-            }
+            await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            await this.$store.dispatch('loadClients');
         },
         async handleTransactionDeleted() {
             this.transactionModal = false;
             this.fetchTransactions();
             this.fetchPaidTotal();
-            // Перезагружаем клиентов в store для обновления баланса
-            if (this.client?.id) {
-                await this.$store.dispatch('loadClients');
-            }
+            await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            await this.$store.dispatch('loadClients');
         },
         handleTransactionError(error) {
             let message;
@@ -159,10 +174,6 @@ export default {
         },
         itemMapper(i, c) {
             switch (c) {
-                case 'debt':
-                    return i.debtCell?.() || '-';
-                case 'amount':
-                    return i.cashAmountData?.() || '-';
                 case 'cashName':
                     return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
                 case 'date':

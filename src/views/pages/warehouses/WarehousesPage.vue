@@ -36,12 +36,17 @@ export default {
     data() {
         return {
             currentTab: 'stock',
-            tabs: [
-                { name: 'stock', label: this.$t('stock') },
-                { name: 'posting', label: this.$t('receipt') },
-                { name: 'movement', label: this.$t('movement') },
-                { name: 'writeoff', label: this.$t('writeoff') },
-            ]
+        }
+    },
+    computed: {
+        tabs() {
+            const allTabs = [
+                { name: 'stock', label: this.$t('stock'), permission: 'warehouse_stocks_view' },
+                { name: 'posting', label: this.$t('receipt'), permission: 'warehouse_receipts_view' },
+                { name: 'movement', label: this.$t('movement'), permission: 'warehouse_movements_view' },
+                { name: 'writeoff', label: this.$t('writeoff'), permission: 'warehouse_writeoffs_view' },
+            ];
+            return allTabs.filter(tab => this.$store.getters.hasPermission(tab.permission));
         }
     },
     methods: {
@@ -53,6 +58,18 @@ export default {
             const hash = window.location.hash.replace('#', '');
             if (this.tabs.some(t => t.name === hash)) {
                 this.currentTab = hash;
+            } else if (this.tabs.length > 0) {
+                this.currentTab = this.tabs[0].name;
+            }
+        }
+    },
+    watch: {
+        tabs: {
+            immediate: true,
+            handler(newTabs) {
+                if (newTabs.length > 0 && !newTabs.some(t => t.name === this.currentTab)) {
+                    this.currentTab = newTabs[0].name;
+                }
             }
         }
     },

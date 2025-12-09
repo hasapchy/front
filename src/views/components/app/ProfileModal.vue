@@ -63,23 +63,32 @@
             <!-- Current Password -->
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('currentPassword') }}</label>
-                <input 
-                    v-model="form.currentPassword" 
-                    type="password" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    :placeholder="$t('enterCurrentPassword')"
-                />
+                <div class="flex items-center space-x-2">
+                    <input 
+                        v-model="form.currentPassword" 
+                        :type="showCurrentPassword ? 'text' : 'password'" 
+                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        :placeholder="$t('enterCurrentPassword')"
+                    />
+                    <PrimaryButton :onclick="toggleCurrentPasswordVisibility"
+                        :icon="showCurrentPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
+                </div>
             </div>
 
             <!-- New Password -->
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('newPassword') }}</label>
-                <input 
-                    v-model="form.newPassword" 
-                    type="password" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    :placeholder="$t('enterNewPassword')"
-                />
+                <div class="flex items-center space-x-2">
+                    <input 
+                        v-model="form.newPassword" 
+                        :type="showNewPassword ? 'text' : 'password'" 
+                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        :placeholder="$t('enterNewPassword')"
+                    />
+                    <PrimaryButton :onclick="toggleNewPasswordVisibility"
+                        :icon="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
+                    <PrimaryButton :onclick="generateNewPassword" :icon="'fas fa-dice'" class="px-2 py-1" />
+                </div>
             </div>
 
         </form>
@@ -87,6 +96,10 @@
         
         <div v-show="currentTab === 'balance'">
             <UserClientBalanceTab :editingItem="currentClientAccount" />
+        </div>
+        
+        <div v-show="currentTab === 'salary'">
+            <UserSalaryTab :editingItem="currentUser" />
         </div>
     </div>
     <div v-show="currentTab === 'info'" class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -121,17 +134,22 @@ const UserClientBalanceTab = defineAsyncComponent(() =>
     import('@/views/components/app/UserBalanceTab.vue')
 );
 
+const UserSalaryTab = defineAsyncComponent(() => 
+    import('@/views/pages/users/UserSalaryTab.vue')
+);
+
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, userPhotoMixin],
     emits: ['saved', 'saved-error', 'close-request'],
-    components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, UserClientBalanceTab },
+    components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, UserClientBalanceTab, UserSalaryTab },
     data() {
         return {
             saveLoading: false,
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'profileInfo' },
-                { name: 'balance', label: 'balance' }
+                { name: 'balance', label: 'balance' },
+                { name: 'salary', label: 'salaries' }
             ],
             form: {
                 name: '',
@@ -146,6 +164,8 @@ export default {
             tempImageSrc: '',
             croppedFile: null,
             userClientAccount: null,
+            showCurrentPassword: false,
+            showNewPassword: false,
         };
     },
     computed: {
@@ -156,18 +176,29 @@ export default {
             return null;
         },
         translatedTabs() {
-            // Показываем вкладку баланса только если у пользователя есть клиентский аккаунт
+            const visibleTabs = [];
+            
+            visibleTabs.push(this.tabs[0]);
+            
             if (this.hasClientAccount) {
-                return this.tabs.map(tab => ({
-                    ...tab,
-                    label: this.$t(tab.label)
-                }));
+                visibleTabs.push(this.tabs[1]);
             }
-            // Если нет клиентского аккаунта, показываем только вкладку информации
-            return [this.tabs[0]].map(tab => ({
+            
+            visibleTabs.push(this.tabs[2]);
+            
+            return visibleTabs.map(tab => ({
                 ...tab,
                 label: this.$t(tab.label)
             }));
+        },
+        currentUser() {
+            if (!this.$store.state.user) return null;
+            
+            return {
+                id: this.$store.state.user.id,
+                name: this.$store.state.user.name,
+                email: this.$store.state.user.email
+            };
         },
         hasClientAccount() {
             // Проверяем есть ли у пользователя активные клиентские аккаунты
@@ -293,6 +324,8 @@ export default {
             this.croppedFile = null;
             this.showCropperModal = false;
             this.tempImageSrc = '';
+            this.showCurrentPassword = false;
+            this.showNewPassword = false;
             if (this.$refs.imageInput) {
                 this.$refs.imageInput.value = null;
             }
@@ -300,6 +333,24 @@ export default {
         },
 
 
+        toggleCurrentPasswordVisibility() {
+            this.showCurrentPassword = !this.showCurrentPassword;
+        },
+        toggleNewPasswordVisibility() {
+            this.showNewPassword = !this.showNewPassword;
+        },
+        generateNewPassword() {
+            this.form.newPassword = this.generateRandomPassword();
+        },
+        generateRandomPassword() {
+            const length = 12;
+            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+            let password = "";
+            for (let i = 0; i < length; i++) {
+                password += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            return password;
+        },
         async save() {
             this.saveLoading = true;
             try {
@@ -309,11 +360,11 @@ export default {
                     birthday: this.form.birthday,
                 };
                 
-                if (this.form.currentPassword) {
+                if (this.form.currentPassword && this.form.currentPassword.trim() !== '') {
                     updateData.current_password = this.form.currentPassword;
                 }
                 
-                if (this.form.newPassword) {
+                if (this.form.newPassword && this.form.newPassword.trim() !== '') {
                     updateData.password = this.form.newPassword;
                 }
                 
@@ -335,6 +386,8 @@ export default {
                     : '';
                 this.form.currentPassword = '';
                 this.form.newPassword = '';
+                this.showCurrentPassword = false;
+                this.showNewPassword = false;
                 
                 if (savedUser.user && savedUser.user.photo) {
                     this.selected_image = this.getUserPhotoSrc(savedUser.user);
