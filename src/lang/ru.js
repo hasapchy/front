@@ -370,6 +370,7 @@ export default {
   selectEmployee: 'Выберите сотрудника',
   firstName: 'Имя',
   lastName: 'Фамилия',
+  patronymic: 'Отчество',
   contactPerson: 'Контактное лицо',
   characteristics: 'Характеристики',
   clientCategories: 'Категории клиентов',
