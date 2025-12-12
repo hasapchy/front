@@ -73,6 +73,7 @@ export default {
   products: 'Önümler',
   orders: 'Sargytlar',
   sales: 'Satuwlar',
+  tasks: 'Wezipeler',
   warehouses: 'Ammar',
   transactions: 'Tranzaksiyalar',
     mutualSettlements: 'Aragatnaşyk hasaplaşygy',
@@ -1169,4 +1170,31 @@ export default {
   dateToMustBeAfterDateFrom: 'Gutarýan senesi başlanýan senesinden soň bolmaly',
   user: 'Işgär',
   comment: 'Düşündiriş',
+
+  // Umumy meýdanlar
+  title: 'Ady',
+  description: 'Beýany',
+  status: 'Ýagdaýy',
+  project: 'Taslama',
+  deadline: 'Möhleti',
+  enterDescription: 'Beýany ýazyň',
+
+  // Wezipeleriň ýagdaýy
+  pending: 'Garaşylýar',
+  inProgress: 'Işlenilýär',
+  completed: 'Tamamlandy',
+  postponed: 'Yza goýuldy',
+
+  // Wezipeler
+  createTask: 'Wezipe döret',
+  editTask: 'Wezipäni redaktirlemek',
+  taskSuccessfullyAdded: 'Wezipe üstünlikli döredildi',
+  taskSuccessfullyUpdated: 'Wezipe üstünlikli täzelendi',
+  taskSuccessfullyDeleted: 'Wezipe üstünlikli pozuldy',
+  errorSavingTask: 'Wezipäni ýatda saklamakda säwlik',
+  errorGettingTaskList: 'Wezipeleriň sanawyny almagyň säwligi',
+  titleRequired: 'Wezipäniň ady hökmany',
+  supervisor: 'Ýolbaşçy',
+  executor: 'Ýerine ýetiriji',
+  creator: 'Dörediji',
 }

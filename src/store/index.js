@@ -1471,6 +1471,13 @@ const store = createStore({
           permission: "sales_view",
         },
         {
+          id: "tasks",
+          to: "/tasks",
+          icon: "fas fa-tasks mr-2",
+          label: "tasks",
+          permission: "tasks_view_all", //tasks_view
+        },
+        {
           id: "transactions",
           to: "/transactions",
           icon: "fas fa-coins mr-2",
@@ -1573,6 +1580,7 @@ const store = createStore({
       const defaultMain = [
         "orders",
         "sales",
+        "tasks",
         "transactions",
         "clients",
         "projects",

@@ -98,6 +98,7 @@ export default {
   products: 'Товары',
   orders: 'Заказы',
   sales: 'Продажи',
+  tasks: 'Задачи',
   warehouseReceipt: 'Оприходование',
   warehouses: 'Склады',
   transactions: 'Операции',
@@ -1389,4 +1390,32 @@ export default {
   errorGettingLeaveList: 'Ошибка получения списка отпусков',
   allRequiredFieldsMustBeFilled: 'Все обязательные поля должны быть заполнены',
   dateToMustBeAfterDateFrom: 'Дата окончания должна быть после даты начала',
+
+  // Tasks
+  // Общие поля (если их еще нет)
+  title: 'Название',
+  description: 'Описание',
+  status: 'Статус',
+  project: 'Проект',
+  deadline: 'Срок выполнения',
+  enterDescription: 'Введите описание',
+  
+  // Статусы задач
+  pending: 'Ожидает',
+  inProgress: 'В работе',
+  completed: 'Завершена',
+  postponed: 'Отложена',
+  
+  // Tasks
+  createTask: 'Создать задачу',
+  editTask: 'Редактировать задачу',
+  taskSuccessfullyAdded: 'Задача успешно создана',
+  taskSuccessfullyUpdated: 'Задача успешно обновлена',
+  taskSuccessfullyDeleted: 'Задача успешно удалена',
+  errorSavingTask: 'Ошибка при сохранении задачи',
+  errorGettingTaskList: 'Ошибка при получении списка задач',
+  titleRequired: 'Название задачи обязательно',
+  supervisor: 'Супервайзер',
+  executor: 'Исполнитель',
+  creator: 'Создатель',
 }
