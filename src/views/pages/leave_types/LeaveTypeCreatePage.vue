@@ -1,9 +1,17 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editLeaveType') : $t('createLeaveType') }}</h2>
-        <div>
+        <div class="mb-4">
             <label class="required">{{ $t('name') }}</label>
             <input type="text" v-model="name">
+        </div>
+        <div>
+            <label>{{ $t('color') || 'Цвет' }}</label>
+            <div class="flex items-center gap-2">
+                <input type="color" v-model="color" class="w-16 h-10 rounded border border-gray-300 cursor-pointer">
+                <input type="text" v-model="color" placeholder="#3B82F6" maxlength="7" 
+                    class="flex-1" pattern="^#[0-9A-Fa-f]{6}$">
+            </div>
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -42,6 +50,7 @@ export default {
     data() {
         return {
             name: this.editingItem ? this.editingItem.name : '',
+            color: this.editingItem && this.editingItem.color ? this.editingItem.color : '#3B82F6',
             editingItemId: this.editingItem ? this.editingItem.id : null,
             saveLoading: false,
             deleteDialog: false,
@@ -56,7 +65,8 @@ export default {
     methods: {
         getFormState() {
             return {
-                name: this.name
+                name: this.name,
+                color: this.color
             };
         },
         async save() {
@@ -67,16 +77,17 @@ export default {
 
             this.saveLoading = true;
             try {
+                const data = {
+                    name: this.name.trim(),
+                    color: this.color && this.color.trim() ? this.color.trim() : null
+                };
+                
                 if (this.editingItemId != null) {
                     var resp = await LeaveTypeController.updateItem(
                         this.editingItemId,
-                        {
-                            name: this.name.trim()
-                        });
+                        data);
                 } else {
-                    var resp = await LeaveTypeController.storeItem({
-                        name: this.name.trim()
-                    });
+                    var resp = await LeaveTypeController.storeItem(data);
                 }
                 if (resp.message) {
                     this.$emit('saved');
@@ -107,6 +118,7 @@ export default {
         },
         clearForm() {
             this.name = '';
+            this.color = '#3B82F6';
             this.editingItemId = null;
             this.resetFormChanges();
         },
@@ -122,9 +134,11 @@ export default {
             handler(newEditingItem) {
                 if (newEditingItem) {
                     this.name = newEditingItem.name || '';
+                    this.color = newEditingItem.color || '#3B82F6';
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     this.name = '';
+                    this.color = '#3B82F6';
                     this.editingItemId = null;
                 }
                 this.$nextTick(() => {

@@ -107,6 +107,7 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'name', label: 'name' },
+                { name: 'color', label: 'color', size: 100 },
                 { name: 'createdAt', label: 'creationDate' }
             ]
         }
@@ -119,6 +120,8 @@ export default {
             switch (c) {
                 case 'createdAt':
                     return i.formatCreatedAt();
+                case 'color':
+                    return i.color || '-';
                 default:
                     return i[c];
             }

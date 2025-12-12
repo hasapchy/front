@@ -59,16 +59,17 @@
                                 }"
                                 @click="handleDayClick(day)"
                             >
-                                <div 
-                                    v-for="leave in getLeavesForUserAndDay(user.id, day.date)"
-                                    :key="leave.id"
-                                    class="leave-bar"
-                                    :style="getLeaveBarStyle(leave, day.date)"
-                                    @click.stop="handleLeaveClick(leave)"
-                                    :title="`${leave.leaveTypeName} - ${leave.formatDateFrom()} - ${leave.formatDateTo()}`"
-                                >
-                                    <span class="leave-bar-text">{{ leave.leaveTypeName }}</span>
-                                </div>
+                            </div>
+                            <!-- Полоски отпусков - отображаются поверх ячеек -->
+                            <div 
+                                v-for="leave in getLeavesForUser(user.id)"
+                                :key="`leave-${leave.id}`"
+                                class="leave-bar-continuous"
+                                :style="getContinuousLeaveBarStyle(leave, user.id)"
+                                @click.stop="handleLeaveClick(leave)"
+                                :title="`${leave.leaveTypeName} - ${leave.formatDateFrom()} - ${leave.formatDateTo()}`"
+                            >
+                                <span class="leave-bar-text">{{ leave.leaveTypeName }}</span>
                             </div>
                         </div>
                     </div>
@@ -81,7 +82,10 @@
             <h3 class="text-sm font-semibold mb-3">{{ $t('leaveTypes') || 'Типы отпусков' }}</h3>
             <div class="flex flex-wrap gap-4">
                 <div v-for="leaveType in leaveTypes" :key="leaveType.id" class="flex items-center gap-2">
-                    <div class="w-5 h-5 rounded" :style="{ backgroundColor: getLeaveTypeColor(leaveType.id) }"></div>
+                    <div 
+                        class="w-5 h-5 rounded" 
+                        :style="{ backgroundColor: leaveType.color || '#9CA3AF' }"
+                    ></div>
                     <span class="text-sm">{{ leaveType.name }}</span>
                 </div>
             </div>
@@ -194,6 +198,102 @@ export default {
                        (checkDay.isBefore(leaveEnd, 'day') || checkDay.isSame(leaveEnd, 'day'));
             });
         },
+        getLeavesForUser(userId) {
+            return this.leaves.filter(leave => leave.userId === userId);
+        },
+        getContinuousLeaveBarStyle(leave, userId) {
+            const leaveStart = dayjs(leave.dateFrom).startOf('day');
+            const leaveEnd = dayjs(leave.dateTo).startOf('day');
+            
+            // Проверяем, что отпуск попадает в видимый период
+            const firstVisibleDay = dayjs(this.calendarDays[0].date).startOf('day');
+            const lastVisibleDay = dayjs(this.calendarDays[this.calendarDays.length - 1].date).startOf('day');
+            
+            if (leaveEnd.isBefore(firstVisibleDay, 'day') || leaveStart.isAfter(lastVisibleDay, 'day')) {
+                return { display: 'none' };
+            }
+            
+            // Находим индексы начала и конца отпуска в календаре
+            let actualStartIndex = -1;
+            let actualEndIndex = -1;
+            
+            // Определяем видимый диапазон отпуска
+            const visibleStart = leaveStart.isBefore(firstVisibleDay, 'day') ? firstVisibleDay : leaveStart;
+            const visibleEnd = leaveEnd.isAfter(lastVisibleDay, 'day') ? lastVisibleDay : leaveEnd;
+            
+            // Находим индексы для видимого диапазона
+            for (let i = 0; i < this.calendarDays.length; i++) {
+                const dayDate = dayjs(this.calendarDays[i].date).startOf('day');
+                
+                if (actualStartIndex === -1 && (dayDate.isSame(visibleStart, 'day') || dayDate.isAfter(visibleStart, 'day'))) {
+                    actualStartIndex = i;
+                }
+                
+                if (dayDate.isSame(visibleEnd, 'day') || (dayDate.isBefore(visibleEnd, 'day') && 
+                    (i === this.calendarDays.length - 1 || dayjs(this.calendarDays[i + 1].date).startOf('day').isAfter(visibleEnd, 'day')))) {
+                    actualEndIndex = i;
+                }
+            }
+            
+            // Если отпуск начинается до видимого периода
+            if (actualStartIndex === -1 && leaveStart.isBefore(firstVisibleDay, 'day')) {
+                actualStartIndex = 0;
+            }
+            
+            // Если отпуск заканчивается после видимого периода
+            if (actualEndIndex === -1 && leaveEnd.isAfter(lastVisibleDay, 'day')) {
+                actualEndIndex = this.calendarDays.length - 1;
+            }
+            
+            // Если отпуск не попадает в видимый период, не отображаем
+            if (actualStartIndex === -1 || actualEndIndex === -1 || actualStartIndex > actualEndIndex) {
+                return { display: 'none' };
+            }
+            
+            // Вычисляем позицию и ширину
+            const dayWidth = 60; // ширина одной ячейки дня
+            const left = actualStartIndex * dayWidth;
+            const spanDays = actualEndIndex - actualStartIndex + 1;
+            const width = spanDays * dayWidth;
+            
+            const color = leave.leaveType && leave.leaveType.color ? leave.leaveType.color : '#9CA3AF';
+            
+            // Определяем, является ли первый/последний день видимого периода началом/концом отпуска
+            const isStartVisible = dayjs(this.calendarDays[actualStartIndex].date).startOf('day').isSame(leaveStart, 'day');
+            const isEndVisible = dayjs(this.calendarDays[actualEndIndex].date).startOf('day').isSame(leaveEnd, 'day');
+            
+            // Вычисляем вертикальное смещение для перекрывающихся отпусков
+            const userLeaves = this.getLeavesForUser(userId);
+            let verticalOffset = 0;
+            const leaveIndex = userLeaves.findIndex(l => l.id === leave.id);
+            
+            // Если есть перекрывающиеся отпуска, смещаем вертикально
+            if (leaveIndex > 0) {
+                for (let i = 0; i < leaveIndex; i++) {
+                    const otherLeave = userLeaves[i];
+                    const otherStart = dayjs(otherLeave.dateFrom).startOf('day');
+                    const otherEnd = dayjs(otherLeave.dateTo).startOf('day');
+                    
+                    // Проверяем перекрытие по времени
+                    if (!(leaveEnd.isBefore(otherStart, 'day') || leaveStart.isAfter(otherEnd, 'day'))) {
+                        verticalOffset += 28; // высота полоски + небольшой отступ
+                    }
+                }
+            }
+            
+            const baseTop = 'calc(50% - 12px)';
+            const topValue = verticalOffset > 0 ? `calc(50% - 12px + ${verticalOffset}px)` : baseTop;
+            
+            return {
+                backgroundColor: color,
+                left: `${left}px`,
+                width: `${width}px`,
+                top: topValue,
+                borderRadius: isStartVisible && isEndVisible ? '0.25rem' : 
+                             isStartVisible ? '0.25rem 0 0 0.25rem' : 
+                             isEndVisible ? '0 0.25rem 0.25rem 0' : '0'
+            };
+        },
         getLeaveBarStyle(leave, dayDate) {
             const leaveStart = dayjs(leave.dateFrom).startOf('day');
             const leaveEnd = dayjs(leave.dateTo).startOf('day');
@@ -202,7 +302,7 @@ export default {
             const isStart = currentDay.isSame(leaveStart, 'day');
             const isEnd = currentDay.isSame(leaveEnd, 'day');
             
-            const color = this.getLeaveTypeColor(leave.leaveTypeId);
+            const color = leave.leaveType && leave.leaveType.color ? leave.leaveType.color : '#9CA3AF';
             
             return {
                 backgroundColor: color,
@@ -215,37 +315,6 @@ export default {
         },
         nextMonth() {
             this.currentDate = this.currentDate.add(1, 'month');
-        },
-        getLeaveTypeColor(leaveTypeId) {
-            // Расширенная палитра цветов для поддержки большего количества типов отпусков
-            const colors = [
-                '#3B82F6', // blue
-                '#10B981', // green
-                '#F59E0B', // amber
-                '#EF4444', // red
-                '#8B5CF6', // purple
-                '#EC4899', // pink
-                '#06B6D4', // cyan
-                '#F97316', // orange
-                '#14B8A6', // teal
-                '#84CC16', // lime
-                '#A855F7', // violet
-                '#F43F5E', // rose
-                '#0EA5E9', // sky
-                '#6366F1', // indigo
-                '#22C55E', // emerald
-                '#EAB308', // yellow
-                '#64748B', // slate
-                '#78716C', // stone
-                '#B91C1C', // dark red
-                '#1E40AF', // dark blue
-            ];
-            
-            // Используем ID типа отпуска для получения цвета
-            // Если типов больше, чем цветов (20), цвета будут повторяться циклически
-            // Это гарантирует, что каждый тип всегда получит один и тот же цвет
-            const index = Math.abs(leaveTypeId) % colors.length;
-            return colors[index];
         },
         handleLeaveClick(leave) {
             this.$emit('leave-click', leave);
@@ -394,6 +463,7 @@ export default {
     display: flex;
     flex: 1;
     min-width: fit-content;
+    position: relative;
 }
 
 .day-cell {
@@ -407,6 +477,7 @@ export default {
     display: flex;
     flex-direction: column;
     gap: 0.125rem;
+    z-index: 1;
 }
 
 .day-cell:hover {
@@ -442,6 +513,29 @@ export default {
     opacity: 0.9;
     transform: scale(1.02);
     z-index: 1;
+}
+
+.leave-bar-continuous {
+    position: absolute;
+    height: 24px;
+    padding: 0.125rem 0.5rem;
+    color: white;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.2s;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+    z-index: 2;
+    box-sizing: border-box;
+    transform-origin: left center;
+}
+
+.leave-bar-continuous:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+    z-index: 3;
 }
 
 .leave-bar-text {

@@ -5,11 +5,13 @@ export default class LeaveTypeDto {
   constructor(
     id,
     name,
+    color = null,
     createdAt = "",
     updatedAt = ""
   ) {
     this.id = id;
     this.name = name;
+    this.color = color;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
@@ -27,6 +29,7 @@ export default class LeaveTypeDto {
       return new LeaveTypeDto(
         data.id,
         data.name,
+        data.color || null,
         data.created_at,
         data.updated_at
       );
