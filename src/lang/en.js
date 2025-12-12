@@ -461,7 +461,13 @@ export default {
     present: 'to present',
     bonus: 'Add Bonus',
     penalty: 'Issue Penalty',
-<<<<<<< HEAD
+    advance: 'Issue Advance',
+    accrueSalary: 'Accrue Salary',
+    paySalary: 'Pay Salary',
+    salaryDifferenceHelpTitle: 'What\'s the difference?',
+    salaryDifferenceHelp: 'Salary accrual is money for work done by the employee (a debt record, employee owes us). Salary payment is the actual payment of money to the employee (not a debt, reduces employee debt).',
+    employeeClientNotFound: 'Client for employee not found',
+    employeeClientNotFoundDescription: 'To work with employee balance, you need to create a linked client with employee_id matching this employee\'s ID.',
 
     // Common fields
     title: 'Title',
@@ -489,13 +495,4 @@ export default {
     supervisor: 'Supervisor',
     executor: 'Executor',
     creator: 'Creator',
-=======
-    advance: 'Issue Advance',
-    accrueSalary: 'Accrue Salary',
-    paySalary: 'Pay Salary',
-    salaryDifferenceHelpTitle: 'What\'s the difference?',
-    salaryDifferenceHelp: 'Salary accrual is money for work done by the employee (a debt record, employee owes us). Salary payment is the actual payment of money to the employee (not a debt, reduces employee debt).',
-    employeeClientNotFound: 'Client for employee not found',
-    employeeClientNotFoundDescription: 'To work with employee balance, you need to create a linked client with employee_id matching this employee\'s ID.',
->>>>>>> origin/main
 }

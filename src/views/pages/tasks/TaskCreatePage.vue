@@ -1,8 +1,9 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editTask') : $t('createTask') }}</h2>
+        <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
         
-        <div>
+        <div v-show="currentTab === 'info'">
             <div>
                 <label class="required">{{ $t('title') }}</label>
                 <input type="text" v-model="title" required />
@@ -42,9 +43,9 @@
             </div>
 
             <div>
-                <label>{{ $t('supervisor') }}</label>
-                <select v-model="supervisorId">
-                    <option :value="null">{{ $t('no') }}</option>
+                <label class="required">{{ $t('supervisor') }}</label>
+                <select v-model="supervisorId" required>
+                    <option :value="null">{{ $t('select') }}</option>
                     <option v-for="user in users" :key="user.id" :value="user.id">
                         {{ user.name }}
                     </option>
@@ -52,14 +53,33 @@
             </div>
 
             <div>
-                <label>{{ $t('executor') }}</label>
-                <select v-model="executorId">
-                    <option :value="null">{{ $t('no') }}</option>
+                <label class="required">{{ $t('executor') }}</label>
+                <select v-model="executorId" required>
+                    <option :value="null">{{ $t('select') }}</option>
                     <option v-for="user in users" :key="user.id" :value="user.id">
                         {{ user.name }}
                     </option>
                 </select>
             </div>
+        </div>
+        
+        <div v-if="currentTab === 'files' && editingItem && editingItemId">
+            <FileUploader 
+                ref="fileUploader" 
+                :files="editingItem ? getFormattedFiles() : []"
+                :uploading="uploading" 
+                :disabled="!editingItemId"
+                :deleting="deletingFiles" 
+                @file-change="handleFileChange" 
+                @delete-file="showDeleteFileDialog"
+                @delete-multiple-files="showDeleteMultipleFilesDialog" />
+        </div>
+        
+        <div v-if="currentTab === 'comments' && editingItem && editingItemId" class="h-full">
+            <TimelinePanel 
+                type="task" 
+                :id="editingItemId"
+                :is-collapsed="false" />
         </div>
     </div>
 
@@ -96,6 +116,17 @@
         :confirm-text="$t('closeWithoutSaving')" 
         :leave-text="$t('stay')" />
     
+    <AlertDialog 
+        :dialog="deleteFileDialog" 
+        @confirm="confirmDeleteFile" 
+        @leave="closeDeleteFileDialog"
+        :descr="deleteFileIndex === 'multiple' ?
+            `${$t('confirmDeleteSelected')} (${selectedFileIds.length})?` :
+            `${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`" 
+        :confirm-text="$t('deleteFile')" 
+        :leave-text="$t('cancel')"
+        :confirm-loading="deletingFiles" />
+    
     <NotificationToast 
         :title="notificationTitle" 
         :subtitle="notificationSubtitle" 
@@ -111,6 +142,10 @@ import ProjectController from '@/api/ProjectController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
+import TabBar from '@/views/components/app/forms/TabBar.vue';
+import FileUploader from '@/views/components/app/forms/FileUploader.vue';
+import TimelinePanel from '@/views/components/app/dialog/TimelinePanel.vue';
+import TaskDto from '@/dto/task/TaskDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
@@ -121,7 +156,10 @@ export default {
     components: { 
         PrimaryButton, 
         AlertDialog, 
-        NotificationToast 
+        NotificationToast,
+        TabBar,
+        FileUploader,
+        TimelinePanel
     },
     props: {
         editingItem: { type: Object, default: null }
@@ -130,7 +168,7 @@ export default {
         return {
             title: this.editingItem ? this.editingItem.title : '',
             description: this.editingItem ? this.editingItem.description : '',
-            status: this.editingItem ? this.editingItem.status : 'pending',
+            status: this.editingItem ? this.editingItem.status : 'in_progress',
             deadline: this.editingItem && this.editingItem.deadline
                 ? new Date(this.editingItem.deadline).toISOString().substring(0, 16)
                 : '',
@@ -149,6 +187,55 @@ export default {
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
+            currentTab: 'info',
+            tabs: [
+                { name: 'info', label: 'info' },
+                { name: 'files', label: 'files' },
+                { name: 'comments', label: 'comments' },
+            ],
+            uploading: false,
+            deleteFileDialog: false,
+            deleteFileIndex: -1,
+            selectedFileIds: [],
+            deletingFiles: false,
+        }
+    },
+    computed: {
+        visibleTabs() {
+            const baseTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name === 'info');
+            return baseTabs;
+        },
+        translatedTabs() {
+            return this.visibleTabs.map(tab => ({
+                ...tab,
+                label: this.$t(tab.label)
+            }));
+        },
+    },
+    watch: {
+        editingItem: {
+            handler(newEditingItem) {
+                if (newEditingItem) {
+                    this.title = newEditingItem.title || '';
+                    this.description = newEditingItem.description || '';
+                    this.status = newEditingItem.status || 'in_progress';
+                    this.deadline = newEditingItem.deadline
+                        ? new Date(newEditingItem.deadline).toISOString().substring(0, 16)
+                        : '';
+                    this.projectId = newEditingItem.project?.id || null;
+                    this.supervisorId = newEditingItem.supervisor?.id || null;
+                    this.executorId = newEditingItem.executor?.id || null;
+                    this.editingItemId = newEditingItem.id || null;
+                    this.currentTab = 'info';
+                } else {
+                    this.clearForm();
+                }
+                this.$nextTick(() => {
+                    this.saveInitialState();
+                });
+            },
+            deep: true,
+            immediate: true
         }
     },
     mounted() {
@@ -161,9 +248,29 @@ export default {
         });
     },
     methods: {
+        clearForm() {
+            this.title = '';
+            this.description = '';
+            this.status = 'in_progress';
+            this.deadline = '';
+            this.projectId = null;
+            this.supervisorId = null;
+            this.executorId = null;
+            this.editingItemId = null;
+            this.currentTab = 'info';
+            this.resetFormChanges();
+        },
+        changeTab(tabName) {
+            if (!this.visibleTabs.find(tab => tab.name === tabName)) {
+                return;
+            }
+            this.currentTab = tabName;
+        },
         async fetchUsers() {
             try {
-                const users = await UsersController.getAllItems();
+                const users = await UsersController.getListItems();
+                console.log(users);
+                console.log("***---***");
                 this.users = users || [];
             } catch (error) {
                 console.error('Error fetching users:', error);
@@ -172,18 +279,65 @@ export default {
         },
         async fetchProjects() {
             try {
-                const projects = await ProjectController.getAllItems();
+                const projects = await ProjectController.getListItems();
                 this.projects = projects || [];
             } catch (error) {
                 console.error('Error fetching projects:', error);
                 this.projects = [];
             }
         },
+        getFormattedFiles() {
+            if (!this.editingItem || !this.editingItem.files) return [];
+            const taskDto = new TaskDto(
+                this.editingItem.id,
+                this.editingItem.title,
+                this.editingItem.description,
+                this.editingItem.status,
+                this.editingItem.deadline,
+                this.editingItem.creator?.id,
+                this.editingItem.creator,
+                this.editingItem.supervisor?.id,
+                this.editingItem.supervisor,
+                this.editingItem.executor?.id,
+                this.editingItem.executor,
+                this.editingItem.project?.id,
+                this.editingItem.project,
+                this.editingItem.company_id,
+                this.editingItem.files || [],
+                this.editingItem.comments || [],
+                this.editingItem.created_at,
+                this.editingItem.updated_at
+            );
+            return taskDto.getFormattedFiles();
+        },
         async save() {
+            if (this.uploading) {
+                alert(this.$t('waitForFileUpload') || 'Дождитесь завершения загрузки файлов');
+                return;
+            }
+
             if (!this.title || this.title.trim() === '') {
                 this.showNotification(
                     this.$t('error'), 
-                    this.$t('titleRequired'), 
+                    this.$t('titleRequired') || 'Заголовок обязателен', 
+                    true
+                );
+                return;
+            }
+
+            if (!this.supervisorId) {
+                this.showNotification(
+                    this.$t('error'), 
+                    this.$t('supervisorRequired') || 'Постановщик обязателен', 
+                    true
+                );
+                return;
+            }
+
+            if (!this.executorId) {
+                this.showNotification(
+                    this.$t('error'), 
+                    this.$t('executorRequired') || 'Исполнитель обязателен', 
                     true
                 );
                 return;
@@ -197,8 +351,8 @@ export default {
                     status: this.status,
                     deadline: this.deadline || null,
                     project_id: this.projectId || null,
-                    supervisor_id: this.supervisorId || null,
-                    executor_id: this.executorId || null,
+                    supervisor_id: this.supervisorId,
+                    executor_id: this.executorId,
                 };
 
                 let response;
@@ -206,6 +360,7 @@ export default {
                     response = await TaskController.updateItem(this.editingItemId, data);
                 } else {
                     response = await TaskController.createItem(data);
+                    this.editingItemId = response.data.id;
                 }
 
                 this.showNotification(
@@ -256,6 +411,109 @@ export default {
         },
         closeDeleteDialog() {
             this.deleteDialog = false;
+        },
+        async handleFileChange(files) {
+            if (!this.editingItemId) {
+                alert(this.$t('saveTaskFirstThenAttachFiles') || 'Сначала сохраните задачу, затем прикрепите файлы');
+                return;
+            }
+            if (!files || !files.length) return;
+
+            const fileArray = Array.from(files);
+
+            const uploadingFileIds = fileArray.map((file, index) => ({
+                id: Date.now() + index,
+                name: file.name,
+                size: file.size,
+                progress: 0,
+                error: null
+            }));
+
+            this.$refs.fileUploader.uploadingFiles = uploadingFileIds;
+
+            try {
+                const progressIntervals = uploadingFileIds.map(fileInfo => {
+                    return setInterval(() => {
+                        const currentProgress = this.$refs.fileUploader.uploadingFiles.find(f => f.id === fileInfo.id)?.progress || 0;
+                        if (currentProgress < 90) {
+                            this.$refs.fileUploader.updateUploadProgress(fileInfo.id, currentProgress + Math.random() * 10);
+                        }
+                    }, 200);
+                });
+
+                const uploadedFiles = await TaskController.uploadFiles(this.editingItemId, fileArray);
+
+                progressIntervals.forEach(interval => clearInterval(interval));
+
+                uploadingFileIds.forEach(fileInfo => {
+                    this.$refs.fileUploader.updateUploadProgress(fileInfo.id, 100);
+                });
+
+                if (this.editingItem && this.editingItem.files) {
+                    this.editingItem.files = uploadedFiles.files;
+                }
+
+                setTimeout(() => {
+                    this.$refs.fileUploader.uploadingFiles = [];
+                }, 2000);
+
+            } catch (error) {
+                console.error('Ошибка при загрузке файлов:', error);
+
+                uploadingFileIds.forEach(fileInfo => {
+                    this.$refs.fileUploader.updateUploadProgress(fileInfo.id, 0, 'Ошибка загрузки файла');
+                });
+
+                alert('Произошла ошибка при загрузке файлов');
+
+                setTimeout(() => {
+                    this.$refs.fileUploader.uploadingFiles = [];
+                }, 3000);
+            }
+        },
+        showDeleteFileDialog(filePath) {
+            this.deleteFileIndex = filePath;
+            this.deleteFileDialog = true;
+        },
+        showDeleteMultipleFilesDialog(selectedFileIds) {
+            if (!selectedFileIds || selectedFileIds.length === 0) return;
+            this.selectedFileIds = selectedFileIds;
+            this.deleteFileIndex = 'multiple';
+            this.deleteFileDialog = true;
+        },
+        closeDeleteFileDialog() {
+            this.deleteFileDialog = false;
+            this.deleteFileIndex = -1;
+        },
+        async confirmDeleteFile() {
+            if (this.deleteFileIndex === -1 || !this.editingItemId) return;
+
+            this.deletingFiles = true;
+
+            try {
+                let updatedFiles;
+
+                if (this.deleteFileIndex === 'multiple') {
+                    for (const filePath of this.selectedFileIds) {
+                        updatedFiles = await TaskController.deleteFile(this.editingItemId, filePath);
+                    }
+                    if (this.$refs.fileUploader) {
+                        this.$refs.fileUploader.selectedFileIds = [];
+                    }
+                    this.selectedFileIds = [];
+                } else {
+                    updatedFiles = await TaskController.deleteFile(this.editingItemId, this.deleteFileIndex);
+                }
+
+                if (this.editingItem && this.editingItem.files && updatedFiles) {
+                    this.editingItem.files = updatedFiles.files;
+                }
+            } catch (e) {
+                alert('Ошибка удаления файла');
+            } finally {
+                this.deletingFiles = false;
+                this.closeDeleteFileDialog();
+            }
         },
         getInitialState() {
             return {
