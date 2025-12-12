@@ -99,6 +99,7 @@ export const STORE_CONFIG = {
     "cashRegisterFilter",
     "menuItems",
     "kanbanCardFields",
+    "viewModes",
   ],
 
   loadingFlagsToReset: [
