@@ -178,7 +178,7 @@
         </div>
 
         <!-- Сумма заказа (только для заказов) -->
-        <div v-if="!isProjectMode && showField('totalPrice')" class="mt-3 pt-3 border-t border-gray-100">
+        <div v-if="!isProjectMode && !isTaskMode && showField('totalPrice')" class="mt-3 pt-3 border-t border-gray-100">
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center space-x-1">
                     <i class="fas fa-money-bill-wave text-green-600 text-xs"></i>

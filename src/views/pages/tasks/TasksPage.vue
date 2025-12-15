@@ -463,8 +463,25 @@ export default {
                         created_at: task.createdAt,
                     }));
                     this.data = { ...new_data, data: this.allKanbanItems, meta: { ...new_data.meta, current_page: 1, last_page: 1 } };
-                } else {
-                    this.data = new_data;
+                }  else {
+                    // Преобразуем данные для табличного вида
+                    const tasks = TaskDto.fromApiArray(new_data.data || []);
+                    // Преобразуем TaskDto объекты в простые объекты для таблицы
+                    const tableData = tasks.map(task => ({
+                        id: task.id,
+                        title: task.title,
+                        description: task.description,
+                        status: task.status,
+                        deadline: task.deadline,
+                        creator: task.creator,
+                        supervisor: task.supervisor,
+                        executor: task.executor,
+                        project: task.project,
+                        created_at: task.createdAt,
+                        updated_at: task.updatedAt,
+                        frontend_link: `/tasks/${task.id}`,
+                    }));
+                    this.data = { ...new_data, data: tableData };
                 }
             } catch (error) {
                 this.showNotification(
