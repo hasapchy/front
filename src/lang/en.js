@@ -495,4 +495,6 @@ export default {
     supervisor: 'Supervisor',
     executor: 'Executor',
     creator: 'Creator',
+    select: 'Select',
+    errorDeletingTask: 'Error deleting task',
 }

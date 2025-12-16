@@ -1161,4 +1161,6 @@ export default {
   supervisor: 'Ýolbaşçy',
   executor: 'Ýerine ýetiriji',
   creator: 'Dörediji',
+  select: 'Saýla',
+  errorDeletingTask: 'Wezipe pozulmakda ýalňyşlyk',
 }

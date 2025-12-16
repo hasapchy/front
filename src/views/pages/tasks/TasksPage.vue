@@ -3,10 +3,9 @@
     
     <transition name="fade" mode="out-in">
         <!-- Табличный вид -->
-        <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
-            <div class="flex justify-between items-center bg-red-600">{{data.data}} </div>
-            <DraggableTable table-key="admin.tasks" :columns-config="columnsConfig" :table-data="data.data"
-                :item-mapper="itemMapper" :onItemClick="(i) => showModal(i)" @selectionChange="selectedIds = $event">
+        <div v-if="!loading && viewMode === 'table' && rawTasks.length > 0" :key="`table-${$i18n.locale}`">
+            <DraggableTable table-key="admin.tasks" :columns-config="columnsConfig" :table-data="tableTasks"
+                :item-mapper="itemMapper" :onItemClick="handleItemClick" @selectionChange="selectedIds = $event">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
                         :show-filters="true"
@@ -14,7 +13,7 @@
                         :active-filters-count="getActiveFiltersCount()"
                         :on-filters-reset="resetFilters"
                         :show-pagination="true"
-                        :pagination-data="data ? { currentPage: data.meta.current_page, lastPage: data.meta.last_page, perPage: perPage, perPageOptions: perPageOptions } : null"
+                        :pagination-data="paginationData"
                         :on-page-change="fetchItems"
                         :on-per-page-change="handlePerPageChange"
                         :resetColumns="resetColumns"
@@ -86,7 +85,7 @@
                         </template>
 
                         <template #right>
-                            <Pagination v-if="data != null" :currentPage="data.meta.current_page" :lastPage="data.meta.last_page"
+                            <Pagination v-if="paginationData" :currentPage="paginationData.currentPage" :lastPage="paginationData.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
                                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
                         </template>
@@ -119,7 +118,7 @@
         </div>
 
         <!-- Канбан вид -->
-        <div v-else-if="data && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
+        <div v-else-if="!loading && viewMode === 'kanban' && rawTasks.length > 0" key="kanban-view" class="kanban-view-container">
             <TableControlsBar
                 :show-filters="true"
                 :has-active-filters="hasActiveFilters"
@@ -195,7 +194,7 @@
             </TableControlsBar>
             
             <KanbanBoard
-                :orders="allKanbanItems"
+                :orders="kanbanTasks"
                 :statuses="taskStatuses"
                 :projects="[]"
                 :selected-ids="selectedIds"
@@ -275,29 +274,43 @@ export default {
     },
     data() {
         return {
-            viewMode: 'table', // 'table' или 'kanban'
+            // Единый источник данных - массив TaskDto объектов
+            rawTasks: [],
+            meta: null,
+            
+            // Состояние UI
+            viewMode: 'table',
+            selectedIds: [],
+            
+            // Фильтры
             statusFilter: 'all',
             dateFilter: 'all_time',
             startDate: '',
             endDate: '',
+            
+            // Загрузка
+            debounceTimer: null,
+            
+            // Пендинг-обновления статусов
+            pendingStatusUpdates: new Map(),
+            batchStatusId: '',
+            
+            // Конфигурация
             controller: TaskController,
             cacheInvalidationType: 'tasks',
             savedSuccessText: this.$t('taskSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingTask'),
             deletedSuccessText: this.$t('taskSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingTask'),
-            debounceTimer: null,
-            pendingStatusUpdates: new Map(),
-            batchStatusId: '',
-            allKanbanItems: [],
+            
             columnsConfig: [
-                { key: 'title', label: 'title', sortable: true },
-                { key: 'status', label: 'status', sortable: true },
-                { key: 'creator', label: 'creator', sortable: false },
-                { key: 'supervisor', label: 'supervisor', sortable: false },
-                { key: 'executor', label: 'executor', sortable: false },
-                { key: 'deadline', label: 'deadline', sortable: true },
-                { key: 'created_at', label: 'createdAt', sortable: true },
+                { name: 'title', label: 'title', sortable: true },
+                { name: 'status', label: 'status', sortable: true, html: true },
+                { name: 'creator', label: 'creator', sortable: false },
+                { name: 'supervisor', label: 'supervisor', sortable: false },
+                { name: 'executor', label: 'executor', sortable: false },
+                { name: 'deadline', label: 'deadline', sortable: true },
+                { name: 'created_at', label: 'createdAt', sortable: true },
             ],
             taskStatuses: [
                 { id: 'pending', name: this.$t('pending') || 'Ожидает', isActive: true },
@@ -314,10 +327,6 @@ export default {
         const savedViewMode = localStorage.getItem('tasks_viewMode');
         if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
             this.viewMode = savedViewMode;
-        }
-        
-        if (this.viewMode === 'kanban') {
-            this.allKanbanItems = [];
         }
         
         this.fetchItems();
@@ -440,51 +449,24 @@ export default {
                 const status = this.statusFilter === 'all' ? '' : this.statusFilter;
                 const { dateFrom, dateTo } = this.getDateRange();
                 
-                const new_data = await TaskController.getItems(page, this.searchQuery, status, per_page, dateFrom, dateTo);
+                const response = await TaskController.getItems(page, this.searchQuery, status, per_page, dateFrom, dateTo);
                 
-                if (this.viewMode === 'kanban') {
-                    // Преобразуем данные в формат для канбана
-                    const tasks = TaskDto.fromApiArray(new_data.data || []);
-                    this.allKanbanItems = tasks.map(task => ({
-                        id: task.id,
-                        title: task.title,
-                        description: task.description,
-                        statusId: task.status,
-                        statusName: task.getStatusBadge().text,
-                        deadline: task.deadline,
-                        creator: task.creator,
-                        supervisor: task.supervisor,
-                        executor: task.executor,
-                        project: task.project,
-                        created_at: task.createdAt,
-                    }));
-                    this.data = { ...new_data, data: this.allKanbanItems, meta: { ...new_data.meta, current_page: 1, last_page: 1 } };
-                }  else {
-                    // Преобразуем данные для табличного вида
-                    const tasks = TaskDto.fromApiArray(new_data.data || []);
-                    // Преобразуем TaskDto объекты в простые объекты для таблицы
-                    const tableData = tasks.map(task => ({
-                        id: task.id,
-                        title: task.title,
-                        description: task.description,
-                        status: task.status,
-                        deadline: task.deadline,
-                        creator: task.creator,
-                        supervisor: task.supervisor,
-                        executor: task.executor,
-                        project: task.project,
-                        created_at: task.createdAt,
-                        updated_at: task.updatedAt,
-                        frontend_link: `/tasks/${task.id}`,
-                    }));
-                    this.data = { ...new_data, data: tableData };
-                }
+                // Единый источник данных - сохраняем TaskDto объекты
+                this.rawTasks = TaskDto.fromApiArray(response.data || []);
+                this.meta = response.meta || {
+                    current_page: page,
+                    last_page: 1,
+                    per_page: per_page,
+                    total: 0
+                };
             } catch (error) {
                 this.showNotification(
                     this.$t('errorGettingTaskList'), 
                     this.getApiErrorMessage(error), 
                     true
                 );
+                this.rawTasks = [];
+                this.meta = null;
             }
             if (!silent) {
                 this.loading = false;
@@ -523,14 +505,10 @@ export default {
         handleTaskMoved(updateData) {
             try {
                 if (updateData.type === 'status') {
-                    const items = this.viewMode === 'kanban' ? this.allKanbanItems : this.data.data;
-                    const task = items.find(t => t.id === updateData.orderId);
+                    // Обновляем статус в rawTasks (единый источник данных)
+                    const task = this.rawTasks.find(t => t.id === updateData.orderId);
                     if (task) {
-                        task.statusId = updateData.statusId;
-                        const status = this.taskStatuses.find(s => s.id === updateData.statusId);
-                        if (status) {
-                            task.statusName = status.name;
-                        }
+                        task.status = updateData.statusId;
                     }
                     
                     this.pendingStatusUpdates.set(updateData.orderId, updateData.statusId);
@@ -539,7 +517,7 @@ export default {
             } catch (error) {
                 const errors = this.getApiErrorMessage(error);
                 this.showNotification(this.$t('error'), errors, true);
-                this.fetchItems(this.data?.meta?.current_page || 1, true);
+                this.fetchItems(this.meta?.current_page || 1, true);
             }
         },
         debouncedStatusUpdate: debounce(function() {
@@ -558,18 +536,34 @@ export default {
             const promises = [];
             updatesByStatus.forEach((taskIds, statusId) => {
                 const promise = Promise.all(
-                    taskIds.map(taskId => TaskController.updateItem(taskId, { status: statusId }))
+                    taskIds.map(taskId => {
+                        // Находим задачу для получения supervisor_id и executor_id
+                        const task = this.rawTasks.find(t => t.id === taskId);
+                        const updateData = { status: statusId };
+                        
+                        // Добавляем обязательные поля для валидации
+                        if (task) {
+                            if (task.supervisorId) updateData.supervisor_id = task.supervisorId;
+                            if (task.executorId) updateData.executor_id = task.executorId;
+                        }
+                        
+                        return TaskController.updateItem(taskId, updateData);
+                    })
                 ).catch(error => {
                     const errors = this.getApiErrorMessage(error);
                     this.showNotification(this.$t('error'), errors, true);
-                    this.fetchItems(this.data?.meta?.current_page || 1, true);
+                    this.fetchItems(this.meta?.current_page || 1, true);
                 });
                 promises.push(promise);
             });
             
             Promise.all(promises).then(async () => {
                 await this.$store.dispatch('invalidateCache', { type: 'tasks' });
+                await this.fetchItems(this.meta?.current_page || 1, true);
                 this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
+            }).catch(error => {
+                const errors = this.getApiErrorMessage(error);
+                this.showNotification(this.$t('error'), errors, true);
             });
         }, 500),
         toggleSelectRow(id) {
@@ -596,10 +590,20 @@ export default {
             if (!statusId || this.selectedIds.length === 0) return;
             
             Promise.all(
-                this.selectedIds.map(id => TaskController.updateItem(id, { status: statusId }))
+                this.selectedIds.map(id => {
+                    const task = this.rawTasks.find(t => t.id === id);
+                    const updateData = { status: statusId };
+                    
+                    if (task) {
+                        if (task.supervisorId) updateData.supervisor_id = task.supervisorId;
+                        if (task.executorId) updateData.executor_id = task.executorId;
+                    }
+                    
+                    return TaskController.updateItem(id, updateData);
+                })
             ).then(async () => {
                 await this.$store.dispatch('invalidateCache', { type: 'tasks' });
-                await this.fetchItems(this.data?.meta?.current_page || 1, true);
+                await this.fetchItems(this.meta?.current_page || 1, true);
                 this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
                 this.selectedIds = [];
             }).catch(error => {
@@ -611,18 +615,9 @@ export default {
         viewMode: {
             handler(newMode) {
                 localStorage.setItem('tasks_viewMode', newMode);
-                
-                if (newMode === 'kanban') {
-                    this.allKanbanItems = [];
-                    this.$nextTick(() => {
-                        this.fetchItems(1, false);
-                    });
-                } else {
-                    this.allKanbanItems = [];
-                    this.$nextTick(() => {
-                        this.fetchItems(1, false);
-                    });
-                }
+                this.$nextTick(() => {
+                    this.fetchItems(1, false);
+                });
             },
             immediate: false
         }
@@ -631,6 +626,52 @@ export default {
         hasActiveFilters() {
             return this.statusFilter !== 'all' || this.dateFilter !== 'all_time';
         },
+        
+        // Преобразование rawTasks в формат для таблицы
+        tableTasks() {
+            return this.rawTasks.map(task => ({
+                id: task.id,
+                title: task.title,
+                description: task.description,
+                status: task.status,
+                deadline: task.deadline,
+                creator: task.creator,
+                supervisor: task.supervisor,
+                executor: task.executor,
+                project: task.project,
+                created_at: task.createdAt,
+                updated_at: task.updatedAt,
+                frontend_link: `/tasks/${task.id}`,
+            }));
+        },
+        
+        // Преобразование rawTasks в формат для канбана
+        kanbanTasks() {
+            return this.rawTasks.map(task => ({
+                id: task.id,
+                title: task.title,
+                description: task.description,
+                statusId: task.status,
+                statusName: task.getStatusBadge().text,
+                deadline: task.deadline,
+                creator: task.creator,
+                supervisor: task.supervisor,
+                executor: task.executor,
+                project: task.project,
+                created_at: task.createdAt,
+            }));
+        },
+        
+        // Данные для пагинации
+        paginationData() {
+            if (!this.meta) return null;
+            return {
+                currentPage: this.meta.current_page || 1,
+                lastPage: this.meta.last_page || 1,
+                perPage: this.perPage || 20,
+                perPageOptions: this.perPageOptions || [10, 20, 50, 100]
+            };
+        }
     },
 }
 </script>

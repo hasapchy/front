@@ -1384,4 +1384,6 @@ export default {
   supervisor: 'Супервайзер',
   executor: 'Исполнитель',
   creator: 'Создатель',
+  select: 'Выбрать',
+  errorDeletingTask: 'Ошибка при удалении задачи',
 }
