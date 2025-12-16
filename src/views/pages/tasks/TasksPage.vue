@@ -1,0 +1,673 @@
+<template>
+    <BatchButton
+        v-if="selectedIds.length && viewMode === 'table'"
+        :selected-ids="selectedIds"
+        :batch-actions="getBatchActions()"
+        :statuses="statuses"
+        :handle-change-status="handleChangeStatus"
+        :show-status-select="true"
+    />
+    
+    <transition name="fade" mode="out-in">
+        <!-- Табличный вид -->
+        <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
+            <DraggableTable table-key="admin.tasks" :columns-config="columnsConfig" :table-data="data.items"
+                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" @selectionChange="selectedIds = $event">
+                <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+                    <TableControlsBar
+                        :show-filters="true"
+                        :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()"
+                        :on-filters-reset="resetFilters"
+                        :show-pagination="true"
+                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+                        :on-page-change="fetchItems"
+                        :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns"
+                        :columns="columns"
+                        :toggleVisible="toggleVisible"
+                        :log="log">
+                        <template #left>
+                            <PrimaryButton 
+                                :onclick="() => { showModal(null) }" 
+                                icon="fas fa-plus"
+                                :disabled="!$store.getters.hasPermission('tasks_create')">
+                            </PrimaryButton>
+                            
+                            <FiltersContainer
+                                :has-active-filters="hasActiveFilters"
+                                :active-filters-count="getActiveFiltersCount()"
+                                @reset="resetFilters">
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
+                                    <select v-model="statusFilter" @change="debouncedFetchItems" class="w-full">
+                                        <option value="all">{{ $t('allStatuses') }}</option>
+                                        <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
+                                            {{ status.name }}
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
+                                    <select v-model="dateFilter" @change="debouncedFetchItems" class="w-full">
+                                        <option value="all_time">{{ $t('allTime') }}</option>
+                                        <option value="today">{{ $t('today') }}</option>
+                                        <option value="yesterday">{{ $t('yesterday') }}</option>
+                                        <option value="this_week">{{ $t('thisWeek') }}</option>
+                                        <option value="this_month">{{ $t('thisMonth') }}</option>
+                                        <option value="last_week">{{ $t('lastWeek') }}</option>
+                                        <option value="last_month">{{ $t('lastMonth') }}</option>
+                                        <option value="custom">{{ $t('selectDates') }}</option>
+                                    </select>
+                                </div>
+                                
+                                <div v-if="dateFilter === 'custom'" class="space-y-2">
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
+                                        <input type="date" v-model="startDate" @change="debouncedFetchItems" class="w-full" />
+                                    </div>
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
+                                        <input type="date" v-model="endDate" @change="debouncedFetchItems" class="w-full" />
+                                    </div>
+                                </div>
+                            </FiltersContainer>
+
+                            <div class="flex items-center border border-gray-300 rounded overflow-hidden">
+                                <button 
+                                    @click="viewMode = 'table'"
+                                    class="px-3 py-2 transition-colors"
+                                    :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                                    <i class="fas fa-table"></i>
+                                </button>
+                                <button 
+                                    @click="viewMode = 'kanban'"
+                                    class="px-3 py-2 transition-colors"
+                                    :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                                    <i class="fas fa-columns"></i>
+                                </button>
+                            </div>
+                        </template>
+
+                        <template #right>
+                            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
+                                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+                                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                        </template>
+                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+                                <ul>
+                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
+                                        @change="log">
+                                        <li v-for="(element, index) in columns" :key="element.name"
+                                            @click="toggleVisible(index)"
+                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                <div>
+                                                    <i class="text-sm mr-2 text-[#337AB7]"
+                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
+                                                </div>
+                                                <div><i
+                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </draggable>
+                                </ul>
+                            </TableFilterButton>
+                        </template>
+                    </TableControlsBar>
+                </template>
+            </DraggableTable>
+        </div>
+
+        <!-- Канбан вид -->
+        <div v-else-if="data && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
+            <TableControlsBar
+                :show-filters="true"
+                :has-active-filters="hasActiveFilters"
+                :active-filters-count="getActiveFiltersCount()"
+                :on-filters-reset="resetFilters"
+                :show-pagination="false">
+                <template #left>
+                    <PrimaryButton 
+                        :onclick="() => { showModal(null) }" 
+                        icon="fas fa-plus"
+                        :disabled="!$store.getters.hasPermission('tasks_create')">
+                    </PrimaryButton>
+                    
+                    <FiltersContainer
+                        :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()"
+                        @reset="resetFilters">
+                        <div>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
+                            <select v-model="statusFilter" @change="debouncedFetchItems" class="w-full">
+                                <option value="all">{{ $t('allStatuses') }}</option>
+                                <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
+                                    {{ status.name }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
+                            <select v-model="dateFilter" @change="debouncedFetchItems" class="w-full">
+                                <option value="all_time">{{ $t('allTime') }}</option>
+                                <option value="today">{{ $t('today') }}</option>
+                                <option value="yesterday">{{ $t('yesterday') }}</option>
+                                <option value="this_week">{{ $t('thisWeek') }}</option>
+                                <option value="this_month">{{ $t('thisMonth') }}</option>
+                                <option value="last_week">{{ $t('lastWeek') }}</option>
+                                <option value="last_month">{{ $t('lastMonth') }}</option>
+                                <option value="custom">{{ $t('selectDates') }}</option>
+                            </select>
+                        </div>
+                        
+                        <div v-if="dateFilter === 'custom'" class="space-y-2">
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
+                                <input type="date" v-model="startDate" @change="debouncedFetchItems" class="w-full" />
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
+                                <input type="date" v-model="endDate" @change="debouncedFetchItems" class="w-full" />
+                            </div>
+                        </div>
+                    </FiltersContainer>
+
+                    <div class="flex items-center border border-gray-300 rounded overflow-hidden">
+                        <button 
+                            @click="viewMode = 'table'"
+                            class="px-3 py-2 transition-colors"
+                            :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                            <i class="fas fa-table"></i>
+                        </button>
+                        <button 
+                            @click="viewMode = 'kanban'"
+                            class="px-3 py-2 transition-colors"
+                            :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                            <i class="fas fa-columns"></i>
+                        </button>
+                    </div>
+                </template>
+                <template #right>
+                    <KanbanFieldsButton mode="tasks" />
+                </template>
+            </TableControlsBar>
+            
+            <KanbanBoard
+                :orders="kanbanTasks"
+                :statuses="statuses"
+                :projects="[]"
+                :selected-ids="selectedIds"
+                :loading="loading"
+                :currency-symbol="''"
+                :is-project-mode="false"
+                :batch-status-id="batchStatusId"
+                @order-moved="handleTaskMoved"
+                @card-dblclick="showModal"
+                @card-select-toggle="toggleSelectRow"
+                @column-select-toggle="handleColumnSelectToggle"
+                @batch-status-change="handleBatchStatusChangeFromToolbar"
+                @batch-delete="() => deleteItems(selectedIds)"
+                @clear-selection="() => selectedIds = []"
+            />
+        </div>
+
+        <!-- Загрузка -->
+        <div v-else key="loader" class="flex justify-center items-center h-64">
+            <SpinnerIcon />
+        </div>
+    </transition>
+    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
+        <TaskCreatePage v-if="modalDialog" ref="taskForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
+    </SideModalDialog>
+    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
+        :is-danger="notificationIsDanger" @close="closeNotification" />
+            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
+                  :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+</template>
+
+<script>
+import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
+import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
+import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import Pagination from '@/views/components/app/buttons/Pagination.vue';
+import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
+import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
+import KanbanBoard from '@/views/components/app/kanban/KanbanBoard.vue';
+import TaskController from '@/api/TaskController';
+import TaskCreatePage from '@/views/pages/tasks/TaskCreatePage.vue';
+import notificationMixin from '@/mixins/notificationMixin';
+import modalMixin from '@/mixins/modalMixin';
+import crudEventMixin from '@/mixins/crudEventMixin';
+import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
+import batchActionsMixin from '@/mixins/batchActionsMixin';
+import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
+import { highlightMatches } from '@/utils/searchUtils';
+import searchMixin from '@/mixins/searchMixin';
+import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
+import debounce from "lodash.debounce";
+import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
+import { markRaw } from 'vue';
+import { VueDraggableNext } from 'vue-draggable-next';
+
+export default {
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin],
+    components: { 
+        NotificationToast, 
+        PrimaryButton, 
+        SideModalDialog, 
+        Pagination, 
+        DraggableTable, 
+        KanbanBoard, 
+        TaskCreatePage, 
+        BatchButton, 
+        AlertDialog, 
+        TableControlsBar, 
+        TableFilterButton, 
+        FiltersContainer, 
+        KanbanFieldsButton, 
+        StatusSelectCell,
+        draggable: VueDraggableNext
+    },
+    data() {
+        return {
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
+            viewMode: 'table',
+            statusFilter: 'all',
+            dateFilter: 'all_time',
+            startDate: '',
+            endDate: '',
+            debounceTimer: null,
+            pendingStatusUpdates: new Map(),
+            batchStatusId: '',
+            allKanbanItems: [],
+            statuses: [],
+            controller: TaskController,
+            cacheInvalidationType: 'tasks',
+            savedSuccessText: this.$t('taskSuccessfullyAdded'),
+            savedErrorText: this.$t('errorSavingTask'),
+            deletedSuccessText: this.$t('taskSuccessfullyDeleted'),
+            deletedErrorText: this.$t('errorDeletingTask'),
+        }
+    },
+    computed: {
+        taskStatuses() {
+            return this.$store.getters.taskStatuses || [];
+        },
+        columnsConfig() {
+            return [
+                { name: 'title', label: 'title', sortable: true },
+                { 
+                    name: 'status', 
+                    label: 'status', 
+                    component: markRaw(StatusSelectCell), 
+                    props: (i) => ({ 
+                        id: i.id, 
+                        value: i.statusId || (i.status?.id), 
+                        statuses: this.statuses, 
+                        onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) 
+                    }), 
+                },
+                { name: 'creator', label: 'creator', sortable: false },
+                { name: 'supervisor', label: 'supervisor', sortable: false },
+                { name: 'executor', label: 'executor', sortable: false },
+                { name: 'deadline', label: 'deadline', sortable: true },
+                { name: 'created_at', label: 'createdAt', sortable: true },
+            ];
+        },
+        hasActiveFilters() {
+            return this.statusFilter !== 'all' || this.dateFilter !== 'all_time';
+        },
+        // Преобразование data.items в формат для канбана
+        kanbanTasks() {
+            const tasksToUse = this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
+            return tasksToUse.map(task => {
+                let status = task.status;
+                if (!status && task.statusId) {
+                    status = this.taskStatuses.find(s => s.id === task.statusId);
+                }
+                return {
+                    id: task.id,
+                    title: task.title,
+                    description: task.description,
+                    statusId: task.statusId || (status?.id),
+                    statusName: status?.name || '-',
+                    deadline: task.deadline,
+                    creator: task.creator,
+                    supervisor: task.supervisor,
+                    executor: task.executor,
+                    project: task.project,
+                    created_at: task.createdAt,
+                };
+            });
+        }
+    },
+    created() {
+        this.$store.commit('SET_SETTINGS_OPEN', false);
+    },
+    async mounted() {
+        await this.fetchTaskStatuses();
+        await this.fetchItems();
+    },
+    methods: {
+        async fetchTaskStatuses() {
+            try {
+                // Используем данные из store
+                await this.$store.dispatch('loadTaskStatuses');
+                this.statuses = this.$store.getters.taskStatuses || [];
+            } catch (error) {
+                console.error('Error fetching task statuses:', error);
+                this.statuses = [];
+            }
+        },
+        itemMapper(i, c) {
+            const search = this.searchQuery;
+            switch (c) {
+                case 'id':
+                    return i.id || '-';
+                case 'title':
+                    const title = i.title || '-';
+                    return search ? highlightMatches(title, search) : title;
+                case 'creator':
+                    return i.creator?.name || '-';
+                case 'supervisor':
+                    return i.supervisor?.name || '-';
+                case 'executor':
+                    return i.executor?.name || '-';
+                case 'deadline':
+                    return i.deadline ? new Date(i.deadline).toLocaleDateString() : '-';
+                case 'created_at':
+                    return i.createdAt ? new Date(i.createdAt).toLocaleDateString() : '-';
+                default:
+                    return i[c] || '-';
+            }
+        },
+        debouncedFetchItems() {
+            if (this.debounceTimer) {
+                clearTimeout(this.debounceTimer);
+            }
+            this.debounceTimer = setTimeout(() => {
+                if (this.viewMode === 'kanban') {
+                    this.fetchItems(1, true);
+                } else {
+                    this.fetchItems();
+                }
+            }, 300);
+        },
+        getDateRange() {
+            if (this.dateFilter === 'custom') {
+                return {
+                    dateFrom: this.startDate || null,
+                    dateTo: this.endDate || null
+                };
+            }
+            
+            const today = new Date();
+            const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+            
+            switch (this.dateFilter) {
+                case 'today':
+                    return {
+                        dateFrom: startOfDay.toISOString().split('T')[0],
+                        dateTo: endOfDay.toISOString().split('T')[0]
+                    };
+                case 'yesterday':
+                    const yesterday = new Date(startOfDay);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    return {
+                        dateFrom: yesterday.toISOString().split('T')[0],
+                        dateTo: yesterday.toISOString().split('T')[0]
+                    };
+                case 'this_week':
+                    const weekStart = new Date(startOfDay);
+                    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                    return {
+                        dateFrom: weekStart.toISOString().split('T')[0],
+                        dateTo: endOfDay.toISOString().split('T')[0]
+                    };
+                case 'this_month':
+                    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                    return {
+                        dateFrom: monthStart.toISOString().split('T')[0],
+                        dateTo: endOfDay.toISOString().split('T')[0]
+                    };
+                case 'last_week':
+                    const lastWeekStart = new Date(startOfDay);
+                    lastWeekStart.setDate(lastWeekStart.getDate() - lastWeekStart.getDay() - 7);
+                    const lastWeekEnd = new Date(lastWeekStart);
+                    lastWeekEnd.setDate(lastWeekEnd.getDate() + 6);
+                    return {
+                        dateFrom: lastWeekStart.toISOString().split('T')[0],
+                        dateTo: lastWeekEnd.toISOString().split('T')[0]
+                    };
+                case 'last_month':
+                    const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+                    return {
+                        dateFrom: lastMonthStart.toISOString().split('T')[0],
+                        dateTo: lastMonthEnd.toISOString().split('T')[0]
+                    };
+                default:
+                    return { dateFrom: null, dateTo: null };
+            }
+        },
+        async fetchItems(page = 1, silent = false) {
+            if (!silent) {
+                this.loading = true;
+            }
+            try {
+                const per_page = this.viewMode === 'kanban' ? 1000 : this.perPage;
+                const status = this.statusFilter === 'all' ? '' : this.statusFilter;
+                const { dateFrom, dateTo } = this.getDateRange();
+                
+                const new_data = await TaskController.getItems(page, this.searchQuery, status, per_page, dateFrom, dateTo);
+
+                if (this.viewMode === 'kanban') {
+                    this.allKanbanItems = [...new_data.items];
+                    this.data = { ...new_data, items: this.allKanbanItems, currentPage: 1, nextPage: null, lastPage: 1 };
+                } else {
+                    this.data = new_data;
+                }
+            } catch (error) {
+                console.error('❌ [TasksPage.fetchItems] Ошибка загрузки:', error);
+                this.showNotification(
+                    this.$t('errorGettingTaskList'), 
+                    this.getApiErrorMessage(error), 
+                    true
+                );
+            }
+            if (!silent) {
+                this.loading = false;
+            }
+        },
+        handlePerPageChange(newPerPage) {
+            this.perPage = newPerPage;
+            this.fetchItems(1, false);
+        },
+        resetFilters() {
+            this.statusFilter = 'all';
+            this.dateFilter = 'all_time';
+            this.startDate = '';
+            this.endDate = '';
+            if (this.viewMode === 'kanban') {
+                this.fetchItems(1, true);
+            } else {
+                this.fetchItems(1);
+            }
+        },
+        getActiveFiltersCount() {
+            let count = 0;
+            if (this.statusFilter !== 'all') count++;
+            if (this.dateFilter !== 'all_time') count++;
+            return count;
+        },
+        // Переопределяем метод из crudEventMixin для правильной работы с data
+        refreshDataAfterOperation() {
+            if (this.fetchItems) {
+                this.fetchItems(this.data?.currentPage || 1, true)
+                    .then(() => this.restoreScrollPosition?.())
+                    .catch((error) => console.error("❌ [TasksPage.refreshDataAfterOperation] Ошибка обновления данных:", error));
+            }
+            if (this.closeModal) {
+                this.shouldRestoreScrollOnClose = false;
+                this.closeModal(true);
+            }
+        },
+        getBatchActions() {
+            return [
+                {
+                    label: this.$t('delete'),
+                    action: () => this.deleteItems(this.selectedIds),
+                    permission: 'tasks_delete_all',
+                },
+            ];
+        },
+        handleTaskMoved(updateData) {
+            try {
+                if (updateData.type === 'status') {
+                    const items = this.viewMode === 'kanban' ? this.allKanbanItems : this.data.items;
+                    const task = items.find(p => p.id === updateData.orderId);
+                    if (task) {
+                        task.statusId = updateData.statusId;
+                        const status = this.statuses.find(s => s.id === updateData.statusId);
+                        if (status) {
+                            task.statusName = status.name;
+                        }
+                    }
+                    
+                    this.pendingStatusUpdates.set(updateData.orderId, updateData.statusId);
+                    this.debouncedStatusUpdate();
+                }
+            } catch (error) {
+                const errors = this.getApiErrorMessage(error);
+                this.showNotification(this.$t('error'), errors, true);
+                this.fetchItems(this.data.currentPage, true);
+            }
+        },
+        debouncedStatusUpdate: debounce(function() {
+            if (this.pendingStatusUpdates.size === 0) return;
+            
+            const updatesByStatus = new Map();
+            this.pendingStatusUpdates.forEach((statusId, taskId) => {
+                if (!updatesByStatus.has(statusId)) {
+                    updatesByStatus.set(statusId, []);
+                }
+                updatesByStatus.get(statusId).push(taskId);
+            });
+            
+            this.pendingStatusUpdates.clear();
+            
+            const promises = [];
+            updatesByStatus.forEach((taskIds, statusId) => {
+                const promise = Promise.all(
+                    taskIds.map(taskId => {
+                        const task = this.data?.items?.find(t => t.id === taskId);
+                        const updateData = { status_id: statusId };
+                        
+                        if (task) {
+                            if (task.supervisorId) updateData.supervisor_id = task.supervisorId;
+                            if (task.executorId) updateData.executor_id = task.executorId;
+                        }
+                        
+                        return TaskController.updateItem(taskId, updateData);
+                    })
+                ).catch(error => {
+                    const errors = this.getApiErrorMessage(error);
+                    this.showNotification(this.$t('error'), errors, true);
+                    this.fetchItems(this.data?.currentPage || 1, true);
+                });
+                promises.push(promise);
+            });
+            
+            Promise.all(promises).then(async () => {
+                await this.$store.dispatch('invalidateCache', { type: 'tasks' });
+                this.fetchItems(this.data?.currentPage || 1, true);
+                this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
+            }).catch(error => {
+                const errors = this.getApiErrorMessage(error);
+                this.showNotification(this.$t('error'), errors, true);
+            });
+        }, 500),
+        toggleSelectRow(id) {
+            if (this.selectedIds.includes(id)) {
+                this.selectedIds = this.selectedIds.filter(x => x !== id);
+            } else {
+                this.selectedIds = [...this.selectedIds, id];
+            }
+        },
+        handleColumnSelectToggle(taskIds, select) {
+            if (select) {
+                const newSelectedIds = [...this.selectedIds];
+                taskIds.forEach(id => {
+                    if (!newSelectedIds.includes(id)) {
+                        newSelectedIds.push(id);
+                    }
+                });
+                this.selectedIds = newSelectedIds;
+            } else {
+                this.selectedIds = this.selectedIds.filter(id => !taskIds.includes(id));
+            }
+        },
+        async handleChangeStatus(ids, statusId) {
+            if (!ids.length) return;
+            this.loading = true;
+            try {
+                await Promise.all(
+                    ids.map(id => {
+                        const task = this.data.items.find(t => t.id === id);
+                        const updateData = { status_id: statusId };
+                        
+                        if (task) {
+                            if (task.supervisorId) updateData.supervisor_id = task.supervisorId;
+                            if (task.executorId) updateData.executor_id = task.executorId;
+                        }
+                        
+                        return TaskController.updateItem(id, updateData);
+                    })
+                );
+                
+                await this.$store.dispatch('invalidateCache', { type: 'tasks' });
+                await this.fetchItems(this.data.currentPage, true);
+                this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
+                this.selectedIds = [];
+            } catch (error) {
+                this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
+            }
+            this.loading = false;
+        },
+        handleBatchStatusChangeFromToolbar(statusId) {
+            if (!statusId || this.selectedIds.length === 0) return;
+            this.handleChangeStatus(this.selectedIds, statusId);
+        }
+    },
+    watch: {
+        viewMode: {
+            handler(newMode) {
+                localStorage.setItem('tasks_viewMode', newMode);
+                this.$nextTick(() => {
+                    this.fetchItems(1, false);
+                });
+            },
+            immediate: false
+        }
+    },
+}
+</script>
+
+<style scoped>
+.kanban-view-container {
+    width: 100%;
+}
+</style>

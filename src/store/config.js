@@ -5,6 +5,7 @@ export const STORE_CONFIG = {
     users: "SET_USERS",
     orderStatuses: "SET_ORDER_STATUSES",
     projectStatuses: "SET_PROJECT_STATUSES",
+    taskStatuses: "SET_TASK_STATUSES",
     transactionCategories: "SET_TRANSACTION_CATEGORIES",
     productStatuses: "SET_PRODUCT_STATUSES",
     warehouses: "SET_WAREHOUSES",

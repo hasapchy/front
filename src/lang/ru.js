@@ -98,6 +98,7 @@ export default {
   products: 'Товары',
   orders: 'Заказы',
   sales: 'Продажи',
+  tasks: 'Задачи',
   warehouseReceipt: 'Оприходование',
   warehouses: 'Склады',
   transactions: 'Операции',
@@ -1355,4 +1356,34 @@ export default {
   roleDeleted: 'Роль удалена',
   errorDeletingRole: 'Ошибка удаления роли',
   mutual_settlements: 'Взаиморасчеты',
+
+  // Tasks
+  // Общие поля (если их еще нет)
+  title: 'Название',
+  description: 'Описание',
+  status: 'Статус',
+  project: 'Проект',
+  deadline: 'Срок выполнения',
+  enterDescription: 'Введите описание',
+  
+  // Статусы задач
+  pending: 'Ожидает',
+  inProgress: 'В работе',
+  completed: 'Завершена',
+  postponed: 'Отложена',
+  
+  // Tasks
+  createTask: 'Создать задачу',
+  editTask: 'Редактировать задачу',
+  taskSuccessfullyAdded: 'Задача успешно создана',
+  taskSuccessfullyUpdated: 'Задача успешно обновлена',
+  taskSuccessfullyDeleted: 'Задача успешно удалена',
+  errorSavingTask: 'Ошибка при сохранении задачи',
+  errorGettingTaskList: 'Ошибка при получении списка задач',
+  titleRequired: 'Название задачи обязательно',
+  supervisor: 'Супервайзер',
+  executor: 'Исполнитель',
+  creator: 'Создатель',
+  select: 'Выбрать',
+  errorDeletingTask: 'Ошибка при удалении задачи',
 }

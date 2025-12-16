@@ -22,6 +22,7 @@ export const CACHE_TTL = {
   users: 12 * 60 * 60 * 1000,                   // ⬇️ 12 часов для сотрудников
   orderStatuses: 12 * 60 * 60 * 1000,           // ⬇️ 12 часов (было 24)
   projectStatuses: 12 * 60 * 60 * 1000,         // ⬇️ 12 часов (было 24)
+  taskStatuses: 12 * 60 * 60 * 1000,            // ⬇️ 12 часов (было 24)
   transactionCategories: 12 * 60 * 60 * 1000,   // ⬇️ 12 часов (было 24)
   productStatuses: 12 * 60 * 60 * 1000,         // ⬇️ 12 часов (было 24)
   

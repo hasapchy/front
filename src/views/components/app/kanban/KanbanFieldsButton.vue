@@ -46,7 +46,7 @@ export default {
         mode: {
             type: String,
             required: true,
-            validator: (value) => ['orders', 'projects'].includes(value)
+            validator: (value) => ['orders', 'projects', 'tasks'].includes(value)
         }
     },
     data() {
@@ -71,6 +71,14 @@ export default {
                     date: { label: 'date' },
                     user: { label: 'user' },
                     totalPrice: { label: 'total' },
+                };
+            } else if (this.mode === 'tasks') {
+                return {
+                    created_at: { label: 'createdAt' },
+                    deadline: { label: 'deadline' },
+                    creator: { label: 'creator' },
+                    supervisor: { label: 'supervisor' },
+                    executor: { label: 'executor' },
                 };
             } else {
                 return {
