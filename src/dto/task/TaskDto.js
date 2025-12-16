@@ -6,7 +6,8 @@ export default class TaskDto {
     id,
     title,
     description = null,
-    status = 'in_progress',
+    statusId = null,
+    status = null,
     deadline = null,
     creatorId = null,
     creator = null,
@@ -25,6 +26,7 @@ export default class TaskDto {
     this.id = id;
     this.title = title;
     this.description = description;
+    this.statusId = statusId;
     this.status = status;
     this.deadline = deadline;
     this.creatorId = creatorId;
@@ -56,13 +58,16 @@ export default class TaskDto {
   }
 
   getStatusBadge() {
-    const badges = {
-      'pending': { class: 'bg-yellow-100 text-yellow-800', text: 'Ожидает' },
-      'in_progress': { class: 'bg-blue-100 text-blue-800', text: 'В работе' },
-      'completed': { class: 'bg-green-100 text-green-800', text: 'Завершена' },
-      'postponed': { class: 'bg-gray-100 text-gray-800', text: 'Отложена' },
-    };
-    return badges[this.status] || { class: '', text: this.status };
+    if (this.status && this.status.name) {
+      const color = this.status.color || '#6c757d';
+      return {
+        class: '',
+        text: this.status.name,
+        color: color,
+        style: `background-color: ${color}20; color: ${color}; border-color: ${color};`
+      };
+    }
+    return { class: '', text: '-' };
   }
 
   getFileUrl(file) {
@@ -117,7 +122,8 @@ export default class TaskDto {
         data.id,
         data.title,
         data.description,
-        data.status,
+        data.status_id || null,
+        data.status || null,
         data.deadline,
         data.creator?.id || null,
         data.creator || null,

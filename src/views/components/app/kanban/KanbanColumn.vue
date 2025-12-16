@@ -61,7 +61,7 @@
             <div v-if="orders.length === 0" class="flex items-center justify-center flex-1 text-gray-400 text-sm">
                 <div class="text-center">
                     <i class="fas fa-inbox text-2xl mb-2"></i>
-                    <p>{{ $t('noOrders') }}</p>
+                    <p>{{ emptyText }}</p>
                 </div>
             </div>
         </div>
@@ -132,6 +132,13 @@ export default {
         isAllSelected() {
             if (this.orders.length === 0) return false;
             return this.orders.every(order => this.selectedIds.includes(order.id));
+        },
+        emptyText() {
+            // Для задач показываем "Нет задач", для проектов/заказов оставляем существующий текст
+            if (this.isProjectMode) {
+                return this.$t('noOrders');
+            }
+            return this.$te('noTasks') ? this.$t('noTasks') : 'Нет задач';
         }
     },
     methods: {

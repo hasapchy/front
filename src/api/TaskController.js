@@ -1,75 +1,105 @@
-import axiosInstance from './axiosInstance';
+import BaseController from './BaseController';
+import PaginatedResponse from '@/dto/app/PaginatedResponseDto';
+import TaskDto from '@/dto/task/TaskDto';
+import api from './axiosInstance';
 
-class TaskController {
-    async getItems(page = 1, search = '', status = '', perPage = 20, dateFrom = null, dateTo = null) {
-        const params = {
-            page,
-            per_page: perPage,
-        };
+class TaskController extends BaseController {
+    static async getItems(page = 1, search = '', status = '', perPage = 20, dateFrom = null, dateTo = null) {
+        const params = {};
         
         if (search) params.search = search;
-        if (status && status !== 'all') params.status = status;
+        if (status && status !== 'all' && status !== '') params.status = status;
         if (dateFrom) params.date_from = dateFrom;
         if (dateTo) params.date_to = dateTo;
         
-        const response = await axiosInstance.get('/tasks', { params });
-        return response.data;
+        const data = await super.getItems('/tasks', page, perPage, params);
+        const items = TaskDto.fromApiArray(data.data || []);
+        const response = new PaginatedResponse(
+            items,
+            data.meta?.current_page || 1,
+            data.meta?.next_page || null,
+            data.meta?.last_page || 1,
+            data.meta?.total || 0
+        );
+        return response;
     }
 
-    async getItem(id) {
-        const response = await axiosInstance.get(`/tasks/${id}`);
-        return response.data;
+    static async getItem(id) {
+        const data = await super.getItem('/tasks', id);
+        return TaskDto.fromApiArray([data.item])[0] || null;
     }
 
-    async createItem(data) {
-        const response = await axiosInstance.post('/tasks', data);
-        return response.data;
+    static async createItem(item) {
+        return await super.storeItem('/tasks', item);
     }
 
-    async updateItem(id, data) {
-        const response = await axiosInstance.put(`/tasks/${id}`, data);
-        return response.data;
+    static async updateItem(id, item) {
+        return await super.updateItem('/tasks', id, item);
     }
 
-    async deleteItem(id) {
-        const response = await axiosInstance.delete(`/tasks/${id}`);
-        return response.data;
+    static async deleteItem(id) {
+        return await super.deleteItem('/tasks', id);
     }
 
-    async completeTask(id) {
-        const response = await axiosInstance.post(`/tasks/${id}/complete`);
-        return response.data;
+    static async completeTask(id) {
+        return await super.handleRequest(
+            async () => {
+                const response = await api.post(`/tasks/${id}/complete`);
+                return response.data;
+            },
+            `Ошибка при завершении задачи: ${id}`
+        );
     }
 
-    async acceptTask(id) {
-        const response = await axiosInstance.post(`/tasks/${id}/accept`);
-        return response.data;
+    static async acceptTask(id) {
+        return await super.handleRequest(
+            async () => {
+                const response = await api.post(`/tasks/${id}/accept`);
+                return response.data;
+            },
+            `Ошибка при принятии задачи: ${id}`
+        );
     }
 
-    async returnTask(id) {
-        const response = await axiosInstance.post(`/tasks/${id}/return`);
-        return response.data;
+    static async returnTask(id) {
+        return await super.handleRequest(
+            async () => {
+                const response = await api.post(`/tasks/${id}/return`);
+                return response.data;
+            },
+            `Ошибка при возврате задачи: ${id}`
+        );
     }
 
-    async uploadFiles(id, files) {
+    static async uploadFiles(id, files) {
         const formData = new FormData();
         files.forEach(file => {
             formData.append('files[]', file);
         });
-        const response = await axiosInstance.post(`/tasks/${id}/files`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
+        return await super.handleRequest(
+            async () => {
+                const response = await api.post(`/tasks/${id}/files`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+                return response.data;
             },
-        });
-        return response.data;
+            `Ошибка при загрузке файлов задачи: ${id}`
+        );
     }
 
-    async deleteFile(id, filePath) {
-        const response = await axiosInstance.delete(`/tasks/${id}/files`, {
-            data: { path: filePath }
-        });
-        return response.data;
+    static async deleteFile(id, filePath) {
+        return await super.handleRequest(
+            async () => {
+                const response = await api.delete(`/tasks/${id}/files`, {
+                    data: { path: filePath }
+                });
+                return response.data;
+            },
+            `Ошибка при удалении файла задачи: ${id}`
+        );
     }
 }
 
-export default new TaskController();
+export default TaskController;

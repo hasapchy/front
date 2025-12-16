@@ -16,11 +16,11 @@
 
             <div>
                 <label>{{ $t('status') }}</label>
-                <select v-model="status">
-                    <option value="pending">{{ $t('pending') }}</option>
-                    <option value="in_progress">{{ $t('inProgress') }}</option>
-                    <option value="completed">{{ $t('completed') }}</option>
-                    <option value="postponed">{{ $t('postponed') }}</option>
+                <select v-model="statusId">
+                    <option :value="null">{{ $t('select') }}</option>
+                    <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
+                        {{ status.name }}
+                    </option>
                 </select>
             </div>
 
@@ -168,7 +168,7 @@ export default {
         return {
             title: this.editingItem ? this.editingItem.title : '',
             description: this.editingItem ? this.editingItem.description : '',
-            status: this.editingItem ? this.editingItem.status : 'in_progress',
+            statusId: this.editingItem ? (this.editingItem.statusId || this.editingItem.status?.id) : null,
             deadline: this.editingItem && this.editingItem.deadline
                 ? new Date(this.editingItem.deadline).toISOString().substring(0, 16)
                 : '',
@@ -211,6 +211,9 @@ export default {
                 label: this.$t(tab.label)
             }));
         },
+        taskStatuses() {
+            return this.$store.getters.taskStatuses || [];
+        },
     },
     watch: {
         editingItem: {
@@ -218,7 +221,7 @@ export default {
                 if (newEditingItem) {
                     this.title = newEditingItem.title || '';
                     this.description = newEditingItem.description || '';
-                    this.status = newEditingItem.status || 'in_progress';
+                    this.statusId = newEditingItem.statusId || newEditingItem.status?.id || null;
                     this.deadline = newEditingItem.deadline
                         ? new Date(newEditingItem.deadline).toISOString().substring(0, 16)
                         : '';
@@ -240,6 +243,10 @@ export default {
     },
     mounted() {
         this.$nextTick(async () => {
+            // Загружаем статусы задач, если еще не загружены
+            if (!this.$store.getters.taskStatuses || this.$store.getters.taskStatuses.length === 0) {
+                await this.$store.dispatch('loadTaskStatuses');
+            }
             await Promise.all([
                 this.fetchUsers(),
                 this.fetchProjects()
@@ -251,7 +258,7 @@ export default {
         clearForm() {
             this.title = '';
             this.description = '';
-            this.status = 'in_progress';
+            this.statusId = null;
             this.deadline = '';
             this.projectId = null;
             this.supervisorId = null;
@@ -269,8 +276,6 @@ export default {
         async fetchUsers() {
             try {
                 const users = await UsersController.getListItems();
-                console.log(users);
-                console.log("***---***");
                 this.users = users || [];
             } catch (error) {
                 console.error('Error fetching users:', error);
@@ -348,7 +353,7 @@ export default {
                 const data = {
                     title: this.title.trim(),
                     description: this.description || null,
-                    status: this.status,
+                    status_id: this.statusId || null,
                     deadline: this.deadline || null,
                     project_id: this.projectId || null,
                     supervisor_id: this.supervisorId,
@@ -519,7 +524,7 @@ export default {
             return {
                 title: this.title,
                 description: this.description,
-                status: this.status,
+                statusId: this.statusId,
                 deadline: this.deadline,
                 projectId: this.projectId,
                 supervisorId: this.supervisorId,

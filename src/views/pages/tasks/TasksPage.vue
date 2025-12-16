@@ -1,10 +1,17 @@
 <template>
-    <BatchButton v-if="selectedIds.length && viewMode === 'table'" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+    <BatchButton
+        v-if="selectedIds.length && viewMode === 'table'"
+        :selected-ids="selectedIds"
+        :batch-actions="getBatchActions()"
+        :statuses="statuses"
+        :handle-change-status="handleChangeStatus"
+        :show-status-select="true"
+    />
     
     <transition name="fade" mode="out-in">
         <!-- Табличный вид -->
-        <div v-if="!loading && viewMode === 'table' && rawTasks.length > 0" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="admin.tasks" :columns-config="columnsConfig" :table-data="tableTasks"
+        <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
+            <DraggableTable table-key="admin.tasks" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" @selectionChange="selectedIds = $event">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
@@ -13,7 +20,7 @@
                         :active-filters-count="getActiveFiltersCount()"
                         :on-filters-reset="resetFilters"
                         :show-pagination="true"
-                        :pagination-data="paginationData"
+                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
                         :on-page-change="fetchItems"
                         :on-per-page-change="handlePerPageChange"
                         :resetColumns="resetColumns"
@@ -35,10 +42,9 @@
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
                                     <select v-model="statusFilter" @change="debouncedFetchItems" class="w-full">
                                         <option value="all">{{ $t('allStatuses') }}</option>
-                                        <option value="pending">{{ $t('pending') }}</option>
-                                        <option value="in_progress">{{ $t('inProgress') }}</option>
-                                        <option value="completed">{{ $t('completed') }}</option>
-                                        <option value="postponed">{{ $t('postponed') }}</option>
+                                        <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
+                                            {{ status.name }}
+                                        </option>
                                     </select>
                                 </div>
 
@@ -85,7 +91,7 @@
                         </template>
 
                         <template #right>
-                            <Pagination v-if="paginationData" :currentPage="paginationData.currentPage" :lastPage="paginationData.lastPage"
+                            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
                                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
                         </template>
@@ -118,7 +124,7 @@
         </div>
 
         <!-- Канбан вид -->
-        <div v-else-if="!loading && viewMode === 'kanban' && rawTasks.length > 0" key="kanban-view" class="kanban-view-container">
+        <div v-else-if="data && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
             <TableControlsBar
                 :show-filters="true"
                 :has-active-filters="hasActiveFilters"
@@ -140,10 +146,9 @@
                             <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
                             <select v-model="statusFilter" @change="debouncedFetchItems" class="w-full">
                                 <option value="all">{{ $t('allStatuses') }}</option>
-                                <option value="pending">{{ $t('pending') }}</option>
-                                <option value="in_progress">{{ $t('inProgress') }}</option>
-                                <option value="completed">{{ $t('completed') }}</option>
-                                <option value="postponed">{{ $t('postponed') }}</option>
+                                <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
+                                    {{ status.name }}
+                                </option>
                             </select>
                         </div>
 
@@ -195,7 +200,7 @@
             
             <KanbanBoard
                 :orders="kanbanTasks"
-                :statuses="taskStatuses"
+                :statuses="statuses"
                 :projects="[]"
                 :selected-ids="selectedIds"
                 :loading="loading"
@@ -249,10 +254,11 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import searchMixin from '@/mixins/searchMixin';
-import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
-import TaskDto from '@/dto/task/TaskDto';
 import debounce from "lodash.debounce";
+import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
+import { markRaw } from 'vue';
+import { VueDraggableNext } from 'vue-draggable-next';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin],
@@ -270,98 +276,122 @@ export default {
         TableFilterButton, 
         FiltersContainer, 
         KanbanFieldsButton, 
-        draggable: VueDraggableNext 
+        StatusSelectCell,
+        draggable: VueDraggableNext
     },
     data() {
         return {
-            // Единый источник данных - массив TaskDto объектов
-            rawTasks: [],
-            meta: null,
-            
-            // Состояние UI
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             viewMode: 'table',
-            selectedIds: [],
-            
-            // Фильтры
             statusFilter: 'all',
             dateFilter: 'all_time',
             startDate: '',
             endDate: '',
-            
-            // Загрузка
             debounceTimer: null,
-            
-            // Пендинг-обновления статусов
             pendingStatusUpdates: new Map(),
             batchStatusId: '',
-            
-            // Конфигурация
+            allKanbanItems: [],
+            statuses: [],
             controller: TaskController,
             cacheInvalidationType: 'tasks',
             savedSuccessText: this.$t('taskSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingTask'),
             deletedSuccessText: this.$t('taskSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingTask'),
-            
-            columnsConfig: [
+        }
+    },
+    computed: {
+        taskStatuses() {
+            return this.$store.getters.taskStatuses || [];
+        },
+        columnsConfig() {
+            return [
                 { name: 'title', label: 'title', sortable: true },
-                { name: 'status', label: 'status', sortable: true, html: true },
+                { 
+                    name: 'status', 
+                    label: 'status', 
+                    component: markRaw(StatusSelectCell), 
+                    props: (i) => ({ 
+                        id: i.id, 
+                        value: i.statusId || (i.status?.id), 
+                        statuses: this.statuses, 
+                        onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) 
+                    }), 
+                },
                 { name: 'creator', label: 'creator', sortable: false },
                 { name: 'supervisor', label: 'supervisor', sortable: false },
                 { name: 'executor', label: 'executor', sortable: false },
                 { name: 'deadline', label: 'deadline', sortable: true },
                 { name: 'created_at', label: 'createdAt', sortable: true },
-            ],
-            taskStatuses: [
-                { id: 'pending', name: this.$t('pending') || 'Ожидает', isActive: true },
-                { id: 'in_progress', name: this.$t('inProgress') || 'В работе', isActive: true },
-                { id: 'completed', name: this.$t('completed') || 'Завершена', isActive: true },
-                { id: 'postponed', name: this.$t('postponed') || 'Отложена', isActive: true },
-            ],
+            ];
+        },
+        hasActiveFilters() {
+            return this.statusFilter !== 'all' || this.dateFilter !== 'all_time';
+        },
+        // Преобразование data.items в формат для канбана
+        kanbanTasks() {
+            const tasksToUse = this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
+            return tasksToUse.map(task => {
+                let status = task.status;
+                if (!status && task.statusId) {
+                    status = this.taskStatuses.find(s => s.id === task.statusId);
+                }
+                return {
+                    id: task.id,
+                    title: task.title,
+                    description: task.description,
+                    statusId: task.statusId || (status?.id),
+                    statusName: status?.name || '-',
+                    deadline: task.deadline,
+                    creator: task.creator,
+                    supervisor: task.supervisor,
+                    executor: task.executor,
+                    project: task.project,
+                    created_at: task.createdAt,
+                };
+            });
         }
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
     },
     async mounted() {
-        const savedViewMode = localStorage.getItem('tasks_viewMode');
-        if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
-            this.viewMode = savedViewMode;
-        }
-        
-        this.fetchItems();
+        await this.fetchTaskStatuses();
+        await this.fetchItems();
     },
     methods: {
-        itemMapper(item, column) {
-            const search = this.searchQuery;
-            switch (column) {
-                case 'title':
-                    const title = item.title || '-';
-                    return search ? highlightMatches(title, search) : title;
-                case 'status':
-                    return this.getStatusBadge(item.status);
-                case 'creator':
-                    return item.creator ? item.creator.name : '-';
-                case 'supervisor':
-                    return item.supervisor ? item.supervisor.name : '-';
-                case 'executor':
-                    return item.executor ? item.executor.name : '-';
-                case 'deadline':
-                    return item.deadline ? new Date(item.deadline).toLocaleDateString() : '-';
-                case 'created_at':
-                    return item.created_at ? new Date(item.created_at).toLocaleDateString() : '-';
-                default:
-                    return item[column] || '-';
+        async fetchTaskStatuses() {
+            try {
+                // Используем данные из store
+                await this.$store.dispatch('loadTaskStatuses');
+                this.statuses = this.$store.getters.taskStatuses || [];
+            } catch (error) {
+                console.error('Error fetching task statuses:', error);
+                this.statuses = [];
             }
         },
-        getStatusBadge(status) {
-            const badges = {
-                'pending': '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">Ожидает</span>',
-                'in_progress': '<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded">В работе</span>',
-                'completed': '<span class="px-2 py-1 bg-green-100 text-green-800 rounded">Завершена</span>',
-                'postponed': '<span class="px-2 py-1 bg-gray-100 text-gray-800 rounded">Отложена</span>',
-            };
-            return badges[status] || status;
+        itemMapper(i, c) {
+            const search = this.searchQuery;
+            switch (c) {
+                case 'id':
+                    return i.id || '-';
+                case 'title':
+                    const title = i.title || '-';
+                    return search ? highlightMatches(title, search) : title;
+                case 'creator':
+                    return i.creator?.name || '-';
+                case 'supervisor':
+                    return i.supervisor?.name || '-';
+                case 'executor':
+                    return i.executor?.name || '-';
+                case 'deadline':
+                    return i.deadline ? new Date(i.deadline).toLocaleDateString() : '-';
+                case 'created_at':
+                    return i.createdAt ? new Date(i.createdAt).toLocaleDateString() : '-';
+                default:
+                    return i[c] || '-';
+            }
         },
         debouncedFetchItems() {
             if (this.debounceTimer) {
@@ -438,28 +468,25 @@ export default {
                 this.loading = true;
             }
             try {
-                const per_page = this.viewMode === 'kanban' ? 1000 : this.perPage || 20;
+                const per_page = this.viewMode === 'kanban' ? 1000 : this.perPage;
                 const status = this.statusFilter === 'all' ? '' : this.statusFilter;
                 const { dateFrom, dateTo } = this.getDateRange();
                 
-                const response = await TaskController.getItems(page, this.searchQuery, status, per_page, dateFrom, dateTo);
-                
-                // Единый источник данных - сохраняем TaskDto объекты
-                this.rawTasks = TaskDto.fromApiArray(response.data || []);
-                this.meta = response.meta || {
-                    current_page: page,
-                    last_page: 1,
-                    per_page: per_page,
-                    total: 0
-                };
+                const new_data = await TaskController.getItems(page, this.searchQuery, status, per_page, dateFrom, dateTo);
+
+                if (this.viewMode === 'kanban') {
+                    this.allKanbanItems = [...new_data.items];
+                    this.data = { ...new_data, items: this.allKanbanItems, currentPage: 1, nextPage: null, lastPage: 1 };
+                } else {
+                    this.data = new_data;
+                }
             } catch (error) {
+                console.error('❌ [TasksPage.fetchItems] Ошибка загрузки:', error);
                 this.showNotification(
                     this.$t('errorGettingTaskList'), 
                     this.getApiErrorMessage(error), 
                     true
                 );
-                this.rawTasks = [];
-                this.meta = null;
             }
             if (!silent) {
                 this.loading = false;
@@ -486,6 +513,18 @@ export default {
             if (this.dateFilter !== 'all_time') count++;
             return count;
         },
+        // Переопределяем метод из crudEventMixin для правильной работы с data
+        refreshDataAfterOperation() {
+            if (this.fetchItems) {
+                this.fetchItems(this.data?.currentPage || 1, true)
+                    .then(() => this.restoreScrollPosition?.())
+                    .catch((error) => console.error("❌ [TasksPage.refreshDataAfterOperation] Ошибка обновления данных:", error));
+            }
+            if (this.closeModal) {
+                this.shouldRestoreScrollOnClose = false;
+                this.closeModal(true);
+            }
+        },
         getBatchActions() {
             return [
                 {
@@ -498,10 +537,14 @@ export default {
         handleTaskMoved(updateData) {
             try {
                 if (updateData.type === 'status') {
-                    // Обновляем статус в rawTasks (единый источник данных)
-                    const task = this.rawTasks.find(t => t.id === updateData.orderId);
+                    const items = this.viewMode === 'kanban' ? this.allKanbanItems : this.data.items;
+                    const task = items.find(p => p.id === updateData.orderId);
                     if (task) {
-                        task.status = updateData.statusId;
+                        task.statusId = updateData.statusId;
+                        const status = this.statuses.find(s => s.id === updateData.statusId);
+                        if (status) {
+                            task.statusName = status.name;
+                        }
                     }
                     
                     this.pendingStatusUpdates.set(updateData.orderId, updateData.statusId);
@@ -510,7 +553,7 @@ export default {
             } catch (error) {
                 const errors = this.getApiErrorMessage(error);
                 this.showNotification(this.$t('error'), errors, true);
-                this.fetchItems(this.meta?.current_page || 1, true);
+                this.fetchItems(this.data.currentPage, true);
             }
         },
         debouncedStatusUpdate: debounce(function() {
@@ -530,11 +573,9 @@ export default {
             updatesByStatus.forEach((taskIds, statusId) => {
                 const promise = Promise.all(
                     taskIds.map(taskId => {
-                        // Находим задачу для получения supervisor_id и executor_id
-                        const task = this.rawTasks.find(t => t.id === taskId);
-                        const updateData = { status: statusId };
+                        const task = this.data?.items?.find(t => t.id === taskId);
+                        const updateData = { status_id: statusId };
                         
-                        // Добавляем обязательные поля для валидации
                         if (task) {
                             if (task.supervisorId) updateData.supervisor_id = task.supervisorId;
                             if (task.executorId) updateData.executor_id = task.executorId;
@@ -545,14 +586,14 @@ export default {
                 ).catch(error => {
                     const errors = this.getApiErrorMessage(error);
                     this.showNotification(this.$t('error'), errors, true);
-                    this.fetchItems(this.meta?.current_page || 1, true);
+                    this.fetchItems(this.data?.currentPage || 1, true);
                 });
                 promises.push(promise);
             });
             
             Promise.all(promises).then(async () => {
                 await this.$store.dispatch('invalidateCache', { type: 'tasks' });
-                await this.fetchItems(this.meta?.current_page || 1, true);
+                this.fetchItems(this.data?.currentPage || 1, true);
                 this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
             }).catch(error => {
                 const errors = this.getApiErrorMessage(error);
@@ -579,29 +620,36 @@ export default {
                 this.selectedIds = this.selectedIds.filter(id => !taskIds.includes(id));
             }
         },
-        handleBatchStatusChangeFromToolbar(statusId) {
-            if (!statusId || this.selectedIds.length === 0) return;
-            
-            Promise.all(
-                this.selectedIds.map(id => {
-                    const task = this.rawTasks.find(t => t.id === id);
-                    const updateData = { status: statusId };
-                    
-                    if (task) {
-                        if (task.supervisorId) updateData.supervisor_id = task.supervisorId;
-                        if (task.executorId) updateData.executor_id = task.executorId;
-                    }
-                    
-                    return TaskController.updateItem(id, updateData);
-                })
-            ).then(async () => {
+        async handleChangeStatus(ids, statusId) {
+            if (!ids.length) return;
+            this.loading = true;
+            try {
+                await Promise.all(
+                    ids.map(id => {
+                        const task = this.data.items.find(t => t.id === id);
+                        const updateData = { status_id: statusId };
+                        
+                        if (task) {
+                            if (task.supervisorId) updateData.supervisor_id = task.supervisorId;
+                            if (task.executorId) updateData.executor_id = task.executorId;
+                        }
+                        
+                        return TaskController.updateItem(id, updateData);
+                    })
+                );
+                
                 await this.$store.dispatch('invalidateCache', { type: 'tasks' });
-                await this.fetchItems(this.meta?.current_page || 1, true);
+                await this.fetchItems(this.data.currentPage, true);
                 this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
                 this.selectedIds = [];
-            }).catch(error => {
+            } catch (error) {
                 this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
-            });
+            }
+            this.loading = false;
+        },
+        handleBatchStatusChangeFromToolbar(statusId) {
+            if (!statusId || this.selectedIds.length === 0) return;
+            this.handleChangeStatus(this.selectedIds, statusId);
         }
     },
     watch: {
@@ -613,57 +661,6 @@ export default {
                 });
             },
             immediate: false
-        }
-    },
-    computed: {
-        hasActiveFilters() {
-            return this.statusFilter !== 'all' || this.dateFilter !== 'all_time';
-        },
-        
-        // Преобразование rawTasks в формат для таблицы
-        tableTasks() {
-            return this.rawTasks.map(task => ({
-                id: task.id,
-                title: task.title,
-                description: task.description,
-                status: task.status,
-                deadline: task.deadline,
-                creator: task.creator,
-                supervisor: task.supervisor,
-                executor: task.executor,
-                project: task.project,
-                created_at: task.createdAt,
-                updated_at: task.updatedAt,
-                frontend_link: `/tasks/${task.id}`,
-            }));
-        },
-        
-        // Преобразование rawTasks в формат для канбана
-        kanbanTasks() {
-            return this.rawTasks.map(task => ({
-                id: task.id,
-                title: task.title,
-                description: task.description,
-                statusId: task.status,
-                statusName: task.getStatusBadge().text,
-                deadline: task.deadline,
-                creator: task.creator,
-                supervisor: task.supervisor,
-                executor: task.executor,
-                project: task.project,
-                created_at: task.createdAt,
-            }));
-        },
-        
-        // Данные для пагинации
-        paginationData() {
-            if (!this.meta) return null;
-            return {
-                currentPage: this.meta.current_page || 1,
-                lastPage: this.meta.last_page || 1,
-                perPage: this.perPage || 20,
-                perPageOptions: this.perPageOptions || [10, 20, 50, 100]
-            };
         }
     },
 }
