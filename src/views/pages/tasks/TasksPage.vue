@@ -5,7 +5,7 @@
         <!-- Табличный вид -->
         <div v-if="!loading && viewMode === 'table' && rawTasks.length > 0" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.tasks" :columns-config="columnsConfig" :table-data="tableTasks"
-                :item-mapper="itemMapper" :onItemClick="handleItemClick" @selectionChange="selectedIds = $event">
+                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" @selectionChange="selectedIds = $event">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
                         :show-filters="true"
@@ -362,13 +362,6 @@ export default {
                 'postponed': '<span class="px-2 py-1 bg-gray-100 text-gray-800 rounded">Отложена</span>',
             };
             return badges[status] || status;
-        },
-        handleItemClick(item) {
-            if (item.frontend_link) {
-                this.$router.push(item.frontend_link);
-            } else {
-                this.$router.push(`/tasks/${item.id}`);
-            }
         },
         debouncedFetchItems() {
             if (this.debounceTimer) {
