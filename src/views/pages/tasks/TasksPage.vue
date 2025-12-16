@@ -4,13 +4,9 @@
     <transition name="fade" mode="out-in">
         <!-- Табличный вид -->
         <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
-            <DraggableTable 
-                table-key="common.tasks" 
-                :columns-config="columnsConfig" 
-                :table-data="data.data"
-                :item-mapper="itemMapper" 
-                :onItemClick="handleItemClick"
-                @selectionChange="selectedIds = $event">
+            <div class="flex justify-between items-center bg-red-600">{{data.data}} </div>
+            <DraggableTable table-key="admin.tasks" :columns-config="columnsConfig" :table-data="data.data"
+                :item-mapper="itemMapper" :onItemClick="(i) => showModal(i)" @selectionChange="selectedIds = $event">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
                         :show-filters="true"
