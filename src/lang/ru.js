@@ -1360,6 +1360,7 @@ export default {
   // Отпуска
   leaves: 'Отпуска',
   leaveTypes: 'Типы отпусков',
+  leave_types: 'Типы отпусков',
   leaveType: 'Тип отпуска',
   createLeave: 'Создать отпуск',
   editLeave: 'Редактировать отпуск',

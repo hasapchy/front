@@ -472,6 +472,7 @@ export default {
     // Leaves
     leaves: 'Leaves',
     leaveTypes: 'Leave Types',
+    leave_types: 'Leave Types',
     leaveType: 'Leave Type',
     createLeave: 'Create Leave',
     editLeave: 'Edit Leave',

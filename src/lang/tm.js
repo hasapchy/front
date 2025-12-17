@@ -1138,6 +1138,7 @@ export default {
   // Отпуска
   leaves: 'Dynç alyşlar',
   leaveTypes: 'Dynç alyş görnüşleri',
+  leave_types: 'Dynç alyş görnüşleri',
   leaveType: 'Dynç alyş görnüşi',
   createLeave: 'Dynç alyş döret',
   editLeave: 'Dynç alyşy redaktirle',

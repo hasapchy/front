@@ -163,6 +163,18 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
+    leaves: {
+      has_user_id: true,
+      check_strategy: "user_id",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+    },
+    leave_types: {
+      has_user_id: false,
+      check_strategy: "default",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+    },
   },
 
   custom_permissions: [
@@ -231,6 +243,10 @@ export const PERMISSIONS_CONFIG = {
     users: {
       label: "users",
       resources: ["users", "roles", "employee_salaries"],
+    },
+    leaves: {
+      label: "leaves",
+      resources: ["leaves", "leave_types"],
     },
   },
 
