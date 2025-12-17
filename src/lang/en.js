@@ -497,4 +497,5 @@ export default {
     creator: 'Creator',
     select: 'Select',
     errorDeletingTask: 'Error deleting task',
+    taskStatuses: 'Task Statuses',
 }

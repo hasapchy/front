@@ -1386,4 +1386,5 @@ export default {
   creator: 'Создатель',
   select: 'Выбрать',
   errorDeletingTask: 'Ошибка при удалении задачи',
+  taskStatuses: 'Статусы задач',
 }

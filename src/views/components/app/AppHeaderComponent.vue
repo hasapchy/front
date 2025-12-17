@@ -101,6 +101,8 @@ export default {
                 '/order_status_categories': 'order_statuscategories_view',
                 '/project_statuses': 'project_statuses_view',
                 '/projects': 'projects_view',
+                '/task_statuses': 'task_statuses_view',
+                '/tasks': 'tasks_view_all',
                 '/transaction_categories': 'transaction_categories_view',
                 '/transactions': 'transactions_view',
                 '/mutual-settlements': 'mutual_settlements_view',
@@ -128,6 +130,8 @@ export default {
                 '/services': 'fas fa-concierge-bell',
                 '/project_statuses': 'fas fa-project-diagram',
                 '/projects': 'fas fa-tasks',
+                '/task_statuses': 'fas fa-project-diagram',
+                '/tasks': 'fas fa-tasks',
                 '/categories': 'fas fa-tags',
                 '/warehouses': 'fas fa-box',
                 '/admin/warehouses': 'fas fa-warehouse'

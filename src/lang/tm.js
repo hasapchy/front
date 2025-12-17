@@ -1163,4 +1163,5 @@ export default {
   creator: 'Dörediji',
   select: 'Saýla',
   errorDeletingTask: 'Wezipe pozulmakda ýalňyşlyk',
+  taskStatuses: 'Wezipeler ýagdaýlary',
 }

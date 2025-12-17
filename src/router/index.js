@@ -65,6 +65,28 @@ const routes = [
           title: "tasks",
           requiresAuth: true,
           permission: "tasks_view_all",
+          binded: [
+            {
+              name: "taskStatuses",
+              path: "/task_statuses",
+            },
+          ],
+        },
+      },
+      {
+        path: "/task_statuses",
+        name: "task_statuses",
+        component: () => import("@/views/pages/tasks/TaskStatusesPage.vue"),
+        meta: {
+          title: "taskStatuses",
+          requiresAuth: true,
+          permission: "task_statuses_view",
+          binded: [
+            {
+              name: "tasks",
+              path: "/tasks",
+            },
+          ],
         },
       },
       {
