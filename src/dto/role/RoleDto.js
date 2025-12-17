@@ -2,12 +2,13 @@ import { dtoDateFormatters } from "@/utils/dateUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
 
 export default class RoleDto {
-  constructor(id, name, permissions = [], createdAt = "", updatedAt = "") {
+  constructor(id, name, permissions = [], createdAt = "", updatedAt = "", companyId = null) {
     this.id = id;
     this.name = name;
     this.permissions = permissions;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+    this.companyId = companyId;
   }
 
   formatCreatedAt() {
@@ -25,7 +26,8 @@ export default class RoleDto {
         data.name,
         data.permissions || [],
         data.created_at,
-        data.updated_at
+        data.updated_at,
+        data.company_id || null
       );
     }).filter(Boolean);
   }

@@ -6,7 +6,7 @@
       <i class="fas fa-chevron-down text-xs ml-2 text-white"></i>
     </div>
 
-    <ul v-if="isOpen" class="absolute z-50 top-full mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+    <ul v-if="isOpen" ref="dropdownMenu" class="fixed z-50 w-64 bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" :style="dropdownStyle">
       <template v-for="group in sortedStatuses" :key="group.category?.id">
         <li v-for="s in group.items" :key="s.id"
           :class="[
@@ -44,7 +44,8 @@ export default {
   },
   data() {
     return {
-      isOpen: false
+      isOpen: false,
+      dropdownStyle: {}
     };
   },
   computed: {
@@ -98,6 +99,17 @@ export default {
   methods: {
     toggleDropdown(event) {
       this.isOpen = !this.isOpen;
+      if (this.isOpen) {
+        this.$nextTick(() => {
+          if (this.$refs.dropdownRef) {
+            const rect = this.$refs.dropdownRef.getBoundingClientRect();
+            this.dropdownStyle = {
+              top: `${rect.bottom + 8}px`,
+              left: `${rect.left}px`
+            };
+          }
+        });
+      }
     },
     selectStatus(newId) {
       this.isOpen = false;

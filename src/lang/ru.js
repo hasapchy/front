@@ -1240,6 +1240,7 @@ export default {
   transaction_categories: 'Категории транзакций',
   employee_salaries: 'Зарплаты сотрудников',
   settings_client_balance_adjustment: 'Корректировка баланса клиента',
+  products_create_temp: 'Создание временного товара',
 
   projectStatusSuccessfullyAdded: 'Статус проекта успешно добавлен',
   projectStatusSuccessfullyDeleted: 'Статус проекта успешно удален',

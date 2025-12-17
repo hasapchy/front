@@ -54,13 +54,15 @@
             :showForm="transactionModalOpen" 
             :onclose="closeTransactionModal">
             <TransactionCreatePage 
-                v-if="!transactionLoading"
+                v-if="transactionModalOpen && !transactionLoading"
                 :editingItem="editingTransactionItem"
                 :initialProjectId="editingItem?.id"
                 :form-config="projectFormConfig"
                 :header-text="'Транзакция — проект'"
                 @saved="handleTransactionSaved"
                 @saved-error="handleTransactionSavedError"
+                @deleted="handleTransactionDeleted"
+                @deleted-error="handleTransactionSavedError"
                 @close-request="closeTransactionModal" />
             
             <div v-else-if="transactionLoading" class="p-4 text-center">
@@ -381,6 +383,12 @@ export default {
                 }
             }
             this.showNotification(this.$t('error'), errorMessage, true);
+        },
+        async handleTransactionDeleted() {
+            this.transactionModalOpen = false;
+            this.editingTransactionItem = null;
+            this.forceRefresh = true;
+            await this.fetchBalanceHistory();
         },
     },
     watch: {

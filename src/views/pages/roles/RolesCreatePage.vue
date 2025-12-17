@@ -508,6 +508,7 @@ export default {
                 'settings_cash_balance_view': 'Просмотр баланса кассы',
                 'settings_client_balance_view': 'Просмотр баланса клиентов',
                 'settings_client_balance_adjustment': 'Корректировка баланса клиента',
+                'products_create_temp': 'Создание временного товара',
                 'transactions_view_sale': 'Просмотр транзакций из продаж',
                 'transactions_view_order': 'Просмотр транзакций из заказов',
                 'transactions_view_receipt': 'Просмотр транзакций из оприходований',

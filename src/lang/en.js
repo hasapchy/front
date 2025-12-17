@@ -386,6 +386,7 @@ export default {
     settings_cash_balance_view: 'View Cash Balance',
     settings_client_balance_view: 'View Client Balance',
     settings_client_balance_adjustment: 'Client Balance Adjustment',
+    products_create_temp: 'Create Temporary Product',
     settings_view: 'View Settings',
     mutual_settlements_view: 'View Mutual Settlements',
     
