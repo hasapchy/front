@@ -1,18 +1,13 @@
 <template>
-    <BatchButton
-        v-if="selectedIds.length && viewMode === 'table'"
-        :selected-ids="selectedIds"
-        :batch-actions="getBatchActions()"
-        :statuses="statuses"
-        :handle-change-status="handleChangeStatus"
-        :show-status-select="true"
-    />
+    <BatchButton v-if="selectedIds.length && viewMode === 'table'" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
+        :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true"/>
     
     <transition name="fade" mode="out-in">
         <!-- Табличный вид -->
         <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="admin.tasks" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" @selectionChange="selectedIds = $event">
+            <DraggableTable table-key="admin.tasks" :columns-config="columnsConfig" :table-data="data.items" 
+                :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
+                :onItemClick="(i) => { showModal(i) }">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
                         :show-filters="true"
@@ -307,6 +302,8 @@ export default {
         },
         columnsConfig() {
             return [
+                { name: 'select', label: '#', size: 15 },
+                { name: 'id', label: 'number', size: 60 },
                 { name: 'title', label: 'title', sortable: true },
                 { 
                     name: 'status', 
@@ -374,8 +371,6 @@ export default {
         itemMapper(i, c) {
             const search = this.searchQuery;
             switch (c) {
-                case 'id':
-                    return i.id || '-';
                 case 'title':
                     const title = i.title || '-';
                     return search ? highlightMatches(title, search) : title;
@@ -390,7 +385,7 @@ export default {
                 case 'created_at':
                     return i.createdAt ? new Date(i.createdAt).toLocaleDateString() : '-';
                 default:
-                    return i[c] || '-';
+                    return i[c];
             }
         },
         debouncedFetchItems() {
@@ -525,15 +520,6 @@ export default {
                 this.closeModal(true);
             }
         },
-        getBatchActions() {
-            return [
-                {
-                    label: this.$t('delete'),
-                    action: () => this.deleteItems(this.selectedIds),
-                    permission: 'tasks_delete_all',
-                },
-            ];
-        },
         handleTaskMoved(updateData) {
             try {
                 if (updateData.type === 'status') {
@@ -647,9 +633,18 @@ export default {
             }
             this.loading = false;
         },
+        handleBatchStatusChange() {
+            if (!this.batchStatusId || this.selectedIds.length === 0) return;
+            
+            this.handleChangeStatus(this.selectedIds, this.batchStatusId);
+            this.batchStatusId = '';
+            this.selectedIds = [];
+        },
         handleBatchStatusChangeFromToolbar(statusId) {
             if (!statusId || this.selectedIds.length === 0) return;
             this.handleChangeStatus(this.selectedIds, statusId);
+            this.batchStatusId = '';
+            this.selectedIds = [];
         }
     },
     watch: {
