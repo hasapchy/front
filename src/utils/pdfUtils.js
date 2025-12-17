@@ -47,8 +47,6 @@ export class InvoicePdfGenerator {
         
         if (firstOrder.currencySymbol && isValidCurrency(firstOrder.currencySymbol)) {
           currencySymbol = firstOrder.currencySymbol.trim();
-        } else if (firstOrder.currencyCode && isValidCurrency(firstOrder.currencyCode)) {
-          currencySymbol = firstOrder.currencyCode.trim();
         }
       }
     }

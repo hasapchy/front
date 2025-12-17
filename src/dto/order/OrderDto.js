@@ -31,7 +31,6 @@ export default class OrderDto {
     // paymentStatus = null,
     currencyId,
     currencyName,
-    currencyCode,
     currencySymbol,
     date = "",
     createdAt = "",
@@ -64,7 +63,6 @@ export default class OrderDto {
     // this.paymentStatus = paymentStatus;
     this.currencyId = currencyId;
     this.currencyName = currencyName;
-    this.currencyCode = currencyCode;
     this.currencySymbol = currencySymbol;
     this.date = date;
     this.createdAt = createdAt;
@@ -184,35 +182,38 @@ export default class OrderDto {
     return createFromApiArray(dataArray, data => {
       const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;
       const products = data.products ? OrderProductDto.fromApiArray(data.products) : null;
+      const status = data.status || {};
+      const category = data.category || {};
+      const cash = data.cash || {};
+      const cashCurrency = cash.currency || {};
+      const warehouse = data.warehouse || {};
+      const user = data.user || {};
+      const project = data.project || {};
       
       return new OrderDto(
         data.id,
         data.note ?? "",
         data.description ?? "",
-        data.status_id,
-        data.status_name,
-        data.category_id ?? data.product_category_id,
-        data.category_name ?? data.product_category_name,
+        data.status_id ?? status.id,
+        status.name ?? null,
+        data.category_id ?? category.id ?? null,
+        category.name ?? null,
         data.client_id,
         data.user_id,
-        data.user_name,
-        data.user_photo,
-        data.cash_id ?? null,
-        data.cash_name ?? null,
-        data.warehouse_id,
-        data.warehouse_name,
-        data.project_id,
-        data.project_name,
+        user.name ?? null,
+        user.photo ?? null,
+        data.cash_id ?? cash.id ?? null,
+        cash.name ?? null,
+        data.warehouse_id ?? warehouse.id ?? null,
+        warehouse.name ?? null,
+        data.project_id ?? project.id ?? null,
+        project.name ?? null,
         data.price,
         data.discount ?? 0,
         data.total_price,
-        // Временно отключена логика оплаты для производительности
-        // data.paid_amount ?? 0,
-        // data.payment_status ?? null,
-        data.currency_id,
-        data.currency_name,
-        data.currency_code,
-        data.currency_symbol,
+        cashCurrency?.id ?? data.currency_id ?? null,
+        cashCurrency?.name ?? data.currency_name ?? null,
+        cashCurrency?.symbol ?? data.currency_symbol ?? null,
         data.date,
         data.created_at,
         data.updated_at,

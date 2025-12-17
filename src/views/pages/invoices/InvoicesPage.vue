@@ -29,10 +29,11 @@
                             <FiltersContainer 
                                 :has-active-filters="hasActiveFilters"
                                 :active-filters-count="getActiveFiltersCount()"
-                                @reset="resetFilters">
+                                @reset="resetFilters"
+                                @apply="applyFilters">
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
-                                    <select v-model="dateFilter" @change="fetchItems" class="w-full">
+                                    <select v-model="dateFilter" class="w-full">
                                         <option value="all_time">{{ $t('allTime') }}</option>
                                         <option value="today">{{ $t('today') }}</option>
                                         <option value="yesterday">{{ $t('yesterday') }}</option>
@@ -47,17 +48,17 @@
                                 <div v-if="dateFilter === 'custom'" class="space-y-2">
                                     <div>
                                         <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
-                                        <input type="date" v-model="startDate" @change="fetchItems" class="w-full" />
+                                        <input type="date" v-model="startDate" class="w-full" />
                                     </div>
                                     <div>
                                         <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
-                                        <input type="date" v-model="endDate" @change="fetchItems" class="w-full" />
+                                        <input type="date" v-model="endDate" class="w-full" />
                                     </div>
                                 </div>
 
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
-                                    <select v-model="statusFilter" @change="fetchItems" class="w-full">
+                                    <select v-model="statusFilter" class="w-full">
                                         <option value="">{{ $t('allStatuses') }}</option>
                                         <option value="new">{{ $t('new') }}</option>
                                         <option value="in_progress">{{ $t('inProgress') }}</option>
@@ -144,10 +145,11 @@ import { defineAsyncComponent } from "vue";
 import { eventBus } from "@/eventBus";
 import companyChangeMixin from "@/mixins/companyChangeMixin";
 import searchMixin from "@/mixins/searchMixin";
+import filtersMixin from "@/mixins/filtersMixin";
 
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin,  companyChangeMixin, searchMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin,  companyChangeMixin, searchMixin, filtersMixin],
     components: { 
         NotificationToast, 
         SideModalDialog, 
@@ -187,7 +189,8 @@ export default {
                     label: 'products',
                     component: markRaw(ProductsListCell),
                     props: (item) => ({
-                        products: item.products || []
+                        products: item.products || [],
+                        maxItems: 3
                     })
                 },
                 { name: "totalAmount", label: 'amount' },

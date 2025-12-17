@@ -31,10 +31,11 @@
                             <FiltersContainer
                                 :has-active-filters="hasActiveFilters"
                                 :active-filters-count="getActiveFiltersCount()"
-                                @reset="resetFilters">
+                                @reset="resetFilters"
+                                @apply="applyFilters">
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('currency') || 'Валюта' }}</label>
-                                    <select v-model="selectedCurrencyId" @change="onCurrencyChange" class="w-full">
+                                    <select v-model="selectedCurrencyId" class="w-full">
                                         <option value="">{{ $t('selectCurrency') }}</option>
                                         <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
                                             {{ currency.symbol }} - {{ currency.name }} ({{ currency.current_rate }})
@@ -130,11 +131,12 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
+import filtersMixin from '@/mixins/filtersMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 
 
 export default {
-    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin],
+    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, filtersMixin],
     components: {
         NotificationToast,
         PrimaryButton,

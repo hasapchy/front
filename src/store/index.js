@@ -812,7 +812,8 @@ const store = createStore({
           return res.data;
         }, 3);
 
-        const plainData = Array.isArray(response) ? response : [];
+        const responseData = response.data || response;
+        const plainData = Array.isArray(responseData) ? responseData : [];
         const clients = ClientDto.fromApiArray(plainData);
         
         commit("SET_CLIENTS_DATA", plainData);
@@ -999,9 +1000,6 @@ const store = createStore({
         loadingFlag: "orderStatuses",
         logName: "📊 Статусы заказов",
         fetchFn: async () => {
-          const OrderStatusController = (
-            await import("@/api/OrderStatusController")
-          ).default;
           return await OrderStatusController.getListItems();
         },
         transformFn: (data) => {
@@ -1024,9 +1022,6 @@ const store = createStore({
         loadingFlag: "projectStatuses",
         logName: "🎯 Статусы проектов",
         fetchFn: async () => {
-          const ProjectStatusController = (
-            await import("@/api/ProjectStatusController")
-          ).default;
           return await ProjectStatusController.getListItems();
         },
       });
@@ -1039,9 +1034,6 @@ const store = createStore({
         loadingFlag: "transactionCategories",
         logName: "💳 Категории транзакций",
         fetchFn: async () => {
-          const TransactionCategoryController = (
-            await import("@/api/TransactionCategoryController")
-          ).default;
           return await TransactionCategoryController.getListItems();
         },
       });
@@ -1054,7 +1046,6 @@ const store = createStore({
         loadingFlag: "productStatuses",
         logName: "🏷️ Статусы товаров",
         fetchFn: async () => {
-          const AppController = (await import("@/api/AppController")).default;
           return await retryWithExponentialBackoff(
             () => AppController.getProductStatuses(),
             3
@@ -1173,7 +1164,7 @@ const store = createStore({
         }
 
         await dispatch("setUser", userData.user);
-        await dispatch("setPermissions", userData.permissions || []);
+        await dispatch("setPermissions", userData.user?.permissions || userData.permissions || []);
         await dispatch("initializeMenu");
 
         if (!isBasementWorker) {

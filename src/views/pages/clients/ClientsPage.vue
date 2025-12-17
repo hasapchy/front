@@ -26,10 +26,11 @@
                             <FiltersContainer
                                 :has-active-filters="hasActiveFilters"
                                 :active-filters-count="getActiveFiltersCount()"
-                                @reset="resetFilters">
+                                @reset="resetFilters"
+                                @apply="applyFilters">
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
-                                    <select v-model="statusFilter" @change="() => fetchItems(1)" class="w-full">
+                                    <select v-model="statusFilter" class="w-full">
                                         <option value="">{{ $t('allStatuses') }}</option>
                                         <option value="active">{{ $t('active') }}</option>
                                         <option value="inactive">{{ $t('inactive') }}</option>
@@ -38,7 +39,7 @@
 
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
-                                    <select v-model="typeFilter" @change="() => fetchItems(1)" class="w-full">
+                                    <select v-model="typeFilter" class="w-full">
                                         <option value="">{{ $t('allTypes') }}</option>
                                         <option value="individual">{{ $t('individual') }}</option>
                                         <option value="company">{{ $t('company') }}</option>
@@ -120,13 +121,14 @@ import { VueDraggableNext } from 'vue-draggable-next';
 
 import { highlightMatches } from '@/utils/searchUtils';
 import searchMixin from '@/mixins/searchMixin';
+import filtersMixin from '@/mixins/filtersMixin';
 import ClientNameCell from '@/views/components/app/buttons/ClientNameCell.vue';
 import StatusIconCell from '@/views/components/app/buttons/StatusIconCell.vue';
 import ListCell from '@/views/components/app/buttons/ListCell.vue';
 import { markRaw } from 'vue';
 
 export default {
-    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, searchMixin, getApiErrorMessageMixin],
+    mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, searchMixin, getApiErrorMessageMixin, filtersMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog, FiltersContainer, TableControlsBar, TableFilterButton, ClientNameCell, StatusIconCell, ListCell, draggable: VueDraggableNext },
     data() {
         return {

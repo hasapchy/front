@@ -7,4 +7,12 @@ export default class PaginatedResponseDto {
         this.total = total;
         this.unpaidOrdersTotal = unpaidOrdersTotal;
     }
+
+    hasNextPage() {
+        return this.nextPage !== null && this.currentPage < this.lastPage;
+    }
+
+    hasPrevPage() {
+        return this.currentPage > 1;
+    }
 }

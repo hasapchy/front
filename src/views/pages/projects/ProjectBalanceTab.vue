@@ -113,7 +113,7 @@ export default {
     },
     data() {
         return {
-            currencyCode: '',
+            currencySymbol: '',
             balanceLoading: false,
             balanceHistory: [],
             lastFetchedProjectId: null, // Для предотвращения дублирования запросов
@@ -170,7 +170,7 @@ export default {
                     component: markRaw(ProjectAmountCell),
                     props: (item) => ({
                         item: item,
-                        projectCurrency: this.editingItem?.currency?.symbol || this.currencyCode || 'Нет валюты',
+                        projectCurrency: this.editingItem?.currency?.symbol || this.currencySymbol || 'Нет валюты',
                         formatNumberFn: this.$formatNumber
                     })
                 },
@@ -198,7 +198,7 @@ export default {
         },
         budgetDisplay() {
             if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
-                return `${this.budgetFormatted} ${this.currencyCode}`;
+                return `${this.budgetFormatted} ${this.currencySymbol}`;
             }
             
             // Бюджет уже в валюте проекта, показываем его
@@ -206,7 +206,7 @@ export default {
         },
         balanceDisplay() {
             if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
-                return `${this.balanceFormatted} ${this.currencyCode}`;
+                return `${this.balanceFormatted} ${this.currencySymbol}`;
             }
             
             // Баланс уже в валюте проекта (конвертация происходит на бэкенде)
@@ -232,7 +232,7 @@ export default {
         },
         totalIncomeDisplay() {
             if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
-                return `${this.totalIncomeFormatted} ${this.currencyCode}`;
+                return `${this.totalIncomeFormatted} ${this.currencySymbol}`;
             }
             
             // Приход уже в валюте проекта (конвертация происходит на бэкенде)
@@ -240,7 +240,7 @@ export default {
         },
         totalExpenseDisplay() {
             if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
-                return `${this.totalExpenseFormatted} ${this.currencyCode}`;
+                return `${this.totalExpenseFormatted} ${this.currencySymbol}`;
             }
             
             // Расход уже в валюте проекта (конвертация происходит на бэкенде)
@@ -255,7 +255,7 @@ export default {
         formatBalance(balance) {
             const formattedBalance = this.$formatNumber(balance || 0, null, true);
             if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
-                return `${formattedBalance} ${this.currencyCode}`;
+                return `${formattedBalance} ${this.currencySymbol}`;
             }
             return `${formattedBalance} ${this.editingItem?.currency?.symbol}`;
         },
@@ -265,9 +265,9 @@ export default {
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
                 const defaultCurrency = currencies.find(c => c.isDefault);
-                this.currencyCode = defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
+                this.currencySymbol = defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
             } catch (error) {
-                this.currencyCode = 'Нет валюты';
+                this.currencySymbol = 'Нет валюты';
             }
         },
         async fetchBalanceHistory() {
@@ -287,7 +287,7 @@ export default {
                 await this.$store.dispatch('loadCurrencies');
                 
                 // Определяем валюту проекта
-                const projectCurrency = this.editingItem?.currency?.symbol || this.currencyCode || 'Нет валюты';
+                const projectCurrency = this.editingItem?.currency?.symbol || this.currencySymbol || 'Нет валюты';
                 
                 this.balanceHistory = (data.history || [])
                     .filter(item => item.source !== 'project_income'); // Исключаем project_income записи

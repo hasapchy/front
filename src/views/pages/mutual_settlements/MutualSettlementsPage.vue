@@ -14,18 +14,18 @@
                         :toggleVisible="toggleVisible" :log="log">
                         <template #left>
                             <FiltersContainer :has-active-filters="hasActiveFilters"
-                                :active-filters-count="getActiveFiltersCount()" @reset="resetFilters">
+                                :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
                                     <CheckboxFilter class="w-full" :model-value="clientTypeFilter"
                                         :options="clientTypeOptions" placeholder="all"
-                                        @update:modelValue="handleClientTypeChange" />
+                                        @update:modelValue="clientTypeFilter = $event" />
                                 </div>
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') || 'Касса' }}</label>
                                     <CheckboxFilter class="w-full" :model-value="cashRegisterFilter"
                                         :options="cashRegisterOptions" placeholder="all"
-                                        @update:modelValue="handleCashRegisterChange" />
+                                        @update:modelValue="cashRegisterFilter = $event" />
                                 </div>
                             </FiltersContainer>
                         </template>
@@ -92,10 +92,11 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import MutualSettlementsBalanceWrapper from './MutualSettlementsBalanceWrapper.vue';
 import { eventBus } from '@/eventBus';
 import searchMixin from '@/mixins/searchMixin';
+import filtersMixin from '@/mixins/filtersMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
-    mixins: [notificationMixin, modalMixin, companyChangeMixin, searchMixin, crudEventMixin, getApiErrorMessageMixin],
+    mixins: [notificationMixin, modalMixin, companyChangeMixin, searchMixin, crudEventMixin, getApiErrorMessageMixin, filtersMixin],
     components: { NotificationToast, SideModalDialog, PrimaryButton, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
     data() {
         return {
@@ -342,7 +343,7 @@ export default {
             const cashRegisters = this.$store.getters.cashRegisters || [];
             return cashRegisters.map(cash => ({
                 value: cash.id,
-                label: `${cash.name} (${cash.currencySymbol || cash.currencyCode || ''})`
+                label: `${cash.name} (${cash.currencySymbol || ''})`
             }));
         },
         hasActiveFilters() {

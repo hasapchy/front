@@ -11,7 +11,6 @@ export default class ProjectTransactionDto {
         amount,
         currencyId,
         currencyName,
-        currencyCode,
         currencySymbol,
         note,
         date,
@@ -26,7 +25,6 @@ export default class ProjectTransactionDto {
         this.amount = amount;
         this.currencyId = currencyId;
         this.currencyName = currencyName;
-        this.currencyCode = currencyCode;
         this.currencySymbol = currencySymbol;
         this.note = note;
         this.date = date;
@@ -44,7 +42,6 @@ export default class ProjectTransactionDto {
             data.amount,
             data.currency_id,
             data.currency_name || data.currency?.name || null,
-            data.currency_code || data.currency?.code || null,
             data.currency_symbol || data.currency?.symbol || null,
             data.note,
             data.date,
@@ -58,7 +55,7 @@ export default class ProjectTransactionDto {
     }
 
     formatAmountWithCurrency() {
-        return `${this.formatAmount()} ${this.currencySymbol || this.currencyCode}`;
+        return `${this.formatAmount()} ${this.currencySymbol || ''}`;
     }
 
     formatDate() {

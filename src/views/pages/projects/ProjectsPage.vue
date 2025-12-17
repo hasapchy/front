@@ -32,10 +32,11 @@
                             <FiltersContainer
                                 :has-active-filters="hasActiveFilters"
                                 :active-filters-count="getActiveFiltersCount()"
-                                @reset="resetFilters">
+                                @reset="resetFilters"
+                                @apply="applyFilters">
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
-                                    <select v-model="statusFilter" @change="debouncedFetchItems" class="w-full">
+                                    <select v-model="statusFilter" class="w-full">
                                         <option value="">{{ $t('allStatuses') }}</option>
                                         <option v-for="status in statuses" :key="status.id" :value="status.id">
                                             {{ status.name }}
@@ -45,7 +46,7 @@
 
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент' }}</label>
-                                    <select v-model="clientFilter" @change="debouncedFetchItems" class="w-full">
+                                    <select v-model="clientFilter" class="w-full">
                                         <option value="">{{ $t('allClients') }}</option>
                                         <option v-for="client in clients" :key="client.id" :value="client.id">
                                             {{ client.first_name }} {{ client.last_name || client.contact_person }}
@@ -70,13 +71,11 @@
                             </div>
                         </template>
 
-                        <template #right>
+                        <template #right="{ resetColumns, columns, toggleVisible, log }">
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
                                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-                        </template>
-                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+                            <TableFilterButton v-if="viewMode === 'table' && columns && columns.length" :onReset="resetColumns">
                                 <ul>
                                     <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                         @change="log">
@@ -97,6 +96,8 @@
                                     </draggable>
                                 </ul>
                             </TableFilterButton>
+                        </template>
+                        <template #gear>
                         </template>
                     </TableControlsBar>
                 </template>
@@ -121,10 +122,11 @@
                     <FiltersContainer
                         :has-active-filters="hasActiveFilters"
                         :active-filters-count="getActiveFiltersCount()"
-                        @reset="resetFilters">
+                        @reset="resetFilters"
+                        @apply="applyFilters">
                         <div>
                             <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
-                            <select v-model="statusFilter" @change="debouncedFetchItems" class="w-full">
+                            <select v-model="statusFilter" class="w-full">
                                 <option value="">{{ $t('allStatuses') }}</option>
                                 <option v-for="status in statuses" :key="status.id" :value="status.id">
                                     {{ status.name }}
@@ -134,7 +136,7 @@
 
                         <div>
                             <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент' }}</label>
-                            <select v-model="clientFilter" @change="debouncedFetchItems" class="w-full">
+                            <select v-model="clientFilter" class="w-full">
                                 <option value="">{{ $t('allClients') }}</option>
                                 <option v-for="client in clients" :key="client.id" :value="client.id">
                                     {{ client.first_name }} {{ client.last_name || client.contact_person }}
@@ -218,6 +220,7 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
+import filtersMixin from '@/mixins/filtersMixin';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import { markRaw } from 'vue';
@@ -227,7 +230,7 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell, TableControlsBar, TableFilterButton, FiltersContainer, KanbanFieldsButton, draggable: VueDraggableNext },
     data() {
         return {

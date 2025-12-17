@@ -74,17 +74,16 @@ export function formatAmountWithColor(amount, options = {}) {
   return `<span class="${colorClass} ${className}">${sign}${formatted}${currency}</span>`;
 }
 
-export function formatAmountWithStyle(amount, currencyCode = '', formatFn = null) {
+export function formatAmountWithStyle(amount, currencySymbol = '', formatFn = null) {
   const val = parseFloat(amount);
   const color = val >= 0 ? "#EE4F47" : "#5CB85C";
   const formatted = formatFn ? formatFn(Math.abs(val)) : Math.abs(val).toFixed(2);
-  const currency = currencyCode || '';
+  const currency = currencySymbol || '';
   return `<span style="color:${color};font-weight:bold">${formatted} ${currency}</span>`;
 }
 
-export function formatAmountWithSignAndColor(amount, currencyCode = '', formatFn = null, isDebt = false) {
+export function formatAmountWithSignAndColor(amount, currencySymbol = '', formatFn = null, isDebt = false) {
   const val = parseFloat(amount);
-  const currencySymbol = currencyCode || '';
   const formatted = formatFn ? formatFn(Math.abs(val)) : Math.abs(val).toFixed(2);
   
   if (isDebt) {
@@ -93,9 +92,8 @@ export function formatAmountWithSignAndColor(amount, currencyCode = '', formatFn
   return `<span class="text-[#5CB85C] font-semibold">-${formatted} ${currencySymbol}</span>`;
 }
 
-export function formatAmountSimple(amount, currencyCode = '', formatFn = null) {
+export function formatAmountSimple(amount, currencySymbol = '', formatFn = null) {
   const val = parseFloat(amount);
-  const currencySymbol = currencyCode || '';
   const formatted = formatFn ? formatFn(Math.abs(val)) : Math.abs(val).toFixed(2);
   return `<span class="text-[#5CB85C] font-semibold">${formatted} ${currencySymbol}</span>`;
 }

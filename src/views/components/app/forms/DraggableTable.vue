@@ -32,7 +32,7 @@
     <!-- Desktop/Tablet Table View (hidden on mobile) -->
     <div class="desktop-table overflow-x-auto">
       <div class="overflow-x-auto w-full">
-        <table class="min-w-full bg-white shadow-md rounded mb-6" style="font-size: 12px;">
+        <table class="draggable-table min-w-full bg-white shadow-md rounded mb-6" style="font-size: 12px;">
           <thead class="bg-gray-100 rounded-t-sm">
             <draggable v-if="columns.length" tag="tr" class="dragArea list-group w-full" :list="columns" @change="log">
               <th v-for="(element, index) in columns" :key="element.name"
@@ -542,5 +542,10 @@ export default {
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
+}
+
+.draggable-table {
+  width: 100%;
+  min-width: max-content;
 }
 </style>

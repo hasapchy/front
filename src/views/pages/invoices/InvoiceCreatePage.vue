@@ -240,15 +240,19 @@ export default {
                             }
                         }
                         
+                        const quantity = parseFloat(product.quantity || 0);
+                        const price = parseFloat(product.price || 0);
+                        const totalPrice = product.totalPrice || product.total_price || (quantity * price);
+                        
                         return {
                             id: product.id,
                             productId: product.productId,
                             productName: product.productName,
                             name: product.productName,
                             productDescription: product.productDescription || '',
-                            quantity: product.quantity,
-                            price: product.price,
-                            totalPrice: product.totalPrice,
+                            quantity: quantity,
+                            price: price,
+                            totalPrice: totalPrice,
                             unitId: product.unitId,
                             unitName: product.unitName || product.unitShortName || '',
                             productImage: null,
@@ -330,16 +334,22 @@ export default {
                 const products = orderSearch ? orderSearch.allProductsFromOrders : [];
                 const totalAmount = orderSearch ? orderSearch.subtotal : 0;
                 
-                const invoiceProducts = products.map(product => ({
-                    product_id: product.productId || null,
-                    product_name: product.productName || product.name,
-                    product_description: product.productDescription || '',
-                    quantity: product.quantity,
-                    price: product.price,
-                    total_price: product.totalPrice || (product.quantity * product.price),
-                    unit_id: product.unitId || null,
-                    unit_name: product.unitName || product.unitShortName || ''
-                }));
+                const invoiceProducts = products.map(product => {
+                    const quantity = parseFloat(product.quantity || 0);
+                    const price = parseFloat(product.price || 0);
+                    const totalPrice = product.totalPrice || product.total_price || (quantity * price);
+                    
+                    return {
+                        product_id: product.productId || null,
+                        product_name: product.productName || product.name,
+                        product_description: product.productDescription || '',
+                        quantity: quantity,
+                        price: price,
+                        total_price: totalPrice,
+                        unit_id: product.unitId || null,
+                        unit_name: product.unitName || product.unitShortName || ''
+                    };
+                });
                 
                 
                 const data = {
@@ -348,7 +358,7 @@ export default {
                     order_ids: this.editingItem ? this.formData.order_ids : this.selectedOrders.map(o => o.id),
                     products: invoiceProducts,
                     total_amount: totalAmount,
-                    status: this.formData.status || 'new'
+                    status: this.formData.status || (this.editingItem ? this.editingItem.status : 'new')
                 };
 
                 if (this.editingItem) {

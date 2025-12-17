@@ -16,12 +16,10 @@ export default class TransactionDto {
     cashAmount,
     cashCurrencyId,
     cashCurrencyName,
-    cashCurrencyCode,
     cashCurrencySymbol,
     origAmount,
     origCurrencyId,
     origCurrencyName,
-    origCurrencyCode,
     origCurrencySymbol,
     userId,
     userName,
@@ -52,12 +50,10 @@ export default class TransactionDto {
     this.cashAmount = cashAmount;
     this.cashCurrencyId = cashCurrencyId;
     this.cashCurrencyName = cashCurrencyName;
-    this.cashCurrencyCode = cashCurrencyCode;
     this.cashCurrencySymbol = cashCurrencySymbol;
     this.origAmount = origAmount;
     this.origCurrencyId = origCurrencyId;
     this.origCurrencyName = origCurrencyName;
-    this.origCurrencyCode = origCurrencyCode;
     this.origCurrencySymbol = origCurrencySymbol;
     this.userId = userId;
     this.userName = userName;
@@ -111,12 +107,10 @@ export default class TransactionDto {
       this.cashAmount,
       this.cashCurrencyId,
       this.cashCurrencyName,
-      this.cashCurrencyCode,
       this.cashCurrencySymbol,
       this.origAmount,
       this.origCurrencyId,
       this.origCurrencyName,
-      this.origCurrencyCode,
       this.origCurrencySymbol,
       this.userId,
       this.userName,
@@ -154,12 +148,10 @@ export default class TransactionDto {
         data.cash_amount,
         data.cash_currency_id,
         data.cash_currency_name,
-        data.cash_currency_code,
         data.cash_currency_symbol,
         data.orig_amount,
         data.orig_currency_id,
         data.orig_currency_name,
-        data.orig_currency_code,
         data.orig_currency_symbol,
         data.user_id,
         data.user_name,

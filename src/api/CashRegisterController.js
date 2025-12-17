@@ -6,15 +6,16 @@ import BaseController from "./BaseController";
 
 export default class CashRegisterController extends BaseController {
   static async getItems(page = 1, per_page = 20) {
-    const data = await super.getItems("/cash_registers", page, per_page);
-    const items = CashRegisterDto.fromApiArray(data.items || []);
+    const responseData = await super.getItems("/cash_registers", page, per_page);
+    const items = CashRegisterDto.fromApiArray(responseData.data || []);
+    const meta = responseData.meta || {};
 
     return new PaginatedResponse(
       items,
-      data.current_page,
-      data.next_page,
-      data.last_page,
-      data.total
+      meta.current_page || page,
+      meta.next_page || null,
+      meta.last_page || 1,
+      meta.total || 0
     );
   }
 

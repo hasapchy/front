@@ -27,18 +27,18 @@
         </div>
 
         <!-- Касса (только для заказов) -->
-        <div v-if="!isProjectMode && showField('cashRegister') && order.cashName" class="mb-2">
+        <div v-if="!isProjectMode && showField('cashRegister') && order.cash?.name" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-cash-register text-gray-400 text-xs"></i>
-                <span class="truncate">{{ order.cashName }}</span>
+                <span class="truncate">{{ order.cash?.name }}</span>
             </div>
         </div>
 
         <!-- Склад (только для заказов) -->
-        <div v-if="!isProjectMode && showField('warehouse') && order.warehouseName" class="mb-2">
+        <div v-if="!isProjectMode && showField('warehouse') && order.warehouse?.name" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-warehouse text-gray-400 text-xs"></i>
-                <span class="truncate">{{ order.warehouseName }}</span>
+                <span class="truncate">{{ order.warehouse?.name }}</span>
             </div>
         </div>
 
@@ -68,10 +68,10 @@
         </div>
 
         <!-- Пользователь (только для заказов) -->
-        <div v-if="!isProjectMode && showField('user') && order.userName" class="mb-2">
+        <div v-if="!isProjectMode && showField('user') && order.user?.name" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-user text-gray-400"></i>
-                <span class="truncate">{{ order.userName }}</span>
+                <span class="truncate">{{ order.user?.name }}</span>
             </div>
         </div>
 
@@ -79,7 +79,7 @@
         <div v-if="!isProjectMode && order.projectId && showField('project')" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-folder text-purple-500 text-xs"></i>
-                <span class="truncate">{{ order.projectName }}</span>
+                <span class="truncate">{{ order.project?.name }}</span>
             </div>
         </div>
 
@@ -95,7 +95,7 @@
         <div v-if="isProjectMode && showField('user')" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-user text-gray-400"></i>
-                <span class="truncate">{{ order.userName || order.user_name || (order.creator && order.creator.name) || '-' }}</span>
+                <span class="truncate">{{ order.user?.name || order.userName || order.user_name || (order.creator && order.creator.name) || '-' }}</span>
             </div>
         </div>
 

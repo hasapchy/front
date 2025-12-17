@@ -29,10 +29,11 @@
                             <FiltersContainer
                                 :has-active-filters="hasActiveFilters"
                                 :active-filters-count="getActiveFiltersCount()"
-                                @reset="resetFilters">
+                                @reset="resetFilters"
+                                @apply="applyFilters">
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
-                                    <select v-model="dateFilter" @change="fetchItems" class="w-full">
+                                    <select v-model="dateFilter" class="w-full">
                                         <option value="all_time">{{ $t('allTime') }}</option>
                                         <option value="today">{{ $t('today') }}</option>
                                         <option value="yesterday">{{ $t('yesterday') }}</option>
@@ -47,11 +48,11 @@
                                 <div v-if="dateFilter === 'custom'" class="space-y-2">
                                     <div>
                                         <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
-                                        <input type="date" v-model="startDate" @change="fetchItems" class="w-full" />
+                                        <input type="date" v-model="startDate" class="w-full" />
                                     </div>
                                     <div>
                                         <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
-                                        <input type="date" v-model="endDate" @change="fetchItems" class="w-full" />
+                                        <input type="date" v-model="endDate" class="w-full" />
                                     </div>
                                 </div>
                             </FiltersContainer>
@@ -130,10 +131,11 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import { eventBus } from '@/eventBus';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import searchMixin from '@/mixins/searchMixin';
+import filtersMixin from '@/mixins/filtersMixin';
 
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,  companyChangeMixin, searchMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,  companyChangeMixin, searchMixin, filtersMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, ClientButtonCell, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, draggable: VueDraggableNext },
     data() {
         return {

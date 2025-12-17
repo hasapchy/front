@@ -38,7 +38,7 @@
                                     <i class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 cursor-move"></i>
                                     <span class="cash-register-name text-sm font-semibold text-center">
                                         {{ translateName(card.name) }}
-                                        <span class="cash-register-currency">({{ card.currencySymbol || card.currencyCode || '' }})</span>
+                                        <span class="cash-register-currency">({{ card.currencySymbol || '' }})</span>
                                     </span>
                                 </div>
                                 <span
@@ -216,7 +216,6 @@ export default {
                         type: 'cash_register',
                         name: item.name,
                         currencySymbol: item.currencySymbol,
-                        currencyCode: item.currencyCode,
                         balance: item.balance,
                         cashRegisterId: item.id
                     });

@@ -12,7 +12,6 @@ export default class SaleDto {
     totalPrice,
     currencyId,
     currencyName,
-    currencyCode,
     currencySymbol,
     cashId,
     cashName,
@@ -39,7 +38,6 @@ export default class SaleDto {
     this.totalPrice = totalPrice;
     this.currencyId = currencyId;
     this.currencyName = currencyName;
-    this.currencyCode = currencyCode;
     this.currencySymbol = currencySymbol;
     this.cashId = cashId;
     this.cashName = cashName;
@@ -102,7 +100,6 @@ export default class SaleDto {
         totalPrice,
         data.cash_register && data.cash_register.currency ? data.cash_register.currency.id : data.currency_id,
         data.cash_register && data.cash_register.currency ? data.cash_register.currency.name : data.currency_name,
-        data.cash_register && data.cash_register.currency ? data.cash_register.currency.code : data.currency_code,
         data.cash_register && data.cash_register.currency ? data.cash_register.currency.symbol : data.currency_symbol,
         data.cash_id,
         data.cash_register ? data.cash_register.name : null,

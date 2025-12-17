@@ -9,7 +9,6 @@ export default class OrderTempProductDto {
         this.quantity = data.quantity || 0;
         this.price = data.price || 0;
         this.unitId = data.unit_id || null;
-        this.unitName = data.unit_name || '';
         this.unitShortName = data.unit_short_name || '';
         this.createdAt = data.created_at || null;
         this.updatedAt = data.updated_at || null;
@@ -40,7 +39,6 @@ export default class OrderTempProductDto {
             quantity: quantity,
             price: price || product.retailPrice || 0,
             unitId: product.unitId,
-            unitName: product.unitName,
             unitShortName: product.unitShortName,
         });
     }
@@ -64,7 +62,6 @@ export default class OrderTempProductDto {
             quantity: this.quantity,
             price: this.price,
             unitId: this.unitId,
-            unitName: this.unitName,
             unitShortName: this.unitShortName,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt,

@@ -14,7 +14,7 @@
         </div>
         
         <div class="flex items-center gap-2">
-            <slot name="right">
+            <slot name="right" :resetColumns="$attrs.resetColumns" :columns="$attrs.columns" :toggleVisible="$attrs.toggleVisible" :log="$attrs.log">
                 <Pagination 
                     v-if="showPagination && paginationData && onPageChange"
                     :currentPage="paginationData.currentPage" 

@@ -13,7 +13,7 @@
             <select v-model="cashId" :disabled="!!editingItemId">
                 <option value="">{{ $t('no') }}</option>
                 <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
-                    {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
+                    {{ parent.name }} ({{ parent.currencySymbol || '' }})
                 </option>
             </select>
         </div>

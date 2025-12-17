@@ -343,7 +343,8 @@ export default {
         },
         async fetchOrderStatuses() {
             await this.$store.dispatch('loadOrderStatuses');
-            this.statuses = this.$store.getters.orderStatuses;
+            // Фильтруем только активные статусы
+            this.statuses = this.$store.getters.orderStatuses.filter(status => status.isActive !== false);
         },
         changeTab(tabName) {
             this.currentTab = tabName;
