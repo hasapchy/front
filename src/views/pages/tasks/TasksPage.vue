@@ -294,6 +294,7 @@ export default {
             savedErrorText: this.$t('errorSavingTask'),
             deletedSuccessText: this.$t('taskSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingTask'),
+            deletePermission: 'tasks_delete_all', // ← Добавьте эту строку
         }
     },
     computed: {
