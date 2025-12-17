@@ -4,7 +4,7 @@ import { startApiCall, endApiCall, getStore } from "@/store/storeManager";
 import TokenUtils from "@/utils/tokenUtils";
 
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_APP_BASE_URL || "http://192.168.0.119"}/api`,
+  baseURL: `${import.meta.env.VITE_APP_BASE_URL || "http://127.0.0.1"}/api`,
   headers: {
     "Content-Type": "application/json",
   },
