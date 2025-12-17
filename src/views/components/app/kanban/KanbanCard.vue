@@ -123,6 +123,47 @@
             </div>
         </div>
 
+        <!-- Поля для задач -->
+        <!-- Дата создания (для задач) -->
+        <div v-if="isTaskMode && showField('created_at') && order.created_at" class="mb-2">
+            <div class="flex items-center space-x-1 text-xs text-gray-600">
+                <i class="fas fa-calendar-plus text-gray-400"></i>
+                <span>{{ formatDate(order.created_at) }}</span>
+            </div>
+        </div>
+
+        <!-- Срок выполнения (для задач) -->
+        <div v-if="isTaskMode && showField('deadline') && order.deadline" class="mb-2">
+            <div class="flex items-center space-x-1 text-xs text-gray-600">
+                <i class="fas fa-calendar-check text-orange-400"></i>
+                <span>{{ formatDate(order.deadline) }}</span>
+            </div>
+        </div>
+
+        <!-- Создатель (для задач) -->
+        <div v-if="isTaskMode && showField('creator') && order.creator" class="mb-2">
+            <div class="flex items-center space-x-1 text-xs text-gray-600">
+                <i class="fas fa-user-plus text-blue-400"></i>
+                <span class="truncate">{{ order.creator.name || order.creator }}</span>
+            </div>
+        </div>
+
+        <!-- Супервайзер (для задач) -->
+        <div v-if="isTaskMode && showField('supervisor') && order.supervisor" class="mb-2">
+            <div class="flex items-center space-x-1 text-xs text-gray-600">
+                <i class="fas fa-user-tie text-purple-400"></i>
+                <span class="truncate">{{ order.supervisor.name || order.supervisor }}</span>
+            </div>
+        </div>
+
+        <!-- Исполнитель (для задач) -->
+        <div v-if="isTaskMode && showField('executor') && order.executor" class="mb-2">
+            <div class="flex items-center space-x-1 text-xs text-gray-600">
+                <i class="fas fa-user-check text-green-400"></i>
+                <span class="truncate">{{ order.executor.name || order.executor }}</span>
+            </div>
+        </div>
+
         <!-- Бюджет проекта (только для проектов с permission) -->
         <div v-if="isProjectMode && $store.getters.hasPermission('settings_project_budget_view') && order.budget && showField('budget')" class="mt-3 pt-3 border-t border-gray-100">
             <div class="flex items-center justify-between">
@@ -137,7 +178,7 @@
         </div>
 
         <!-- Сумма заказа (только для заказов) -->
-        <div v-if="!isProjectMode && showField('totalPrice')" class="mt-3 pt-3 border-t border-gray-100">
+        <div v-if="!isProjectMode && !isTaskMode && showField('totalPrice')" class="mt-3 pt-3 border-t border-gray-100">
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center space-x-1">
                     <i class="fas fa-money-bill-wave text-green-600 text-xs"></i>
@@ -180,8 +221,12 @@ export default {
     },
     emits: ['dblclick', 'select-toggle'],
     computed: {
+        isTaskMode() {
+            return !!(this.order.creator || this.order.supervisor || this.order.executor);
+        },
         kanbanFields() {
-            const mode = this.isProjectMode ? 'projects' : 'orders';
+            // ✅ Определить режим: если есть поля creator/supervisor/executor - это задачи
+            const mode = this.isProjectMode ? 'projects' : (this.isTaskMode ? 'tasks' : 'orders');
             return this.$store.state.kanbanCardFields[mode] || {};
         }
     },

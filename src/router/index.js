@@ -58,6 +58,16 @@ const routes = [
         },
       },
       {
+        path: "/tasks",
+        name: "Tasks",
+        component: () => import("@/views/pages/tasks/TasksPage.vue"),  
+        meta: {
+          title: "tasks",
+          requiresAuth: true,
+          permission: "tasks_view_all",
+        },
+      },
+      {
         path: "/orders",
         name: "Orders",
         component: OrdersPage,

@@ -276,6 +276,10 @@ export function timestampKey(key) {
 }
 
 export function isFreshByKey(key, ttlMs) {
+  if (process.env.NODE_ENV !== "production") {
+    return false; // Всегда считаем кеш устаревшим в режиме разработки
+  }
+  
   if (!key) return false;
 
   try {

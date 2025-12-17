@@ -297,6 +297,7 @@ const store = createStore({
       projects: false,
       orderStatuses: false,
       projectStatuses: false,
+      taskStatuses: false,
       transactionCategories: false,
       productStatuses: false,
       companyData: false,
@@ -327,6 +328,7 @@ const store = createStore({
     projectsDataCompanyId: null, // ✅ Для кого сохранены projectsData
     orderStatuses: [], // Статусы заказов
     projectStatuses: [], // Статусы проектов
+    taskStatuses: [], // Статусы задач
     transactionCategories: [], // Категории транзакций
     productStatuses: [], // Статусы товаров
     currentCompany: null, // Текущая выбранная компания
@@ -459,6 +461,9 @@ const store = createStore({
     },
     SET_PROJECT_STATUSES(state, projectStatuses) {
       state.projectStatuses = projectStatuses;
+    },
+    SET_TASK_STATUSES(state, taskStatuses) {
+      state.taskStatuses = taskStatuses;
     },
     INCREMENT_LOGO_VERSION(state) {
       state.logoVersion = (state.logoVersion || 0) + 1;
@@ -1026,6 +1031,21 @@ const store = createStore({
         },
       });
     },
+    async loadTaskStatuses(context) {
+      await loadGlobalReference(context, {
+        cacheKey: "taskStatuses",
+        ttl: CACHE_TTL.taskStatuses,
+        mutation: "SET_TASK_STATUSES",
+        loadingFlag: "taskStatuses",
+        logName: "🎯 Статусы задач",
+        fetchFn: async () => {
+          const TaskStatusController = (
+            await import("@/api/TaskStatusController")
+          ).default;
+          return await TaskStatusController.getListItems();
+        },
+      });
+    },
     async loadTransactionCategories(context) {
       await loadGlobalReference(context, {
         cacheKey: "transactionCategories",
@@ -1441,6 +1461,13 @@ const store = createStore({
           permission: "sales_view",
         },
         {
+          id: "tasks",
+          to: "/tasks",
+          icon: "fas fa-tasks mr-2",
+          label: "tasks",
+          permission: "tasks_view_all", //tasks_view
+        },
+        {
           id: "transactions",
           to: "/transactions",
           icon: "fas fa-coins mr-2",
@@ -1529,6 +1556,7 @@ const store = createStore({
       const defaultMain = [
         "orders",
         "sales",
+        "tasks",
         "transactions",
         "clients",
         "projects",
@@ -1718,6 +1746,7 @@ const store = createStore({
       state.projects.filter((p) => p.statusId !== 4 && p.statusId !== 5),
     orderStatuses: (state) => state.orderStatuses,
     projectStatuses: (state) => state.projectStatuses,
+    taskStatuses: (state) => state.taskStatuses,
     transactionCategories: (state) => state.transactionCategories,
     productStatuses: (state) => state.productStatuses,
     getUnitById: (state) => (id) => state.units.find((unit) => unit.id === id),

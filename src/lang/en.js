@@ -78,6 +78,7 @@ export default {
   categories: 'Product Categories',
   orders: 'Orders',
   sales: 'Sales',
+  tasks: 'Tasks',
   warehouses: 'Warehouses',
   finance: 'Finance',
   transactions: 'Transactions',
@@ -467,4 +468,33 @@ export default {
     salaryDifferenceHelp: 'Salary accrual is money for work done by the employee (a debt record, employee owes us). Salary payment is the actual payment of money to the employee (not a debt, reduces employee debt).',
     employeeClientNotFound: 'Client for employee not found',
     employeeClientNotFoundDescription: 'To work with employee balance, you need to create a linked client with employee_id matching this employee\'s ID.',
+
+    // Common fields
+    title: 'Title',
+    description: 'Description',
+    status: 'Status',
+    project: 'Project',
+    deadline: 'Due date',
+    enterDescription: 'Enter description',
+
+    // Task statuses
+    pending: 'Pending',
+    inProgress: 'In Progress',
+    completed: 'Completed',
+    postponed: 'Postponed',
+
+    // Tasks
+    createTask: 'Create Task',
+    editTask: 'Edit Task',
+    taskSuccessfullyAdded: 'Task successfully created',
+    taskSuccessfullyUpdated: 'Task successfully updated',
+    taskSuccessfullyDeleted: 'Task successfully deleted',
+    errorSavingTask: 'Error saving task',
+    errorGettingTaskList: 'Error loading task list',
+    titleRequired: 'Task title is required',
+    supervisor: 'Supervisor',
+    executor: 'Executor',
+    creator: 'Creator',
+    select: 'Select',
+    errorDeletingTask: 'Error deleting task',
 }
