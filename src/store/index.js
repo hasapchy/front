@@ -1214,7 +1214,7 @@ const store = createStore({
         }
 
         await dispatch("setUser", userData.user);
-        await dispatch("setPermissions", userData.permissions || []);
+        await dispatch("setPermissions", userData.user?.permissions || userData.permissions || []);
         await dispatch("initializeMenu");
 
         if (!isBasementWorker) {
