@@ -416,6 +416,7 @@ export default {
     
     // Exchange rate
     exchangeRate: 'Exchange Rate',
+    atExchangeRate: 'at rate',
     exchangeRateHelp: 'Rate shows how many units of target currency you get for 1 unit of source currency',
     receiverAmount: 'Receiver Amount',
     

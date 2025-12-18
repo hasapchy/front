@@ -40,7 +40,7 @@
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="$t('deleteCashRegister')" :confirm-text="$t('deleteCashRegister')" :leave-text="$t('cancel')" />
+        :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
         :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
@@ -93,10 +93,7 @@ export default {
             return this.currencies.find(currency => currency.id == this.currency_id);
         },
         assignableUsers() {
-            if (!Array.isArray(this.users)) {
-                return [];
-            }
-            return this.users.filter(this.userHasCashAccess);
+            return Array.isArray(this.users) ? this.users.filter(this.userHasCashAccess) : [];
         },
         userOptions() {
             return this.assignableUsers.map(user => {
@@ -119,7 +116,7 @@ export default {
             };
         },
         async fetchUsers() {
-            if (this.$store.getters.usersForCurrentCompany && this.$store.getters.usersForCurrentCompany.length > 0) {
+            if (this.$store.getters.usersForCurrentCompany?.length) {
                 this.users = this.$store.getters.usersForCurrentCompany;
                 this.filterSelectedUsers();
                 return;
@@ -129,7 +126,7 @@ export default {
             this.filterSelectedUsers();
         },
         async fetchCurrencies() {
-            if (this.$store.getters.currencies && this.$store.getters.currencies.length > 0) {
+            if (this.$store.getters.currencies?.length) {
                 this.currencies = this.$store.getters.currencies;
                 return;
             }
@@ -137,15 +134,10 @@ export default {
             this.currencies = this.$store.getters.currencies;
         },
         userHasCashAccess(user) {
-            if (!user || !Array.isArray(user.permissions)) {
-                return false;
-            }
-            return user.permissions.some(permission => permission === 'cash_registers_view' || permission === 'cash_registers_view_all' || permission.startsWith('cash_registers_view_'));
+            return user?.permissions?.some(permission => permission === 'cash_registers_view' || permission === 'cash_registers_view_all' || permission.startsWith('cash_registers_view_')) || false;
         },
         filterSelectedUsers() {
-            if (!Array.isArray(this.users) || this.users.length === 0) {
-                return;
-            }
+            if (!Array.isArray(this.users) || !this.users.length) return;
             const availableIds = new Set(this.assignableUsers.map(user => user.id.toString()));
             const filtered = this.selectedUsers.filter(id => availableIds.has(id.toString()));
             if (filtered.length !== this.selectedUsers.length) {
@@ -153,28 +145,26 @@ export default {
             }
         },
         async save() {
-            if (!this.selectedUsers || this.selectedUsers.length === 0) {
+            if (!this.selectedUsers?.length) {
                 this.$emit('saved-error', this.$t('cashRegisterMustHaveAtLeastOneUser'));
                 return;
             }
 
             this.saveLoading = true;
             try {
+                const data = {
+                    name: this.name,
+                    users: this.selectedUsers
+                };
+                
                 if (this.editingItemId != null) {
-                    var resp = await CashRegisterController.updateItem(
-                        this.editingItemId,
-                        {
-                            name: this.name,
-                            users: this.selectedUsers,
-                        });
+                    var resp = await CashRegisterController.updateItem(this.editingItemId, data);
                 } else {
-                    var resp = await CashRegisterController.storeItem({
-                        name: this.name,
-                        balance: this.balance,
-                        currency_id: this.currency_id,
-                        users: this.selectedUsers
-                    });
+                    data.balance = this.balance;
+                    data.currency_id = this.currency_id;
+                    var resp = await CashRegisterController.storeItem(data);
                 }
+                
                 if (resp.message) {
                     this.$emit('saved');
                     this.clearForm();
@@ -183,17 +173,14 @@ export default {
                 this.$emit('saved-error', this.getApiErrorMessage(error));
             }
             this.saveLoading = false;
-
         },
         async deleteItem() {
             this.closeDeleteDialog();
-            if (this.editingItemId == null) {
-                return;
-            }
+            if (!this.editingItemId) return;
+            
             this.deleteLoading = true;
             try {
-                var resp = await CashRegisterController.deleteItem(
-                    this.editingItemId);
+                var resp = await CashRegisterController.deleteItem(this.editingItemId);
                 if (resp.message) {
                     this.$emit('deleted');
                     this.clearForm();
@@ -229,7 +216,7 @@ export default {
                     this.selectedUsers = newEditingItem.getUserIds() || [];
                     this.balance = newEditingItem.balance || '';
                     this.currency_id = newEditingItem.currencyId || '';
-                    this.editingItemId = newEditingItem.id || null;
+                    this.editingItemId = newEditingItem.id;
                 } else {
                     this.name = '';
                     this.selectedUsers = [];

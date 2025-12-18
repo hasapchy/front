@@ -3,7 +3,7 @@ import { formatCurrency } from "@/utils/numberUtils";
 import { createFromApiArray } from "@/utils/dtoUtils";
 
 export default class TransferDto {
-    constructor(id, cashFromId, cashFromName, currencyFromId, currencyFromName, currencyFromSymbol, cashToId, cashToName, currencyToId, currencyToName, currencyToSymbol, amount, userId, userName, date = null, note = null) {
+    constructor(id, cashFromId, cashFromName, currencyFromId, currencyFromName, currencyFromSymbol, cashToId, cashToName, currencyToId, currencyToName, currencyToSymbol, amount, userId, userName, date = null, note = null, exchangeRate = null) {
         this.id = id;
         this.cashFromId = cashFromId;
         this.cashFromName = cashFromName;
@@ -20,6 +20,7 @@ export default class TransferDto {
         this.userName = userName;
         this.date = date;
         this.note = note;
+        this.exchangeRate = exchangeRate;
     }
 
     formatDate() {
@@ -44,7 +45,8 @@ export default class TransferDto {
          data.user_id,
          data.user_name,
          data.date,
-         data.note
+         data.note,
+         data.exchange_rate || null
        );
      }).filter(Boolean);
    }

@@ -198,6 +198,7 @@ async function loadProductsForSearch(getters, isProducts, limit = 10) {
 async function clearAllCacheOnCompanyChange() {
   try {
     await CacheInvalidator.invalidateAll();
+    localStorage.removeItem("menuItems");
   } catch (error) {
     console.error("Error clearing cache on company change:", error);
   }
@@ -1356,7 +1357,7 @@ const store = createStore({
         throw error;
       }
     },
-    async refreshUserPermissions({ commit, getters, state }, options = {}) {
+    async refreshUserPermissions({ commit, dispatch, getters, state }, options = {}) {
       if (state.loadingFlags.userPermissions) {
         return;
       }
@@ -1372,8 +1373,10 @@ const store = createStore({
           () => apiInstance.get("/user/me"),
           3
         );
+        const permissions = response.data.user?.permissions || response.data.permissions || [];
         commit("SET_USER", response.data.user);
-        commit("SET_PERMISSIONS", response.data.permissions);
+        commit("SET_PERMISSIONS", permissions);
+        await dispatch("initializeMenu");
         return response.data;
       } catch (error) {
         console.error("Ошибка обновления прав пользователя:", error);
@@ -1425,7 +1428,7 @@ const store = createStore({
       });
       commit("SET_USERS", []);
     },
-    initializeMenu({ commit }) {
+    initializeMenu({ commit, state }) {
       const storageKey = "menuItems";
       let saved = null;
 

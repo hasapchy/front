@@ -1,86 +1,154 @@
 <template>
   <div>
-    <!-- Заголовок -->
-    <div class="md:flex md:items-center md:justify-between">
-      <div class="flex-1 min-w-0">
-        <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-          {{ $t('orders') }}
-        </h2>
+    <transition name="fade" mode="out-in">
+      <div v-if="!loading" :key="`table-${$i18n.locale}`">
+        <DraggableTable 
+          table-key="basementOrders"
+          :columns-config="columns"
+          :table-data="orders"
+          :item-mapper="itemMapper"
+          :on-item-click="editOrder">
+          <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+            <TableControlsBar 
+              :show-filters="true"
+              :has-active-filters="hasActiveFilters"
+              :active-filters-count="getActiveFiltersCount()"
+              :on-filters-reset="resetFilters"
+              :show-pagination="true"
+              :pagination-data="paginationData ? { currentPage: paginationData.currentPage, lastPage: paginationData.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+              :on-page-change="fetchOrders" 
+              :on-per-page-change="handlePerPageChange"
+              :resetColumns="resetColumns"
+              :columns="columns"
+              :toggleVisible="toggleVisible"
+              :log="log">
+              <template #left>
+                <router-link to="/basement/orders/create">
+                  <PrimaryButton
+                    icon="fas fa-plus"
+                  >
+                    {{ $t('createOrder') }}
+                  </PrimaryButton>
+                </router-link>
+
+                <FiltersContainer 
+                  :has-active-filters="hasActiveFilters"
+                  :active-filters-count="getActiveFiltersCount()" 
+                  @reset="resetFilters" 
+                  @apply="applyFilters">
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
+                    <select v-model="dateFilter" class="w-full">
+                      <option value="all_time">{{ $t('allTime') }}</option>
+                      <option value="today">{{ $t('today') }}</option>
+                      <option value="yesterday">{{ $t('yesterday') }}</option>
+                      <option value="this_week">{{ $t('thisWeek') }}</option>
+                      <option value="this_month">{{ $t('thisMonth') }}</option>
+                      <option value="last_week">{{ $t('lastWeek') }}</option>
+                      <option value="last_month">{{ $t('lastMonth') }}</option>
+                      <option value="custom">{{ $t('selectDates') }}</option>
+                    </select>
+                  </div>
+
+                  <div v-if="dateFilter === 'custom'" class="space-y-2">
+                    <div>
+                      <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
+                      <input type="date" v-model="startDate" class="w-full" />
+                    </div>
+                    <div>
+                      <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
+                      <input type="date" v-model="endDate" class="w-full" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block mb-2 text-xs font-semibold">{{ $t('project') || 'Проект' }}</label>
+                    <select v-model="projectFilter" class="w-full">
+                      <option value="">{{ $t('allProjects') }}</option>
+                      <option v-for="project in projects" :key="project.id" :value="project.id">
+                        {{ project.name }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <!-- Фильтр по клиенту в basement не используется -->
+                </FiltersContainer>
+              </template>
+
+              <template #right>
+                <Pagination 
+                  v-if="paginationData" 
+                  :currentPage="paginationData.currentPage" 
+                  :lastPage="paginationData.lastPage"
+                  :per-page="perPage" 
+                  :per-page-options="perPageOptions" 
+                  :show-per-page-selector="true"
+                  @changePage="fetchOrders" 
+                  @perPageChange="handlePerPageChange" 
+                />
+                <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+                  <ul>
+                    <draggable v-if="columns && columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
+                      <li v-for="(element, index) in columns" :key="element.name"
+                          @click="toggleVisible(index)"
+                          class="flex items-center hover:bg-gray-100 p-2 rounded">
+                          <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                              <div>
+                                  <i class="text-sm mr-2 text-[#337AB7]"
+                                      :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                  {{ $te(element.label) ? $t(element.label) : element.label }}
+                              </div>
+                              <div><i
+                                      class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                              </div>
+                          </div>
+                      </li>
+                    </draggable>
+                  </ul>
+                </TableFilterButton>
+              </template>
+            </TableControlsBar>
+          </template>
+        </DraggableTable>
       </div>
-      <div class="mt-4 flex md:mt-0 md:ml-4 space-x-2">
-        <router-link to="/basement/orders/create">
-          <PrimaryButton
-            icon="fas fa-plus"
-            :is-info="true"
-          >
-            {{ $t('createOrder') }}
-          </PrimaryButton>
-        </router-link>
+
+      <div v-else key="loader" class="flex justify-center items-center h-64">
+        <div class="text-center flex flex-col items-center gap-2">
+          <SpinnerIcon />
+          <p class="mt-2 text-gray-500">{{ $t('loading') }}</p>
+        </div>
       </div>
-    </div>
-
-    <!-- Пагинация сверху -->
-    <div class="mt-4 flex justify-end">
-      <Pagination 
-        v-if="paginationData" 
-        :currentPage="paginationData.currentPage" 
-        :lastPage="paginationData.lastPage"
-        :per-page="perPage" 
-        :per-page-options="perPageOptions" 
-        :show-per-page-selector="true"
-        @changePage="fetchOrders" 
-        @perPageChange="handlePerPageChange" 
-      />
-    </div>
-
-    <!-- Таблица заказов -->
-    <div class="mt-8">
-      <div v-if="loading" class="text-center py-12">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-        <p class="mt-2 text-gray-500">{{ $t('loading') }}</p>
-      </div>
-
-      <DraggableTable 
-        v-else
-        table-key="basementOrders"
-        :columns-config="columns"
-        :table-data="orders"
-        :item-mapper="itemMapper"
-        :on-item-click="editOrder"
-      />
-    </div>
-
-    <!-- Пагинация снизу -->
-    <div class="mt-4 flex justify-end">
-      <Pagination 
-        v-if="paginationData" 
-        :currentPage="paginationData.currentPage" 
-        :lastPage="paginationData.lastPage"
-        :per-page="perPage" 
-        :per-page-options="perPageOptions" 
-        :show-per-page-selector="true"
-        @changePage="fetchOrders" 
-        @perPageChange="handlePerPageChange" 
-      />
-    </div>
-
+    </transition>
   </div>
 </template>
 
 <script>
-import { BasementAuthController } from '@/api/basement/BasementAuthController'
-import basementApi from '@/api/basement/basementAxiosInstance'
+import BasementOrderController from '@/api/basement/BasementOrderController'
+import BasementProjectController from '@/api/basement/BasementProjectController'
+import BasementClientController from '@/api/basement/BasementClientController'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'
+import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
+import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue'
+import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import Pagination from '@/views/components/app/buttons/Pagination.vue'
+import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue'
+import filtersMixin from '@/mixins/filtersMixin'
+import { VueDraggableNext } from 'vue-draggable-next'
 import { formatOrderDate } from '@/utils/dateUtils'
 
 export default {
   name: 'BasementOrdersPage',
+  mixins: [filtersMixin],
   components: {
     PrimaryButton,
     DraggableTable,
-    Pagination
+    TableControlsBar,
+    TableFilterButton,
+    FiltersContainer,
+    Pagination,
+    draggable: VueDraggableNext,
+    SpinnerIcon
   },
   data() {
     return {
@@ -88,7 +156,12 @@ export default {
       loading: true,
       paginationData: null,
       perPage: 20,
-      perPageOptions: [10, 20, 50, 100]
+      perPageOptions: [10, 20, 50, 100],
+      projects: [],
+      dateFilter: 'all_time',
+      startDate: null,
+      endDate: null,
+      projectFilter: ''
     }
   },
   computed: {
@@ -129,23 +202,37 @@ export default {
     }
   },
   async mounted() {
+    await this.fetchProjects()
     await this.fetchOrders(1)
   },
   methods: {
+    async fetchProjects() {
+      try {
+        const projects = await BasementProjectController.getItems(1, { active_only: true })
+        this.projects = Array.isArray(projects) ? projects : (projects.items || [])
+      } catch (error) {
+        this.projects = []
+      }
+    },
     async fetchOrders(page = 1) {
       this.loading = true
       try {
-        const { data } = await basementApi.get('/orders', {
-          params: {
-            page,
-            per_page: this.perPage
-          }
-        })
-        this.orders = data.items || []
+        const response = await BasementOrderController.getItems(
+          page,
+          this.perPage,
+          null,
+          this.dateFilter,
+          this.startDate,
+          this.endDate,
+          null,
+          this.projectFilter,
+          null
+        )
+        this.orders = response.items || []
         this.paginationData = {
-          currentPage: data.current_page || page,
-          lastPage: data.last_page || 1,
-          total: data.total || 0
+          currentPage: response.currentPage || page,
+          lastPage: response.lastPage || 1,
+          total: response.total || 0
         }
       } catch (error) {
         this.orders = []
@@ -153,6 +240,24 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+    applyFilters() {
+      this.fetchOrders(1)
+    },
+    resetFilters() {
+      this.dateFilter = 'all_time'
+      this.startDate = null
+      this.endDate = null
+      this.projectFilter = ''
+      this.fetchOrders(1)
+    },
+    getActiveFiltersCount() {
+      let count = 0
+      if (this.dateFilter !== 'all_time') count++
+      if (this.projectFilter !== '') count++
+      if (this.startDate !== null && this.startDate !== '') count++
+      if (this.endDate !== null && this.endDate !== '') count++
+      return count
     },
     handlePerPageChange(newPerPage) {
       this.perPage = newPerPage

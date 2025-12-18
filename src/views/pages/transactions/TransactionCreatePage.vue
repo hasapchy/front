@@ -62,22 +62,26 @@
                 </span>
             </span>
         </div>
-        <div v-if="cashCurrencyId != currencyId && editingItemId" class="flex items-center space-x-2">
-            <div class="w-full mt-2">
-                <label>{{ $t('amountAfterConversion') }}</label>
-                <input type="number" v-model="cashAmount" :readonly="true" :disabled="true">
-            </div>
-            <div class="w-full mt-2">
-                <label class="block mb-1">{{ $t('cashCurrency') }}</label>
-                <select v-model="cashCurrencyId" :disabled="true" readonly>
-                    <option value="">{{ $t('no') }}</option>
-                    <template v-if="currencies.length">
-                        <option v-for="parent in currencies" :key="parent.id" :value="parent.id">
-                            {{ parent.symbol }} -
-                            {{ parent.name }}
-                        </option>
-                    </template>
-                </select>
+        <div v-if="showExchangeRate" class="mt-2">
+            <label>{{ $t('exchangeRate') }}</label>
+            <input type="number" v-model="exchangeRate" step="0.000001" min="0.000001" @input="handleExchangeRateChange">
+        </div>
+        <div v-if="showCalculatedAmount" class="mt-2 p-2 bg-blue-50 rounded">
+            <div class="text-sm text-gray-600 mb-1">
+                {{ formatCurrency(origAmount, transactionCurrencySymbol || '', 2, true) }} 
+                {{ $t('atExchangeRate') || 'по курсу' }} 
+                {{ exchangeRate }} = 
+                <span class="text-lg font-bold text-black inline-flex items-center gap-1">
+                    <input
+                        type="number"
+                        v-model.number="calculatedCashAmountInput"
+                        step="0.01"
+                        min="0.01"
+                        :disabled="isTransferTransaction"
+                        class="w-24 bg-transparent border-b border-black focus:outline-none text-lg font-bold"
+                    >
+                    <span>{{ cashCurrencySymbol || '' }}</span>
+                </span>
             </div>
         </div>
         <div class="mt-2" v-if="isFieldVisible('category')">
@@ -120,12 +124,12 @@
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-trash"
-            :disabled="isDeletedTransaction || !$store.getters.hasPermission('transactions_delete')">
+            :disabled="isDeletedTransaction || isTransferTransaction || !$store.getters.hasPermission('transactions_delete')">
         </PrimaryButton>
         <PrimaryButton v-if="editingItem != null" :onclick="copyTransaction" icon="fas fa-copy"
-            :disabled="isDeletedTransaction || !$store.getters.hasPermission('transactions_create')">
+            :disabled="isDeletedTransaction || isTransferTransaction || !$store.getters.hasPermission('transactions_create')">
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="isDeletedTransaction || (editingItemId != null && !$store.getters.hasPermission('transactions_update')) ||
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="isDeletedTransaction || isTransferTransaction || (editingItemId != null && !$store.getters.hasPermission('transactions_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('transactions_create'))">
         </PrimaryButton>
     </div>
@@ -150,7 +154,8 @@ import OrderStatusController from '@/api/OrderStatusController';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
-import { roundValue } from '@/utils/numberUtils';
+import { roundValue, formatCurrency } from '@/utils/numberUtils';
+import AppController from '@/api/AppController';
 
 
 export default {
@@ -225,6 +230,8 @@ export default {
             deleteDialog: false,
             deleteLoading: false,
             orderInfo: null,
+            exchangeRate: null,
+            isExchangeRateManual: false
 
         }
     },
@@ -238,12 +245,12 @@ export default {
         isDeletedTransaction() {
             return !!(this.editingItem && (this.editingItem.isDeleted || this.editingItem.is_deleted));
         },
+        isTransferTransaction() {
+            return !!(this.editingItem && this.editingItem.isTransfer == 1);
+        },
         isSourceRestricted() {
             if (!this.editingItem) {
                 return false;
-            }
-            if (this.editingItem.isTransfer == 1) {
-                return true;
             }
             const source = this.editingItem.sourceType || '';
             return Boolean(source && (source.includes('Order') || source.includes('Sale') || source.includes('WhReceipt')));
@@ -316,6 +323,52 @@ export default {
         showAdjustmentBalancePreview() {
             const previewEnabled = this.formConfig?.options?.showBalancePreview;
             return !!previewEnabled && this.currentClientBalance !== null && this.currentClientBalance !== undefined;
+        },
+        showExchangeRate() {
+            if (!this.cashId || !this.currencyId) return false;
+            const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
+            if (!selectedCash) return false;
+            const cashCurrencyId = selectedCash.currency_id || selectedCash.currencyId;
+            const transactionCurrencyId = this.currencyId;
+            return cashCurrencyId != transactionCurrencyId;
+        },
+        cashCurrencySymbol() {
+            if (!this.cashId) return '';
+            const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
+            return selectedCash?.currencySymbol || '';
+        },
+        transactionCurrencySymbol() {
+            if (!this.currencyId) return '';
+            const currency = this.currencies.find(c => c.id == this.currencyId);
+            return currency?.symbol || '';
+        },
+        calculatedCashAmount() {
+            if (!this.exchangeRate || !this.origAmount) return null;
+            const result = parseFloat(this.origAmount) * parseFloat(this.exchangeRate);
+            return Math.round(result * 100) / 100;
+        },
+        calculatedCashAmountInput: {
+            get() {
+                const result = this.calculatedCashAmount;
+                return result !== null && result !== undefined ? result : '';
+            },
+            set(value) {
+                const amount = parseFloat(value);
+                const orig = parseFloat(this.origAmount);
+                if (!orig || isNaN(amount) || amount <= 0) {
+                    return;
+                }
+                const rate = amount / orig;
+                this.exchangeRate = rate.toFixed(6);
+            }
+        },
+        showCalculatedAmount() {
+            if (!this.cashId || !this.currencyId) return false;
+            const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
+            if (!selectedCash) return false;
+            const cashCurrencyId = selectedCash.currency_id || selectedCash.currencyId;
+            const transactionCurrencyId = this.currencyId;
+            return this.calculatedCashAmount && cashCurrencyId != transactionCurrencyId;
         },
         balanceAfterAdjustmentValue() {
             if (!this.showAdjustmentBalancePreview) {
@@ -411,6 +464,10 @@ export default {
                 }
             }
 
+            if (this.showExchangeRate && !this.editingItemId) {
+                await this.calculateExchangeRate();
+            }
+
             this.saveInitialState();
             this.applyTypeConstraints();
             this.applyDebtConstraints();
@@ -418,6 +475,7 @@ export default {
         });
     },
     methods: {
+        formatCurrency,
         ensureEditable(eventName = 'saved-error') {
             if (!this.isDeletedTransaction && !this.isSourceRestricted) {
                 return true;
@@ -556,6 +614,77 @@ export default {
                 }
             }
         },
+        async calculateExchangeRate() {
+            if (!this.showExchangeRate || this.isExchangeRateManual) {
+                return;
+            }
+
+            if (!this.currencyId || !this.cashId) {
+                this.exchangeRate = null;
+                return;
+            }
+
+            const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
+            if (!selectedCash) {
+                this.exchangeRate = null;
+                return;
+            }
+
+            const transactionCurrencyId = parseInt(this.currencyId);
+            const cashCurrencyId = parseInt(selectedCash.currency_id || selectedCash.currencyId);
+
+            if (transactionCurrencyId == cashCurrencyId) {
+                this.exchangeRate = '1.0';
+                return;
+            }
+
+            try {
+                const transactionCurrency = this.currencies.find(c => c.id == transactionCurrencyId);
+                const cashCurrency = this.currencies.find(c => c.id == cashCurrencyId);
+                
+                if (!transactionCurrency || !cashCurrency) {
+                    this.exchangeRate = '1.0';
+                    return;
+                }
+
+                const fromRateData = await AppController.getCurrencyExchangeRate(transactionCurrencyId);
+                const toRateData = await AppController.getCurrencyExchangeRate(cashCurrencyId);
+                
+                if (!fromRateData?.exchange_rate || !toRateData?.exchange_rate) {
+                    this.exchangeRate = '1.0';
+                    return;
+                }
+                
+                const fromRate = parseFloat(fromRateData.exchange_rate);
+                const toRate = parseFloat(toRateData.exchange_rate);
+                if (isNaN(fromRate) || isNaN(toRate) || fromRate <= 0 || toRate <= 0) {
+                    this.exchangeRate = '1.0';
+                    return;
+                }
+                
+                const defaultCurrency = this.currencies.find(c => c.isDefault);
+                if (!defaultCurrency) {
+                    this.exchangeRate = '1.0';
+                    return;
+                }
+                
+                let calculatedRate;
+                if (transactionCurrencyId == defaultCurrency.id) {
+                    calculatedRate = (1 / toRate).toFixed(6);
+                } else if (cashCurrencyId == defaultCurrency.id) {
+                    calculatedRate = fromRate.toFixed(6);
+                } else {
+                    calculatedRate = (fromRate / toRate).toFixed(6);
+                }
+                
+                this.exchangeRate = calculatedRate;
+            } catch (error) {
+                this.exchangeRate = '1.0';
+            }
+        },
+        handleExchangeRateChange() {
+            this.isExchangeRateManual = true;
+        },
         async save() {
             if (!this.ensureEditable('saved-error')) {
                 return;
@@ -595,6 +724,15 @@ export default {
                         note: this.note,
                         is_debt: this.isDebt,
                     };
+                    if (this.showExchangeRate && this.exchangeRate !== null && this.exchangeRate !== '') {
+                        updateData.exchange_rate = parseFloat(this.exchangeRate);
+                    }
+                    console.log('Transaction update payload', {
+                        id: this.editingItemId,
+                        hasCustomExchangeRate: !!updateData.exchange_rate,
+                        exchangeRate: updateData.exchange_rate,
+                        payload: updateData,
+                    });
                     if (!this.fieldConfig('client').excludeFromRequest) {
                         updateData.client_id = this.selectedClient?.id;
                     }
@@ -625,6 +763,9 @@ export default {
                         order_id: this.orderId,
                         is_debt: this.isDebt,
                     };
+                    if (this.showExchangeRate && this.exchangeRate) {
+                        requestData.exchange_rate = parseFloat(this.exchangeRate);
+                    }
                     if (!this.fieldConfig('client').excludeFromRequest) {
                         requestData.client_id = this.selectedClient?.id;
                     }
@@ -683,17 +824,19 @@ export default {
             this.origAmount = 0;
             this.note = '';
             this.isDebt = this.fieldConfig('debt').enforcedValue ?? false;
-            this.categoryId = 4; // Устанавливаем id = 4 для типа income по умолчанию
+            this.categoryId = 4;
             this.projectId = this.initialProjectId || '';
             this.date = new Date().toISOString().substring(0, 16);
             this.selectedClient = this.initialClient || null;
             this.selectedSource = null;
             this.sourceType = '';
             this.editingItemId = null;
+            this.exchangeRate = null;
+            this.isExchangeRateManual = false;
             this.applyTypeConstraints();
             this.applyDebtConstraints();
             this.applyCategoryConstraints();
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            this.resetFormChanges();
         },
         showDeleteDialog() {
             if (!this.ensureEditable('deleted-error')) {
@@ -925,6 +1068,8 @@ export default {
                     this.selectedClient = newEditingItem.client || this.initialClient || null;
                     this.editingItemId = newEditingItem.id || null;
                     this.isDebt = newEditingItem.isDebt || false;
+                    this.exchangeRate = newEditingItem.exchangeRate || null;
+                    this.isExchangeRateManual = !!newEditingItem.exchangeRate;
                     // Загружаем источник если он есть
                     if (newEditingItem.sourceType && newEditingItem.sourceId) {
                         this.loadSourceForEdit(newEditingItem.sourceType, newEditingItem.sourceId);
@@ -989,12 +1134,16 @@ export default {
         // ✅ allProjects теперь computed property, не нужен watcher
         '$store.state.currencies'(newVal) {
             this.currencies = newVal;
-            // Если валюта не выбрана и касса не выбрана/не определяет валюту — берём дефолтную валюту из Store
             if (!this.currencyId) {
                 const defaultCurrency = (this.currencies || []).find(c => c.isDefault);
                 if (defaultCurrency && (!this.cashId || !this.allCashRegisters.find(c => c.id == this.cashId)?.currency_id)) {
                     this.currencyId = defaultCurrency.id;
                 }
+            }
+            if (this.showExchangeRate && !this.isExchangeRateManual && !this.editingItemId) {
+                this.$nextTick(() => {
+                    this.calculateExchangeRate();
+                });
             }
         },
         '$store.state.transactionCategories'(newVal) {
@@ -1021,6 +1170,28 @@ export default {
             },
             deep: true
         },
+        cashId() {
+            if (!this.isExchangeRateManual && !this.editingItemId) {
+                this.$nextTick(() => {
+                    if (this.showExchangeRate) {
+                        this.calculateExchangeRate();
+                    } else {
+                        this.exchangeRate = null;
+                    }
+                });
+            }
+        },
+        currencyId() {
+            if (!this.isExchangeRateManual && !this.editingItemId) {
+                this.$nextTick(() => {
+                    if (this.showExchangeRate) {
+                        this.calculateExchangeRate();
+                    } else {
+                        this.exchangeRate = null;
+                    }
+                });
+            }
+        }
     }
 }
 </script>

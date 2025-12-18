@@ -52,7 +52,6 @@
                 <TransactionCreatePage 
                     v-if="selectedEntity && selectedEntity.type === 'transaction'"
                     :editingItem="editingTransactionItem"
-                    :preselectedClientId="editingItem.id"
                     :initialClient="editingItem"
                     :form-config="balanceAdjustmentFormConfig"
                     :current-client-balance="editingItem?.balance"
