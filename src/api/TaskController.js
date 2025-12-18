@@ -13,7 +13,13 @@ class TaskController extends BaseController {
         if (dateTo) params.date_to = dateTo;
         
         const data = await super.getItems('/tasks', page, perPage, params);
+        console.log('🔍 [TaskController.getItems] Raw API data:', data.data);
+        console.log('🔍 [TaskController.getItems] First item files:', data.data?.[0]?.files);
+        
         const items = TaskDto.fromApiArray(data.data || []);
+        console.log('🔍 [TaskController.getItems] Converted items:', items);
+        console.log('🔍 [TaskController.getItems] First item files after DTO:', items?.[0]?.files);
+        
         const response = new PaginatedResponse(
             items,
             data.meta?.current_page || 1,

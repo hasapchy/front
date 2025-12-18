@@ -222,7 +222,8 @@
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed"
         :showTimelineButton="!!editingItem" @toggle-timeline="toggleTimeline">
         <TaskCreatePage v-if="modalDialog" ref="taskForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
+            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" 
+            @update:editingItem="editingItem = $event" />
 
         <template #timeline>
             <TimelinePanel v-if="editingItem && !timelineCollapsed" ref="timelinePanel" :type="'task'"

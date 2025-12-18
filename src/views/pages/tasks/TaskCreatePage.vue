@@ -66,7 +66,7 @@
         <div v-if="currentTab === 'files' && editingItem && editingItemId">
             <FileUploader 
                 ref="fileUploader" 
-                :files="editingItem ? getFormattedFiles() : []"
+                :files="getFormattedFiles()"
                 :uploading="uploading" 
                 :disabled="!editingItemId"
                 :deleting="deletingFiles" 
@@ -220,6 +220,9 @@ export default {
     watch: {
         editingItem: {
             handler(newEditingItem) {
+                console.log('🔄 [TaskCreatePage.watch.editingItem] New editingItem:', newEditingItem);
+                console.log('🔄 [TaskCreatePage.watch.editingItem] Files:', newEditingItem?.files);
+                
                 if (newEditingItem) {
                     this.title = newEditingItem.title || '';
                     this.description = newEditingItem.description || '';
@@ -294,12 +297,18 @@ export default {
             }
         },
         getFormattedFiles() {
+            console.log('📁 [TaskCreatePage.getFormattedFiles] editingItem:', this.editingItem);
+            console.log('📁 [TaskCreatePage.getFormattedFiles] editingItem.files:', this.editingItem?.files);
+            
             if (!this.editingItem || !this.editingItem.files) return [];
+            
+            // Используем TaskDto для форматирования файлов
             const taskDto = new TaskDto(
                 this.editingItem.id,
                 this.editingItem.title,
                 this.editingItem.description,
-                this.editingItem.status,
+                this.editingItem.status_id || null,
+                this.editingItem.status || null,
                 this.editingItem.deadline,
                 this.editingItem.creator?.id,
                 this.editingItem.creator,
@@ -307,8 +316,8 @@ export default {
                 this.editingItem.supervisor,
                 this.editingItem.executor?.id,
                 this.editingItem.executor,
-                this.editingItem.project?.id,
-                this.editingItem.project,
+                this.editingItem.project?.id || null,
+                this.editingItem.project || null,
                 this.editingItem.company_id,
                 this.editingItem.files || [],
                 this.editingItem.comments || [],
@@ -368,6 +377,12 @@ export default {
                 } else {
                     response = await TaskController.createItem(data);
                     this.editingItemId = response.data.id;
+                }
+
+                // Обновляем editingItem актуальными данными с сервера
+                // Это необходимо для правильного отображения файлов после сохранения
+                if (response && response.data) {
+                    this.$emit('update:editingItem', response.data);
                 }
 
                 this.showNotification(
@@ -463,8 +478,8 @@ export default {
                 });
 
                 // Обновляем список файлов задачи
-                if (this.editingItem && this.editingItem.files) {
-                    this.editingItem.files = uploadedFiles;
+                if (this.editingItem) {
+                    this.$set(this.editingItem, 'files', uploadedFiles);
                 }
 
                 setTimeout(() => {
@@ -519,8 +534,8 @@ export default {
                     updatedFiles = await TaskController.deleteFile(this.editingItemId, this.deleteFileIndex);
                 }
 
-                if (this.editingItem && this.editingItem.files && updatedFiles) {
-                    this.editingItem.files = updatedFiles;
+                if (this.editingItem && updatedFiles) {
+                    this.$set(this.editingItem, 'files', updatedFiles);
                 }
             } catch (e) {
                 alert('Ошибка удаления файла');

@@ -77,7 +77,6 @@ export default {
                     description: { label: 'description' },
                     created_at: { label: 'createdAt' },
                     deadline: { label: 'deadline' },
-                    creator: { label: 'creator' },
                     supervisor: { label: 'supervisor' },
                     executor: { label: 'executor' },
                 };

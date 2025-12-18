@@ -43,7 +43,7 @@
         </div>
 
         <!-- Клиент -->
-        <div v-if="!isProjectMode && showField('client') " class="mb-2">
+        <div v-if="!isProjectMode && showField('client') && !isTaskMode " class="mb-2">
             <div class="flex items-center space-x-1 text-sm">
                 <i :class="getClientIconClass()"></i>
                 <span class="font-medium text-gray-800 truncate">
@@ -141,7 +141,7 @@
         </div>
 
         <!-- Создатель (для задач) -->
-        <div v-if="isTaskMode && showField('creator') && order.creator" class="mb-2">
+        <div v-if="isTaskMode && showField('creator') && order.creator && !isTaskMode " class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-user-plus text-blue-400"></i>
                 <span class="truncate">{{ order.creator.name || order.creator }}</span>
