@@ -51,6 +51,7 @@
                         :order="order"
                         :is-selected="selectedIds.includes(order.id)"
                         :is-project-mode="isProjectMode"
+                        :is-task-mode="isTaskMode"
                         @dblclick="handleCardDoubleClick"
                         @select-toggle="handleCardSelectToggle"
                     />
@@ -101,6 +102,10 @@ export default {
             default: ''
         },
         isProjectMode: {
+            type: Boolean,
+            default: false
+        },
+        isTaskMode: {
             type: Boolean,
             default: false
         },

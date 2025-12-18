@@ -371,12 +371,21 @@ const store = createStore({
         user: true,
         budget: true,
       },
+      tasks: {
+        description: true,
+        created_at: true,
+        deadline: true,
+        creator: true,
+        supervisor: true,
+        executor: true,
+      },
     },
     // Режимы просмотра для разных страниц
     viewModes: {
       leaves: 'table', // 'table' или 'calendar'
       projects: 'kanban', // 'table' или 'kanban'
       orders: 'table', // 'table' или 'kanban'
+      tasks: 'table', // 'table' или 'kanban'
     },
   },
 
@@ -550,7 +559,7 @@ const store = createStore({
       state.kanbanCardFields = fields;
     },
     UPDATE_KANBAN_CARD_FIELDS(state, { mode, fields }) {
-      if (mode === "orders" || mode === "projects") {
+      if (mode === "orders" || mode === "projects" || mode === "tasks") {
         state.kanbanCardFields[mode] = { ...state.kanbanCardFields[mode], ...fields };
       }
     },

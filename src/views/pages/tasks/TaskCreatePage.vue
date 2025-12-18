@@ -75,12 +75,12 @@
                 @delete-multiple-files="showDeleteMultipleFilesDialog" />
         </div>
         
-        <div v-if="currentTab === 'comments' && editingItem && editingItemId" class="h-full">
+        <!-- <div v-if="currentTab === 'comments' && editingItem && editingItemId" class="h-full">
             <TimelinePanel 
                 type="task" 
                 :id="editingItemId"
                 :is-collapsed="false" />
-        </div>
+        </div> -->
     </div>
 
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -191,7 +191,7 @@ export default {
             tabs: [
                 { name: 'info', label: 'info' },
                 { name: 'files', label: 'files' },
-                { name: 'comments', label: 'comments' },
+                // { name: 'comments', label: 'comments' },
             ],
             uploading: false,
             deleteFileDialog: false,
@@ -202,8 +202,10 @@ export default {
     },
     computed: {
         visibleTabs() {
-            const baseTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name === 'info');
-            return baseTabs;
+            // const baseTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name === 'info');
+            // console.log(baseTabs);
+            // console.log(this.tabs);
+            return this.tabs;
         },
         translatedTabs() {
             return this.visibleTabs.map(tab => ({
@@ -426,6 +428,7 @@ export default {
 
             const fileArray = Array.from(files);
 
+            // Создаем массив файлов для отслеживания прогресса
             const uploadingFileIds = fileArray.map((file, index) => ({
                 id: Date.now() + index,
                 name: file.name,
@@ -434,9 +437,14 @@ export default {
                 error: null
             }));
 
+            // Проверяем наличие компонента перед работой с ним
+            if (!this.$refs.fileUploader) return;
+
+            // Устанавливаем массив файлов в компонент
             this.$refs.fileUploader.uploadingFiles = uploadingFileIds;
 
             try {
+                // Симулируем прогресс загрузки для всех файлов
                 const progressIntervals = uploadingFileIds.map(fileInfo => {
                     return setInterval(() => {
                         const currentProgress = this.$refs.fileUploader.uploadingFiles.find(f => f.id === fileInfo.id)?.progress || 0;
@@ -454,8 +462,9 @@ export default {
                     this.$refs.fileUploader.updateUploadProgress(fileInfo.id, 100);
                 });
 
+                // Обновляем список файлов задачи
                 if (this.editingItem && this.editingItem.files) {
-                    this.editingItem.files = uploadedFiles.files;
+                    this.editingItem.files = uploadedFiles;
                 }
 
                 setTimeout(() => {
@@ -511,7 +520,7 @@ export default {
                 }
 
                 if (this.editingItem && this.editingItem.files && updatedFiles) {
-                    this.editingItem.files = updatedFiles.files;
+                    this.editingItem.files = updatedFiles;
                 }
             } catch (e) {
                 alert('Ошибка удаления файла');

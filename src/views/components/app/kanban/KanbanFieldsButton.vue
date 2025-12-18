@@ -74,6 +74,7 @@ export default {
                 };
             } else if (this.mode === 'tasks') {
                 return {
+                    description: { label: 'description' },
                     created_at: { label: 'createdAt' },
                     deadline: { label: 'deadline' },
                     creator: { label: 'creator' },

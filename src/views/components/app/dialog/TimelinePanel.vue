@@ -256,8 +256,8 @@ export default {
                 return '0';
             }
 
-            // Специальная обработка для статусов заказов
-            if (key === 'status_id' && this.type === 'order') {
+            // Специальная обработка для статусов
+            if (key === 'status_id' && (this.type === 'order' || this.type === 'task')) {
                 return this.getStatusName(value);
             }
 
@@ -298,6 +298,13 @@ export default {
                 },
                 'sale': {
                     'category_id': 'Категория продажи',
+                },
+                'task': {
+                    'status_id': 'Статус задачи',
+                    'creator_id': 'Создатель',
+                    'supervisor_id': 'Постановщик',
+                    'executor_id': 'Исполнитель',
+                    'project_id': 'Проект',
                 }
             };
 
@@ -313,13 +320,23 @@ export default {
         async loadStatuses() {
             if (this.type === 'order') {
                 await this.$store.dispatch('loadOrderStatuses');
+            } else if (this.type === 'task') {
+                await this.$store.dispatch('loadTaskStatuses');
             }
         },
         async loadCurrencies() {
             await this.$store.dispatch('loadCurrencies');
         },
         getStatusName(statusId) {
-            const status = this.$store.getters.orderStatuses.find(s => s.id === statusId);
+            let statuses;
+            if (this.type === 'order') {
+                statuses = this.$store.getters.orderStatuses;
+            } else if (this.type === 'task') {
+                statuses = this.$store.getters.taskStatuses;
+            } else {
+                return statusId;
+            }
+            const status = statuses?.find(s => s.id === statusId);
             return status ? status.name : statusId;
         }
     },
