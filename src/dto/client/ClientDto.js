@@ -52,10 +52,10 @@ export default class ClientDto {
     this.employeeId = employeeId;
     this.employee = employee;
     this.emails = (emails || []).map(
-      (email) => new ClientEmailDto(email.id, email.client_id, email.email)
+      (email) => new ClientEmailDto(email.id, null, email.email)
     );
     this.phones = (phones || []).map(
-      (phone) => new ClientPhoneDto(phone.id, phone.client_id, phone.phone)
+      (phone) => new ClientPhoneDto(phone.id, null, phone.phone)
     );
   }
 

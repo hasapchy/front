@@ -24,6 +24,11 @@
                             class="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-sm font-medium transition-colors">
                             {{ $t('resetFilters') || 'Сбросить' }}
                         </button>
+                        <button 
+                            @click="$emit('apply')"
+                            class="flex-1 px-4 py-2 bg-[#5CB85C] hover:bg-[#4EA84E] text-white rounded-md text-sm font-medium transition-colors">
+                            {{ $t('apply') || 'Применить' }}
+                        </button>
                     </div>
                 </div>
             </div>
@@ -34,7 +39,7 @@
 <script>
 export default {
     name: 'FiltersModal',
-    emits: ['close', 'reset'],
+    emits: ['close', 'reset', 'apply'],
     props: {
         show: {
             type: Boolean,

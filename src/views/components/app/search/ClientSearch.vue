@@ -5,15 +5,22 @@
             class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="handleBlur" :disabled="disabled" />
         <transition name="appear">
             <ul v-show="showDropdown"
-                class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-96 mt-1 z-10">
+                class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-10">
                 <li v-if="clientSearchLoading" class="p-2 text-gray-500">{{ $t('loading') }}</li>
                 <template v-else-if="clientSearch.length === 0">
                     <li v-for="client in lastClients" :key="client.id" @mousedown.prevent="selectClient(client)"
                         class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
                         <div class="flex justify-between">
                             <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                            <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
+                            <div class="text-[#337AB7]">{{ client.phones?.[0]?.phone || client.primaryPhone }}</div>
                         </div>
+                        <span v-if="$store.getters.hasPermission('settings_client_balance_view')"
+                            :class="client.balance == 0 ? 'text-[#337AB7]' : client.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
+                            {{ client.balanceFormatted() }}
+                            <span v-if="client.balance > 0">({{ $t('clientOwesUs') }})</span>
+                            <span v-else-if="client.balance < 0">({{ $t('weOweClient') }})</span>
+                            <span v-else>({{ $t('mutualSettlement') }})</span>
+                        </span>
                     </li>
                 </template>
                 <li v-else-if="clientSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}</li>
@@ -22,7 +29,7 @@
                     class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
                     <div class="flex justify-between">
                         <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                        <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
+                        <div class="text-[#337AB7]">{{ client.primaryPhone || client.phones?.[0]?.phone }}</div>
                     </div>
                     <span v-if="$store.getters.hasPermission('settings_client_balance_view')"
                         :class="client.balance == 0 ? 'text-[#337AB7]' : client.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
@@ -172,6 +179,9 @@ export default {
         },
         clientPhones() {
             if (!this.selectedClient) return [];
+            if (this.selectedClient.primaryPhone) {
+                return [{ phone: this.selectedClient.primaryPhone }];
+            }
             const phones = this.selectedClient.phones || [];
             return Array.isArray(phones) ? phones : [];
         },
@@ -187,7 +197,7 @@ export default {
 
         if (this.selectedClient && this.selectedClient.id) {
             try {
-                if (typeof this.selectedClient.fullName === 'function' && this.selectedClient.phones && Array.isArray(this.selectedClient.phones)) {
+                if (typeof this.selectedClient.fullName === 'function' && (this.selectedClient.phones && Array.isArray(this.selectedClient.phones) || this.selectedClient.primaryPhone)) {
                     return;
                 }
                 const updatedClient = await ClientController.getItem(this.selectedClient.id);

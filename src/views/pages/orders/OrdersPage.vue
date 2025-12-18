@@ -20,11 +20,11 @@
                             </PrimaryButton>
 
                             <FiltersContainer :has-active-filters="hasActiveFilters"
-                                :active-filters-count="getActiveFiltersCount()" @reset="resetFilters">
+                                :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период'
                                         }}</label>
-                                    <select v-model="dateFilter" @change="() => fetchItems(1)" class="w-full">
+                                    <select v-model="dateFilter" class="w-full">
                                         <option value="all_time">{{ $t('allTime') }}</option>
                                         <option value="today">{{ $t('today') }}</option>
                                         <option value="yesterday">{{ $t('yesterday') }}</option>
@@ -39,18 +39,18 @@
                                 <div v-if="dateFilter === 'custom'" class="space-y-2">
                                     <div>
                                         <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
-                                        <input type="date" v-model="startDate" @change="() => fetchItems(1)" class="w-full" />
+                                        <input type="date" v-model="startDate" class="w-full" />
                                     </div>
                                     <div>
                                         <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
-                                        <input type="date" v-model="endDate" @change="() => fetchItems(1)" class="w-full" />
+                                        <input type="date" v-model="endDate" class="w-full" />
                                     </div>
                                 </div>
 
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус'
                                         }}</label>
-                                    <select v-model="statusFilter" @change="() => fetchItems(1)" class="w-full">
+                                    <select v-model="statusFilter" class="w-full">
                                         <option value="">{{ $t('allStatuses') }}</option>
                                         <option v-for="status in statuses" :key="status.id" :value="status.id">
                                             {{ status.name }}
@@ -61,7 +61,7 @@
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('project') || 'Проект'
                                         }}</label>
-                                    <select v-model="projectFilter" @change="() => fetchItems(1)" class="w-full">
+                                    <select v-model="projectFilter" class="w-full">
                                         <option value="">{{ $t('allProjects') }}</option>
                                         <option v-for="project in projects" :key="project.id" :value="project.id">
                                             {{ project.name }}
@@ -72,7 +72,7 @@
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент'
                                         }}</label>
-                                    <select v-model="clientFilter" @change="() => fetchItems(1)" class="w-full">
+                                    <select v-model="clientFilter" class="w-full">
                                         <option value="">{{ $t('allClients') }}</option>
                                         <option v-for="client in clients" :key="client.id" :value="client.id">
                                             {{ client.fullName() }}
@@ -81,50 +81,47 @@
                                 </div>
                             </FiltersContainer>
 
-                            <div class="flex items-center gap-2">
-                                <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                                    <button @click="changeViewMode('table')"
-                                        class="px-3 py-2 transition-colors cursor-pointer"
-                                        :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                                        <i class="fas fa-table"></i>
-                                    </button>
-                                    <button @click="changeViewMode('kanban')"
-                                        class="px-3 py-2 transition-colors cursor-pointer"
-                                        :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                                        <i class="fas fa-columns"></i>
-                                    </button>
-                                </div>
-                                <TableFilterButton v-if="viewMode === 'table'" :onReset="resetColumns">
-                                    <ul>
-                                        <draggable v-if="columns && columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
-                                            <li v-for="(element, index) in columns" :key="element.name"
-                                                @click="toggleVisible(index)"
-                                                class="flex items-center hover:bg-gray-100 p-2 rounded">
-                                                <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                                                    <div>
-                                                        <i class="text-sm mr-2 text-[#337AB7]"
-                                                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                                        {{ $te(element.label) ? $t(element.label) : element.label }}
-                                                    </div>
-                                                    <div><i
-                                                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        </draggable>
-                                    </ul>
-                                </TableFilterButton>
-                                <KanbanFieldsButton v-else-if="viewMode === 'kanban'" mode="orders" />
+                            <div class="flex items-center border border-gray-300 rounded overflow-hidden">
+                                <button @click="changeViewMode('table')"
+                                    class="px-3 py-2 transition-colors cursor-pointer"
+                                    :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                                    <i class="fas fa-table"></i>
+                                </button>
+                                <button @click="changeViewMode('kanban')"
+                                    class="px-3 py-2 transition-colors cursor-pointer"
+                                    :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                                    <i class="fas fa-columns"></i>
+                                </button>
                             </div>
                         </template>
 
-                        <template #right>
+                        <template #right="{ resetColumns, columns, toggleVisible, log }">
                             <OrderPaymentFilter v-model="paidOrdersFilter" :orders="data ? data.items : []"
                                 :statusId="4" :currencySymbol="currencySymbol" :unpaidOrdersTotal="unpaidOrdersTotal"
                                 @change="handlePaidOrdersFilterChange" />
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
                                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                            <TableFilterButton v-if="viewMode === 'table'" :onReset="resetColumns">
+                                <ul>
+                                    <draggable v-if="columns && columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
+                                        <li v-for="(element, index) in columns" :key="element.name"
+                                            @click="toggleVisible(index)"
+                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                <div>
+                                                    <i class="text-sm mr-2 text-[#337AB7]"
+                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
+                                                </div>
+                                                <div><i
+                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </draggable>
+                                </ul>
+                            </TableFilterButton>
                         </template>
 
                         <template #gear>
@@ -144,10 +141,10 @@
                     </PrimaryButton>
 
                     <FiltersContainer :has-active-filters="hasActiveFilters"
-                        :active-filters-count="getActiveFiltersCount()" @reset="resetFilters">
+                        :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
                         <div>
                             <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
-                            <select v-model="dateFilter" @change="() => fetchItems(1)" class="w-full">
+                            <select v-model="dateFilter" class="w-full">
                                 <option value="all_time">{{ $t('allTime') }}</option>
                                 <option value="today">{{ $t('today') }}</option>
                                 <option value="yesterday">{{ $t('yesterday') }}</option>
@@ -162,17 +159,17 @@
                         <div v-if="dateFilter === 'custom'" class="space-y-2">
                             <div>
                                 <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
-                                <input type="date" v-model="startDate" @change="() => fetchItems(1)" class="w-full" />
+                                <input type="date" v-model="startDate" class="w-full" />
                             </div>
                             <div>
                                 <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
-                                <input type="date" v-model="endDate" @change="() => fetchItems(1)" class="w-full" />
+                                <input type="date" v-model="endDate" class="w-full" />
                             </div>
                         </div>
 
                         <div>
                             <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
-                            <select v-model="statusFilter" @change="() => fetchItems(1)" class="w-full">
+                            <select v-model="statusFilter" class="w-full">
                                 <option value="">{{ $t('allStatuses') }}</option>
                                 <option v-for="status in statuses" :key="status.id" :value="status.id">
                                     {{ status.name }}
@@ -182,7 +179,7 @@
 
                         <div>
                             <label class="block mb-2 text-xs font-semibold">{{ $t('project') || 'Проект' }}</label>
-                            <select v-model="projectFilter" @change="() => fetchItems(1)" class="w-full">
+                            <select v-model="projectFilter" class="w-full">
                                 <option value="">{{ $t('allProjects') }}</option>
                                 <option v-for="project in projects" :key="project.id" :value="project.id">
                                     {{ project.name }}
@@ -192,7 +189,7 @@
 
                         <div>
                             <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент' }}</label>
-                            <select v-model="clientFilter" @change="() => fetchItems(1)" class="w-full">
+                            <select v-model="clientFilter" class="w-full">
                                 <option value="">{{ $t('allClients') }}</option>
                                 <option v-for="client in clients" :key="client.id" :value="client.id">
                                     {{ client.fullName() }}
@@ -310,6 +307,7 @@ import StatusSelectCell from "@/views/components/app/buttons/StatusSelectCell.vu
 import debounce from "lodash.debounce";
 import companyChangeMixin from "@/mixins/companyChangeMixin";
 import searchMixin from "@/mixins/searchMixin";
+import filtersMixin from "@/mixins/filtersMixin";
 import { formatCurrency } from "@/utils/numberUtils";
 import { highlightMatches } from "@/utils/searchUtils";
 import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
@@ -321,7 +319,7 @@ const TimelinePanel = defineAsyncComponent(() =>
 );
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin],
     components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, draggable: VueDraggableNext },
     data() {
         return {
@@ -399,15 +397,6 @@ export default {
             }
             return this.savedCurrencySymbol || '';
         },
-        hasActiveFilters() {
-            return this.dateFilter !== 'all_time' ||
-                (this.startDate !== null && this.startDate !== '') ||
-                (this.endDate !== null && this.endDate !== '') ||
-                this.statusFilter !== '' ||
-                this.projectFilter !== '' ||
-                this.clientFilter !== '' ||
-                this.paidOrdersFilter !== false;
-        },
         orderTransactionFormConfig() {
             return TRANSACTION_FORM_PRESETS.orderPayment;
         }
@@ -432,18 +421,18 @@ export default {
                 case "products":
                     return i.productsHtmlList();
                 case "dateUser":
-                    return `${i.formatDate()} / ${i.userName}`;
+                    return `${i.formatDate()} / ${i.user?.name || i.userName || "-"}`;
                 case "client":
                     if (!i.client) return '<span class="text-gray-500">' + this.$t('notSpecified') + '</span>';
                     const name = i.client.fullName();
                     const phone = i.client.phones?.[0]?.phone;
                     return phone ? `<div>${name} (<span>${phone}</span>)</div>` : name;
                 case "statusName":
-                    return i.statusName || "-";
+                    return i.status?.name || i.statusName || "-";
                 case "cashName":
-                    return i.cashName || "-";
+                    return i.cash?.name || i.cashName || "-";
                 case "warehouseName":
-                    return i.warehouseName || "-";
+                    return i.warehouse?.name || i.warehouseName || "-";
                 case "totalPrice":
                     if (i.priceInfo && typeof i.priceInfo === 'function') {
                         return i.priceInfo();
@@ -455,7 +444,7 @@ export default {
                 case "description":
                     return i.description || "";
                 case "projectName":
-                    return i.projectName || "-";
+                    return i.project?.name || i.projectName || "-";
 
                 default:
                     return i[c];
@@ -577,7 +566,8 @@ export default {
 
         async fetchStatuses() {
             await this.$store.dispatch('loadOrderStatuses');
-            this.statuses = this.$store.getters.orderStatuses;
+            // Фильтруем только активные статусы (isActive !== false, чтобы включить undefined как активный)
+            this.statuses = this.$store.getters.orderStatuses.filter(status => status.isActive !== false);
         },
 
         async handleChangeStatus(ids, statusId) {
@@ -779,6 +769,7 @@ export default {
                         order.statusId = updateData.statusId;
                         const status = this.statuses.find(s => s.id === updateData.statusId);
                         if (status) {
+                            order.status = status;
                             order.statusName = status.name;
                         }
                     }
@@ -794,6 +785,7 @@ export default {
                         order.projectId = updateData.projectId;
                         const project = this.projects.find(p => p.id === updateData.projectId);
                         if (project) {
+                            order.project = project;
                             order.projectName = project.name;
                         }
                     }

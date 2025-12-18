@@ -14,7 +14,7 @@ export default {
             type: Object,
             required: true
         },
-        currencyCode: {
+        currencySymbol: {
             type: String,
             default: ''
         },
@@ -36,7 +36,7 @@ export default {
             return this.item.isDebt == 1 || this.item.is_debt == 1;
         },
         currencySymbol() {
-            return this.item.currencySymbol || this.currencyCode || '';
+            return this.item.currencySymbol || this.currencySymbol || '';
         },
         formatFn() {
             return this.formatNumberFn || ((val) => formatNumber(val, null, true));

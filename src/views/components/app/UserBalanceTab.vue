@@ -174,7 +174,7 @@ export default {
     },
     data() {
         return {
-            currencyCode: '',
+            currencySymbol: '',
             balanceLoading: false,
             balanceHistory: [],
             totalBalance: 0,
@@ -267,7 +267,7 @@ export default {
                     component: markRaw(ClientImpactCell),
                     props: (item) => ({
                         item: item,
-                        currencyCode: this.currencyCode,
+                        currencySymbol: this.currencySymbol,
                         formatNumberFn: this.$formatNumber
                     })
                 },
@@ -305,7 +305,7 @@ export default {
     },
     methods: {
         formatBalance(balance) {
-            return `${this.$formatNumber(balance, null, true)} ${this.currencyCode}`;
+            return `${this.$formatNumber(balance, null, true)} ${this.currencySymbol}`;
         },
         itemMapper(i, c) {
             switch (c) {
@@ -389,9 +389,9 @@ export default {
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
                 const defaultCurrency = currencies.find(c => c.isDefault);
-                this.currencyCode = defaultCurrency ? defaultCurrency.symbol : '';
+                this.currencySymbol = defaultCurrency ? defaultCurrency.symbol : '';
             } catch (error) {
-                this.currencyCode = '';
+                this.currencySymbol = '';
             }
         },
         async fetchBalanceHistory() {

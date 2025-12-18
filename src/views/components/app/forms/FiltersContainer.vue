@@ -18,7 +18,7 @@
             </button>
         </div>
 
-        <FiltersModal :show="showFiltersModal" @close="showFiltersModal = false" @reset="handleReset">
+        <FiltersModal :show="showFiltersModal" @close="showFiltersModal = false" @reset="handleReset" @apply="handleApply">
             <slot />
         </FiltersModal>
     </div>
@@ -42,7 +42,7 @@ export default {
             default: 0
         }
     },
-    emits: ['reset'],
+    emits: ['reset', 'apply'],
     data() {
         return {
             showFiltersModal: false
@@ -52,6 +52,10 @@ export default {
         handleReset() {
             this.showFiltersModal = false;
             this.$emit('reset');
+        },
+        handleApply() {
+            this.showFiltersModal = false;
+            this.$emit('apply');
         }
     }
 }

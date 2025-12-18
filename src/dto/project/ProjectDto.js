@@ -158,7 +158,6 @@ export default class ProjectDto {
       const client = data.client ? ClientDto.fromApiArray([data.client])[0] || null : null;
       const currency = data.currency ? new CurrencyDto({
         id: data.currency.id,
-        code: data.currency.code,
         name: data.currency.name,
         symbol: data.currency.symbol,
         is_default: data.currency.is_default,

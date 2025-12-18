@@ -10,7 +10,6 @@ class ProjectContractDto {
         amount,
         currencyId,
         currencyName,
-        currencyCode,
         currencySymbol,
         date,
         returned,
@@ -25,7 +24,6 @@ class ProjectContractDto {
         this.amount = amount;
         this.currencyId = currencyId;
         this.currencyName = currencyName;
-        this.currencyCode = currencyCode;
         this.currencySymbol = currencySymbol;
         this.date = date;
         this.returned = returned;
@@ -70,7 +68,6 @@ class ProjectContractDto {
                 data.amount,
                 data.currency_id || data.currencyId,
                 data.currency_name || data.currencyName,
-                data.currency_code || data.currencyCode,
                 data.currency_symbol || data.currencySymbol,
                 data.date,
                 data.returned,

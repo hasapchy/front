@@ -31,7 +31,7 @@
             <select v-model="cashId" :disabled="!!editingItemId">
                 <option value="">{{ $t('no') }}</option>
                 <option v-for="c in allCashRegisters" :key="c.id" :value="c.id">
-                    {{ c.name }} ({{ c.currencySymbol || c.currencyCode || '' }})
+                    {{ c.name }} ({{ c.currencySymbol || '' }})
                 </option>
             </select>
         </div>

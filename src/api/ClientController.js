@@ -7,8 +7,14 @@ import BaseController from "./BaseController";
 
 export default class ClientController extends BaseController {
   static async getItem(id) {
-    const data = await super.getItem("/clients", id);
-    return ClientDto.fromApiArray([data.item])[0] || null;
+    return super.handleRequest(
+      async () => {
+        const response = await api.get(`/clients/${id}`);
+        const clientData = response.data.data || response.data;
+        return ClientDto.fromApiArray([clientData])[0] || null;
+      },
+      `Ошибка при получении клиента: /clients/${id}`
+    );
   }
 
   static async getItems(
@@ -33,15 +39,22 @@ export default class ClientController extends BaseController {
       params.type_filter = typeFilter;
     }
 
-    const data = await super.getItems("/clients", page, per_page, params);
-    const items = ClientDto.fromApiArray(data.items || []);
+    return super.handleRequest(
+      async () => {
+        const response = await api.get("/clients", { params: { page, per_page, ...params } });
+        const responseData = response.data;
+        const items = ClientDto.fromApiArray(responseData.data || []);
+        const meta = responseData.meta || {};
 
-    return new PaginatedResponse(
-      items,
-      data.current_page,
-      data.next_page,
-      data.last_page,
-      data.total
+        return new PaginatedResponse(
+          items,
+          meta.current_page || page,
+          meta.next_page || null,
+          meta.last_page || 1,
+          meta.total || 0
+        );
+      },
+      "Ошибка при получении списка клиентов:"
     );
   }
 
@@ -59,27 +72,52 @@ export default class ClientController extends BaseController {
   }
 
   static async getListItems(forMutualSettlements = false, cashRegisterIds = null) {
-    const params = {};
-    if (forMutualSettlements) {
-      params.for_mutual_settlements = true;
-    }
-    if (cashRegisterIds && Array.isArray(cashRegisterIds) && cashRegisterIds.length > 0) {
-      params.cash_register_ids = cashRegisterIds;
-    }
-    const data = await super.getListItems("/clients", params);
-    return ClientDto.fromApiArray(data);
+    return super.handleRequest(
+      async () => {
+        const params = {};
+        if (forMutualSettlements) {
+          params.for_mutual_settlements = true;
+        }
+        if (cashRegisterIds && Array.isArray(cashRegisterIds) && cashRegisterIds.length > 0) {
+          params.cash_register_ids = cashRegisterIds;
+        }
+        const response = await api.get("/clients/all", { params });
+        const responseData = response.data;
+        const items = responseData.data || responseData;
+        return ClientDto.fromApiArray(Array.isArray(items) ? items : []);
+      },
+      "Ошибка при получении всех клиентов:"
+    );
   }
 
   static async storeItem(item) {
-    const data = await super.storeItem("/clients", item);
-    return {
-      item: data.item,
-      message: data.message || "Client created successfully",
-    };
+    return super.handleRequest(
+      async () => {
+        const response = await api.post("/clients", item);
+        const responseData = response.data;
+        const clientData = responseData.data || responseData;
+        return {
+          item: ClientDto.fromApiArray([clientData])[0] || clientData,
+          message: responseData.message || "Client created successfully",
+        };
+      },
+      "Ошибка при создании клиента:"
+    );
   }
 
   static async updateItem(id, item) {
-    return super.updateItem("/clients", id, item);
+    return super.handleRequest(
+      async () => {
+        const response = await api.put(`/clients/${id}`, item);
+        const responseData = response.data;
+        const clientData = responseData.data || responseData;
+        return {
+          client: ClientDto.fromApiArray([clientData])[0] || clientData,
+          message: responseData.message || "Client updated successfully",
+        };
+      },
+      `Ошибка при обновлении клиента: /clients/${id}`
+    );
   }
 
   static async deleteItem(id) {

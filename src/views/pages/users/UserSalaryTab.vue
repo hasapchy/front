@@ -170,7 +170,7 @@ export default {
                     return item.id || '-';
                 case 'amount':
                     const amount = parseFloat(item.amount || 0);
-                    const symbol = item.currency?.symbol || item.currency?.code || '';
+                    const symbol = item.currency?.symbol || '';
                     return `<span class="font-semibold">${this.$formatNumber(amount, null, true)} ${symbol}</span>`;
                 case 'startDate':
                     return item.start_date ? new Date(item.start_date).toLocaleDateString('ru-RU') : '-';

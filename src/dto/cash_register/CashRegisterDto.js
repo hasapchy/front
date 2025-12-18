@@ -9,7 +9,6 @@ export default class CashRegisterDto {
     users = [],
     currency_id,
     currency_name,
-    currency_code,
     currency_symbol,
     createdAt = "",
     updatedAt = ""
@@ -20,7 +19,6 @@ export default class CashRegisterDto {
     this.users = users;
     this.currencyId = currency_id;
     this.currencyName = currency_name;
-    this.currencyCode = currency_code;
     this.currencySymbol = currency_symbol;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
@@ -47,7 +45,6 @@ export default class CashRegisterDto {
         data.users || [],
         data.currency_id,
         data.currency?.name,
-        data.currency?.code,
         data.currency?.symbol,
         data.created_at,
         data.updated_at

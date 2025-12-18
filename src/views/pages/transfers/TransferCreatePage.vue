@@ -8,7 +8,7 @@
                 <template v-if="allCashRegisters.length">
                     <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id"
                         :disabled="parent.id === cashIdTo">
-                        {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
+                        {{ parent.name }} ({{ parent.currencySymbol || '' }})
                     </option>
                 </template>
             </select>
@@ -20,7 +20,7 @@
                 <template v-if="allCashRegisters.length">
                     <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id"
                         :disabled="parent.id === cashIdFrom">
-                        {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
+                        {{ parent.name }} ({{ parent.currencySymbol || '' }})
                     </option>
                 </template>
             </select>
@@ -28,7 +28,7 @@
         <div class="mt-2">
             <label>{{ $t('amount') }}</label>
             <input type="number" v-model="origAmount" step="0.01" min="0.01" :disabled="!!editingItemId">
-            <span v-if="cashFromCurrency" class="text-gray-500 ml-2">{{ cashFromCurrency.symbol || cashFromCurrency.code }}</span>
+            <span v-if="cashFromCurrency" class="text-gray-500 ml-2">{{ cashFromCurrency.symbol || '' }}</span>
         </div>
         <div v-if="showExchangeRate" class="mt-2">
             <label>{{ $t('exchangeRate') }}</label>
@@ -40,7 +40,7 @@
         <div v-if="showExchangeRate && calculatedAmount" class="mt-2 p-2 bg-blue-50 rounded">
             <label class="text-sm font-semibold">{{ $t('receiverAmount') }}:</label>
             <span class="text-lg font-bold text-blue-700">
-                {{ formatCurrency(calculatedAmount, cashToCurrency?.symbol || cashToCurrency?.code || '') }}
+                {{ formatCurrency(calculatedAmount, cashToCurrency?.symbol || '') }}
             </span>
         </div>
         <div class="mt-2">

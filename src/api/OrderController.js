@@ -41,28 +41,49 @@ export default class OrderController extends BaseController {
       params.unpaid_only = true;
     }
 
-    const data = await super.getItems("/orders", page, per_page, params);
-    const items = OrderDto.fromApiArray(data.items || []);
-    return new PaginatedResponse(
-      items,
-      data.current_page,
-      data.next_page,
-      data.last_page,
-      data.total,
-      data.unpaid_orders_total || 0
-    );
+    return super.handleRequest(async () => {
+      const response = await api.get("/orders", {
+        params: { page, per_page, ...params },
+      });
+      const responseData = response.data;
+      const items = OrderDto.fromApiArray(responseData.data || []);
+      const meta = responseData.meta || {};
+
+        return new PaginatedResponse(
+          items,
+          meta.current_page || page,
+          meta.next_page || null,
+          meta.last_page || 1,
+          meta.total || 0,
+          meta.unpaid_orders_total || 0
+        );
+    }, "Ошибка при получении списка заказов:");
   }
 
   static async storeItem(item) {
-    const data = await super.storeItem("/orders", item);
-    await CacheInvalidator.onCreate("orders");
-    return data;
+    return super.handleRequest(async () => {
+      const response = await api.post("/orders", item);
+      const responseData = response.data;
+      const orderData = responseData.data || responseData;
+      await CacheInvalidator.onCreate("orders");
+      return {
+        item: OrderDto.fromApiArray([orderData])[0] || orderData,
+        message: responseData.message || "Заказ успешно создан",
+      };
+    }, "Ошибка при создании заказа:");
   }
 
   static async updateItem(id, item) {
-    const data = await super.updateItem("/orders", id, item);
-    await CacheInvalidator.onUpdate("orders");
-    return data;
+    return super.handleRequest(async () => {
+      const response = await api.put(`/orders/${id}`, item);
+      const responseData = response.data;
+      const orderData = responseData.data || responseData;
+      await CacheInvalidator.onUpdate("orders");
+      return {
+        order: OrderDto.fromApiArray([orderData])[0] || orderData,
+        message: responseData.message || "Заказ сохранён",
+      };
+    }, `Ошибка при обновлении заказа: /orders/${id}`);
   }
 
   static async deleteItem(id) {
@@ -82,7 +103,10 @@ export default class OrderController extends BaseController {
   }
 
   static async getItem(id) {
-    const data = await super.getItem("/orders", id);
-    return OrderDto.fromApiArray([data.item])[0] || null;
+    return super.handleRequest(async () => {
+      const response = await api.get(`/orders/${id}`);
+      const orderData = response.data.data || response.data;
+      return OrderDto.fromApiArray([orderData])[0] || null;
+    }, `Ошибка при получении заказа: /orders/${id}`);
   }
 }

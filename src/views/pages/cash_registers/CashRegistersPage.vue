@@ -127,11 +127,11 @@ export default {
         itemMapper(i, c) {
             switch (c) {
                 case 'balance':
-                    return this.$formatNumber(i.balance || 0, null, true) + ' ' + (i.currencySymbol || i.currencyCode || '');
+                    return this.$formatNumber(i.balance || 0, null, true) + ' ' + (i.currencySymbol || '');
                 case 'users':
                     return (i.users || '').length + ' ' + this.$t('users');
                 case 'currency':
-                    return (i.currencyCode || '') + (i.currencySymbol ? ' (' + i.currencySymbol + ')' : '');
+                    return i.currencySymbol || '';
                 case 'createdAt':
                     return i.formatCreatedAt();
                 case 'dateUser':

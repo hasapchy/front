@@ -52,8 +52,6 @@ export default class InvoiceDto {
       const firstOrder = this.orders[0];
       if (firstOrder.currencySymbol && isValidCurrency(firstOrder.currencySymbol)) {
         currencySymbol = firstOrder.currencySymbol.trim();
-      } else if (firstOrder.currencyCode && isValidCurrency(firstOrder.currencyCode)) {
-        currencySymbol = firstOrder.currencyCode.trim();
       } else if (firstOrder.currencyName && isValidCurrency(firstOrder.currencyName)) {
         currencySymbol = firstOrder.currencyName.trim();
       }
@@ -121,7 +119,6 @@ export default class InvoiceDto {
         ...order,
         currency_id: order.currency_id ?? order.cash?.currency?.id ?? null,
         currency_name: order.currency_name ?? order.cash?.currency?.name ?? null,
-        currency_code: order.currency_code ?? order.cash?.currency?.code ?? null,
         currency_symbol: order.currency_symbol ?? order.cash?.currency?.symbol ?? null,
         client: data.client,
         category_id: null,

@@ -22,7 +22,7 @@
                             </div>
                             <div class="text-[#337AB7] text-xs flex flex-col items-end min-w-[90px]">
                                 <div class="font-medium">{{ order.priceInfo() }}</div>
-                                <div class="text-sm text-gray-500">{{ order.statusName }}</div>
+                                <div class="text-sm text-gray-500">{{ order.status?.name || order.statusName }}</div>
                             </div>
                         </div>
                     </li>

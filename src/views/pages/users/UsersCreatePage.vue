@@ -389,7 +389,7 @@ export default {
         },
         async fetchRoles() {
             try {
-                this.allRoles = await RolesController.getListItems();
+                this.allRoles = await RolesController.getListItems({ all_companies: true });
             } catch (error) {
                 console.error('Error fetching roles:', error);
                 this.allRoles = [];

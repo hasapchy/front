@@ -130,7 +130,7 @@ export default {
             entityModalOpen: false,
             entityLoading: false,
             selectedEntity: null,
-            currencyCode: '',
+            currencySymbol: '',
             columnsConfig: [],
         };
     },
@@ -186,9 +186,9 @@ export default {
                 await this.$store.dispatch('loadCurrencies');
                 const currencies = this.$store.getters.currencies;
                 const defaultCurrency = currencies.find(c => c.isDefault);
-                this.currencyCode = defaultCurrency ? defaultCurrency.symbol : '';
+                this.currencySymbol = defaultCurrency ? defaultCurrency.symbol : '';
             } catch (error) {
-                this.currencyCode = '';
+                this.currencySymbol = '';
             }
         },
         async fetchData() {
@@ -218,10 +218,10 @@ export default {
                     this.tableData = response.items.map(order => ({
                         id: order.id,
                         name: order.note || order.description || `Заказ #${order.id}`,
-                        status: order.statusName || '-',
+                        status: order.status?.name || order.statusName || '-',
                         date: order.formatDate ? order.formatDate() : (order.date ? new Date(order.date).toLocaleString() : '-'),
                         amount: order.totalPrice || order.price || 0,
-                        currencySymbol: order.currencySymbol || this.currencyCode,
+                        currencySymbol: order.currencySymbol || this.currencySymbol,
                         originalData: order,
                     }));
                 } else if (this.selectedFilter === 'sales') {
@@ -234,7 +234,7 @@ export default {
                         name: sale.note || `Продажа #${sale.id}`,
                         date: sale.formatDate ? sale.formatDate() : (sale.date ? new Date(sale.date).toLocaleString() : '-'),
                         amount: sale.totalPrice || sale.price || 0,
-                        currencySymbol: sale.currencySymbol || this.currencyCode,
+                        currencySymbol: sale.currencySymbol || this.currencySymbol,
                         originalData: sale,
                     }));
                 } else if (this.selectedFilter === 'receipts') {
@@ -247,7 +247,7 @@ export default {
                         name: receipt.note || `Оприходование #${receipt.id}`,
                         date: receipt.formatDate ? receipt.formatDate() : (receipt.date ? new Date(receipt.date).toLocaleString() : '-'),
                         amount: receipt.amount || 0,
-                        currencySymbol: receipt.currencySymbol || this.currencyCode,
+                        currencySymbol: receipt.currencySymbol || this.currencySymbol,
                         originalData: receipt,
                     }));
                 }
@@ -273,7 +273,7 @@ export default {
                     return item.date || '-';
                 case "amount": {
                     const amount = parseFloat(item.amount || 0);
-                    const symbol = item.currencySymbol || this.currencyCode || '';
+                    const symbol = item.currencySymbol || this.currencySymbol || '';
                     return `<span class="font-semibold">${this.$formatNumber(amount, null, true)} ${symbol}</span>`;
                 }
                 default:

@@ -40,7 +40,7 @@
                         v-for="currency in currencies" 
                         :key="currency.id" 
                         :value="currency.id">
-                        {{ currency.name }} ({{ currency.symbol || currency.code }})
+                        {{ currency.name }} ({{ currency.symbol || '' }})
                     </option>
                 </select>
             </div>

@@ -261,7 +261,7 @@ export default {
                 } else {
                     const userData = await AuthController.getUser();
                     this.$store.dispatch('setUser', userData.user);
-                    this.$store.dispatch('setPermissions', userData.permissions);
+                    this.$store.dispatch('setPermissions', userData.user?.permissions || []);
                     this.$router.push('/');
                 }
             } catch (error) {

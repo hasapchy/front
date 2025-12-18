@@ -1113,6 +1113,7 @@ export default {
     settings_cash_balance_view: 'Kassa balansyny gör',
     settings_client_balance_view: 'Müşderi balansyny gör',
     settings_client_balance_adjustment: 'Müşderi balansyny düzetmek',
+    products_create_temp: 'Wagtlaýyn önüm döretmek',
     settings_view: 'Sazlamalary gör',
     mutual_settlements_view: 'Özara hasaplaşyklary gör',
   

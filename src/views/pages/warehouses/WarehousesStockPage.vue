@@ -35,10 +35,11 @@
                             <FiltersContainer
                                 :has-active-filters="hasActiveFilters"
                                 :active-filters-count="getActiveFiltersCount()"
-                                @reset="resetFilters">
+                                @reset="resetFilters"
+                                @apply="applyFilters">
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('warehouse') || 'Склад' }}</label>
-                                    <select v-model="warehouseId" @change="fetchItems(1)" class="w-full">
+                                    <select v-model="warehouseId" class="w-full">
                                         <option value="">{{ $t('allWarehouses') }}</option>
                                         <option v-for="warehouse in allWarehouses" :key="warehouse.id" :value="warehouse.id">
                                             {{ warehouse.name }}
@@ -48,7 +49,7 @@
 
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('category') || 'Категория' }}</label>
-                                    <select v-model="categoryId" @change="fetchItems(1)" class="w-full">
+                                    <select v-model="categoryId" class="w-full">
                                         <option value="">{{ $t('allCategories') }}</option>
                                         <option v-for="category in allCategories" :key="category.id" :value="category.id">
                                             {{ category.name }}
@@ -58,7 +59,7 @@
 
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('availability') || 'Наличие' }}</label>
-                                    <select v-model="availabilityFilter" @change="fetchItems(1)" class="w-full">
+                                    <select v-model="availabilityFilter" class="w-full">
                                         <option value="all">{{ $t('allProducts') || 'Все товары' }}</option>
                                         <option value="in_stock">{{ $t('inStock') || 'В наличии' }}</option>
                                         <option value="out_of_stock">{{ $t('outOfStock') || 'Нет в наличии' }}</option>
@@ -141,11 +142,12 @@ import { eventBus } from '@/eventBus';
 import { formatQuantity } from '@/utils/numberUtils';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import searchMixin from '@/mixins/searchMixin';
+import filtersMixin from '@/mixins/filtersMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, companyChangeMixin, searchMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, companyChangeMixin, searchMixin, filtersMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, AdminWarehouseCreatePage, TableControlsBar, TableFilterButton, FiltersContainer, draggable: VueDraggableNext },
     data() {
         return {

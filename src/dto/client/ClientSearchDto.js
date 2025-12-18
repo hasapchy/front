@@ -11,13 +11,9 @@ export default class ClientSearchDto {
     isConflict,
     firstName,
     lastName,
-    patronymic,
     contactPerson,
     position,
-    status,
-    phones = [],
-    employeeId = null,
-    employee = null
+    primaryPhone = null
   ) {
     this.id = id;
     this.clientType = clientType;
@@ -26,21 +22,10 @@ export default class ClientSearchDto {
     this.isConflict = Boolean(isConflict);
     this.firstName = firstName;
     this.lastName = lastName;
-    this.patronymic = patronymic;
     this.contactPerson = contactPerson;
     this.position = position;
-    this.status = Boolean(status);
-    this.employeeId = employeeId;
-    this.employee = employee;
-    this.phones = (phones || []).map((phone) => {
-      if (typeof phone === 'string') {
-        return { phone };
-      } else if (phone && phone.phone) {
-        return new ClientPhoneDto(phone.id, phone.client_id, phone.phone);
-      } else {
-        return phone;
-      }
-    });
+    this.status = true;
+    this.primaryPhone = primaryPhone;
   }
 
   balanceFormatted() {
@@ -49,18 +34,16 @@ export default class ClientSearchDto {
 
   fullName() {
     if (this.clientType === 'employee' || this.clientType === 'investor') {
-      if (this.employee) {
-        const employeeName = this.employee.name || '';
-        const employeeSurname = this.employee.surname || '';
-        const employeePosition = this.employee.position || '';
-        const parts = [employeeName, employeeSurname].filter(Boolean);
-        let result = parts.join(' ').trim();
-        if (employeePosition) {
-          result += ` (${employeePosition})`;
-        }
-        return result || this.firstName || '';
+      const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
+      const position = this.position || '';
+      
+      if (!baseName) return '';
+      
+      if (position) {
+        return `${baseName} (${position})`;
       }
-      return this.firstName || '';
+      
+      return baseName;
     } else if (this.clientType === 'company') {
       const baseName = [this.firstName, this.lastName].filter(Boolean).join(' ').trim();
       const position = this.position || '';
@@ -111,18 +94,14 @@ export default class ClientSearchDto {
       return new ClientSearchDto(
         data.id,
         data.client_type,
-        data.balance || 0,
+        data.balance ?? 0,
         data.is_supplier,
         data.is_conflict,
         data.first_name,
         data.last_name,
-        data.patronymic,
         data.contact_person,
         data.position,
-        data.status,
-        data.phones || [],
-        data.employee_id,
-        data.employee
+        data.primary_phone
       );
     }).filter(Boolean);
   }

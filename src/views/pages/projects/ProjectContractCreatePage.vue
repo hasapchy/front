@@ -170,7 +170,6 @@ export default {
                 const selectedCurrency = this.currencies.find(c => c.id == formData.currencyId);
                 if (selectedCurrency) {
                     formData.currencyName = selectedCurrency.name;
-                    formData.currencyCode = selectedCurrency.code;
                     formData.currencySymbol = selectedCurrency.symbol;
                 }
 

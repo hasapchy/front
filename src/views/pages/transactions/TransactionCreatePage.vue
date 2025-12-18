@@ -24,7 +24,7 @@
             <select v-model="cashId" :disabled="!!editingItemId" required>
                 <option value="">{{ $t('no') }}</option>
                 <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
-                    {{ parent.name }} ({{ parent.currencySymbol || parent.currencyCode || '' }})
+                    {{ parent.name }} ({{ parent.currencySymbol || '' }})
                 </option>
             </select>
         </div>
@@ -385,8 +385,11 @@ export default {
                 }
 
                 if (this.allCashRegisters.length > 0 && !this.cashId) {
-                    this.cashId = this.allCashRegisters[0].id;
-                    this.currencyId = this.allCashRegisters[0].currency_id;
+                    this.cashId = this.defaultCashId || this.allCashRegisters[0].id;
+                    const selectedCash = this.allCashRegisters.find(c => c.id == this.cashId);
+                    if (selectedCash?.currency_id) {
+                        this.currencyId = selectedCash.currency_id;
+                    }
                 } else if (!this.currencyId) {
                     const defaultCurrency = (this.currencies || []).find(c => c.isDefault);
                     if (defaultCurrency) {
@@ -545,8 +548,12 @@ export default {
                 await this.$store.dispatch('loadCashRegisters');
                 this.allCashRegisters = this.$store.getters.cashRegisters;
             }
-            if (this.allCashRegisters.length && !this.cashId && !this.defaultCashId) {
-                this.cashId = this.allCashRegisters[0].id;
+            if (this.allCashRegisters.length && !this.cashId) {
+                this.cashId = this.defaultCashId || this.allCashRegisters[0].id;
+                const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
+                if (selectedCash?.currency_id && !this.currencyId) {
+                    this.currencyId = selectedCash.currency_id;
+                }
             }
         },
         async save() {
@@ -668,7 +675,11 @@ export default {
         },
         clearForm() {
             this.type = "income";
-            this.cashId = this.allCashRegisters.length ? this.allCashRegisters[0].id : '';
+            if (this.allCashRegisters.length > 0) {
+                this.cashId = this.defaultCashId || this.allCashRegisters[0].id;
+            } else if (!this.cashId) {
+                this.cashId = this.defaultCashId || '';
+            }
             this.origAmount = 0;
             this.note = '';
             this.isDebt = this.fieldConfig('debt').enforcedValue ?? false;
@@ -840,8 +851,10 @@ export default {
             immediate: true
         },
         defaultCashId: {
-            handler(i) {
-                this.cashId = this.defaultCashId;
+            handler(newDefaultCashId) {
+                if (newDefaultCashId && !this.editingItemId) {
+                    this.cashId = newDefaultCashId;
+                }
             },
             immediate: true
         },
@@ -923,12 +936,21 @@ export default {
                     // При создании новой транзакции устанавливаем значения по умолчанию
                     // Для заказов всегда тип "income" и не долговая
                     this.type = this.orderId ? "income" : "income";
-                    this.cashId = this.defaultCashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
-                    const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
+                    // Не сбрасываем cashId, если он уже установлен и кассы не загружены
+                    if (this.allCashRegisters.length > 0) {
+                        if (!this.cashId) {
+                            this.cashId = this.defaultCashId || this.allCashRegisters[0].id;
+                        }
+                        const selectedCash = this.allCashRegisters.find(cash => cash.id == this.cashId);
+                        if (selectedCash?.currency_id) {
+                            this.currencyId = selectedCash.currency_id;
+                        }
+                    } else if (this.defaultCashId && !this.cashId) {
+                        this.cashId = this.defaultCashId;
+                    }
                     this.cashAmount = null;
                     this.cashCurrencyId = null;
                     this.origAmount = 0;
-                    this.currencyId = selectedCash?.currency_id || '';
                     this.categoryId = 4;
                     this.projectId = this.initialProjectId || '';
                     this.date = new Date().toISOString().substring(0, 16);

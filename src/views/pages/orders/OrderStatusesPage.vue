@@ -103,6 +103,7 @@ export default {
                 { name: 'id', label: '№', size: 60 },
                 { name: 'name', label: 'name' },
                 { name: 'categoryName', label: 'category' },
+                { name: 'status', label: 'status' },
                 { name: 'createdAt', label: 'creationDate' }
             ]
         }
@@ -130,6 +131,8 @@ export default {
             switch (c) {
                 case 'createdAt':
                     return i.formatCreatedAt ? i.formatCreatedAt() : i.createdAt;
+                case 'status':
+                    return i.isActive ? this.$t('active') : this.$t('inactive');
                 default:
                     return i[c];
             }

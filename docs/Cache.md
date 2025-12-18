@@ -65,11 +65,11 @@ protected static function invalidateOtherCache(string $like, ?int $companyId, st
 
 **Критические проблемы:**
 
-1. ❌ **При отсутствии `companyId` выполняется `Cache::flush()`** - это очищает ВЕСЬ кэш приложения, включая кэш Laravel, сессии и другие данные
+1. ✅ **ИСПРАВЛЕНО: При отсутствии `companyId` выполняется `Cache::flush()`** - убран опасный вызов `Cache::flush()`, теперь при отсутствии `companyId` инвалидация не выполняется (так как используется database драйвер, этот метод не вызывается)
 
-2. ❌ **Нет поддержки паттернов для Redis/Memcached** - метод `forget()` не поддерживает wildcards, поэтому инвалидация по паттерну не работает
+2. ⚠️ **Нет поддержки паттернов для Redis/Memcached** - метод `forget()` не поддерживает wildcards, поэтому инвалидация по паттерну не работает (актуально только при переходе на Redis)
 
-3. ❌ **При переходе на Redis это сломает инвалидацию кэша**
+3. ⚠️ **При переходе на Redis это сломает инвалидацию кэша** - требуется реализация поддержки Redis
 
 **Решение:**
 
@@ -125,9 +125,9 @@ public static function getPaginatedData(string $cacheKey, callable $callback, in
 
 1. ⚠️ Каждая страница кэшируется отдельно - при изменении данных нужно инвалидировать все страницы
 
-2. ⚠️ Нет механизма инвалидации всех страниц при изменении данных
+2. ✅ **ИСПРАВЛЕНО:** Добавлен метод `invalidatePaginatedData()` для инвалидации всех страниц по базовому ключу
 
-3. ⚠️ При большом количестве страниц это может привести к переполнению кэша
+3. ⚠️ При большом количестве страниц это может привести к переполнению кэша (актуально при большом объеме данных)
 
 **Пример проблемы:**
 
@@ -140,12 +140,10 @@ public static function getPaginatedData(string $cacheKey, callable $callback, in
 
 **Методы, которые определены, но не используются:**
 
-- `smartRemember()` - не используется в коде
-- `rememberSearch()` - не используется (вместо него используется `getReferenceData()`)
-- `preloadData()` - не используется
-- `clearUserCache()` - не используется
-
-**Рекомендация:** Удалить неиспользуемые методы или документировать их назначение.
+- ✅ **ИСПРАВЛЕНО:** `smartRemember()` - удален (не использовался)
+- `rememberSearch()` - используется в `ClientsRepository`, оставлен
+- ✅ **ИСПРАВЛЕНО:** `preloadData()` - удален (не использовался)
+- `clearUserCache()` - не используется (можно удалить в будущем)
 
 ### 2.5. Проблема с обработкой ошибок
 
@@ -766,7 +764,7 @@ public static function invalidatePaginatedData(string $baseKey): void
 
 ### 8.2. Чеклист перед переходом на Redis
 
-- [ ] Исправлен метод `invalidateOtherCache()`
+- [x] Исправлен метод `invalidateOtherCache()`
 - [ ] Реализован метод `invalidateRedisCache()`
 - [ ] Добавлено логирование ошибок
 - [ ] Протестировано на тестовом окружении
@@ -797,5 +795,136 @@ public static function invalidatePaginatedData(string $baseKey): void
 
 ---
 
+## 9. Выполненные исправления
+
+### 9.1. Исправление критической проблемы с Cache::flush() (2025-01-27)
+
+**Проблема:** В методе `invalidateOtherCache()` при отсутствии `companyId` выполнялся `Cache::flush()`, что очищало весь кэш приложения.
+
+**Исправление:**
+- Убран опасный вызов `Cache::flush()`
+- Упрощена логика метода: при отсутствии `companyId` инвалидация не выполняется
+- Для database драйвера (текущий) метод `invalidateOtherCache()` не вызывается, поэтому изменение безопасно
+
+**Измененный код:**
+```php
+protected static function invalidateOtherCache(string $like, ?int $companyId, string $driver): void
+{
+    try {
+        if ($companyId !== null) {
+            $pattern = str_replace('%', '', $like) . "_{$companyId}";
+            Cache::forget($pattern);
+        }
+    } catch (\Exception $e) {
+    }
+}
+```
+
+**Статус:** ✅ Исправлено
+
+### 9.2. Улучшение генерации ключей кэша (2025-01-27)
+
+**Проблема:** Возможны коллизии и чрезмерная длина ключей из-за неочищенных параметров и специальных символов.
+
+**Исправление:**
+- Нормализация параметров (булевы, массивы, строки)
+- Хеширование длинных параметров и усечение ключа с контрольным хешем
+- Пропуск пустых и null-значений
+
+**Измененный код:**
+```php
+public function generateCacheKey(string $prefix, array $params = []): string
+{
+    $companyId = $this->getCurrentCompanyId() ?? 'default';
+    $key = $prefix;
+    foreach ($params as $param) {
+        if ($param === null) {
+            continue;
+        }
+        $normalized = $this->normalizeCacheParam($param);
+        if ($normalized === '') {
+            continue;
+        }
+        if (strlen($normalized) > 50) {
+            $normalized = md5($normalized);
+        }
+        $key .= "_{$normalized}";
+    }
+    $key .= "_{$companyId}";
+    if (strlen($key) > 250) {
+        $hash = md5($key);
+        $key = substr($key, 0, 200) . "_{$hash}";
+    }
+    return $key;
+}
+```
+
+**Статус:** ✅ Исправлено
+
+### 9.2. Улучшение генерации ключей кэша (2025-01-27)
+
+**Проблема:** В методе `generateCacheKey()` отсутствовала нормализация параметров, что могло приводить к коллизиям ключей и очень длинным ключам.
+
+**Исправление:**
+- Добавлена нормализация параметров (bool, массивы, строки)
+- Длинные строки (>50 символов) хешируются через `md5()`
+- Ключи ограничены длиной 250 символов с контрольным хешем
+- Добавлен вспомогательный метод `normalizeCacheParam()`
+
+**Измененный код:**
+```php
+public function generateCacheKey(string $prefix, array $params = []): string
+{
+    $companyId = $this->getCurrentCompanyId() ?? 'default';
+    $key = $prefix;
+    foreach ($params as $param) {
+        if ($param === null) {
+            continue;
+        }
+        $normalized = $this->normalizeCacheParam($param);
+        if ($normalized === '') {
+            continue;
+        }
+        if (strlen($normalized) > 50) {
+            $normalized = md5($normalized);
+        }
+        $key .= "_{$normalized}";
+    }
+    $key .= "_{$companyId}";
+    if (strlen($key) > 250) {
+        $hash = md5($key);
+        $key = substr($key, 0, 200) . "_{$hash}";
+    }
+    return $key;
+}
+```
+
+**Статус:** ✅ Исправлено
+
+### 9.3. Добавление метода инвалидации пагинированных данных и удаление неиспользуемых методов (2025-01-27)
+
+**Проблема:** 
+- Не было механизма для инвалидации всех страниц пагинации при изменении данных
+- В коде присутствовали неиспользуемые методы `smartRemember()` и `preloadData()`
+
+**Исправление:**
+- Добавлен метод `invalidatePaginatedData()` для инвалидации всех страниц по базовому ключу
+- Удалены неиспользуемые методы `smartRemember()` и `preloadData()`
+- Метод `rememberSearch()` оставлен, так как используется в `ClientsRepository`
+
+**Добавленный код:**
+```php
+public static function invalidatePaginatedData(string $baseKey, ?int $companyId = null): void
+{
+    $pattern = "paginated_{$baseKey}_page_%";
+    self::invalidateByLike($pattern, $companyId);
+}
+```
+
+**Статус:** ✅ Исправлено
+
+---
+
 **Автор аудита:** AI Assistant  
-**Дата завершения:** 2025-01-27
+**Дата завершения:** 2025-01-27  
+**Последнее обновление:** 2025-01-27
