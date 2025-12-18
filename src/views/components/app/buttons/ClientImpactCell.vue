@@ -1,6 +1,6 @@
 <template>
     <span :class="amountClass" class="font-semibold">
-        <span v-if="showSign">{{ sign }}</span>{{ formattedAmount }} {{ currencySymbol }}
+        <span v-if="showSign">{{ sign }}</span>{{ formattedAmount }} {{ displayCurrencySymbol }}
     </span>
 </template>
 
@@ -35,7 +35,7 @@ export default {
         isDebt() {
             return this.item.isDebt == 1 || this.item.is_debt == 1;
         },
-        currencySymbol() {
+        displayCurrencySymbol() {
             return this.item.currencySymbol || this.currencySymbol || '';
         },
         formatFn() {

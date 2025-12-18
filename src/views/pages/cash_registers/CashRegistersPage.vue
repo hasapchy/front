@@ -145,34 +145,21 @@ export default {
             this.fetchItems(1, false);
         },
         async handleCompanyChanged(companyId) {
-            // ✅ Очищаем фильтры при смене компании
             this.selectedIds = [];
-            
-            // Перезагружаем данные со страницы 1
             await this.fetchItems(1, false);
-            
-            // Уведомляем пользователя о смене компании
             this.$store.dispatch('showNotification', {
               title: 'Компания изменена',
               isDanger: false
             });
         },
         async fetchItems(page = 1, silent = false) {
-            if (!silent) {
-                this.loading = true;
-            }
+            if (!silent) this.loading = true;
             try {
-               
-                const per_page = this.perPage;
-                
-                const new_data = await CashRegisterController.getItems(page, per_page);
-                this.data = new_data;
+                this.data = await CashRegisterController.getItems(page, this.perPage);
             } catch (error) {
                 this.showNotification(this.$t('errorGettingCashRegisterList'), error.message, true);
             }
-            if (!silent) {
-                this.loading = false;
-            }
+            if (!silent) this.loading = false;
         }
     },
     computed: {

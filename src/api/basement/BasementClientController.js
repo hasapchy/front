@@ -8,9 +8,9 @@ export default class BasementClientController {
   static async getItem(id) {
     try {
       const response = await basementApi.get(`/clients/${id}`);
-      const item = response.data.item;
+      const clientData = response.data.data || response.data;
       
-      return ClientDto.fromApiArray([item])[0] || null;
+      return ClientDto.fromApiArray([clientData])[0] || null;
     } catch (error) {
       console.error("Ошибка при получении клиента:", error);
       throw error;
@@ -27,16 +27,17 @@ export default class BasementClientController {
         params.include_inactive = true;
       }
       const response = await basementApi.get("/clients", { params });
-      const data = response.data;
+      const responseData = response.data;
       
-      const items = ClientDto.fromApiArray(data.items);
+      const items = ClientDto.fromApiArray(responseData.data || []);
+      const meta = responseData.meta || {};
 
       const paginatedResponse = new PaginatedResponse(
         items,
-        data.current_page,
-        data.next_page,
-        data.last_page,
-        data.total
+        meta.current_page || page,
+        meta.next_page || null,
+        meta.last_page || 1,
+        meta.total || 0
       );
 
       return paginatedResponse;
@@ -62,9 +63,9 @@ export default class BasementClientController {
   static async getListItems() {
     try {
       const response = await basementApi.get(`/clients/all`);
-      const data = response.data;
-      const items = ClientDto.fromApiArray(data);
-      return items;
+      const responseData = response.data;
+      const items = responseData.data || responseData;
+      return ClientDto.fromApiArray(Array.isArray(items) ? items : []);
     } catch (error) {
       console.error('Ошибка при получении всех клиентов:', error);
       throw error;
@@ -73,8 +74,13 @@ export default class BasementClientController {
 
   static async storeItem(item) {
     try {
-      const { data } = await basementApi.post("/clients", item);
-      return data;
+      const response = await basementApi.post("/clients", item);
+      const responseData = response.data;
+      const clientData = responseData.data || responseData;
+      return {
+        item: ClientDto.fromApiArray([clientData])[0] || clientData,
+        message: responseData.message || "Client created successfully",
+      };
     } catch (error) {
       console.error("Ошибка при создании клиента:", error);
       throw error;
@@ -83,8 +89,13 @@ export default class BasementClientController {
 
   static async updateItem(id, item) {
     try {
-      const { data } = await basementApi.put(`/clients/${id}`, item);
-      return data;
+      const response = await basementApi.put(`/clients/${id}`, item);
+      const responseData = response.data;
+      const clientData = responseData.data || responseData;
+      return {
+        client: ClientDto.fromApiArray([clientData])[0] || clientData,
+        message: responseData.message || "Client updated successfully",
+      };
     } catch (error) {
       console.error("Ошибка при обновлении клиента:", error);
       throw error;

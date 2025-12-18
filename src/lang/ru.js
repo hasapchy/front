@@ -199,6 +199,7 @@ export default {
   editExchangeRate: 'Редактировать курс',
   selectCurrency: 'Выберите валюту',
   exchangeRate: 'Курс обмена',
+  atExchangeRate: 'по курсу',
   startDate: 'Дата начала',
   endDate: 'Дата окончания',
   duration: 'Продолжительность',

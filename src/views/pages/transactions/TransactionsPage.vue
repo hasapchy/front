@@ -261,6 +261,7 @@ export default {
                         transaction: item
                     })
                 },
+                { name: 'exchangeRate', label: 'exchangeRate', visible: false },
                 { name: 'origAmount', label: 'originalAmount', visible: false },
             ],
             sourceOptions: [
@@ -306,6 +307,11 @@ export default {
                 case 'origAmount':
                     // Возвращаем числовое значение для сортировки (отображение через компонент TransactionAmountCell)
                     return parseFloat(i.origAmount || 0);
+                case 'exchangeRate':
+                    if (!i.exchangeRate || i.origCurrencyId === i.cashCurrencyId) {
+                        return null;
+                    }
+                    return `${i.exchangeRate} ${i.cashCurrencySymbol || ''}`.trim();
                 case 'note':
                     if (!i.note) return '';
                     return search ? highlightMatches(i.note, search) : i.note;
@@ -355,10 +361,6 @@ export default {
         showModal(item = null, formConfig = null) {
             this.editingItem = null;
             this.currentFormConfig = formConfig || TRANSACTION_FORM_PRESETS.full;
-            if (item?.isTransfer == 1) {
-                this.showNotification(this.$t('cannotEditTransfer'), this.$t('transferTransaction'), true);
-                return;
-            }
             this.modalDialog = true;
             this.editingItem = item;
         },

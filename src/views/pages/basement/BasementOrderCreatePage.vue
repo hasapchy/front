@@ -221,6 +221,7 @@
 
 <script>
 import basementApi from '@/api/basement/basementAxiosInstance'
+import BasementOrderController from '@/api/basement/BasementOrderController'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'
 import BasementClientSearch from '@/views/components/basement/BasementClientSearch.vue'
@@ -411,6 +412,8 @@ export default {
     this.loadCashRegisters();
     this.loadWarehouses();
     this.loadProjects();
+    // Инициализируем форму после загрузки базовых данных
+    await this.initializeForm();
   },
   methods: {
     setCategoryByUser() {
@@ -697,9 +700,7 @@ export default {
       } else if (this.orderId) {
         // Загружаем данные заказа по ID из роута
         try {
-          const { data } = await basementApi.get(`/orders/${parseInt(this.orderId)}`)
-          
-          const orderData = data.item || data
+          const orderData = await BasementOrderController.getItem(parseInt(this.orderId))
           this.fillFormWithOrderData(orderData)
         } catch (error) {
           this.$store.dispatch('showNotification', {

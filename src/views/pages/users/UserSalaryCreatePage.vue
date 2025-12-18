@@ -100,6 +100,10 @@ export default {
         userId: {
             type: [Number, String],
             required: true
+        },
+        usersController: {
+            type: Object,
+            default: null
         }
     },
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
@@ -117,6 +121,11 @@ export default {
             },
             currencies: [],
         };
+    },
+    computed: {
+        controller() {
+            return this.usersController || UsersController;
+        }
     },
     computed: {
         canSave() {
@@ -207,7 +216,7 @@ export default {
                 }
 
                 if (this.editingItem) {
-                    await UsersController.updateSalary(
+                    await this.controller.updateSalary(
                         this.userId,
                         this.editingItem.id,
                         payload
@@ -218,7 +227,7 @@ export default {
                         false
                     );
                 } else {
-                    await UsersController.createSalary(this.userId, payload);
+                    await this.controller.createSalary(this.userId, payload);
                     this.showNotification(
                         this.$t('success') || 'Успешно',
                         this.$t('salarySaved') || 'Зарплата сохранена',
@@ -250,7 +259,7 @@ export default {
 
             this.deleteLoading = true;
             try {
-                await UsersController.deleteSalary(this.userId, this.editingItem.id);
+                await this.controller.deleteSalary(this.userId, this.editingItem.id);
                 this.showNotification(
                     this.$t('success') || 'Успешно',
                     this.$t('salaryDeleted') || 'Зарплата удалена',

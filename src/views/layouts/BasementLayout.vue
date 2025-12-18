@@ -24,19 +24,7 @@
               <div class="flex-shrink-0">
                 <LanguageSwitcher @language-changed="onLanguageChanged" />
               </div>
-              <div class="flex items-center space-x-3">
-                <span class="text-sm text-gray-500">
-                  {{ user?.name || $t('worker') }}
-                </span>
-                <button @click="logout"
-                  class="text-red-500 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded-md p-1"
-                  :title="$t('logout')">
-                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                </button>
-              </div>
+              <BasementUserProfileDropdown />
             </div>
           </div>
         </div>
@@ -80,6 +68,7 @@
 <script>
 import { BasementAuthController } from '@/api/basement/BasementAuthController'
 import LanguageSwitcher from '@/views/components/app/LanguageSwitcher.vue'
+import BasementUserProfileDropdown from '@/views/components/basement/BasementUserProfileDropdown.vue'
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue'
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue'
 import companyChangeMixin from '@/mixins/companyChangeMixin'
@@ -90,6 +79,7 @@ export default {
   mixins: [companyChangeMixin],
   components: {
     LanguageSwitcher,
+    BasementUserProfileDropdown,
     NotificationToast,
     SpinnerIcon
   },

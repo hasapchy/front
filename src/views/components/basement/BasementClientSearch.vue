@@ -3,7 +3,7 @@
         <div v-if="selectedClient == null" class="relative">
             <label class="block mb-1 required">{{ $t('client') }}</label>
             <input type="text" v-model="clientSearch" :placeholder="$t('enterClientNameOrNumber')"
-                class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="handleBlur"
+                class="w-full p-2 border rounded" @focus="handleFocus" @blur="handleBlur"
                 :disabled="disabled" />
             <transition name="appear">
                 <ul v-show="showDropdown"
@@ -14,7 +14,7 @@
                             class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
                             <div class="flex justify-between">
                                 <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                                <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
+                                <div class="text-[#337AB7]">{{ client.phones?.[0]?.phone || client.primaryPhone }}</div>
                             </div>
                         </li>
                     </template>
@@ -24,7 +24,7 @@
                         class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
                         <div class="flex justify-between">
                             <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
-                            <div class="text-[#337AB7]">{{ client.phones[0]?.phone }}</div>
+                            <div class="text-[#337AB7]">{{ client.primaryPhone || client.phones?.[0]?.phone }}</div>
                         </div>
                     </li>
                 </ul>
@@ -36,7 +36,8 @@
                     <div>
                         <label class="required">{{ $t('client') }}</label>
                         <p><span class="font-semibold text-sm">{{ $t('name') }}:</span> {{ clientFullName }}</p>
-                        <p><span class="font-semibold text-sm">{{ $t('phone') }}:</span> {{ clientPhones[0]?.phone || $t('noPhone') }}</p>
+                        <p><span class="font-semibold text-sm">{{ $t('phone') }}:</span> <span class="font-semibold text-sm">{{
+                            clientPhones[0]?.phone || '' }}</span></p>
                     </div>
                     <button v-on:click="deselectClient" class="text-red-500 text-2xl cursor-pointer"
                         :disabled="disabled">×</button>
@@ -76,17 +77,15 @@ export default {
             clientResults: [],
             lastClients: [],
             showDropdown: false,
-            localSelectedClient: null,
         };
     },
     computed: {
         clientFullName() {
-            const client = this.localSelectedClient || this.selectedClient;
-            
-            if (!client) return '';
-            if (typeof client.fullName === 'function') {
-                return client.fullName();
+            if (!this.selectedClient) return '';
+            if (typeof this.selectedClient.fullName === 'function') {
+                return this.selectedClient.fullName();
             }
+            const client = this.selectedClient;
             const clientType = client.clientType || client.client_type;
             const firstName = client.firstName || client.first_name || '';
             const lastName = client.lastName || client.last_name || '';
@@ -117,27 +116,44 @@ export default {
             }
         },
         clientPhones() {
-            const client = this.localSelectedClient || this.selectedClient;
-            if (!client) return [];
-            const phones = client.phones || [];
+            if (!this.selectedClient) return [];
+            if (this.selectedClient.primaryPhone) {
+                return [{ phone: this.selectedClient.primaryPhone }];
+            }
+            const phones = this.selectedClient.phones || [];
             return Array.isArray(phones) ? phones : [];
         }
     },
-    created() {
-        this.fetchLastClients();
+    async created() {
+        await this.fetchLastClients();
+
+        if (this.selectedClient && this.selectedClient.id) {
+            try {
+                if (typeof this.selectedClient.fullName === 'function' && (this.selectedClient.phones && Array.isArray(this.selectedClient.phones) || this.selectedClient.primaryPhone)) {
+                    return;
+                }
+                const updatedClient = await BasementClientController.getItem(this.selectedClient.id);
+                this.$emit('update:selectedClient', updatedClient);
+            } catch (error) {
+                console.error('Ошибка при обновлении данных клиента:', error);
+            }
+        }
     },
     emits: ['update:selectedClient'],
     methods: {
-    async fetchLastClients() {
-        try {
-            const paginated = await BasementClientController.getItems(1, null, false, 20);
-            this.lastClients = paginated.items
-                .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
-                .slice(0, 10);
-        } catch (error) {
-            this.lastClients = [];
-        }
-    },
+        async fetchLastClients() {
+            try {
+                const paginated = await BasementClientController.getItems(1, null, false, 20);
+                this.lastClients = paginated.items
+                    .filter((client) => client.status === true)
+                    .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
+                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                    .slice(0, 10);
+            } catch (error) {
+                console.error('Ошибка при загрузке последних клиентов:', error);
+                this.lastClients = [];
+            }
+        },
         searchClients: debounce(async function () {
             if (this.clientSearch.length >= 3) {
                 this.clientSearchLoading = true;
@@ -159,14 +175,16 @@ export default {
             this.showDropdown = false;
             this.clientSearch = '';
             this.clientResults = [];
-            
-            // Используем клиента напрямую из списка
-            this.localSelectedClient = client;
             this.$emit('update:selectedClient', client);
         },
         deselectClient() {
-            this.localSelectedClient = null;
             this.$emit('update:selectedClient', null);
+        },
+        async handleFocus() {
+            this.showDropdown = true;
+            if (this.lastClients.length === 0) {
+                await this.fetchLastClients();
+            }
         },
         handleBlur() {
             requestAnimationFrame(() => {
@@ -176,10 +194,9 @@ export default {
     },
     watch: {
         selectedClient: {
-            handler(newClient) {
-                this.localSelectedClient = newClient;
+            handler(newVal) {
             },
-            immediate: true,
+            deep: true,
         },
         clientSearch: {
             handler: 'searchClients',

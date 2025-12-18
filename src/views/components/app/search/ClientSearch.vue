@@ -2,7 +2,7 @@
     <div v-if="selectedClient == null" class="relative">
         <label v-if="showLabel" :class="['block', 'mb-1', { 'required': required }]">{{ $t('client') }}</label>
         <input type="text" v-model="clientSearch" :placeholder="$t('enterClientNameOrNumber')"
-            class="w-full p-2 border rounded" @focus="showDropdown = true" @blur="handleBlur" :disabled="disabled" />
+            class="w-full p-2 border rounded" @focus="handleFocus" @blur="handleBlur" :disabled="disabled" />
         <transition name="appear">
             <ul v-show="showDropdown"
                 class="absolute bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto w-full mt-1 z-10">
@@ -287,6 +287,12 @@ export default {
             const errorText = Array.isArray(errorMessages) ? errorMessages.join(', ') : errorMessages;
             this.showNotification(this.$t('errorCreatingClient'), errorText, true);
         },
+        async handleFocus() {
+            this.showDropdown = true;
+            if (this.lastClients.length === 0) {
+                await this.fetchLastClients();
+            }
+        },
         handleBlur() {
             requestAnimationFrame(() => {
                 this.showDropdown = false;
@@ -306,10 +312,8 @@ export default {
         '$store.state.clients': {
             handler(newClients) {
                 if (newClients && newClients.length > 0) {
-                    if (!this.selectedClient) {
-                        this.updateLastClientsFromStore();
-                    } else if (this.selectedClient?.id) {
-                        // Автоматически обновляем selectedClient из Store если он есть
+                    this.updateLastClientsFromStore(newClients);
+                    if (this.selectedClient?.id) {
                         const updated = newClients.find(c => c.id === this.selectedClient.id);
                         if (updated) {
                             this.$emit('update:selectedClient', updated);

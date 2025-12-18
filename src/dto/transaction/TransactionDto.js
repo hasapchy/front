@@ -37,7 +37,8 @@ export default class TransactionDto {
     orders = [],
     sourceType = null,
     sourceId = null,
-    isDeleted = false
+    isDeleted = false,
+    exchangeRate = null
   ) {
     this.id = id;
     this.type = type;
@@ -73,6 +74,7 @@ export default class TransactionDto {
     this.sourceType = sourceType;
     this.sourceId = sourceId;
     this.isDeleted = isDeleted;
+    this.exchangeRate = exchangeRate;
   }
 
   typeName() {
@@ -92,6 +94,13 @@ export default class TransactionDto {
 
   formatUpdatedAt() {
     return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
+  }
+
+  formatExchangeRate() {
+    if (!this.exchangeRate || this.origCurrencyId === this.cashCurrencyId) {
+      return null;
+    }
+    return `${this.exchangeRate} ${this.cashCurrencySymbol || ''}`.trim();
   }
 
   clone() {
@@ -128,7 +137,8 @@ export default class TransactionDto {
       this.orders,
       this.sourceType ?? null,
       this.sourceId ?? null,
-      false
+      false,
+      this.exchangeRate
     );
   }
 
@@ -169,7 +179,8 @@ export default class TransactionDto {
         data.orders || [],
         data.source_type || null,
         data.source_id || null,
-        data.is_deleted || false
+        data.is_deleted || false,
+        data.exchange_rate || null
       );
     }).filter(Boolean);
   }

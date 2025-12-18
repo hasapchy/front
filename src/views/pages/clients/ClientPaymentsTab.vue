@@ -53,7 +53,6 @@
                 <TransactionCreatePage 
                     v-if="selectedEntity && selectedEntity.type === 'transaction'"
                     :editingItem="editingTransactionItem"
-                    :preselectedClientId="editingItem.id"
                     :initialClient="editingItem"
                     :form-config="paymentsFormConfig"
                     :header-text="paymentsHeaderText"

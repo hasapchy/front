@@ -380,6 +380,7 @@ export default {
   
   // Exchange rate
   exchangeRate: 'Walýuta kursy',
+  atExchangeRate: 'kurs boýunça',
   exchangeRateHelp: 'Kurs 1 birlik başlangyç walýutadan näçe birlik maksat walýutanyň alynjakdygyny görkezýär',
   receiverAmount: 'Alyjy mukdary',
   
