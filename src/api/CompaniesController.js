@@ -44,4 +44,26 @@ export default class CompaniesController extends BaseController {
   static async deleteItem(id) {
     return super.deleteItem("/companies", id);
   }
+
+  static async accrueSalaries(companyId, data) {
+    return super.handleRequest(
+      async () => {
+        const { data: response } = await api.post(`/companies/${companyId}/salaries/accrue`, data);
+        return response;
+      },
+      "Ошибка при начислении зарплат:"
+    );
+  }
+
+  static async checkExistingSalaries(companyId, date) {
+    return super.handleRequest(
+      async () => {
+        const { data: response } = await api.get(`/companies/${companyId}/salaries/check`, {
+          params: { date }
+        });
+        return response;
+      },
+      "Ошибка при проверке начислений:"
+    );
+  }
 }

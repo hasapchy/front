@@ -9,6 +9,8 @@
                     :disabled="createButtonDisabled">
                 </PrimaryButton>
                 
+                <slot name="additionalButtons"></slot>
+                
                 <slot name="filters-desktop"></slot>
             </slot>
         </div>
