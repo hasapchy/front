@@ -16,17 +16,6 @@
                         :columns="columns"
                         :toggleVisible="toggleVisible"
                         :log="log">
-                        <template #additionalButtons>
-                            <PrimaryButton 
-                                v-if="$store.getters.hasPermission('employee_salaries_create')"
-                                icon="fas fa-money-bill-wave" 
-                                :onclick="openSalaryAccrualModal"
-                                :is-success="true"
-                                class="ml-2"
-                            >
-                                {{ $t('accrueSalaries') || 'Начислить зарплаты' }}
-                            </PrimaryButton>
-                        </template>
                         <template #gear="{ resetColumns, columns, toggleVisible, log }">
                             <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
                                 <ul>
@@ -63,14 +52,6 @@
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
             :editingItem="editingItem" />
     </SideModalDialog>
-    <SideModalDialog :showForm="salaryAccrualModalOpen" :onclose="closeSalaryAccrualModal">
-        <SalaryAccrualModal 
-            v-if="salaryAccrualModalOpen && selectedCompanyId"
-            :company-id="selectedCompanyId"
-            @success="handleSalaryAccrualSuccess"
-            @cancel="closeSalaryAccrualModal"
-        />
-    </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
     <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
@@ -88,7 +69,6 @@ import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import CompaniesCreatePage from './CompaniesCreatePage.vue';
-import SalaryAccrualModal from '@/views/components/app/SalaryAccrualModal.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
@@ -101,7 +81,7 @@ import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, ],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, CompaniesCreatePage, SalaryAccrualModal, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, CompaniesCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -112,8 +92,6 @@ export default {
             savedErrorText: this.$t('errorSavingCompany'),
             deletedSuccessText: this.$t('companyDeleted'),
             deletedErrorText: this.$t('errorDeletingCompany'),
-            selectedCompanyId: null,
-            salaryAccrualModalOpen: false,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'ID', size: 60 },
@@ -169,25 +147,6 @@ export default {
                 default:
                     return item[column];
             }
-        },
-        openSalaryAccrualModal() {
-            if (this.selectedIds && this.selectedIds.length === 1) {
-                this.selectedCompanyId = this.selectedIds[0];
-                this.salaryAccrualModalOpen = true;
-            } else {
-                this.showNotification(
-                    this.$t('error') || 'Ошибка',
-                    this.$t('selectOneCompany') || 'Выберите одну компанию',
-                    true
-                );
-            }
-        },
-        closeSalaryAccrualModal() {
-            this.salaryAccrualModalOpen = false;
-            this.selectedCompanyId = null;
-        },
-        handleSalaryAccrualSuccess() {
-            this.closeSalaryAccrualModal();
         }
     },
 };

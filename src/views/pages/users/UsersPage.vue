@@ -9,6 +9,17 @@
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
                         :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
                         :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
+                        <template #additionalButtons>
+                            <PrimaryButton 
+                                v-if="$store.getters.hasPermission('employee_salaries_accrue')"
+                                icon="fas fa-money-bill-wave" 
+                                :onclick="openSalaryAccrualModal"
+                                :is-success="true"
+                                class="ml-2"
+                            >
+                                {{ $t('accrueSalaries') || 'Начислить зарплаты' }}
+                            </PrimaryButton>
+                        </template>
                         <template #right>
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
@@ -51,6 +62,13 @@
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
             :editingItem="editingItem" />
     </SideModalDialog>
+    <SideModalDialog :showForm="salaryAccrualModalOpen" :onclose="closeSalaryAccrualModal">
+        <SalaryAccrualModal 
+            v-if="salaryAccrualModalOpen"
+            @success="handleSalaryAccrualSuccess"
+            @cancel="closeSalaryAccrualModal"
+        />
+    </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
     <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
@@ -69,6 +87,7 @@ import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import UsersCreatePage from './UsersCreatePage.vue';
+import SalaryAccrualModal from '@/views/components/app/SalaryAccrualModal.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
@@ -80,7 +99,7 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 
 export default {
     mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, UsersCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, UsersCreatePage, SalaryAccrualModal, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
     data() {
         return {
             controller: UsersController,
@@ -89,6 +108,7 @@ export default {
             savedErrorText: this.$t('errorSavingUser'),
             deletedSuccessText: this.$t('userDeleted'),
             deletedErrorText: this.$t('errorDeletingUser'),
+            salaryAccrualModalOpen: false,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'ID', size: 60 },
@@ -162,6 +182,15 @@ export default {
                 title: 'Компания изменена',
                 isDanger: false
             });
+        },
+        openSalaryAccrualModal() {
+            this.salaryAccrualModalOpen = true;
+        },
+        closeSalaryAccrualModal() {
+            this.salaryAccrualModalOpen = false;
+        },
+        handleSalaryAccrualSuccess() {
+            this.closeSalaryAccrualModal();
         }
     },
 };

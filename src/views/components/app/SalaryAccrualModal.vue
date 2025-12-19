@@ -15,9 +15,9 @@
 
             <div>
                 <label class="required">{{ $t('cashRegister') || 'Касса' }}</label>
-                <select v-model="form.cash_id" required>
+                <select v-model="form.cash_id" required :disabled="!form.company_id || loading">
                     <option :value="null" disabled>{{ $t('selectCashRegister') || 'Выберите кассу' }}</option>
-                    <option v-for="cash in cashRegisters" :key="cash.id" :value="cash.id">
+                    <option v-for="cash in filteredCashRegisters" :key="cash.id" :value="cash.id">
                         {{ cash.name }} {{ cash.currencySymbol ? `(${cash.currencySymbol})` : '' }}
                     </option>
                 </select>
@@ -53,7 +53,7 @@
             :onclick="handleAccrue"
             :is-loading="loading"
             :is-success="true"
-            :disabled="!form.date || !form.cash_id"
+            :disabled="!form.date || !form.cash_id || !form.company_id"
             icon="fas fa-money-bill-wave"
         >
         </PrimaryButton>
@@ -64,6 +64,7 @@
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import CompaniesController from '@/api/CompaniesController';
+import CashRegisterController from '@/api/CashRegisterController';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 
@@ -76,7 +77,8 @@ export default {
     props: {
         companyId: {
             type: Number,
-            required: true
+            required: false,
+            default: null
         }
     },
     emits: ['success', 'cancel'],
@@ -85,6 +87,7 @@ export default {
         today.setHours(0, 0, 0, 0);
         return {
             form: {
+                company_id: null,
                 date: today.toISOString().split('T')[0],
                 cash_id: null,
                 note: null
@@ -101,10 +104,26 @@ export default {
         maxDate() {
             const today = new Date();
             return today.toISOString().split('T')[0];
+        },
+        filteredCashRegisters() {
+            return this.cashRegisters;
         }
     },
     async mounted() {
+        const companyId = this.companyId || this.$store.getters.currentCompanyId;
+        
+        if (!companyId) {
+            this.showNotification(
+                this.$t('error') || 'Ошибка',
+                'Не выбрана компания. Пожалуйста, выберите компанию в настройках.',
+                true
+            );
+            return;
+        }
+        
+        this.form.company_id = companyId;
         await this.loadCashRegisters();
+        
         const month = new Date().toLocaleString('ru-RU', { month: 'long' });
         const year = new Date().getFullYear();
         this.form.note = `Зарплата за ${month} ${year}`;
@@ -116,9 +135,23 @@ export default {
                 this.cashRegisters = this.$store.getters.cashRegisters || [];
             } catch (error) {
                 console.error('Error loading cash registers:', error);
+                this.showNotification(
+                    this.$t('error') || 'Ошибка',
+                    'Не удалось загрузить список касс',
+                    true
+                );
             }
         },
         async handleAccrue() {
+            if (!this.form.company_id) {
+                this.showNotification(
+                    this.$t('error') || 'Ошибка',
+                    this.$t('companyRequired') || 'Компания обязательна для выбора',
+                    true
+                );
+                return;
+            }
+
             if (!this.form.date) {
                 this.showNotification(
                     this.$t('error') || 'Ошибка',
@@ -139,13 +172,14 @@ export default {
 
             this.checking = true;
             try {
-                const checkResult = await CompaniesController.checkExistingSalaries(this.companyId, this.form.date);
+                const checkResult = await CompaniesController.checkExistingSalaries(this.form.company_id, this.form.date);
                 
                 if (checkResult.has_existing) {
                     const month = checkResult.month || new Date(this.form.date).toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
                     this.confirmMessage = this.$t('salaryAccrualAlreadyExists') || 
                         `Начисление уже было ранее сделано в этом месяце (${month}). Было начислено ${checkResult.employees_count} сотрудникам в ${checkResult.count} операциях. Вы уверены, что хотите продолжить?`;
                     this.pendingAccrue = {
+                        company_id: this.form.company_id,
                         date: this.form.date,
                         cash_id: this.form.cash_id,
                         note: this.form.note || null
@@ -161,6 +195,7 @@ export default {
             }
 
             await this.performAccrue({
+                company_id: this.form.company_id,
                 date: this.form.date,
                 cash_id: this.form.cash_id,
                 note: this.form.note || null
@@ -176,7 +211,7 @@ export default {
         async performAccrue(payload) {
             this.loading = true;
             try {
-                const result = await CompaniesController.accrueSalaries(this.companyId, payload);
+                const result = await CompaniesController.accrueSalaries(this.form.company_id, payload);
 
                 const successCount = result.summary?.success || 0;
                 const skippedCount = result.summary?.skipped || 0;
