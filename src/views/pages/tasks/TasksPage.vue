@@ -332,6 +332,7 @@ export default {
                     }), 
                 },
                 { name: 'creator', label: 'creator', sortable: false },
+                { name: 'description', label: 'description', sortable: false, visible: true },
                 { name: 'supervisor', label: 'supervisor', sortable: false },
                 { name: 'executor', label: 'executor', sortable: false },
                 { name: 'deadline', label: 'deadline', sortable: true },
@@ -390,6 +391,9 @@ export default {
                 case 'title':
                     const title = i.title || '-';
                     return search ? highlightMatches(title, search) : title;
+                case 'description':
+                console.log('🔍 [itemMapper] description:', i.description, 'column:', c);
+                    return i.description || '-';
                 case 'creator':
                     return i.creator?.name || '-';
                 case 'supervisor':
