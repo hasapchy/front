@@ -413,6 +413,7 @@ export default {
                         permission && permission.name && !permission.name.startsWith('system_settings_')
                     )
                     : [];
+                console.log(this.allPermissions);
             } catch (error) {
                 console.error('Ошибка при загрузке прав:', error);
                 this.allPermissions = [];
