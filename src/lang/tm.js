@@ -175,7 +175,7 @@ export default {
   deleteFile: 'Faýly poz',
   deleteFileConfirm: 'Faýly pozmak üçin tassyklaň',
   deleteFileWithoutName: 'ady ýok',
-  
+  fileDeletedSuccessfully: 'Faýl üstünlikli pozuldy',  
   // Системные настройки
   recommendedSize: 'Maslahat berilen ölçegi: 200x60px',
   supportedFormats: 'Goldanýan formatlar: PNG, JPG, SVG',
@@ -1203,4 +1203,12 @@ export default {
   select: 'Saýla',
   errorDeletingTask: 'Wezipe pozulmakda ýalňyşlyk',
   taskStatuses: 'Wezipeler ýagdaýlary',
+  createTaskStatus: 'Wezipäniň ýagdaýyny döret',
+  editTaskStatus: 'Wezipäniň ýagdaýyny redaktirlemek',
+  taskStatusSuccessfullyAdded: 'Wezipäniň ýagdaýy üstünlikli döredildi',
+  taskStatusSuccessfullyUpdated: 'Wezipäniň ýagdaýy üstünlikli täzelendi',
+  taskStatusSuccessfullyDeleted: 'Wezipäniň ýagdaýy üstünlikli pozuldy',
+  errorSavingTaskStatus: 'Wezipäniň ýagdaýyny ýatda saklamakda säwlik',
+  errorDeletingTaskStatus: 'Wezipäniň ýagdaýyny pozmakda säwlik',
+  deleteTaskStatus: 'Wezipäniň ýagdaýyny poz',
 }

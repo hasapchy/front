@@ -292,7 +292,7 @@ export default {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
             // selectedIds - из batchActionsMixin
-            viewMode: 'table',
+            viewMode: localStorage.getItem('tasks_viewMode') || 'kanban',
             statusFilter: 'all',
             dateFilter: 'all_time',
             startDate: '',
@@ -346,7 +346,6 @@ export default {
         kanbanTasks() {
             const tasksToUse = this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
             return tasksToUse.map(task => {
-                console.log(task);
                 let status = task.status;
                 if (!status && task.statusId) {
                     status = this.taskStatuses.find(s => s.id === task.statusId);
@@ -375,6 +374,32 @@ export default {
         await this.fetchItems();
     },
     methods: {
+        async showModal(item = null) {
+            this.savedScrollPosition = window.pageYOffset ?? document.documentElement.scrollTop;
+            this.shouldRestoreScrollOnClose = true;
+            this.modalDialog = true;
+            this.showTimeline = true;
+            
+            if (item && item.id) {
+                // Загружаем полную задачу с сервера, чтобы получить все данные, включая файлы
+                try {
+                    const fullTask = await TaskController.getItem(item.id);
+                    if (fullTask) {
+                        this.editingItem = fullTask;
+                    } else {
+                        // Если не удалось загрузить, используем данные из списка
+                        this.editingItem = item;
+                    }
+                } catch (error) {
+                    console.error('Ошибка при загрузке задачи:', error);
+                    // Если не удалось загрузить, используем данные из списка
+                    this.editingItem = item;
+                }
+            } else {
+                this.editingItem = null;
+            }
+        },
+        
         async fetchTaskStatuses() {
             try {
                 // Используем данные из store
@@ -392,7 +417,6 @@ export default {
                     const title = i.title || '-';
                     return search ? highlightMatches(title, search) : title;
                 case 'description':
-                console.log('🔍 [itemMapper] description:', i.description, 'column:', c);
                     return i.description || '-';
                 case 'creator':
                     return i.creator?.name || '-';
@@ -668,6 +692,7 @@ export default {
             // Вызываем стандартную обработку из crudEventMixin
             this.refreshDataAfterOperation();
         },
+        
     },
     watch: {
         viewMode: {

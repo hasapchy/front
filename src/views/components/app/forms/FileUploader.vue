@@ -160,7 +160,7 @@
                         <td class="border border-gray-300 px-3 py-2">
                             <div class="flex items-center gap-3">
                                 <i :class="file.icon" class="text-gray-600 text-xl"></i>
-                                <a :href="file.url" target="_blank" download class="text-blue-600 hover:underline font-medium">
+                                <a :href="file.url" target="_blank" :download="file.name" class="text-blue-600 hover:underline font-medium">
                                     {{ file.name }}
                                 </a>
                             </div>
