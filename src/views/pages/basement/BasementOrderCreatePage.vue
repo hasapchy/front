@@ -166,11 +166,30 @@
             >
               {{ isEditing ? $t('updateOrder') : $t('createOrder') }}
             </PrimaryButton>
+            <PrimaryButton
+              v-if="isEditing && orderId"
+              :is-loading="deleteLoading"
+              :is-danger="true"
+              icon="fas fa-trash"
+              :onclick="showDeleteDialog"
+            >
+              {{ $t('delete') }}
+            </PrimaryButton>
           </div>
         </div>
 
       </form>
     </div>
+
+    <!-- Диалог подтверждения удаления -->
+    <AlertDialog 
+      :dialog="deleteDialog" 
+      @confirm="deleteOrder" 
+      @leave="closeDeleteDialog" 
+      :descr="$t('confirmDelete')"
+      :confirm-text="$t('delete')" 
+      :leave-text="$t('cancel')" 
+    />
 
     <!-- Модальное окно для добавления клиента -->
     <div v-if="showClientForm" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -229,6 +248,7 @@ import BasementProductSearch from '@/views/components/basement/BasementProductSe
 import BasementStockSearch from '@/views/components/basement/BasementStockSearch.vue'
 import BasementServicesRow from '@/views/components/basement/BasementServicesRow.vue'
 import BasementProjectController from '@/api/basement/BasementProjectController'
+import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue'
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin'
 import crudEventMixin from '@/mixins/crudEventMixin'
 import { formatNumber } from '@/utils/numberUtils'
@@ -242,7 +262,8 @@ export default {
     BasementClientSearch,
     BasementProductSearch,
     BasementStockSearch,
-    BasementServicesRow
+    BasementServicesRow,
+    AlertDialog
   },
   props: {
     editingItem: {
@@ -265,6 +286,8 @@ export default {
       selectedClient: null,
       allProjects: [],
       loading: false,
+      deleteLoading: false,
+      deleteDialog: false,
       showClientForm: false,
       clientForm: {
         name: '',
@@ -406,8 +429,6 @@ export default {
     }
   },
   async mounted() {
-    // Определяем категорию по текущему пользователю
-    this.setCategoryByUser();
     // Загружаем кассы, склады и проекты в фоне, не блокируя загрузку страницы
     this.loadCashRegisters();
     this.loadWarehouses();
@@ -416,26 +437,6 @@ export default {
     await this.initializeForm();
   },
   methods: {
-    setCategoryByUser() {
-      // Хардкод соответствия: юзер 6 = категория 2, 7 = 3, 8 = 14, 12 = 14
-      try {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          const user = JSON.parse(userStr);
-          const userId = user.id;
-          
-          const basementCategoryMap = {
-            6: 2,
-            7: 3,
-            8: 14,
-            12: 14
-          };
-          
-          this.form.category_id = basementCategoryMap[userId] || null;
-        }
-      } catch (error) {
-      }
-    },
     async loadCashRegisters() {
       try {
         const { data } = await basementApi.get('/cash_registers/all');
@@ -691,6 +692,41 @@ export default {
       } else if (this.orderId) {
         // Если редактируем через роут, переходим обратно к заказам
         this.$router.push('/basement/orders')
+      }
+    },
+    showDeleteDialog() {
+      this.deleteDialog = true
+    },
+    closeDeleteDialog() {
+      this.deleteDialog = false
+    },
+    async deleteOrder() {
+      this.closeDeleteDialog()
+      
+      if (!this.orderId) {
+        return
+      }
+
+      this.deleteLoading = true
+      try {
+        await BasementOrderController.deleteItem(parseInt(this.orderId))
+        
+        this.$store.dispatch('showNotification', {
+          title: this.deletedSuccessText,
+          subtitle: '',
+          isDanger: false
+        })
+        
+        this.$router.push('/basement/orders')
+      } catch (error) {
+        const errorMessage = this.getApiErrorMessage(error)
+        this.$store.dispatch('showNotification', {
+          title: this.deletedErrorText,
+          subtitle: errorMessage,
+          isDanger: true
+        })
+      } finally {
+        this.deleteLoading = false
       }
     },
     async initializeForm() {
