@@ -60,5 +60,18 @@ export default class BasementOrderController {
       throw error;
     }
   }
+
+  static async deleteItem(id) {
+    try {
+      const response = await basementApi.delete(`/orders/${id}`);
+      return {
+        message: response.data.message || 'Заказ успешно удалён',
+        data: response.data
+      };
+    } catch (error) {
+      console.error("Ошибка при удалении заказа:", error);
+      throw error;
+    }
+  }
 }
 
