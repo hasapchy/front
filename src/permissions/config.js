@@ -165,6 +165,9 @@ export const PERMISSIONS_CONFIG = {
       check_strategy: "user_id",
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
+      custom_permissions: {
+        accrue: "employee_salaries_accrue",
+      },
     },
     leaves: {
       has_user_id: true,
