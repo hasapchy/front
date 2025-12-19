@@ -122,7 +122,7 @@
                                     </draggable>
                                 </ul>
                             </TableFilterButton>
-                        </template>
+                        </template> 
 
                         <template #gear>
                         </template>

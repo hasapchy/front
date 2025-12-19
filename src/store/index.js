@@ -372,6 +372,21 @@ const store = createStore({
         user: true,
         budget: true,
       },
+      tasks: {
+        description: true,
+        created_at: true,
+        deadline: true,
+        creator: true,
+        supervisor: true,
+        executor: true,
+      },
+    },
+    // Режимы просмотра для разных страниц
+    viewModes: {
+      leaves: 'table', // 'table' или 'calendar'
+      projects: 'kanban', // 'table' или 'kanban'
+      orders: 'table', // 'table' или 'kanban'
+      tasks: 'table', // 'table' или 'kanban'
     },
   },
 
@@ -545,8 +560,23 @@ const store = createStore({
       state.kanbanCardFields = fields;
     },
     UPDATE_KANBAN_CARD_FIELDS(state, { mode, fields }) {
-      if (mode === "orders" || mode === "projects") {
+      if (mode === "orders" || mode === "projects" || mode === "tasks") {
         state.kanbanCardFields[mode] = { ...state.kanbanCardFields[mode], ...fields };
+      }
+    },
+    SET_LEAVES_VIEW_MODE(state, mode) {
+      if (['table', 'calendar'].includes(mode)) {
+        state.viewModes.leaves = mode;
+      }
+    },
+    SET_PROJECTS_VIEW_MODE(state, mode) {
+      if (['table', 'kanban'].includes(mode)) {
+        state.viewModes.projects = mode;
+      }
+    },
+    SET_ORDERS_VIEW_MODE(state, mode) {
+      if (['table', 'kanban'].includes(mode)) {
+        state.viewModes.orders = mode;
       }
     },
   },
@@ -1554,6 +1584,20 @@ const store = createStore({
           label: "currencyHistory",
           permission: "currency_history_view",
         },
+        {
+          id: "leaves",
+          to: "/leaves",
+          icon: "fa-solid fa-calendar-days mr-2",
+          label: "leaves",
+          permission: "leaves_view_all",
+        },
+        {
+          id: "leave-types",
+          to: "/leave_types",
+          icon: "fa-solid fa-list mr-2",
+          label: "leaveTypes",
+          permission: "leave_types_view_all",
+        },
       ];
 
       const defaultMain = [
@@ -1574,6 +1618,8 @@ const store = createStore({
         "products",
         "services",
         "currency-history",
+        "leaves",
+        "leave-types",
       ];
 
       const main = defaultMain
@@ -1711,6 +1757,15 @@ const store = createStore({
       } catch (e) {
         console.error("Failed to save menu items to localStorage:", e);
       }
+    },
+    setLeavesViewMode({ commit }, mode) {
+      commit('SET_LEAVES_VIEW_MODE', mode);
+    },
+    setProjectsViewMode({ commit }, mode) {
+      commit('SET_PROJECTS_VIEW_MODE', mode);
+    },
+    setOrdersViewMode({ commit }, mode) {
+      commit('SET_ORDERS_VIEW_MODE', mode);
     },
   },
 
@@ -1872,6 +1927,9 @@ const store = createStore({
         return getters.hasPermission(item.permission);
       });
     },
+    leavesViewMode: (state) => state.viewModes.leaves || 'table',
+    projectsViewMode: (state) => state.viewModes.projects || 'kanban',
+    ordersViewMode: (state) => state.viewModes.orders || 'table',
   },
   plugins: [
     // 1. Долгосрочный кэш справочников (localStorage)

@@ -29,6 +29,8 @@ import UsersPage from "@/views/pages/users/UsersPage.vue";
 import RolesPage from "@/views/pages/roles/RolesPage.vue";
 import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
 import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
+import LeavesPage from "@/views/pages/leaves/LeavesPage.vue";
+import LeaveTypesPage from "@/views/pages/leave_types/LeaveTypesPage.vue";
 
 // Basement pages
 import BasementOrdersPage from "@/views/pages/basement/BasementOrdersPage.vue";
@@ -65,6 +67,28 @@ const routes = [
           title: "tasks",
           requiresAuth: true,
           permission: "tasks_view_all",
+          binded: [
+            {
+              name: "taskStatuses",
+              path: "/task_statuses",
+            },
+          ],
+        },
+      },
+      {
+        path: "/task_statuses",
+        name: "task_statuses",
+        component: () => import("@/views/pages/tasks/TaskStatusesPage.vue"),
+        meta: {
+          title: "taskStatuses",
+          requiresAuth: true,
+          permission: "task_statuses_view",
+          binded: [
+            {
+              name: "tasks",
+              path: "/tasks",
+            },
+          ],
         },
       },
       {
@@ -479,6 +503,38 @@ const routes = [
           title: "currencyHistory",
           requiresAuth: true,
           permission: "currency_history_view",
+        },
+      },
+      {
+        path: "/leaves",
+        name: "Leaves",
+        component: LeavesPage,
+        meta: {
+          title: "leaves",
+          requiresAuth: true,
+          permission: "leaves_view_all",
+          binded: [
+            {
+              name: "leaveTypes",
+              path: "/leave_types",
+            },
+          ],
+        },
+      },
+      {
+        path: "/leave_types",
+        name: "leave_types",
+        component: LeaveTypesPage,
+        meta: {
+          title: "leaveTypes",
+          requiresAuth: true,
+          permission: "leave_types_view_all",
+          binded: [
+            {
+              name: "leaves",
+              path: "/leaves",
+            },
+          ],
         },
       },
     ],

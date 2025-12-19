@@ -29,7 +29,7 @@
                     drag-class="dragging-column" handle=".column-drag-handle" @change="handleColumnReorder"
                     class="kanban-columns flex space-x-4">
                     <KanbanColumn v-for="column in sortedColumns" :key="column.id" :status="column"
-                        :orders="column.orders" :selected-ids="selectedIds" :disabled="loading"
+                        :orders="column.orders" :selected-ids="selectedIds" :disabled="loading" :is-task-mode="isTaskMode"
                         :currency-symbol="currencySymbol" :is-project-mode="isProjectMode" :has-more="hasMore"
                         :loading="loading" @change="handleOrderMove($event, column.id)"
                         @card-dblclick="handleCardDoubleClick" @card-select-toggle="handleCardSelectToggle"
@@ -61,6 +61,10 @@ export default {
         SpinnerIcon
     },
     props: {
+        type: {
+            type: String,
+            default: 'orders'
+        },
         orders: {
             type: Array,
             required: true
@@ -89,6 +93,10 @@ export default {
             type: Boolean,
             default: false
         },
+        isTaskMode: {
+            type: Boolean,
+            default: false
+        },
         batchStatusId: {
             type: String,
             default: ''
@@ -108,7 +116,7 @@ export default {
     computed: {
         // Ключ для localStorage в зависимости от режима (проекты/заказы)
         storageKey() {
-            return this.isProjectMode ? 'kanban_column_order_projects' : 'kanban_column_order_orders';
+            return this.isTaskMode ? 'kanban_column_order_tasks' : this.isProjectMode ? 'kanban_column_order_projects' : 'kanban_column_order_orders';
         }
     },
     methods: {

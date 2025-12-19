@@ -66,7 +66,7 @@
         <div v-if="currentTab === 'files' && editingItem && editingItemId">
             <FileUploader 
                 ref="fileUploader" 
-                :files="editingItem ? getFormattedFiles() : []"
+                :files="getFormattedFiles()"
                 :uploading="uploading" 
                 :disabled="!editingItemId"
                 :deleting="deletingFiles" 
@@ -75,12 +75,12 @@
                 @delete-multiple-files="showDeleteMultipleFilesDialog" />
         </div>
         
-        <div v-if="currentTab === 'comments' && editingItem && editingItemId" class="h-full">
+        <!-- <div v-if="currentTab === 'comments' && editingItem && editingItemId" class="h-full">
             <TimelinePanel 
                 type="task" 
                 :id="editingItemId"
                 :is-collapsed="false" />
-        </div>
+        </div> -->
     </div>
 
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -191,7 +191,7 @@ export default {
             tabs: [
                 { name: 'info', label: 'info' },
                 { name: 'files', label: 'files' },
-                { name: 'comments', label: 'comments' },
+                // { name: 'comments', label: 'comments' },
             ],
             uploading: false,
             deleteFileDialog: false,
@@ -202,8 +202,10 @@ export default {
     },
     computed: {
         visibleTabs() {
-            const baseTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name === 'info');
-            return baseTabs;
+            // const baseTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name === 'info');
+            // console.log(baseTabs);
+            // console.log(this.tabs);
+            return this.tabs;
         },
         translatedTabs() {
             return this.visibleTabs.map(tab => ({
@@ -218,6 +220,9 @@ export default {
     watch: {
         editingItem: {
             handler(newEditingItem) {
+                console.log('🔄 [TaskCreatePage.watch.editingItem] New editingItem:', newEditingItem);
+                console.log('🔄 [TaskCreatePage.watch.editingItem] Files:', newEditingItem?.files);
+                
                 if (newEditingItem) {
                     this.title = newEditingItem.title || '';
                     this.description = newEditingItem.description || '';
@@ -292,12 +297,18 @@ export default {
             }
         },
         getFormattedFiles() {
+            console.log('📁 [TaskCreatePage.getFormattedFiles] editingItem:', this.editingItem);
+            console.log('📁 [TaskCreatePage.getFormattedFiles] editingItem.files:', this.editingItem?.files);
+            
             if (!this.editingItem || !this.editingItem.files) return [];
+            
+            // Используем TaskDto для форматирования файлов
             const taskDto = new TaskDto(
                 this.editingItem.id,
                 this.editingItem.title,
                 this.editingItem.description,
-                this.editingItem.status,
+                this.editingItem.status_id || null,
+                this.editingItem.status || null,
                 this.editingItem.deadline,
                 this.editingItem.creator?.id,
                 this.editingItem.creator,
@@ -305,8 +316,8 @@ export default {
                 this.editingItem.supervisor,
                 this.editingItem.executor?.id,
                 this.editingItem.executor,
-                this.editingItem.project?.id,
-                this.editingItem.project,
+                this.editingItem.project?.id || null,
+                this.editingItem.project || null,
                 this.editingItem.company_id,
                 this.editingItem.files || [],
                 this.editingItem.comments || [],
@@ -368,6 +379,12 @@ export default {
                     this.editingItemId = response.data.id;
                 }
 
+                // Обновляем editingItem актуальными данными с сервера
+                // Это необходимо для правильного отображения файлов после сохранения
+                if (response && response.data) {
+                    this.$emit('update:editingItem', response.data);
+                }
+
                 this.showNotification(
                     this.$t('success'), 
                     this.editingItemId ? this.$t('taskSuccessfullyUpdated') : this.$t('taskSuccessfullyAdded'), 
@@ -426,6 +443,7 @@ export default {
 
             const fileArray = Array.from(files);
 
+            // Создаем массив файлов для отслеживания прогресса
             const uploadingFileIds = fileArray.map((file, index) => ({
                 id: Date.now() + index,
                 name: file.name,
@@ -434,9 +452,14 @@ export default {
                 error: null
             }));
 
+            // Проверяем наличие компонента перед работой с ним
+            if (!this.$refs.fileUploader) return;
+
+            // Устанавливаем массив файлов в компонент
             this.$refs.fileUploader.uploadingFiles = uploadingFileIds;
 
             try {
+                // Симулируем прогресс загрузки для всех файлов
                 const progressIntervals = uploadingFileIds.map(fileInfo => {
                     return setInterval(() => {
                         const currentProgress = this.$refs.fileUploader.uploadingFiles.find(f => f.id === fileInfo.id)?.progress || 0;
@@ -454,8 +477,9 @@ export default {
                     this.$refs.fileUploader.updateUploadProgress(fileInfo.id, 100);
                 });
 
-                if (this.editingItem && this.editingItem.files) {
-                    this.editingItem.files = uploadedFiles.files;
+                // Обновляем список файлов задачи
+                if (this.editingItem) {
+                    this.$set(this.editingItem, 'files', uploadedFiles);
                 }
 
                 setTimeout(() => {
@@ -510,8 +534,8 @@ export default {
                     updatedFiles = await TaskController.deleteFile(this.editingItemId, this.deleteFileIndex);
                 }
 
-                if (this.editingItem && this.editingItem.files && updatedFiles) {
-                    this.editingItem.files = updatedFiles.files;
+                if (this.editingItem && updatedFiles) {
+                    this.$set(this.editingItem, 'files', updatedFiles);
                 }
             } catch (e) {
                 alert('Ошибка удаления файла');

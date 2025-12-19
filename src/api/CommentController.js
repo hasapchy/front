@@ -29,4 +29,8 @@ export default class CommentController extends BaseController {
   static async deleteItem(id) {
     return super.deleteItem("/comments", id);
   }
+
+  static async create(type, id, body) {
+    return this.storeItem({ type, id, body });
+  }
 }

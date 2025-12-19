@@ -13,7 +13,13 @@ class TaskController extends BaseController {
         if (dateTo) params.date_to = dateTo;
         
         const data = await super.getItems('/tasks', page, perPage, params);
+        console.log('🔍 [TaskController.getItems] Raw API data:', data.data);
+        console.log('🔍 [TaskController.getItems] First item files:', data.data?.[0]?.files);
+        
         const items = TaskDto.fromApiArray(data.data || []);
+        console.log('🔍 [TaskController.getItems] Converted items:', items);
+        console.log('🔍 [TaskController.getItems] First item files after DTO:', items?.[0]?.files);
+        
         const response = new PaginatedResponse(
             items,
             data.meta?.current_page || 1,
@@ -83,7 +89,7 @@ class TaskController extends BaseController {
                         'Content-Type': 'multipart/form-data',
                     },
                 });
-                return response.data;
+                return response.data.files;
             },
             `Ошибка при загрузке файлов задачи: ${id}`
         );
@@ -95,7 +101,7 @@ class TaskController extends BaseController {
                 const response = await api.delete(`/tasks/${id}/files`, {
                     data: { path: filePath }
                 });
-                return response.data;
+                return response.data.files;
             },
             `Ошибка при удалении файла задачи: ${id}`
         );

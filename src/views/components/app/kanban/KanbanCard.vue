@@ -14,7 +14,7 @@
                     class="cursor-pointer flex-shrink-0"
                 />
                 <span class="text-sm font-bold text-gray-800 truncate">
-                    {{ isProjectMode ? `№${order.id}` : `№${order.id}` }}
+                    {{ isProjectMode ? `№${order.id}` : isTaskMode ? `${order.title}` : `№${order.id}` }}
                 </span>
             </div>
         </div>
@@ -43,7 +43,7 @@
         </div>
 
         <!-- Клиент -->
-        <div v-if="!isProjectMode && showField('client')" class="mb-2">
+        <div v-if="!isProjectMode && showField('client') && !isTaskMode " class="mb-2">
             <div class="flex items-center space-x-1 text-sm">
                 <i :class="getClientIconClass()"></i>
                 <span class="font-medium text-gray-800 truncate">
@@ -60,10 +60,10 @@
         </div>
 
         <!-- Дата создания -->
-        <div v-if="showField('date')" class="mb-2">
+        <div v-if="showField('date') && !isTaskMode" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-calendar text-gray-400"></i>
-                <span>{{ formatDate(order.date) }}</span>
+                <span>{{ formatDate(order.date) }} Заказ</span>
             </div>
         </div>
 
@@ -134,14 +134,14 @@
 
         <!-- Срок выполнения (для задач) -->
         <div v-if="isTaskMode && showField('deadline') && order.deadline" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <i class="fas fa-calendar-check text-orange-400"></i>
+            <div class="flex items-center space-x-1 text-xs" :class="getDeadlineClass(order.deadline)">
+                <i class="fas fa-calendar-check" :class="getDeadlineIconClass(order.deadline)"></i>
                 <span>{{ formatDate(order.deadline) }}</span>
             </div>
         </div>
 
         <!-- Создатель (для задач) -->
-        <div v-if="isTaskMode && showField('creator') && order.creator" class="mb-2">
+        <div v-if="isTaskMode && showField('creator') && order.creator && !isTaskMode " class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-user-plus text-blue-400"></i>
                 <span class="truncate">{{ order.creator.name || order.creator }}</span>
@@ -217,13 +217,14 @@ export default {
         isProjectMode: {
             type: Boolean,
             default: false
+        },
+        isTaskMode: {
+            type: Boolean,
+            default: false
         }
     },
     emits: ['dblclick', 'select-toggle'],
     computed: {
-        isTaskMode() {
-            return !!(this.order.creator || this.order.supervisor || this.order.executor);
-        },
         kanbanFields() {
             // ✅ Определить режим: если есть поля creator/supervisor/executor - это задачи
             const mode = this.isProjectMode ? 'projects' : (this.isTaskMode ? 'tasks' : 'orders');
@@ -242,6 +243,35 @@ export default {
         },
         formatDate(date) {
             return dayjsDateTime(date);
+        },
+        isDeadlineExpired(deadline) {
+            if (!deadline) return false;
+            const now = new Date();
+            const deadlineDate = new Date(deadline);
+            return deadlineDate < now;
+        },
+        isDeadlineSoon(deadline) {
+            if (!deadline) return false;
+            const now = new Date();
+            const deadlineDate = new Date(deadline);
+            const hoursLeft = (deadlineDate - now) / (1000 * 60 * 60);
+            return hoursLeft > 0 && hoursLeft <= 24;
+        },
+        getDeadlineClass(deadline) {
+            if (this.isDeadlineExpired(deadline)) {
+                return 'text-red-600 font-semibold';
+            } else if (this.isDeadlineSoon(deadline)) {
+                return 'text-orange-600';
+            }
+            return 'text-gray-600';
+        },
+        getDeadlineIconClass(deadline) {
+            if (this.isDeadlineExpired(deadline)) {
+                return 'text-red-600';
+            } else if (this.isDeadlineSoon(deadline)) {
+                return 'text-orange-600';
+            }
+            return 'text-orange-400';
         },
         getClientIconClass() {
             try {

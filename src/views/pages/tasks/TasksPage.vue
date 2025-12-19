@@ -1,18 +1,13 @@
 <template>
-    <BatchButton
-        v-if="selectedIds.length && viewMode === 'table'"
-        :selected-ids="selectedIds"
-        :batch-actions="getBatchActions()"
-        :statuses="statuses"
-        :handle-change-status="handleChangeStatus"
-        :show-status-select="true"
-    />
+    <BatchButton v-if="selectedIds.length && viewMode === 'table'" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
+        :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true"/>
     
     <transition name="fade" mode="out-in">
         <!-- Табличный вид -->
         <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="admin.tasks" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }" @selectionChange="selectedIds = $event">
+            <DraggableTable table-key="admin.tasks" :columns-config="columnsConfig" :table-data="data.items" 
+                :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
+                :onItemClick="(i) => { showModal(i) }">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
                         :show-filters="true"
@@ -37,10 +32,12 @@
                             <FiltersContainer
                                 :has-active-filters="hasActiveFilters"
                                 :active-filters-count="getActiveFiltersCount()"
-                                @reset="resetFilters">
+                                @reset="resetFilters"
+                                @apply="applyFilters"
+                                >
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
-                                    <select v-model="statusFilter" @change="debouncedFetchItems" class="w-full">
+                                    <select v-model="statusFilter" class="w-full">
                                         <option value="all">{{ $t('allStatuses') }}</option>
                                         <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
                                             {{ status.name }}
@@ -50,7 +47,7 @@
 
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
-                                    <select v-model="dateFilter" @change="debouncedFetchItems" class="w-full">
+                                    <select v-model="dateFilter" class="w-full">
                                         <option value="all_time">{{ $t('allTime') }}</option>
                                         <option value="today">{{ $t('today') }}</option>
                                         <option value="yesterday">{{ $t('yesterday') }}</option>
@@ -65,17 +62,17 @@
                                 <div v-if="dateFilter === 'custom'" class="space-y-2">
                                     <div>
                                         <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
-                                        <input type="date" v-model="startDate" @change="debouncedFetchItems" class="w-full" />
+                                        <input type="date" v-model="startDate" class="w-full" />
                                     </div>
                                     <div>
                                         <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
-                                        <input type="date" v-model="endDate" @change="debouncedFetchItems" class="w-full" />
+                                        <input type="date" v-model="endDate"  class="w-full" />
                                     </div>
                                 </div>
                             </FiltersContainer>
 
                             <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                                <button 
+                                <button  
                                     @click="viewMode = 'table'"
                                     class="px-3 py-2 transition-colors"
                                     :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
@@ -90,16 +87,14 @@
                             </div>
                         </template>
 
-                        <template #right>
+                        <template #right="{ resetColumns, columns, toggleVisible, log }">
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
                                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-                        </template>
-                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+
+                            <TableFilterButton v-if="viewMode === 'table'" :onReset="resetColumns">
                                 <ul>
-                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
-                                        @change="log">
+                                    <draggable v-if="columns && columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
                                         <li v-for="(element, index) in columns" :key="element.name"
                                             @click="toggleVisible(index)"
                                             class="flex items-center hover:bg-gray-100 p-2 rounded">
@@ -118,6 +113,7 @@
                                 </ul>
                             </TableFilterButton>
                         </template>
+                        <template #gear></template>
                     </TableControlsBar>
                 </template>
             </DraggableTable>
@@ -141,10 +137,11 @@
                     <FiltersContainer
                         :has-active-filters="hasActiveFilters"
                         :active-filters-count="getActiveFiltersCount()"
-                        @reset="resetFilters">
+                        @reset="resetFilters"
+                        @apply="applyFilters">
                         <div>
                             <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
-                            <select v-model="statusFilter" @change="debouncedFetchItems" class="w-full">
+                            <select v-model="statusFilter" class="w-full">
                                 <option value="all">{{ $t('allStatuses') }}</option>
                                 <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
                                     {{ status.name }}
@@ -154,7 +151,7 @@
 
                         <div>
                             <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
-                            <select v-model="dateFilter" @change="debouncedFetchItems" class="w-full">
+                            <select v-model="dateFilter" class="w-full">
                                 <option value="all_time">{{ $t('allTime') }}</option>
                                 <option value="today">{{ $t('today') }}</option>
                                 <option value="yesterday">{{ $t('yesterday') }}</option>
@@ -169,11 +166,11 @@
                         <div v-if="dateFilter === 'custom'" class="space-y-2">
                             <div>
                                 <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
-                                <input type="date" v-model="startDate" @change="debouncedFetchItems" class="w-full" />
+                                <input type="date" v-model="startDate" class="w-full" />
                             </div>
                             <div>
                                 <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
-                                <input type="date" v-model="endDate" @change="debouncedFetchItems" class="w-full" />
+                                <input type="date" v-model="endDate" class="w-full" />
                             </div>
                         </div>
                     </FiltersContainer>
@@ -205,7 +202,7 @@
                 :selected-ids="selectedIds"
                 :loading="loading"
                 :currency-symbol="''"
-                :is-project-mode="false"
+                :is-task-mode="true"
                 :batch-status-id="batchStatusId"
                 @order-moved="handleTaskMoved"
                 @card-dblclick="showModal"
@@ -222,9 +219,16 @@
             <SpinnerIcon />
         </div>
     </transition>
-    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
+    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed"
+        :showTimelineButton="!!editingItem" @toggle-timeline="toggleTimeline">
         <TaskCreatePage v-if="modalDialog" ref="taskForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
+            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" 
+            @update:editingItem="editingItem = $event" />
+
+        <template #timeline>
+            <TimelinePanel v-if="editingItem && !timelineCollapsed" ref="timelinePanel" :type="'task'"
+                :id="editingItem.id" @toggle-timeline="toggleTimeline" />
+        </template>
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
@@ -255,13 +259,17 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import searchMixin from '@/mixins/searchMixin';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
-import debounce from "lodash.debounce";
+import filtersMixin from "@/mixins/filtersMixin";
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
-import { markRaw } from 'vue';
+import { markRaw, defineAsyncComponent } from 'vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 
+const TimelinePanel = defineAsyncComponent(() =>
+    import("@/views/components/app/dialog/TimelinePanel.vue")
+);
+
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
     components: { 
         NotificationToast, 
         PrimaryButton, 
@@ -277,6 +285,7 @@ export default {
         FiltersContainer, 
         KanbanFieldsButton, 
         StatusSelectCell,
+        TimelinePanel,
         draggable: VueDraggableNext
     },
     data() {
@@ -288,7 +297,6 @@ export default {
             dateFilter: 'all_time',
             startDate: '',
             endDate: '',
-            debounceTimer: null,
             pendingStatusUpdates: new Map(),
             batchStatusId: '',
             allKanbanItems: [],
@@ -299,6 +307,8 @@ export default {
             savedErrorText: this.$t('errorSavingTask'),
             deletedSuccessText: this.$t('taskSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingTask'),
+            deletePermission: 'tasks_delete_all',
+            timelineCollapsed: true,
         }
     },
     computed: {
@@ -307,6 +317,8 @@ export default {
         },
         columnsConfig() {
             return [
+                { name: 'select', label: '#', size: 15 },
+                { name: 'id', label: 'number', size: 60 },
                 { name: 'title', label: 'title', sortable: true },
                 { 
                     name: 'status', 
@@ -333,6 +345,7 @@ export default {
         kanbanTasks() {
             const tasksToUse = this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
             return tasksToUse.map(task => {
+                console.log(task);
                 let status = task.status;
                 if (!status && task.statusId) {
                     status = this.taskStatuses.find(s => s.id === task.statusId);
@@ -374,8 +387,6 @@ export default {
         itemMapper(i, c) {
             const search = this.searchQuery;
             switch (c) {
-                case 'id':
-                    return i.id || '-';
                 case 'title':
                     const title = i.title || '-';
                     return search ? highlightMatches(title, search) : title;
@@ -390,20 +401,8 @@ export default {
                 case 'created_at':
                     return i.createdAt ? new Date(i.createdAt).toLocaleDateString() : '-';
                 default:
-                    return i[c] || '-';
+                    return i[c];
             }
-        },
-        debouncedFetchItems() {
-            if (this.debounceTimer) {
-                clearTimeout(this.debounceTimer);
-            }
-            this.debounceTimer = setTimeout(() => {
-                if (this.viewMode === 'kanban') {
-                    this.fetchItems(1, true);
-                } else {
-                    this.fetchItems();
-                }
-            }, 300);
         },
         getDateRange() {
             if (this.dateFilter === 'custom') {
@@ -525,15 +524,6 @@ export default {
                 this.closeModal(true);
             }
         },
-        getBatchActions() {
-            return [
-                {
-                    label: this.$t('delete'),
-                    action: () => this.deleteItems(this.selectedIds),
-                    permission: 'tasks_delete_all',
-                },
-            ];
-        },
         handleTaskMoved(updateData) {
             try {
                 if (updateData.type === 'status') {
@@ -548,7 +538,7 @@ export default {
                     }
                     
                     this.pendingStatusUpdates.set(updateData.orderId, updateData.statusId);
-                    this.debouncedStatusUpdate();
+                    // this.debouncedStatusUpdate();
                 }
             } catch (error) {
                 const errors = this.getApiErrorMessage(error);
@@ -556,50 +546,50 @@ export default {
                 this.fetchItems(this.data.currentPage, true);
             }
         },
-        debouncedStatusUpdate: debounce(function() {
-            if (this.pendingStatusUpdates.size === 0) return;
+        // debouncedStatusUpdate: debounce(function() {
+        //     if (this.pendingStatusUpdates.size === 0) return;
             
-            const updatesByStatus = new Map();
-            this.pendingStatusUpdates.forEach((statusId, taskId) => {
-                if (!updatesByStatus.has(statusId)) {
-                    updatesByStatus.set(statusId, []);
-                }
-                updatesByStatus.get(statusId).push(taskId);
-            });
+        //     const updatesByStatus = new Map();
+        //     this.pendingStatusUpdates.forEach((statusId, taskId) => {
+        //         if (!updatesByStatus.has(statusId)) {
+        //             updatesByStatus.set(statusId, []);
+        //         }
+        //         updatesByStatus.get(statusId).push(taskId);
+        //     });
             
-            this.pendingStatusUpdates.clear();
+        //     this.pendingStatusUpdates.clear();
             
-            const promises = [];
-            updatesByStatus.forEach((taskIds, statusId) => {
-                const promise = Promise.all(
-                    taskIds.map(taskId => {
-                        const task = this.data?.items?.find(t => t.id === taskId);
-                        const updateData = { status_id: statusId };
+        //     const promises = [];
+        //     updatesByStatus.forEach((taskIds, statusId) => {
+        //         const promise = Promise.all(
+        //             taskIds.map(taskId => {
+        //                 const task = this.data?.items?.find(t => t.id === taskId);
+        //                 const updateData = { status_id: statusId };
                         
-                        if (task) {
-                            if (task.supervisorId) updateData.supervisor_id = task.supervisorId;
-                            if (task.executorId) updateData.executor_id = task.executorId;
-                        }
+        //                 if (task) {
+        //                     if (task.supervisorId) updateData.supervisor_id = task.supervisorId;
+        //                     if (task.executorId) updateData.executor_id = task.executorId;
+        //                 }
                         
-                        return TaskController.updateItem(taskId, updateData);
-                    })
-                ).catch(error => {
-                    const errors = this.getApiErrorMessage(error);
-                    this.showNotification(this.$t('error'), errors, true);
-                    this.fetchItems(this.data?.currentPage || 1, true);
-                });
-                promises.push(promise);
-            });
+        //                 return TaskController.updateItem(taskId, updateData);
+        //             })
+        //         ).catch(error => {
+        //             const errors = this.getApiErrorMessage(error);
+        //             this.showNotification(this.$t('error'), errors, true);
+        //             this.fetchItems(this.data?.currentPage || 1, true);
+        //         });
+        //         promises.push(promise);
+        //     });
             
-            Promise.all(promises).then(async () => {
-                await this.$store.dispatch('invalidateCache', { type: 'tasks' });
-                this.fetchItems(this.data?.currentPage || 1, true);
-                this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
-            }).catch(error => {
-                const errors = this.getApiErrorMessage(error);
-                this.showNotification(this.$t('error'), errors, true);
-            });
-        }, 500),
+        //     Promise.all(promises).then(async () => {
+        //         await this.$store.dispatch('invalidateCache', { type: 'tasks' });
+        //         this.fetchItems(this.data?.currentPage || 1, true);
+        //         this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
+        //     }).catch(error => {
+        //         const errors = this.getApiErrorMessage(error);
+        //         this.showNotification(this.$t('error'), errors, true);
+        //     });
+        // }, 500),
         toggleSelectRow(id) {
             if (this.selectedIds.includes(id)) {
                 this.selectedIds = this.selectedIds.filter(x => x !== id);
@@ -647,10 +637,33 @@ export default {
             }
             this.loading = false;
         },
+        handleBatchStatusChange() {
+            if (!this.batchStatusId || this.selectedIds.length === 0) return;
+            
+            this.handleChangeStatus(this.selectedIds, this.batchStatusId);
+            this.batchStatusId = '';
+            this.selectedIds = [];
+        },
         handleBatchStatusChangeFromToolbar(statusId) {
             if (!statusId || this.selectedIds.length === 0) return;
             this.handleChangeStatus(this.selectedIds, statusId);
-        }
+            this.batchStatusId = '';
+            this.selectedIds = [];
+        },
+        toggleTimeline() {
+            this.timelineCollapsed = !this.timelineCollapsed;
+        },
+        handleModalClose() {
+            this.timelineCollapsed = true;
+            this.closeModal();
+        },
+        handleSaved(savedTask) {
+            if (this.$refs.timelinePanel && !this.timelineCollapsed) {
+                this.$refs.timelinePanel.refreshTimeline();
+            }
+            // Вызываем стандартную обработку из crudEventMixin
+            this.refreshDataAfterOperation();
+        },
     },
     watch: {
         viewMode: {
