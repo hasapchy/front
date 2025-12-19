@@ -1409,7 +1409,7 @@ export default {
   description: 'Описание',
   status: 'Статус',
   project: 'Проект',
-  deadline: 'Срок выполнения',
+  deadline: 'Крайний срок',
   enterDescription: 'Введите описание',
   
   // Статусы задач

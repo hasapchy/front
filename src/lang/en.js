@@ -513,7 +513,7 @@ export default {
     description: 'Description',
     status: 'Status',
     project: 'Project',
-    deadline: 'Due date',
+    deadline: 'Deadline',
     enterDescription: 'Enter description',
 
     // Task statuses

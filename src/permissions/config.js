@@ -167,8 +167,8 @@ export const PERMISSIONS_CONFIG = {
       scope_actions: ["view", "update", "delete"],
     },
     tasks: {
-      has_user_id: false,
-      check_strategy: "default",
+      has_user_id: true,
+      check_strategy: "user_id",
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },

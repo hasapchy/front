@@ -17,9 +17,8 @@
             <div>
                 <label>{{ $t('status') }}</label>
                 <select v-model="statusId">
-                    <option :value="null">{{ $t('select') }}</option>
-                    <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
-                        {{ status.name }}
+                    <option v-for="status in taskStatuses" :key="status.id" :value="status.id" >
+                        {{ status.name}}
                     </option>
                 </select>
             </div>
@@ -263,7 +262,7 @@ export default {
         clearForm() {
             this.title = '';
             this.description = '';
-            this.statusId = null;
+            this.statusId = 1;
             this.deadline = '';
             this.projectId = null;
             this.supervisorId = null;
