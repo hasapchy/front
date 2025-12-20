@@ -290,7 +290,7 @@ export default {
   deleteFile: 'Удалить файл',
   deleteFileConfirm: 'Подтвердите удаление файла',
   deleteFileWithoutName: 'без названия',
-  
+  fileDeletedSuccessfully: 'Файл успешно удален',
   // Системные настройки
   recommendedSize: 'Рекомендуемый размер: 200x60px',
   supportedFormats: 'Поддерживаемые форматы: PNG, JPG, SVG',
@@ -1434,4 +1434,12 @@ export default {
   select: 'Выбрать',
   errorDeletingTask: 'Ошибка при удалении задачи',
   taskStatuses: 'Статусы задач',
+  createTaskStatus: 'Создать статус задачи',
+  editTaskStatus: 'Редактировать статус задачи',
+  taskStatusSuccessfullyAdded: 'Статус задачи успешно создан',
+  taskStatusSuccessfullyUpdated: 'Статус задачи успешно обновлен',
+  taskStatusSuccessfullyDeleted: 'Статус задачи успешно удален',
+  errorSavingTaskStatus: 'Ошибка при сохранении статуса задачи',
+  errorDeletingTaskStatus: 'Ошибка при удалении статуса задачи',
+  deleteTaskStatus: 'Удалить статус задачи',
 }

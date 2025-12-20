@@ -263,6 +263,7 @@ import filtersMixin from "@/mixins/filtersMixin";
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import { markRaw, defineAsyncComponent } from 'vue';
 import { VueDraggableNext } from 'vue-draggable-next';
+import debounce from 'lodash.debounce';
 
 const TimelinePanel = defineAsyncComponent(() =>
     import("@/views/components/app/dialog/TimelinePanel.vue")
@@ -292,7 +293,7 @@ export default {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
             // selectedIds - из batchActionsMixin
-            viewMode: 'table',
+            viewMode: localStorage.getItem('tasks_viewMode') || 'kanban',
             statusFilter: 'all',
             dateFilter: 'all_time',
             startDate: '',
@@ -346,7 +347,6 @@ export default {
         kanbanTasks() {
             const tasksToUse = this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
             return tasksToUse.map(task => {
-                console.log(task);
                 let status = task.status;
                 if (!status && task.statusId) {
                     status = this.taskStatuses.find(s => s.id === task.statusId);
@@ -375,6 +375,32 @@ export default {
         await this.fetchItems();
     },
     methods: {
+        async showModal(item = null) {
+            this.savedScrollPosition = window.pageYOffset ?? document.documentElement.scrollTop;
+            this.shouldRestoreScrollOnClose = true;
+            this.modalDialog = true;
+            this.showTimeline = true;
+            
+            if (item && item.id) {
+                // Загружаем полную задачу с сервера, чтобы получить все данные, включая файлы
+                try {
+                    const fullTask = await TaskController.getItem(item.id);
+                    if (fullTask) {
+                        this.editingItem = fullTask;
+                    } else {
+                        // Если не удалось загрузить, используем данные из списка
+                        this.editingItem = item;
+                    }
+                } catch (error) {
+                    console.error('Ошибка при загрузке задачи:', error);
+                    // Если не удалось загрузить, используем данные из списка
+                    this.editingItem = item;
+                }
+            } else {
+                this.editingItem = null;
+            }
+        },
+        
         async fetchTaskStatuses() {
             try {
                 // Используем данные из store
@@ -392,7 +418,6 @@ export default {
                     const title = i.title || '-';
                     return search ? highlightMatches(title, search) : title;
                 case 'description':
-                console.log('🔍 [itemMapper] description:', i.description, 'column:', c);
                     return i.description || '-';
                 case 'creator':
                     return i.creator?.name || '-';
@@ -542,7 +567,7 @@ export default {
                     }
                     
                     this.pendingStatusUpdates.set(updateData.orderId, updateData.statusId);
-                    // this.debouncedStatusUpdate();
+                    this.debouncedStatusUpdate();
                 }
             } catch (error) {
                 const errors = this.getApiErrorMessage(error);
@@ -550,50 +575,26 @@ export default {
                 this.fetchItems(this.data.currentPage, true);
             }
         },
-        // debouncedStatusUpdate: debounce(function() {
-        //     if (this.pendingStatusUpdates.size === 0) return;
+        debouncedStatusUpdate: debounce(function() {
+            if (this.pendingStatusUpdates.size === 0) return;
             
-        //     const updatesByStatus = new Map();
-        //     this.pendingStatusUpdates.forEach((statusId, taskId) => {
-        //         if (!updatesByStatus.has(statusId)) {
-        //             updatesByStatus.set(statusId, []);
-        //         }
-        //         updatesByStatus.get(statusId).push(taskId);
-        //     });
+            const promises = [];
+            this.pendingStatusUpdates.forEach((statusId, taskId) => {
+                const updateData = { status_id: statusId };
+                const promise = TaskController.updateItem(taskId, updateData)
+                    .catch(error => {
+                        console.error('Error updating task status:', error);
+                    });
+                promises.push(promise);
+            });
             
-        //     this.pendingStatusUpdates.clear();
+            this.pendingStatusUpdates.clear();
             
-        //     const promises = [];
-        //     updatesByStatus.forEach((taskIds, statusId) => {
-        //         const promise = Promise.all(
-        //             taskIds.map(taskId => {
-        //                 const task = this.data?.items?.find(t => t.id === taskId);
-        //                 const updateData = { status_id: statusId };
-                        
-        //                 if (task) {
-        //                     if (task.supervisorId) updateData.supervisor_id = task.supervisorId;
-        //                     if (task.executorId) updateData.executor_id = task.executorId;
-        //                 }
-                        
-        //                 return TaskController.updateItem(taskId, updateData);
-        //             })
-        //         ).catch(error => {
-        //             const errors = this.getApiErrorMessage(error);
-        //             this.showNotification(this.$t('error'), errors, true);
-        //             this.fetchItems(this.data?.currentPage || 1, true);
-        //         });
-        //         promises.push(promise);
-        //     });
-            
-        //     Promise.all(promises).then(async () => {
-        //         await this.$store.dispatch('invalidateCache', { type: 'tasks' });
-        //         this.fetchItems(this.data?.currentPage || 1, true);
-        //         this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
-        //     }).catch(error => {
-        //         const errors = this.getApiErrorMessage(error);
-        //         this.showNotification(this.$t('error'), errors, true);
-        //     });
-        // }, 500),
+            Promise.all(promises).then(() => {
+                this.$store.dispatch('invalidateCache', { type: 'tasks' });
+                this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
+            });
+        }, 500),
         toggleSelectRow(id) {
             if (this.selectedIds.includes(id)) {
                 this.selectedIds = this.selectedIds.filter(x => x !== id);
@@ -668,6 +669,7 @@ export default {
             // Вызываем стандартную обработку из crudEventMixin
             this.refreshDataAfterOperation();
         },
+        
     },
     watch: {
         viewMode: {

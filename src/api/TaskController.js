@@ -13,12 +13,9 @@ class TaskController extends BaseController {
         if (dateTo) params.date_to = dateTo;
         
         const data = await super.getItems('/tasks', page, perPage, params);
-        console.log('🔍 [TaskController.getItems] Raw API data:', data.data);
-        console.log('🔍 [TaskController.getItems] First item files:', data.data?.[0]?.files);
         
         const items = TaskDto.fromApiArray(data.data || []);
-        console.log('🔍 [TaskController.getItems] Converted items:', items);
-        console.log('🔍 [TaskController.getItems] First item files after DTO:', items?.[0]?.files);
+
         
         const response = new PaginatedResponse(
             items,
@@ -32,7 +29,11 @@ class TaskController extends BaseController {
 
     static async getItem(id) {
         const data = await super.getItem('/tasks', id);
-        return TaskDto.fromApiArray([data.item])[0] || null;
+        if (!data || !data.data) {
+            return null;
+        }
+        // Backend возвращает { data: TaskResource }, а не { item: ... }
+        return TaskDto.fromApiArray([data.data])[0] || null;
     }
 
     static async createItem(item) {
@@ -98,8 +99,8 @@ class TaskController extends BaseController {
     static async deleteFile(id, filePath) {
         return await super.handleRequest(
             async () => {
-                const response = await api.delete(`/tasks/${id}/files`, {
-                    data: { path: filePath }
+                const response = await api.post(`/tasks/${id}/delete-file`, {
+                    path: filePath
                 });
                 return response.data.files;
             },
