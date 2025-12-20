@@ -11,13 +11,7 @@
             </select>
         </div>
         <div class="mt-4">
-            <label class="required">{{ $t('user') || 'Сотрудник' }}</label>
-            <select v-model="userId" required>
-                <option value="">{{ $t('selectUser') || 'Выберите сотрудника' }}</option>
-                <option v-for="user in users" :key="user.id" :value="user.id">
-                    {{ user.name }} {{ user.surname || '' }}
-                </option>
-            </select>
+            <UserSearch v-model:selectedUser="selectedUser" :required="true" />
         </div>
         <div class="mt-4">
             <label class="required">{{ $t('dateFrom') || 'Дата начала' }}</label>
@@ -55,37 +49,39 @@ import LeaveTypeController from '@/api/LeaveTypeController';
 import LeaveDto from '@/dto/leave/LeaveDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { PrimaryButton, AlertDialog },
+    components: { PrimaryButton, AlertDialog, UserSearch },
     props: {
         editingItem: { type: LeaveDto, required: false, default: null }
     },
     data() {
         return {
             leaveTypeId: this.editingItem ? this.editingItem.leaveTypeId : '',
-            userId: this.editingItem ? this.editingItem.userId : '',
+            selectedUser: this.editingItem && this.editingItem.userId ? { id: this.editingItem.userId } : null,
             dateFrom: this.editingItem ? this.editingItem.dateFromForInput : '',
             dateTo: this.editingItem ? this.editingItem.dateToForInput : '',
             comment: this.editingItem ? (this.editingItem.comment || '') : '',
             editingItemId: this.editingItem ? this.editingItem.id : null,
             allLeaveTypes: [],
-            users: [],
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false
         }
     },
+    computed: {
+        userId() {
+            return this.selectedUser?.id || '';
+        }
+    },
     mounted() {
         this.$nextTick(async () => {
-            await Promise.all([
-                this.fetchAllLeaveTypes(),
-                this.fetchUsers()
-            ]);
+            await this.fetchAllLeaveTypes();
             this.saveInitialState();
         });
     },
@@ -106,14 +102,6 @@ export default {
                 console.error('Ошибка загрузки типов отпусков:', error);
                 this.allLeaveTypes = [];
             }
-        },
-        async fetchUsers() {
-            if (this.$store.getters.usersForCurrentCompany && this.$store.getters.usersForCurrentCompany.length > 0) {
-                this.users = this.$store.getters.usersForCurrentCompany;
-                return;
-            }
-            await this.$store.dispatch('loadUsers');
-            this.users = this.$store.getters.usersForCurrentCompany;
         },
         async save() {
             if (!this.leaveTypeId || !this.userId || !this.dateFrom || !this.dateTo) {
@@ -168,13 +156,12 @@ export default {
         },
         clearForm() {
             this.leaveTypeId = '';
-            this.userId = '';
+            this.selectedUser = null;
             this.dateFrom = '';
             this.dateTo = '';
             this.comment = '';
             this.editingItemId = null;
             this.fetchAllLeaveTypes();
-            this.fetchUsers();
             this.resetFormChanges();
         },
         showDeleteDialog() { this.deleteDialog = true; },
@@ -185,14 +172,14 @@ export default {
             handler(newEditingItem) {
                 if (newEditingItem) {
                     this.leaveTypeId = newEditingItem.leaveTypeId || '';
-                    this.userId = newEditingItem.userId || '';
+                    this.selectedUser = newEditingItem.userId ? { id: newEditingItem.userId } : null;
                     this.dateFrom = newEditingItem.dateFromForInput || '';
                     this.dateTo = newEditingItem.dateToForInput || '';
                     this.comment = newEditingItem.comment || '';
                     this.editingItemId = newEditingItem.id || null;
                 } else {
                     this.leaveTypeId = '';
-                    this.userId = '';
+                    this.selectedUser = null;
                     this.dateFrom = '';
                     this.dateTo = '';
                     this.comment = '';

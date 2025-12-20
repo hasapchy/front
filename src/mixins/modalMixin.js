@@ -10,8 +10,6 @@ export default {
   },
   methods: {
     showModal(item = null) {
-      console.log('📋 [modalMixin.showModal] Opening modal with item:', item);
-      console.log('📋 [modalMixin.showModal] Item files:', item?.files);
       this.savedScrollPosition = window.pageYOffset ?? document.documentElement.scrollTop;
       this.shouldRestoreScrollOnClose = true;
       this.modalDialog = true;

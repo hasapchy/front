@@ -537,4 +537,10 @@ export default {
     select: 'Select',
     errorDeletingTask: 'Error deleting task',
     taskStatuses: 'Task Statuses',
+    
+    // Search
+    enterClientNameOrNumber: 'Enter client name or number',
+    enterUserNameOrPosition: 'Enter name, surname or position',
+    minimum3Characters: 'Minimum 3 characters',
+    notFound: 'Not found',
 }

@@ -125,9 +125,7 @@ export default {
     computed: {
         controller() {
             return this.usersController || UsersController;
-        }
-    },
-    computed: {
+        },
         canSave() {
             const hasFormData = this.form.start_date && this.form.amount && this.form.currency_id;
             if (this.editingItem) {

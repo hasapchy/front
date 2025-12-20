@@ -927,6 +927,7 @@ export default {
   
   // Поиск и клиенты
   enterClientNameOrNumber: 'Введите имя или номер клиента',
+  enterUserNameOrPosition: 'Введите имя, фамилию или должность',
   minimum3Characters: 'Минимум 3 символа',
   selectSourceType: 'Выберите тип источника',
   enterSourceId: 'Введите ID заказа, продажи или оприходования',

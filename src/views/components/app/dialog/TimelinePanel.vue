@@ -4,7 +4,7 @@
 
 
             <div class="sticky top-0 z-20 flex justify-between items-center p-4 bg-white">
-                <h2 class="text-lg font-bold">Таймлайн</h2>
+                <h2 class="text-lg font-bold">История и комментарии</h2>
                 <button @click="toggleTimeline" class="text-gray-500 hover:text-black transition-colors duration-200">
                     <i class="fas fa-times"></i>
                 </button>

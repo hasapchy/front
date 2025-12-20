@@ -21,6 +21,30 @@ export default class UsersController extends BaseController {
     return UserDto.fromApiArray(data);
   }
 
+  static async searchItems(term) {
+    return super.handleRequest(
+      async () => {
+        const response = await api.get("/users/search", {
+          params: { search_request: term },
+        });
+        const data = Array.isArray(response.data) ? response.data : [];
+        return UserDto.fromApiArray(data);
+      },
+      "Ошибка при поиске пользователей:"
+    );
+  }
+
+  static async getItem(id) {
+    return super.handleRequest(
+      async () => {
+        const response = await api.get(`/users/${id}`);
+        const userData = response.data.data || response.data.user || response.data;
+        return UserDto.fromApiArray([userData])[0] || null;
+      },
+      `Ошибка при получении пользователя: /users/${id}`
+    );
+  }
+
   static async storeItem(payload, file = null) {
     return super.storeItem("/users", payload, {
       file: file,

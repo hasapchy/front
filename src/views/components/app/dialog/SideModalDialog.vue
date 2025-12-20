@@ -18,7 +18,7 @@
                     <button @click="toggleTimeline" 
                             class="transform -rotate-90 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors duration-200 flex items-center space-x-2">
                         <i :class="timelineCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right'" class="text-xs transition-transform duration-200"></i>
-                        <span>Таймлайн</span>
+                        <span>История и комментарии</span>
                     </button>
                 </div>
 

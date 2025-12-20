@@ -44,25 +44,12 @@
             </div>
 
             <div>
-                <div class="flex justify-between items-center mb-2">
-                    <label>{{ $t('assignUsers') }}</label>
-                    <div v-if="users != null && users.length > 0">
-                        <PrimaryButton :onclick="toggleAllUsers" :is-info="!allUsersSelected"
-                            :is-light="allUsersSelected"
-                            :icon="allUsersSelected ? 'fas fa-times' : 'fas fa-check-double'" class="text-xs py-1 px-2"
-                            :title="allUsersSelected ? $t('deselectAll') : $t('selectAll')">
-                        </PrimaryButton>
-                    </div>
-                </div>
-                <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
-                    <label v-for="user in users" :key="user.id"
-                        class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-                        <input type="checkbox" :value="user.id.toString()" v-model="selectedUsers"
-                            :id="'user-' + user.id" />
-                        <span class="text-black">{{ user.name }}</span>
-                    </label>
-                </div>
-
+                <label>{{ $t('assignUsers') }}</label>
+                <UserSearch
+                    v-model:selectedUsers="selectedUsers"
+                    :multiple="true"
+                    :showLabel="false"
+                />
             </div>
         </div>
         <div v-if="currentTab === 'files' && editingItem && canViewProjectFiles">
@@ -105,6 +92,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ProjectController from '@/api/ProjectController';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
+import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import companyChangeMixin from '@/mixins/companyChangeMixin';
@@ -117,7 +105,7 @@ import FileUploader from '@/views/components/app/forms/FileUploader.vue';
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, companyChangeMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, FileUploader },
+    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, UserSearch, ProjectBalanceTab, ProjectContractsTab, FileUploader },
     props: {
         editingItem: { type: ProjectDto, required: false, default: null }
     },
@@ -131,10 +119,9 @@ export default {
                 ? new Date(this.editingItem.date).toISOString().substring(0, 16)
                 : new Date().toISOString().substring(0, 16),
             description: this.editingItem ? this.editingItem.description : '',
-            selectedUsers: [],
+            selectedUsers: this.editingItem ? this.editingItem.getUserIds() : [],
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
-            users: [],
             currencies: [],
             saveLoading: false,
             deleteDialog: false,
@@ -189,9 +176,6 @@ export default {
             }
 
             return currency.exchange_rate?.toFixed(6) || '1.000000';
-        },
-        allUsersSelected() {
-            return this.users && this.users.length > 0 && this.selectedUsers.length === this.users.length;
         }
     },
     created() {
@@ -201,12 +185,7 @@ export default {
     },
     mounted() {
         this.$nextTick(async () => {
-            await Promise.all([
-                this.fetchUsers(),
-                this.fetchCurrencies()
-            ]);
-
-
+            await this.fetchCurrencies();
             this.saveInitialState();
         });
     },
@@ -276,36 +255,6 @@ export default {
                 }
             } else {
                 this.exchangeRate = null;
-            }
-        },
-        async fetchUsers() {
-            if (this.$store.getters.usersForCurrentCompany && this.$store.getters.usersForCurrentCompany.length > 0) {
-                this.users = this.$store.getters.usersForCurrentCompany;
-            } else {
-                await this.$store.dispatch('loadUsers');
-                this.users = this.$store.getters.usersForCurrentCompany;
-            }
-
-            if (this.editingItem && Array.isArray(this.editingItem.users)) {
-                const availableUserIds = this.users.map(u => u.id.toString());
-                this.selectedUsers = this.editingItem.getUserIds().filter(id => availableUserIds.includes(id));
-            } else if (!this.editingItem) {
-                this.selectAllUsers();
-            }
-        },
-        selectAllUsers() {
-            if (this.users && this.users.length > 0) {
-                this.selectedUsers = this.users.map(user => user.id.toString());
-            }
-        },
-        deselectAllUsers() {
-            this.selectedUsers = [];
-        },
-        toggleAllUsers() {
-            if (this.allUsersSelected) {
-                this.deselectAllUsers();
-            } else {
-                this.selectAllUsers();
             }
         },
         async save() {
@@ -551,16 +500,8 @@ export default {
                     this.clearForm();
                     this.currentTab = 'info'; // Сбрасываем вкладку и при закрытии
                 }
-                this.$nextTick(async () => {
+                this.$nextTick(() => {
                     this.saveInitialState();
-                    // ✅ Если открываем проект для редактирования, перезагружаем пользователей
-                    // чтобы отфильтровать их по текущей компании
-                    if (newEditingItem) {
-                        await this.fetchUsers();
-                    } else if (this.users && this.users.length > 0 && this.selectedUsers.length === 0) {
-                        // Дополнительная проверка: если это создание нового проекта и пользователи загружены, выбираем всех
-                        this.selectedUsers = this.users.map(user => user.id.toString());
-                    }
                 });
             },
             deep: true,
