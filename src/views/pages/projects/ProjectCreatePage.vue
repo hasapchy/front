@@ -43,14 +43,6 @@
                 <small class="text-gray-500">{{ $t('exchangeRateHelp') }}</small>
             </div>
 
-            <div>
-                <label>{{ $t('assignUsers') }}</label>
-                <UserSearch
-                    v-model:selectedUsers="selectedUsers"
-                    :multiple="true"
-                    :showLabel="false"
-                />
-            </div>
         </div>
         <div v-if="currentTab === 'files' && editingItem && canViewProjectFiles">
             <FileUploader ref="fileUploader" :files="editingItem ? editingItem.getFormattedFiles() : []"
@@ -92,7 +84,6 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ProjectController from '@/api/ProjectController';
 import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
-import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import companyChangeMixin from '@/mixins/companyChangeMixin';
@@ -105,7 +96,7 @@ import FileUploader from '@/views/components/app/forms/FileUploader.vue';
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, companyChangeMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, UserSearch, ProjectBalanceTab, ProjectContractsTab, FileUploader },
+    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, FileUploader },
     props: {
         editingItem: { type: ProjectDto, required: false, default: null }
     },
@@ -119,7 +110,6 @@ export default {
                 ? new Date(this.editingItem.date).toISOString().substring(0, 16)
                 : new Date().toISOString().substring(0, 16),
             description: this.editingItem ? this.editingItem.description : '',
-            selectedUsers: this.editingItem ? this.editingItem.getUserIds() : [],
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
             currencies: [],
@@ -198,7 +188,6 @@ export default {
             this.date = new Date().toISOString().substring(0, 16);
             this.description = '';
             this.selectedClient = null;
-            this.selectedUsers = [];
             this.editingItemId = null;
             this.currentTab = 'info';
             this.resetFormChanges(); // Сбрасываем состояние изменений
@@ -217,8 +206,7 @@ export default {
                 exchangeRate: this.exchangeRate,
                 date: this.date,
                 description: this.description,
-                selectedClient: this.selectedClient?.id || null,
-                selectedUsers: [...this.selectedUsers]
+                selectedClient: this.selectedClient?.id || null
             };
         },
         async fetchCurrencies() {
@@ -282,8 +270,7 @@ export default {
                     name: this.name,
                     date: new Date(this.date).toISOString(),
                     description: this.description || null,
-                    client_id: this.selectedClient?.id,
-                    users: this.selectedUsers
+                    client_id: this.selectedClient?.id
                 };
 
                 // Добавляем поля бюджета только если у пользователя есть права
@@ -448,13 +435,6 @@ export default {
                 this.closeDeleteFileDialog();
             }
         },
-        // ✅ Обработчик смены компании - перезагружаем пользователей с фильтрацией по новой компании
-        async handleCompanyChanged(companyId) {
-            // Очищаем выбранных пользователей, так как они могут быть из другой компании
-            this.selectedUsers = [];
-            // Перезагружаем пользователей с новой фильтрацией
-            await this.fetchUsers();
-        },
     },
 
     beforeUnmount() {
@@ -490,7 +470,6 @@ export default {
                         : new Date().toISOString().substring(0, 16);
                     this.description = newEditingItem.description || '';
                     this.selectedClient = newEditingItem.client || null;
-                    this.selectedUsers = newEditingItem.getUserIds() || [];
                     this.editingItemId = newEditingItem.id || null;
                     
                     // Всегда открываем вкладку "info" при открытии проекта

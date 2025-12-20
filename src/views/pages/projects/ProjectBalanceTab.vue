@@ -155,6 +155,7 @@ export default {
                     }
                 },
                 { name: "note", label: this.$t("note"), size: 200 },
+                { name: "categoryName", label: this.$t("category"), size: 150 },
                 { name: "user_name", label: this.$t("user"), size: 120 },
                 {
                     name: "is_debt",
@@ -328,6 +329,8 @@ export default {
                     return i.dateUser || (i.formatDate ? i.formatDate() : '');
                 case "note":
                     return i.note || '';
+                case "categoryName":
+                    return i.categoryName || '-';
                 case "user_name":
                     return i.userName || '-';
                 case "amount":

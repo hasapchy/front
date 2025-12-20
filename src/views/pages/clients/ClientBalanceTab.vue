@@ -158,6 +158,7 @@ export default {
                     }
                 },
                 { name: "note", label: this.$t("note"), size: 200 },
+                { name: "categoryName", label: this.$t("category"), size: 150 },
                 {
                     name: "debt",
                     label: "Долг",
@@ -335,6 +336,8 @@ export default {
                     return i.userName || i.user_name || '-';
                 case "note":
                     return i.note || '-';
+                case "categoryName":
+                    return i.categoryName || '-';
                 case "clientImpact":
                     // Возвращаем числовое значение для сортировки (отображение через компонент ClientImpactCell)
                     return parseFloat(i.amount || 0);

@@ -19,12 +19,9 @@
         </div>
         <div class="mt-4">
             <label class="flex items-center space-x-2">
-                <input type="checkbox" v-model="isActive" :disabled="isProtectedStatus">
+                <input type="checkbox" v-model="isActive">
                 <span>{{ $t('isActive') || 'Активен' }}</span>
             </label>
-            <p v-if="isProtectedStatus" class="text-xs text-gray-500 mt-1">
-                {{ $t('protectedStatusCannotBeDisabled') || 'Этот статус нельзя отключить' }}
-            </p>
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -75,12 +72,6 @@ export default {
             deleteDialog: false,
             deleteLoading: false,
             modalDialog: false
-        }
-    },
-    computed: {
-        isProtectedStatus() {
-            const protectedIds = [1, 5, 6]; // Новый, Завершено, Отменено
-            return this.editingItemId && protectedIds.includes(this.editingItemId);
         }
     },
     mounted() {

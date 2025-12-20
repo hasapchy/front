@@ -116,7 +116,7 @@ export default {
                 case 'createdAt':
                     return i.formatCreatedAt();
                 case 'name':
-                    return i.canBeDeleted() ? i.name : `${i.name} 🔒`;
+                    return i.name;
                 case 'user_name':
                     return i.user_name || '-';
                 default:
