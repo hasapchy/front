@@ -28,7 +28,7 @@
                 <input 
                     type="datetime-local" 
                     v-model="deadline"
-                    :min="new Date().toISOString().substring(0, 16)" />
+                    :min="minDeadline" />
             </div>
 
             <div>
@@ -148,6 +148,7 @@ import TaskDto from '@/dto/task/TaskDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
+import dayjs from 'dayjs';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
@@ -169,8 +170,9 @@ export default {
             description: this.editingItem ? this.editingItem.description : '',
             statusId: this.editingItem ? (this.editingItem.statusId || this.editingItem.status?.id) : null,
             deadline: this.editingItem && this.editingItem.deadline
-                ? new Date(this.editingItem.deadline).toISOString().substring(0, 16)
+                ? dayjs(this.editingItem.deadline).format('YYYY-MM-DDTHH:mm')
                 : '',
+            minDeadline: dayjs().format('YYYY-MM-DDTHH:mm'),
             projectId: this.editingItem && this.editingItem.project 
                 ? this.editingItem.project.id 
                 : null,
@@ -223,7 +225,7 @@ export default {
                     this.description = newEditingItem.description || '';
                     this.statusId = newEditingItem.statusId || newEditingItem.status?.id || null;
                     this.deadline = newEditingItem.deadline
-                        ? new Date(newEditingItem.deadline).toISOString().substring(0, 16)
+                        ? dayjs(newEditingItem.deadline).format('YYYY-MM-DDTHH:mm')
                         : '';
                     this.projectId = newEditingItem.project?.id || null;
                     this.supervisorId = newEditingItem.supervisor?.id || null;
@@ -609,7 +611,7 @@ export default {
                     title: this.title.trim(),
                     description: this.description || null,
                     status_id: this.statusId || null,
-                    deadline: this.deadline || null,
+                    deadline: this.deadline ? dayjs(this.deadline).format('YYYY-MM-DD HH:mm:ss') : null,
                     project_id: this.projectId || null,
                     supervisor_id: this.supervisorId,
                     executor_id: this.executorId,

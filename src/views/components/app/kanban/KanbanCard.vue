@@ -63,7 +63,7 @@
         <div v-if="showField('date') && !isTaskMode" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-calendar text-gray-400"></i>
-                <span>{{ formatDate(order.date) }} Заказ</span>
+                <span>{{ formatDate(order.date) }}</span>
             </div>
         </div>
 
