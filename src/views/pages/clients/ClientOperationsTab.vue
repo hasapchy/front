@@ -92,6 +92,7 @@ import SaleController from "@/api/SaleController";
 import WarehouseReceiptController from "@/api/WarehouseReceiptController";
 import ClientDto from "@/dto/client/ClientDto";
 import { defineAsyncComponent } from 'vue';
+import { translateOrderStatus } from '@/utils/translationUtils';
 
 const OrderCreatePage = defineAsyncComponent(() => 
     import("@/views/pages/orders/OrderCreatePage.vue")
@@ -218,7 +219,7 @@ export default {
                     this.tableData = response.items.map(order => ({
                         id: order.id,
                         name: order.note || order.description || `Заказ #${order.id}`,
-                        status: order.status?.name ? this.$t(`orderStatus.${order.status.name}`, order.status.name) : (order.statusName || '-'),
+                        status: order.statusName || (order.status?.name ? translateOrderStatus(order.status.name, this.$t) : '-'),
                         dateUser: order.formatDate ? `${order.formatDate()} / ${order.user?.name || order.userName || "-"}` : (order.date ? `${new Date(order.date).toLocaleString()} / ${order.user?.name || order.userName || "-"}` : '-'),
                         amount: order.totalPrice || order.price || 0,
                         currencySymbol: order.currencySymbol || this.currencySymbol,

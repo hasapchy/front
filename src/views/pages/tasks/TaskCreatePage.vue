@@ -18,7 +18,7 @@
                 <label>{{ $t('status') }}</label>
                 <select v-model="statusId">
                     <option v-for="status in taskStatuses" :key="status.id" :value="status.id" >
-                        {{ status.name}}
+                        {{ translateTaskStatus(status.name, $t) }}
                     </option>
                 </select>
             </div>
@@ -138,6 +138,7 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
 import dayjs from 'dayjs';
+import { translateTaskStatus } from '@/utils/translationUtils';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],

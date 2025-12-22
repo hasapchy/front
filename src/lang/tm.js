@@ -1258,6 +1258,7 @@ export default {
   'unit.ROLL': 'Rulon',
   
   // Task Statuses
+  'taskStatus.NEW': 'Täze',
   'taskStatus.PENDING': 'Garaşylýar',
   'taskStatus.IN_PROGRESS': 'Işde',
   'taskStatus.COMPLETED': 'Tamamlandy',

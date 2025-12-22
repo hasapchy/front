@@ -133,6 +133,7 @@ import { translateField, formatFieldValue as formatFieldValueUtil } from '@/util
 import { formatNumber as formatNumberUtil, formatCurrency as formatCurrencyUtil } from '@/utils/numberUtils';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
+import { translateOrderStatus, translateTaskStatus } from '@/utils/translationUtils';
 
 dayjs.locale('ru');
 
@@ -337,7 +338,13 @@ export default {
                 return statusId;
             }
             const status = statuses?.find(s => s.id === statusId);
-            return status ? status.name : statusId;
+            if (!status) return statusId;
+            if (this.type === 'order') {
+                return translateOrderStatus(status.name, this.$t);
+            } else if (this.type === 'task') {
+                return translateTaskStatus(status.name, this.$t);
+            }
+            return status.name;
         }
     },
     computed: {

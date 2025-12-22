@@ -174,7 +174,7 @@
                             <select v-model="statusFilter" class="w-full">
                                 <option value="">{{ $t('allStatuses') }}</option>
                                 <option v-for="status in statuses" :key="status.id" :value="status.id">
-                                    {{ status.name }}
+                                    {{ translateOrderStatus(status.name, $t) }}
                                 </option>
                             </select>
                         </div>

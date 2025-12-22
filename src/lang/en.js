@@ -602,6 +602,7 @@ export default {
     'unit.ROLL': 'Roll',
     
     // Task Statuses
+    'taskStatus.NEW': 'New',
     'taskStatus.PENDING': 'Pending',
     'taskStatus.IN_PROGRESS': 'In Progress',
     'taskStatus.COMPLETED': 'Completed',

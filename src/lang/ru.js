@@ -1496,6 +1496,7 @@ export default {
   'unit.ROLL': 'Рулон',
   
   // Task Statuses
+  'taskStatus.NEW': 'Новый',
   'taskStatus.PENDING': 'Ожидает',
   'taskStatus.IN_PROGRESS': 'В работе',
   'taskStatus.COMPLETED': 'Завершен',
