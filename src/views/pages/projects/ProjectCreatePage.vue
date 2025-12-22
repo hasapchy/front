@@ -16,7 +16,7 @@
                 <label>{{ $t('projectDate') }}</label>
                 <input type="datetime-local" v-model="date"
                     :disabled="!!editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                    :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
+                    :min="!$store.getters.hasPermission('settings_edit_any_date') ? this.getCurrentLocalDateTime() : null" />
             </div>
             <div v-if="$store.getters.hasPermission('settings_project_budget_view')"
                 class="flex items-center space-x-2">
@@ -113,6 +113,8 @@ import AppController from '@/api/AppController';
 import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
 import ProjectContractsTab from '@/views/pages/projects/ProjectContractsTab.vue';
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
+import dayjs from 'dayjs';
+import { getCurrentLocalDateTime, formatDatabaseDateTimeForInput } from '@/utils/dateUtils';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, companyChangeMixin],
@@ -127,9 +129,8 @@ export default {
             budget: this.editingItem ? this.editingItem.budget : 0,
             currencyId: this.editingItem ? this.editingItem.currencyId : '',
             exchangeRate: this.editingItem ? this.editingItem.exchangeRate : null,
-            date: this.editingItem && this.editingItem.date
-                ? new Date(this.editingItem.date).toISOString().substring(0, 16)
-                : new Date().toISOString().substring(0, 16),
+            date: this.editingItem && this.editingItem.date ? this.formatDatabaseDateTimeForInput(this.editingItem.date)
+                : getCurrentLocalDateTime(),
             description: this.editingItem ? this.editingItem.description : '',
             selectedUsers: [],
             editingItemId: this.editingItem ? this.editingItem.id : null,
@@ -211,12 +212,14 @@ export default {
         });
     },
     methods: {
+        formatDatabaseDateTimeForInput,
+        
         clearForm() {
             this.name = '';
             this.budget = 0;
             this.currencyId = '';
             this.exchangeRate = null;
-            this.date = new Date().toISOString().substring(0, 16);
+            this.date = getCurrentLocalDateTime();
             this.description = '';
             this.selectedClient = null;
             this.selectedUsers = [];
@@ -331,7 +334,7 @@ export default {
                 let resp;
                 const formData = {
                     name: this.name,
-                    date: new Date(this.date).toISOString(),
+                    date: this.date ? dayjs(this.date).format('YYYY-MM-DD HH:mm:ss') : null,
                     description: this.description || null,
                     client_id: this.selectedClient?.id,
                     users: this.selectedUsers
@@ -537,8 +540,8 @@ export default {
                     this.currencyId = newEditingItem.currencyId || '';
                     this.exchangeRate = newEditingItem.exchangeRate || null;
                     this.date = newEditingItem.date
-                        ? new Date(newEditingItem.date).toISOString().substring(0, 16)
-                        : new Date().toISOString().substring(0, 16);
+                        ? this.formatDatabaseDateTimeForInput(newEditingItem.date)
+                        : this.getCurrentLocalDateTime();
                     this.description = newEditingItem.description || '';
                     this.selectedClient = newEditingItem.client || null;
                     this.selectedUsers = newEditingItem.getUserIds() || [];

@@ -22,7 +22,7 @@
                     <label>{{ $t('date') }}</label>
                     <input type="datetime-local" v-model="date"
                         :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                        :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
+                        :min="!$store.getters.hasPermission('settings_edit_any_date') ? this.getCurrentLocalDateTime() : null" />
                 </div>
                 <div>
                     <label>{{ $t('description') }}</label>
@@ -128,6 +128,11 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import { formatCurrency, roundValue } from '@/utils/numberUtils';
+import { formatDatabaseDateTime } from '@/utils/dateUtils';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 
 
 export default {
@@ -154,7 +159,7 @@ export default {
             warehouseId: this.editingItem?.warehouseId || '',
             statusId: this.editingItem?.statusId || 1,
             categoryId: this.editingItem?.categoryId || '',
-            date: this.editingItem?.date ? this.editingItem.date.substring(0, 16) : new Date().toISOString().substring(0, 16),
+            date: this.editingItem?.date ? this.formatDatabaseDateTimeForInput(this.editingItem.date) : this.getCurrentLocalDateTime(),
             note: this.editingItem?.note || '',
             description: this.editingItem?.description || '',
             products: this.editingItem?.products || [],
@@ -267,6 +272,31 @@ export default {
         }
     },
     methods: {
+        formatDatabaseDateTimeForInput(date) {
+            if (!date) return '';
+            // Конвертируем дату из базы данных в формат datetime-local без UTC смещения
+            const dateObj = new Date(date);
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const hours = String(dateObj.getHours()).padStart(2, '0');
+            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        },
+        getCurrentLocalDateTime() {
+            // Получаем текущее время в UTC
+            const now = new Date();
+            // Добавляем 5 часов (Asia/Ashgabat = UTC+5)
+            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const asiaTime = new Date(utcTime + (5 * 3600000)); // +5 часов
+            
+            const year = asiaTime.getUTCFullYear();
+            const month = String(asiaTime.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(asiaTime.getUTCDate()).padStart(2, '0');
+            const hours = String(asiaTime.getUTCHours()).padStart(2, '0');
+            const minutes = String(asiaTime.getUTCMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        },
         formatCurrency,
         getFormState() {
             const state = {
@@ -534,7 +564,7 @@ export default {
             this.warehouseId = this.allWarehouses[0]?.id || '';
             this.statusId = '';
             this.categoryId = '';
-            this.date = new Date().toISOString().substring(0, 16);
+            this.date = this.getCurrentLocalDateTime();
             this.note = '';
             this.description = ''
             this.products = [];
@@ -683,7 +713,7 @@ export default {
                     this.cashId = newEditingItem.cashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
                     this.statusId = newEditingItem.statusId || '';
                     this.categoryId = newEditingItem.categoryId || '';
-                    this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
+                    this.date = newEditingItem.date ? this.formatDatabaseDateTimeForInput(newEditingItem.date) : this.getCurrentLocalDateTime();
                     this.note = newEditingItem.note || '';
                     this.description = newEditingItem.description || '';
                     const rawProducts = newEditingItem.products || [];

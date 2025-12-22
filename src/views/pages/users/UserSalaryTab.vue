@@ -58,6 +58,7 @@ import UserSalaryCreatePage from "./UserSalaryCreatePage.vue";
 import UsersController from "@/api/UsersController";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
+import { formatDatabaseDate } from '@/utils/dateUtils';
 
 export default {
     mixins: [notificationMixin, getApiErrorMessage],
@@ -125,6 +126,9 @@ export default {
         }
     },
     methods: {
+        formatDatabaseDate(date) {
+            return formatDatabaseDate(date);
+        },
         async fetchSalaries() {
             if (!this.editingItem || !this.editingItem.id) return;
             
@@ -173,12 +177,12 @@ export default {
                     const symbol = item.currency?.symbol || '';
                     return `<span class="font-semibold">${this.$formatNumber(amount, null, true)} ${symbol}</span>`;
                 case 'startDate':
-                    return item.start_date ? new Date(item.start_date).toLocaleDateString('ru-RU') : '-';
+                    return item.start_date ? this.formatDatabaseDate(item.start_date) : '-';
                 case 'endDate':
                     if (!item.end_date) {
                         return `<span class="text-gray-500">${this.$t('present') || 'по н.в.'}</span>`;
                     }
-                    return new Date(item.end_date).toLocaleDateString('ru-RU');
+                    return this.formatDatabaseDate(item.end_date);
                 case 'note':
                     return item.note || '-';
                 default:

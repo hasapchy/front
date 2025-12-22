@@ -9,7 +9,7 @@
             <label>{{ $t('date') }}</label>
             <input type="datetime-local" v-model="date"
                 :disabled="!!editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
+                :min="!$store.getters.hasPermission('settings_edit_any_date') ? this.getCurrentLocalDateTime() : null" />
         </div>
         <div class="mt-2">
             <label class="block mb-1 required">{{ $t('warehouse') }}</label>
@@ -97,6 +97,7 @@ import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import { formatDatabaseDateTime } from '@/utils/dateUtils';
 
 
 export default {
@@ -108,7 +109,7 @@ export default {
     },
     data() {
         return {
-            date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
+            date: this.editingItem ? this.formatDatabaseDateTimeForInput(this.editingItem.date) : this.getCurrentLocalDateTime(),
             note: this.editingItem ? this.editingItem.note : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId || '' : '',
             type: this.editingItem ? this.editingItem.type : 'cash',
@@ -159,6 +160,26 @@ export default {
         });
     },
     methods: {
+        formatDatabaseDateTimeForInput(date) {
+            if (!date) return '';
+            // Конвертируем дату из базы данных в формат datetime-local без UTC смещения
+            const dateObj = new Date(date);
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const hours = String(dateObj.getHours()).padStart(2, '0');
+            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        },
+        getCurrentLocalDateTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        },
         
         getFormState() {
             return {
@@ -304,7 +325,7 @@ export default {
             this.deleteLoading = false;
         },
         clearForm() {
-            this.date = new Date().toISOString().substring(0, 16);
+            this.date = this.getCurrentLocalDateTime();
             this.note = '';
             this.warehouseId = '';
             this.currencyId = '';

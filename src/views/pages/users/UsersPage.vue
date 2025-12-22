@@ -91,6 +91,7 @@ import SalaryAccrualModal from '@/views/components/app/SalaryAccrualModal.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
+import { formatDatabaseDate, formatDatabaseDateTime } from '@/utils/dateUtils';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
@@ -134,6 +135,12 @@ export default {
     },
 
     methods: {
+        formatDatabaseDate(date) {
+            return formatDatabaseDate(date);
+        },
+        formatDatabaseDateTime(date) {
+            return formatDatabaseDateTime(date);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
@@ -159,9 +166,9 @@ export default {
                 case 'isAdmin':
                     return item.isAdmin ? '✅' : '❌';
                 case 'createdAt':
-                    return new Date(item.createdAt).toLocaleDateString();
+                    return this.formatDatabaseDate(item.createdAt);
                 case 'lastLoginAt':
-                    return item.lastLoginAt ? new Date(item.lastLoginAt).toLocaleDateString() + ' ' + new Date(item.lastLoginAt).toLocaleTimeString() : '—';
+                    return item.lastLoginAt ? this.formatDatabaseDateTime(item.lastLoginAt) : '—';
                 case 'roles':
                     return item.roles && item.roles.length > 0 ? item.roles.join(', ') : '—';
                 case 'companies':
