@@ -6,6 +6,7 @@
             <PrimaryButton v-else :icon="action.icon" :isDanger="action.type === 'danger'"
                 :isInfo="action.type === 'info'" :isLight="action.type === 'light'" :isFull="action.isFull"
                 @click="() => action.action(selectedIds)" :disabled="!!action.disabled">
+                <span v-if="action.label">{{ action.label }}</span>
             </PrimaryButton>
         </template>
     </div>

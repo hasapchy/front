@@ -258,7 +258,7 @@ export default {
             
             if (hasDeletePermission) {
                 actions.push({
-                    label: "",
+                    label: this.$t('delete') || 'Удалить',
                     icon: "fas fa-trash",
                     type: "danger",
                     action: this.deleteItems,
