@@ -17,7 +17,7 @@
                     <select v-model="currencyId">
                         <option value="">{{ $t('selectCurrency') }}</option>
                         <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
-                            {{ currency.symbol }} - {{ currency.name }}
+                            {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }}
                         </option>
                     </select>
                 </div>
@@ -58,6 +58,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import notificationMixin from "@/mixins/notificationMixin";
+import { translateCurrency } from '@/utils/translationUtils';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, notificationMixin],
@@ -102,6 +103,7 @@ export default {
         this.saveInitialState();
     },
     methods: {
+        translateCurrency,
         clearForm() {
             this.number = '';
             this.amount = '';
@@ -169,7 +171,7 @@ export default {
                 // Получаем информацию о валюте
                 const selectedCurrency = this.currencies.find(c => c.id == formData.currencyId);
                 if (selectedCurrency) {
-                    formData.currencyName = selectedCurrency.name;
+                    formData.currencyName = this.translateCurrency(selectedCurrency.name, this.$t);
                     formData.currencySymbol = selectedCurrency.symbol;
                 }
 

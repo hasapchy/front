@@ -1,5 +1,4 @@
 <template>
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.order_statuses" :columns-config="columnsConfig" :table-data="data.items"
@@ -17,6 +16,11 @@
                         :columns="columns"
                         :toggleVisible="toggleVisible"
                         :log="log">
+                        <template #left>
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                            </transition>
+                        </template>
                         <template #right>
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
@@ -82,6 +86,7 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
+import { translateOrderStatus, translateOrderStatusCategory } from '@/utils/translationUtils';
 
 
 export default {
@@ -112,6 +117,8 @@ export default {
         this.fetchItems();
     },
     methods: {
+        translateOrderStatus,
+        translateOrderStatusCategory,
         getBatchActions() {
             const actions = [];
             
@@ -133,6 +140,10 @@ export default {
                     return i.formatCreatedAt ? i.formatCreatedAt() : i.createdAt;
                 case 'status':
                     return i.isActive ? this.$t('active') : this.$t('inactive');
+                case 'name':
+                    return translateOrderStatus(i.name, this.$t);
+                case 'categoryName':
+                    return i.categoryName ? translateOrderStatusCategory(i.categoryName, this.$t) : '-';
                 default:
                     return i[c];
             }

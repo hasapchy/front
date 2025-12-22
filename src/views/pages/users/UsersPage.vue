@@ -9,16 +9,16 @@
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
                         :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
                         :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
-                        <template #additionalButtons>
+                        <template #left>
                             <PrimaryButton 
-                                v-if="$store.getters.hasPermission('employee_salaries_accrue')"
-                                icon="fas fa-money-bill-wave" 
-                                :onclick="openSalaryAccrualModal"
-                                :is-success="true"
-                                class="ml-2"
-                            >
-                                {{ $t('accrueSalaries') || 'Начислить зарплаты' }}
+                                :onclick="() => showModal(null)" 
+                                icon="fas fa-plus"
+                                :disabled="!$store.getters.hasPermission('users_create')">
                             </PrimaryButton>
+                            
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                            </transition>
                         </template>
                         <template #right>
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
@@ -65,6 +65,8 @@
     <SideModalDialog :showForm="salaryAccrualModalOpen" :onclose="closeSalaryAccrualModal">
         <SalaryAccrualModal 
             v-if="salaryAccrualModalOpen"
+            :user-ids="selectedIds"
+            :operation-type="salaryOperationType"
             @success="handleSalaryAccrualSuccess"
             @cancel="closeSalaryAccrualModal"
         />
@@ -109,7 +111,9 @@ export default {
             savedErrorText: this.$t('errorSavingUser'),
             deletedSuccessText: this.$t('userDeleted'),
             deletedErrorText: this.$t('errorDeletingUser'),
+            deletePermission: 'users_delete',
             salaryAccrualModalOpen: false,
+            salaryOperationType: 'salaryAccrual',
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'ID', size: 60 },
@@ -191,14 +195,98 @@ export default {
             });
         },
         openSalaryAccrualModal() {
+            if (this.selectedIds.length === 0) {
+                this.showNotification(
+                    this.$t('error') || 'Ошибка',
+                    this.$t('selectUsersFirst') || 'Выберите сотрудников для начисления зарплаты',
+                    true
+                );
+                return;
+            }
             this.salaryAccrualModalOpen = true;
         },
         closeSalaryAccrualModal() {
             this.salaryAccrualModalOpen = false;
+            this.salaryOperationType = 'salaryAccrual';
         },
-        handleSalaryAccrualSuccess() {
+        async handleSalaryAccrualSuccess() {
             this.closeSalaryAccrualModal();
+            this.selectedIds = [];
+            await this.fetchItems(this.data?.currentPage || 1, false);
+        },
+        getBatchActions() {
+            const actions = [];
+            
+            if (this.$store.getters.hasPermission('employee_salaries_accrue')) {
+                actions.push({
+                    label: this.$t('accrueSalary') || 'Начислить зарплату',
+                    icon: "fas fa-money-bill-wave",
+                    type: "success",
+                    action: () => this.openSalaryOperationModal('salaryAccrual'),
+                    disabled: false,
+                });
+                actions.push({
+                    label: this.$t('paySalary') || 'Выплатить зарплату',
+                    icon: "fas fa-hand-holding-usd",
+                    type: "success",
+                    action: () => this.openSalaryOperationModal('salaryPayment'),
+                    disabled: false,
+                });
+                actions.push({
+                    label: this.$t('bonus') || 'Начислить премию',
+                    icon: "fas fa-gift",
+                    type: "success",
+                    action: () => this.openSalaryOperationModal('bonus'),
+                    disabled: false,
+                });
+                actions.push({
+                    label: this.$t('penalty') || 'Выписать штраф',
+                    icon: "fas fa-exclamation-triangle",
+                    type: "danger",
+                    action: () => this.openSalaryOperationModal('penalty'),
+                    disabled: false,
+                });
+                actions.push({
+                    label: this.$t('advance') || 'Выдать аванс',
+                    icon: "fas fa-money-check-alt",
+                    type: "success",
+                    action: () => this.openSalaryOperationModal('advance'),
+                    disabled: false,
+                });
+            }
+            
+            const deletePermissions = Array.isArray(this.deletePermission) 
+                ? this.deletePermission 
+                : (this.deletePermission ? [this.deletePermission] : ['users_delete']);
+            
+            const hasDeletePermission = deletePermissions.some(perm => 
+                this.$store.getters.hasPermission(perm)
+            );
+            
+            if (hasDeletePermission) {
+                actions.push({
+                    label: this.$t('delete') || 'Удалить',
+                    icon: "fas fa-trash",
+                    type: "danger",
+                    action: this.deleteItems,
+                    disabled: this.loadingBatch,
+                });
+            }
+            
+            return actions;
+        },
+        openSalaryOperationModal(operationType) {
+            if (this.selectedIds.length === 0) {
+                this.showNotification(
+                    this.$t('error') || 'Ошибка',
+                    this.$t('selectUsersFirst') || 'Выберите сотрудников',
+                    true
+                );
+                return;
+            }
+            this.salaryOperationType = operationType;
+            this.salaryAccrualModalOpen = true;
         }
-    },
+    }
 };
 </script>

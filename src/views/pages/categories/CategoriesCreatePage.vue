@@ -8,11 +8,11 @@
 
         <div class="mt-4">
             <label>{{ $t('assignUsers') }}</label>
-            <CheckboxFilter
-                v-if="assignableUsers.length"
-                v-model="selectedUsers"
-                :options="userOptions"
-                :placeholder="'all'"
+            <UserSearch
+                v-model:selectedUsers="selectedUsers"
+                :multiple="true"
+                :filterUsers="userHasCategoryAccess"
+                :showLabel="false"
             />
         </div>
         <div class=" mt-4 mb-2">
@@ -49,12 +49,12 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
+import UserSearch from '@/views/components/app/search/UserSearch.vue';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { PrimaryButton, AlertDialog, CheckboxFilter },
+    components: { PrimaryButton, AlertDialog, UserSearch },
     props: {
         editingItem: { type: CategoryDto, required: false, default: null }
     },
@@ -96,16 +96,6 @@ export default {
                 return [];
             }
             return this.users.filter(this.userHasCategoryAccess);
-        },
-        userOptions() {
-            return this.assignableUsers.map(user => {
-                const fullName = [user.name, user.surname].filter(Boolean).join(' ').trim() || user.name;
-                const position = user.position ? ` (${user.position})` : '';
-                return {
-                    value: user.id.toString(),
-                    label: `${fullName}${position}`
-                };
-            });
         }
     },
     methods: {

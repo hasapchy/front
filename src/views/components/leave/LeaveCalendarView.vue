@@ -67,9 +67,9 @@
                                 class="leave-bar-continuous"
                                 :style="getContinuousLeaveBarStyle(leave, user.id)"
                                 @click.stop="handleLeaveClick(leave)"
-                                :title="`${leave.leaveTypeName} - ${leave.formatDateFrom()} - ${leave.formatDateTo()}`"
+                                :title="`${getLeaveTypeName(leave.leaveTypeName)} - ${leave.formatDateFrom()} - ${leave.formatDateTo()}`"
                             >
-                                <span class="leave-bar-text">{{ leave.leaveTypeName }}</span>
+                                <span class="leave-bar-text">{{ getLeaveTypeName(leave.leaveTypeName) }}</span>
                             </div>
                         </div>
                     </div>
@@ -86,7 +86,7 @@
                         class="w-5 h-5 rounded" 
                         :style="{ backgroundColor: leaveType.color || '#9CA3AF' }"
                     ></div>
-                    <span class="text-sm">{{ leaveType.name }}</span>
+                    <span class="text-sm">{{ getLeaveTypeName(leaveType.name) }}</span>
                 </div>
             </div>
         </div>
@@ -184,6 +184,9 @@ export default {
     mounted() {
     },
     methods: {
+        getLeaveTypeName(typeName) {
+            return typeName ? translateLeaveType(typeName, this.$t) : '';
+        },
         getLeavesForUserAndDay(userId, date) {
             const checkDay = dayjs(date).startOf('day');
             

@@ -1,7 +1,7 @@
 <template>
     <div class="kanban-board-wrapper">
         <!-- Батч операции -->
-        <div v-if="selectedIds.length > 0" class="flex items-center space-x-2 mb-4 p-3 bg-white rounded-lg shadow-sm">
+        <div v-if="selectedIds.length > 0 && !hideBatchActions" class="flex items-center space-x-2 mb-4 p-3 bg-white rounded-lg shadow-sm">
             <div class="text-sm text-gray-600">
                 <span>{{ $t('selected') }}: <strong>{{ selectedIds.length }}</strong></span>
             </div>
@@ -102,6 +102,10 @@ export default {
             default: ''
         },
         hasMore: {
+            type: Boolean,
+            default: false
+        },
+        hideBatchActions: {
             type: Boolean,
             default: false
         }

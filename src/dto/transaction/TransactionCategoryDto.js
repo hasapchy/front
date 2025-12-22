@@ -28,26 +28,6 @@ export default class TransactionCategoryDto {
         return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
     }
 
-    canBeDeleted() {
-        const protectedCategories = [
-            'Перемещение',
-            'Выплата зарплаты',
-            'Продажа',
-            'Предоплата',
-            'Оплата покупателя за услугу, товар',
-            'Прочий приход денег',
-            'Возврат денег покупателю',
-            'Оплата поставщикам товаров, запчастей',
-            'Прочий расход денег'
-        ];
-        
-        return !protectedCategories.includes(this.name);
-    }
-
-    canBeEdited() {
-        return this.canBeDeleted();
-    }
-
     static fromApiArray(dataArray) {
         return createFromApiArray(dataArray, data => {
             return new TransactionCategoryDto({

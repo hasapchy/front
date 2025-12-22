@@ -27,18 +27,18 @@
         </div>
 
         <!-- Касса (только для заказов) -->
-        <div v-if="!isProjectMode && showField('cashRegister') && order.cash?.name" class="mb-2">
+        <div v-if="!isProjectMode && showField('cashRegister') && (order.cashName || order.cash?.name)" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-cash-register text-gray-400 text-xs"></i>
-                <span class="truncate">{{ order.cash?.name }}</span>
+                <span class="truncate">{{ order.cashName || order.cash?.name || '-' }}</span>
             </div>
         </div>
 
         <!-- Склад (только для заказов) -->
-        <div v-if="!isProjectMode && showField('warehouse') && order.warehouse?.name" class="mb-2">
+        <div v-if="!isProjectMode && showField('warehouse') && (order.warehouseName || order.warehouse?.name)" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-warehouse text-gray-400 text-xs"></i>
-                <span class="truncate">{{ order.warehouse?.name }}</span>
+                <span class="truncate">{{ order.warehouseName || order.warehouse?.name || '-' }}</span>
             </div>
         </div>
 
@@ -68,10 +68,10 @@
         </div>
 
         <!-- Пользователь (только для заказов) -->
-        <div v-if="!isProjectMode && showField('user') && order.user?.name" class="mb-2">
+        <div v-if="!isProjectMode && showField('user') && (order.userName || order.user?.name)" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-user text-gray-400"></i>
-                <span class="truncate">{{ order.user?.name }}</span>
+                <span class="truncate">{{ order.userName || order.user?.name || '-' }}</span>
             </div>
         </div>
 
@@ -79,7 +79,7 @@
         <div v-if="!isProjectMode && order.projectId && showField('project')" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-folder text-purple-500 text-xs"></i>
-                <span class="truncate">{{ order.project?.name }}</span>
+                <span class="truncate">{{ order.projectName || order.project?.name || '-' }}</span>
             </div>
         </div>
 

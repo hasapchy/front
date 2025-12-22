@@ -8,7 +8,7 @@
                     <div class="column-drag-handle cursor-move text-white opacity-60 hover:opacity-100 transition-opacity">
                         <i class="fas fa-grip-vertical text-sm"></i>
                     </div>
-                    <h3 class="font-semibold text-white">{{ status.name }}</h3>
+                    <h3 class="font-semibold text-white">{{ getStatusName(status) }}</h3>
                     <div class="flex items-center space-x-1">
                         <span class="text-xs text-gray-800 bg-white px-2 py-0.5 rounded-full font-medium">
                             {{ orders.length }}
@@ -73,6 +73,7 @@
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanCard from './KanbanCard.vue';
 import debounce from 'lodash.debounce';
+import { translateOrderStatus, translateTaskStatus } from '@/utils/translationUtils';
 
 export default {
     name: 'KanbanColumn',
@@ -147,6 +148,13 @@ export default {
         }
     },
     methods: {
+        getStatusName(status) {
+            if (!status || !status.name) return '';
+            if (status.category) {
+                return translateOrderStatus(status.name, this.$t);
+            }
+            return translateTaskStatus(status.name, this.$t);
+        },
         formatAmount(amount) {
             try {
                 const roundingEnabled = this.$store.getters.roundingEnabled;

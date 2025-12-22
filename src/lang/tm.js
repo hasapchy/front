@@ -770,11 +770,11 @@ export default {
   currency: 'Walýuta',
   selectCurrency: 'Walýuta saýlaň',
   present: 'häzirki wagta çenli',
-  bonus: 'Premiýa tabşyr',
-  penalty: 'Jäza çykar',
-  advance: 'Awans ber',
-  accrueSalary: 'Mukafat hasapla',
-  paySalary: 'Mukafat töle',
+  bonus: 'Premiýa',
+  penalty: 'Jäza',
+  advance: 'Awans',
+  accrueSalary: 'Mukafat',
+  paySalary: 'Töleg',
   salaryDifferenceHelpTitle: 'Tapawudy näme?',
   salaryDifferenceHelp: 'Mukafat hasaplamak — bu işgäriň eden işi üçin pul (borç ýazgysy, işgär bize borçly). Mukafat tölemek — bu işgäre hakyky pul tölegi (borç däl, işgäriň borçyny azaldýar).',
   employeeClientNotFound: 'Işgär üçin müşderi tapylmady',
@@ -1072,6 +1072,36 @@ export default {
   systemCategoryProtected: 'Bu kategoriýa sistem goragyna eýe we üýtgedilip bilinmez',
   createdBy: 'Dörediji',
   
+  // Transaction Category Names
+  'transactionCategory.SALE': 'Satuw',
+  'transactionCategory.CUSTOMER_PAYMENT': 'Müşderiniň hyzmat üçin tölegi',
+  'transactionCategory.PREPAYMENT': 'Öňünden töleg',
+  'transactionCategory.OTHER_INCOME': 'Başga girdejiler',
+  'transactionCategory.CUSTOMER_REFUND': 'Müşderä pul yzyna gaýtaryş',
+  'transactionCategory.GOODS_PAYMENT': 'Harytlara töleg',
+  'transactionCategory.SALARY_PAYMENT': 'Mukafat tölegi',
+  'transactionCategory.TAX_PAYMENT': 'Salgyt tölegi',
+  'transactionCategory.RENT_PAYMENT': 'Iýe tölegi',
+  'transactionCategory.FUEL_TRANSPORT': 'Ýanýan madda, transport hyzmatlaryna töleg',
+  'transactionCategory.UTILITIES': 'Kommunal çykdajylara töleg',
+  'transactionCategory.ADVERTISING': 'Reklamaga töleg',
+  'transactionCategory.PHONE_INTERNET': 'Telefon we internet tölegi',
+  'transactionCategory.OTHER_EXPENSE': 'Başga çykdajylar',
+  'transactionCategory.FOOD': 'Iýmit',
+  'transactionCategory.LOGISTICS': 'Logistika',
+  'transactionCategory.TRANSFER_OUTCOME': 'Göçürmä (Çykdajy)',
+  'transactionCategory.TRANSFER_INCOME': 'Göçürmä (Girdejilik)',
+  'transactionCategory.NON_CASH': 'Nagt däl',
+  'transactionCategory.BONUS': 'Bonus',
+  'transactionCategory.BALANCE_ADJUSTMENT_EXP': 'Balans düzetmek',
+  'transactionCategory.BALANCE_ADJUSTMENT_INC': 'Balans düzetmek',
+  'transactionCategory.ADVANCE': 'Awans',
+  'transactionCategory.SALARY_ACCRUAL': 'Mukafat hasaplamak',
+  'transactionCategory.ORDER': 'Sargyt',
+  'transactionCategory.PREMIUM': 'Premiýa',
+  'transactionCategory.FINE': 'Jäza',
+  'transactionCategory.RENT_INCOME': 'Iýe tölegi',
+  
   // Payment types
   paymentType: 'Töleg görnüşi',
   
@@ -1102,6 +1132,8 @@ export default {
   pdfGenerated: 'PDF döredildi',
   errorGeneratingPdf: 'PDF döretmekde ýalňyşlyk',
   saveInvoiceFirst: 'Ilki hasaby saklaň',
+  printInvoice: 'Hasaby çap et',
+  selectPdfVariant: 'PDF görnüşini saýlaň',
   
   // Settings permissions
   settings: 'Sazlamalar',
@@ -1211,4 +1243,48 @@ export default {
   errorSavingTaskStatus: 'Wezipäniň ýagdaýyny ýatda saklamakda säwlik',
   errorDeletingTaskStatus: 'Wezipäniň ýagdaýyny pozmakda säwlik',
   deleteTaskStatus: 'Wezipäniň ýagdaýyny poz',
+  
+  // Units
+  'unit.METER': 'Metr',
+  'unit.SQUARE_METER': 'Kwadrat metr',
+  'unit.LITER': 'Litr',
+  'unit.KILOGRAM': 'Kilogramm',
+  'unit.GRAM': 'Gramm',
+  'unit.PIECE': 'Sany',
+  'unit.PACKAGE': 'Gaplama',
+  'unit.BOX': 'Gutul',
+  'unit.PALLET': 'Pallet',
+  'unit.SET': 'Komplekt',
+  'unit.ROLL': 'Rulon',
+  
+  // Task Statuses
+  'taskStatus.NEW': 'Täze',
+  'taskStatus.PENDING': 'Garaşylýar',
+  'taskStatus.IN_PROGRESS': 'Işde',
+  'taskStatus.COMPLETED': 'Tamamlandy',
+  'taskStatus.CANCELLED': 'Ýatyryldy',
+  
+  // Order Status Categories
+  'orderStatusCategory.NEW': 'Täze',
+  'orderStatusCategory.IN_PROGRESS': 'Işde',
+  'orderStatusCategory.READY': 'Taýýar',
+  'orderStatusCategory.COMPLETED': 'Tamamlandy',
+  'orderStatusCategory.CANCELLED': 'Ýatyryldy',
+  
+  // Order Statuses
+  'orderStatus.NEW': 'Täze',
+  'orderStatus.IN_PROGRESS': 'Işde',
+  'orderStatus.READY': 'Taýýar',
+  'orderStatus.COMPLETED': 'Tamamlandy',
+  'orderStatus.CANCELLED': 'Ýatyryldy',
+  
+  // Leave Types
+  'leaveType.TIME_OFF': 'Gün çykaryş',
+  'leaveType.VACATION': 'Dynç alyş',
+  'leaveType.SICK_LEAVE': 'Kesel',
+  'leaveType.ABSENCE': 'Ýokluk',
+  'leaveType.UNPAID_LEAVE': 'Tölegsiz dynç alyş',
+  
+  // Currencies
+  'currency.RUSSIAN_RUBLE': 'Rus rubly',
 }

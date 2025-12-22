@@ -1,7 +1,4 @@
 <template>
-    <BatchButton v-if="selectedIds.length && viewMode === 'table'" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
-        :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true"/>
-    
     <transition name="fade" mode="out-in">
         <!-- Табличный вид -->
         <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
@@ -29,6 +26,11 @@
                                 :disabled="!$store.getters.hasPermission('tasks_create')">
                             </PrimaryButton>
                             
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
+                                    :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
+                            </transition>
+                            
                             <FiltersContainer
                                 :has-active-filters="hasActiveFilters"
                                 :active-filters-count="getActiveFiltersCount()"
@@ -40,7 +42,7 @@
                                     <select v-model="statusFilter" class="w-full">
                                         <option value="all">{{ $t('allStatuses') }}</option>
                                         <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
-                                            {{ status.name }}
+                                            {{ translateTaskStatus(status.name, $t) }}
                                         </option>
                                     </select>
                                 </div>
@@ -144,7 +146,7 @@
                             <select v-model="statusFilter" class="w-full">
                                 <option value="all">{{ $t('allStatuses') }}</option>
                                 <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
-                                    {{ status.name }}
+                                    {{ translateTaskStatus(status.name, $t) }}
                                 </option>
                             </select>
                         </div>
@@ -265,6 +267,7 @@ import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vu
 import { markRaw, defineAsyncComponent } from 'vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import debounce from 'lodash.debounce';
+import { translateTaskStatus } from '@/utils/translationUtils';
 
 const TimelinePanel = defineAsyncComponent(() =>
     import("@/views/components/app/dialog/TimelinePanel.vue")
@@ -357,7 +360,7 @@ export default {
                     title: task.title,
                     description: task.description,
                     statusId: task.statusId || (status?.id),
-                    statusName: status?.name || '-',
+                    statusName: status?.name ? translateTaskStatus(status.name, this.$t) : '-',
                     deadline: task.deadline,
                     creator: task.creator,
                     supervisor: task.supervisor,
@@ -377,11 +380,29 @@ export default {
     },
     methods: {
         formatDatabaseDateTime(date) {
+        try {
             return formatDatabaseDateTime(date);
-        },
-        formatDatabaseDate(date) {
+        } catch (error) {
+            console.error('Ошибка форматирования даты:', error, date);
+            return date || '-';
+        }
+    },
+    formatDatabaseDate(date) {
+        try {
             return formatDatabaseDate(date);
-        },
+        } catch (error) {
+            console.error('Ошибка форматирования даты:', error, date);
+            return date || '-';
+        }
+    },
+
+        // formatDatabaseDateTime(date) {
+        //     return formatDatabaseDateTime(date);
+        // },
+        // formatDatabaseDate(date) {
+        //     return formatDatabaseDate(date);
+        // },
+        translateTaskStatus,
         async showModal(item = null) {
             this.savedScrollPosition = window.pageYOffset ?? document.documentElement.scrollTop;
             this.shouldRestoreScrollOnClose = true;
@@ -569,7 +590,7 @@ export default {
                         task.statusId = updateData.statusId;
                         const status = this.statuses.find(s => s.id === updateData.statusId);
                         if (status) {
-                            task.statusName = status.name;
+                            task.statusName = translateTaskStatus(status.name, this.$t);
                         }
                     }
                     

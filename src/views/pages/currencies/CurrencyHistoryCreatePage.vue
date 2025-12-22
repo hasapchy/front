@@ -6,7 +6,7 @@
 
         <div v-if="currency" class="mb-4 p-3 bg-blue-50 rounded-lg">
             <p class="text-sm text-blue-700">
-                <strong>{{ $t('currency') }}:</strong> {{ currency.symbol }} - {{ currency.name }}
+                <strong>{{ $t('currency') }}:</strong> {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }}
             </p>
             <p class="text-sm text-blue-700">
                 <strong>{{ $t('currentRate') }}:</strong> {{ currency.current_rate }}
@@ -86,6 +86,7 @@ import NotificationToast from '@/views/components/app/dialog/NotificationToast.v
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
+import { translateCurrency } from '@/utils/translationUtils';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
@@ -118,6 +119,7 @@ export default {
         });
     },
     methods: {
+        translateCurrency,
         getFormState() {
             return {
                 exchangeRate: this.exchangeRate,

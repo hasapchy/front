@@ -1591,13 +1591,6 @@ const store = createStore({
           label: "leaves",
           permission: "leaves_view_all",
         },
-        {
-          id: "leave-types",
-          to: "/leave_types",
-          icon: "fa-solid fa-list mr-2",
-          label: "leaveTypes",
-          permission: "leave_types_view_all",
-        },
       ];
 
       const defaultMain = [
@@ -1619,7 +1612,6 @@ const store = createStore({
         "services",
         "currency-history",
         "leaves",
-        "leave-types",
       ];
 
       const main = defaultMain

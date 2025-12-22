@@ -22,12 +22,10 @@
             </div>
         </div>
         <div class="mt-4">
-            <label>{{ $t('assignUsers') }}</label>
-            <CheckboxFilter
-                v-if="assignableUsers.length"
-                v-model="selectedUsers"
-                :options="userOptions"
-                :placeholder="'all'"
+            <UserSearch
+                v-model:selectedUsers="selectedUsers"
+                :multiple="true"
+                :filterUsers="userHasCashAccess"
             />
         </div>
     </div>
@@ -56,11 +54,11 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
+import UserSearch from '@/views/components/app/search/UserSearch.vue';
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { PrimaryButton, AlertDialog, CheckboxFilter },
+    components: { PrimaryButton, AlertDialog, UserSearch },
     props: {
         editingItem: { type: CashRegisterDto, required: false, default: null }
     },

@@ -30,7 +30,7 @@
                         <option value="">{{ $t('no') }}</option>
                         <template v-if="currencies.length">
                             <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
-                                {{ currency.symbol }} - {{ currency.name }}
+                                {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }}
                             </option>
                         </template>
                     </select>
@@ -43,27 +43,6 @@
                 <small class="text-gray-500">{{ $t('exchangeRateHelp') }}</small>
             </div>
 
-            <div>
-                <div class="flex justify-between items-center mb-2">
-                    <label>{{ $t('assignUsers') }}</label>
-                    <div v-if="users != null && users.length > 0">
-                        <PrimaryButton :onclick="toggleAllUsers" :is-info="!allUsersSelected"
-                            :is-light="allUsersSelected"
-                            :icon="allUsersSelected ? 'fas fa-times' : 'fas fa-check-double'" class="text-xs py-1 px-2"
-                            :title="allUsersSelected ? $t('deselectAll') : $t('selectAll')">
-                        </PrimaryButton>
-                    </div>
-                </div>
-                <div v-if="users != null && users.length != 0" class="flex flex-wrap gap-2">
-                    <label v-for="user in users" :key="user.id"
-                        class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-                        <input type="checkbox" :value="user.id.toString()" v-model="selectedUsers"
-                            :id="'user-' + user.id" />
-                        <span class="text-black">{{ user.name }}</span>
-                    </label>
-                </div>
-
-            </div>
         </div>
         <div v-if="currentTab === 'files' && editingItem && canViewProjectFiles">
             <FileUploader ref="fileUploader" :files="editingItem ? editingItem.getFormattedFiles() : []"
@@ -109,6 +88,7 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import AppController from '@/api/AppController';
+import { translateCurrency } from '@/utils/translationUtils';
 
 import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
 import ProjectContractsTab from '@/views/pages/projects/ProjectContractsTab.vue';
@@ -132,10 +112,8 @@ export default {
             date: this.editingItem && this.editingItem.date ? this.formatDatabaseDateTimeForInput(this.editingItem.date)
                 : getCurrentLocalDateTime(),
             description: this.editingItem ? this.editingItem.description : '',
-            selectedUsers: [],
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
-            users: [],
             currencies: [],
             saveLoading: false,
             deleteDialog: false,
@@ -190,9 +168,6 @@ export default {
             }
 
             return currency.exchange_rate?.toFixed(6) || '1.000000';
-        },
-        allUsersSelected() {
-            return this.users && this.users.length > 0 && this.selectedUsers.length === this.users.length;
         }
     },
     created() {
@@ -202,18 +177,13 @@ export default {
     },
     mounted() {
         this.$nextTick(async () => {
-            await Promise.all([
-                this.fetchUsers(),
-                this.fetchCurrencies()
-            ]);
-
-
+            await this.fetchCurrencies();
             this.saveInitialState();
         });
     },
     methods: {
         formatDatabaseDateTimeForInput,
-        
+        translateCurrency,
         clearForm() {
             this.name = '';
             this.budget = 0;
@@ -222,7 +192,6 @@ export default {
             this.date = getCurrentLocalDateTime();
             this.description = '';
             this.selectedClient = null;
-            this.selectedUsers = [];
             this.editingItemId = null;
             this.currentTab = 'info';
             this.resetFormChanges(); // Сбрасываем состояние изменений
@@ -241,8 +210,7 @@ export default {
                 exchangeRate: this.exchangeRate,
                 date: this.date,
                 description: this.description,
-                selectedClient: this.selectedClient?.id || null,
-                selectedUsers: [...this.selectedUsers]
+                selectedClient: this.selectedClient?.id || null
             };
         },
         async fetchCurrencies() {
@@ -281,36 +249,6 @@ export default {
                 this.exchangeRate = null;
             }
         },
-        async fetchUsers() {
-            if (this.$store.getters.usersForCurrentCompany && this.$store.getters.usersForCurrentCompany.length > 0) {
-                this.users = this.$store.getters.usersForCurrentCompany;
-            } else {
-                await this.$store.dispatch('loadUsers');
-                this.users = this.$store.getters.usersForCurrentCompany;
-            }
-
-            if (this.editingItem && Array.isArray(this.editingItem.users)) {
-                const availableUserIds = this.users.map(u => u.id.toString());
-                this.selectedUsers = this.editingItem.getUserIds().filter(id => availableUserIds.includes(id));
-            } else if (!this.editingItem) {
-                this.selectAllUsers();
-            }
-        },
-        selectAllUsers() {
-            if (this.users && this.users.length > 0) {
-                this.selectedUsers = this.users.map(user => user.id.toString());
-            }
-        },
-        deselectAllUsers() {
-            this.selectedUsers = [];
-        },
-        toggleAllUsers() {
-            if (this.allUsersSelected) {
-                this.deselectAllUsers();
-            } else {
-                this.selectAllUsers();
-            }
-        },
         async save() {
             if (this.uploading) {
                 alert(this.$t('waitForFileUpload'));
@@ -336,8 +274,7 @@ export default {
                     name: this.name,
                     date: this.date ? dayjs(this.date).format('YYYY-MM-DD HH:mm:ss') : null,
                     description: this.description || null,
-                    client_id: this.selectedClient?.id,
-                    users: this.selectedUsers
+                    client_id: this.selectedClient?.id
                 };
 
                 // Добавляем поля бюджета только если у пользователя есть права
@@ -502,13 +439,6 @@ export default {
                 this.closeDeleteFileDialog();
             }
         },
-        // ✅ Обработчик смены компании - перезагружаем пользователей с фильтрацией по новой компании
-        async handleCompanyChanged(companyId) {
-            // Очищаем выбранных пользователей, так как они могут быть из другой компании
-            this.selectedUsers = [];
-            // Перезагружаем пользователей с новой фильтрацией
-            await this.fetchUsers();
-        },
     },
 
     beforeUnmount() {
@@ -544,7 +474,6 @@ export default {
                         : this.getCurrentLocalDateTime();
                     this.description = newEditingItem.description || '';
                     this.selectedClient = newEditingItem.client || null;
-                    this.selectedUsers = newEditingItem.getUserIds() || [];
                     this.editingItemId = newEditingItem.id || null;
                     
                     // Всегда открываем вкладку "info" при открытии проекта
@@ -554,16 +483,8 @@ export default {
                     this.clearForm();
                     this.currentTab = 'info'; // Сбрасываем вкладку и при закрытии
                 }
-                this.$nextTick(async () => {
+                this.$nextTick(() => {
                     this.saveInitialState();
-                    // ✅ Если открываем проект для редактирования, перезагружаем пользователей
-                    // чтобы отфильтровать их по текущей компании
-                    if (newEditingItem) {
-                        await this.fetchUsers();
-                    } else if (this.users && this.users.length > 0 && this.selectedUsers.length === 0) {
-                        // Дополнительная проверка: если это создание нового проекта и пользователи загружены, выбираем всех
-                        this.selectedUsers = this.users.map(user => user.id.toString());
-                    }
                 });
             },
             deep: true,

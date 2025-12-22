@@ -89,8 +89,8 @@
             <select v-model="categoryId"
                 :disabled="fieldConfig('category').readonly || fieldConfig('category').enforcedValue !== undefined || fieldConfig('category').enforcedByType">
                 <option value="">{{ $t('no') }}</option>
-                <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">
-                    {{ cat.type ? '✅' : '🔺' }} {{ cat.name }}
+                <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id" :disabled="isCategoryDisabled(cat)">
+                    {{ cat.type ? '✅' : '🔺' }} {{ translateTransactionCategory(cat.name, $t) }}
                 </option>
             </select>
         </div>
@@ -156,6 +156,7 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import { roundValue, formatCurrency } from '@/utils/numberUtils';
 import AppController from '@/api/AppController';
+import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 
 
 export default {
@@ -273,25 +274,40 @@ export default {
             }
         },
         filteredCategories() {
-            const wanted = this.type === 'income' ? 1 : 0;
-            let filtered = this.allCategories.filter(cat => cat.type === wanted);
-            
+            let filtered = this.allCategories;
             const categoryConfig = this.fieldConfig('category');
+            const currentCategoryId = this.categoryId ? parseInt(this.categoryId) : null;
             
-            if (categoryConfig.excludedIds && Array.isArray(categoryConfig.excludedIds)) {
-                filtered = filtered.filter(cat => {
-                    if (categoryConfig.excludedIds.includes(cat.id) && cat.id !== this.categoryId) {
-                        return false;
-                    }
-                    return true;
-                });
+            if (this.type === 'income' || this.type === 'outcome') {
+                const wanted = this.type === 'income' ? 1 : 0;
+                filtered = filtered.filter(cat => cat.type === wanted);
             }
             
             if (categoryConfig.allowedIds && Array.isArray(categoryConfig.allowedIds)) {
                 filtered = filtered.filter(cat => categoryConfig.allowedIds.includes(cat.id));
             }
             
+            if (categoryConfig.excludedIds && Array.isArray(categoryConfig.excludedIds)) {
+                filtered = filtered.filter(cat => {
+                    if (currentCategoryId && cat.id === currentCategoryId) {
+                        return true;
+                    }
+                    return !categoryConfig.excludedIds.includes(cat.id);
+                });
+            }
+            
             return filtered;
+        },
+        isCategoryDisabled() {
+            return (cat) => {
+                const categoryConfig = this.fieldConfig('category');
+                if (categoryConfig.excludedIds && Array.isArray(categoryConfig.excludedIds)) {
+                    if (categoryConfig.excludedIds.includes(cat.id) && cat.id !== this.categoryId) {
+                        return true;
+                    }
+                }
+                return false;
+            };
         },
         allProjects() {
             // ✅ Берем напрямую из Store - автоматически обновляется при изменениях
@@ -475,6 +491,7 @@ export default {
         });
     },
     methods: {
+        translateTransactionCategory,
         formatCurrency,
         ensureEditable(eventName = 'saved-error') {
             if (!this.isDeletedTransaction && !this.isSourceRestricted) {

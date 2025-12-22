@@ -122,7 +122,7 @@ export default {
             entityLoading: false,
             columnsConfig: [
                 { name: "id", label: "№", size: 60 },
-                { name: "dateUser", label: this.$t("date"), size: 120 },
+                { name: "dateUser", label: this.$t("dateUser"), size: 120 },
                 {
                     name: "operationType",
                     label: this.$t("type"),

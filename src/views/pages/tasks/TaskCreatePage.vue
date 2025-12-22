@@ -18,7 +18,7 @@
                 <label>{{ $t('status') }}</label>
                 <select v-model="statusId">
                     <option v-for="status in taskStatuses" :key="status.id" :value="status.id" >
-                        {{ status.name}}
+                        {{ translateTaskStatus(status.name, $t) }}
                     </option>
                 </select>
             </div>
@@ -42,23 +42,11 @@
             </div>
 
             <div>
-                <label class="required">{{ $t('supervisor') }}</label>
-                <select v-model="supervisorId" required>
-                    <option :value="null">{{ $t('select') }}</option>
-                    <option v-for="user in users" :key="user.id" :value="user.id">
-                        {{ user.name }}
-                    </option>
-                </select>
+                <UserSearch v-model:selectedUser="selectedSupervisor" :required="true" :label="$t('supervisor')" />
             </div>
 
             <div>
-                <label class="required">{{ $t('executor') }}</label>
-                <select v-model="executorId" required>
-                    <option :value="null">{{ $t('select') }}</option>
-                    <option v-for="user in users" :key="user.id" :value="user.id">
-                        {{ user.name }}
-                    </option>
-                </select>
+                <UserSearch v-model:selectedUser="selectedExecutor" :required="true" :label="$t('executor')" />
             </div>
         </div>
         
@@ -144,12 +132,14 @@ import NotificationToast from '@/views/components/app/dialog/NotificationToast.v
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
 import TimelinePanel from '@/views/components/app/dialog/TimelinePanel.vue';
+import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import TaskDto from '@/dto/task/TaskDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
 import dayjs from 'dayjs';
 import { formatDatabaseDateTimeForInput, getCurrentLocalDateTime } from '@/utils/dateUtils';
+import { translateTaskStatus } from '@/utils/translationUtils';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
@@ -160,7 +150,8 @@ export default {
         NotificationToast,
         TabBar,
         FileUploader,
-        TimelinePanel
+        TimelinePanel,
+        UserSearch
     },
     props: {
         editingItem: { type: Object, default: null }
@@ -177,14 +168,13 @@ export default {
             projectId: this.editingItem && this.editingItem.project 
                 ? this.editingItem.project.id 
                 : null,
-            supervisorId: this.editingItem && this.editingItem.supervisor 
-                ? this.editingItem.supervisor.id 
+            selectedSupervisor: this.editingItem && this.editingItem.supervisor 
+                ? { id: this.editingItem.supervisor.id } 
                 : null,
-            executorId: this.editingItem && this.editingItem.executor 
-                ? this.editingItem.executor.id 
+            selectedExecutor: this.editingItem && this.editingItem.executor 
+                ? { id: this.editingItem.executor.id } 
                 : null,
             editingItemId: this.editingItem ? this.editingItem.id : null,
-            users: [],
             projects: [],
             saveLoading: false,
             deleteDialog: false,
@@ -216,6 +206,12 @@ export default {
         taskStatuses() {
             return this.$store.getters.taskStatuses || [];
         },
+        supervisorId() {
+            return this.selectedSupervisor?.id || null;
+        },
+        executorId() {
+            return this.selectedExecutor?.id || null;
+        },
     },
     watch: {
         editingItem: {
@@ -229,8 +225,8 @@ export default {
                         ? formatDatabaseDateTimeForInput(newEditingItem.deadline)
                         : getCurrentLocalDateTime();
                     this.projectId = newEditingItem.project?.id || null;
-                    this.supervisorId = newEditingItem.supervisor?.id || null;
-                    this.executorId = newEditingItem.executor?.id || null;
+                    this.selectedSupervisor = newEditingItem.supervisor?.id ? { id: newEditingItem.supervisor.id } : null;
+                    this.selectedExecutor = newEditingItem.executor?.id ? { id: newEditingItem.executor.id } : null;
                     this.editingItemId = newEditingItem.id || null;
                     this.currentTab = 'info';
                 } else {
@@ -246,26 +242,23 @@ export default {
     },
     mounted() {
         this.$nextTick(async () => {
-            // Загружаем статусы задач, если еще не загружены
             if (!this.$store.getters.taskStatuses || this.$store.getters.taskStatuses.length === 0) {
                 await this.$store.dispatch('loadTaskStatuses');
             }
-            await Promise.all([
-                this.fetchUsers(),
-                this.fetchProjects()
-            ]);
+            await this.fetchProjects();
             this.saveInitialState();
         });
     },
     methods: {
+        translateTaskStatus,
         clearForm() {
             this.title = '';
             this.description = '';
             this.statusId = 1;
             this.deadline = getCurrentLocalDateTime();
             this.projectId = null;
-            this.supervisorId = null;
-            this.executorId = null;
+            this.selectedSupervisor = null;
+            this.selectedExecutor = null;
             this.editingItemId = null;
             this.currentTab = 'info';
             this.pendingFiles = []; // Очищаем pending файлы
@@ -276,15 +269,6 @@ export default {
                 return;
             }
             this.currentTab = tabName;
-        },
-        async fetchUsers() {
-            try {
-                const users = await UsersController.getListItems();
-                this.users = users || [];
-            } catch (error) {
-                console.error('Error fetching users:', error);
-                this.users = [];
-            }
         },
         async fetchProjects() {
             try {
@@ -755,8 +739,8 @@ export default {
                 statusId: this.statusId,
                 deadline: this.deadline,
                 projectId: this.projectId,
-                supervisorId: this.supervisorId,
-                executorId: this.executorId,
+                supervisorId: this.selectedSupervisor?.id || null,
+                executorId: this.selectedExecutor?.id || null,
             };
         },
     },
