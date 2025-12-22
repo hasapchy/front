@@ -1,5 +1,4 @@
 <template>
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="task_statuses" :columns-config="columnsConfig"
@@ -17,6 +16,11 @@
                         :columns="columns"
                         :toggleVisible="toggleVisible"
                         :log="log">
+                        <template #left>
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                            </transition>
+                        </template>
                         <template #gear="{ resetColumns, columns, toggleVisible, log }">
                             <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
                                 <ul>

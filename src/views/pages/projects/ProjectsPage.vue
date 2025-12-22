@@ -1,7 +1,4 @@
 <template>
-    <BatchButton v-if="selectedIds.length && viewMode === 'table'" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
-        :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
-    
     <transition name="fade" mode="out-in">
         <!-- Табличный вид -->
         <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
@@ -29,6 +26,11 @@
                                 :disabled="!$store.getters.hasPermission('projects_create')">
                             </PrimaryButton>
                             
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
+                                    :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
+                            </transition>
+                            
                             <FiltersContainer
                                 :has-active-filters="hasActiveFilters"
                                 :active-filters-count="getActiveFiltersCount()"
@@ -39,7 +41,7 @@
                                     <select v-model="statusFilter" class="w-full">
                                         <option value="">{{ $t('allStatuses') }}</option>
                                         <option v-for="status in statuses" :key="status.id" :value="status.id">
-                                            {{ status.name }}
+                                            {{ translateTaskStatus(status.name, $t) }}
                                         </option>
                                     </select>
                                 </div>
@@ -129,7 +131,7 @@
                             <select v-model="statusFilter" class="w-full">
                                 <option value="">{{ $t('allStatuses') }}</option>
                                 <option v-for="status in statuses" :key="status.id" :value="status.id">
-                                    {{ status.name }}
+                                    {{ translateTaskStatus(status.name, $t) }}
                                 </option>
                             </select>
                         </div>
@@ -228,6 +230,7 @@ import debounce from "lodash.debounce";
 import { eventBus } from '@/eventBus';
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
+import { translateTaskStatus } from '@/utils/translationUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin],
@@ -243,6 +246,7 @@ export default {
             clients: [],
             controller: ProjectController,
             cacheInvalidationType: 'projects',
+            deletePermission: 'projects_delete',
             savedSuccessText: this.$t('projectSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProject'),
             deletedSuccessText: this.$t('projectSuccessfullyDeleted'),
@@ -309,6 +313,7 @@ export default {
         eventBus.off('cache:invalidate', this.handleCacheInvalidate);
     },
     methods: {
+        translateTaskStatus,
         itemMapper(i, c) {
             switch (c) {
                 case 'users':
@@ -456,7 +461,7 @@ export default {
                         project.statusId = updateData.statusId;
                         const status = this.statuses.find(s => s.id === updateData.statusId);
                         if (status) {
-                            project.statusName = status.name;
+                            project.statusName = translateTaskStatus(status.name, this.$t);
                         }
                     }
                     

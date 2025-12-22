@@ -146,7 +146,7 @@ export class InvoicePdfGenerator {
       content: [
         // Заголовок
         {
-          text: `СЧЕТ № ${this.invoice.invoiceNumber} от ${invoiceDate}`,
+          text: `СЧЕТ от ${invoiceDate}`,
           style: 'header'
         },
         // Жирная линия разделитель
@@ -274,7 +274,7 @@ export class InvoicePdfGenerator {
       content: [
         // Заголовок
         {
-          text: `СЧЕТ № ${this.invoice.invoiceNumber} от ${invoiceDate}`,
+          text: `СЧЕТ от ${invoiceDate}`,
           style: 'header'
         },
         

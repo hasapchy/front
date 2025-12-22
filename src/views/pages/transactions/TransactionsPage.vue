@@ -3,7 +3,6 @@
     <TransactionsBalanceWrapper ref="balanceWrapper" :cash-register-id="cashRegisterId || null" :start-date="startDate"
         :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter"
         :source-filter="sourceFilter" @balance-click="handleBalanceClick" />
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable ref="draggableTable" table-key="admin.transactions" :columns-config="columnsConfig"
@@ -21,6 +20,11 @@
                                     icon="fas fa-plus"
                                     :disabled="!$store.getters.hasPermission('transactions_create')">
                                 </PrimaryButton>
+                                
+                                <transition name="fade">
+                                    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                                </transition>
+                                
                                 <FiltersContainer
                                     :has-active-filters="hasActiveFilters"
                                     :active-filters-count="getActiveFiltersCount()"
@@ -187,6 +191,7 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import { eventBus } from '@/eventBus';
 import searchMixin from '@/mixins/searchMixin';
+import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import filtersMixin from '@/mixins/filtersMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import TRANSACTION_FORM_PRESETS from '@/constants/transactionFormPresets';
@@ -200,6 +205,7 @@ export default {
             // selectedIds - из batchActionsMixin
             controller: TransactionController,
             cacheInvalidationType: 'transactions',
+            deletePermission: 'transactions_delete',
             showStatusSelect: false,
             allCashRegisters: [],
             cashRegisterId: '',
@@ -219,7 +225,7 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
-                { name: 'dateUser', label: 'date' },
+                { name: 'dateUser', label: 'dateUser' },
                 {
                     name: 'type',
                     label: 'type',
@@ -287,6 +293,7 @@ export default {
         eventBus.off('global-search', this.handleSearch);
     },
     methods: {
+        translateTransactionCategory,
         updateBalace() {
             // Обновляем баланс кассы и кредитов (один компонент для обоих)
             if (this.$refs.balanceWrapper) {
@@ -300,12 +307,9 @@ export default {
                 case 'cashName':
                     return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
                 case 'cashAmount':
-                    // Возвращаем числовое значение для сортировки (отображение через компонент TransactionAmountCell)
-                    // Учитываем знак: для прихода (type == 1) положительное, для расхода отрицательное
                     const isPositive = i.type == 1;
                     return parseFloat(i.cashAmount || 0) * (isPositive ? 1 : -1);
                 case 'origAmount':
-                    // Возвращаем числовое значение для сортировки (отображение через компонент TransactionAmountCell)
                     return parseFloat(i.origAmount || 0);
                 case 'exchangeRate':
                     if (!i.exchangeRate || i.origCurrencyId === i.cashCurrencyId) {
@@ -317,6 +321,8 @@ export default {
                     return search ? highlightMatches(i.note, search) : i.note;
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
+                case 'categoryName':
+                    return translateTransactionCategory(i.categoryName, this.$t) || '-';
                 default:
                     return i[c];
             }
@@ -482,22 +488,24 @@ export default {
                 return item && item.isTransfer != 1;
             });
 
-            const hasTransfers = this.selectedIds.length > nonTransferIds.length;
-
-            if (hasTransfers) {
-                this.showNotification(
-                    this.$t('cannotDeleteTransfers'),
-                    this.$t('transferTransactionsCannotBeDeleted'),
-                    true
-                );
-            }
-
             return [
                 {
                     label: "Удалить",
                     icon: "fas fa-trash",
                     type: "danger",
-                    action: nonTransferIds.length > 0 ? this.deleteItems : null,
+                    action: nonTransferIds.length > 0 ? () => {
+                        const hasTransfers = this.selectedIds.length > nonTransferIds.length;
+                        if (hasTransfers) {
+                            this.showNotification(
+                                this.$t('cannotDeleteTransfers'),
+                                this.$t('transferTransactionsCannotBeDeleted'),
+                                true
+                            );
+                        }
+                        if (nonTransferIds.length > 0) {
+                            this.deleteItems(nonTransferIds);
+                        }
+                    } : null,
                     disabled: this.loadingBatch || nonTransferIds.length === 0,
                 },
             ];

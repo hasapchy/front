@@ -894,7 +894,14 @@ export default {
   accrueSalary: 'Начислить зарплату',
   accrueSalaries: 'Начислить зарплаты',
   accrueSalariesForCompany: 'Начислить зарплаты сотрудникам компании',
+  accrueSalariesForSelected: 'Начислить зарплаты выбранным сотрудникам',
   paySalary: 'Выплатить зарплату',
+  paySalariesForSelected: 'Выплатить зарплаты выбранным сотрудникам',
+  accrueBonusesForSelected: 'Начислить премии выбранным сотрудникам',
+  issuePenaltiesForSelected: 'Выписать штрафы выбранным сотрудникам',
+  issueAdvancesForSelected: 'Выдать авансы выбранным сотрудникам',
+  pay: 'Выплатить',
+  issue: 'Выдать',
   salaryDifferenceHelpTitle: 'В чем разница?',
   salaryDifferenceHelp: 'Начисление зарплаты — это деньги за проделанную работу сотрудником (запись о долге, сотрудник нам должен). Выплата зарплаты — это фактическая выплата денег сотруднику (не в долг, уменьшает долг сотрудника).',
   employeeClientNotFound: 'Клиент для сотрудника не найден',
@@ -993,6 +1000,36 @@ export default {
   transactionCategories: 'Категории транзакций',
   systemCategoryProtected: 'Эта категория является системной и не может быть изменена',
   createdBy: 'Создал',
+  
+  // Transaction Category Names
+  'transactionCategory.SALE': 'Продажа',
+  'transactionCategory.CUSTOMER_PAYMENT': 'Оплата покупателя за услугу',
+  'transactionCategory.PREPAYMENT': 'Предоплата',
+  'transactionCategory.OTHER_INCOME': 'Прочий приход денег',
+  'transactionCategory.CUSTOMER_REFUND': 'Возврат денег покупателю',
+  'transactionCategory.GOODS_PAYMENT': 'Оплата товаров',
+  'transactionCategory.SALARY_PAYMENT': 'Выплата зарплаты',
+  'transactionCategory.TAX_PAYMENT': 'Выплата налогов',
+  'transactionCategory.RENT_PAYMENT': 'Оплата аренды',
+  'transactionCategory.FUEL_TRANSPORT': 'Оплата ГСМ, транспортных услуг',
+  'transactionCategory.UTILITIES': 'Оплата коммунальных расходов',
+  'transactionCategory.ADVERTISING': 'Оплата рекламы',
+  'transactionCategory.PHONE_INTERNET': 'Оплата телефона и интернета',
+  'transactionCategory.OTHER_EXPENSE': 'Прочий расход денег',
+  'transactionCategory.FOOD': 'Питание',
+  'transactionCategory.LOGISTICS': 'Логистика',
+  'transactionCategory.TRANSFER_OUTCOME': 'Перемещение (Расход)',
+  'transactionCategory.TRANSFER_INCOME': 'Перемещение (Приход)',
+  'transactionCategory.NON_CASH': 'Безналичный',
+  'transactionCategory.BONUS': 'Бонус',
+  'transactionCategory.BALANCE_ADJUSTMENT_EXP': 'Корректировка остатка',
+  'transactionCategory.BALANCE_ADJUSTMENT_INC': 'Корректировка остатка',
+  'transactionCategory.ADVANCE': 'Аванс',
+  'transactionCategory.SALARY_ACCRUAL': 'Начисление зарплаты',
+  'transactionCategory.ORDER': 'Заказ',
+  'transactionCategory.PREMIUM': 'Премия',
+  'transactionCategory.FINE': 'Штраф',
+  'transactionCategory.RENT_INCOME': 'Оплата нам за аренду',
   
   // Фразы для товаров
   createProduct: 'Товар',
@@ -1165,6 +1202,8 @@ export default {
   // Счета
   invoices: 'Счета',
   createInvoice: 'Создать счет',
+  printInvoice: 'Распечатать счет',
+  selectPdfVariant: 'Выберите вариант PDF',
   editInvoice: 'Редактировать счет',
   invoiceNumber: 'Номер счета',
   invoiceDate: 'Дата счета',
@@ -1442,4 +1481,47 @@ export default {
   errorSavingTaskStatus: 'Ошибка при сохранении статуса задачи',
   errorDeletingTaskStatus: 'Ошибка при удалении статуса задачи',
   deleteTaskStatus: 'Удалить статус задачи',
+  
+  // Units
+  'unit.METER': 'Метр',
+  'unit.SQUARE_METER': 'Квадратный метр',
+  'unit.LITER': 'Литр',
+  'unit.KILOGRAM': 'Килограмм',
+  'unit.GRAM': 'Грамм',
+  'unit.PIECE': 'Штука',
+  'unit.PACKAGE': 'Упаковка',
+  'unit.BOX': 'Коробка',
+  'unit.PALLET': 'Паллета',
+  'unit.SET': 'Комплект',
+  'unit.ROLL': 'Рулон',
+  
+  // Task Statuses
+  'taskStatus.PENDING': 'Ожидает',
+  'taskStatus.IN_PROGRESS': 'В работе',
+  'taskStatus.COMPLETED': 'Завершен',
+  'taskStatus.CANCELLED': 'Отменен',
+  
+  // Order Status Categories
+  'orderStatusCategory.NEW': 'Новые',
+  'orderStatusCategory.IN_PROGRESS': 'В работе',
+  'orderStatusCategory.READY': 'Готово',
+  'orderStatusCategory.COMPLETED': 'Завершено',
+  'orderStatusCategory.CANCELLED': 'Отменено',
+  
+  // Order Statuses
+  'orderStatus.NEW': 'Новый',
+  'orderStatus.IN_PROGRESS': 'В работе',
+  'orderStatus.READY': 'Готово',
+  'orderStatus.COMPLETED': 'Завершено',
+  'orderStatus.CANCELLED': 'Отменено',
+  
+  // Leave Types
+  'leaveType.TIME_OFF': 'Отгул',
+  'leaveType.VACATION': 'Отпуск',
+  'leaveType.SICK_LEAVE': 'Больничный',
+  'leaveType.ABSENCE': 'Прогул',
+  'leaveType.UNPAID_LEAVE': 'Отпуск без содержания',
+  
+  // Currencies
+  'currency.RUSSIAN_RUBLE': 'Российский рубль',
 }

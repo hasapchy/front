@@ -1,15 +1,19 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <PrimaryButton 
-            :onclick="() => { showModal(null) }" 
-            icon="fas fa-plus"
-            :disabled="!$store.getters.hasPermission('order_statuscategories_create')">
-        </PrimaryButton>
+        <div class="flex items-center gap-2">
+            <PrimaryButton 
+                :onclick="() => { showModal(null) }" 
+                icon="fas fa-plus"
+                :disabled="!$store.getters.hasPermission('order_statuscategories_create')">
+            </PrimaryButton>
+            <transition name="fade">
+                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+            </transition>
+        </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
             @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.order_status_categories" :columns-config="columnsConfig" :table-data="data.items"
@@ -45,6 +49,7 @@ import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import { translateOrderStatusCategory } from '@/utils/translationUtils';
 
 
 export default {
@@ -84,6 +89,7 @@ export default {
         this.fetchItems();
     },
     methods: {
+        translateOrderStatusCategory,
         itemMapper(i, c) {
             switch (c) {
                 case 'color':
@@ -93,6 +99,8 @@ export default {
                     return '-';
                 case 'createdAt':
                     return i.formatCreatedAt ? i.formatCreatedAt() : i.createdAt;
+                case 'name':
+                    return translateOrderStatusCategory(i.name, this.$t);
                 default:
                     return i[c];
             }

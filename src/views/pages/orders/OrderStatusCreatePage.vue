@@ -11,7 +11,7 @@
                 <select v-model="categoryId">
                     <option value="">{{ $t('selectStatusCategory') }}</option>
                     <option v-for="cat in allCategories" :key="cat.id" :value="cat.id">
-                        {{ cat.name }}
+                        {{ translateOrderStatusCategory(cat.name, $t) }}
                     </option>
                 </select>
                 <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showModal" />
@@ -52,6 +52,7 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import OrderStatusCategoryCreatePage from '@/views/pages/orders/OrderStatusCategoryCreatePage.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import { translateOrderStatusCategory, translateOrderStatus } from '@/utils/translationUtils';
 
 
 export default {
@@ -82,6 +83,8 @@ export default {
         });
     },
     methods: {
+        translateOrderStatusCategory,
+        translateOrderStatus,
         getFormState() {
             return {
                 name: this.name,

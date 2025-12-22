@@ -30,7 +30,7 @@
                         <option value="">{{ $t('no') }}</option>
                         <template v-if="currencies.length">
                             <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
-                                {{ currency.symbol }} - {{ currency.name }}
+                                {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }}
                             </option>
                         </template>
                     </select>
@@ -88,6 +88,7 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import AppController from '@/api/AppController';
+import { translateCurrency } from '@/utils/translationUtils';
 
 import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
 import ProjectContractsTab from '@/views/pages/projects/ProjectContractsTab.vue';
@@ -180,6 +181,7 @@ export default {
         });
     },
     methods: {
+        translateCurrency,
         clearForm() {
             this.name = '';
             this.budget = 0;

@@ -1,5 +1,4 @@
 <template>
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.sales" :columns-config="columnsConfig" :table-data="data.items"
@@ -25,6 +24,10 @@
                                 icon="fas fa-plus"
                                 :disabled="!$store.getters.hasPermission('sales_create')">
                             </PrimaryButton>
+                            
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                            </transition>
                             
                             <FiltersContainer
                                 :has-active-filters="hasActiveFilters"
@@ -144,6 +147,7 @@ export default {
             controller: SaleController,
             cacheInvalidationType: 'sales',
             showStatusSelect: false,
+            deletePermission: 'sales_delete',
             savedSuccessText: this.$t('saleRecordAdded'),
             savedErrorText: this.$t('errorSavingRecord'),
             deletedSuccessText: this.$t('recordSuccessfullyDeleted'),

@@ -194,8 +194,8 @@ export default {
           html: true
         },
         { 
-          name: 'created_at', 
-          label: this.$t('date'), 
+          name: 'dateUser', 
+          label: this.$t('dateUser'), 
           size: 180 
         }
       ]
@@ -275,8 +275,10 @@ export default {
           return this.getCategoryName(order)
         case 'products':
           return this.formatProducts(order.products)
-        case 'created_at':
-          return this.formatOrderDate(order.created_at)
+        case 'dateUser':
+          const dateStr = this.formatOrderDate(order.created_at)
+          const userName = order.user?.name || order.userName || '-'
+          return `${dateStr} / ${userName}`
         default:
           return order[columnName] || '-'
       }

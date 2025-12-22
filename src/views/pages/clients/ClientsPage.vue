@@ -1,5 +1,4 @@
 <template>
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="common.clients" :columns-config="columnsConfig" :table-data="data.items"
@@ -22,6 +21,11 @@
                         :columns="columns"
                         :toggleVisible="toggleVisible"
                         :log="log">
+                        <template #left>
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                            </transition>
+                        </template>
                         <template #filters-desktop>
                             <FiltersContainer
                                 :has-active-filters="hasActiveFilters"
@@ -134,6 +138,7 @@ export default {
         return {
             controller: ClientController,
             cacheInvalidationType: 'clients',
+            deletePermission: 'clients_delete',
             statusFilter: '',
             typeFilter: '',
             savedSuccessText: this.$t('clientSuccessfullyAdded'),

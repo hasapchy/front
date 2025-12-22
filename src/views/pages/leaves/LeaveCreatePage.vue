@@ -5,9 +5,9 @@
             <label class="required">{{ $t('leaveType') || 'Тип отпуска' }}</label>
             <select v-model="leaveTypeId" required>
                 <option value="">{{ $t('selectLeaveType') || 'Выберите тип отпуска' }}</option>
-                <option v-for="leaveType in allLeaveTypes" :key="leaveType.id" :value="leaveType.id">
-                    {{ leaveType.name }}
-                </option>
+                                        <option v-for="leaveType in allLeaveTypes" :key="leaveType.id" :value="leaveType.id">
+                                            {{ translateLeaveType(leaveType.name, $t) }}
+                                        </option>
             </select>
         </div>
         <div class="mt-4">
@@ -52,6 +52,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import { translateLeaveType } from '@/utils/translationUtils';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin],
@@ -86,6 +87,7 @@ export default {
         });
     },
     methods: {
+        translateLeaveType,
         getFormState() {
             return {
                 leaveTypeId: this.leaveTypeId,

@@ -224,7 +224,7 @@ export default {
         columnsConfig() {
             return [
                 { name: "id", label: "№", size: 60 },
-                { name: "dateUser", label: this.$t("date"), size: 120 },
+                { name: "dateUser", label: this.$t("dateUser"), size: 120 },
                 {
                     name: "sourceType", 
                     label: "Источник", 
@@ -316,7 +316,8 @@ export default {
                 case "note":
                     return i.note || '-';
                 case "categoryName":
-                    return i.categoryName || i.category_name || '-';
+                    const categoryName = i.categoryName || i.category_name || '';
+                    return categoryName ? this.$t(`transactionCategory.${categoryName}`, categoryName) : '-';
                 case "clientImpact":
                     // Возвращаем числовое значение для сортировки (отображение через компонент ClientImpactCell)
                     return parseFloat(i.amount || 0);

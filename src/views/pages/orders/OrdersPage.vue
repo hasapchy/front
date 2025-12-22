@@ -1,8 +1,4 @@
 <template>
-    <BatchButton v-if="selectedIds.length && viewMode === 'table'" :selected-ids="selectedIds"
-        :batch-actions="getBatchActions()" :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
-        :handle-change-status="handleChangeStatus" :show-status-select="true" />
-
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.orders" :columns-config="columnsConfig" :table-data="data.items"
@@ -18,6 +14,12 @@
                             <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
                                 :disabled="!$store.getters.hasPermission('orders_create')">
                             </PrimaryButton>
+                            
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
+                                    :batch-actions="getBatchActions()" :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
+                                    :handle-change-status="handleChangeStatus" :show-status-select="true" />
+                            </transition>
 
                             <FiltersContainer :has-active-filters="hasActiveFilters"
                                 :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
@@ -53,7 +55,7 @@
                                     <select v-model="statusFilter" class="w-full">
                                         <option value="">{{ $t('allStatuses') }}</option>
                                         <option v-for="status in statuses" :key="status.id" :value="status.id">
-                                            {{ status.name }}
+                                            {{ translateOrderStatus(status.name, $t) }}
                                         </option>
                                     </select>
                                 </div>
@@ -217,9 +219,16 @@
                 </template>
             </TableControlsBar>
 
+            <div v-if="selectedIds.length && viewMode === 'kanban'" class="mb-4">
+                <BatchButton :selected-ids="selectedIds"
+                    :batch-actions="getBatchActions()" :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
+                    :handle-change-status="handleChangeStatus" :show-status-select="true" />
+            </div>
+            
             <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :projects="projects" :selected-ids="selectedIds"
                 :loading="loading || kanbanLoadingMore" :currency-symbol="currencySymbol" :batch-status-id="batchStatusId"
-                :has-more="kanbanHasMore" @order-moved="handleOrderMoved" @card-dblclick="showModal"
+                :has-more="kanbanHasMore" :hide-batch-actions="true"
+                @order-moved="handleOrderMoved" @card-dblclick="showModal"
                 @card-select-toggle="toggleSelectRow" @column-select-toggle="handleColumnSelectToggle"
                 @batch-status-change="handleBatchStatusChangeFromToolbar" @batch-delete="() => deleteItems(selectedIds)"
                 @clear-selection="() => selectedIds = []" @load-more="loadMoreKanbanItems" />
@@ -246,7 +255,7 @@
     <SideModalDialog :showForm="invoiceModalDialog" :onclose="handleInvoiceModalClose">
         <InvoiceCreatePage v-if="invoiceModalDialog" ref="invoiceCreateForm" @saved="handleInvoiceSaved"
             @saved-error="handleInvoiceSavedError" @close-request="closeInvoiceModal"
-            :preselectedOrderIds="selectedIds" />
+            :preselectedOrderIds="selectedIds || []" />
     </SideModalDialog>
 
     <SideModalDialog :showForm="viewTransactionModal"
@@ -270,6 +279,9 @@
     <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
         :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
         @leave="deleteDialog = false" />
+    
+    <PrintInvoiceDialog :dialog="printInvoiceDialog" :loading="printInvoiceLoading"
+        @close="printInvoiceDialog = false" @print="handlePrintInvoice" />
 </template>
 
 <script>
@@ -300,6 +312,7 @@ import notificationMixin from "@/mixins/notificationMixin";
 import batchActionsMixin from "@/mixins/batchActionsMixin";
 import modalMixin from "@/mixins/modalMixin";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
+import { translateOrderStatus } from '@/utils/translationUtils';
 import { defineAsyncComponent } from "vue";
 import { eventBus } from "@/eventBus";
 import OrderPaymentFilter from "@/views/components/app/forms/OrderPaymentFilter.vue";
@@ -313,14 +326,16 @@ import { highlightMatches } from "@/utils/searchUtils";
 import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import KanbanFieldsButton from "@/views/components/app/kanban/KanbanFieldsButton.vue";
+import PrintInvoiceDialog from "@/views/components/app/dialog/PrintInvoiceDialog.vue";
+import printInvoiceMixin from "@/mixins/printInvoiceMixin";
 
 const TimelinePanel = defineAsyncComponent(() =>
     import("@/views/components/app/dialog/TimelinePanel.vue")
 );
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, draggable: VueDraggableNext },
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin, printInvoiceMixin],
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, draggable: VueDraggableNext },
     data() {
         return {
             viewMode: 'kanban',
@@ -372,6 +387,8 @@ export default {
             kanbanFetchPerPage: 50,
             kanbanHasMore: false,
             kanbanLoadingMore: false,
+            printInvoiceDialog: false,
+            printInvoiceLoading: false,
         };
     },
     created() {
@@ -414,6 +431,7 @@ export default {
         }
     },
     methods: {
+        translateOrderStatus,
         itemMapper(i, c) {
             const search = this.searchQuery;
 
@@ -428,7 +446,8 @@ export default {
                     const phone = i.client.phones?.[0]?.phone;
                     return phone ? `<div>${name} (<span>${phone}</span>)</div>` : name;
                 case "statusName":
-                    return i.status?.name || i.statusName || "-";
+                    const statusName = i.status?.name || i.statusName || '';
+                    return statusName ? translateOrderStatus(statusName, this.$t) : '-';
                 case "cashName":
                     return i.cash?.name || i.cashName || "-";
                 case "warehouseName":
@@ -677,6 +696,40 @@ export default {
             this.invoiceModalDialog = true;
         },
 
+        showPrintInvoiceDialog() {
+            if (this.selectedIds.length === 0) {
+                this.showNotification(this.$t('error'), this.$t('selectOrdersFirst'), true);
+                return;
+            }
+
+            this.printInvoiceDialog = true;
+        },
+
+        async handlePrintInvoice(variants) {
+            this.printInvoiceLoading = true;
+            try {
+                const items = this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
+                const selectedOrders = items.filter(order => 
+                    order && 
+                    this.selectedIds.includes(order.id) && 
+                    order.products?.length > 0
+                );
+                
+                if (!selectedOrders.length) {
+                    this.showNotification(this.$t('error'), 'В выбранных заказах нет товаров', true);
+                    return;
+                }
+                
+                await this.printInvoiceFromOrders(selectedOrders, variants);
+                this.printInvoiceDialog = false;
+            } catch (error) {
+                console.error('Ошибка в handlePrintInvoice:', error);
+                this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf') || 'Ошибка генерации PDF', true);
+            } finally {
+                this.printInvoiceLoading = false;
+            }
+        },
+
         getBatchActions() {
             return [
                 {
@@ -684,6 +737,13 @@ export default {
                     icon: "fas fa-file-invoice",
                     type: "info",
                     action: this.createInvoiceFromOrders,
+                    disabled: false,
+                },
+                {
+                    label: this.$t('printInvoice'),
+                    icon: "fas fa-print",
+                    type: "info",
+                    action: this.showPrintInvoiceDialog,
                     disabled: false,
                 },
                 {
@@ -770,7 +830,7 @@ export default {
                         const status = this.statuses.find(s => s.id === updateData.statusId);
                         if (status) {
                             order.status = status;
-                            order.statusName = status.name;
+                            order.statusName = translateOrderStatus(status.name, this.$t);
                         }
                     }
 

@@ -40,7 +40,7 @@
                         v-for="currency in currencies" 
                         :key="currency.id" 
                         :value="currency.id">
-                        {{ currency.name }} ({{ currency.symbol || '' }})
+                        {{ translateCurrency(currency.name, $t) }} ({{ currency.symbol || '' }})
                     </option>
                 </select>
             </div>
@@ -85,6 +85,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UsersController from '@/api/UsersController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
+import { translateCurrency } from '@/utils/translationUtils';
 
 export default {
     mixins: [notificationMixin, getApiErrorMessage],
@@ -166,6 +167,7 @@ export default {
         });
     },
     methods: {
+        translateCurrency,
         async fetchCurrencies() {
             try {
                 if (this.$store.getters.currencies && this.$store.getters.currencies.length > 0) {

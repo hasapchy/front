@@ -1,5 +1,4 @@
 <template>
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.transfers" :columns-config="columnsConfig" :table-data="data.items"
@@ -7,9 +6,6 @@
                 :onItemClick="(i) => { showModal(i) }">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
-                        :show-create-button="true"
-                        :on-create-click="() => { showModal(null) }"
-                        :create-button-disabled="!$store.getters.hasPermission('transfers_create')"
                         :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
                         :on-page-change="fetchItems"
@@ -18,6 +14,17 @@
                         :columns="columns"
                         :toggleVisible="toggleVisible"
                         :log="log">
+                        <template #left>
+                            <PrimaryButton 
+                                :onclick="() => { showModal(null) }" 
+                                icon="fas fa-plus"
+                                :disabled="!$store.getters.hasPermission('transfers_create')">
+                            </PrimaryButton>
+                            
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                            </transition>
+                        </template>
                         <template #gear="{ resetColumns, columns, toggleVisible, log }">
                             <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
                                 <ul>
@@ -121,7 +128,7 @@ export default {
                 },
                 { name: 'cashToName', label: 'destination' },
                 { name: 'note', label: 'note' },
-                { name: 'dateUser', label: 'date' },
+                { name: 'dateUser', label: 'dateUser' },
             ]
         }
     },

@@ -231,6 +231,8 @@ export default {
   detailedPdf: 'Detailed',
   downloadSelected: 'Download Selected',
   print: 'Print',
+  printInvoice: 'Print Invoice',
+  selectPdfVariant: 'Select PDF variant',
   
   // Performance monitoring
   performanceMonitor: 'Monitoring',
@@ -331,6 +333,36 @@ export default {
   transactionCategories: 'Transaction Categories',
   systemCategoryProtected: 'This category is system-protected and cannot be modified',
   createdBy: 'Created by',
+  
+  // Transaction Category Names
+  'transactionCategory.SALE': 'Sale',
+  'transactionCategory.CUSTOMER_PAYMENT': 'Customer Payment',
+  'transactionCategory.PREPAYMENT': 'Prepayment',
+  'transactionCategory.OTHER_INCOME': 'Other Income',
+  'transactionCategory.CUSTOMER_REFUND': 'Customer Refund',
+  'transactionCategory.GOODS_PAYMENT': 'Goods Payment',
+  'transactionCategory.SALARY_PAYMENT': 'Salary Payment',
+  'transactionCategory.TAX_PAYMENT': 'Tax Payment',
+  'transactionCategory.RENT_PAYMENT': 'Rent Payment',
+  'transactionCategory.FUEL_TRANSPORT': 'Fuel & Transport',
+  'transactionCategory.UTILITIES': 'Utilities',
+  'transactionCategory.ADVERTISING': 'Advertising',
+  'transactionCategory.PHONE_INTERNET': 'Phone & Internet',
+  'transactionCategory.OTHER_EXPENSE': 'Other Expense',
+  'transactionCategory.FOOD': 'Food',
+  'transactionCategory.LOGISTICS': 'Logistics',
+  'transactionCategory.TRANSFER_OUTCOME': 'Transfer (Outcome)',
+  'transactionCategory.TRANSFER_INCOME': 'Transfer (Income)',
+  'transactionCategory.NON_CASH': 'Non-Cash',
+  'transactionCategory.BONUS': 'Bonus',
+  'transactionCategory.BALANCE_ADJUSTMENT_EXP': 'Balance Adjustment',
+  'transactionCategory.BALANCE_ADJUSTMENT_INC': 'Balance Adjustment',
+  'transactionCategory.ADVANCE': 'Advance',
+  'transactionCategory.SALARY_ACCRUAL': 'Salary Accrual',
+  'transactionCategory.ORDER': 'Order',
+  'transactionCategory.PREMIUM': 'Premium',
+  'transactionCategory.FINE': 'Fine',
+  'transactionCategory.RENT_INCOME': 'Rent Income',
   
   // Payment types
   paymentType: 'Payment Type',
@@ -555,4 +587,47 @@ export default {
     errorSavingTaskStatus: 'Error saving task status',
     errorDeletingTaskStatus: 'Error deleting task status',
     deleteTaskStatus: 'Delete Task Status',
+    
+    // Units
+    'unit.METER': 'Meter',
+    'unit.SQUARE_METER': 'Square Meter',
+    'unit.LITER': 'Liter',
+    'unit.KILOGRAM': 'Kilogram',
+    'unit.GRAM': 'Gram',
+    'unit.PIECE': 'Piece',
+    'unit.PACKAGE': 'Package',
+    'unit.BOX': 'Box',
+    'unit.PALLET': 'Pallet',
+    'unit.SET': 'Set',
+    'unit.ROLL': 'Roll',
+    
+    // Task Statuses
+    'taskStatus.PENDING': 'Pending',
+    'taskStatus.IN_PROGRESS': 'In Progress',
+    'taskStatus.COMPLETED': 'Completed',
+    'taskStatus.CANCELLED': 'Cancelled',
+    
+    // Order Status Categories
+    'orderStatusCategory.NEW': 'New',
+    'orderStatusCategory.IN_PROGRESS': 'In Progress',
+    'orderStatusCategory.READY': 'Ready',
+    'orderStatusCategory.COMPLETED': 'Completed',
+    'orderStatusCategory.CANCELLED': 'Cancelled',
+    
+    // Order Statuses
+    'orderStatus.NEW': 'New',
+    'orderStatus.IN_PROGRESS': 'In Progress',
+    'orderStatus.READY': 'Ready',
+    'orderStatus.COMPLETED': 'Completed',
+    'orderStatus.CANCELLED': 'Cancelled',
+    
+    // Leave Types
+    'leaveType.TIME_OFF': 'Time Off',
+    'leaveType.VACATION': 'Vacation',
+    'leaveType.SICK_LEAVE': 'Sick Leave',
+    'leaveType.ABSENCE': 'Absence',
+    'leaveType.UNPAID_LEAVE': 'Unpaid Leave',
+    
+    // Currencies
+    'currency.RUSSIAN_RUBLE': 'Russian Ruble',
 }

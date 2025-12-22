@@ -1,13 +1,17 @@
 <template>
     <div class="flex justify-between items-center mb-4">
-        <PrimaryButton :onclick="() => { showModal(null) }"
-            :disabled="!$store.getters.hasPermission('order_categories_create')" icon="fas fa-plus">{{ $t('addOrderCategory') }}
-        </PrimaryButton>
+        <div class="flex items-center gap-2">
+            <PrimaryButton :onclick="() => { showModal(null) }"
+                :disabled="!$store.getters.hasPermission('order_categories_create')" icon="fas fa-plus">{{ $t('addOrderCategory') }}
+            </PrimaryButton>
+            <transition name="fade">
+                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+            </transition>
+        </div>
         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
             :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
             @changePage="fetchItems" @perPageChange="handlePerPageChange" />
     </div>
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.order_categories" :columns-config="columnsConfig" :table-data="data.items"

@@ -58,7 +58,7 @@ export default {
                 { name: "number", label: this.$t("contractNumber"), size: 150 },
                 { name: "amount", label: this.$t("amount"), size: 120, html: true },
                 { name: "description", label: this.$t("description"), size: 200 },
-                { name: "date", label: this.$t("date"), size: 100 },
+                { name: "dateUser", label: this.$t("dateUser"), size: 100 },
                 { name: "returned", label: this.$t("status"), size: 100, html: true },
                 { name: "note", label: this.$t("note"), size: 200 },
                 { name: "files", label: this.$t("files"), size: 80, html: true },
@@ -78,6 +78,9 @@ export default {
                     },
                     formatDate() {
                         return contract.formatDate();
+                    },
+                    formatDateUser() {
+                        return `${contract.formatDate()} / ${contract.user?.name || contract.userName || "-"}`;
                     },
                     formatReturnedStatus() {
                         const status = contract.getReturnedStatus();
@@ -104,8 +107,8 @@ export default {
                     return item.formatAmount();
                 case "description":
                     return item.note || '-';
-                case "date":
-                    return item.formatDate();
+                case "dateUser":
+                    return item.formatDateUser ? item.formatDateUser() : `${item.formatDate()} / -`;
                 case "returned":
                     return item.formatReturnedStatus();
                 case "note":
