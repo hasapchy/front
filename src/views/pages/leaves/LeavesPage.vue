@@ -243,7 +243,7 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
-                { name: 'leaveTypeName', label: 'leaveType' },
+                { name: 'leaveTypeName', label: 'leaveType', html: true },
                 { name: 'userName', label: 'user' },
                 { name: 'dateFrom', label: 'dateFrom' },
                 { name: 'dateTo', label: 'dateTo' },
@@ -306,6 +306,14 @@ export default {
     methods: {
         itemMapper(i, c) {
             switch (c) {
+                case 'leaveTypeName':
+                    const color = i.leaveType?.color || '#3B82F6';
+                    return `
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded border border-gray-300" style="background-color: ${color}"></div>
+                            <span>${i.leaveTypeName}</span>
+                        </div>
+                    `;
                 case 'dateFrom':
                     return i.formatDateFrom();
                 case 'dateTo':

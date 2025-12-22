@@ -107,7 +107,7 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'name', label: 'name' },
-                { name: 'color', label: 'color', size: 100 },
+                { name: 'color', label: 'color', size: 100, html: true },
                 { name: 'createdAt', label: 'creationDate' }
             ]
         }
@@ -121,7 +121,10 @@ export default {
                 case 'createdAt':
                     return i.formatCreatedAt();
                 case 'color':
-                    return i.color || '-';
+                    if (i.color) {
+                        return `<div style="width: 20px; height: 20px; background-color: ${i.color}; border-radius: 4px; display: inline-block; border: 1px solid #ddd;"></div>`;
+                    }
+                    return '-';
                 default:
                     return i[c];
             }
