@@ -200,26 +200,23 @@
         <div v-if="isSupervisor && order?.statusId === 3 && isTaskMode" class="flex gap-2 mt-2">
             <button
                 @click.stop="updateTaskStatus('COMPLETED')"
-                class="px-3 py-1 text-xs font-semibold  text-white rounded transition"
-                :style="{ backgroundColor: taskStatusColors?.COMPLETED || 'green' }"
+                class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-green-500 hover:bg-green-600"
             >
-                {{ $t('accept') || 'Принять' }}
+            <i class="fas fa-check"></i>
             </button>
             <button
                 @click.stop="updateTaskStatus('IN_PROGRESS')"
-                class="px-3 py-1 text-xs font-semibold  text-white rounded transition"
-                :style="{ backgroundColor: taskStatusColors?.IN_PROGRESS || 'red' }"
+                class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-red-500 hover:bg-red-600"
             >
-                {{ $t('decline') || 'Отклонить' }}
+            <i class="fas fa-times"></i>
             </button>
         </div>
         <div v-if="isExecutor && order?.statusId === 2 && isTaskMode" class="flex gap-2 mt-2">
             <button
                 @click.stop="updateTaskStatus('PENDING')"
-                class="px-3 py-1 text-xs font-semibold  text-white rounded transition"
-                :style="{ backgroundColor: taskStatusColors?.PENDING || 'green' }"
+                class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-green-500 hover:bg-green-600"
                 >
-                {{ $t('complete') || 'Завершить задачу' }}
+                <i class="fas fa-check"></i>
             </button>
         </div>
     </div>
@@ -270,14 +267,6 @@ export default {
         isSupervisor() {
             const user = this.$store.getters.user;
             return user?.id === this.order?.supervisor?.id;
-        },
-        taskStatusColors() {
-            const statuses = this.$store.getters.taskStatuses;
-            if (!Array.isArray(statuses)) return {};
-            return statuses.reduce((acc, s) => {
-            acc[s.name] = s.color;
-            return acc;
-            }, {});
         },
     },
     methods: {
