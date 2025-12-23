@@ -52,8 +52,10 @@
                         :is-selected="selectedIds.includes(order.id)"
                         :is-project-mode="isProjectMode"
                         :is-task-mode="isTaskMode"
+                        :statusesForColor="status"
                         @dblclick="handleCardDoubleClick"
                         @select-toggle="handleCardSelectToggle"
+                        @status-updated="handleStatusUpdated"
                     />
                 </div>
             </draggable>
@@ -119,7 +121,7 @@ export default {
             default: false
         }
     },
-    emits: ['change', 'card-dblclick', 'card-select-toggle', 'column-select-toggle', 'load-more'],
+    emits: ['change', 'card-dblclick', 'card-select-toggle', 'column-select-toggle', 'load-more', 'status-updated'],
     computed: {
         statusColor() {
             const hex = this.status.category?.color || this.status.color;
@@ -173,6 +175,9 @@ export default {
         },
         handleCardSelectToggle(orderId) {
             this.$emit('card-select-toggle', orderId);
+        },
+        handleStatusUpdated() {
+            this.$emit('status-updated');
         },
         handleSelectAll() {
             if (this.isAllSelected) {

@@ -28,12 +28,12 @@
                 <draggable :list="sortedColumns" group="columns" :animation="200" ghost-class="ghost-column"
                     drag-class="dragging-column" handle=".column-drag-handle" @change="handleColumnReorder"
                     class="kanban-columns flex space-x-4">
-                    <KanbanColumn v-for="column in sortedColumns" :key="column.id" :status="column"
+                        <KanbanColumn v-for="column in sortedColumns" :key="column.id" :status="column"
                         :orders="column.orders" :selected-ids="selectedIds" :disabled="loading" :is-task-mode="isTaskMode"
                         :currency-symbol="currencySymbol" :is-project-mode="isProjectMode" :has-more="hasMore"
                         :loading="loading" @change="handleOrderMove($event, column.id)"
                         @card-dblclick="handleCardDoubleClick" @card-select-toggle="handleCardSelectToggle"
-                        @column-select-toggle="handleColumnSelectToggle" @load-more="$emit('load-more')" />
+                        @column-select-toggle="handleColumnSelectToggle" @status-updated="$emit('status-updated')" @load-more="$emit('load-more')" />
                 </draggable>
             </div>
         </div>
@@ -110,7 +110,7 @@ export default {
             default: false
         }
     },
-    emits: ['order-moved', 'card-dblclick', 'card-select-toggle', 'column-select-toggle', 'batch-status-change', 'batch-delete', 'clear-selection', 'load-more'],
+    emits: ['order-moved', 'card-dblclick', 'card-select-toggle', 'column-select-toggle', 'batch-status-change', 'batch-delete', 'clear-selection', 'load-more', 'status-updated'],
     data() {
         return {
             columnOrder: [],

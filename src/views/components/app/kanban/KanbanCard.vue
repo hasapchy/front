@@ -196,12 +196,39 @@
                 </span>
             </div> -->
         </div>
+        <!-- Кнопки только для задач со статусом PENDING и только для админов -->
+        <div v-if="isSupervisor && order?.statusId === 3 && isTaskMode" class="flex gap-2 mt-2">
+            <button
+                @click.stop="updateTaskStatus('COMPLETED')"
+                class="px-3 py-1 text-xs font-semibold  text-white rounded transition"
+                :style="{ backgroundColor: taskStatusColors?.COMPLETED || 'green' }"
+            >
+                {{ $t('accept') || 'Принять' }}
+            </button>
+            <button
+                @click.stop="updateTaskStatus('IN_PROGRESS')"
+                class="px-3 py-1 text-xs font-semibold  text-white rounded transition"
+                :style="{ backgroundColor: taskStatusColors?.IN_PROGRESS || 'red' }"
+            >
+                {{ $t('decline') || 'Отклонить' }}
+            </button>
+        </div>
+        <div v-if="isExecutor && order?.statusId === 2 && isTaskMode" class="flex gap-2 mt-2">
+            <button
+                @click.stop="updateTaskStatus('PENDING')"
+                class="px-3 py-1 text-xs font-semibold  text-white rounded transition"
+                :style="{ backgroundColor: taskStatusColors?.PENDING || 'green' }"
+                >
+                {{ $t('complete') || 'Завершить задачу' }}
+            </button>
+        </div>
     </div>
 </template>
 
 <script>
 import { dayjsDateTime } from '@/utils/dateUtils';
 import { formatNumber } from '@/utils/numberUtils';
+import TaskController from '@/api/TaskController';
 
 export default {
     name: 'KanbanCard',
@@ -221,17 +248,61 @@ export default {
         isTaskMode: {
             type: Boolean,
             default: false
-        }
-    },
-    emits: ['dblclick', 'select-toggle'],
+        },
+    },  
+    emits: ['dblclick', 'select-toggle', 'status-updated'],
     computed: {
         kanbanFields() {
             // ✅ Определить режим: если есть поля creator/supervisor/executor - это задачи
             const mode = this.isProjectMode ? 'projects' : (this.isTaskMode ? 'tasks' : 'orders');
             return this.$store.state.kanbanCardFields[mode] || {};
-        }
+        },
+        isAdmin() {
+            const user = this.$store.getters.user;
+            console.log(user);
+            return user?.is_admin === true;  // или просто: return !!user?.is_admin;
+        },
+        isExecutor() {
+            const user = this.$store.getters.user;
+            console.log(this.order?.executor);
+            return user?.id === this.order?.executor?.id;
+        },
+        isSupervisor() {
+            const user = this.$store.getters.user;
+            return user?.id === this.order?.supervisor?.id;
+        },
+        taskStatusColors() {
+            const statuses = this.$store.getters.taskStatuses;
+            if (!Array.isArray(statuses)) return {};
+            return statuses.reduce((acc, s) => {
+            acc[s.name] = s.color;
+            return acc;
+            }, {});
+        },
     },
     methods: {
+
+        async updateTaskStatus(targetStatusName) {
+            try {
+            // берем ID статуса из store
+            const statuses = this.$store.getters.taskStatuses || [];
+            const target = statuses.find(s => s.name === targetStatusName);
+            if (!target) {
+                console.warn('Status not found:', targetStatusName);
+                return;
+            }
+
+            await TaskController.updateItem(this.order.id, { status_id: target.id });
+            this.$emit('status-updated'); // пусть родитель перезагрузит данные
+            } catch (e) {
+            console.error('Cannot update task status', e);
+            this.$store.dispatch('showNotification', {
+                title: this.$t('error') || 'Ошибка',
+                message: this.$t('errorUpdatingStatus') || 'Не удалось обновить статус задачи',
+                isDanger: true,
+            });
+            }
+        },
         showField(fieldName) {
             return this.kanbanFields[fieldName] !== false;
         },

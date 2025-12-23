@@ -14,7 +14,7 @@
                 <textarea v-model="description" rows="4" :placeholder="$t('enterDescription')"></textarea>
             </div>
 
-            <div>
+            <div class="hidden">
                 <label>{{ $t('status') }}</label>
                 <select v-model="statusId">
                     <option v-for="status in taskStatuses" :key="status.id" :value="status.id" >

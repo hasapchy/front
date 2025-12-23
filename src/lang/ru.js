@@ -1501,6 +1501,9 @@ export default {
   'taskStatus.IN_PROGRESS': 'В работе',
   'taskStatus.COMPLETED': 'Завершен',
   'taskStatus.CANCELLED': 'Отменен',
+  accept: 'Принять',
+  decline: 'Отклонить',
+  complete: 'Завершить',
   
   // Order Status Categories
   'orderStatusCategory.NEW': 'Новые',

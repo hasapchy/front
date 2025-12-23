@@ -573,6 +573,9 @@ export default {
     select: 'Select',
     errorDeletingTask: 'Error deleting task',
     taskStatuses: 'Task Statuses',
+    accept: 'Accept',
+    decline: 'Decline',
+    complete: 'Complete',
     
     // Search
     enterClientNameOrNumber: 'Enter client name or number',

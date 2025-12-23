@@ -213,6 +213,7 @@
                 @batch-status-change="handleBatchStatusChangeFromToolbar"
                 @batch-delete="() => deleteItems(selectedIds)"
                 @clear-selection="() => selectedIds = []"
+                @status-updated="fetchItems"
             />
         </div>
 

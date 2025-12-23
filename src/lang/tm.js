@@ -1263,6 +1263,9 @@ export default {
   'taskStatus.IN_PROGRESS': 'Işde',
   'taskStatus.COMPLETED': 'Tamamlandy',
   'taskStatus.CANCELLED': 'Ýatyryldy',
+  accept: 'Kabul et',
+  decline: 'Ýatyr',
+  complete: 'Tamamla',
   
   // Order Status Categories
   'orderStatusCategory.NEW': 'Täze',
