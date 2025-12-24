@@ -10,9 +10,6 @@
                 @selectionChange="selectedIds = $event">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
-                        :show-create-button="true"
-                        :on-create-click="() => showModal(null)"
-                        :create-button-disabled="!selectedCurrency || !$store.getters.hasPermission('currency_history_create')"
                         :show-filters="true"
                         :has-active-filters="hasActiveFilters"
                         :active-filters-count="getActiveFiltersCount()"
@@ -26,6 +23,11 @@
                         :toggleVisible="toggleVisible"
                         :log="log">
                         <template #left>
+                            <PrimaryButton 
+                                :onclick="() => showModal(null)"
+                                icon="fas fa-plus"
+                                :disabled="!selectedCurrency || !$store.getters.hasPermission('currency_history_create')">
+                            </PrimaryButton>
                             <transition name="fade">
                                 <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
                             </transition>
