@@ -163,6 +163,23 @@
                 <span class="truncate">{{ order.executor.name || order.executor }}</span>
             </div>
         </div>
+        
+        <!-- Приоритет (для задач) -->
+        <div v-if="isTaskMode && showField('priority') && order.priority" class="mb-2">
+            <div class="flex items-center space-x-1 text-xs text-gray-600">
+                <span class="text-sm">{{ getPriorityIcons() }}</span>
+                <!-- <span class="truncate">{{ getPriorityLabel() }}</span> -->
+            </div>
+        </div>
+
+        <!-- Сложность (для задач) -->
+        <div v-if="isTaskMode && showField('complexity') && order.complexity" class="mb-2">
+            <div class="flex items-center space-x-1 text-xs text-gray-600">
+                <span class="text-sm">{{ getComplexityIcons() }}</span>
+                <!-- <span class="truncate">{{ getComplexityLabel() }}</span> -->
+            </div>
+        </div>
+
 
         <!-- Бюджет проекта (только для проектов с permission) -->
         <div v-if="isProjectMode && $store.getters.hasPermission('settings_project_budget_view') && order.budget && showField('budget')" class="mt-3 pt-3 border-t border-gray-100">
@@ -454,7 +471,56 @@ export default {
                 return this.order.productsHtmlList();
             }
             return '';
-        }
+        },
+        // В methods секцию KanbanCard.vue добавить:
+
+        getPriorityIcons() {
+            if (typeof this.order?.getPriorityIcons === 'function') {
+                return this.order.getPriorityIcons();
+            }
+            const icons = {
+                'low': '🔥',
+                'normal': '🔥🔥',
+                'high': '🔥🔥🔥'
+            };
+            return icons[this.order?.priority] || icons['low'];
+        },
+
+        getPriorityLabel() {
+            if (typeof this.order?.getPriorityLabel === 'function') {
+                return this.order.getPriorityLabel();
+            }
+            const labels = {
+                'low': 'низкий',
+                'normal': 'нормальный',
+                'high': 'высокий'
+            };
+            return labels[this.order?.priority] || labels['low'];
+        },
+
+        getComplexityIcons() {
+            if (typeof this.order?.getComplexityIcons === 'function') {
+                return this.order.getComplexityIcons();
+            }
+            const icons = {
+                'simple': '🧠',
+                'normal': '🧠🧠',
+                'complex': '🧠🧠🧠'
+            };
+            return icons[this.order?.complexity] || icons['normal'];
+        },
+
+        getComplexityLabel() {
+            if (typeof this.order?.getComplexityLabel === 'function') {
+                return this.order.getComplexityLabel();
+            }
+            const labels = {
+                'simple': 'простая',
+                'normal': 'нормальная',
+                'complex': 'сложная'
+            };
+            return labels[this.order?.complexity] || labels['normal'];
+        },
     }
 };
 </script>

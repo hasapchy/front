@@ -1472,6 +1472,8 @@ export default {
   creator: 'Создатель',
   select: 'Выбрать',
   errorDeletingTask: 'Ошибка при удалении задачи',
+  priority: 'Приоритет',
+  complexity: 'Сложность',
   taskStatuses: 'Статусы задач',
   createTaskStatus: 'Создать статус задачи',
   editTaskStatus: 'Редактировать статус задачи',

@@ -800,6 +800,7 @@ export default {
   
   // Поиск и клиенты
   enterClientNameOrNumber: 'Müşderi adyny ýa-da nomerini ýazyň',
+  enterUserNameOrPosition: 'Ady, familiýasy ýa-da wezipesini ýazyň',
   minimum3Characters: 'Iň az 3 simwol',
   notFound: 'Tapylmady',
   clientOwesUs: 'Müşderi bize borçly',
@@ -1234,6 +1235,8 @@ export default {
   creator: 'Dörediji',
   select: 'Saýla',
   errorDeletingTask: 'Wezipe pozulmakda ýalňyşlyk',
+  priority: 'Prioritet',
+  complexity: 'Kynlyk',
   taskStatuses: 'Wezipeler ýagdaýlary',
   createTaskStatus: 'Wezipäniň ýagdaýyny döret',
   editTaskStatus: 'Wezipäniň ýagdaýyny redaktirlemek',

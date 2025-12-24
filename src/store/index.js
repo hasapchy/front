@@ -379,6 +379,8 @@ const store = createStore({
         creator: true,
         supervisor: true,
         executor: true,
+        priority: true,
+        complexity: true,
       },
     },
     // Режимы просмотра для разных страниц

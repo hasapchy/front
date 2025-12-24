@@ -368,6 +368,8 @@ export default {
                     executor: task.executor,
                     project: task.project,
                     created_at: task.createdAt,
+                    priority: task.priority,
+                    complexity: task.complexity,
                 };
             });
         }
