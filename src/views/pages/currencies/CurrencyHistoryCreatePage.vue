@@ -197,7 +197,7 @@ export default {
 
         clearForm() {
             this.exchangeRate = '';
-            this.startDate = new Date().toISOString().split('T')[0];
+            this.startDate = new Date().toString().split('T')[0];
             this.endDate = '';
             this.isCurrent = true;
             this.resetFormChanges();
@@ -237,7 +237,7 @@ export default {
             handler(newEditingItem) {
                 if (newEditingItem) {
                     this.exchangeRate = newEditingItem.exchangeRate || '';
-                    this.startDate = newEditingItem.startDate ? newEditingItem.startDate.split('T')[0] : new Date().toISOString().split('T')[0];
+                    this.startDate = newEditingItem.startDate ? newEditingItem.startDate.split('T')[0] : new Date().toString().split('T')[0];
                     this.endDate = newEditingItem.endDate ? newEditingItem.endDate.split('T')[0] : '';
                     this.isCurrent = !newEditingItem.endDate;
                     this.editingItemId = newEditingItem.id;

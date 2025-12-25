@@ -68,6 +68,7 @@ import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
+import { formatDatabaseDate } from '@/utils/dateUtils';
 import CompaniesCreatePage from './CompaniesCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -116,6 +117,9 @@ export default {
     },
 
     methods: {
+        formatDatabaseDate(date) {
+            return formatDatabaseDate(date);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
@@ -143,7 +147,7 @@ export default {
                     const logoUrl = item.logoUrl ? item.logoUrl() : '/logo.png';
                     return `<img src="${logoUrl}" alt="${item.name}" class="w-8 h-8 object-contain rounded">`;
                 case 'createdAt':
-                    return new Date(item.createdAt).toLocaleDateString();
+                    return this.formatDatabaseDate(item.createdAt);
                 default:
                     return item[column];
             }

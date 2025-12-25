@@ -4,8 +4,7 @@
             <DraggableTable table-key="admin.users" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="(i) => showModal(i)">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar :show-create-button="true" :on-create-click="() => showModal(null)"
-                        :create-button-disabled="!$store.getters.hasPermission('users_create')" :show-pagination="true"
+                    <TableControlsBar :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
                         :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
                         :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
@@ -93,6 +92,7 @@ import SalaryAccrualModal from '@/views/components/app/SalaryAccrualModal.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
+import { formatDatabaseDate, formatDatabaseDateTime } from '@/utils/dateUtils';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
@@ -138,6 +138,12 @@ export default {
     },
 
     methods: {
+        formatDatabaseDate(date) {
+            return formatDatabaseDate(date);
+        },
+        formatDatabaseDateTime(date) {
+            return formatDatabaseDateTime(date);
+        },
         async fetchItems(page = 1, silent = false) {
             if (!silent) {
                 this.loading = true;
@@ -163,9 +169,9 @@ export default {
                 case 'isAdmin':
                     return item.isAdmin ? '✅' : '❌';
                 case 'createdAt':
-                    return new Date(item.createdAt).toLocaleDateString();
+                    return this.formatDatabaseDate(item.createdAt);
                 case 'lastLoginAt':
-                    return item.lastLoginAt ? new Date(item.lastLoginAt).toLocaleDateString() + ' ' + new Date(item.lastLoginAt).toLocaleTimeString() : '—';
+                    return item.lastLoginAt ? this.formatDatabaseDateTime(item.lastLoginAt) : '—';
                 case 'roles':
                     return item.roles && item.roles.length > 0 ? item.roles.join(', ') : '—';
                 case 'companies':

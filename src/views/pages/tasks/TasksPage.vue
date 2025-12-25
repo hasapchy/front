@@ -213,6 +213,7 @@
                 @batch-status-change="handleBatchStatusChangeFromToolbar"
                 @batch-delete="() => deleteItems(selectedIds)"
                 @clear-selection="() => selectedIds = []"
+                @status-updated="fetchItems"
             />
         </div>
 
@@ -258,6 +259,7 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
+import { formatDatabaseDateTime, formatDatabaseDate } from '@/utils/dateUtils';
 import { highlightMatches } from '@/utils/searchUtils';
 import searchMixin from '@/mixins/searchMixin';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
@@ -378,6 +380,29 @@ export default {
         await this.fetchItems();
     },
     methods: {
+        formatDatabaseDateTime(date) {
+        try {
+            return formatDatabaseDateTime(date);
+        } catch (error) {
+            console.error('Ошибка форматирования даты:', error, date);
+            return date || '-';
+        }
+    },
+    formatDatabaseDate(date) {
+        try {
+            return formatDatabaseDate(date);
+        } catch (error) {
+            console.error('Ошибка форматирования даты:', error, date);
+            return date || '-';
+        }
+    },
+
+        // formatDatabaseDateTime(date) {
+        //     return formatDatabaseDateTime(date);
+        // },
+        // formatDatabaseDate(date) {
+        //     return formatDatabaseDate(date);
+        // },
         translateTaskStatus,
         async showModal(item = null) {
             this.savedScrollPosition = window.pageYOffset ?? document.documentElement.scrollTop;
@@ -430,9 +455,9 @@ export default {
                 case 'executor':
                     return i.executor?.name || '-';
                 case 'deadline':
-                    return i.deadline ? new Date(i.deadline).toLocaleDateString() : '-';
+                    return i.deadline ? this.formatDatabaseDateTime(i.deadline) : '-';
                 case 'created_at':
-                    return i.createdAt ? new Date(i.createdAt).toLocaleDateString() : '-';
+                    return i.createdAt ? this.formatDatabaseDate(i.createdAt) : '-';
                 default:
                     return i[c];
             }

@@ -13,7 +13,7 @@
                     <input type="datetime-local" v-model="formData.invoice_date" 
                         class="w-full p-2 border rounded h-10"
                         :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                        :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
+                        :min="!$store.getters.hasPermission('settings_edit_any_date') ? this.getCurrentLocalDateTime() : null" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('status') }}</label>
@@ -128,6 +128,7 @@ import { eventBus } from "@/eventBus";
 import { generateInvoicePdf, InvoicePdfGenerator } from "@/utils/pdfUtils";
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
+import { formatDatabaseDateTime } from '@/utils/dateUtils';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
@@ -157,7 +158,15 @@ export default {
             editingItemId: this.editingItem?.id || null,
             formData: {
                 client_id: null,
-                invoice_date: new Date().toISOString().slice(0, 16),
+                invoice_date: (() => {
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    return `${year}-${month}-${day}T${hours}:${minutes}`;
+                })(),
                 status: 'new',
                 note: '',
                 order_ids: [],
@@ -206,7 +215,7 @@ export default {
             this.selectedClient = this.editingItem.client || null;
             
             this.formData = {
-                invoice_date: this.editingItem.invoiceDate ? this.formatDateTimeForInput(this.editingItem.invoiceDate) : new Date().toISOString().slice(0, 16),
+                invoice_date: this.editingItem.invoiceDate ? this.formatDateTimeForInput(this.editingItem.invoiceDate) : this.getCurrentLocalDateTime(),
                 status: this.editingItem.status || 'new',
                 note: this.editingItem.note,
                 order_ids: this.editingItem.orders ? this.editingItem.orders.map(o => o.id) : []
@@ -381,7 +390,7 @@ export default {
             this.editingItemId = null;
             this.selectedClient = null;
             this.formData = {
-                invoice_date: new Date().toISOString().slice(0, 16), // Дата и время
+                invoice_date: this.getCurrentLocalDateTime(), // Дата и время
                 status: 'new',
                 note: '',
                 order_ids: [],
@@ -538,10 +547,31 @@ export default {
             });
         },
 
+        formatDatabaseDateTimeForInput(date) {
+            if (!date) return '';
+            // Конвертируем дату из базы данных в формат datetime-local без UTC смещения
+            const dateObj = new Date(date);
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const hours = String(dateObj.getHours()).padStart(2, '0');
+            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        },
+
         formatDateTimeForInput(dateString) {
-            if (!dateString) return new Date().toISOString().slice(0, 16);
-            const date = new Date(dateString);
-            return date.toISOString().slice(0, 16);
+            if (!dateString) return this.getCurrentLocalDateTime();
+            return this.formatDatabaseDateTimeForInput(dateString);
+        },
+
+        getCurrentLocalDateTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
         }
     },
     watch: {

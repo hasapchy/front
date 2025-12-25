@@ -3,7 +3,7 @@
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editTaskStatus') : $t('createTaskStatus') }}</h2>
         <div>
             <label class="required">{{ $t('statusName') }}</label>
-            <input type="text" v-model="name">
+            <input type="text" v-model="name" :disabled="allowEditStatus(id)">
         </div>
         <div class="mt-4">
             <label>{{ $t('statusColor') }}</label>
@@ -45,6 +45,7 @@ export default {
     },
     data() {
         return {
+            id: this.editingItem ? this.editingItem.id : null,
             name: this.editingItem ? this.editingItem.name : '',
             color: this.editingItem ? this.editingItem.color : '#6c757d',
             editingItemId: this.editingItem ? this.editingItem.id : null,
@@ -59,8 +60,15 @@ export default {
         });
     },
     methods: {
+        allowEditStatus(id){
+            return this.ArrayItem(id);
+        },
+        ArrayItem(id) {
+            return [1,2,3,4,5].includes(id);
+        },
         getFormState() {
             return {
+                id: this.id,
                 name: this.name,
                 color: this.color
             };
@@ -105,6 +113,7 @@ export default {
             this.deleteLoading = false;
         },
         clearForm() {
+            this.id = null;
             this.name = '';
             this.color = '#6c757d';
             this.editingItemId = null;
@@ -117,10 +126,12 @@ export default {
         editingItem: {
             handler(newEditingItem) {
                 if (newEditingItem) {
+                    this.id = newEditingItem.id || null;
                     this.name = newEditingItem.name || '';
                     this.color = newEditingItem.color || '#6c757d';
                     this.editingItemId = newEditingItem.id || null;
                 } else {
+                    this.id = null;
                     this.name = '';
                     this.color = '#6c757d';
                     this.editingItemId = null;

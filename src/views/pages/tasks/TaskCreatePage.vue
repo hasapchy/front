@@ -14,7 +14,7 @@
                 <textarea v-model="description" rows="4" :placeholder="$t('enterDescription')"></textarea>
             </div>
 
-            <div>
+            <div class="hidden">
                 <label>{{ $t('status') }}</label>
                 <select v-model="statusId">
                     <option v-for="status in taskStatuses" :key="status.id" :value="status.id" >
@@ -138,6 +138,7 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
 import dayjs from 'dayjs';
+import { formatDatabaseDateTimeForInput, getCurrentLocalDateTime } from '@/utils/dateUtils';
 import { translateTaskStatus } from '@/utils/translationUtils';
 
 export default {
@@ -161,8 +162,8 @@ export default {
             description: this.editingItem ? this.editingItem.description : '',
             statusId: this.editingItem ? (this.editingItem.statusId || this.editingItem.status?.id) : null,
             deadline: this.editingItem && this.editingItem.deadline
-                ? dayjs(this.editingItem.deadline).format('YYYY-MM-DDTHH:mm')
-                : '',
+                ? formatDatabaseDateTimeForInput(this.editingItem.deadline)
+                : getCurrentLocalDateTime(),
             minDeadline: dayjs().format('YYYY-MM-DDTHH:mm'),
             projectId: this.editingItem && this.editingItem.project 
                 ? this.editingItem.project.id 
@@ -221,8 +222,8 @@ export default {
                     this.description = newEditingItem.description || '';
                     this.statusId = newEditingItem.statusId || newEditingItem.status?.id || null;
                     this.deadline = newEditingItem.deadline
-                        ? dayjs(newEditingItem.deadline).format('YYYY-MM-DDTHH:mm')
-                        : '';
+                        ? formatDatabaseDateTimeForInput(newEditingItem.deadline)
+                        : getCurrentLocalDateTime();
                     this.projectId = newEditingItem.project?.id || null;
                     this.selectedSupervisor = newEditingItem.supervisor?.id ? { id: newEditingItem.supervisor.id } : null;
                     this.selectedExecutor = newEditingItem.executor?.id ? { id: newEditingItem.executor.id } : null;
@@ -249,11 +250,12 @@ export default {
         });
     },
     methods: {
+        translateTaskStatus,
         clearForm() {
             this.title = '';
             this.description = '';
             this.statusId = 1;
-            this.deadline = '';
+            this.deadline = getCurrentLocalDateTime();
             this.projectId = null;
             this.selectedSupervisor = null;
             this.selectedExecutor = null;
