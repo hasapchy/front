@@ -718,7 +718,7 @@ export default {
   view: 'Просмотр',
   create: 'Создание',
   update: 'Редактирование',
-  delete: 'Удалить',
+  delete: 'Удаление',
   all: 'Все',
   
   // Группы прав
@@ -888,14 +888,14 @@ export default {
   currency: 'Валюта',
   selectCurrency: 'Выберите валюту',
   present: 'по н.в.',
-  bonus: 'Премия',
-  penalty: 'Штраф',
-  advance: 'Аванс',
-  accrueSalary: 'Зарплата',
+  bonus: 'Начислить премию',
+  penalty: 'Выписать штраф',
+  advance: 'Выдать аванс',
+  accrueSalary: 'Начислить зарплату',
   accrueSalaries: 'Начислить зарплаты',
   accrueSalariesForCompany: 'Начислить зарплаты сотрудникам компании',
   accrueSalariesForSelected: 'Начислить зарплаты выбранным сотрудникам',
-  paySalary: 'Выплата',
+  paySalary: 'Выплатить зарплату',
   paySalariesForSelected: 'Выплатить зарплаты выбранным сотрудникам',
   accrueBonusesForSelected: 'Начислить премии выбранным сотрудникам',
   issuePenaltiesForSelected: 'Выписать штрафы выбранным сотрудникам',
@@ -1496,7 +1496,6 @@ export default {
   'unit.ROLL': 'Рулон',
   
   // Task Statuses
-  'taskStatus.NEW': 'Новый',
   'taskStatus.PENDING': 'Ожидает',
   'taskStatus.IN_PROGRESS': 'В работе',
   'taskStatus.COMPLETED': 'Завершен',

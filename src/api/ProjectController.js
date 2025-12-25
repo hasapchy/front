@@ -79,6 +79,38 @@ export default class ProjectController extends BaseController {
     );
   }
 
+  static async downloadFiles(projectId, filePaths) {
+    return super.handleRequest(
+      async () => {
+        const response = await api.post(
+          `/projects/${projectId}/download-files`,
+          { paths: filePaths },
+          {
+            responseType: 'blob',
+          }
+        );
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        const contentDisposition = response.headers['content-disposition'];
+        let filename = `project_${projectId}_files.zip`;
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+          if (filenameMatch) {
+            filename = filenameMatch[1];
+          }
+        }
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        return true;
+      },
+      "Ошибка при скачивании файлов проекта:"
+    );
+  }
+
   static async getBalanceHistory(projectId, timestamp = null) {
     return super.handleRequest(
       async () => {

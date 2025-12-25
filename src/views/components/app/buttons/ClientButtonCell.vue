@@ -38,7 +38,6 @@ export default {
             if (!this.client) return '';
             
             const name = this.client.fullName();
-            // Убрали отображение телефона, но поиск по нему работает на бэкенде
             const text = name;
             
             if (this.searchQuery && this.searchQuery.trim()) {

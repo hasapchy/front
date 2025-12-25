@@ -61,7 +61,6 @@ export default {
                 { name: "dateUser", label: this.$t("dateUser"), size: 100 },
                 { name: "returned", label: this.$t("status"), size: 100, html: true },
                 { name: "note", label: this.$t("note"), size: 200 },
-                { name: "files", label: this.$t("files"), size: 80, html: true },
             ],
         };
     },
@@ -86,11 +85,6 @@ export default {
                         const status = contract.getReturnedStatus();
                         const color = contract.returned ? '#5CB85C' : '#EE4F47';
                         return `<span style="color:${color};font-weight:bold">${status}</span>`;
-                    },
-                    formatFiles() {
-                        const count = contract.files ? contract.files.length : 0;
-                        if (count === 0) return '-';
-                        return `<span class="text-blue-600"><i class="fas fa-file"></i> ${count}</span>`;
                     }
                 }));
             } catch (error) {
@@ -113,8 +107,6 @@ export default {
                     return item.formatReturnedStatus();
                 case "note":
                     return item.note || '-';
-                case "files":
-                    return item.formatFiles();
                 default:
                     return item[column];
             }

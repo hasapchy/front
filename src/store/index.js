@@ -198,7 +198,6 @@ async function loadProductsForSearch(getters, isProducts, limit = 10) {
 async function clearAllCacheOnCompanyChange() {
   try {
     await CacheInvalidator.invalidateAll();
-    localStorage.removeItem("menuItems");
   } catch (error) {
     console.error("Error clearing cache on company change:", error);
   }
@@ -271,7 +270,7 @@ function initializeStorageSync(_store) {
 }
 
 const store = createStore({
-  state: {
+    state: {
     user: null,
     permissions: [],
     permissionsLoaded: false,
@@ -1429,7 +1428,8 @@ const store = createStore({
       commit("SET_USERS", []);
     },
     initializeMenu({ commit, state }) {
-      const storageKey = "menuItems";
+      const companyId = state.currentCompany?.id || 'default';
+      const storageKey = `menuItems_${companyId}`;
       let saved = null;
 
       try {
@@ -1652,7 +1652,8 @@ const store = createStore({
         }
       }
 
-      const storageKey = "menuItems";
+      const companyId = state.currentCompany?.id || 'default';
+      const storageKey = `menuItems_${companyId}`;
       const currentMain =
         type === "main" ? uniqueItems : state.menuItems.main || [];
       const currentAvailable =
@@ -1745,7 +1746,8 @@ const store = createStore({
       commit("SET_MENU_ITEMS", current);
 
       try {
-        localStorage.setItem("menuItems", JSON.stringify(current));
+        const companyId = state.currentCompany?.id || 'default';
+        localStorage.setItem(`menuItems_${companyId}`, JSON.stringify(current));
       } catch (e) {
         console.error("Failed to save menu items to localStorage:", e);
       }

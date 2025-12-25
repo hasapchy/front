@@ -275,6 +275,17 @@ const routes = [
         },
       },
       {
+        path: "/clients/:id",
+        name: "ClientView",
+        component: ClientsPage,
+        meta: {
+          title: "clients",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "clients_view",
+        },
+      },
+      {
         path: "/projects",
         name: "Projects",
         component: ProjectsPage,

@@ -142,12 +142,6 @@
                         :disabled="!$store.getters.hasPermission('orders_create')">
                     </PrimaryButton>
 
-                    <transition name="fade">
-                        <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
-                            :batch-actions="getBatchActions()" :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
-                            :handle-change-status="handleChangeStatus" :show-status-select="true" />
-                    </transition>
-
                     <FiltersContainer :has-active-filters="hasActiveFilters"
                         :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
                         <div>
@@ -180,7 +174,7 @@
                             <select v-model="statusFilter" class="w-full">
                                 <option value="">{{ $t('allStatuses') }}</option>
                                 <option v-for="status in statuses" :key="status.id" :value="status.id">
-                                    {{ translateOrderStatus(status.name, $t) }}
+                                    {{ status.name }}
                                 </option>
                             </select>
                         </div>
@@ -224,6 +218,12 @@
                     <KanbanFieldsButton mode="orders" />
                 </template>
             </TableControlsBar>
+
+            <div v-if="selectedIds.length && viewMode === 'kanban'" class="mb-4">
+                <BatchButton :selected-ids="selectedIds"
+                    :batch-actions="getBatchActions()" :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
+                    :handle-change-status="handleChangeStatus" :show-status-select="true" />
+            </div>
             
             <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :projects="projects" :selected-ids="selectedIds"
                 :loading="loading || kanbanLoadingMore" :currency-symbol="currencySymbol" :batch-status-id="batchStatusId"

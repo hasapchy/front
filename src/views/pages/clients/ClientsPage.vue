@@ -2,7 +2,7 @@
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="common.clients" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }"
+                :item-mapper="itemMapper" :onItemClick="handleRowClick"
                 @selectionChange="selectedIds = $event">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
@@ -92,7 +92,7 @@
     </transition>
 
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <ClientCreatePage v-if="modalDialog" ref="clientForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <ClientCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new'" ref="clientForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -151,6 +151,14 @@ export default {
         this.$store.commit('SET_SETTINGS_OPEN', false);
         
         eventBus.on('global-search', this.handleSearch);
+    },
+    watch: {
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteClient(value);
+            }
+        }
     },
 
     mounted() {
@@ -216,6 +224,47 @@ export default {
             if (this.statusFilter !== '') count++;
             if (this.typeFilter !== '') count++;
             return count;
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'Clients' });
+            }
+        },
+        async handleRouteClient(id) {
+            if (!id) {
+                if (this.modalDialog) {
+                    this.closeModal();
+                }
+                this.editingItem = null;
+                return;
+            }
+            const clientId = Number(id);
+            if (!clientId) {
+                this.$router.replace({ name: 'Clients' });
+                return;
+            }
+            if (this.editingItem?.id === clientId && this.modalDialog) {
+                return;
+            }
+            try {
+                const client = await ClientController.getItem(clientId);
+                if (!client) {
+                    this.showNotification(this.$t('errorGettingClient'), this.$t('notFound'), true);
+                    this.$router.replace({ name: 'Clients' });
+                    return;
+                }
+                this.showModal(client);
+            } catch (error) {
+                this.showNotification(this.$t('errorGettingClient'), error.message, true);
+                this.$router.replace({ name: 'Clients' });
+            }
+        },
+        handleRowClick(item) {
+            if (!item?.id) {
+                return;
+            }
+            this.$router.push({ name: 'ClientView', params: { id: item.id } });
         }
     },
     computed: {

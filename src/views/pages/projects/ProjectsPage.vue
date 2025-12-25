@@ -121,11 +121,6 @@
                         :disabled="!$store.getters.hasPermission('projects_create')">
                     </PrimaryButton>
                     
-                    <transition name="fade">
-                        <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
-                            :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
-                    </transition>
-                    
                     <FiltersContainer
                         :has-active-filters="hasActiveFilters"
                         :active-filters-count="getActiveFiltersCount()"
