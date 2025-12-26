@@ -50,7 +50,7 @@
                 :deleting="deletingFiles" @file-change="handleFileChange" @delete-file="showDeleteFileDialog"
                 @delete-multiple-files="showDeleteMultipleFilesDialog" @download-multiple-files="handleDownloadMultipleFiles" />
         </div>
-        <div v-if="currentTab === 'employees'">
+        <!-- <div v-if="currentTab === 'employees'">
             <UserSearch
                 :multiple="true"
                 :show-label="true"
@@ -81,7 +81,7 @@
             <div v-if="editingItemId && selectedEmployeeForAdvance" class="mt-4">
                 <UserBalanceTab :editing-item="selectedEmployeeForAdvance" />
             </div>
-        </div>
+        </div> -->
         <div v-if="currentTab === 'balance' && editingItem && canViewProjectBalance">
             <ProjectBalanceTab :editing-item="editingItem" />
         </div>
@@ -124,6 +124,8 @@ import { translateCurrency } from '@/utils/translationUtils';
 import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
 import ProjectContractsTab from '@/views/pages/projects/ProjectContractsTab.vue';
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
+import UserSearch from '@/views/components/app/search/UserSearch.vue';
+import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
 import dayjs from 'dayjs';
 import { getCurrentLocalDateTime, formatDatabaseDateTimeForInput } from '@/utils/dateUtils';
 
@@ -160,7 +162,7 @@ export default {
             tabs: [
                 { name: 'info', label: 'info' },
                 { name: 'files', label: 'files', permission: 'settings_project_files_view' },
-                { name: 'employees', label: 'employees' },
+                // { name: 'employees', label: 'employees' },
                 { name: 'balance', label: 'balance', permission: 'settings_project_balance_view' },
                 { name: 'contracts', label: 'contracts', permission: 'settings_project_contracts_view' },
             ],
@@ -180,7 +182,7 @@ export default {
             return this.$store.getters.hasPermission('settings_project_contracts_view');
         },
         visibleTabs() {
-            const baseTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => ['info', 'employees'].includes(tab.name));
+            const baseTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => ['info'].includes(tab.name));
             return baseTabs.filter(tab => !tab.permission || this.$store.getters.hasPermission(tab.permission));
         },
         translatedTabs() {

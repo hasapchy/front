@@ -377,7 +377,8 @@ export default {
             }
         },
         getLocalStorageKey() {
-            return 'ui_transactions_balance_cards_layout';
+            const companyId = this.$store.state.currentCompany?.id || 'default';
+            return `ui_transactions_balance_cards_layout_${companyId}`;
         },
         getSavedData() {
             try {
@@ -505,6 +506,23 @@ export default {
                 this.updateSortedBalanceCards();
             },
             deep: true
+        },
+        '$store.state.currentCompany.id': {
+            handler() {
+                const savedData = this.getSavedData();
+                this.cardSizes = {};
+                if (savedData) {
+                    if (savedData.cards) {
+                        savedData.cards.forEach(card => {
+                            this.cardSizes[card.id] = card.size || 250;
+                        });
+                    }
+                    if (savedData.rowsCount !== undefined) {
+                        this.rowsCount = savedData.rowsCount;
+                    }
+                }
+                this.updateSortedBalanceCards();
+            }
         }
     },
     mounted() {
