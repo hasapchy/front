@@ -52,7 +52,7 @@ export default {
       
       const deletePermissions = Array.isArray(this.deletePermission) 
         ? this.deletePermission 
-        : (this.deletePermission ? [this.deletePermission] : ['orders_delete', 'projects_delete', 'clients_delete']);
+        : (this.deletePermission ? [this.deletePermission] : ['orders_delete', 'projects_delete', 'clients_delete', 'sales_delete', 'transactions_delete']);
       
       const hasDeletePermission = deletePermissions.some(perm => 
         this.$store.getters.hasPermission(perm)

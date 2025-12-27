@@ -1,7 +1,4 @@
 <template>
-    <BatchButton v-if="selectedIds.length && viewMode === 'table'" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
-        :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true"/>
-    
     <transition name="fade" mode="out-in">
         <!-- Табличный вид -->
         <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
@@ -29,6 +26,11 @@
                                 :disabled="!$store.getters.hasPermission('tasks_create')">
                             </PrimaryButton>
                             
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
+                                    :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
+                            </transition>
+                            
                             <FiltersContainer
                                 :has-active-filters="hasActiveFilters"
                                 :active-filters-count="getActiveFiltersCount()"
@@ -40,7 +42,7 @@
                                     <select v-model="statusFilter" class="w-full">
                                         <option value="all">{{ $t('allStatuses') }}</option>
                                         <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
-                                            {{ status.name }}
+                                            {{ translateTaskStatus(status.name, $t) }}
                                         </option>
                                     </select>
                                 </div>
@@ -144,7 +146,7 @@
                             <select v-model="statusFilter" class="w-full">
                                 <option value="all">{{ $t('allStatuses') }}</option>
                                 <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
-                                    {{ status.name }}
+                                    {{ translateTaskStatus(status.name, $t) }}
                                 </option>
                             </select>
                         </div>
@@ -211,6 +213,7 @@
                 @batch-status-change="handleBatchStatusChangeFromToolbar"
                 @batch-delete="() => deleteItems(selectedIds)"
                 @clear-selection="() => selectedIds = []"
+                @status-updated="fetchItems"
             />
         </div>
 
@@ -256,6 +259,7 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
+import { formatDatabaseDateTime, formatDatabaseDate } from '@/utils/dateUtils';
 import { highlightMatches } from '@/utils/searchUtils';
 import searchMixin from '@/mixins/searchMixin';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
@@ -264,6 +268,7 @@ import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vu
 import { markRaw, defineAsyncComponent } from 'vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import debounce from 'lodash.debounce';
+import { translateTaskStatus } from '@/utils/translationUtils';
 
 const TimelinePanel = defineAsyncComponent(() =>
     import("@/views/components/app/dialog/TimelinePanel.vue")
@@ -356,13 +361,15 @@ export default {
                     title: task.title,
                     description: task.description,
                     statusId: task.statusId || (status?.id),
-                    statusName: status?.name || '-',
+                    statusName: status?.name ? translateTaskStatus(status.name, this.$t) : '-',
                     deadline: task.deadline,
                     creator: task.creator,
                     supervisor: task.supervisor,
                     executor: task.executor,
                     project: task.project,
                     created_at: task.createdAt,
+                    priority: task.priority,
+                    complexity: task.complexity,
                 };
             });
         }
@@ -375,6 +382,30 @@ export default {
         await this.fetchItems();
     },
     methods: {
+        formatDatabaseDateTime(date) {
+        try {
+            return formatDatabaseDateTime(date);
+        } catch (error) {
+            console.error('Ошибка форматирования даты:', error, date);
+            return date || '-';
+        }
+    },
+    formatDatabaseDate(date) {
+        try {
+            return formatDatabaseDate(date);
+        } catch (error) {
+            console.error('Ошибка форматирования даты:', error, date);
+            return date || '-';
+        }
+    },
+
+        // formatDatabaseDateTime(date) {
+        //     return formatDatabaseDateTime(date);
+        // },
+        // formatDatabaseDate(date) {
+        //     return formatDatabaseDate(date);
+        // },
+        translateTaskStatus,
         async showModal(item = null) {
             this.savedScrollPosition = window.pageYOffset ?? document.documentElement.scrollTop;
             this.shouldRestoreScrollOnClose = true;
@@ -426,9 +457,9 @@ export default {
                 case 'executor':
                     return i.executor?.name || '-';
                 case 'deadline':
-                    return i.deadline ? new Date(i.deadline).toLocaleDateString() : '-';
+                    return i.deadline ? this.formatDatabaseDateTime(i.deadline) : '-';
                 case 'created_at':
-                    return i.createdAt ? new Date(i.createdAt).toLocaleDateString() : '-';
+                    return i.createdAt ? this.formatDatabaseDate(i.createdAt) : '-';
                 default:
                     return i[c];
             }
@@ -562,7 +593,7 @@ export default {
                         task.statusId = updateData.statusId;
                         const status = this.statuses.find(s => s.id === updateData.statusId);
                         if (status) {
-                            task.statusName = status.name;
+                            task.statusName = translateTaskStatus(status.name, this.$t);
                         }
                     }
                     

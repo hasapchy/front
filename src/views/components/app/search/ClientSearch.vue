@@ -292,6 +292,20 @@ export default {
             if (this.lastClients.length === 0) {
                 await this.fetchLastClients();
             }
+            if (this.lastClients.length === 0) {
+                try {
+                    const paginated = await ClientController.getItems(1, null, false, null, null, 20);
+                    if (paginated && paginated.items) {
+                        this.lastClients = paginated.items
+                            .filter((client) => client.status === true)
+                            .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
+                            .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+                            .slice(0, 10);
+                    }
+                } catch (error) {
+                    console.error('Ошибка при загрузке последних клиентов:', error);
+                }
+            }
         },
         handleBlur() {
             requestAnimationFrame(() => {

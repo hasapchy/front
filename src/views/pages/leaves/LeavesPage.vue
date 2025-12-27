@@ -1,5 +1,4 @@
 <template>
-    <BatchButton v-if="selectedIds.length && viewMode === 'table'" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <!-- Табличный вид -->
         <div v-if="data != null && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
@@ -30,6 +29,10 @@
                                 :disabled="!$store.getters.hasPermission('leaves_create_all')">
                             </PrimaryButton>
 
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                            </transition>
+
                             <FiltersContainer :has-active-filters="hasActiveFilters"
                                 :active-filters-count="getActiveFiltersCount()" @reset="resetFilters">
                                 <div>
@@ -46,7 +49,7 @@
                                     <select v-model="leaveTypeFilter" @change="debouncedFetchItems" class="w-full">
                                         <option value="">{{ $t('allLeaveTypes') || 'Все типы' }}</option>
                                         <option v-for="leaveType in leaveTypes" :key="leaveType.id" :value="leaveType.id">
-                                            {{ leaveType.name }}
+                                            {{ translateLeaveType(leaveType.name, $t) }}
                                         </option>
                                     </select>
                                 </div>
@@ -136,7 +139,7 @@
                             <select v-model="leaveTypeFilter" @change="debouncedFetchItems" class="w-full">
                                 <option value="">{{ $t('allLeaveTypes') || 'Все типы' }}</option>
                                 <option v-for="leaveType in leaveTypes" :key="leaveType.id" :value="leaveType.id">
-                                    {{ leaveType.name }}
+                                    {{ translateLeaveType(leaveType.name, $t) }}
                                 </option>
                             </select>
                         </div>
@@ -213,6 +216,7 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 import LeaveCalendarView from '@/views/components/leave/LeaveCalendarView.vue';
 import debounce from "lodash.debounce";
+import { translateLeaveType } from '@/utils/translationUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
@@ -320,6 +324,8 @@ export default {
                     return i.formatDateTo();
                 case 'duration':
                     return i.formatDuration(this.$t);
+                case 'leaveTypeName':
+                    return i.leaveTypeName ? translateLeaveType(i.leaveTypeName, this.$t) : '-';
                 default:
                     return i[c];
             }

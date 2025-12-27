@@ -92,6 +92,7 @@ import ProjectAmountCell from "@/views/components/app/buttons/ProjectAmountCell.
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import { defineAsyncComponent, markRaw } from 'vue';
+import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 
 const TransactionCreatePage = defineAsyncComponent(() => 
     import("@/views/pages/transactions/TransactionCreatePage.vue")
@@ -130,7 +131,7 @@ export default {
             editingTransactionItem: null,
             transactionLoading: false,
             columnsConfig: [
-                { name: "dateUser", label: this.$t("date"), size: 120 },
+                { name: "dateUser", label: this.$t("dateUser"), size: 120 },
                 { 
                     name: "source", 
                     label: this.$t("source"), 
@@ -155,6 +156,7 @@ export default {
                     }
                 },
                 { name: "note", label: this.$t("note"), size: 200 },
+                { name: "categoryName", label: this.$t("category"), size: 150 },
                 { name: "user_name", label: this.$t("user"), size: 120 },
                 {
                     name: "is_debt",
@@ -328,6 +330,8 @@ export default {
                     return i.dateUser || (i.formatDate ? i.formatDate() : '');
                 case "note":
                     return i.note || '';
+                case "categoryName":
+                    return translateTransactionCategory(i.categoryName, this.$t) || '-';
                 case "user_name":
                     return i.userName || '-';
                 case "amount":

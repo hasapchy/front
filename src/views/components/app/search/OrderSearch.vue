@@ -22,7 +22,7 @@
                             </div>
                             <div class="text-[#337AB7] text-xs flex flex-col items-end min-w-[90px]">
                                 <div class="font-medium">{{ order.priceInfo() }}</div>
-                                <div class="text-sm text-gray-500">{{ order.status?.name || order.statusName }}</div>
+                                <div class="text-sm text-gray-500">{{ order.statusName || (order.status?.name ? translateOrderStatus(order.status.name, $t) : '-') }}</div>
                             </div>
                         </div>
                     </li>
@@ -160,6 +160,7 @@
 <script>
 import OrderController from "@/api/OrderController";
 import debounce from 'lodash.debounce';
+import { translateOrderStatus } from '@/utils/translationUtils';
 
 export default {
     emits: ['update:modelValue', 'update:subtotal', 'change'],

@@ -1,6 +1,4 @@
 <template>
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
-
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable
@@ -28,6 +26,10 @@
                         :toggleVisible="toggleVisible"
                         :log="log">
                         <template #left>
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                            </transition>
+                            
                             <FiltersContainer
                                 :has-active-filters="hasActiveFilters"
                                 :active-filters-count="getActiveFiltersCount()"
@@ -38,7 +40,7 @@
                                     <select v-model="selectedCurrencyId" class="w-full">
                                         <option value="">{{ $t('selectCurrency') }}</option>
                                         <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
-                                            {{ currency.symbol }} - {{ currency.name }} ({{ currency.current_rate }})
+                                            {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }} ({{ currency.current_rate }})
                                         </option>
                                     </select>
                                 </div>
@@ -133,6 +135,7 @@ import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 import filtersMixin from '@/mixins/filtersMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import { translateCurrency } from '@/utils/translationUtils';
 
 
 export default {
@@ -190,6 +193,7 @@ export default {
         }
     },
     methods: {
+        translateCurrency,
         async fetchCurrencies() {
             try {
                 this.currencies = await CurrencyHistoryController.getCurrenciesWithRates();

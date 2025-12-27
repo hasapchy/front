@@ -1,5 +1,4 @@
 <template>
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.warehouse_writeoffs" :columns-config="columnsConfig"
@@ -18,6 +17,11 @@
                         :columns="columns"
                         :toggleVisible="toggleVisible"
                         :log="log">
+                        <template #left>
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                            </transition>
+                        </template>
                         <template #right>
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"

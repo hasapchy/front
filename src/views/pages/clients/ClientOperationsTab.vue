@@ -92,6 +92,7 @@ import SaleController from "@/api/SaleController";
 import WarehouseReceiptController from "@/api/WarehouseReceiptController";
 import ClientDto from "@/dto/client/ClientDto";
 import { defineAsyncComponent } from 'vue';
+import { translateOrderStatus } from '@/utils/translationUtils';
 
 const OrderCreatePage = defineAsyncComponent(() => 
     import("@/views/pages/orders/OrderCreatePage.vue")
@@ -170,13 +171,13 @@ export default {
                 this.columnsConfig = [
                     ...baseColumns,
                     { name: "status", label: this.$t("status"), size: 120 },
-                    { name: "date", label: this.$t("date"), size: 150 },
+                    { name: "dateUser", label: this.$t("dateUser"), size: 150 },
                     { name: "amount", label: this.$t("amount"), size: 130, html: true },
                 ];
             } else {
                 this.columnsConfig = [
                     ...baseColumns,
-                    { name: "date", label: this.$t("date"), size: 150 },
+                    { name: "dateUser", label: this.$t("dateUser"), size: 150 },
                     { name: "amount", label: this.$t("amount"), size: 130, html: true },
                 ];
             }
@@ -218,8 +219,8 @@ export default {
                     this.tableData = response.items.map(order => ({
                         id: order.id,
                         name: order.note || order.description || `Заказ #${order.id}`,
-                        status: order.status?.name || order.statusName || '-',
-                        date: order.formatDate ? order.formatDate() : (order.date ? new Date(order.date).toLocaleString() : '-'),
+                        status: order.statusName || (order.status?.name ? translateOrderStatus(order.status.name, this.$t) : '-'),
+                        dateUser: order.formatDate ? `${order.formatDate()} / ${order.user?.name || order.userName || "-"}` : (order.date ? `${new Date(order.date).toLocaleString()} / ${order.user?.name || order.userName || "-"}` : '-'),
                         amount: order.totalPrice || order.price || 0,
                         currencySymbol: order.currencySymbol || this.currencySymbol,
                         originalData: order,
@@ -232,7 +233,7 @@ export default {
                     this.tableData = sales.map(sale => ({
                         id: sale.id,
                         name: sale.note || `Продажа #${sale.id}`,
-                        date: sale.formatDate ? sale.formatDate() : (sale.date ? new Date(sale.date).toLocaleString() : '-'),
+                        dateUser: sale.formatDate ? `${sale.formatDate()} / ${sale.user?.name || sale.userName || "-"}` : (sale.date ? `${new Date(sale.date).toLocaleString()} / ${sale.user?.name || sale.userName || "-"}` : '-'),
                         amount: sale.totalPrice || sale.price || 0,
                         currencySymbol: sale.currencySymbol || this.currencySymbol,
                         originalData: sale,
@@ -245,7 +246,7 @@ export default {
                     this.tableData = receipts.map(receipt => ({
                         id: receipt.id,
                         name: receipt.note || `Оприходование #${receipt.id}`,
-                        date: receipt.formatDate ? receipt.formatDate() : (receipt.date ? new Date(receipt.date).toLocaleString() : '-'),
+                        dateUser: receipt.formatDate ? `${receipt.formatDate()} / ${receipt.user?.name || receipt.userName || "-"}` : (receipt.date ? `${new Date(receipt.date).toLocaleString()} / ${receipt.user?.name || receipt.userName || "-"}` : '-'),
                         amount: receipt.amount || 0,
                         currencySymbol: receipt.currencySymbol || this.currencySymbol,
                         originalData: receipt,
@@ -269,8 +270,8 @@ export default {
                     return item.name || '-';
                 case "status":
                     return item.status || '-';
-                case "date":
-                    return item.date || '-';
+                case "dateUser":
+                    return item.dateUser || '-';
                 case "amount": {
                     const amount = parseFloat(item.amount || 0);
                     const symbol = item.currencySymbol || this.currencySymbol || '';

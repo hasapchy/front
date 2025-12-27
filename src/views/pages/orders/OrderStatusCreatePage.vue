@@ -11,7 +11,7 @@
                 <select v-model="categoryId">
                     <option value="">{{ $t('selectStatusCategory') }}</option>
                     <option v-for="cat in allCategories" :key="cat.id" :value="cat.id">
-                        {{ cat.name }}
+                        {{ translateOrderStatusCategory(cat.name, $t) }}
                     </option>
                 </select>
                 <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showModal" />
@@ -19,12 +19,9 @@
         </div>
         <div class="mt-4">
             <label class="flex items-center space-x-2">
-                <input type="checkbox" v-model="isActive" :disabled="isProtectedStatus">
+                <input type="checkbox" v-model="isActive">
                 <span>{{ $t('isActive') || 'Активен' }}</span>
             </label>
-            <p v-if="isProtectedStatus" class="text-xs text-gray-500 mt-1">
-                {{ $t('protectedStatusCannotBeDisabled') || 'Этот статус нельзя отключить' }}
-            </p>
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -55,6 +52,7 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import OrderStatusCategoryCreatePage from '@/views/pages/orders/OrderStatusCategoryCreatePage.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import { translateOrderStatusCategory, translateOrderStatus } from '@/utils/translationUtils';
 
 
 export default {
@@ -77,12 +75,6 @@ export default {
             modalDialog: false
         }
     },
-    computed: {
-        isProtectedStatus() {
-            const protectedIds = [1, 5, 6]; // Новый, Завершено, Отменено
-            return this.editingItemId && protectedIds.includes(this.editingItemId);
-        }
-    },
     mounted() {
         this.$nextTick(async () => {
             await this.fetchAllCategories();
@@ -91,6 +83,8 @@ export default {
         });
     },
     methods: {
+        translateOrderStatusCategory,
+        translateOrderStatus,
         getFormState() {
             return {
                 name: this.name,

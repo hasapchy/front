@@ -1,5 +1,4 @@
 <template>
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.transaction_categories" :columns-config="columnsConfig" :table-data="data.items"
@@ -18,6 +17,11 @@
                         :columns="columns"
                         :toggleVisible="toggleVisible"
                         :log="log">
+                        <template #left>
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                            </transition>
+                        </template>
                         <template #right>
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
@@ -82,6 +86,7 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin],
@@ -90,6 +95,7 @@ export default {
         return {
             controller: TransactionCategoryController,
             cacheInvalidationType: 'transactionCategories',
+            deletePermission: 'transaction_categories_delete',
             showStatusSelect: false,
             savedSuccessText: this.$t('transactionCategorySuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingTransactionCategory'),
@@ -116,7 +122,7 @@ export default {
                 case 'createdAt':
                     return i.formatCreatedAt();
                 case 'name':
-                    return i.canBeDeleted() ? i.name : `${i.name} 🔒`;
+                    return translateTransactionCategory(i.name, this.$t) || i.name;
                 case 'user_name':
                     return i.user_name || '-';
                 default:

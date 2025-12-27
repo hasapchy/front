@@ -85,8 +85,7 @@ export default {
                     })
                 },
                 { name: 'cashName', label: 'Касса' },
-                { name: 'date', label: 'Дата' },
-                { name: 'userName', label: 'Сотрудник' },
+                { name: 'dateUser', label: this.$t('dateUser') },
             ]
         }
     },
@@ -176,10 +175,8 @@ export default {
             switch (c) {
                 case 'cashName':
                     return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
-                case 'date':
-                    return i.formatDate?.() || '-';
-                case 'userName':
-                    return i.userName || '-';
+                case 'dateUser':
+                    return `${i.formatDate?.() || '-'} / ${i.userName || '-'}`;
                 default:
                     return i[c];
             }

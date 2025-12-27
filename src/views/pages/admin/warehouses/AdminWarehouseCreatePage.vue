@@ -8,11 +8,11 @@
 
         <div class="mt-4">
             <label>{{ $t('assignUsers') }}</label>
-            <CheckboxFilter
-                v-if="assignableUsers.length"
-                v-model="selectedUsers"
-                :options="userOptions"
-                :placeholder="'all'"
+            <UserSearch
+                v-model:selectedUsers="selectedUsers"
+                :multiple="true"
+                :filterUsers="userHasWarehouseAccess"
+                :showLabel="false"
             />
         </div>
     </div>
@@ -38,7 +38,7 @@ import WarehouseController from '@/api/WarehouseController';
 import WarehouseDto from '@/dto/warehouse/WarehouseDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
+import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 export default {
@@ -46,7 +46,7 @@ export default {
     components: {
         PrimaryButton,
         AlertDialog,
-        CheckboxFilter
+        UserSearch
     },
     props: {
         warehouse: {
@@ -83,16 +83,6 @@ export default {
                 return [];
             }
             return this.users.filter(this.userHasWarehouseAccess);
-        },
-        userOptions() {
-            return this.assignableUsers.map(user => {
-                const fullName = [user.name, user.surname].filter(Boolean).join(' ').trim() || user.name;
-                const position = user.position ? ` (${user.position})` : '';
-                return {
-                    value: user.id.toString(),
-                    label: `${fullName}${position}`
-                };
-            });
         }
     },
     methods: {

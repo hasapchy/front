@@ -30,7 +30,7 @@
                 <select v-model="unitId" required class="w-full border rounded p-2">
                     <option value="">Выберите единицу</option>
                     <option v-for="unit in allUnits" :key="unit.id" :value="unit.id">
-                        {{ unit.name }} ({{ unit.short_name }})
+                        {{ translateUnit(unit.name, $t) }} ({{ unit.short_name }})
                     </option>
                 </select>
             </div>
@@ -53,6 +53,7 @@
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AppController from '@/api/AppController';
 import OrderTempProductDto from '@/dto/order/OrderTempProductDto';
+import { translateUnit } from '@/utils/translationUtils';
 
 export default {
     components: { PrimaryButton },
@@ -97,6 +98,7 @@ export default {
         }
     },
     methods: {
+        translateUnit,
         async fetchAllUnits() {
             try {
                 await this.$store.dispatch('loadUnits');

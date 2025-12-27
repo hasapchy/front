@@ -1,5 +1,4 @@
 <template>
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.products" :columns-config="columnsConfig" :table-data="data.items"
@@ -24,6 +23,10 @@
                                 :onclick="() => { showModal(null) }" 
                                 icon="fas fa-plus">
                             </PrimaryButton>
+                            
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                            </transition>
                             
                             <FiltersContainer
                                 :has-active-filters="hasActiveFilters"

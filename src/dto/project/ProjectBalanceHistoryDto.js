@@ -14,7 +14,8 @@ export default class ProjectBalanceHistoryDto {
     sourceType = null,
     sourceSourceId = null,
     cashCurrencySymbol = null,
-    origAmount = null
+    origAmount = null,
+    categoryName = null
   ) {
     this.source = source;
     this.sourceId = sourceId;
@@ -27,6 +28,7 @@ export default class ProjectBalanceHistoryDto {
     this.sourceSourceId = sourceSourceId || sourceId;
     this.cashCurrencySymbol = cashCurrencySymbol;
     this.origAmount = origAmount;
+    this.categoryName = categoryName;
   }
 
   get dateUser() {
@@ -51,7 +53,8 @@ export default class ProjectBalanceHistoryDto {
         data.source_type || null,
         data.source_source_id || data.sourceId || null,
         data.cash_currency_symbol || null,
-        data.orig_amount || null
+        data.orig_amount || null,
+        data.category_name || data.categoryName || null
       );
     }).filter(Boolean);
   }

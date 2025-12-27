@@ -16,13 +16,13 @@
           </select>
         </div>
         <div v-if="clientType === 'employee' || clientType === 'investor'">
-          <label class="required">{{ $t('selectEmployee') }}</label>
-          <select v-model="employeeId" required>
-            <option :value="null">{{ $t('selectEmployee') }}</option>
-            <option v-for="user in users" :key="user.id" :value="user.id">
-              {{ user.name }}
-            </option>
-          </select>
+          <UserSearch
+            v-model:selectedUser="selectedEmployee"
+            :required="true"
+            :showLabel="true"
+            :label="$t('selectEmployee')"
+            :filterUsers="filterAvailableEmployees"
+          />
         </div>
         <div v-if="clientType !== 'employee' && clientType !== 'investor'">
           <label class="required">{{ $t('firstName') }}</label>
@@ -142,6 +142,7 @@
 
 <script>
 import ClientController from "@/api/ClientController";
+import UsersController from "@/api/UsersController";
 import ClientDto from "@/dto/client/ClientDto";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
@@ -151,6 +152,7 @@ import PhoneInputWithCountry from "@/views/components/app/forms/PhoneInputWithCo
 import ClientBalanceTab from "@/views/pages/clients/ClientBalanceTab.vue";
 import ClientPaymentsTab from "@/views/pages/clients/ClientPaymentsTab.vue";
 import ClientOperationsTab from "@/views/pages/clients/ClientOperationsTab.vue";
+import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import formChangesMixin from "@/mixins/formChangesMixin";
@@ -158,7 +160,7 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 export default {
   mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
   emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
-  components: { PrimaryButton, AlertDialog, NotificationToast, TabBar, PhoneInputWithCountry, ClientBalanceTab, ClientPaymentsTab, ClientOperationsTab },
+  components: { PrimaryButton, AlertDialog, NotificationToast, TabBar, PhoneInputWithCountry, ClientBalanceTab, ClientPaymentsTab, ClientOperationsTab, UserSearch },
   props: {
     editingItem: { type: ClientDto, default: null },
     defaultFirstName: { type: String, default: "" },
@@ -174,6 +176,7 @@ export default {
       position: this.editingItem ? this.editingItem.position : "",
       clientType: this.editingItem ? this.editingItem.clientType : "individual",
       employeeId: this.editingItem ? this.editingItem.employeeId : null,
+      selectedEmployee: null,
       address: this.editingItem ? this.editingItem.address : "",
       note: this.editingItem ? this.editingItem.note : "",
       status: this.editingItem ? this.editingItem.status : true,
@@ -256,6 +259,12 @@ export default {
     if (this.$store.getters.clients.length === 0) {
       await this.$store.dispatch('loadClients');
     }
+    
+    if (this.employeeId) {
+      await this.loadSelectedEmployee();
+    }
+    
+    this.saveInitialState();
   },
   methods: {
     changeTab(tabName) {
@@ -264,6 +273,46 @@ export default {
         return;
       }
       this.currentTab = tabName;
+    },
+    async loadSelectedEmployee() {
+      if (!this.employeeId) {
+        this.selectedEmployee = null;
+        return;
+      }
+      const allUsers = this.$store.getters.usersForCurrentCompany || [];
+      const user = allUsers.find(u => u.id === this.employeeId);
+      if (user) {
+        this.selectedEmployee = user;
+      } else {
+        try {
+          const loadedUser = await UsersController.getItem(this.employeeId);
+          if (loadedUser) {
+            this.selectedEmployee = loadedUser;
+          }
+        } catch (error) {
+          console.error('Ошибка при загрузке сотрудника:', error);
+        }
+      }
+    },
+    filterAvailableEmployees(user) {
+      if (this.clientType !== 'employee' && this.clientType !== 'investor') {
+        return true;
+      }
+      const clients = this.$store.getters.clients || [];
+      const usedEmployeeIds = new Set();
+      clients.forEach(client => {
+        if (
+          (client.clientType === 'employee' || client.clientType === 'investor') &&
+          client.employeeId &&
+          (!this.editingItem || client.id !== this.editingItem.id)
+        ) {
+          usedEmployeeIds.add(client.employeeId);
+        }
+      });
+      if (this.employeeId && user.id === this.employeeId) {
+        return true;
+      }
+      return !usedEmployeeIds.has(user.id);
     },
     handlePaymentsUpdated() {
       if (this.editingItem && this.editingItem.id) {
@@ -492,7 +541,7 @@ export default {
       this.emails.splice(index, 1);
     },
     async save() {
-      if ((this.clientType === 'employee' || this.clientType === 'investor') && !this.employeeId) {
+      if ((this.clientType === 'employee' || this.clientType === 'investor') && !this.selectedEmployee) {
         this.showNotification(this.$t('error') || 'Ошибка', this.$t('selectEmployee') || 'Необходимо выбрать сотрудника', true);
         return;
       }
@@ -506,7 +555,7 @@ export default {
           contact_person: this.contactPerson,
           position: this.position,
           client_type: this.clientType,
-          employee_id: this.employeeId,
+          employee_id: this.selectedEmployee?.id || null,
           address: this.address,
           note: this.note,
           status: this.status,
@@ -560,6 +609,7 @@ export default {
       this.position = "";
       this.clientType = "individual";
       this.employeeId = null;
+      this.selectedEmployee = null;
       this.address = "";
       this.note = "";
       this.status = true;
@@ -619,8 +669,13 @@ export default {
           this.emails = newEditingItem.emails.map((email) => email.email) || [];
           this.discountType = newEditingItem.discountType ?? "fixed";
           this.discount = newEditingItem.discount ?? 0;
-          this.$nextTick(() => {
+          this.$nextTick(async () => {
             this.employeeId = newEditingItem.employeeId || null;
+            if (this.employeeId) {
+              await this.loadSelectedEmployee();
+            } else {
+              this.selectedEmployee = null;
+            }
             this.saveInitialState();
           });
           this.currentTab = "info";
@@ -642,20 +697,23 @@ export default {
 
         if (type !== "employee" && type !== "investor") {
           this.employeeId = null;
+          this.selectedEmployee = null;
         }
       },
       deep: true,
       immediate: true,
     },
-    employeeId: {
-      handler(newEmployeeId) {
-        if (newEmployeeId && (this.clientType === "employee" || this.clientType === "investor")) {
-          const selectedUser = this.users.find(user => user.id === newEmployeeId);
-          if (selectedUser) {
-            this.firstName = selectedUser.name || "";
-            this.lastName = selectedUser.surname || "";
-            this.position = selectedUser.position || "";
+    selectedEmployee: {
+      handler(newEmployee) {
+        if (newEmployee) {
+          this.employeeId = newEmployee.id;
+          if (this.clientType === "employee" || this.clientType === "investor") {
+            this.firstName = newEmployee.name || "";
+            this.lastName = newEmployee.surname || "";
+            this.position = newEmployee.position || "";
           }
+        } else {
+          this.employeeId = null;
         }
       },
     },

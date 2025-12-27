@@ -4,7 +4,7 @@
 
 
             <div class="sticky top-0 z-20 flex justify-between items-center p-4 bg-white">
-                <h2 class="text-lg font-bold">Таймлайн</h2>
+                <h2 class="text-lg font-bold">История и комментарии</h2>
                 <button @click="toggleTimeline" class="text-gray-500 hover:text-black transition-colors duration-200">
                     <i class="fas fa-times"></i>
                 </button>
@@ -133,6 +133,7 @@ import { translateField, formatFieldValue as formatFieldValueUtil } from '@/util
 import { formatNumber as formatNumberUtil, formatCurrency as formatCurrencyUtil } from '@/utils/numberUtils';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
+import { translateOrderStatus, translateTaskStatus } from '@/utils/translationUtils';
 
 dayjs.locale('ru');
 
@@ -337,7 +338,13 @@ export default {
                 return statusId;
             }
             const status = statuses?.find(s => s.id === statusId);
-            return status ? status.name : statusId;
+            if (!status) return statusId;
+            if (this.type === 'order') {
+                return translateOrderStatus(status.name, this.$t);
+            } else if (this.type === 'task') {
+                return translateTaskStatus(status.name, this.$t);
+            }
+            return status.name;
         }
     },
     computed: {

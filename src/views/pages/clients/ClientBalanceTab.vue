@@ -123,7 +123,7 @@ export default {
             isAdjustmentMode: false,
             columnsConfig: [
                 { name: "id", label: "№", size: 60 },
-                { name: "dateUser", label: this.$t("date"), size: 120 },
+                { name: "dateUser", label: this.$t("dateUser"), size: 120 },
                 {
                     name: "operationType",
                     label: this.$t("type"),
@@ -158,6 +158,7 @@ export default {
                     }
                 },
                 { name: "note", label: this.$t("note"), size: 200 },
+                { name: "categoryName", label: this.$t("category"), size: 150 },
                 {
                     name: "debt",
                     label: "Долг",
@@ -335,6 +336,9 @@ export default {
                     return i.userName || i.user_name || '-';
                 case "note":
                     return i.note || '-';
+                case "categoryName":
+                    const categoryName = i.categoryName || '';
+                    return categoryName ? this.$t(`transactionCategory.${categoryName}`, categoryName) : '-';
                 case "clientImpact":
                     // Возвращаем числовое значение для сортировки (отображение через компонент ClientImpactCell)
                     return parseFloat(i.amount || 0);

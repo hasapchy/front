@@ -1,5 +1,4 @@
 <template>
-    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.products" :columns-config="columnsConfig" :table-data="data.items"
@@ -25,6 +24,10 @@
                                 icon="fas fa-plus"
                                 :disabled="!$store.getters.hasPermission('products_create')">
                             </PrimaryButton>
+                            
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                            </transition>
                             
                             <FiltersContainer
                                 :has-active-filters="hasActiveFilters"
@@ -127,6 +130,7 @@ export default {
             selectedCategoryId: '',
             controller: ProductController,
             cacheInvalidationType: 'products',
+            deletePermission: 'products_delete',
             savedSuccessText: this.$t('productSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProduct'),
             deletedSuccessText: this.$t('productSuccessfullyDeleted'),

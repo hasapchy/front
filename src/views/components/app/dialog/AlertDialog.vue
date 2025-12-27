@@ -22,7 +22,7 @@
                                         <h3 class="font-semibold text-gray-900 text-base" id="modal-title" style="font-size: 16px;">{{ displayTitle }}
                                         </h3>
                                         <div class="mt-2">
-                                            <p class="text-sm text-gray-500">{{ displayDescr }}
+                                            <p class="text-sm text-gray-500" v-html="displayDescr">
                                             </p>
                                         </div>
                                     </div>

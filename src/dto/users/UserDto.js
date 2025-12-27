@@ -33,6 +33,17 @@ export class UserDto {
     return getImageUrl(this.photo);
   }
 
+  fullName() {
+    const name = this.name || '';
+    const surname = this.surname || '';
+    const position = this.position || '';
+    const fullName = [name, surname].filter(Boolean).join(' ').trim();
+    if (position) {
+      return `${fullName} (${position})`;
+    }
+    return fullName;
+  }
+
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, (data) => new UserDto(data));
   }

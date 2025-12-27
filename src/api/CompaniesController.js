@@ -55,13 +55,13 @@ export default class CompaniesController extends BaseController {
     );
   }
 
-  static async checkExistingSalaries(companyId, date) {
+  static async checkExistingSalaries(companyId, date, userIds) {
     return super.handleRequest(
       async () => {
-        const { data: response } = await api.get(`/companies/${companyId}/salaries/check`, {
-          params: { date }
+        const response = await api.get(`/companies/${companyId}/salaries/check`, {
+          params: { date, user_ids: userIds }
         });
-        return response;
+        return response.data;
       },
       "Ошибка при проверке начислений:"
     );

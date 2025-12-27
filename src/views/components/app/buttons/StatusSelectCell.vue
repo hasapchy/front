@@ -2,7 +2,7 @@
   <div ref="dropdownRef" class="relative status-dropdown inline-block">
     <div class="px-2 py-2 rounded cursor-pointer flex items-center justify-between min-w-[120px]" :style="selectedStyle"
       @click="toggleDropdown">
-      <span class="truncate text-[12px] text-white">{{ selectedStatus?.name || $t('selectStatus') }}</span>
+      <span class="truncate text-[12px] text-white">{{ selectedStatus ? getStatusName(selectedStatus) : (placeholder || $t('selectStatus')) }}</span>
       <i class="fas fa-chevron-down text-xs ml-2 text-white"></i>
     </div>
 
@@ -23,7 +23,7 @@
           <span :class="[
             'text-sm font-medium',
             s.id === value ? 'text-blue-700' : 'text-gray-700'
-          ]">{{ s.name }}</span>
+          ]">{{ getStatusName(s) }}</span>
         </li>
       </template>
     </ul>
@@ -32,6 +32,8 @@
 </template>
 
 <script>
+import { translateOrderStatus, translateTaskStatus } from '@/utils/translationUtils';
+
 export default {
   props: {
     id: Number,
@@ -41,6 +43,10 @@ export default {
       required: true
     },
     onChange: Function,
+    placeholder: {
+      type: String,
+      default: null
+    },
   },
   data() {
     return {
@@ -134,6 +140,13 @@ export default {
       if (this.$refs.dropdownRef && !this.$refs.dropdownRef.contains(e.target)) {
         this.isOpen = false;
       }
+    },
+    getStatusName(status) {
+      if (!status || !status.name) return '';
+      if (status.category) {
+        return translateOrderStatus(status.name, this.$t);
+      }
+      return translateTaskStatus(status.name, this.$t);
     },
   },
   mounted() {
