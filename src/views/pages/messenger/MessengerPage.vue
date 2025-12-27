@@ -14,7 +14,7 @@
           </button>
 
           <div class="flex-1 relative">
-            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+            <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
             <input
               v-model="search"
               type="text"
@@ -41,7 +41,7 @@
             class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3 disabled:opacity-60"
             :class="selectedChatId === generalChat?.id ? 'bg-sky-500 text-white hover:bg-sky-500' : ''"
             type="button"
-            :disabled="!generalChat"
+            :disabled="loadingChats"
             @click="openGeneralChat"
           >
             <div class="relative shrink-0">
@@ -340,10 +340,12 @@ export default {
     async loadChats() {
       if (!this.hasChatsView) return;
       this.loadingChats = true;
+      const prevGeneral = this.generalChat;
       try {
         const items = await ChatController.getChats();
         this.chats = Array.isArray(items) ? items : [];
-        this.generalChat = this.chats.find((c) => c && c.type === "general") || null;
+        const foundGeneral = this.chats.find((c) => c && c.type === "general") || null;
+        this.generalChat = foundGeneral || prevGeneral || null;
       } finally {
         this.loadingChats = false;
       }
@@ -356,8 +358,9 @@ export default {
       this.chatListPollTimer = setInterval(async () => {
         try {
           const items = await ChatController.getChats();
+          const prevGeneral = this.generalChat;
           this.chats = Array.isArray(items) ? items : [];
-          this.generalChat = this.chats.find((c) => c && c.type === "general") || null;
+          this.generalChat = this.chats.find((c) => c && c.type === "general") || prevGeneral || null;
         } catch (e) {
           // ignore
         }
@@ -382,16 +385,49 @@ export default {
       return "fa-users";
     },
     async selectChat(chat) {
+      this.stopPolling();
       this.selectedChat = chat;
       this.selectedChatId = chat.id;
-      await this.loadMessages(chat.id);
-      this.startPolling(chat.id);
+      this.messages = [];
+      this.lastSeenMessageId = null;
+      try {
+        await this.loadMessages(chat.id);
+      } finally {
+        this.startPolling(chat.id);
+      }
     },
     openGeneralChat() {
       this.activePeerUser = null;
-      if (this.generalChat) {
-        this.selectChat(this.generalChat);
-      }
+      const open = async () => {
+        try {
+          // Явно запросим/создадим общий чат
+          const chat = await ChatController.ensureGeneralChat();
+          if (chat) {
+            this.generalChat = chat;
+            // Если в списке не было — добавим
+            const exists = (this.chats || []).some((c) => Number(c.id) === Number(chat.id));
+            if (!exists) {
+              this.chats = [...(this.chats || []), chat];
+            }
+            await this.selectChat(chat);
+            return;
+          }
+        } catch (e) {
+          // fallthrough to notification
+        }
+
+        // если по какой-то причине общий чат не найден
+        this.$store.dispatch("showNotification", {
+          title: "Общий чат не найден",
+          subtitle: "Попробуйте обновить страницу",
+          isDanger: false,
+          duration: 4000,
+        });
+        this.selectedChat = null;
+        this.selectedChatId = null;
+        this.messages = [];
+      };
+      open();
     },
     async loadMessages(chatId) {
       this.loadingMessages = true;
@@ -400,6 +436,14 @@ export default {
         this.messages = Array.isArray(items) ? items : [];
         this.lastSeenMessageId = this.messages.length ? this.messages[this.messages.length - 1].id : null;
         this.$nextTick(() => this.scrollToBottom());
+      } catch (e) {
+        this.messages = [];
+        this.$store.dispatch("showNotification", {
+          title: "Не удалось загрузить сообщения",
+          subtitle: e?.message || "",
+          isDanger: true,
+          duration: 3000,
+        });
       } finally {
         this.loadingMessages = false;
       }
@@ -479,6 +523,8 @@ export default {
           this.lastSeenMessageId = msg.id || this.lastSeenMessageId;
           this.draft = "";
           this.selectedFiles = [];
+          // моментально обновим метаданные чата для отправителя
+          this.applyLocalMessageMeta(msg);
           this.$nextTick(() => this.scrollToBottom());
         } else {
           await this.loadMessages(this.selectedChatId);
@@ -487,12 +533,41 @@ export default {
         this.sending = false;
       }
     },
+    applyLocalMessageMeta(msg) {
+      if (!msg) return;
+      const chatId = Number(msg.chat_id || msg.chatId || this.selectedChatId);
+      if (!chatId) return;
+      // обновляем в generalChat
+      if (this.generalChat && Number(this.generalChat.id) === chatId) {
+        this.generalChat = {
+          ...this.generalChat,
+          last_message: msg,
+          last_message_at: msg.created_at || this.generalChat.last_message_at || null,
+          unread_count: 0,
+        };
+      }
+      // обновляем в списке chats
+      this.chats = (this.chats || []).map((c) => {
+        if (!c || Number(c.id) !== chatId) return c;
+        return {
+          ...c,
+          last_message: msg,
+          last_message_at: msg.created_at || c.last_message_at || null,
+          unread_count: 0, // у отправителя непрочитанных нет
+        };
+      });
+    },
     async openDirect(user) {
       if (!this.hasChatsView) return;
       try {
         const chat = await ChatController.startDirectChat(user.id);
         if (!chat) return;
         this.activePeerUser = user;
+        // если чата ещё нет в списке, добавим
+        const exists = (this.chats || []).some((c) => Number(c.id) === Number(chat.id));
+        if (!exists) {
+          this.chats = [...(this.chats || []), chat];
+        }
         await this.selectChat(chat);
       } catch (e) {
         // ignore

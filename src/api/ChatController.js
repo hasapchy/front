@@ -12,6 +12,16 @@ export default class ChatController extends BaseController {
     );
   }
 
+  static async ensureGeneralChat() {
+    return super.handleRequest(
+      async () => {
+        const { data } = await api.post("/chats/general");
+        return data.data || data.chat || data;
+      },
+      "Ошибка при создании общего чата:"
+    );
+  }
+
   static async getMessages(chatId, params = {}) {
     return super.handleRequest(
       async () => {
