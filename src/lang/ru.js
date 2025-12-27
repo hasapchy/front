@@ -99,6 +99,7 @@ export default {
   orders: 'Заказы',
   sales: 'Продажи',
   tasks: 'Задачи',
+  messenger: 'Мессенджер',
   warehouseReceipt: 'Оприходование',
   warehouses: 'Склады',
   transactions: 'Операции',

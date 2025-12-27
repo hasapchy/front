@@ -74,6 +74,7 @@ export default {
   orders: 'Sargytlar',
   sales: 'Satuwlar',
   tasks: 'Wezipeler',
+  messenger: 'Messenger',
   warehouses: 'Ammar',
   transactions: 'Tranzaksiyalar',
     mutualSettlements: 'Aragatnaşyk hasaplaşygy',

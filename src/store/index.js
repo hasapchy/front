@@ -1433,6 +1433,7 @@ const store = createStore({
     initializeMenu({ commit, state }) {
       const storageKey = "menuItems";
       let saved = null;
+      let savedMenu = null;
 
       try {
         saved = localStorage.getItem(storageKey);
@@ -1466,14 +1467,13 @@ const store = createStore({
               main: mainUnique,
               available: availableUnique,
             };
-            commit("SET_MENU_ITEMS", cleaned);
+            savedMenu = cleaned;
 
             try {
               localStorage.setItem(storageKey, JSON.stringify(cleaned));
             } catch (e) {
               console.warn("Failed to save cleaned menu to localStorage:", e);
             }
-            return;
           }
         } catch (e) {
           console.warn("Failed to load saved menu, using default:", e);
@@ -1501,6 +1501,13 @@ const store = createStore({
           icon: "fas fa-tasks mr-2",
           label: "tasks",
           permission: "tasks_view_all", //tasks_view
+        },
+        {
+          id: "messenger",
+          to: "/messenger",
+          icon: "fas fa-comments mr-2",
+          label: "messenger",
+          permission: "chats_view",
         },
         {
           id: "transactions",
@@ -1599,6 +1606,7 @@ const store = createStore({
         "orders",
         "sales",
         "tasks",
+        "messenger",
         "transactions",
         "clients",
         "projects",
@@ -1616,15 +1624,31 @@ const store = createStore({
         "leaves",
       ];
 
-      const main = defaultMain
-        .map((id) => allMenuItems.find((item) => item.id === id))
-        .filter(Boolean);
-      const available = defaultAvailable
-        .map((id) => allMenuItems.find((item) => item.id === id))
-        .filter(Boolean);
+      const defaults = {
+        main: defaultMain
+          .map((id) => allMenuItems.find((item) => item.id === id))
+          .filter(Boolean),
+        available: defaultAvailable
+          .map((id) => allMenuItems.find((item) => item.id === id))
+          .filter(Boolean),
+      };
 
-      commit("SET_MENU_ITEMS", { main, available });
-      localStorage.setItem(storageKey, JSON.stringify({ main, available }));
+      // Если меню уже было в localStorage — мерджим с новыми пунктами (чтобы новые фичи появлялись без сброса настроек)
+      const baseMenu = savedMenu || defaults;
+      const baseMainIds = new Set((baseMenu.main || []).map((i) => i.id));
+      const baseAvailableIds = new Set((baseMenu.available || []).map((i) => i.id));
+
+      const missingItems = allMenuItems.filter(
+        (i) => i && i.id && !baseMainIds.has(i.id) && !baseAvailableIds.has(i.id)
+      );
+
+      const merged = {
+        main: baseMenu.main || [],
+        available: [...(baseMenu.available || []), ...missingItems],
+      };
+
+      commit("SET_MENU_ITEMS", merged);
+      localStorage.setItem(storageKey, JSON.stringify(merged));
     },
     updateMenuItems({ commit, state }, { type, items }) {
       if (!Array.isArray(items)) {

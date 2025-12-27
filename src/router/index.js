@@ -31,6 +31,7 @@ import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
 import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
 import LeavesPage from "@/views/pages/leaves/LeavesPage.vue";
 import LeaveTypesPage from "@/views/pages/leave_types/LeaveTypesPage.vue";
+import MessengerPage from "@/views/pages/messenger/MessengerPage.vue";
 
 // Basement pages
 import BasementOrdersPage from "@/views/pages/basement/BasementOrdersPage.vue";
@@ -47,6 +48,16 @@ const routes = [
         name: "Home",
         component: HomePage,
         meta: { title: "home", requiresAuth: true },
+      },
+      {
+        path: "/messenger",
+        name: "Messenger",
+        component: MessengerPage,
+        meta: {
+          title: "messenger",
+          requiresAuth: true,
+          permission: "chats_view",
+        },
       },
       {
         path: "/sales",
