@@ -704,15 +704,15 @@ const store = createStore({
         if (hasAccessToOtherCurrencies && onlyDefaultInCache) {
           commit("SET_CURRENCIES", []);
         } else {
-        if (
-          state.currencies[0]?.is_default &&
-          !state.currencies[0]?.isDefault
-        ) {
-          commit(
-            "SET_CURRENCIES",
-            CurrencyDto.fromApiArray(state.currencies)
-          );
-        }
+          if (
+            state.currencies[0]?.is_default &&
+            !state.currencies[0]?.isDefault
+          ) {
+            commit(
+              "SET_CURRENCIES",
+              CurrencyDto.fromApiArray(state.currencies)
+            );
+          }
           return;
         }
       }
@@ -851,7 +851,7 @@ const store = createStore({
         const responseData = response.data || response;
         const plainData = Array.isArray(responseData) ? responseData : [];
         const clients = ClientDto.fromApiArray(plainData);
-        
+
         commit("SET_CLIENTS_DATA", plainData);
         commit("SET_CLIENTS", clients);
         touchKey(cacheKey);
@@ -1430,53 +1430,6 @@ const store = createStore({
     },
     initializeMenu({ commit, state }) {
       const storageKey = "menuItems";
-      let saved = null;
-
-      try {
-        saved = localStorage.getItem(storageKey);
-      } catch (e) {
-        console.warn("Failed to read from localStorage:", e);
-      }
-
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (
-            parsed &&
-            Array.isArray(parsed.main) &&
-            Array.isArray(parsed.available)
-          ) {
-            const mainIds = new Set(
-              parsed.main.map((item) => item?.id).filter(Boolean)
-            );
-            const availableIds = new Set(
-              parsed.available.map((item) => item?.id).filter(Boolean)
-            );
-
-            const mainUnique = parsed.main.filter(
-              (item) => item && item.id && !availableIds.has(item.id)
-            );
-            const availableUnique = parsed.available.filter(
-              (item) => item && item.id && !mainIds.has(item.id)
-            );
-
-            const cleaned = {
-              main: mainUnique,
-              available: availableUnique,
-            };
-            commit("SET_MENU_ITEMS", cleaned);
-
-            try {
-              localStorage.setItem(storageKey, JSON.stringify(cleaned));
-            } catch (e) {
-              console.warn("Failed to save cleaned menu to localStorage:", e);
-            }
-            return;
-          }
-        } catch (e) {
-          console.warn("Failed to load saved menu, using default:", e);
-        }
-      }
 
       const allMenuItems = [
         {
@@ -1534,6 +1487,13 @@ const store = createStore({
           icon: "fa-solid fa-user mr-2",
           label: "users",
           permission: "users_view",
+        },
+        {
+          id: "org-structure",
+          to: "/org-structure",
+          icon: "fa-solid fa-sitemap mr-2",
+          label: "orgStructure",
+          permission: "departments_view",
         },
         {
           id: "roles",
@@ -1611,6 +1571,7 @@ const store = createStore({
       ];
       const defaultAvailable = [
         "users",
+        "org-structure",
         "roles",
         "companies",
         "cash-registers",
@@ -1621,6 +1582,49 @@ const store = createStore({
         "leaves",
         "leave-types",
       ];
+
+      let saved = null;
+      try {
+        saved = localStorage.getItem(storageKey);
+      } catch (e) {
+        console.warn("Failed to read from localStorage:", e);
+      }
+
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (
+            parsed &&
+            Array.isArray(parsed.main) &&
+            Array.isArray(parsed.available)
+          ) {
+            // Find items in allMenuItems that are NOT in saved main or available
+            const existingIds = new Set([
+              ...parsed.main.map((item) => item?.id).filter(Boolean),
+              ...parsed.available.map((item) => item?.id).filter(Boolean),
+            ]);
+
+            const missingItems = allMenuItems.filter(
+              (item) => !existingIds.has(item.id)
+            );
+
+            const cleaned = {
+              main: parsed.main,
+              available: [...parsed.available, ...missingItems],
+            };
+            commit("SET_MENU_ITEMS", cleaned);
+
+            try {
+              localStorage.setItem(storageKey, JSON.stringify(cleaned));
+            } catch (e) {
+              console.warn("Failed to save cleaned menu to localStorage:", e);
+            }
+            return;
+          }
+        } catch (e) {
+          console.warn("Failed to load saved menu, using default:", e);
+        }
+      }
 
       const main = defaultMain
         .map((id) => allMenuItems.find((item) => item.id === id))

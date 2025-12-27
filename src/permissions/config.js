@@ -142,6 +142,12 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
+    departments: {
+      has_user_id: false,
+      check_strategy: "default",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+    },
     roles: {
       has_user_id: false,
       check_strategy: "default",
@@ -254,7 +260,7 @@ export const PERMISSIONS_CONFIG = {
     },
     users: {
       label: "users",
-      resources: ["users", "roles", "employee_salaries"],
+      resources: ["users", "roles", "employee_salaries", "departments"],
     },
     tasks: {
       label: "tasks",
