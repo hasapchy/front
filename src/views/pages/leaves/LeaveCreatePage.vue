@@ -46,6 +46,7 @@
 <script>
 import LeaveController from '@/api/LeaveController';
 import LeaveTypeController from '@/api/LeaveTypeController';
+import UsersController from '@/api/UsersController';
 import LeaveDto from '@/dto/leave/LeaveDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
@@ -64,7 +65,9 @@ export default {
     data() {
         return {
             leaveTypeId: this.editingItem ? this.editingItem.leaveTypeId : '',
-            selectedUser: this.editingItem && this.editingItem.userId ? { id: this.editingItem.userId } : null,
+            selectedUser: this.editingItem && this.editingItem.userId 
+                ? (this.editingItem.user || { id: this.editingItem.userId }) 
+                : null,
             dateFrom: this.editingItem ? this.editingItem.dateFromForInput : '',
             dateTo: this.editingItem ? this.editingItem.dateToForInput : '',
             comment: this.editingItem ? (this.editingItem.comment || '') : '',
@@ -83,6 +86,10 @@ export default {
     mounted() {
         this.$nextTick(async () => {
             await this.fetchAllLeaveTypes();
+            // Если есть editingItem с userId, но нет полного объекта пользователя, загружаем его
+            if (this.editingItem && this.editingItem.userId && !this.editingItem.user) {
+                await this.loadUser(this.editingItem.userId);
+            }
             this.saveInitialState();
         });
     },
@@ -103,6 +110,28 @@ export default {
             } catch (error) {
                 console.error('Ошибка загрузки типов отпусков:', error);
                 this.allLeaveTypes = [];
+            }
+        },
+        async loadUser(userId) {
+            if (!userId) return;
+            
+            try {
+                // Сначала пытаемся найти в store
+                const users = this.$store.getters.usersForCurrentCompany || [];
+                let user = users.find(u => u.id === userId);
+                
+                // Если не нашли в store, загружаем через API
+                if (!user) {
+                    user = await UsersController.getItem(userId);
+                }
+                
+                if (user) {
+                    this.selectedUser = user;
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки пользователя:', error);
+                // Если не удалось загрузить, используем только id
+                this.selectedUser = { id: userId };
             }
         },
         async save() {
@@ -171,10 +200,20 @@ export default {
     },
     watch: {
         editingItem: {
-            handler(newEditingItem) {
+            async handler(newEditingItem) {
                 if (newEditingItem) {
                     this.leaveTypeId = newEditingItem.leaveTypeId || '';
-                    this.selectedUser = newEditingItem.userId ? { id: newEditingItem.userId } : null;
+                    
+                    // Если есть полный объект пользователя, используем его
+                    if (newEditingItem.user && newEditingItem.userId) {
+                        this.selectedUser = newEditingItem.user;
+                    } else if (newEditingItem.userId) {
+                        // Если есть только userId, загружаем пользователя
+                        await this.loadUser(newEditingItem.userId);
+                    } else {
+                        this.selectedUser = null;
+                    }
+                    
                     this.dateFrom = newEditingItem.dateFromForInput || '';
                     this.dateTo = newEditingItem.dateToForInput || '';
                     this.comment = newEditingItem.comment || '';
