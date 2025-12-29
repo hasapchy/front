@@ -1,7 +1,7 @@
 <template>
   <div class="h-[calc(100vh-6rem)] flex overflow-hidden rounded-2xl border border-gray-200 bg-white">
     <!-- LEFT: list -->
-    <aside class="w-full md:w-[360px] shrink-0 border-r border-gray-200 bg-white flex flex-col">
+    <aside class="w-full md:w-[360px] shrink-0 border-r border-gray-200 bg-white flex flex-col min-h-0">
       <!-- Search row (Bitrix-like) -->
       <div class="px-3 py-2 border-b border-gray-200">
         <div class="flex items-center gap-2">
@@ -25,7 +25,7 @@
         </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto">
+      <div class="flex-1 overflow-y-auto min-h-0">
         <div v-if="!hasChatsView" class="p-4 text-sm text-gray-500">
           Нет доступа к чатам
         </div>
@@ -64,12 +64,19 @@
           </button>
 
           <!-- Users (always) -->
-          <div class="px-4 pt-4 pb-2 text-[11px] uppercase tracking-wide text-gray-500">
-            Сотрудники
+          <div class="px-4 pt-4 pb-2 text-[11px] uppercase tracking-wide text-gray-500 flex items-center justify-between">
+            <span>Сотрудники</span>
+            <span v-if="isDevelopment" class="normal-case text-gray-400 text-[10px]">
+              ({{ filteredUsers.length }}/{{ usersForCompany.length }})
+            </span>
           </div>
 
           <div v-if="filteredUsers.length === 0" class="px-4 py-3 text-sm text-gray-500">
             Нет сотрудников
+            <span v-if="isDevelopment" class="block text-xs text-gray-400 mt-1">
+              Всего в store: {{ $store.state.users?.length || 0 }}, 
+              Для компании: {{ usersForCompany.length }}
+            </span>
           </div>
 
           <button
@@ -286,6 +293,9 @@ export default {
     };
   },
   computed: {
+    isDevelopment() {
+      return import.meta.env.DEV || import.meta.env.MODE === 'development';
+    },
     hasChatsView() {
       return this.$store.getters.hasPermission("chats_view");
     },
@@ -298,6 +308,16 @@ export default {
     filteredUsers() {
       const q = (this.search || "").trim().toLowerCase();
       const users = this.usersForCompany.filter((u) => u && u.id !== this.$store.state.user?.id);
+      
+      // Отладка: логируем количество пользователей
+      if (import.meta.env.DEV) {
+        console.log("[Messenger] Фильтрация пользователей:", {
+          всегоДляКомпании: this.usersForCompany.length,
+          послеИсключенияТекущего: users.length,
+          поисковыйЗапрос: q || "(нет)",
+        });
+      }
+      
       if (!q) return users;
       return users.filter((u) => {
         const s = `${u.name || ""} ${u.surname || ""} ${u.email || ""}`.toLowerCase();
@@ -328,13 +348,35 @@ export default {
   },
   methods: {
     async ensureUsersLoaded() {
-      // users используются в разных местах приложения; если ещё не загружены — подгрузим
-      if (!Array.isArray(this.$store.state.users) || this.$store.state.users.length === 0) {
-        try {
-          await this.$store.dispatch("loadUsers");
-        } catch (e) {
-          // ignore
+      // Для мессенджера всегда загружаем пользователей, чтобы получить актуальный список
+      // Очищаем state перед загрузкой, чтобы гарантировать свежие данные
+      try {
+        // Очищаем пользователей в state, чтобы принудительно загрузить заново
+        this.$store.commit("SET_USERS", []);
+        
+        // Загружаем пользователей
+        await this.$store.dispatch("loadUsers");
+        
+        // Отладка: проверим сколько пользователей загружено
+        const allUsers = this.$store.state.users || [];
+        const companyUsers = this.usersForCompany || [];
+        console.log("[Messenger] Загружено пользователей:", {
+          всего: allUsers.length,
+          дляКомпании: companyUsers.length,
+          текущаяКомпания: this.$store.state.currentCompany?.id,
+          активных: allUsers.filter(u => u?.isActive).length,
+        });
+        
+        // Дополнительная отладка: проверим структуру компаний у пользователей
+        if (import.meta.env.DEV) {
+          allUsers.forEach(u => {
+            if (!u.companies || u.companies.length === 0) {
+              console.warn(`[Messenger] Пользователь ${u.name} ${u.surname} не имеет компаний`);
+            }
+          });
         }
+      } catch (e) {
+        console.error("[Messenger] Ошибка загрузки пользователей:", e);
       }
     },
     async loadChats() {
