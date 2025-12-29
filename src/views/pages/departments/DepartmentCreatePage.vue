@@ -100,7 +100,7 @@ export default {
         userOptions() {
             return this.users.map(u => ({
                 value: u.id,
-                label: `${u.name} ${u.surname}`
+                label: u.surname ? `${u.name} ${u.surname}` : u.name || ''
             }));
         },
         departmentOptions() {
