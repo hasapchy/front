@@ -6,9 +6,9 @@
                 <SpinnerIcon />
             </div>
 
-            <div v-else class="py-10 px-8">
-                <div class="flex flex-col items-center mb-8">
-                    <div class="org-chart-scroll overflow-x-auto w-full px-12 pt-10 pb-12">
+            <div v-else class="py-8 px-6">
+                <div class="flex flex-col items-center">
+                    <div class="org-chart-scroll overflow-x-auto w-full px-8 pt-8 pb-12">
                         <div class="relative org-chart-container min-w-max flex flex-col items-center">
                             <!-- SVG Connectors Layer -->
                             <OrgChartConnectors 
@@ -19,14 +19,14 @@
                             
                             <!-- Company Card -->
                             <div 
-                                class="company-card bg-white rounded-xl shadow-lg border-2 border-[#337AB7]/20 w-72 group relative transition-all duration-200 hover:shadow-xl hover:border-[#337AB7]/40 z-10"
+                                class="company-card bg-white rounded-lg shadow-sm border-2 border-[#337AB7]/20 w-72 group relative transition-all duration-200 hover:shadow-md hover:border-[#337AB7] hover:ring-2 hover:ring-[#337AB7]/20 z-10"
                             >
-                                <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#337AB7] text-white text-[10px] font-semibold px-4 py-1 rounded-full uppercase tracking-wide shadow-md">
+                                <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#337AB7] text-white text-[10px] font-semibold px-4 py-1 rounded-full uppercase tracking-wide shadow-sm z-10">
                                     Организация
                                 </div>
 
                                 <div class="p-6 text-center">
-                                    <div class="w-20 h-20 bg-gradient-to-br from-blue-50 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-blue-100 shadow-sm">
+                                    <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-gray-200">
                                         <i class="fas fa-building text-[#337AB7] text-4xl"></i>
                                     </div>
                                     <div class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">Название компании</div>
@@ -35,7 +35,7 @@
                                     </div>
                                 </div>
 
-                                <div class="px-5 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-center rounded-b-xl">
+                                <div class="px-5 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-center rounded-b-lg">
                                     <button 
                                         @click.stop="showCreateModal(null)"
                                         :disabled="!$store.getters.hasPermission('departments_create')"
@@ -314,10 +314,7 @@ export default {
     scrollbar-color: #cbd5e1 transparent;
 }
 .company-card {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.company-card:hover {
-    transform: translateY(-2px);
+    transition: all 0.2s ease;
 }
 /* Скроллбар */
 div[style*="overflow-x: auto"]::-webkit-scrollbar {

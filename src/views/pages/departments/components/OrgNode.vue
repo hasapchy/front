@@ -6,16 +6,16 @@
     >
         <!-- Node Card -->
         <div 
-            class="node-card bg-white rounded-xl shadow-md border border-gray-200 transition-all duration-200 w-72 group relative cursor-pointer hover:shadow-lg hover:border-[#337AB7]/30"
+            class="node-card bg-white rounded-lg shadow-sm border border-gray-200 transition-all duration-200 w-72 group relative cursor-pointer hover:shadow-md hover:border-[#337AB7] hover:ring-2 hover:ring-[#337AB7]/20"
             @click="handleCardClick"
         >
-            <!-- Badge -->
-            <div v-if="!node.parentId" class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#337AB7] text-white text-[10px] font-semibold px-3 py-0.5 rounded-full uppercase tracking-wide shadow-md">
+            <!-- Top Badge -->
+            <div v-if="!node.parentId" class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#337AB7] text-white text-[10px] font-semibold px-3 py-0.5 rounded-full uppercase tracking-wide shadow-sm z-10">
                 Департамент
             </div>
 
             <!-- "My Department" Indicator -->
-            <div v-if="isMyDepartment" class="absolute top-3 right-3 flex items-center gap-1.5">
+            <div v-if="isMyDepartment" class="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-10">
                 <span class="relative flex h-2 w-2">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
@@ -23,20 +23,22 @@
             </div>
 
             <!-- Card Header -->
-            <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-start">
-                <div class="flex-1 min-w-0">
-                    <h3 class="text-sm font-bold text-gray-900 truncate leading-tight mb-1">{{ node.title }}</h3>
-                    <div v-if="node.description" class="text-xs text-gray-500 line-clamp-2 mt-1">
+            <div class="px-4 pt-4 pb-3 border-b border-gray-200 flex justify-between items-start">
+                <div class="flex-1 min-w-0 pr-2">
+                    <h3 class="text-sm font-bold text-gray-900 truncate leading-tight mb-1">
+                        {{ node.title }}
+                    </h3>
+                    <div v-if="node.description" class="text-xs text-gray-500 line-clamp-2 leading-relaxed">
                         {{ node.description }}
                     </div>
                 </div>
                 
                 <!-- Action Buttons: Visible on hover -->
-                <div class="flex items-center gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
                     <button 
                         v-if="$store.getters.hasPermission('departments_update')"
                         @click.stop="$emit('edit', node)" 
-                        class="p-1.5 rounded-md text-gray-400 hover:text-[#337AB7] hover:bg-blue-50 transition-all" 
+                        class="p-1.5 rounded-md text-gray-400 hover:text-[#337AB7] hover:bg-blue-50 transition-all duration-200" 
                         title="Редактировать"
                     >
                         <i class="fas fa-edit text-xs"></i>
@@ -44,7 +46,7 @@
                     <button 
                         v-if="$store.getters.hasPermission('departments_delete')"
                         @click.stop="$emit('delete', node)" 
-                        class="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all" 
+                        class="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200" 
                         title="Удалить"
                     >
                         <i class="fas fa-trash text-xs"></i>
@@ -53,41 +55,46 @@
             </div>
 
             <!-- Card Body (Head Info) -->
-            <div class="px-5 py-4">
-                <div class="flex items-center">
+            <div class="px-4 py-4 bg-white">
+                <div class="flex items-start">
                     <div class="relative flex-shrink-0">
                         <img 
                             v-if="node.head && node.head.photo && typeof node.head.photoUrl === 'function'" 
                             :src="node.head.photoUrl()" 
-                            class="w-14 h-14 rounded-full object-cover border-2 border-gray-100 ring-2 ring-white"
+                            class="w-14 h-14 rounded-full object-cover border-2 border-gray-100"
                             @error="onImgError"
                             :alt="node.head ? `${node.head.name || ''} ${node.head.surname || ''}`.trim() || 'Руководитель' : 'Руководитель'"
                         >
-                        <div v-else class="w-14 h-14 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border-2 border-gray-100 ring-2 ring-white">
+                        <div v-else class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-100">
                             <i class="fas fa-user text-gray-400 text-lg" aria-hidden="true"></i>
                         </div>
                         
-                        <div class="absolute -bottom-0.5 -right-0.5 bg-[#337AB7] text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                        <div class="absolute -bottom-0.5 -right-0.5 bg-[#337AB7] text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm" title="Руководитель">
                             <i class="fas fa-star text-[9px]"></i>
                         </div>
                     </div>
                     
-                    <div class="ml-4 flex-1 min-w-0">
+                    <div class="ml-3 flex-1 min-w-0">
                         <div class="text-sm font-semibold text-gray-900 truncate">
                             {{ node.head && (node.head.name || node.head.surname) ? `${node.head.name || ''} ${node.head.surname || ''}`.trim() : 'Не назначен' }}
                         </div>
                         <div class="text-xs text-gray-500 truncate mt-0.5">
                             {{ node.head && node.head.position ? node.head.position : 'Руководитель' }}
                         </div>
+                        <!-- Deputy Head Info (compact, if exists) -->
+                        <div v-if="node.deputyHead" class="text-xs text-gray-500 truncate mt-2 flex items-center gap-1.5">
+                            <i class="fas fa-user-tie text-[10px] text-[#5CB85C]"></i>
+                            <span>{{ node.deputyHead && (node.deputyHead.name || node.deputyHead.surname) ? `${node.deputyHead.name || ''} ${node.deputyHead.surname || ''}`.trim() : 'Заместитель' }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Card Footer -->
-            <div class="px-5 py-3 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between rounded-b-xl">
+            <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between rounded-b-lg">
                 <div class="flex items-center text-[#337AB7] text-xs font-medium">
                     <i class="fas fa-users mr-2 text-[#337AB7]/60"></i>
-                    <span>{{ node.users_count || 0 }} {{ node.users_count === 1 ? 'сотрудник' : node.users_count < 5 ? 'сотрудника' : 'сотрудников' }}</span>
+                    <span>{{ node.users_count || 0 }} {{ getUsersCountText(node.users_count || 0) }}</span>
                 </div>
                 
                 <button 
@@ -185,6 +192,24 @@ export default {
             if (this.$store.getters.hasPermission('departments_update')) {
                 this.$emit('edit', this.node);
             }
+        },
+        getUsersCountText(count) {
+            const lastDigit = count % 10;
+            const lastTwoDigits = count % 100;
+            
+            if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
+                return 'сотрудников';
+            }
+            
+            if (lastDigit === 1) {
+                return 'сотрудник';
+            }
+            
+            if (lastDigit >= 2 && lastDigit <= 4) {
+                return 'сотрудника';
+            }
+            
+            return 'сотрудников';
         }
     }
 };
@@ -192,9 +217,13 @@ export default {
 
 <style scoped>
 .node-card {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s ease;
 }
-.node-card:hover {
-    transform: translateY(-2px);
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 </style>
