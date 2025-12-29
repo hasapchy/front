@@ -267,6 +267,7 @@
 
 <script>
 import ChatController from "@/api/ChatController";
+import echo from "@/services/echo";
 
 export default {
   data() {
@@ -287,9 +288,7 @@ export default {
       selectedFiles: [],
       sending: false,
 
-      pollTimer: null,
-      lastSeenMessageId: null,
-      chatListPollTimer: null,
+      currentChannel: null, // WebSocket channel subscription
     };
   },
   computed: {
@@ -340,11 +339,12 @@ export default {
   async mounted() {
     await this.ensureUsersLoaded();
     await this.loadChats();
-    this.startChatListPolling();
+    // Подписываемся на список чатов для получения обновлений (unread_count, last_message)
+    this.subscribeToChatsUpdates();
   },
   beforeUnmount() {
-    this.stopPolling();
-    this.stopChatListPolling();
+    this.unsubscribeFromChat();
+    this.unsubscribeFromChatsUpdates();
   },
   methods: {
     async ensureUsersLoaded() {
@@ -392,27 +392,12 @@ export default {
         this.loadingChats = false;
       }
     },
-    startChatListPolling() {
-      this.stopChatListPolling();
-      if (!this.hasChatsView) return;
-
-      // Обновляем список чатов (для last_message/unread_count) каждые 2 сек
-      this.chatListPollTimer = setInterval(async () => {
-        try {
-          const items = await ChatController.getChats();
-          const prevGeneral = this.generalChat;
-          this.chats = Array.isArray(items) ? items : [];
-          this.generalChat = this.chats.find((c) => c && c.type === "general") || prevGeneral || null;
-        } catch (e) {
-          // ignore
-        }
-      }, 2000);
+    subscribeToChatsUpdates() {
+      // WebSocket: подписываемся на обновления списка чатов (можно добавить позже, если нужно)
+      // Пока оставляем пустым, т.к. основные обновления идут через подписку на конкретный чат
     },
-    stopChatListPolling() {
-      if (this.chatListPollTimer) {
-        clearInterval(this.chatListPollTimer);
-        this.chatListPollTimer = null;
-      }
+    unsubscribeFromChatsUpdates() {
+      // WebSocket: отписываемся от обновлений списка чатов
     },
     chatTitle(chat) {
       if (chat?.type === "direct" && this.activePeerUser) {
@@ -427,15 +412,15 @@ export default {
       return "fa-users";
     },
     async selectChat(chat) {
-      this.stopPolling();
+      this.unsubscribeFromChat(); // Отписываемся от предыдущего чата
       this.selectedChat = chat;
       this.selectedChatId = chat.id;
       this.messages = [];
-      this.lastSeenMessageId = null;
       try {
         await this.loadMessages(chat.id);
-      } finally {
-        this.startPolling(chat.id);
+        this.subscribeToChat(chat); // Подписываемся на новый чат через WebSocket
+      } catch (e) {
+        console.error("[Messenger] Ошибка при выборе чата:", e);
       }
     },
     openGeneralChat() {
@@ -476,7 +461,6 @@ export default {
       try {
         const items = await ChatController.getMessages(chatId);
         this.messages = Array.isArray(items) ? items : [];
-        this.lastSeenMessageId = this.messages.length ? this.messages[this.messages.length - 1].id : null;
         this.$nextTick(() => this.scrollToBottom());
       } catch (e) {
         this.messages = [];
@@ -490,33 +474,57 @@ export default {
         this.loadingMessages = false;
       }
     },
-    startPolling(chatId) {
-      this.stopPolling();
-      if (!chatId) return;
+    subscribeToChat(chat) {
+      if (!chat || !chat.id) return;
+      
+      const companyId = this.$store.getters.currentCompanyId;
+      if (!companyId) return;
 
-      // MVP fallback вместо WebSocket: проверяем новые сообщения раз в 2 секунды
-      this.pollTimer = setInterval(async () => {
-        try {
-          if (!this.selectedChatId || Number(this.selectedChatId) !== Number(chatId)) return;
+      // Отписываемся от предыдущего канала, если есть
+      this.unsubscribeFromChat();
 
-          const afterId = this.lastSeenMessageId || 0;
-          const items = await ChatController.getMessages(chatId, { after_id: afterId, limit: 200 });
-          const newItems = Array.isArray(items) ? items : [];
+      // Подписываемся на приватный канал чата
+      const channelName = `company.${companyId}.chat.${chat.id}`;
+      console.log(`[WebSocket] Подписка на канал: ${channelName}`);
 
-          if (newItems.length) {
-            this.messages = [...this.messages, ...newItems];
-            this.lastSeenMessageId = newItems[newItems.length - 1].id;
+      this.currentChannel = echo.private(channelName)
+        .listen('.chat.message.sent', (event) => {
+          console.log('[WebSocket] Получено новое сообщение:', event);
+          
+          // Проверяем, что сообщение для текущего чата
+          if (Number(event.chat_id) !== Number(this.selectedChatId)) return;
+
+          // Добавляем сообщение в список
+          const newMessage = {
+            id: event.id,
+            chat_id: event.chat_id,
+            user_id: event.user?.id,
+            body: event.body,
+            files: event.files,
+            created_at: event.created_at,
+            user: event.user,
+          };
+
+          // Проверяем, что сообщение еще не в списке (избегаем дублей)
+          const exists = this.messages.some(m => Number(m.id) === Number(newMessage.id));
+          if (!exists) {
+            this.messages.push(newMessage);
             this.$nextTick(() => this.scrollToBottom());
+            
+            // Обновляем метаданные чата
+            this.applyLocalMessageMeta(newMessage);
           }
-        } catch (e) {
-          // ignore polling errors
-        }
-      }, 2000);
+        })
+        .error((error) => {
+          console.error('[WebSocket] Ошибка подписки на канал:', error);
+        });
     },
-    stopPolling() {
-      if (this.pollTimer) {
-        clearInterval(this.pollTimer);
-        this.pollTimer = null;
+    unsubscribeFromChat() {
+      if (this.currentChannel) {
+        console.log('[WebSocket] Отписка от канала');
+        this.currentChannel.stopListening('.chat.message.sent');
+        echo.leave(this.currentChannel.name);
+        this.currentChannel = null;
       }
     },
     scrollToBottom() {
@@ -562,7 +570,6 @@ export default {
 
         if (msg) {
           this.messages.push(msg);
-          this.lastSeenMessageId = msg.id || this.lastSeenMessageId;
           this.draft = "";
           this.selectedFiles = [];
           // моментально обновим метаданные чата для отправителя
