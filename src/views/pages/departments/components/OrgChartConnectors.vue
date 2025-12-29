@@ -10,8 +10,8 @@
                 :stroke="lineColor"
                 :stroke-width="lineWidth"
                 fill="none"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                :stroke-linecap="line.isStraight ? 'butt' : 'round'"
+                :stroke-linejoin="line.isStraight ? 'miter' : 'round'"
                 class="org-connector-line"
             />
         </g>
@@ -109,10 +109,12 @@ export default {
 
                     // Рисуем линии от компании к департаментам первого уровня
                     if (rootTops.length === 1) {
-                        // Одна прямая линия
+                        // Одна прямая вертикальная линия - выравниваем X координаты для строгой вертикали
                         const target = rootTops[0];
+                        const x = companyBottom.x; // Используем X координату компании для строгой вертикали
                         this.lines.push({
-                            path: `M ${companyBottom.x} ${companyBottom.y} L ${target.x} ${target.y}`
+                            path: `M ${x} ${companyBottom.y} L ${x} ${target.y}`,
+                            isStraight: true
                         });
                     } else {
                         // Множественные департаменты: вертикаль -> горизонталь -> вертикали
@@ -185,10 +187,12 @@ export default {
             if (childTops.length === 0) return;
 
             if (childTops.length === 1) {
-                // Одна прямая линия
+                // Одна прямая вертикальная линия - выравниваем X координаты для строгой вертикали
                 const target = childTops[0];
+                const x = nodeBottom.x; // Используем X координату родителя для строгой вертикали
                 this.lines.push({
-                    path: `M ${nodeBottom.x} ${nodeBottom.y} L ${target.x} ${target.y}`
+                    path: `M ${x} ${nodeBottom.y} L ${x} ${target.y}`,
+                    isStraight: true
                 });
             } else {
                 // Множественные дети: вертикаль -> горизонталь -> вертикали
