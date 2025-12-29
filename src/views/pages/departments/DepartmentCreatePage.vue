@@ -188,41 +188,46 @@ export default {
     watch: {
         editingItem: {
             handler(newItem, oldItem) {
-                if (newItem) {
-                    // Редактирование существующего отдела
-                    this.title = newItem.title || '';
-                    this.description = newItem.description || '';
-                    this.parentIdValue = newItem.parentId || null;
-                    this.headId = newItem.headId || null;
-                    this.deputyHeadId = newItem.deputyHeadId || null;
-                    this.editingItemId = newItem.id || null;
-                } else if (oldItem !== undefined) {
-                    // editingItem стал null - создание нового отдела, сбрасываем форму
-                    this.title = '';
-                    this.description = '';
-                    this.parentIdValue = this.parentId || null;
-                    this.headId = null;
-                    this.deputyHeadId = null;
-                    this.editingItemId = null;
-                }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
+                // Добавляем небольшую задержку для корректной обработки изменений
+                setTimeout(() => {
+                    if (newItem) {
+                        // Редактирование существующего отдела
+                        this.title = newItem.title || '';
+                        this.description = newItem.description || '';
+                        this.parentIdValue = newItem.parentId || null;
+                        this.headId = newItem.headId || null;
+                        this.deputyHeadId = newItem.deputyHeadId || null;
+                        this.editingItemId = newItem.id || null;
+                    } else {
+                        // editingItem стал null или undefined - создание нового отдела, сбрасываем форму
+                        this.title = '';
+                        this.description = '';
+                        this.parentIdValue = this.parentId || null;
+                        this.headId = null;
+                        this.deputyHeadId = null;
+                        this.editingItemId = null;
+                    }
+                    this.$nextTick(() => {
+                        this.saveInitialState();
+                    });
+                }, 50);
             },
             deep: true,
-            immediate: false
+            immediate: true
         },
         parentId: {
             handler(newParentId) {
                 // Обновляем parentIdValue только если создаем новый отдел (не редактируем)
                 if (!this.editingItem) {
-                    this.parentIdValue = newParentId || null;
-                    this.$nextTick(() => {
-                        this.saveInitialState();
-                    });
+                    setTimeout(() => {
+                        this.parentIdValue = newParentId || null;
+                        this.$nextTick(() => {
+                            this.saveInitialState();
+                        });
+                    }, 50);
                 }
             },
-            immediate: false
+            immediate: true
         }
     }
 };

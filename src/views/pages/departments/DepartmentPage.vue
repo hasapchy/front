@@ -215,15 +215,32 @@ export default {
                 this.fetchDepartments(1, true)
                     .catch((error) => console.error("Ошибка обновления данных:", error));
             }
+            // Сбрасываем editingItem после операции
+            this.editingItem = null;
+            this.parentId = null;
             if (this.closeModal) {
                 this.shouldRestoreScrollOnClose = false;
                 this.closeModal(true);
             }
         },
+        handleModalClose() {
+            // Сбрасываем editingItem при закрытии модального окна
+            this.editingItem = null;
+            this.parentId = null;
+            const formRef = Object.values(this.$refs || {}).find(ref => ref?.handleCloseRequest);
+            if (formRef?.handleCloseRequest) {
+                formRef.handleCloseRequest();
+            } else {
+                this.closeModal();
+            }
+        },
         showCreateModal(parentId = null) {
+            // Сбрасываем editingItem с небольшой задержкой для корректной работы watcher
             this.editingItem = null;
             this.parentId = parentId;
-            this.modalDialog = true;
+            this.$nextTick(() => {
+                this.modalDialog = true;
+            });
         },
         showEditModal(item) {
             this.editingItem = item;
