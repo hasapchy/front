@@ -1,7 +1,7 @@
 <template>
   <div class="h-[calc(100vh-6rem)] flex overflow-hidden rounded-2xl border border-gray-200 bg-white">
     <!-- LEFT: list -->
-    <aside class="w-full md:w-[360px] shrink-0 border-r border-gray-200 bg-white flex flex-col">
+    <aside class="w-full md:w-[360px] shrink-0 border-r border-gray-200 bg-white flex flex-col min-h-0">
       <!-- Search row (Bitrix-like) -->
       <div class="px-3 py-2 border-b border-gray-200">
         <div class="flex items-center gap-2">
@@ -25,7 +25,7 @@
         </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto">
+      <div class="flex-1 overflow-y-auto min-h-0">
         <div v-if="!hasChatsView" class="p-4 text-sm text-gray-500">
           Нет доступа к чатам
         </div>
@@ -64,12 +64,19 @@
           </button>
 
           <!-- Users (always) -->
-          <div class="px-4 pt-4 pb-2 text-[11px] uppercase tracking-wide text-gray-500">
-            Сотрудники
+          <div class="px-4 pt-4 pb-2 text-[11px] uppercase tracking-wide text-gray-500 flex items-center justify-between">
+            <span>Сотрудники</span>
+            <span v-if="isDevelopment" class="normal-case text-gray-400 text-[10px]">
+              ({{ filteredUsers.length }}/{{ usersForCompany.length }})
+            </span>
           </div>
 
           <div v-if="filteredUsers.length === 0" class="px-4 py-3 text-sm text-gray-500">
             Нет сотрудников
+            <span v-if="isDevelopment" class="block text-xs text-gray-400 mt-1">
+              Всего в store: {{ $store.state.users?.length || 0 }}, 
+              Для компании: {{ usersForCompany.length }}
+            </span>
           </div>
 
           <button
@@ -94,7 +101,10 @@
               >
                 <i class="fas fa-user"></i>
               </div>
-              <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-white"></span>
+              <span
+                class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white"
+                :class="isUserOnline(u) ? 'bg-green-500' : 'bg-gray-300'"
+              ></span>
             </div>
             <div class="min-w-0 flex-1">
               <div class="flex items-center justify-between gap-2">
@@ -136,7 +146,7 @@
               {{ selectedChat ? chatTitle(selectedChat) : $t("messenger") }}
             </div>
             <div class="text-xs text-gray-400 truncate">
-              {{ selectedChat ? "Онлайн" : "Выберите сотрудника или общий чат слева" }}
+              {{ presenceStatusText }}
             </div>
           </div>
         </div>
@@ -260,6 +270,7 @@
 
 <script>
 import ChatController from "@/api/ChatController";
+import echo from "@/services/echo";
 
 export default {
   data() {
@@ -280,12 +291,16 @@ export default {
       selectedFiles: [],
       sending: false,
 
-      pollTimer: null,
-      lastSeenMessageId: null,
-      chatListPollTimer: null,
+      currentChannel: null, // WebSocket channel subscription
+      presenceChannel: null,
+      presenceChannelName: null,
+      onlineUserIds: new Set(),
     };
   },
   computed: {
+    isDevelopment() {
+      return import.meta.env.DEV || import.meta.env.MODE === 'development';
+    },
     hasChatsView() {
       return this.$store.getters.hasPermission("chats_view");
     },
@@ -298,6 +313,16 @@ export default {
     filteredUsers() {
       const q = (this.search || "").trim().toLowerCase();
       const users = this.usersForCompany.filter((u) => u && u.id !== this.$store.state.user?.id);
+      
+      // Отладка: логируем количество пользователей
+      if (import.meta.env.DEV) {
+        console.log("[Messenger] Фильтрация пользователей:", {
+          всегоДляКомпании: this.usersForCompany.length,
+          послеИсключенияТекущего: users.length,
+          поисковыйЗапрос: q || "(нет)",
+        });
+      }
+      
       if (!q) return users;
       return users.filter((u) => {
         const s = `${u.name || ""} ${u.surname || ""} ${u.email || ""}`.toLowerCase();
@@ -316,25 +341,57 @@ export default {
       }
       return "Нажмите, чтобы открыть общий чат";
     },
+    presenceStatusText() {
+      if (!this.selectedChat) return "Выберите сотрудника или общий чат слева";
+      if (this.selectedChat.type === "direct" && this.activePeerUser) {
+        return this.isUserOnline(this.activePeerUser) ? "Онлайн" : "Оффлайн";
+      }
+      return "Онлайн";
+    },
   },
   async mounted() {
     await this.ensureUsersLoaded();
     await this.loadChats();
-    this.startChatListPolling();
+    this.subscribeToPresence();
+    // Подписываемся на список чатов для получения обновлений (unread_count, last_message)
+    this.subscribeToChatsUpdates();
   },
   beforeUnmount() {
-    this.stopPolling();
-    this.stopChatListPolling();
+    this.unsubscribeFromChat();
+    this.unsubscribeFromChatsUpdates();
+    this.unsubscribeFromPresence();
   },
   methods: {
     async ensureUsersLoaded() {
-      // users используются в разных местах приложения; если ещё не загружены — подгрузим
-      if (!Array.isArray(this.$store.state.users) || this.$store.state.users.length === 0) {
-        try {
-          await this.$store.dispatch("loadUsers");
-        } catch (e) {
-          // ignore
+      // Для мессенджера всегда загружаем пользователей, чтобы получить актуальный список
+      // Очищаем state перед загрузкой, чтобы гарантировать свежие данные
+      try {
+        // Очищаем пользователей в state, чтобы принудительно загрузить заново
+        this.$store.commit("SET_USERS", []);
+        
+        // Загружаем пользователей
+        await this.$store.dispatch("loadUsers");
+        
+        // Отладка: проверим сколько пользователей загружено
+        const allUsers = this.$store.state.users || [];
+        const companyUsers = this.usersForCompany || [];
+        console.log("[Messenger] Загружено пользователей:", {
+          всего: allUsers.length,
+          дляКомпании: companyUsers.length,
+          текущаяКомпания: this.$store.state.currentCompany?.id,
+          активных: allUsers.filter(u => u?.isActive).length,
+        });
+        
+        // Дополнительная отладка: проверим структуру компаний у пользователей
+        if (import.meta.env.DEV) {
+          allUsers.forEach(u => {
+            if (!u.companies || u.companies.length === 0) {
+              console.warn(`[Messenger] Пользователь ${u.name} ${u.surname} не имеет компаний`);
+            }
+          });
         }
+      } catch (e) {
+        console.error("[Messenger] Ошибка загрузки пользователей:", e);
       }
     },
     async loadChats() {
@@ -350,27 +407,12 @@ export default {
         this.loadingChats = false;
       }
     },
-    startChatListPolling() {
-      this.stopChatListPolling();
-      if (!this.hasChatsView) return;
-
-      // Обновляем список чатов (для last_message/unread_count) каждые 2 сек
-      this.chatListPollTimer = setInterval(async () => {
-        try {
-          const items = await ChatController.getChats();
-          const prevGeneral = this.generalChat;
-          this.chats = Array.isArray(items) ? items : [];
-          this.generalChat = this.chats.find((c) => c && c.type === "general") || prevGeneral || null;
-        } catch (e) {
-          // ignore
-        }
-      }, 2000);
+    subscribeToChatsUpdates() {
+      // WebSocket: подписываемся на обновления списка чатов (можно добавить позже, если нужно)
+      // Пока оставляем пустым, т.к. основные обновления идут через подписку на конкретный чат
     },
-    stopChatListPolling() {
-      if (this.chatListPollTimer) {
-        clearInterval(this.chatListPollTimer);
-        this.chatListPollTimer = null;
-      }
+    unsubscribeFromChatsUpdates() {
+      // WebSocket: отписываемся от обновлений списка чатов
     },
     chatTitle(chat) {
       if (chat?.type === "direct" && this.activePeerUser) {
@@ -384,16 +426,59 @@ export default {
       if (chat.type === "direct") return "fa-user";
       return "fa-users";
     },
+    isUserOnline(u) {
+      if (!u || !u.id) return false;
+      return this.onlineUserIds.has(Number(u.id));
+    },
+    subscribeToPresence() {
+      const companyId = this.$store.getters.currentCompanyId;
+      if (!companyId) return;
+
+      const channelName = `company.${companyId}.presence`;
+      this.unsubscribeFromPresence();
+      this.presenceChannelName = channelName;
+
+      this.presenceChannel = echo.join(channelName)
+        .here((users) => {
+          const ids = (users || []).map((u) => Number(u.id)).filter((id) => !Number.isNaN(id));
+          this.onlineUserIds = new Set(ids);
+        })
+        .joining((user) => {
+          const id = Number(user?.id);
+          if (Number.isNaN(id)) return;
+          const next = new Set(this.onlineUserIds);
+          next.add(id);
+          this.onlineUserIds = next;
+        })
+        .leaving((user) => {
+          const id = Number(user?.id);
+          if (Number.isNaN(id)) return;
+          const next = new Set(this.onlineUserIds);
+          next.delete(id);
+          this.onlineUserIds = next;
+        })
+        .error((err) => {
+          console.error("[WebSocket] Ошибка presence-канала:", err);
+        });
+    },
+    unsubscribeFromPresence() {
+      if (this.presenceChannelName) {
+        echo.leave(this.presenceChannelName);
+      }
+      this.presenceChannel = null;
+      this.presenceChannelName = null;
+      this.onlineUserIds = new Set();
+    },
     async selectChat(chat) {
-      this.stopPolling();
+      this.unsubscribeFromChat(); // Отписываемся от предыдущего чата
       this.selectedChat = chat;
       this.selectedChatId = chat.id;
       this.messages = [];
-      this.lastSeenMessageId = null;
       try {
         await this.loadMessages(chat.id);
-      } finally {
-        this.startPolling(chat.id);
+        this.subscribeToChat(chat); // Подписываемся на новый чат через WebSocket
+      } catch (e) {
+        console.error("[Messenger] Ошибка при выборе чата:", e);
       }
     },
     openGeneralChat() {
@@ -434,7 +519,6 @@ export default {
       try {
         const items = await ChatController.getMessages(chatId);
         this.messages = Array.isArray(items) ? items : [];
-        this.lastSeenMessageId = this.messages.length ? this.messages[this.messages.length - 1].id : null;
         this.$nextTick(() => this.scrollToBottom());
       } catch (e) {
         this.messages = [];
@@ -448,33 +532,57 @@ export default {
         this.loadingMessages = false;
       }
     },
-    startPolling(chatId) {
-      this.stopPolling();
-      if (!chatId) return;
+    subscribeToChat(chat) {
+      if (!chat || !chat.id) return;
+      
+      const companyId = this.$store.getters.currentCompanyId;
+      if (!companyId) return;
 
-      // MVP fallback вместо WebSocket: проверяем новые сообщения раз в 2 секунды
-      this.pollTimer = setInterval(async () => {
-        try {
-          if (!this.selectedChatId || Number(this.selectedChatId) !== Number(chatId)) return;
+      // Отписываемся от предыдущего канала, если есть
+      this.unsubscribeFromChat();
 
-          const afterId = this.lastSeenMessageId || 0;
-          const items = await ChatController.getMessages(chatId, { after_id: afterId, limit: 200 });
-          const newItems = Array.isArray(items) ? items : [];
+      // Подписываемся на приватный канал чата
+      const channelName = `company.${companyId}.chat.${chat.id}`;
+      console.log(`[WebSocket] Подписка на канал: ${channelName}`);
 
-          if (newItems.length) {
-            this.messages = [...this.messages, ...newItems];
-            this.lastSeenMessageId = newItems[newItems.length - 1].id;
+      this.currentChannel = echo.private(channelName)
+        .listen('.chat.message.sent', (event) => {
+          console.log('[WebSocket] Получено новое сообщение:', event);
+          
+          // Проверяем, что сообщение для текущего чата
+          if (Number(event.chat_id) !== Number(this.selectedChatId)) return;
+
+          // Добавляем сообщение в список
+          const newMessage = {
+            id: event.id,
+            chat_id: event.chat_id,
+            user_id: event.user?.id,
+            body: event.body,
+            files: event.files,
+            created_at: event.created_at,
+            user: event.user,
+          };
+
+          // Проверяем, что сообщение еще не в списке (избегаем дублей)
+          const exists = this.messages.some(m => Number(m.id) === Number(newMessage.id));
+          if (!exists) {
+            this.messages.push(newMessage);
             this.$nextTick(() => this.scrollToBottom());
+            
+            // Обновляем метаданные чата
+            this.applyLocalMessageMeta(newMessage);
           }
-        } catch (e) {
-          // ignore polling errors
-        }
-      }, 2000);
+        })
+        .error((error) => {
+          console.error('[WebSocket] Ошибка подписки на канал:', error);
+        });
     },
-    stopPolling() {
-      if (this.pollTimer) {
-        clearInterval(this.pollTimer);
-        this.pollTimer = null;
+    unsubscribeFromChat() {
+      if (this.currentChannel) {
+        console.log('[WebSocket] Отписка от канала');
+        this.currentChannel.stopListening('.chat.message.sent');
+        echo.leave(this.currentChannel.name);
+        this.currentChannel = null;
       }
     },
     scrollToBottom() {
@@ -491,9 +599,17 @@ export default {
     messageTime(m) {
       const raw = m.created_at || m.createdAt || null;
       if (!raw) return "";
-      // ожидаем 'YYYY-MM-DD HH:mm:ss' или ISO; берём последние 5 символов времени
       const s = String(raw);
-      const match = s.match(/(\d{2}:\d{2})(?::\d{2})?$/);
+
+      // ISO вида 2025-12-27T09:17:28.000000Z -> берём HH:mm после 'T'
+      if (s.includes("T")) {
+        const timePart = (s.split("T")[1] || "").trim();
+        const hhmm = timePart.slice(0, 5);
+        if (/^\d{2}:\d{2}$/.test(hhmm)) return hhmm;
+      }
+
+      // Формат "YYYY-MM-DD HH:mm:ss" или похожий -> ищем первую HH:mm
+      const match = s.match(/(\d{2}:\d{2})/);
       return match ? match[1] : s;
     },
     userPhotoUrl(path) {
@@ -520,7 +636,6 @@ export default {
 
         if (msg) {
           this.messages.push(msg);
-          this.lastSeenMessageId = msg.id || this.lastSeenMessageId;
           this.draft = "";
           this.selectedFiles = [];
           // моментально обновим метаданные чата для отправителя
