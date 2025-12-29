@@ -101,7 +101,10 @@
               >
                 <i class="fas fa-user"></i>
               </div>
-              <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-white"></span>
+              <span
+                class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white"
+                :class="isUserOnline(u) ? 'bg-green-500' : 'bg-gray-300'"
+              ></span>
             </div>
             <div class="min-w-0 flex-1">
               <div class="flex items-center justify-between gap-2">
@@ -143,7 +146,7 @@
               {{ selectedChat ? chatTitle(selectedChat) : $t("messenger") }}
             </div>
             <div class="text-xs text-gray-400 truncate">
-              {{ selectedChat ? "Онлайн" : "Выберите сотрудника или общий чат слева" }}
+              {{ presenceStatusText }}
             </div>
           </div>
         </div>
@@ -289,6 +292,9 @@ export default {
       sending: false,
 
       currentChannel: null, // WebSocket channel subscription
+      presenceChannel: null,
+      presenceChannelName: null,
+      onlineUserIds: new Set(),
     };
   },
   computed: {
@@ -335,16 +341,25 @@ export default {
       }
       return "Нажмите, чтобы открыть общий чат";
     },
+    presenceStatusText() {
+      if (!this.selectedChat) return "Выберите сотрудника или общий чат слева";
+      if (this.selectedChat.type === "direct" && this.activePeerUser) {
+        return this.isUserOnline(this.activePeerUser) ? "Онлайн" : "Оффлайн";
+      }
+      return "Онлайн";
+    },
   },
   async mounted() {
     await this.ensureUsersLoaded();
     await this.loadChats();
+    this.subscribeToPresence();
     // Подписываемся на список чатов для получения обновлений (unread_count, last_message)
     this.subscribeToChatsUpdates();
   },
   beforeUnmount() {
     this.unsubscribeFromChat();
     this.unsubscribeFromChatsUpdates();
+    this.unsubscribeFromPresence();
   },
   methods: {
     async ensureUsersLoaded() {
@@ -410,6 +425,49 @@ export default {
       if (chat.type === "general") return "fa-globe";
       if (chat.type === "direct") return "fa-user";
       return "fa-users";
+    },
+    isUserOnline(u) {
+      if (!u || !u.id) return false;
+      return this.onlineUserIds.has(Number(u.id));
+    },
+    subscribeToPresence() {
+      const companyId = this.$store.getters.currentCompanyId;
+      if (!companyId) return;
+
+      const channelName = `company.${companyId}.presence`;
+      this.unsubscribeFromPresence();
+      this.presenceChannelName = channelName;
+
+      this.presenceChannel = echo.join(channelName)
+        .here((users) => {
+          const ids = (users || []).map((u) => Number(u.id)).filter((id) => !Number.isNaN(id));
+          this.onlineUserIds = new Set(ids);
+        })
+        .joining((user) => {
+          const id = Number(user?.id);
+          if (Number.isNaN(id)) return;
+          const next = new Set(this.onlineUserIds);
+          next.add(id);
+          this.onlineUserIds = next;
+        })
+        .leaving((user) => {
+          const id = Number(user?.id);
+          if (Number.isNaN(id)) return;
+          const next = new Set(this.onlineUserIds);
+          next.delete(id);
+          this.onlineUserIds = next;
+        })
+        .error((err) => {
+          console.error("[WebSocket] Ошибка presence-канала:", err);
+        });
+    },
+    unsubscribeFromPresence() {
+      if (this.presenceChannelName) {
+        echo.leave(this.presenceChannelName);
+      }
+      this.presenceChannel = null;
+      this.presenceChannelName = null;
+      this.onlineUserIds = new Set();
     },
     async selectChat(chat) {
       this.unsubscribeFromChat(); // Отписываемся от предыдущего чата
@@ -541,9 +599,17 @@ export default {
     messageTime(m) {
       const raw = m.created_at || m.createdAt || null;
       if (!raw) return "";
-      // ожидаем 'YYYY-MM-DD HH:mm:ss' или ISO; берём последние 5 символов времени
       const s = String(raw);
-      const match = s.match(/(\d{2}:\d{2})(?::\d{2})?$/);
+
+      // ISO вида 2025-12-27T09:17:28.000000Z -> берём HH:mm после 'T'
+      if (s.includes("T")) {
+        const timePart = (s.split("T")[1] || "").trim();
+        const hhmm = timePart.slice(0, 5);
+        if (/^\d{2}:\d{2}$/.test(hhmm)) return hhmm;
+      }
+
+      // Формат "YYYY-MM-DD HH:mm:ss" или похожий -> ищем первую HH:mm
+      const match = s.match(/(\d{2}:\d{2})/);
       return match ? match[1] : s;
     },
     userPhotoUrl(path) {
