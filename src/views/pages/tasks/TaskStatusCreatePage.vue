@@ -35,9 +35,10 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog },
     props: {
@@ -48,10 +49,6 @@ export default {
             id: this.editingItem ? this.editingItem.id : null,
             name: this.editingItem ? this.editingItem.name : '',
             color: this.editingItem ? this.editingItem.color : '#6c757d',
-            editingItemId: this.editingItem ? this.editingItem.id : null,
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false
         }
     },
     mounted() {
@@ -73,72 +70,43 @@ export default {
                 color: this.color
             };
         },
-        async save() {
-            this.saveLoading = true;
-            try {
-                let resp;
-                if (this.editingItemId != null) {
-                    resp = await TaskStatusController.updateItem(this.editingItemId, {
-                        name: this.name,
-                        color: this.color
-                    });
-                } else {
-                    resp = await TaskStatusController.storeItem({
-                        name: this.name,
-                        color: this.color
-                    });
-                }
-                if (resp.message) {
-                    this.$emit('saved');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
-            }
-            this.saveLoading = false;
+        prepareSave() {
+            return {
+                name: this.name,
+                color: this.color
+            };
         },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (!this.editingItemId) return;
-            this.deleteLoading = true;
-            try {
-                const resp = await TaskStatusController.deleteItem(this.editingItemId);
-                if (resp.message) {
-                    this.$emit('deleted');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+        async performSave(data) {
+            if (this.editingItemId != null) {
+                return await TaskStatusController.updateItem(this.editingItemId, data);
+            } else {
+                return await TaskStatusController.storeItem(data);
             }
-            this.deleteLoading = false;
+        },
+        async performDelete() {
+            const resp = await TaskStatusController.deleteItem(this.editingItemId);
+            if (!resp.message) {
+                throw new Error('Failed to delete task status');
+            }
+            return resp;
+        },
+        onSaveSuccess(response) {
+            if (response && response.message) {
+                this.clearForm();
+            }
         },
         clearForm() {
             this.id = null;
             this.name = '';
             this.color = '#6c757d';
-            this.editingItemId = null;
-            this.resetFormChanges();
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
         },
-        showDeleteDialog() { this.deleteDialog = true; },
-        closeDeleteDialog() { this.deleteDialog = false; }
-    },
-    watch: {
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    this.id = newEditingItem.id || null;
-                    this.name = newEditingItem.name || '';
-                    this.color = newEditingItem.color || '#6c757d';
-                    this.editingItemId = newEditingItem.id || null;
-                } else {
-                    this.id = null;
-                    this.name = '';
-                    this.color = '#6c757d';
-                    this.editingItemId = null;
-                }
-            },
-            deep: true,
-            immediate: true
+        onEditingItemChanged(newEditingItem) {
+            this.id = newEditingItem.id || null;
+            this.name = newEditingItem.name || '';
+            this.color = newEditingItem.color || '#6c757d';
         }
     }
 }

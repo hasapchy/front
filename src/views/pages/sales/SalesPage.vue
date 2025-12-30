@@ -2,40 +2,30 @@
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.sales" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="(i) => { showModal(i) }">
+                :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar
-                        :show-filters="true"
-                        :has-active-filters="hasActiveFilters"
-                        :active-filters-count="getActiveFiltersCount()"
-                        :on-filters-reset="resetFilters"
+                    <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
                         :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                        :on-page-change="fetchItems"
-                        :on-per-page-change="handlePerPageChange"
-                        :resetColumns="resetColumns"
-                        :columns="columns"
-                        :toggleVisible="toggleVisible"
-                        :log="log">
+                        :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
                         <template #left>
-                            <PrimaryButton 
-                                :onclick="() => { showModal(null) }" 
-                                icon="fas fa-plus"
+                            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
                                 :disabled="!$store.getters.hasPermission('sales_create')">
                             </PrimaryButton>
-                            
+
                             <transition name="fade">
-                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
+                                    :batch-actions="getBatchActions()" />
                             </transition>
-                            
-                            <FiltersContainer
-                                :has-active-filters="hasActiveFilters"
-                                :active-filters-count="getActiveFiltersCount()"
-                                @reset="resetFilters"
+
+                            <FiltersContainer :has-active-filters="hasActiveFilters"
+                                :active-filters-count="getActiveFiltersCount()" @reset="resetFilters"
                                 @apply="applyFilters">
                                 <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период'
+                                    }}</label>
                                     <select v-model="dateFilter" class="w-full">
                                         <option value="all_time">{{ $t('allTime') }}</option>
                                         <option value="today">{{ $t('today') }}</option>
@@ -50,11 +40,11 @@
 
                                 <div v-if="dateFilter === 'custom'" class="space-y-2">
                                     <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
                                         <input type="date" v-model="startDate" class="w-full" />
                                     </div>
                                     <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
                                         <input type="date" v-model="endDate" class="w-full" />
                                     </div>
                                 </div>
@@ -99,13 +89,15 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <SaleCreatePage v-if="modalDialog" ref="salecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <SaleCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-sale'" ref="salecreatepageForm"
+            @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
-            :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
+        :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
+        @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -138,14 +130,15 @@ import filtersMixin from '@/mixins/filtersMixin';
 
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,  companyChangeMixin, searchMixin, filtersMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, ClientButtonCell, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, draggable: VueDraggableNext },
     data() {
         return {
-            // data, loading, perPage, perPageOptions - из crudEventMixin
-            // selectedIds - из batchActionsMixin
             controller: SaleController,
             cacheInvalidationType: 'sales',
+            itemViewRouteName: 'SaleView',
+            baseRouteName: 'Sales',
+            errorGettingItemText: this.$t('errorGettingSaleList'),
             showStatusSelect: false,
             deletePermission: 'sales_delete',
             savedSuccessText: this.$t('saleRecordAdded'),
@@ -177,7 +170,6 @@ export default {
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
-        
         eventBus.on('global-search', this.handleSearch);
     },
 
@@ -186,6 +178,14 @@ export default {
     },
     beforeUnmount() {
         eventBus.off('global-search', this.handleSearch);
+    },
+    watch: {
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
+        }
     },
     methods: {
         itemMapper(i, c) {
@@ -199,7 +199,6 @@ export default {
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
                 case 'products':
-                    // Возвращаем количество продуктов для сортировки (отображение через компонент ProductsListCell)
                     return (i.products || []).length;
                 case 'price':
                     return i.priceInfo();
@@ -224,14 +223,10 @@ export default {
             this.startDate = null;
             this.endDate = null;
             this.selectedIds = [];
-            
-            // Перезагружаем данные со страницы 1
             await this.fetchItems(1, false);
-            
-            // Уведомляем пользователя о смене компании
             this.$store.dispatch('showNotification', {
-              title: 'Компания изменена',
-              isDanger: false
+                title: 'Компания изменена',
+                isDanger: false
             });
         },
         async fetchItems(page = 1, silent = false) {
@@ -239,9 +234,9 @@ export default {
                 this.loading = true;
             }
             try {
-               
+
                 const per_page = this.perPage;
-                
+
                 const new_data = await SaleController.getItems(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, per_page);
                 this.data = new_data;
             } catch (error) {
@@ -279,8 +274,8 @@ export default {
         },
         hasActiveFilters() {
             return this.dateFilter !== 'all_time' ||
-                   (this.startDate !== null && this.startDate !== '') ||
-                   (this.endDate !== null && this.endDate !== '');
+                (this.startDate !== null && this.startDate !== '') ||
+                (this.endDate !== null && this.endDate !== '');
         }
     },
 }

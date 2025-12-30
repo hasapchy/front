@@ -36,12 +36,13 @@ import LeaveTypeController from '@/api/LeaveTypeController';
 import LeaveTypeDto from '@/dto/leave/LeaveTypeDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog },
     props: {
@@ -51,10 +52,6 @@ export default {
         return {
             name: this.editingItem ? this.editingItem.name : '',
             color: this.editingItem && this.editingItem.color ? this.editingItem.color : '#3B82F6',
-            editingItemId: this.editingItem ? this.editingItem.id : null,
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false
         }
     },
     mounted() {
@@ -69,84 +66,41 @@ export default {
                 color: this.color
             };
         },
-        async save() {
-            if (!this.name || this.name.trim() === '') {
-                this.$emit('saved-error', this.$t('nameIsRequired'));
-                return;
-            }
-
-            this.saveLoading = true;
-            try {
-                const data = {
-                    name: this.name.trim(),
-                    color: this.color && this.color.trim() ? this.color.trim() : null
-                };
-                
-                if (this.editingItemId != null) {
-                    var resp = await LeaveTypeController.updateItem(
-                        this.editingItemId,
-                        data);
-                } else {
-                    var resp = await LeaveTypeController.storeItem(data);
-                }
-                if (resp.message) {
-                    this.$emit('saved');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
-            }
-            this.saveLoading = false;
+        prepareSave() {
+            return {
+                name: this.name.trim(),
+                color: this.color && this.color.trim() ? this.color.trim() : null
+            };
         },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (this.editingItemId == null) {
-                return;
+        async performSave(data) {
+            if (this.editingItemId != null) {
+                return await LeaveTypeController.updateItem(this.editingItemId, data);
+            } else {
+                return await LeaveTypeController.storeItem(data);
             }
-            this.deleteLoading = true;
-            try {
-                var resp = await LeaveTypeController.deleteItem(
-                    this.editingItemId);
-                if (resp.message) {
-                    this.$emit('deleted');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+        },
+        async performDelete() {
+            const resp = await LeaveTypeController.deleteItem(this.editingItemId);
+            if (!resp.message) {
+                throw new Error('Failed to delete leave type');
             }
-            this.deleteLoading = false;
+            return resp;
+        },
+        onSaveSuccess(response) {
+            if (response && response.message) {
+                this.clearForm();
+            }
         },
         clearForm() {
             this.name = '';
             this.color = '#3B82F6';
-            this.editingItemId = null;
-            this.resetFormChanges();
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
         },
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
-        }
-    },
-    watch: {
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    this.name = newEditingItem.name || '';
-                    this.color = newEditingItem.color || '#3B82F6';
-                    this.editingItemId = newEditingItem.id || null;
-                } else {
-                    this.name = '';
-                    this.color = '#3B82F6';
-                    this.editingItemId = null;
-                }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
-            },
-            deep: true,
-            immediate: true
+        onEditingItemChanged(newEditingItem) {
+            this.name = newEditingItem.name || '';
+            this.color = newEditingItem.color || '#3B82F6';
         }
     }
 }

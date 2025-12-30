@@ -4,7 +4,7 @@
         <div v-if="data != null && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.leaves" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="(i) => { showModal(i) }">
+                :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
                         :show-filters="true"
@@ -181,7 +181,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <LeaveCreatePage ref="leavecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <LeaveCreatePage :key="editingItem ? editingItem.id : 'new-leave'" ref="leavecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -237,6 +237,9 @@ export default {
         return {
             controller: LeaveController,
             cacheInvalidationType: 'leaves',
+            itemViewRouteName: 'LeaveView',
+            baseRouteName: 'Leaves',
+            errorGettingItemText: this.$t('errorGettingLeave'),
             savedSuccessText: this.$t('leaveSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingLeave'),
             deletedSuccessText: this.$t('leaveSuccessfullyDeleted'),
@@ -435,9 +438,21 @@ export default {
                 this.shouldRestoreScrollOnClose = false;
                 this.closeModal(true);
             }
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'Leaves' });
+            }
         }
     },
     watch: {
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
+        },
         viewMode: {
             handler(newMode) {
                 // Vuex автоматически сохранит через vuex-persistedstate

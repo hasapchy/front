@@ -2,7 +2,7 @@
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.orders" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => showModal(i)" @selectionChange="selectedIds = $event">
+                :item-mapper="itemMapper" :onItemClick="onItemClick" @selectionChange="selectedIds = $event">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
                         :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
@@ -14,87 +14,22 @@
                             <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
                                 :disabled="!$store.getters.hasPermission('orders_create')">
                             </PrimaryButton>
-                            
+
                             <transition name="fade">
                                 <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
-                                    :batch-actions="getBatchActions()" :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
-                                    :handle-change-status="handleChangeStatus" :show-status-select="true" />
+                                    :batch-actions="getBatchActions()" :show-batch-status-select="showBatchStatusSelect"
+                                    :statuses="statuses" :handle-change-status="handleChangeStatus"
+                                    :show-status-select="true" />
                             </transition>
 
-                            <FiltersContainer :has-active-filters="hasActiveFilters"
-                                :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
-                                <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период'
-                                        }}</label>
-                                    <select v-model="dateFilter" class="w-full">
-                                        <option value="all_time">{{ $t('allTime') }}</option>
-                                        <option value="today">{{ $t('today') }}</option>
-                                        <option value="yesterday">{{ $t('yesterday') }}</option>
-                                        <option value="this_week">{{ $t('thisWeek') }}</option>
-                                        <option value="this_month">{{ $t('thisMonth') }}</option>
-                                        <option value="last_week">{{ $t('lastWeek') }}</option>
-                                        <option value="last_month">{{ $t('lastMonth') }}</option>
-                                        <option value="custom">{{ $t('selectDates') }}</option>
-                                    </select>
-                                </div>
+                            <OrderFilters v-model:dateFilter="dateFilter" v-model:startDate="startDate"
+                                v-model:endDate="endDate" v-model:statusFilter="statusFilter"
+                                v-model:projectFilter="projectFilter" v-model:clientFilter="clientFilter"
+                                :statuses="statuses" :projects="projects" :clients="clients"
+                                :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"
+                                @reset="resetFilters" @apply="applyFilters" />
 
-                                <div v-if="dateFilter === 'custom'" class="space-y-2">
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
-                                        <input type="date" v-model="startDate" class="w-full" />
-                                    </div>
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
-                                        <input type="date" v-model="endDate" class="w-full" />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус'
-                                        }}</label>
-                                    <select v-model="statusFilter" class="w-full">
-                                        <option value="">{{ $t('allStatuses') }}</option>
-                                        <option v-for="status in statuses" :key="status.id" :value="status.id">
-                                            {{ translateOrderStatus(status.name, $t) }}
-                                        </option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('project') || 'Проект'
-                                        }}</label>
-                                    <select v-model="projectFilter" class="w-full">
-                                        <option value="">{{ $t('allProjects') }}</option>
-                                        <option v-for="project in projects" :key="project.id" :value="project.id">
-                                            {{ project.name }}
-                                        </option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент'
-                                        }}</label>
-                                    <select v-model="clientFilter" class="w-full">
-                                        <option value="">{{ $t('allClients') }}</option>
-                                        <option v-for="client in clients" :key="client.id" :value="client.id">
-                                            {{ client.fullName() }}
-                                        </option>
-                                    </select>
-                                </div>
-                            </FiltersContainer>
-
-                            <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                                <button @click="changeViewMode('table')"
-                                    class="px-3 py-2 transition-colors cursor-pointer"
-                                    :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                                    <i class="fas fa-table"></i>
-                                </button>
-                                <button @click="changeViewMode('kanban')"
-                                    class="px-3 py-2 transition-colors cursor-pointer"
-                                    :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                                    <i class="fas fa-columns"></i>
-                                </button>
-                            </div>
+                            <ViewModeToggle :view-mode="viewMode" @change="changeViewMode" />
                         </template>
 
                         <template #right="{ resetColumns, columns, toggleVisible, log }">
@@ -106,7 +41,8 @@
                                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
                             <TableFilterButton v-if="viewMode === 'table'" :onReset="resetColumns">
                                 <ul>
-                                    <draggable v-if="columns && columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
+                                    <draggable v-if="columns && columns.length" class="dragArea list-group w-full"
+                                        :list="columns" @change="log">
                                         <li v-for="(element, index) in columns" :key="element.name"
                                             @click="toggleVisible(index)"
                                             class="flex items-center hover:bg-gray-100 p-2 rounded">
@@ -124,7 +60,7 @@
                                     </draggable>
                                 </ul>
                             </TableFilterButton>
-                        </template> 
+                        </template>
 
                         <template #gear>
                         </template>
@@ -142,74 +78,13 @@
                         :disabled="!$store.getters.hasPermission('orders_create')">
                     </PrimaryButton>
 
-                    <FiltersContainer :has-active-filters="hasActiveFilters"
-                        :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
-                        <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
-                            <select v-model="dateFilter" class="w-full">
-                                <option value="all_time">{{ $t('allTime') }}</option>
-                                <option value="today">{{ $t('today') }}</option>
-                                <option value="yesterday">{{ $t('yesterday') }}</option>
-                                <option value="this_week">{{ $t('thisWeek') }}</option>
-                                <option value="this_month">{{ $t('thisMonth') }}</option>
-                                <option value="last_week">{{ $t('lastWeek') }}</option>
-                                <option value="last_month">{{ $t('lastMonth') }}</option>
-                                <option value="custom">{{ $t('selectDates') }}</option>
-                            </select>
-                        </div>
+                    <OrderFilters v-model:dateFilter="dateFilter" v-model:startDate="startDate"
+                        v-model:endDate="endDate" v-model:statusFilter="statusFilter"
+                        v-model:projectFilter="projectFilter" v-model:clientFilter="clientFilter" :statuses="statuses"
+                        :projects="projects" :clients="clients" :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters" />
 
-                        <div v-if="dateFilter === 'custom'" class="space-y-2">
-                            <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
-                                <input type="date" v-model="startDate" class="w-full" />
-                            </div>
-                            <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
-                                <input type="date" v-model="endDate" class="w-full" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
-                            <select v-model="statusFilter" class="w-full">
-                                <option value="">{{ $t('allStatuses') }}</option>
-                                <option v-for="status in statuses" :key="status.id" :value="status.id">
-                                    {{ status.name }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('project') || 'Проект' }}</label>
-                            <select v-model="projectFilter" class="w-full">
-                                <option value="">{{ $t('allProjects') }}</option>
-                                <option v-for="project in projects" :key="project.id" :value="project.id">
-                                    {{ project.name }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент' }}</label>
-                            <select v-model="clientFilter" class="w-full">
-                                <option value="">{{ $t('allClients') }}</option>
-                                <option v-for="client in clients" :key="client.id" :value="client.id">
-                                    {{ client.fullName() }}
-                                </option>
-                            </select>
-                        </div>
-                    </FiltersContainer>
-
-                    <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                        <button @click="changeViewMode('table')" class="px-3 py-2 transition-colors cursor-pointer"
-                            :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                            <i class="fas fa-table"></i>
-                        </button>
-                        <button @click="changeViewMode('kanban')" class="px-3 py-2 transition-colors cursor-pointer"
-                            :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                            <i class="fas fa-columns"></i>
-                        </button>
-                    </div>
+                    <ViewModeToggle :view-mode="viewMode" @change="changeViewMode" />
                 </template>
                 <template #right>
                     <OrderPaymentFilter v-model="paidOrdersFilter" :orders="data ? data.items : []" :statusId="4"
@@ -220,16 +95,16 @@
             </TableControlsBar>
 
             <div v-if="selectedIds.length && viewMode === 'kanban'" class="mb-4">
-                <BatchButton :selected-ids="selectedIds"
-                    :batch-actions="getBatchActions()" :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
+                <BatchButton :selected-ids="selectedIds" :batch-actions="getBatchActions()"
+                    :show-batch-status-select="showBatchStatusSelect" :statuses="statuses"
                     :handle-change-status="handleChangeStatus" :show-status-select="true" />
             </div>
-            
+
             <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :projects="projects" :selected-ids="selectedIds"
-                :loading="loading || kanbanLoadingMore" :currency-symbol="currencySymbol" :batch-status-id="batchStatusId"
-                :has-more="kanbanHasMore" :hide-batch-actions="true"
-                @order-moved="handleOrderMoved" @card-dblclick="showModal"
-                @card-select-toggle="toggleSelectRow" @column-select-toggle="handleColumnSelectToggle"
+                :loading="loading || kanbanLoadingMore" :currency-symbol="currencySymbol"
+                :batch-status-id="batchStatusId" :has-more="kanbanHasMore" :hide-batch-actions="true"
+                @order-moved="handleOrderMoved" @card-dblclick="onItemClick" @card-select-toggle="toggleSelectRow"
+                @column-select-toggle="handleColumnSelectToggle"
                 @batch-status-change="handleBatchStatusChangeFromToolbar" @batch-delete="() => deleteItems(selectedIds)"
                 @clear-selection="() => selectedIds = []" @load-more="loadMoreKanbanItems" />
         </div>
@@ -241,9 +116,10 @@
 
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed"
         :showTimelineButton="!!editingItem" @toggle-timeline="toggleTimeline">
-        <OrderCreatePage v-if="modalDialog" ref="ordercreatepageForm" @saved="handleSaved"
-            @saved-silent="handleSavedSilent" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
+        <OrderCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-order'" ref="ordercreatepageForm"
+            @saved="handleSaved" @saved-silent="handleSavedSilent" @saved-error="handleSavedError"
+            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
+            :editingItem="editingItem" />
 
         <template #timeline>
             <TimelinePanel v-if="editingItem && !timelineCollapsed" ref="timelinePanel" :type="'order'"
@@ -279,9 +155,9 @@
     <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
         :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
         @leave="deleteDialog = false" />
-    
-    <PrintInvoiceDialog :dialog="printInvoiceDialog" :loading="printInvoiceLoading"
-        @close="printInvoiceDialog = false" @print="handlePrintInvoice" />
+
+    <PrintInvoiceDialog :dialog="printInvoiceDialog" :loading="printInvoiceLoading" @close="printInvoiceDialog = false"
+        @print="handlePrintInvoice" />
 </template>
 
 <script>
@@ -302,8 +178,6 @@ import TransactionCreatePage from "@/views/pages/transactions/TransactionCreateP
 import TransactionController from "@/api/TransactionController";
 import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
 import OrderStatusController from "@/api/OrderStatusController";
-import ProjectController from "@/api/ProjectController";
-import ClientController from "@/api/ClientController";
 import { markRaw } from "vue";
 import BatchButton from "@/views/components/app/buttons/BatchButton.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
@@ -328,6 +202,8 @@ import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import KanbanFieldsButton from "@/views/components/app/kanban/KanbanFieldsButton.vue";
 import PrintInvoiceDialog from "@/views/components/app/dialog/PrintInvoiceDialog.vue";
 import printInvoiceMixin from "@/mixins/printInvoiceMixin";
+import OrderFilters from "@/views/components/orders/OrderFilters.vue";
+import ViewModeToggle from "@/views/components/app/ViewModeToggle.vue";
 
 const TimelinePanel = defineAsyncComponent(() =>
     import("@/views/components/app/dialog/TimelinePanel.vue")
@@ -335,7 +211,7 @@ const TimelinePanel = defineAsyncComponent(() =>
 
 export default {
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin, printInvoiceMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, draggable: VueDraggableNext },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, draggable: VueDraggableNext },
     data() {
         return {
             viewMode: 'kanban',
@@ -346,9 +222,11 @@ export default {
             timelineCollapsed: true,
             editingItem: null,
             invoiceModalDialog: false,
-            loadingDelete: false,
             controller: OrderController,
             cacheInvalidationType: 'orders',
+            itemViewRouteName: 'OrderView',
+            baseRouteName: 'Orders',
+            errorGettingItemText: this.$t('errorGettingOrder'),
             savedSuccessText: this.$t('orderSaved'),
             savedErrorText: this.$t('errorSavingOrder'),
             deletedSuccessText: this.$t('orderDeleted'),
@@ -409,10 +287,7 @@ export default {
             return this.$store.state.searchQuery;
         },
         currencySymbol() {
-            if (this.data && this.data.items && this.data.items.length > 0) {
-                return this.data.items[0].currencySymbol || '';
-            }
-            return this.savedCurrencySymbol || '';
+            return this.data?.items?.[0]?.currencySymbol || this.savedCurrencySymbol || '';
         },
         orderTransactionFormConfig() {
             return TRANSACTION_FORM_PRESETS.orderPayment;
@@ -427,6 +302,19 @@ export default {
         '$store.state.projects'(newProjects) {
             if (newProjects && newProjects.length > 0) {
                 this.projects = newProjects;
+            }
+        },
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                if (value) {
+                    this.handleRouteItem(value);
+                } else {
+                    if (this.modalDialog) {
+                        this.closeModal();
+                    }
+                    this.editingItem = null;
+                }
             }
         }
     },
@@ -497,11 +385,11 @@ export default {
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
-            
+
             if (this.viewMode === 'kanban' && page === 1) {
                 this.resetKanbanPagination();
             }
-            
+
             try {
                 const perPage = this.viewMode === 'kanban' ? this.kanbanFetchPerPage : this.perPage;
 
@@ -519,18 +407,18 @@ export default {
                 );
 
                 this.data = response;
-                
+
                 if (this.viewMode === 'kanban') {
                     this.allKanbanItems = [...response.items];
                     this.kanbanCurrentPage = response.currentPage;
-                    this.kanbanHasMore = response.nextPage !== null;
+                    this.kanbanHasMore = response.nextPage != null;
                 } else {
                     this.allKanbanItems = [];
                 }
-                
+
                 this.unpaidOrdersTotal = response.unpaidOrdersTotal || 0;
 
-                if (response.items && response.items.length > 0 && response.items[0].currencySymbol) {
+                if (response.items?.[0]?.currencySymbol) {
                     this.savedCurrencySymbol = response.items[0].currencySymbol;
                 }
             } catch (error) {
@@ -542,7 +430,7 @@ export default {
             if (this.kanbanLoadingMore || !this.kanbanHasMore || this.viewMode !== 'kanban') {
                 return;
             }
-            
+
             this.kanbanLoadingMore = true;
             try {
                 const nextPage = this.kanbanCurrentPage + 1;
@@ -558,28 +446,29 @@ export default {
                     this.kanbanFetchPerPage,
                     this.paidOrdersFilter
                 );
-                
+
                 this.allKanbanItems = [...this.allKanbanItems, ...response.items];
                 this.kanbanCurrentPage = response.currentPage;
-                this.kanbanHasMore = response.nextPage !== null;
+                this.kanbanHasMore = response.nextPage != null;
             } catch (error) {
                 this.showNotification(this.$t('errorGettingOrderList'), error.message, true);
             } finally {
                 this.kanbanLoadingMore = false;
             }
         },
-        handleSavedSilent() {
-            this.showNotification(this.$t('orderSaved'), "", false);
-            this.fetchItems(this.data.currentPage, true);
+        refreshTimelineIfVisible() {
             if (this.$refs.timelinePanel && !this.timelineCollapsed) {
                 this.$refs.timelinePanel.refreshTimeline();
             }
         },
+        handleSavedSilent() {
+            this.showNotification(this.$t('orderSaved'), "", false);
+            this.fetchItems(this.data.currentPage, true);
+            this.refreshTimelineIfVisible();
+        },
 
         onAfterSaved() {
-            if (this.$refs.timelinePanel && !this.timelineCollapsed) {
-                this.$refs.timelinePanel.refreshTimeline();
-            }
+            this.refreshTimelineIfVisible();
         },
 
 
@@ -604,11 +493,11 @@ export default {
                 await this.fetchItems(this.data.currentPage, true);
                 this.showNotification(this.$t('statusUpdated'), "", false);
 
-                if (this.editingItem && ids.includes(this.editingItem.id) && this.$refs.timelinePanel && !this.timelineCollapsed) {
-                    this.$refs.timelinePanel.refreshTimeline();
+                if (this.editingItem && ids.includes(this.editingItem.id)) {
+                    this.refreshTimelineIfVisible();
                 }
             } catch (e) {
-                if (e.response && e.response.status === 422 && e.response.data && e.response.data.needs_payment) {
+                if (e.response?.status === 422 && e.response.data?.needs_payment) {
                     this.showPaymentModal(e.response.data);
                 } else {
                     const errors = this.getApiErrorMessage(e);
@@ -620,9 +509,11 @@ export default {
             this.showBatchStatusSelect = false;
         },
 
+        getCurrentItems() {
+            return this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
+        },
         showPaymentModal(paymentData) {
-            const items = this.viewMode === 'kanban' ? this.allKanbanItems : this.data.items;
-            const order = items.find(item => item.id === paymentData.order_id);
+            const order = this.getCurrentItems().find(item => item.id === paymentData.order_id);
             if (order) {
                 this.showNotification(
                     this.$t('orderNeedsPayment'),
@@ -645,13 +536,15 @@ export default {
             this.timelineCollapsed = !this.timelineCollapsed;
         },
 
-        showModal(item) {
-            this.editingItem = item;
-            this.modalDialog = true;
+        showModal(item = null) {
+            modalMixin.methods.showModal.call(this, item);
             this.timelineCollapsed = true;
         },
-        closeModal() {
-            this.modalDialog = false;
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'Orders' });
+            }
             this.editingItem = null;
             this.timelineCollapsed = true;
         },
@@ -675,8 +568,8 @@ export default {
             if (this.projectFilter !== '') count++;
             if (this.clientFilter !== '') count++;
             if (this.paidOrdersFilter !== false) count++;
-            if (this.startDate !== null && this.startDate !== '') count++;
-            if (this.endDate !== null && this.endDate !== '') count++;
+            if (this.startDate) count++;
+            if (this.endDate) count++;
             return count;
         },
         handlePaidOrdersFilterChange(isActive) {
@@ -708,18 +601,17 @@ export default {
         async handlePrintInvoice(variants) {
             this.printInvoiceLoading = true;
             try {
-                const items = this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
-                const selectedOrders = items.filter(order => 
-                    order && 
-                    this.selectedIds.includes(order.id) && 
+                const selectedOrders = this.getCurrentItems().filter(order =>
+                    order &&
+                    this.selectedIds.includes(order.id) &&
                     order.products?.length > 0
                 );
-                
+
                 if (!selectedOrders.length) {
                     this.showNotification(this.$t('error'), 'В выбранных заказах нет товаров', true);
                     return;
                 }
-                
+
                 await this.printInvoiceFromOrders(selectedOrders, variants);
                 this.printInvoiceDialog = false;
             } catch (error) {
@@ -768,7 +660,7 @@ export default {
         },
 
         closeInvoiceModal() {
-            this.invoiceModalDialog = false;
+            this.handleInvoiceModalClose();
         },
 
         handleInvoiceSaved() {
@@ -801,18 +693,14 @@ export default {
         handleTransactionViewSaved() {
             this.viewTransactionModal = false;
             this.editingTransactionItem = null;
-            if (this.$refs.timelinePanel && !this.timelineCollapsed) {
-                this.$refs.timelinePanel.refreshTimeline();
-            }
+            this.refreshTimelineIfVisible();
             this.fetchItems(this.data.currentPage, true);
         },
 
         handleTransactionViewDeleted() {
             this.viewTransactionModal = false;
             this.editingTransactionItem = null;
-            if (this.$refs.timelinePanel && !this.timelineCollapsed) {
-                this.$refs.timelinePanel.refreshTimeline();
-            }
+            this.refreshTimelineIfVisible();
             this.fetchItems(this.data.currentPage, true);
         },
 
@@ -823,8 +711,7 @@ export default {
         handleOrderMoved(updateData) {
             try {
                 if (updateData.type === 'status') {
-                    const items = this.viewMode === 'kanban' ? this.allKanbanItems : this.data.items;
-                    const order = items.find(o => o.id === updateData.orderId);
+                    const order = this.getCurrentItems().find(o => o.id === updateData.orderId);
                     if (order) {
                         order.statusId = updateData.statusId;
                         const status = this.statuses.find(s => s.id === updateData.statusId);
@@ -839,8 +726,7 @@ export default {
                     this.debouncedStatusUpdate();
 
                 } else if (updateData.type === 'project') {
-                    const items = this.viewMode === 'kanban' ? this.allKanbanItems : this.data.items;
-                    const order = items.find(o => o.id === updateData.orderId);
+                    const order = this.getCurrentItems().find(o => o.id === updateData.orderId);
                     if (order) {
                         order.projectId = updateData.projectId;
                         const project = this.projects.find(p => p.id === updateData.projectId);
@@ -886,8 +772,8 @@ export default {
                     ids: orderIds,
                     status_id: statusId
                 }).then(() => {
-                    if (this.editingItem && orderIds.includes(this.editingItem.id) && this.$refs.timelinePanel && !this.timelineCollapsed) {
-                        this.$refs.timelinePanel.refreshTimeline();
+                    if (this.editingItem && orderIds.includes(this.editingItem.id)) {
+                        this.refreshTimelineIfVisible();
                     }
                 }).catch(error => {
                     const errors = this.getApiErrorMessage(error);
@@ -924,20 +810,17 @@ export default {
             }
         },
 
-        handleBatchStatusChange() {
-            if (!this.batchStatusId || this.selectedIds.length === 0) return;
+        handleBatchStatusChange(statusId = null) {
+            const targetStatusId = statusId || this.batchStatusId;
+            if (!targetStatusId || this.selectedIds.length === 0) return;
 
-            this.handleChangeStatus(this.selectedIds, this.batchStatusId);
+            this.handleChangeStatus(this.selectedIds, targetStatusId);
             this.batchStatusId = '';
             this.selectedIds = [];
         },
 
         handleBatchStatusChangeFromToolbar(statusId) {
-            if (!statusId || this.selectedIds.length === 0) return;
-
-            this.handleChangeStatus(this.selectedIds, statusId);
-            this.batchStatusId = '';
-            this.selectedIds = [];
+            this.handleBatchStatusChange(statusId);
         },
 
         changeViewMode(mode) {
@@ -961,7 +844,7 @@ export default {
                 } catch (error) {
                     console.warn('Failed to save view mode to localStorage:', error);
                 }
-                
+
                 if (newMode === 'kanban') {
                     this.resetKanbanPagination();
                     this.$nextTick(() => {
@@ -981,32 +864,32 @@ export default {
         }
     },
     mounted() {
-            try {
+        try {
             const savedViewMode = localStorage.getItem('orders_viewMode');
             if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
                 this.viewMode = savedViewMode;
-                
-                if (savedViewMode === 'kanban') {
-                    this.resetKanbanPagination();
-                } else {
-                    const savedPerPage = localStorage.getItem('perPage');
-                    this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
-                }
             } else {
                 try {
                     localStorage.setItem('orders_viewMode', this.viewMode);
                 } catch (error) {
                     console.warn('Failed to save default view mode to localStorage:', error);
                 }
-                if (this.viewMode === 'kanban') {
-                    this.resetKanbanPagination();
-                } else {
-                    const savedPerPage = localStorage.getItem('perPage');
-                    this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
-                }
             }
-            
+
+            if (this.viewMode === 'kanban') {
+                this.resetKanbanPagination();
+            } else {
+                const savedPerPage = localStorage.getItem('perPage');
+                this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
+            }
+
             this.fetchItems();
+
+            if (this.$route.params.id) {
+                this.$nextTick(() => {
+                    this.handleRouteItem(this.$route.params.id);
+                });
+            }
         } catch (error) {
             console.warn('Failed to read view mode from localStorage:', error);
             this.fetchItems();

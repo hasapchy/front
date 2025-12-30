@@ -24,7 +24,7 @@
             :warehouse-id="warehouseId" required />
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
+        <PrimaryButton v-if="editingItemId != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-trash"
             :disabled="!$store.getters.hasPermission('warehouse_writeoffs_delete')">
         </PrimaryButton>
@@ -49,10 +49,11 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, ProductSearch },
     props: {
@@ -63,10 +64,6 @@ export default {
             note: this.editingItem ? this.editingItem.note : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId || '' : '',
             products: this.editingItem ? this.editingItem.products : [],
-            editingItemId: this.editingItem ? this.editingItem.id : null,
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false,
             allWarehouses: [],
         }
     },
@@ -103,83 +100,46 @@ export default {
                 this.warehouseId = this.allWarehouses[0].id;
             }
         },
-        async save() {
-            this.saveLoading = true;
-            try {
-                var formData = {
-                    warehouse_id: this.warehouseId,
-                    note: this.note,
-                    products: this.products.map(product => ({
-                        product_id: product.productId,
-                        quantity: product.quantity
-                    }))
-                };
-                if (this.editingItemId != null) {
-                    var resp = await WarehouseWriteoffController.updateItem(
-                        this.editingItemId,
-                        formData);
-                } else {
-                    var resp = await WarehouseWriteoffController.storeItem(formData);
-                }
-                if (resp.message) {
-                    this.$emit('saved');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
-            }
-            this.saveLoading = false;
-
+        prepareSave() {
+            return {
+                warehouse_id: this.warehouseId,
+                note: this.note,
+                products: this.products.map(product => ({
+                    product_id: product.productId,
+                    quantity: product.quantity
+                }))
+            };
         },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (this.editingItemId == null) {
-                return;
+        async performSave(data) {
+            if (this.editingItemId != null) {
+                return await WarehouseWriteoffController.updateItem(this.editingItemId, data);
+            } else {
+                return await WarehouseWriteoffController.storeItem(data);
             }
-            this.deleteLoading = true;
-            try {
-                var resp = await WarehouseWriteoffController.deleteItem(
-                    this.editingItemId);
-                if (resp.message) {
-                    this.$emit('deleted');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+        },
+        async performDelete() {
+            const resp = await WarehouseWriteoffController.deleteItem(this.editingItemId);
+            if (!resp.message) {
+                throw new Error('Failed to delete writeoff');
             }
-            this.deleteLoading = false;
+            return resp;
         },
         clearForm() {
-            this.date = new Date().toISOString().substring(0, 16);
             this.note = '';
             this.warehouseId = '';
             this.products = [];
-            this.editingItemId = null;
-            this.resetFormChanges();
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
         },
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                this.note = newEditingItem.note || '';
+                this.warehouseId = newEditingItem.warehouseId || '';
+                this.products = newEditingItem.products || [];
+            }
         }
     },
-    watch: {
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    this.note = newEditingItem.note || '';
-                    this.warehouseId = newEditingItem.warehouseId || '';
-                    this.editingItemId = newEditingItem.id || null;
-                    this.products = newEditingItem.products || [];
-                } else {
-                    this.clearForm();
-                }
-            },
-            deep: true,
-            immediate: true
-        }
-    }
 }
 
 </script>

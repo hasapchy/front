@@ -58,10 +58,11 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import notificationMixin from "@/mixins/notificationMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 import { translateCurrency } from '@/utils/translationUtils';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, notificationMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, notificationMixin, crudFormMixin],
     components: { /* FileUploader, */ PrimaryButton, AlertDialog },
     emits: ['saved', 'saved-error', 'close-request'],
     props: {
@@ -85,22 +86,14 @@ export default {
                 : new Date().toISOString().substring(0, 16),
             returned: this.editingItem ? this.editingItem.returned : false,
             note: this.editingItem ? this.editingItem.note : '',
-            editingItemId: this.editingItem ? this.editingItem.id : null,
             currencies: [],
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false,
-
         };
     },
     async mounted() {
         await this.fetchCurrencies();
-        if (this.editingItem) {
-            this.populateForm();
-        } else {
-            this.clearForm();
-        }
-        this.saveInitialState();
+        this.$nextTick(() => {
+            this.saveInitialState();
+        });
     },
     methods: {
         translateCurrency,
@@ -111,7 +104,26 @@ export default {
             this.date = new Date().toISOString().substring(0, 16);
             this.returned = false;
             this.note = '';
-            this.editingItemId = null;
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
+        },
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                let formattedDate = new Date().toISOString().substring(0, 16);
+                if (newEditingItem.date) {
+                    const date = new Date(newEditingItem.date);
+                    if (!isNaN(date.getTime())) {
+                        formattedDate = date.toISOString().substring(0, 16);
+                    }
+                }
+                this.number = newEditingItem.number || '';
+                this.amount = newEditingItem.amount || '';
+                this.currencyId = newEditingItem.currencyId || '';
+                this.date = formattedDate;
+                this.returned = newEditingItem.returned || false;
+                this.note = newEditingItem.note || '';
+            }
         },
         getFormState() {
             return {
@@ -133,114 +145,53 @@ export default {
                 console.error('Error fetching currencies:', error);
             }
         },
-        populateForm() {
-            let formattedDate = new Date().toISOString().substring(0, 16);
-            if (this.editingItem.date) {
-                const date = new Date(this.editingItem.date);
-                if (!isNaN(date.getTime())) {
-                    formattedDate = date.toISOString().substring(0, 16);
-                }
+        prepareSave() {
+            const formData = {
+                projectId: this.editingItemId ? this.editingItem.projectId : this.projectId,
+                number: this.number,
+                amount: this.amount,
+                currencyId: this.currencyId,
+                date: this.date,
+                returned: this.returned,
+                note: this.note
+            };
+
+            const selectedCurrency = this.currencies.find(c => c.id == formData.currencyId);
+            if (selectedCurrency) {
+                formData.currencyName = this.translateCurrency(selectedCurrency.name, this.$t);
+                formData.currencySymbol = selectedCurrency.symbol;
             }
 
-            this.number = this.editingItem.number || '';
-            this.amount = this.editingItem.amount || '';
-            this.currencyId = this.editingItem.currencyId || '';
-            this.date = formattedDate;
-            this.returned = this.editingItem.returned || false;
-            this.note = this.editingItem.note || '';
-            this.editingItemId = this.editingItem.id || null;
+            return formData;
         },
-        async save() {
-            if (!this.projectId && !this.editingItem) {
-                this.showNotification('Ошибка', 'Не указан ID проекта', true);
-                return;
-            }
-
-            this.saveLoading = true;
-            try {
-                const formData = {
-                    projectId: this.editingItem ? this.editingItem.projectId : this.projectId,
-                    number: this.number,
-                    amount: this.amount,
-                    currencyId: this.currencyId,
-                    date: this.date,
-                    returned: this.returned,
-                    note: this.note
-                };
-
-                // Получаем информацию о валюте
-                const selectedCurrency = this.currencies.find(c => c.id == formData.currencyId);
-                if (selectedCurrency) {
-                    formData.currencyName = this.translateCurrency(selectedCurrency.name, this.$t);
-                    formData.currencySymbol = selectedCurrency.symbol;
-                }
-
-                let response;
-                if (this.editingItem) {
-                    response = await ProjectContractController.updateItem(this.editingItem.id, formData);
-                } else {
-                    response = await ProjectContractController.storeItem(this.projectId, formData);
-                }
-
-                this.$emit('saved', response.item);
-                this.showNotification('Успех', response.message || 'Контракт успешно сохранен', false);
-                if (!this.editingItem) {
-                    this.clearForm();
-                }
-                this.resetFormChanges();
-            } catch (error) {
-                console.error('Error saving contract:', error);
-                const errorMessage = error?.response?.data?.message || error?.message || 'Ошибка при сохранении контракта';
-                this.$emit('saved-error', errorMessage);
-                this.showNotification('Ошибка', errorMessage, true);
-            } finally {
-                this.saveLoading = false;
+        async performSave(data) {
+            if (this.editingItemId) {
+                return await ProjectContractController.updateItem(this.editingItemId, data);
+            } else {
+                return await ProjectContractController.storeItem(this.projectId, data);
             }
         },
-
-        showDeleteDialog() {
-            this.deleteDialog = true;
+        async performDelete() {
+            const response = await ProjectContractController.deleteItem(this.editingItemId);
+            if (!response.message) {
+                throw new Error('Failed to delete contract');
+            }
+            return response;
         },
-
-        closeDeleteDialog() {
-            this.deleteDialog = false;
-        },
-
-        async deleteItem() {
-            if (!this.editingItemId) return;
-
-            this.deleteLoading = true;
-            try {
-                const response = await ProjectContractController.deleteItem(this.editingItemId);
-
-                this.showNotification('Успех', response.message || 'Контракт успешно удален', false);
-                this.$emit('saved'); // Используем тот же эмит, что и при сохранении, чтобы обновить список
-                this.closeDeleteDialog();
+        onSaveSuccess(response) {
+            this.$emit('saved', response.item);
+            this.showNotification('Успех', response.message || 'Контракт успешно сохранен', false);
+            if (!this.editingItemId) {
                 this.clearForm();
-            } catch (error) {
-                console.error('Error deleting contract:', error);
-                const errorMessage = error?.response?.data?.message || error?.message || 'Ошибка при удалении контракта';
-                this.showNotification('Ошибка', errorMessage, true);
-            } finally {
-                this.deleteLoading = false;
             }
+        },
+        onDeleteSuccess(response) {
+            this.showNotification('Успех', response.message || 'Контракт успешно удален', false);
+            this.$emit('saved');
         },
 
         handleCloseRequest() {
             this.$emit('close-request');
-        }
-    },
-
-    watch: {
-        editingItem: {
-            handler(newValue) {
-                if (newValue) {
-                    this.populateForm();
-                } else {
-                    this.clearForm();
-                }
-            },
-            immediate: false
         }
     }
 };

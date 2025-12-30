@@ -2,7 +2,7 @@
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.roles" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="(i) => showModal(i)">
+                :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar :show-create-button="true" :on-create-click="() => showModal(null)"
                         :create-button-disabled="!$store.getters.hasPermission('roles_create')" :show-pagination="true"
@@ -47,7 +47,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <RolesCreatePage ref="rolescreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
+        <RolesCreatePage :key="editingItem ? editingItem.id : 'new-role'" ref="rolescreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
             :editingItem="editingItem" />
     </SideModalDialog>
@@ -94,6 +94,9 @@ export default {
         return {
             controller: RolesController,
             cacheInvalidationType: 'roles',
+            itemViewRouteName: 'RoleView',
+            baseRouteName: 'roles',
+            errorGettingItemText: this.$t('errorLoadingRoles'),
             savedSuccessText: this.$t('roleSaved'),
             savedErrorText: this.$t('errorSavingRole'),
             deletedSuccessText: this.$t('roleDeleted'),
@@ -113,6 +116,14 @@ export default {
 
     mounted() {
         this.fetchItems();
+    },
+    watch: {
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
+        }
     },
     
     methods: {
@@ -148,6 +159,12 @@ export default {
                     console.error('Ошибка обновления прав:', error);
                 }
             }, 500);
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'roles' });
+            }
         },
     },
 };
