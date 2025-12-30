@@ -298,6 +298,26 @@ const routes = [
               name: "projectStatuses",
               path: "/project_statuses",
             },
+            {
+              name: "contracts",
+              path: "/contracts",
+            },
+          ],
+        },
+      },
+      {
+        path: "/contracts",
+        name: "Contracts",
+        component: () => import("@/views/pages/projects/ProjectContractsPage.vue"),
+        meta: {
+          title: "contracts",
+          requiresAuth: true,
+          permission: "projects_view",
+          binded: [
+            {
+              name: "projects",
+              path: "/projects",
+            },
           ],
         },
       },

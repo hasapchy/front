@@ -161,10 +161,10 @@ export default {
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'info' },
+                { name: 'contracts', label: 'contracts', permission: 'contracts_view' },
                 { name: 'files', label: 'files', permission: 'settings_project_files_view' },
                 // { name: 'employees', label: 'employees' },
                 { name: 'balance', label: 'balance', permission: 'settings_project_balance_view' },
-                { name: 'contracts', label: 'contracts', permission: 'settings_project_contracts_view' },
             ],
 
             selectedUserIds: this.editingItem ? this.editingItem.getUserIds?.() || (this.editingItem.users ? this.editingItem.users.map(u => u.id) : []) : [],
@@ -179,7 +179,9 @@ export default {
             return this.$store.getters.hasPermission('settings_project_balance_view');
         },
         canViewProjectContracts() {
-            return this.$store.getters.hasPermission('settings_project_contracts_view');
+            return this.$store.getters.hasPermission('contracts_view') || 
+                   this.$store.getters.hasPermission('contracts_view_all') || 
+                   this.$store.getters.hasPermission('contracts_view_own');
         },
         visibleTabs() {
             const baseTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => ['info'].includes(tab.name));

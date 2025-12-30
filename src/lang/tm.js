@@ -721,6 +721,9 @@ export default {
   users: 'Işgärler',
   
   // Транзакции
+  addTransaction: 'Tranzaksiya goş',
+  addProjectTransaction: 'Proýekt tranzaksiýasyny goş',
+  projectTransactionInfo: 'Proýekt tranzaksiýasy kassa we müşderi bergidarlygyna täsir etmeýär. Ol proýekt amallaryny goşmaça yzarlamak üçin hyzmat edýär we diňe proýekt balansynyň hasabyna gatnaşýar.',
   allCashRegisters: 'Ähli kassalar',
   allTime: 'Ähli wagt',
   lastWeek: 'Öňki hepde',
@@ -1032,6 +1035,10 @@ export default {
   addContract: 'Şertnama goş',
   editContract: 'Şertnamany redaktir et',
   deleteContract: 'Şertnamany poz',
+  returned: 'Yzyna gaýtaryldy',
+  notReturned: 'Yzyna gaýtarylmandy',
+  notPaid: 'Tölenmedi',
+  contractStatus: 'Şertnama ýagdaýy',
   noContracts: 'Şertnama ýok',
   note: 'Bellik',
   enterNote: 'Bellik giriziň',
@@ -1134,6 +1141,10 @@ export default {
   saveInvoiceFirst: 'Ilki hasaby saklaň',
   printInvoice: 'Hasaby çap et',
   selectPdfVariant: 'PDF görnüşini saýlaň',
+  
+  // Invoice statuses
+  new: 'Täze',
+  allStatuses: 'Ähli ýagdaýlar',
   
   // Settings permissions
   settings: 'Sazlamalar',
@@ -1279,6 +1290,13 @@ export default {
   'orderStatus.READY': 'Taýýar',
   'orderStatus.COMPLETED': 'Tamamlandy',
   'orderStatus.CANCELLED': 'Ýatyryldy',
+  
+  // Project Statuses
+  'projectStatus.NEW': 'Täze',
+  'projectStatus.IN_PROGRESS': 'Işde',
+  'projectStatus.PENDING': 'Töleg garaşylýar',
+  'projectStatus.COMPLETED': 'Tamamlandy',
+  'projectStatus.CANCELLED': 'Ýatyryldy',
   
   // Leave Types
   'leaveType.TIME_OFF': 'Gün çykaryş',

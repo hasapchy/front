@@ -82,6 +82,9 @@ export default {
   warehouses: 'Warehouses',
   finance: 'Finance',
   transactions: 'Transactions',
+  addTransaction: 'Add Transaction',
+  addProjectTransaction: 'Add Project Transaction',
+  projectTransactionInfo: 'Project transaction does not affect cash register and client debt. It serves for additional tracking of project operations and only participates in project balance calculation.',
     mutualSettlements: 'Mutual Settlements',
     impact: 'Impact',
     balance: 'Balance',
@@ -234,6 +237,11 @@ export default {
   printInvoice: 'Print Invoice',
   selectPdfVariant: 'Select PDF variant',
   
+  // Invoice statuses
+  new: 'New',
+  cancelled: 'Cancelled',
+  allStatuses: 'All statuses',
+  
   // Performance monitoring
   performanceMonitor: 'Monitoring',
   
@@ -276,6 +284,10 @@ export default {
   addContract: 'Add Contract',
   editContract: 'Edit Contract',
   deleteContract: 'Delete Contract',
+  returned: 'Returned',
+  notReturned: 'Not Returned',
+  notPaid: 'Not Paid',
+  contractStatus: 'Contract Status',
   noContracts: 'No contracts',
   note: 'Note',
   enterNote: 'Enter note',
@@ -623,6 +635,13 @@ export default {
     'orderStatus.READY': 'Ready',
     'orderStatus.COMPLETED': 'Completed',
     'orderStatus.CANCELLED': 'Cancelled',
+    
+    // Project Statuses
+    'projectStatus.NEW': 'New',
+    'projectStatus.IN_PROGRESS': 'In Progress',
+    'projectStatus.PENDING': 'Awaiting Payment',
+    'projectStatus.COMPLETED': 'Completed',
+    'projectStatus.CANCELLED': 'Cancelled',
     
     // Leave Types
     'leaveType.TIME_OFF': 'Time Off',

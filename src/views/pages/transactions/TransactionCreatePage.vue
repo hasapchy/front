@@ -732,69 +732,68 @@ export default {
 
             try {
                 if (this.editingItemId != null) {
-                    const updateData = {
-                        category_id: this.categoryId,
-                        project_id: projectIdForSubmit,
-                        date: this.date,
-                        orig_amount: this.origAmount,
-                        currency_id: this.currencyIdComputed,
-                        note: this.note,
-                        is_debt: this.isDebt,
-                    };
-                    if (this.showExchangeRate && this.exchangeRate !== null && this.exchangeRate !== '') {
-                        updateData.exchange_rate = parseFloat(this.exchangeRate);
+                        const updateData = {
+                            category_id: this.categoryId,
+                            project_id: projectIdForSubmit,
+                            date: this.date,
+                            orig_amount: this.origAmount,
+                            currency_id: this.currencyIdComputed,
+                            note: this.note,
+                            is_debt: this.isDebt,
+                        };
+                        if (this.showExchangeRate && this.exchangeRate !== null && this.exchangeRate !== '') {
+                            updateData.exchange_rate = parseFloat(this.exchangeRate);
+                        }
+                        console.log('Transaction update payload', {
+                            id: this.editingItemId,
+                            hasCustomExchangeRate: !!updateData.exchange_rate,
+                            exchangeRate: updateData.exchange_rate,
+                            payload: updateData,
+                        });
+                        if (!this.fieldConfig('client').excludeFromRequest) {
+                            updateData.client_id = this.selectedClient?.id;
+                        }
+                        
+                        const sourceType = this.getSourceTypeForBackend();
+                        if (sourceType) {
+                            updateData.source_type = sourceType;
+                            updateData.source_id = this.selectedSource?.id || null;
+                        }
+                        
+                        var resp = await TransactionController.updateItem(this.editingItemId, updateData);
+                    } else {
+                        const roundedAmount = roundValue(this.origAmount);
+                        const typeValue = this.type == "income" ? 1 : this.type == "outcome" ? 0 : null;
+                        if (typeValue === null) {
+                            throw new Error('Выберите тип транзакции');
+                        }
+                        const requestData = {
+                            type: typeValue,
+                            cash_id: this.cashId,
+                            orig_amount: roundedAmount,
+                            currency_id: this.currencyIdComputed,
+                            category_id: this.categoryId,
+                            note: this.note,
+                            project_id: projectIdForSubmit,
+                            date: this.date,
+                            order_id: this.orderId,
+                            is_debt: this.isDebt,
+                        };
+                        if (this.showExchangeRate && this.exchangeRate) {
+                            requestData.exchange_rate = parseFloat(this.exchangeRate);
+                        }
+                        if (!this.fieldConfig('client').excludeFromRequest) {
+                            requestData.client_id = this.selectedClient?.id;
+                        }
+                        
+                        const sourceType = this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : null);
+                        if (sourceType) {
+                            requestData.source_type = sourceType;
+                            requestData.source_id = this.selectedSource?.id || this.orderId || null;
+                        }
+                        
+                        var resp = await TransactionController.storeItem(requestData);
                     }
-                    console.log('Transaction update payload', {
-                        id: this.editingItemId,
-                        hasCustomExchangeRate: !!updateData.exchange_rate,
-                        exchangeRate: updateData.exchange_rate,
-                        payload: updateData,
-                    });
-                    if (!this.fieldConfig('client').excludeFromRequest) {
-                        updateData.client_id = this.selectedClient?.id;
-                    }
-                    
-                    const sourceType = this.getSourceTypeForBackend();
-                    if (sourceType) {
-                        updateData.source_type = sourceType;
-                        updateData.source_id = this.selectedSource?.id || null;
-                    }
-                    
-                    var resp = await TransactionController.updateItem(this.editingItemId, updateData);
-                } else {
-                    // Только для НОВЫХ записей применяем реальное округление согласно настройкам компании
-                    const roundedAmount = roundValue(this.origAmount);
-                    const typeValue = this.type == "income" ? 1 : this.type == "outcome" ? 0 : null;
-                    if (typeValue === null) {
-                        throw new Error('Выберите тип транзакции');
-                    }
-                    const requestData = {
-                        type: typeValue,
-                        cash_id: this.cashId,
-                        orig_amount: roundedAmount,
-                        currency_id: this.currencyIdComputed,
-                        category_id: this.categoryId,
-                        note: this.note,
-                        project_id: projectIdForSubmit,
-                        date: this.date,
-                        order_id: this.orderId,
-                        is_debt: this.isDebt,
-                    };
-                    if (this.showExchangeRate && this.exchangeRate) {
-                        requestData.exchange_rate = parseFloat(this.exchangeRate);
-                    }
-                    if (!this.fieldConfig('client').excludeFromRequest) {
-                        requestData.client_id = this.selectedClient?.id;
-                    }
-                    
-                    const sourceType = this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : null);
-                    if (sourceType) {
-                        requestData.source_type = sourceType;
-                        requestData.source_id = this.selectedSource?.id || this.orderId || null;
-                    }
-                    
-                    var resp = await TransactionController.storeItem(requestData);
-                }
                 if (resp.message) {
                     // Проверяем, нужно ли закрыть заказ (только для модалки доплаты)
                     if (this.isPaymentModal) {

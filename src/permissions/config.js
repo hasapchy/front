@@ -69,6 +69,12 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
+    contracts: {
+      has_user_id: true,
+      check_strategy: "user_id",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+    },
     sales: {
       has_user_id: true,
       check_strategy: "user_id",
@@ -242,7 +248,7 @@ export const PERMISSIONS_CONFIG = {
     },
     projects: {
       label: "projects",
-      resources: ["projects", "project_statuses"],
+      resources: ["projects", "project_statuses", "contracts"],
     },
     companies: {
       label: "companies",

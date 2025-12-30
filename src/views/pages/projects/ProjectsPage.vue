@@ -41,7 +41,7 @@
                                     <select v-model="statusFilter" class="w-full">
                                         <option value="">{{ $t('allStatuses') }}</option>
                                         <option v-for="status in statuses" :key="status.id" :value="status.id">
-                                            {{ translateTaskStatus(status.name, $t) }}
+                                            {{ translateProjectStatus(status.name, $t) }}
                                         </option>
                                     </select>
                                 </div>
@@ -131,7 +131,7 @@
                             <select v-model="statusFilter" class="w-full">
                                 <option value="">{{ $t('allStatuses') }}</option>
                                 <option v-for="status in statuses" :key="status.id" :value="status.id">
-                                    {{ translateTaskStatus(status.name, $t) }}
+                                    {{ translateProjectStatus(status.name, $t) }}
                                 </option>
                             </select>
                         </div>
@@ -230,7 +230,7 @@ import debounce from "lodash.debounce";
 import { eventBus } from '@/eventBus';
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
-import { translateTaskStatus } from '@/utils/translationUtils';
+import { translateProjectStatus } from '@/utils/translationUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin],
@@ -313,7 +313,7 @@ export default {
         eventBus.off('cache:invalidate', this.handleCacheInvalidate);
     },
     methods: {
-        translateTaskStatus,
+        translateProjectStatus,
         itemMapper(i, c) {
             switch (c) {
                 case 'users':
@@ -461,7 +461,7 @@ export default {
                         project.statusId = updateData.statusId;
                         const status = this.statuses.find(s => s.id === updateData.statusId);
                         if (status) {
-                            project.statusName = translateTaskStatus(status.name, this.$t);
+                            project.statusName = translateProjectStatus(status.name, this.$t);
                         }
                     }
                     

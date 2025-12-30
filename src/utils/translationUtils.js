@@ -9,6 +9,11 @@ export const translateUnit = (name, t) => translate('unit', name, t);
 export const translateTaskStatus = (name, t) => translate('taskStatus', name, t);
 export const translateOrderStatusCategory = (name, t) => translate('orderStatusCategory', name, t);
 export const translateOrderStatus = (name, t) => translate('orderStatus', name, t);
+export const translateProjectStatus = (name, t) => translate('projectStatus', name, t);
+export const translateInvoiceStatus = (status, t) => {
+    if (!status) return '';
+    return t(status) || status;
+};
 export const translateLeaveType = (name, t) => translate('leaveType', name, t);
 export const translateCurrency = (name, t) => translate('currency', name, t);
 

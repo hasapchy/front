@@ -3,6 +3,15 @@
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editContract') : $t('addContract') }}</h2>
 
         <div>
+            <div v-if="!projectId">
+                <label class="required">{{ $t('project') }}</label>
+                <select v-model="selectedProjectId" :disabled="!!editingItem" required>
+                    <option :value="null"></option>
+                    <option v-for="project in projects" :key="project.id" :value="project.id">
+                        {{ project.name }}
+                    </option>
+                </select>
+            </div>
             <div>
                 <label class="required">{{ $t('contractNumber') }}</label>
                 <input type="text" v-model="number" :placeholder="$t('enterContractNumber')" required>
@@ -30,6 +39,12 @@
                 <label>
                     <input type="checkbox" v-model="returned">
                     <span>{{ $t('contractReturned') }}</span>
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input type="checkbox" v-model="isPaid">
+                    <span>{{ $t('paid') }}</span>
                 </label>
             </div>
             <div>
@@ -84,9 +99,12 @@ export default {
                 ? new Date(this.editingItem.date).toISOString().substring(0, 16)
                 : new Date().toISOString().substring(0, 16),
             returned: this.editingItem ? this.editingItem.returned : false,
+            isPaid: this.editingItem ? this.editingItem.isPaid : false,
             note: this.editingItem ? this.editingItem.note : '',
             editingItemId: this.editingItem ? this.editingItem.id : null,
             currencies: [],
+            projects: [],
+            selectedProjectId: this.projectId || (this.editingItem ? this.editingItem.projectId : null),
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
@@ -94,7 +112,10 @@ export default {
         };
     },
     async mounted() {
-        await this.fetchCurrencies();
+        await Promise.all([
+            this.fetchCurrencies(),
+            this.fetchProjects()
+        ]);
         if (this.editingItem) {
             this.populateForm();
         } else {
@@ -110,8 +131,12 @@ export default {
             this.currencyId = '';
             this.date = new Date().toISOString().substring(0, 16);
             this.returned = false;
+            this.isPaid = false;
             this.note = '';
             this.editingItemId = null;
+            if (!this.projectId) {
+                this.selectedProjectId = null;
+            }
         },
         getFormState() {
             return {
@@ -120,17 +145,39 @@ export default {
                 currencyId: this.currencyId,
                 date: this.date,
                 returned: this.returned,
+                isPaid: this.isPaid,
                 note: this.note
             };
         },
         async fetchCurrencies() {
             try {
-                // Используем данные из store
                 await this.$store.dispatch('loadCurrencies');
                 const response = this.$store.getters.currencies;
                 this.currencies = response;
             } catch (error) {
                 console.error('Error fetching currencies:', error);
+            }
+        },
+        async fetchProjects() {
+            try {
+                await this.$store.dispatch('loadProjects');
+                const activeProjects = this.$store.getters.activeProjects;
+                
+                if (this.editingItem && this.editingItem.projectId && this.editingItem.projectName) {
+                    const hasProject = activeProjects.some(p => p.id === this.editingItem.projectId);
+                    if (!hasProject) {
+                        this.projects = [
+                            ...activeProjects,
+                            { id: this.editingItem.projectId, name: this.editingItem.projectName }
+                        ];
+                        return;
+                    }
+                }
+                
+                this.projects = activeProjects;
+            } catch (error) {
+                console.error('Error fetching projects:', error);
+                this.projects = [];
             }
         },
         populateForm() {
@@ -147,11 +194,17 @@ export default {
             this.currencyId = this.editingItem.currencyId || '';
             this.date = formattedDate;
             this.returned = this.editingItem.returned || false;
+            this.isPaid = this.editingItem.isPaid || false;
             this.note = this.editingItem.note || '';
             this.editingItemId = this.editingItem.id || null;
+            if (!this.projectId && this.editingItem.projectId) {
+                this.selectedProjectId = this.editingItem.projectId;
+            }
         },
         async save() {
-            if (!this.projectId && !this.editingItem) {
+            const finalProjectId = this.projectId || this.selectedProjectId || (this.editingItem ? this.editingItem.projectId : null);
+            
+            if (!finalProjectId) {
                 this.showNotification('Ошибка', 'Не указан ID проекта', true);
                 return;
             }
@@ -159,14 +212,15 @@ export default {
             this.saveLoading = true;
             try {
                 const formData = {
-                    projectId: this.editingItem ? this.editingItem.projectId : this.projectId,
+                    projectId: finalProjectId,
                     number: this.number,
                     amount: this.amount,
                     currencyId: this.currencyId,
-                    date: this.date,
-                    returned: this.returned,
-                    note: this.note
-                };
+                date: this.date,
+                returned: this.returned,
+                isPaid: this.isPaid,
+                note: this.note
+            };
 
                 // Получаем информацию о валюте
                 const selectedCurrency = this.currencies.find(c => c.id == formData.currencyId);
@@ -179,7 +233,7 @@ export default {
                 if (this.editingItem) {
                     response = await ProjectContractController.updateItem(this.editingItem.id, formData);
                 } else {
-                    response = await ProjectContractController.storeItem(this.projectId, formData);
+                    response = await ProjectContractController.storeItem(finalProjectId, formData);
                 }
 
                 this.$emit('saved', response.item);
