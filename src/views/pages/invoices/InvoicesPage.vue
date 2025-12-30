@@ -258,7 +258,7 @@ export default {
                     const phone = i.client.phones?.[0]?.phone;
                     return phone ? `<div>${name} (<span>${phone}</span>)</div>` : name;
                 case "status":
-                    return `<span class="px-2 py-1 rounded text-xs ${i.getStatusClass()}">${i.getStatusLabel()}</span>`;
+                    return `<span class="px-2 py-1 rounded text-xs ${i.getStatusClass()}">${i.getStatusLabel(this.$t)}</span>`;
                 case "totalAmount":
                     return i.amountInfo();
                 case "ordersCount":

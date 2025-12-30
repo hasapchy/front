@@ -225,7 +225,7 @@ export default {
         eventBus.off('cache:invalidate', this.handleCacheInvalidate);
     },
     methods: {
-        translateTaskStatus,
+        translateProjectStatus,
         itemMapper(i, c) {
             switch (c) {
                 case 'users':
@@ -347,7 +347,7 @@ export default {
                         project.statusId = updateData.statusId;
                         const status = this.statuses.find(s => s.id === updateData.statusId);
                         if (status) {
-                            project.statusName = translateTaskStatus(status.name, this.$t);
+                            project.statusName = translateProjectStatus(status.name, this.$t);
                         }
                     }
                     

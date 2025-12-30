@@ -838,6 +838,8 @@ export default {
   
   // Транзакции
   addTransaction: 'Добавить транзакцию',
+  addProjectTransaction: 'Добавить проектную транзакцию',
+  projectTransactionInfo: 'Проектная транзакция не влияет на кассу и долг клиента. Она служит для дополнительной фиксации операций по проекту и участвует только в расчете баланса проекта.',
   allCashRegisters: 'Все кассы',
   allTime: 'За все время',
   lastWeek: 'Прошлая неделя',
@@ -1313,6 +1315,10 @@ export default {
   note: 'Примечание',
   enterNote: 'Введите примечание',
   contractReturned: 'Контракт возвращен',
+  returned: 'Возвращен',
+  notReturned: 'Не возвращен',
+  notPaid: 'Не оплачено',
+  contractStatus: 'Статус контракта',
   noContracts: 'Нет контрактов',
   contractSaved: 'Контракт сохранен',
   contractDeleted: 'Контракт удален',
@@ -1517,6 +1523,13 @@ export default {
   'orderStatus.READY': 'Готово',
   'orderStatus.COMPLETED': 'Завершено',
   'orderStatus.CANCELLED': 'Отменено',
+  
+  // Project Statuses
+  'projectStatus.NEW': 'Новый',
+  'projectStatus.IN_PROGRESS': 'В работе',
+  'projectStatus.PENDING': 'Ожидание оплаты',
+  'projectStatus.COMPLETED': 'Завершено',
+  'projectStatus.CANCELLED': 'Отменено',
   
   // Leave Types
   'leaveType.TIME_OFF': 'Отгул',

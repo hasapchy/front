@@ -3,6 +3,15 @@
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editContract') : $t('addContract') }}</h2>
 
         <div>
+            <div v-if="!projectId">
+                <label class="required">{{ $t('project') }}</label>
+                <select v-model="selectedProjectId" :disabled="!!editingItem" required>
+                    <option :value="null"></option>
+                    <option v-for="project in projects" :key="project.id" :value="project.id">
+                        {{ project.name }}
+                    </option>
+                </select>
+            </div>
             <div>
                 <label class="required">{{ $t('contractNumber') }}</label>
                 <input type="text" v-model="number" :placeholder="$t('enterContractNumber')" required>
@@ -30,6 +39,12 @@
                 <label>
                     <input type="checkbox" v-model="returned">
                     <span>{{ $t('contractReturned') }}</span>
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input type="checkbox" v-model="isPaid">
+                    <span>{{ $t('paid') }}</span>
                 </label>
             </div>
             <div>
@@ -85,12 +100,18 @@ export default {
                 ? new Date(this.editingItem.date).toISOString().substring(0, 16)
                 : new Date().toISOString().substring(0, 16),
             returned: this.editingItem ? this.editingItem.returned : false,
+            isPaid: this.editingItem ? this.editingItem.isPaid : false,
             note: this.editingItem ? this.editingItem.note : '',
             currencies: [],
+            projects: [],
+            selectedProjectId: this.projectId || (this.editingItem ? this.editingItem.projectId : null),
         };
     },
     async mounted() {
         await this.fetchCurrencies();
+        if (!this.projectId) {
+            await this.fetchProjects();
+        }
         this.$nextTick(() => {
             this.saveInitialState();
         });
@@ -103,6 +124,7 @@ export default {
             this.currencyId = '';
             this.date = new Date().toISOString().substring(0, 16);
             this.returned = false;
+            this.isPaid = false;
             this.note = '';
             if (this.resetFormChanges) {
                 this.resetFormChanges();
@@ -122,7 +144,9 @@ export default {
                 this.currencyId = newEditingItem.currencyId || '';
                 this.date = formattedDate;
                 this.returned = newEditingItem.returned || false;
+                this.isPaid = newEditingItem.isPaid || false;
                 this.note = newEditingItem.note || '';
+                this.selectedProjectId = newEditingItem.projectId || null;
             }
         },
         getFormState() {
@@ -132,27 +156,38 @@ export default {
                 currencyId: this.currencyId,
                 date: this.date,
                 returned: this.returned,
+                isPaid: this.isPaid,
                 note: this.note
             };
         },
         async fetchCurrencies() {
             try {
-                // Используем данные из store
                 await this.$store.dispatch('loadCurrencies');
-                const response = this.$store.getters.currencies;
-                this.currencies = response;
+                this.currencies = this.$store.getters.currencies || [];
             } catch (error) {
                 console.error('Error fetching currencies:', error);
+                this.currencies = [];
+            }
+        },
+        async fetchProjects() {
+            try {
+                await this.$store.dispatch('loadActiveProjects');
+                const activeProjects = this.$store.getters.activeProjects || [];
+                this.projects = activeProjects;
+            } catch (error) {
+                console.error('Error fetching projects:', error);
+                this.projects = [];
             }
         },
         prepareSave() {
             const formData = {
-                projectId: this.editingItemId ? this.editingItem.projectId : this.projectId,
+                projectId: this.editingItemId ? this.editingItem.projectId : (this.projectId || this.selectedProjectId),
                 number: this.number,
                 amount: this.amount,
                 currencyId: this.currencyId,
                 date: this.date,
                 returned: this.returned,
+                isPaid: this.isPaid,
                 note: this.note
             };
 
@@ -168,7 +203,8 @@ export default {
             if (this.editingItemId) {
                 return await ProjectContractController.updateItem(this.editingItemId, data);
             } else {
-                return await ProjectContractController.storeItem(this.projectId, data);
+                const finalProjectId = this.projectId || this.selectedProjectId;
+                return await ProjectContractController.storeItem(finalProjectId, data);
             }
         },
         async performDelete() {
@@ -189,7 +225,6 @@ export default {
             this.showNotification('Успех', response.message || 'Контракт успешно удален', false);
             this.$emit('saved');
         },
-
         handleCloseRequest() {
             this.$emit('close-request');
         }

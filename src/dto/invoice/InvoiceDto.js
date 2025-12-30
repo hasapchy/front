@@ -81,7 +81,10 @@ export default class InvoiceDto {
     return this.products ? this.products.length : 0;
   }
 
-  getStatusLabel() {
+  getStatusLabel(t = null) {
+    if (t && typeof t === 'function') {
+      return t(this.status) || this.status;
+    }
     switch (this.status) {
       case 'new':
         return 'Новый';
