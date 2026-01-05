@@ -163,6 +163,23 @@
                 <span class="truncate">{{ order.executor.name || order.executor }}</span>
             </div>
         </div>
+        
+        <!-- Приоритет (для задач) -->
+        <div v-if="isTaskMode && showField('priority') && order.priority" class="mb-2">
+            <div class="flex items-center space-x-1 text-xs text-gray-600">
+                <span class="text-sm">{{ getPriorityIcons() }}</span>
+                <!-- <span class="truncate">{{ getPriorityLabel() }}</span> -->
+            </div>
+        </div>
+
+        <!-- Сложность (для задач) -->
+        <div v-if="isTaskMode && showField('complexity') && order.complexity" class="mb-2">
+            <div class="flex items-center space-x-1 text-xs text-gray-600">
+                <span class="text-sm">{{ getComplexityIcons() }}</span>
+                <!-- <span class="truncate">{{ getComplexityLabel() }}</span> -->
+            </div>
+        </div>
+
 
         <!-- Бюджет проекта (только для проектов с permission) -->
         <div v-if="isProjectMode && $store.getters.hasPermission('settings_project_budget_view') && order.budget && showField('budget')" class="mt-3 pt-3 border-t border-gray-100">
@@ -200,26 +217,23 @@
         <div v-if="isSupervisor && order?.statusId === 3 && isTaskMode" class="flex gap-2 mt-2">
             <button
                 @click.stop="updateTaskStatus('COMPLETED')"
-                class="px-3 py-1 text-xs font-semibold  text-white rounded transition"
-                :style="{ backgroundColor: taskStatusColors?.COMPLETED || 'green' }"
+                class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-green-500 hover:bg-green-600"
             >
-                {{ $t('accept') || 'Принять' }}
+            <i class="fas fa-check"></i>
             </button>
             <button
                 @click.stop="updateTaskStatus('IN_PROGRESS')"
-                class="px-3 py-1 text-xs font-semibold  text-white rounded transition"
-                :style="{ backgroundColor: taskStatusColors?.IN_PROGRESS || 'red' }"
+                class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-red-500 hover:bg-red-600"
             >
-                {{ $t('decline') || 'Отклонить' }}
+            <i class="fas fa-times"></i>
             </button>
         </div>
         <div v-if="isExecutor && order?.statusId === 2 && isTaskMode" class="flex gap-2 mt-2">
             <button
                 @click.stop="updateTaskStatus('PENDING')"
-                class="px-3 py-1 text-xs font-semibold  text-white rounded transition"
-                :style="{ backgroundColor: taskStatusColors?.PENDING || 'green' }"
+                class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-green-500 hover:bg-green-600"
                 >
-                {{ $t('complete') || 'Завершить задачу' }}
+                <i class="fas fa-check"></i>
             </button>
         </div>
     </div>
@@ -270,14 +284,6 @@ export default {
         isSupervisor() {
             const user = this.$store.getters.user;
             return user?.id === this.order?.supervisor?.id;
-        },
-        taskStatusColors() {
-            const statuses = this.$store.getters.taskStatuses;
-            if (!Array.isArray(statuses)) return {};
-            return statuses.reduce((acc, s) => {
-            acc[s.name] = s.color;
-            return acc;
-            }, {});
         },
     },
     methods: {
@@ -465,7 +471,56 @@ export default {
                 return this.order.productsHtmlList();
             }
             return '';
-        }
+        },
+        // В methods секцию KanbanCard.vue добавить:
+
+        getPriorityIcons() {
+            if (typeof this.order?.getPriorityIcons === 'function') {
+                return this.order.getPriorityIcons();
+            }
+            const icons = {
+                'low': '🔥',
+                'normal': '🔥🔥',
+                'high': '🔥🔥🔥'
+            };
+            return icons[this.order?.priority] || icons['low'];
+        },
+
+        getPriorityLabel() {
+            if (typeof this.order?.getPriorityLabel === 'function') {
+                return this.order.getPriorityLabel();
+            }
+            const labels = {
+                'low': 'низкий',
+                'normal': 'нормальный',
+                'high': 'высокий'
+            };
+            return labels[this.order?.priority] || labels['low'];
+        },
+
+        getComplexityIcons() {
+            if (typeof this.order?.getComplexityIcons === 'function') {
+                return this.order.getComplexityIcons();
+            }
+            const icons = {
+                'simple': '🧠',
+                'normal': '🧠🧠',
+                'complex': '🧠🧠🧠'
+            };
+            return icons[this.order?.complexity] || icons['normal'];
+        },
+
+        getComplexityLabel() {
+            if (typeof this.order?.getComplexityLabel === 'function') {
+                return this.order.getComplexityLabel();
+            }
+            const labels = {
+                'simple': 'простая',
+                'normal': 'нормальная',
+                'complex': 'сложная'
+            };
+            return labels[this.order?.complexity] || labels['normal'];
+        },
     }
 };
 </script>
