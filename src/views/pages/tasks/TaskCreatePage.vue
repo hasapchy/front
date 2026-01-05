@@ -31,6 +31,26 @@
                     :min="minDeadline" />
             </div>
 
+            <!-- Приоритет -->
+            <div>
+                <label>{{ $t('priority') || 'Приоритет' }}</label>
+                <select v-model="priority">
+                    <option value="low">🔥 </option>
+                    <option value="normal">🔥🔥 </option>
+                    <option value="high">🔥🔥🔥 </option>
+                </select>
+            </div>
+
+            <!-- Сложность -->
+            <div>
+                <label>{{ $t('complexity') || 'Сложность' }}</label>
+                <select v-model="complexity">
+                    <option value="simple">🧠 </option>
+                    <option value="normal">🧠🧠 </option>
+                    <option value="complex">🧠🧠🧠 </option>
+                </select>
+            </div>
+
             <div>
                 <label>{{ $t('project') }}</label>
                 <select v-model="projectId">
@@ -173,6 +193,8 @@ export default {
             selectedExecutor: this.editingItem && this.editingItem.executor 
                 ? { id: this.editingItem.executor.id } 
                 : null,
+            priority: this.editingItem ? (this.editingItem.priority || 'low') : 'low',        
+            complexity: this.editingItem ? (this.editingItem.complexity || 'normal') : 'normal', 
             editingItemId: this.editingItem ? this.editingItem.id : null,
             projects: [],
             saveLoading: false,
@@ -229,6 +251,8 @@ export default {
             this.statusId = 1;
             this.deadline = this.getCurrentLocalDateTime();
             this.projectId = null;
+            this.priority = 'low';
+            this.complexity = 'normal';
             this.selectedSupervisor = null;
             this.selectedExecutor = null;
             this.currentTab = 'info';
@@ -715,6 +739,8 @@ export default {
                 projectId: this.projectId,
                 supervisorId: this.selectedSupervisor?.id || null,
                 executorId: this.selectedExecutor?.id || null,
+                priority: this.priority,
+                complexity: this.complexity,
             };
         },
     },
