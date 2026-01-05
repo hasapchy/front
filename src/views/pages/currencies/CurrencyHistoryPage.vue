@@ -259,12 +259,16 @@ export default {
             }
         },
         resetFilters() {
-            this.selectedCurrencyId = '';
+            this.resetFiltersFromConfig({
+                selectedCurrencyId: ''
+            });
             this.selectedCurrency = null;
             this.data = null;
         },
         getActiveFiltersCount() {
-            return this.selectedCurrencyId !== '' ? 1 : 0;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.selectedCurrencyId, defaultValue: '' }
+            ]);
         },
     }
 }

@@ -139,6 +139,7 @@ export default {
   
   // Дополнительные действия
   selectCategory: 'Kategoriýany saýlaň',
+  selectCategories: 'Kategoriýalary saýlaň',
   categoryName: 'Kategoriýa ady',
   colorOptional: 'Reňk (islege görä)',
   
@@ -700,6 +701,7 @@ export default {
   errorDeletingProduct: 'Önümi pozmakda ýalňyşlyk',
   
   // Заказы
+  errorGettingOrder: 'Sargyty almakda ýalňyşlyk',
   errorGettingOrderList: 'Sargyt sanawyny almakda ýalňyşlyk',
   orderSaved: 'Sargyt saklandy',
   errorSavingOrder: 'Sargyty saklamakda ýalňyşlyk',
@@ -1018,6 +1020,8 @@ export default {
   editProjectStatus: 'Proýekt ýagdaýyny redaktir et',
   deleteProjectStatus: 'Proýekt ýagdaýyny poz',
   statusColor: 'Ýagdaý reňki',
+  showInProjectSelect: 'Saýlamak üçin sanawda görkez',
+  showInProjectSelectDescription: 'Bu sazlama açylmasa, bu ýagdaýa eýe bolan proýektler meýdanda saýlamak üçin elýeterli bolmaz',
   color: 'Reňk',
   
   // Виртуализация и ленивая загрузка
@@ -1269,6 +1273,7 @@ export default {
   'unit.ROLL': 'Rulon',
   
   // Task Statuses
+  'taskStatus.NEW': 'Täze',
   'taskStatus.PENDING': 'Garaşylýar',
   'taskStatus.IN_PROGRESS': 'Işde',
   'taskStatus.COMPLETED': 'Tamamlandy',

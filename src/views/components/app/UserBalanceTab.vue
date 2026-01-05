@@ -326,29 +326,17 @@ export default {
             }
         },
         async handleBalanceItemClick(item) {
-            if (!this.editingItem || !this.editingItem.id) return;
+            if (!item?.sourceId) return;
             
             try {
                 this.entityLoading = true;
-                if (!item.sourceId) {
-                    console.warn('No source ID found for item:', item);
-                    return;
-                }
                 const data = await this.ENTITY_CONFIG.transaction.fetch(item.sourceId);
                 this.editingTransactionItem = data;
-                
                 this.entityModalOpen = true;
-                this.selectedEntity = {
-                    type: 'transaction',
-                    data,
-                };
+                this.selectedEntity = { type: 'transaction', data };
             } catch (error) {
                 console.error('Error loading transaction:', error);
-                this.showNotification(
-                    this.$t('error') || 'Ошибка',
-                    'Ошибка при загрузке транзакции',
-                    true
-                );
+                this.showNotification(this.$t('error') || 'Ошибка', 'Ошибка при загрузке транзакции', true);
             } finally {
                 this.entityLoading = false;
             }

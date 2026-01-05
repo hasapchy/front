@@ -1,7 +1,41 @@
 <template>
     <div class="mt-4">
-        <div class="flex justify-between items-center mb-2">
-            <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-4">
+                <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
+                
+                <div v-if="editingItem" class="flex items-center gap-2">
+                    <select 
+                        v-model="selectedCashRegisterId"
+                        @change="fetchBalanceHistory"
+                        class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option :value="null">{{ $t('allCashRegisters') || 'Все кассы' }}</option>
+                        <option v-for="cash in cashRegisters" :key="cash.id" :value="cash.id">
+                            {{ cash.name }} ({{ cash.currencySymbol || '' }})
+                        </option>
+                    </select>
+
+                    <input 
+                        type="date" 
+                        v-model="dateFrom"
+                        @change="fetchBalanceHistory"
+                        class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+
+                    <input 
+                        type="date" 
+                        v-model="dateTo"
+                        @change="fetchBalanceHistory"
+                        class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+
+                    <PrimaryButton 
+                        :onclick="resetFilters"
+                        :is-small="true"
+                        icon="fas fa-times"
+                        :isDanger="true">
+                    </PrimaryButton>
+                </div>
+            </div>
+
             <PrimaryButton 
                 v-if="canAdjustBalance"
                 icon="fas fa-plus" 
@@ -12,14 +46,14 @@
             </PrimaryButton>
         </div>
         
-        <div v-if="!balanceLoading && editingItem" class="mb-4">
+        <div v-if="!balanceLoading && editingItem" class="mb-4 flex items-center gap-4 flex-wrap">
             <div class="flex items-center gap-2">
                 <i class="fas fa-wallet text-blue-500"></i>
                 <span class="text-sm text-gray-600">{{ balanceStatusText }}:</span>
                 <b :class="{
                     'text-[#5CB85C]': totalBalance >= 0,
                     'text-[#EE4F47]': totalBalance < 0
-                }">{{ formatBalance(totalBalance) }}</b>
+                }">{{ formatBalance(totalBalance) }} {{ displayCurrencySymbol }}</b>
             </div>
         </div>
 
@@ -76,6 +110,7 @@ import OperationTypeCell from "@/views/components/app/buttons/OperationTypeCell.
 import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
+import filtersMixin from "@/mixins/filtersMixin";
 import { defineAsyncComponent, markRaw } from 'vue';
 
 const TransactionCreatePage = defineAsyncComponent(() => 
@@ -88,7 +123,7 @@ import TransactionDto from "@/dto/transaction/TransactionDto";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 
 export default {
-    mixins: [notificationMixin, getApiErrorMessage],
+    mixins: [notificationMixin, getApiErrorMessage, filtersMixin],
     components: {
         DraggableTable,
         SideModalDialog,
@@ -121,6 +156,9 @@ export default {
             entityModalOpen: false,
             entityLoading: false,
             isAdjustmentMode: false,
+            selectedCashRegisterId: null,
+            dateFrom: null,
+            dateTo: null,
             columnsConfig: [
                 { name: "id", label: "№", size: 60 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 120 },
@@ -191,6 +229,9 @@ export default {
     },
     async mounted() {
         await this.fetchDefaultCurrency();
+        if (!this.$store.getters.cashRegisters?.length) {
+            await this.$store.dispatch('loadCashRegisters');
+        }
     },
 
     methods: {
@@ -221,7 +262,7 @@ export default {
             return item.is_debt == 1;
         },
         formatBalance(balance) {
-            return `${this.$formatNumber(balance, null, true)} ${this.currencySymbol}`;
+            return this.$formatNumber(balance, null, true);
         },
         async fetchDefaultCurrency() {
             try {
@@ -242,17 +283,23 @@ export default {
                 return;
             }
             
-            if (this.lastFetchedClientId === this.editingItem.id && !this.forceRefresh) {
-                return;
-            }
-            
             this.balanceLoading = true;
             try {
                 this.balanceHistory = await ClientController.getBalanceHistory(
-                    this.editingItem.id
+                    this.editingItem.id,
+                    null,
+                    this.selectedCashRegisterId,
+                    this.dateFrom,
+                    this.dateTo
                 );
                 
-                this.totalBalance = parseFloat(this.editingItem.balance || 0);
+                // Всегда рассчитываем баланс из истории для корректного отображения
+                this.totalBalance = this.balanceHistory.reduce((sum, item) => {
+                    const delta = item.balanceDelta !== null && item.balanceDelta !== undefined 
+                        ? parseFloat(item.balanceDelta) 
+                        : (parseFloat(item.amount) || 0);
+                    return sum + delta;
+                }, 0);
                 
                 this.lastFetchedClientId = this.editingItem.id;
                 this.forceRefresh = false;
@@ -263,20 +310,25 @@ export default {
                 this.balanceLoading = false;
             }
         },
+        resetFilters() {
+            this.resetFiltersFromConfig({
+                selectedCashRegisterId: null,
+                dateFrom: null,
+                dateTo: null
+            }, () => {
+                this.fetchBalanceHistory();
+            });
+        },
 
         async handleBalanceItemClick(item) {
-            if (!this.editingItem || !this.editingItem.id) return;
+            if (!item?.sourceId) return;
             
             try {
                 this.entityLoading = true;
                 const data = await this.ENTITY_CONFIG.transaction.fetch(item.sourceId);
                 this.editingTransactionItem = data;
-                
                 this.entityModalOpen = true;
-                this.selectedEntity = {
-                    type: 'transaction',
-                    data,
-                };
+                this.selectedEntity = { type: 'transaction', data };
             } catch (error) {
                 console.error('Error loading transaction:', error);
                 this.$notify?.({ type: 'error', text: 'Ошибка при загрузке транзакции' });
@@ -366,6 +418,16 @@ export default {
         balanceAdjustmentHeader() {
             return this.isAdjustmentMode ? 'Транзакция — корректировка баланса' : '';
         },
+        cashRegisters() {
+            return this.$store.getters.cashRegisters || [];
+        },
+        displayCurrencySymbol() {
+            if (this.selectedCashRegisterId) {
+                const selectedCash = this.cashRegisters.find(cash => cash.id === this.selectedCashRegisterId);
+                return selectedCash?.currencySymbol || this.currencySymbol || 'TMT';
+            }
+            return this.currencySymbol || 'TMT';
+        }
     },
     watch: {
         'editingItem.id': {

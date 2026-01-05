@@ -211,13 +211,14 @@ import RolesController from '@/api/RolesController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import userPhotoMixin from '@/mixins/userPhotoMixin';
+import crudFormMixin from '@/mixins/crudFormMixin';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import AuthController from '@/api/AuthController';
 import UserSalaryTab from '@/views/pages/users/UserSalaryTab.vue';
 import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, userPhotoMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, userPhotoMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, UserSalaryTab, UserBalanceTab },
     props: {
@@ -426,11 +427,10 @@ export default {
             }
             this.resetFormChanges();
         },
-        async save() {
+        // Методы для crudFormMixin
+        prepareSave() {
             if (!this.editingItemId && this.form.password !== this.form.confirmPassword) {
-                const passwordError = new Error(this.$t('passwordsDoNotMatch'));
-                this.$emit('saved-error', passwordError);
-                return;
+                throw new Error(this.$t('passwordsDoNotMatch'));
             }
 
             const selectedCompanies = Array.isArray(this.form.companies)
@@ -439,56 +439,49 @@ export default {
                     ? this.form.companies.split(',').filter((c) => c.trim() !== '')
                     : [];
 
-            if (selectedCompanies.length === 0) {
-                const validationError = new Error(this.$t('companiesRequired'));
-                this.$emit('saved-error', validationError);
-                return;
+            if (!selectedCompanies?.length) {
+                throw new Error(this.$t('companiesRequired'));
             }
 
-            this.saveLoading = true;
-            try {
-                let savedUser;
-
-                const formData = this.prepareUserData();
+            const formData = this.prepareUserData();
+            if (this.editingItemId && this.form.newPassword) {
+                formData.password = this.form.newPassword;
+            }
+            if (this.editingItem && this.editingItem.photo === '') {
+                formData.photo = '';
+            }
+            return formData;
+        },
+        async performSave(data) {
             const fileToUpload = this.hasNewFile ? (this.croppedFile || this.$refs.imageInput?.files[0]) : null;
+            let savedUser;
 
             if (this.editingItemId) {
-                if (this.form.newPassword) {
-                    formData.password = this.form.newPassword;
-                }
-                if (this.editingItem && this.editingItem.photo === '') {
-                    formData.photo = '';
-                }
-                savedUser = await UsersController.updateItem(this.editingItemId, formData, fileToUpload);
+                savedUser = await UsersController.updateItem(this.editingItemId, data, fileToUpload);
             } else {
-                savedUser = await UsersController.storeItem(formData, fileToUpload);
+                savedUser = await UsersController.storeItem(data, fileToUpload);
             }
 
-                const currentUser = this.$store.state.user;
-                if (savedUser.user && savedUser.user.id === currentUser.id) {
-                    this.$store.commit('SET_USER', savedUser.user);
-                    // Обновляем права текущего пользователя, если он редактирует себя
-                    if (savedUser.permissions) {
-                        this.$store.commit('SET_PERMISSIONS', savedUser.permissions);
-                    }
+            const currentUser = this.$store.state.user;
+            if (savedUser.user && savedUser.user.id === currentUser.id) {
+                this.$store.commit('SET_USER', savedUser.user);
+                if (savedUser.permissions) {
+                    this.$store.commit('SET_PERMISSIONS', savedUser.permissions);
                 }
-
-                if (savedUser.user && savedUser.user.photo) {
-                    this.selected_image = this.getUserPhotoSrc(savedUser.user);
-                    this.image = savedUser.user.photo;
-                } else {
-                    this.selected_image = null;
-                    this.image = '';
-                }
-
-                this.hasNewFile = false;
-
-                this.$emit('saved');
-            } catch (e) {
-                this.$emit('saved-error', e);
             }
-            this.saveLoading = false;
+
+            if (savedUser.user && savedUser.user.photo) {
+                this.selected_image = this.getUserPhotoSrc(savedUser.user);
+                this.image = savedUser.user.photo;
+            } else {
+                this.selected_image = null;
+                this.image = '';
+            }
+
+            this.hasNewFile = false;
+            return savedUser.user || data;
         },
+        // Метод save() теперь используется из crudFormMixin
         togglePasswordVisibility() {
             this.showPassword = !this.showPassword;
         },
@@ -519,7 +512,7 @@ export default {
             this.currentTab = tab;
         },
         getRolesForCompany(companyId) {
-            if (!this.allRoles || this.allRoles.length === 0) {
+            if (!this.allRoles?.length) {
                 return [];
             }
             return this.allRoles.filter(role => role.companyId === null || role.companyId === companyId);
@@ -536,7 +529,7 @@ export default {
         },
         getCompanyRole(companyId) {
             const companyRole = this.form.company_roles.find(cr => cr.company_id === companyId);
-            return companyRole && companyRole.role_ids && companyRole.role_ids.length > 0 
+            return companyRole?.role_ids?.length 
                 ? companyRole.role_ids[0] 
                 : null;
         },
@@ -560,27 +553,21 @@ export default {
                 data.password = this.form.password;
             }
 
-            if (this.form.company_roles && this.form.company_roles.length > 0) {
+            if (this.form.company_roles?.length) {
                 data.company_roles = this.form.company_roles;
-            } else if (this.form.roles && this.form.roles.length > 0) {
+            } else if (this.form.roles?.length) {
                 data.roles = Array.isArray(this.form.roles) ? this.form.roles : (this.form.roles ? this.form.roles.split(',').filter(r => r.trim() !== '') : []);
             }
 
             return data;
         },
 
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (!this.editingItemId) return;
-            this.deleteLoading = true;
-            try {
-                await UsersController.deleteItem(this.editingItemId);
-                this.$emit('deleted');
-            } catch (e) {
-                this.$emit('deleted-error', e);
-            }
-            this.deleteLoading = false;
+        // Метод для crudFormMixin
+        async performDelete() {
+            await UsersController.deleteItem(this.editingItemId);
+            return { message: 'deleted' };
         },
+        // Метод deleteItem() теперь используется из crudFormMixin
         showDeleteDialog() {
             this.deleteDialog = true;
         },
@@ -589,54 +576,43 @@ export default {
         },
     },
     watch: {
-        editingItem: {
-            handler(newEditingItem, oldEditingItem) {
-                if (newEditingItem) {
-                    this.form.name = newEditingItem.name || '';
-                    this.form.surname = newEditingItem.surname || '';
-                    this.form.email = newEditingItem.email || '';
-                    this.form.position = newEditingItem.position || '';
-                    this.form.hire_date = newEditingItem.hireDate
-                        ? newEditingItem.hireDate.split('T')[0]
-                        : '';
-                    this.form.birthday = newEditingItem.birthday
-                        ? newEditingItem.birthday.split('T')[0]
-                        : '';
-                    this.form.is_active = newEditingItem.isActive !== undefined ? newEditingItem.isActive : true;
-                    this.form.is_admin = newEditingItem.isAdmin !== undefined ? newEditingItem.isAdmin : false;
-                    this.form.companies = newEditingItem.companies?.map(c => c.id) || [];
-                    this.form.roles = newEditingItem.roles?.map(r => typeof r === 'string' ? r : r.name) || [];
-                    
-                    if (newEditingItem.company_roles && Array.isArray(newEditingItem.company_roles)) {
-                        this.form.company_roles = newEditingItem.company_roles.map(cr => ({
-                            company_id: cr.company_id,
-                            role_ids: Array.isArray(cr.role_ids) ? cr.role_ids : (cr.role_ids ? cr.role_ids.split(',') : [])
-                        }));
-                    } else {
-                        this.form.company_roles = [];
-                    }
-                    
-                    this.editingItemId = newEditingItem.id || null;
-                    this.currentTab = 'info'; // Всегда открываем первую вкладку
-
-                    if (newEditingItem.photo) {
-                        this.selected_image = this.getUserPhotoSrc(newEditingItem);
-                    } else {
-                        this.selected_image = null;
-                        this.image = '';
-                    }
-                    this.hasNewFile = false;
+        // Метод для crudFormMixin - обработка изменения editingItem
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                this.form.name = newEditingItem.name || '';
+                this.form.surname = newEditingItem.surname || '';
+                this.form.email = newEditingItem.email || '';
+                this.form.position = newEditingItem.position || '';
+                this.form.hire_date = newEditingItem.hireDate
+                    ? newEditingItem.hireDate.split('T')[0]
+                    : '';
+                this.form.birthday = newEditingItem.birthday
+                    ? newEditingItem.birthday.split('T')[0]
+                    : '';
+                this.form.is_active = newEditingItem.isActive !== undefined ? newEditingItem.isActive : true;
+                this.form.is_admin = newEditingItem.isAdmin !== undefined ? newEditingItem.isAdmin : false;
+                this.form.companies = newEditingItem.companies?.map(c => c.id) || [];
+                this.form.roles = newEditingItem.roles?.map(r => typeof r === 'string' ? r : r.name) || [];
+                
+                if (newEditingItem.company_roles && Array.isArray(newEditingItem.company_roles)) {
+                    this.form.company_roles = newEditingItem.company_roles.map(cr => ({
+                        company_id: cr.company_id,
+                        role_ids: Array.isArray(cr.role_ids) ? cr.role_ids : (cr.role_ids ? cr.role_ids.split(',') : [])
+                    }));
                 } else {
-                    if (oldEditingItem !== undefined) {
-                        this.clearForm();
-                    }
+                    this.form.company_roles = [];
                 }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
-            },
-            deep: true,
-            immediate: true
+                
+                this.currentTab = 'info'; // Всегда открываем первую вкладку
+
+                if (newEditingItem.photo) {
+                    this.selected_image = this.getUserPhotoSrc(newEditingItem);
+                } else {
+                    this.selected_image = null;
+                    this.image = '';
+                }
+                this.hasNewFile = false;
+            }
         }
     }
 };

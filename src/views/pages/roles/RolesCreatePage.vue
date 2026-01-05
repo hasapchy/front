@@ -134,8 +134,7 @@
                             </label>
                         </div>
                         
-                        <!-- Custom permissions для ресурса -->
-                        <div v-if="resource.customPermissions && resource.customPermissions.length > 0" class="mt-3 pt-3 border-t border-gray-200">
+                        <div v-if="resource.customPermissions?.length" class="mt-3 pt-3 border-t border-gray-200">
                             <div class="grid grid-cols-1 gap-2 text-xs">
                                 <div v-for="perm in resource.customPermissions" :key="perm.name" class="flex items-center gap-2">
                                     <input type="checkbox" :value="perm.name" v-model="form.permissions"
@@ -149,8 +148,7 @@
                         </div>
                     </div>
                     
-                    <!-- Custom permissions для групп -->
-                    <div v-if="(groupKey === 'projects' || groupKey === 'clients' || groupKey === 'finance') && groupedResources[groupKey] && groupedResources[groupKey].customPermissions && groupedResources[groupKey].customPermissions.length > 0" class="ml-4 mt-4 pt-4 border-t border-gray-200">
+                    <div v-if="(groupKey === 'projects' || groupKey === 'clients' || groupKey === 'finance') && groupedResources[groupKey]?.customPermissions?.length" class="ml-4 mt-4 pt-4 border-t border-gray-200">
                         <div class="grid grid-cols-1 gap-2 text-xs">
                             <div v-for="perm in groupedResources[groupKey].customPermissions" :key="perm.name" class="flex items-center gap-2">
                                 <input type="checkbox" :value="perm.name" v-model="form.permissions"
@@ -162,7 +160,7 @@
                     </div>
                 </div>
 
-                <div v-if="customPermissions.length > 0" class="mt-4 pt-4 border-t">
+                <div v-if="customPermissions?.length" class="mt-4 pt-4 border-t">
                     <div class="font-semibold text-sm mb-2">{{ $t('customPermissions') || 'Дополнительные права' }}</div>
                     <div class="grid grid-cols-1 gap-2 text-xs">
                         <div v-for="perm in customPermissions" :key="perm.name" class="flex items-center gap-2">
@@ -198,6 +196,7 @@ import RolesController from '@/api/RolesController';
 import UsersController from '@/api/UsersController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 
 import {
     permissionIcon,
@@ -207,7 +206,7 @@ import {
 } from '@/permissions';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog },
     props: {
@@ -219,11 +218,7 @@ export default {
                 name: '',
                 permissions: [],
             },
-            editingItemId: null,
             allPermissions: [],
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false,
             expandedGroups: {},
         };
     },
@@ -283,7 +278,7 @@ export default {
                             customPerms.push(perm);
                         }
                     });
-                    if (customPerms.length > 0) {
+                    if (customPerms?.length) {
                         resources[resourceKey].customPermissions = customPerms;
                     }
                 }
@@ -313,7 +308,7 @@ export default {
                     }
                 });
                 
-                if (Object.keys(groupResources).length > 0 || customPerms.length > 0) {
+                if (Object.keys(groupResources).length || customPerms?.length) {
                     groups[groupKey] = {
                         label: group.label,
                         resources: groupResources,
@@ -335,7 +330,7 @@ export default {
                 }
             });
             
-            if (Object.keys(ungrouped).length > 0) {
+            if (Object.keys(ungrouped).length) {
                 groups.other = {
                     label: 'other',
                     resources: ungrouped
@@ -375,7 +370,7 @@ export default {
         },
         selectAllChecked: {
             get() {
-                if (!Array.isArray(this.allPermissions) || this.allPermissions.length === 0) {
+                if (!Array.isArray(this.allPermissions) || !this.allPermissions?.length) {
                     return false;
                 }
                 return this.form.permissions.length === this.allPermissions.length;
@@ -422,8 +417,19 @@ export default {
         clearForm() {
             this.form.name = '';
             this.form.permissions = [];
-            this.editingItemId = null;
             this.resetFormChanges();
+        },
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                this.form.name = (newEditingItem.name || '').trim();
+                let permissions = Array.isArray(newEditingItem.permissions)
+                    ? newEditingItem.permissions.map(p => typeof p === 'string' ? p : (p?.name || ''))
+                    : [];
+                
+                permissions = this.validatePermissions(permissions);
+                
+                this.form.permissions = permissions;
+            }
         },
         hasResourceUserId(resourceKey) {
             return !this.resourcesWithoutUserId.includes(resourceKey);
@@ -618,7 +624,7 @@ export default {
         },
         isGroupAllChecked(groupResources) {
             const resourceKeys = Object.keys(groupResources);
-            if (resourceKeys.length === 0) return false;
+            if (!resourceKeys?.length) return false;
             
             return resourceKeys.every(resourceKey => this.isResourceAllChecked(resourceKey));
         },
@@ -723,55 +729,56 @@ export default {
             );
         },
         async save() {
+            const validation = this.validateForm();
+            if (!validation.valid) {
+                this.$emit('saved-error', validation.error);
+                return;
+            }
             this.saveLoading = true;
             try {
-                const validation = this.validateForm();
-                if (!validation.valid) {
-                    this.$emit('saved-error', validation.error);
-                    this.saveLoading = false;
-                    return;
-                }
-
-                let permissions = Array.isArray(this.form.permissions) 
-                    ? this.form.permissions 
-                    : this.form.permissions.split(',');
-                
-                permissions = this.validatePermissions(permissions);
-
-                const data = {
-                    name: this.form.name.trim(),
-                    permissions: permissions,
-                };
-
-                if (this.editingItemId) {
-                    await RolesController.updateItem(this.editingItemId, data);
-                } else {
-                    await RolesController.storeItem(data);
-                }
-
-                this.$emit('saved');
-            } catch (e) {
-                this.$emit('saved-error', this.getApiErrorMessage(e));
+                const data = this.prepareSave();
+                const response = await this.performSave(data);
+                this.$emit('saved', response);
+                this.onSaveSuccess(response);
+            } catch (error) {
+                this.$emit('saved-error', this.getApiErrorMessage ? this.getApiErrorMessage(error) : error);
+                this.onSaveError(error);
             }
             this.saveLoading = false;
         },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (!this.editingItemId) return;
-            this.deleteLoading = true;
-            try {
-                await RolesController.deleteItem(this.editingItemId);
-                this.$emit('deleted');
-            } catch (e) {
-                this.$emit('deleted-error', this.getApiErrorMessage(e));
+        prepareSave() {
+            let permissions = Array.isArray(this.form.permissions) 
+                ? this.form.permissions 
+                : this.form.permissions.split(',');
+            
+            permissions = this.validatePermissions(permissions);
+
+            return {
+                name: this.form.name.trim(),
+                permissions: permissions,
+            };
+        },
+        async performSave(data) {
+            if (this.editingItemId) {
+                return await RolesController.updateItem(this.editingItemId, data);
+            } else {
+                return await RolesController.storeItem(data);
             }
-            this.deleteLoading = false;
         },
-        showDeleteDialog() {
-            this.deleteDialog = true;
+        onSaveSuccess(response) {
+            this.$emit('saved', response);
         },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
+        onSaveError(error) {
+            this.$emit('saved-error', this.getApiErrorMessage(error));
+        },
+        async performDelete() {
+            return await RolesController.deleteItem(this.editingItemId);
+        },
+        onDeleteSuccess() {
+            this.$emit('deleted');
+        },
+        onDeleteError(error) {
+            this.$emit('deleted-error', this.getApiErrorMessage(error));
         },
     },
     watch: {

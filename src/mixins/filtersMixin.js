@@ -10,12 +10,10 @@ export default {
      * Можно переопределить в компоненте для дополнительной логики
      */
     applyFilters() {
-      // Если есть метод resetKanbanPagination (для kanban режима)
       if (this.viewMode === 'kanban' && typeof this.resetKanbanPagination === 'function') {
         this.resetKanbanPagination();
       }
       
-      // Вызываем fetchItems с первой страницы
       if (typeof this.fetchItems === 'function') {
         this.fetchItems(1, true);
       }
@@ -26,7 +24,6 @@ export default {
      * для сброса конкретных фильтров
      */
     resetFilters() {
-      // Базовый метод - должен быть переопределен в компоненте
       if (typeof this.fetchItems === 'function') {
         this.fetchItems(1, true);
       }
@@ -37,10 +34,73 @@ export default {
      * @returns {number}
      */
     getActiveFiltersCount() {
-      // Базовый метод - должен быть переопределен в компоненте
       return 0;
+    },
+
+    /**
+     * Утилита для подсчета активных фильтров на основе массива проверок
+     * @param {Array<{value: any, defaultValue: any, isArray?: boolean}>} filters - Массив объектов с проверками
+     * @returns {number} Количество активных фильтров
+     * 
+     * @example
+     * getActiveFiltersCountFromConfig([
+     *   { value: this.statusFilter, defaultValue: '' },
+     *   { value: this.clientFilter, defaultValue: '' },
+     *   { value: this.dateFilter, defaultValue: 'all_time' },
+     *   { value: this.categoryFilter, defaultValue: [], isArray: true }
+     * ])
+     */
+    getActiveFiltersCountFromConfig(filters) {
+      if (!Array.isArray(filters)) return 0;
+      
+      return filters.reduce((count, filter) => {
+        if (!filter || filter.value === undefined) return count;
+        
+        const { value, defaultValue, isArray } = filter;
+        
+        if (isArray) {
+          return count + (Array.isArray(value) && value.length > 0 ? 1 : 0);
+        }
+        
+        if (value !== defaultValue) {
+          return count + 1;
+        }
+        
+        return count;
+      }, 0);
+    },
+
+    /**
+     * Утилита для сброса фильтров на основе объекта с дефолтными значениями
+     * @param {Object} defaultValues - Объект с дефолтными значениями фильтров
+     * @param {Function} [callback] - Опциональный callback после сброса
+     * 
+     * @example
+     * resetFiltersFromConfig({
+     *   statusFilter: '',
+     *   clientFilter: '',
+     *   dateFilter: 'all_time',
+     *   categoryFilter: []
+     * })
+     */
+    resetFiltersFromConfig(defaultValues, callback) {
+      if (!defaultValues || typeof defaultValues !== 'object') return;
+      
+      Object.keys(defaultValues).forEach(key => {
+        if (this.hasOwnProperty(key) || this[key] !== undefined) {
+          this[key] = defaultValues[key];
+        }
+      });
+      
+      if (this.viewMode === 'kanban' && typeof this.resetKanbanPagination === 'function') {
+        this.resetKanbanPagination();
+      }
+      
+      if (typeof callback === 'function') {
+        callback();
+      } else if (typeof this.fetchItems === 'function') {
+        this.fetchItems(1, this.viewMode === 'kanban');
+      }
     }
   }
 };
-
-

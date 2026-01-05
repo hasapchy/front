@@ -177,6 +177,7 @@ export default {
   
   // Дополнительные действия
   selectCategory: 'Выберите категорию',
+  selectCategories: 'Выберите категории',
   categoryName: 'Название категории',
   colorOptional: 'Цвет (опционально)',
   
@@ -816,6 +817,7 @@ export default {
   errorDeletingProduct: 'Ошибка удаления товара',
   
   // Заказы
+  errorGettingOrder: 'Ошибка получения заказа',
   errorGettingOrderList: 'Ошибка получения списка заказов',
   orderSaved: 'Заказ сохранён',
   errorSavingOrder: 'Ошибка сохранения заказа',
@@ -1303,6 +1305,8 @@ export default {
   editProjectStatus: 'Редактировать статус проекта',
   deleteProjectStatus: 'Удалить статус проекта',
   statusColor: 'Цвет статуса',
+  showInProjectSelect: 'Показывать в списке для выбора',
+  showInProjectSelectDescription: 'Если данная настройка не включена, то при попадании на данный статус проекты не будут доступны для выбора в поле',
   color: 'Цвет',
   projectStatus: 'Статус проекта',
   
@@ -1502,6 +1506,7 @@ export default {
   'unit.ROLL': 'Рулон',
   
   // Task Statuses
+  'taskStatus.NEW': 'Новый',
   'taskStatus.PENDING': 'Ожидает',
   'taskStatus.IN_PROGRESS': 'В работе',
   'taskStatus.COMPLETED': 'Завершен',

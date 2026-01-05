@@ -4,7 +4,7 @@
         <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.tasks" :columns-config="columnsConfig" :table-data="data.items" 
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="(i) => { showModal(i) }">
+                :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
                         :show-filters="true"
@@ -207,7 +207,7 @@
                 :is-task-mode="true"
                 :batch-status-id="batchStatusId"
                 @order-moved="handleTaskMoved"
-                @card-dblclick="showModal"
+                @card-dblclick="onItemClick"
                 @card-select-toggle="toggleSelectRow"
                 @column-select-toggle="handleColumnSelectToggle"
                 @batch-status-change="handleBatchStatusChangeFromToolbar"
@@ -224,7 +224,7 @@
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed"
         :showTimelineButton="!!editingItem" @toggle-timeline="toggleTimeline">
-        <TaskCreatePage v-if="modalDialog" ref="taskForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <TaskCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-task'" ref="taskForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" 
             @update:editingItem="editingItem = $event" />
 
@@ -309,6 +309,9 @@ export default {
             statuses: [],
             controller: TaskController,
             cacheInvalidationType: 'tasks',
+            itemViewRouteName: 'TaskView',
+            baseRouteName: 'Tasks',
+            errorGettingItemText: this.$t('errorGettingTask'),
             savedSuccessText: this.$t('taskSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingTask'),
             deletedSuccessText: this.$t('taskSuccessfullyDeleted'),
@@ -409,24 +412,12 @@ export default {
             this.shouldRestoreScrollOnClose = true;
             this.modalDialog = true;
             this.showTimeline = true;
-            
-            if (item && item.id) {
-                // Загружаем полную задачу с сервера, чтобы получить все данные, включая файлы
-                try {
-                    const fullTask = await TaskController.getItem(item.id);
-                    if (fullTask) {
-                        this.editingItem = fullTask;
-                    } else {
-                        // Если не удалось загрузить, используем данные из списка
-                        this.editingItem = item;
-                    }
-                } catch (error) {
-                    console.error('Ошибка при загрузке задачи:', error);
-                    // Если не удалось загрузить, используем данные из списка
-                    this.editingItem = item;
-                }
-            } else {
-                this.editingItem = null;
+            this.editingItem = item;
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'Tasks' });
             }
         },
         
@@ -554,21 +545,18 @@ export default {
             this.fetchItems(1, false);
         },
         resetFilters() {
-            this.statusFilter = 'all';
-            this.dateFilter = 'all_time';
-            this.startDate = '';
-            this.endDate = '';
-            if (this.viewMode === 'kanban') {
-                this.fetchItems(1, true);
-            } else {
-                this.fetchItems(1);
-            }
+            this.resetFiltersFromConfig({
+                statusFilter: 'all',
+                dateFilter: 'all_time',
+                startDate: '',
+                endDate: ''
+            });
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.statusFilter !== 'all') count++;
-            if (this.dateFilter !== 'all_time') count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.statusFilter, defaultValue: 'all' },
+                { value: this.dateFilter, defaultValue: 'all_time' }
+            ]);
         },
         // Переопределяем метод из crudEventMixin для правильной работы с data
         refreshDataAfterOperation() {
@@ -698,7 +686,20 @@ export default {
             // Вызываем стандартную обработку из crudEventMixin
             this.refreshDataAfterOperation();
         },
-        
+        async handleCompanyChanged(companyId) {
+            this.statusFilter = 'all';
+            this.dateFilter = 'all_time';
+            this.startDate = '';
+            this.endDate = '';
+            this.selectedIds = [];
+            
+            await this.fetchItems(1, false);
+            
+            this.$store.dispatch('showNotification', {
+                title: 'Компания изменена',
+                isDanger: false
+            });
+        },
     },
     watch: {
         viewMode: {
@@ -709,6 +710,12 @@ export default {
                 });
             },
             immediate: false
+        },
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
         }
     },
 }

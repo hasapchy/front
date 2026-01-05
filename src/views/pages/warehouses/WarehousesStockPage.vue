@@ -266,17 +266,18 @@ export default {
             }
         },
         resetFilters() {
-            this.warehouseId = '';
-            this.categoryId = '';
-            this.availabilityFilter = 'all';
-            this.fetchItems(1);
+            this.resetFiltersFromConfig({
+                warehouseId: '',
+                categoryId: '',
+                availabilityFilter: 'all'
+            });
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.warehouseId !== '') count++;
-            if (this.categoryId !== '') count++;
-            if (this.availabilityFilter !== 'all') count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.warehouseId, defaultValue: '' },
+                { value: this.categoryId, defaultValue: '' },
+                { value: this.availabilityFilter, defaultValue: 'all' }
+            ]);
         },
         openCreateWarehouse() {
             this.modalCreateWarehouse = true;

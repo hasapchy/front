@@ -1795,7 +1795,7 @@ const store = createStore({
     categories: (state) => state.categories,
     projects: (state) => state.projects,
     activeProjects: (state) =>
-      state.projects.filter((p) => p.statusId !== 4 && p.statusId !== 5),
+      state.projects.filter((p) => p.status?.isTrVisible ?? true),
     orderStatuses: (state) => state.orderStatuses,
     projectStatuses: (state) => state.projectStatuses,
     taskStatuses: (state) => state.taskStatuses,

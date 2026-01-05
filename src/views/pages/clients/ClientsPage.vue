@@ -2,7 +2,7 @@
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="common.clients" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="handleRowClick"
+                :item-mapper="itemMapper" :onItemClick="onItemClick"
                 @selectionChange="selectedIds = $event">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
@@ -141,6 +141,9 @@ export default {
             controller: ClientController,
             cacheInvalidationType: 'clients',
             deletePermission: 'clients_delete',
+            itemViewRouteName: 'ClientView',
+            baseRouteName: 'Clients',
+            errorGettingItemText: this.$t('errorGettingClient'),
             statusFilter: '',
             typeFilter: '',
             savedSuccessText: this.$t('clientSuccessfullyAdded'),
@@ -158,7 +161,7 @@ export default {
         '$route.params.id': {
             immediate: true,
             handler(value) {
-                this.handleRouteClient(value);
+                this.handleRouteItem(value);
             }
         }
     },
@@ -217,15 +220,16 @@ export default {
             }
         },
         resetFilters() {
-            this.statusFilter = '';
-            this.typeFilter = '';
-            this.fetchItems(1);
+            this.resetFiltersFromConfig({
+                statusFilter: '',
+                typeFilter: ''
+            });
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.statusFilter !== '') count++;
-            if (this.typeFilter !== '') count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.statusFilter, defaultValue: '' },
+                { value: this.typeFilter, defaultValue: '' }
+            ]);
         },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);
@@ -233,41 +237,6 @@ export default {
                 this.$router.replace({ name: 'Clients' });
             }
         },
-        async handleRouteClient(id) {
-            if (!id) {
-                if (this.modalDialog) {
-                    this.closeModal();
-                }
-                this.editingItem = null;
-                return;
-            }
-            const clientId = Number(id);
-            if (!clientId) {
-                this.$router.replace({ name: 'Clients' });
-                return;
-            }
-            if (this.editingItem?.id === clientId && this.modalDialog) {
-                return;
-            }
-            try {
-                const client = await ClientController.getItem(clientId);
-                if (!client) {
-                    this.showNotification(this.$t('errorGettingClient'), this.$t('notFound'), true);
-                    this.$router.replace({ name: 'Clients' });
-                    return;
-                }
-                this.showModal(client);
-            } catch (error) {
-                this.showNotification(this.$t('errorGettingClient'), error.message, true);
-                this.$router.replace({ name: 'Clients' });
-            }
-        },
-        handleRowClick(item) {
-            if (!item?.id) {
-                return;
-            }
-            this.$router.push({ name: 'ClientView', params: { id: item.id } });
-        }
     },
     computed: {
         searchQuery() {

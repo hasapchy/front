@@ -19,7 +19,7 @@
                 </PrimaryButton>
             </div>
         </div>
-        <div v-if="$store.getters.hasPermission('settings_project_budget_view')" class="mb-4">
+        <div v-if="canViewProjectBudget" class="mb-4">
             <!-- Все показатели в один ряд -->
             <div class="flex items-center gap-6">
                 <!-- Приход -->
@@ -51,10 +51,10 @@
             </div>
         </div>
         <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="balanceHistory.length === 0" class="text-gray-500">
+        <div v-else-if="!balanceHistory?.length" class="text-gray-500">
             {{ $t('noHistory') }}
         </div>
-        <DraggableTable v-if="!balanceLoading && balanceHistory.length" table-key="project.balance"
+        <DraggableTable v-if="!balanceLoading && balanceHistory?.length" table-key="project.balance"
             :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
             @selectionChange="selectedIds = $event" :onItemClick="handleBalanceItemClick" />
 
@@ -219,6 +219,12 @@ export default {
         };
     },
     computed: {
+        canViewProjectBudget() {
+            return this.$store.getters.hasPermission('settings_project_budget_view');
+        },
+        hasProjectCurrency() {
+            return this.editingItem?.currencyId && this.editingItem?.currency;
+        },
         projectFormConfig() {
             return TRANSACTION_FORM_PRESETS.projectBalance;
         },
@@ -231,29 +237,25 @@ export default {
             return this.$formatNumber(budget, null, true);
         },
         budgetDisplay() {
-            if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
+            if (!this.hasProjectCurrency) {
                 return `${this.budgetFormatted} ${this.currencySymbol}`;
             }
-            
-            // Бюджет уже в валюте проекта, показываем его
             return `${this.budgetFormatted} ${this.editingItem?.currency?.symbol}`;
         },
         balanceDisplay() {
-            if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
+            if (!this.hasProjectCurrency) {
                 return `${this.balanceFormatted} ${this.currencySymbol}`;
             }
-            
-            // Баланс уже в валюте проекта (конвертация происходит на бэкенде)
             return `${this.balanceFormatted} ${this.editingItem?.currency?.symbol}`;
         },
         totalIncome() {
-            if (!this.balanceHistory || this.balanceHistory.length === 0) return 0;
+            if (!this.balanceHistory?.length) return 0;
             return this.balanceHistory
                 .filter(item => parseFloat(item.amount) > 0)
                 .reduce((sum, item) => sum + parseFloat(item.amount), 0);
         },
         totalExpense() {
-            if (!this.balanceHistory || this.balanceHistory.length === 0) return 0;
+            if (!this.balanceHistory?.length) return 0;
             return Math.abs(this.balanceHistory
                 .filter(item => parseFloat(item.amount) < 0)
                 .reduce((sum, item) => sum + parseFloat(item.amount), 0));
@@ -265,19 +267,15 @@ export default {
             return this.$formatNumber(this.totalExpense, null, true);
         },
         totalIncomeDisplay() {
-            if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
+            if (!this.hasProjectCurrency) {
                 return `${this.totalIncomeFormatted} ${this.currencySymbol}`;
             }
-            
-            // Приход уже в валюте проекта (конвертация происходит на бэкенде)
             return `${this.totalIncomeFormatted} ${this.editingItem?.currency?.symbol}`;
         },
         totalExpenseDisplay() {
-            if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
+            if (!this.hasProjectCurrency) {
                 return `${this.totalExpenseFormatted} ${this.currencySymbol}`;
             }
-            
-            // Расход уже в валюте проекта (конвертация происходит на бэкенде)
             return `${this.totalExpenseFormatted} ${this.editingItem?.currency?.symbol}`;
         },
     },
@@ -288,7 +286,7 @@ export default {
     methods: {
         formatBalance(balance) {
             const formattedBalance = this.$formatNumber(balance || 0, null, true);
-            if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
+            if (!this.hasProjectCurrency) {
                 return `${formattedBalance} ${this.currencySymbol}`;
             }
             return `${formattedBalance} ${this.editingItem?.currency?.symbol}`;
@@ -372,25 +370,20 @@ export default {
             }
         },
         async handleBalanceItemClick(item) {
+            if (!item?.sourceId) return;
+            
             try {
                 this.transactionLoading = true;
-                const sourceId = item?.sourceSourceId || item?.sourceId;
-                if (!sourceId) {
-                    this.$notify?.({ type: 'error', text: 'Ошибка при загрузке транзакции' });
-                    return;
-                }
-                
                 const sourceType = item?.source || item?.sourceType;
                 this.isProjectTransaction = sourceType === 'project_transaction';
                 
                 const entityConfig = this.ENTITY_CONFIG[sourceType] || this.ENTITY_CONFIG.transaction;
-                const data = await entityConfig.fetch(sourceId);
+                const data = await entityConfig.fetch(item.sourceId);
                 this.editingTransactionItem = data;
-                
                 this.transactionModalOpen = true;
             } catch (error) {
                 console.error('Error loading transaction:', error);
-                this.$notify?.({ type: 'error', text: 'Ошибка при загрузке транзакции: ' + (error.message || error) });
+                this.$notify?.({ type: 'error', text: 'Ошибка при загрузке транзакции' });
             } finally {
                 this.transactionLoading = false;
             }

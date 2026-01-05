@@ -6,7 +6,8 @@
 
         <div v-if="currency" class="mb-4 p-3 bg-blue-50 rounded-lg">
             <p class="text-sm text-blue-700">
-                <strong>{{ $t('currency') }}:</strong> {{ currency.symbol }} - {{ translateCurrency(currency.name, $t) }}
+                <strong>{{ $t('currency') }}:</strong> {{ currency.symbol }} - {{ translateCurrency(currency.name, $t)
+                }}
             </p>
             <p class="text-sm text-blue-700">
                 <strong>{{ $t('currentRate') }}:</strong> {{ currency.current_rate }}
@@ -86,10 +87,11 @@ import NotificationToast from '@/views/components/app/dialog/NotificationToast.v
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
+import crudFormMixin from '@/mixins/crudFormMixin';
 import { translateCurrency } from '@/utils/translationUtils';
 
 export default {
-    mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
+    mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
     emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
     components: { PrimaryButton, AlertDialog, NotificationToast },
     props: {
@@ -102,10 +104,6 @@ export default {
             startDate: this.editingItem ? (this.editingItem.startDate ? this.editingItem.startDate.split('T')[0] : '') : new Date().toISOString().split('T')[0],
             endDate: this.editingItem ? (this.editingItem.endDate ? this.editingItem.endDate.split('T')[0] : '') : '',
             isCurrent: this.editingItem ? !this.editingItem.endDate : true,
-            editingItemId: this.editingItem?.id || null,
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false,
         }
     },
     computed: {
@@ -135,80 +133,57 @@ export default {
             }
         },
 
-        async save() {
-            if (!this.isFormValid) {
-                return;
-            }
-
-            this.saveLoading = true;
-
-            try {
-                const data = {
-                    exchangeRate: parseFloat(this.exchangeRate),
-                    startDate: this.startDate,
-                    endDate: this.isCurrent ? null : this.endDate
-                };
-
-                let resp;
-                if (this.editingItem) {
-                    resp = await CurrencyHistoryController.updateItem(
-                        this.currency.id,
-                        this.editingItem.id,
-                        data
-                    );
-                } else {
-                    resp = await CurrencyHistoryController.storeItem(
-                        this.currency.id,
-                        data
-                    );
-                }
-
-                if (resp.message) {
-                    this.$emit("saved", resp.history || data);
-                    this.clearForm();
-                }
-            } catch (error) {
-                const errorMessage = this.getApiErrorMessage(error);
-                this.$emit("saved-error", errorMessage);
-            }
-            this.saveLoading = false;
+        prepareSave() {
+            return {
+                exchangeRate: parseFloat(this.exchangeRate),
+                startDate: this.startDate,
+                endDate: this.isCurrent ? null : this.endDate
+            };
         },
-
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (!this.editingItem) {
-                return;
-            }
-            this.deleteLoading = true;
-            try {
-                const resp = await CurrencyHistoryController.deleteItem(
+        async performSave(data) {
+            if (this.editingItemId) {
+                return await CurrencyHistoryController.updateItem(
                     this.currency.id,
-                    this.editingItem.id
+                    this.editingItemId,
+                    data
                 );
-                if (resp.message) {
-                    this.$emit("deleted");
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit("deleted-error", this.getApiErrorMessage(error));
+            } else {
+                return await CurrencyHistoryController.storeItem(
+                    this.currency.id,
+                    data
+                );
             }
-            this.deleteLoading = false;
         },
-
+        async performDelete() {
+            const resp = await CurrencyHistoryController.deleteItem(
+                this.currency.id,
+                this.editingItemId
+            );
+            if (!resp.message) {
+                throw new Error('Failed to delete currency history');
+            }
+            return resp;
+        },
+        onSaveSuccess(response) {
+            if (response && response.message) {
+                this.$emit("saved", response.history || response);
+                this.clearForm();
+            }
+        },
         clearForm() {
             this.exchangeRate = '';
-            this.startDate = new Date().toString().split('T')[0];
+            this.startDate = new Date().toISOString().split('T')[0];
             this.endDate = '';
             this.isCurrent = true;
-            this.resetFormChanges();
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
         },
-
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-
-        closeDeleteDialog() {
-            this.deleteDialog = false;
+        onEditingItemChanged(newEditingItem) {
+            this.exchangeRate = newEditingItem.exchangeRate || '';
+            this.startDate = newEditingItem.startDate ? newEditingItem.startDate.split('T')[0] : new Date().toISOString().split('T')[0];
+            this.endDate = newEditingItem.endDate ? newEditingItem.endDate.split('T')[0] : '';
+            this.isCurrent = !newEditingItem.endDate;
         },
 
         handleCloseRequest() {
@@ -231,27 +206,6 @@ export default {
         closeModal() {
             this.$emit('close-request');
         }
-    },
-    watch: {
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    this.exchangeRate = newEditingItem.exchangeRate || '';
-                    this.startDate = newEditingItem.startDate ? newEditingItem.startDate.split('T')[0] : new Date().toString().split('T')[0];
-                    this.endDate = newEditingItem.endDate ? newEditingItem.endDate.split('T')[0] : '';
-                    this.isCurrent = !newEditingItem.endDate;
-                    this.editingItemId = newEditingItem.id;
-                } else {
-                    this.clearForm();
-                    this.editingItemId = null;
-                }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
-            },
-            deep: true,
-            immediate: true,
-        },
     },
 }
 </script>
