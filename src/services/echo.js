@@ -1,3 +1,4 @@
+// front/src/services/echo.js
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 import TokenUtils from "@/utils/tokenUtils";
@@ -22,17 +23,26 @@ const getAuthHeaders = () => {
 
 // Создаем экземпляр Echo с динамическими заголовками
 const createEchoInstance = () => {
+  const scheme = import.meta.env.VITE_REVERB_SCHEME || import.meta.env.VITE_PUSHER_SCHEME || 'https';
+  const host = import.meta.env.VITE_REVERB_HOST || import.meta.env.VITE_PUSHER_HOST || window.location.hostname;
+  const isProduction = scheme === 'https' || window.location.protocol === 'https:';
+  
+  // Для production через nginx используем порт 443 (или не указываем)
+  // Для development используем прямой порт
+  const wsPort = isProduction ? 443 : (import.meta.env.VITE_REVERB_PORT || import.meta.env.VITE_PUSHER_PORT || 6001);
+  const wssPort = isProduction ? 443 : (import.meta.env.VITE_REVERB_PORT || import.meta.env.VITE_PUSHER_PORT || 6001);
+  
   return new Echo({
     broadcaster: "reverb",
-    key: import.meta.env.VITE_REVERB_APP_KEY,  // ← Исправлено на REVERB
-    wsHost: import.meta.env.VITE_REVERB_HOST,  // ← Исправлено на REVERB
-    wsPort: import.meta.env.VITE_REVERB_PORT,  // ← Исправлено на REVERB
-    wssPort: import.meta.env.VITE_REVERB_PORT, // ← Исправлено на REVERB
-    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'http') === 'https',
-    enabledTransports: ['ws', 'wss'],
-    authEndpoint: `${import.meta.env.VITE_APP_BASE_URL}/broadcasting/auth`,
+    key: import.meta.env.VITE_REVERB_APP_KEY || import.meta.env.VITE_PUSHER_APP_KEY || "hasapchy-key",
+    wsHost: host,
+    wsPort: isProduction ? undefined : wsPort, // Для production не указываем порт (используется 443)
+    wssPort: wssPort,
+    forceTLS: isProduction,
+    enabledTransports: isProduction ? ['wss'] : ['ws', 'wss'],
+    authEndpoint: `${import.meta.env.VITE_APP_BASE_URL || window.location.origin}/broadcasting/auth`,
     auth: {
-      headers: getAuthHeaders(), // Функция будет вызываться при каждом запросе
+      headers: getAuthHeaders(),
     },
   });
 };
