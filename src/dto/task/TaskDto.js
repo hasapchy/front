@@ -18,6 +18,8 @@ export default class TaskDto {
     projectId = null,
     project = null,
     companyId = null,
+    priority = 'low',        
+    complexity = 'normal',   
     files = [],
     comments = [],
     createdAt = "",
@@ -38,10 +40,48 @@ export default class TaskDto {
     this.projectId = projectId;
     this.project = project;
     this.companyId = companyId;
+    this.priority = priority;
+    this.complexity = complexity;
     this.files = files;
     this.comments = comments;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+  }
+
+  getPriorityIcons() {
+    const icons = {
+      'low': '🔥',
+      'normal': '🔥🔥',
+      'high': '🔥🔥🔥'
+    };
+    return icons[this.priority] || icons['low'];
+  }
+
+  getPriorityLabel() {
+    const labels = {
+      'low': 'низкий',
+      'normal': 'нормальный',
+      'high': 'высокий'
+    };
+    return labels[this.priority] || labels['low'];
+  }
+
+  getComplexityIcons() {
+    const icons = {
+      'simple': '🧠',
+      'normal': '🧠🧠',
+      'complex': '🧠🧠🧠'
+    };
+    return icons[this.complexity] || icons['normal'];
+  }
+
+  getComplexityLabel() {
+    const labels = {
+      'simple': 'простая',
+      'normal': 'нормальная',
+      'complex': 'сложная'
+    };
+    return labels[this.complexity] || labels['normal'];
   }
 
   formatDeadline() {
@@ -134,6 +174,8 @@ export default class TaskDto {
         data.project?.id || null,
         data.project || null,
         data.company_id || null,
+        data.priority || 'low',
+        data.complexity || 'normal',
         data.files || [],
         data.comments || [],
         data.created_at,
