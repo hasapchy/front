@@ -225,7 +225,7 @@ export default {
         eventBus.off('cache:invalidate', this.handleCacheInvalidate);
     },
     methods: {
-        translateProjectStatus,
+        // translateProjectStatus,
         itemMapper(i, c) {
             switch (c) {
                 case 'users':
