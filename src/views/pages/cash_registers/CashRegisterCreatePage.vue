@@ -51,12 +51,13 @@ import UsersController from '@/api/UsersController';
 import CashRegisterDto from '@/dto/cash_register/CashRegisterDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, UserSearch },
     props: {
@@ -66,14 +67,10 @@ export default {
         return {
             name: this.editingItem ? this.editingItem.name : '',
             selectedUsers: this.editingItem ? this.editingItem.getUserIds() : [],
-            editingItemId: this.editingItem ? this.editingItem.id : null,
             balance: this.editingItem ? this.editingItem.balance : '',
             currency_id: this.editingItem ? this.editingItem.currencyId : '',
             users: [],
             currencies: [],
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false
         }
     },
     mounted() {
@@ -142,93 +139,55 @@ export default {
                 this.selectedUsers = filtered;
             }
         },
-        async save() {
-            if (!this.selectedUsers?.length) {
-                this.$emit('saved-error', this.$t('cashRegisterMustHaveAtLeastOneUser'));
-                return;
-            }
-
-            this.saveLoading = true;
-            try {
-                const data = {
-                    name: this.name,
-                    users: this.selectedUsers
-                };
-                
-                if (this.editingItemId != null) {
-                    var resp = await CashRegisterController.updateItem(this.editingItemId, data);
-                } else {
-                    data.balance = this.balance;
-                    data.currency_id = this.currency_id;
-                    var resp = await CashRegisterController.storeItem(data);
-                }
-                
-                if (resp.message) {
-                    this.$emit('saved');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
-            }
-            this.saveLoading = false;
-        },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (!this.editingItemId) return;
+        prepareSave() {
+            const data = {
+                name: this.name,
+                users: this.selectedUsers
+            };
             
-            this.deleteLoading = true;
-            try {
-                var resp = await CashRegisterController.deleteItem(this.editingItemId);
-                if (resp.message) {
-                    this.$emit('deleted');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+            if (this.editingItemId == null) {
+                data.balance = this.balance;
+                data.currency_id = this.currency_id;
             }
-            this.deleteLoading = false;
+            
+            return data;
+        },
+        async performSave(data) {
+            if (this.editingItemId != null) {
+                return await CashRegisterController.updateItem(this.editingItemId, data);
+            } else {
+                return await CashRegisterController.storeItem(data);
+            }
+        },
+        async performDelete() {
+            const resp = await CashRegisterController.deleteItem(this.editingItemId);
+            if (!resp.message) {
+                throw new Error('Failed to delete cash register');
+            }
+            return resp;
+        },
+        onSaveSuccess(response) {
+            if (response && response.message) {
+                this.clearForm();
+            }
         },
         clearForm() {
             this.name = '';
             this.selectedUsers = [];
             this.balance = '0';
             this.currency_id = '';
-            this.editingItemId = null;
             this.fetchCurrencies();
             this.fetchUsers();
-            this.resetFormChanges();
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
         },
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
-        }
-
-    },
-    watch: {
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    this.name = newEditingItem.name || '';
-                    this.selectedUsers = newEditingItem.getUserIds() || [];
-                    this.balance = newEditingItem.balance || '';
-                    this.currency_id = newEditingItem.currencyId || '';
-                    this.editingItemId = newEditingItem.id;
-                } else {
-                    this.name = '';
-                    this.selectedUsers = [];
-                    this.balance = '0';
-                    this.currency_id = '';
-                    this.editingItemId = null;
-                }
-                this.filterSelectedUsers();
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
-            },
-            deep: true,
-            immediate: true
+        onEditingItemChanged(newEditingItem) {
+            this.name = newEditingItem.name || '';
+            this.selectedUsers = newEditingItem.getUserIds() || [];
+            this.balance = newEditingItem.balance || '';
+            this.currency_id = newEditingItem.currencyId || '';
+            this.filterSelectedUsers();
         }
     }
 }

@@ -21,6 +21,7 @@ export const CACHE_CONFIG = {
     "writeoffs_",
     "movements_",
     "stocks_",
+    "departments_",
   ],
 
   plainKeys: [
@@ -62,6 +63,7 @@ export const CACHE_CONFIG = {
     writeoffs: ["writeoffs_"],
     movements: ["movements_"],
     stocks: ["stocks_"],
+    departments: ["departments_"],
   },
 
   dependencies: {

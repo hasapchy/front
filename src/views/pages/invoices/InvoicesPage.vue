@@ -2,39 +2,30 @@
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.invoices" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => showModal(i)" @selectionChange="selectedIds = $event">
+                :item-mapper="itemMapper" :onItemClick="onItemClick" @selectionChange="selectedIds = $event">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar
-                        :show-filters="true"
-                        :has-active-filters="hasActiveFilters"
-                        :active-filters-count="getActiveFiltersCount()"
-                        :on-filters-reset="resetFilters"
+                    <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
                         :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                        :on-page-change="fetchItems"
-                        :on-per-page-change="handlePerPageChange"
-                        :resetColumns="resetColumns"
-                        :columns="columns"
-                        :toggleVisible="toggleVisible"
-                        :log="log">
+                        :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
                         <template #left>
-                            <PrimaryButton 
-                                :onclick="() => showModal(null)" 
-                                icon="fas fa-plus"
+                            <PrimaryButton :onclick="() => showModal(null)" icon="fas fa-plus"
                                 :disabled="!$store.getters.hasPermission('invoices_create')">
                             </PrimaryButton>
-                            
+
                             <transition name="fade">
-                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
+                                    :batch-actions="getBatchActions()" />
                             </transition>
-                            
-                            <FiltersContainer 
-                                :has-active-filters="hasActiveFilters"
-                                :active-filters-count="getActiveFiltersCount()"
-                                @reset="resetFilters"
+
+                            <FiltersContainer :has-active-filters="hasActiveFilters"
+                                :active-filters-count="getActiveFiltersCount()" @reset="resetFilters"
                                 @apply="applyFilters">
                                 <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период'
+                                    }}</label>
                                     <select v-model="dateFilter" class="w-full">
                                         <option value="all_time">{{ $t('allTime') }}</option>
                                         <option value="today">{{ $t('today') }}</option>
@@ -49,17 +40,17 @@
 
                                 <div v-if="dateFilter === 'custom'" class="space-y-2">
                                     <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
                                         <input type="date" v-model="startDate" class="w-full" />
                                     </div>
                                     <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') }}</label>
                                         <input type="date" v-model="endDate" class="w-full" />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('status') }}</label>
                                     <select v-model="statusFilter" class="w-full">
                                         <option value="">{{ $t('allStatuses') }}</option>
                                         <option value="new">{{ $t('new') }}</option>
@@ -108,17 +99,19 @@
             <SpinnerIcon />
         </div>
     </transition>
-    
+
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <InvoiceCreatePage v-if="modalDialog" ref="invoicecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
-            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" 
+        <InvoiceCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-invoice'"
+            ref="invoicecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem"
             :preselectedOrderIds="preselectedOrderIds" />
     </SideModalDialog>
 
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
-          :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
+        :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
+        @leave="deleteDialog = false" />
 </template>
 
 <script>
@@ -151,17 +144,17 @@ import filtersMixin from "@/mixins/filtersMixin";
 
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin,  companyChangeMixin, searchMixin, filtersMixin],
-    components: { 
-        NotificationToast, 
-        SideModalDialog, 
-        PrimaryButton, 
-        Pagination, 
-        DraggableTable, 
-        InvoiceCreatePage, 
-        ClientButtonCell, 
-        BatchButton, 
-        AlertDialog, 
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin],
+    components: {
+        NotificationToast,
+        SideModalDialog,
+        PrimaryButton,
+        Pagination,
+        DraggableTable,
+        InvoiceCreatePage,
+        ClientButtonCell,
+        BatchButton,
+        AlertDialog,
         FiltersContainer,
         TableControlsBar,
         TableFilterButton,
@@ -175,6 +168,9 @@ export default {
             loadingDelete: false,
             controller: InvoiceController,
             cacheInvalidationType: 'invoices',
+            itemViewRouteName: 'InvoiceView',
+            baseRouteName: 'Invoices',
+            errorGettingItemText: this.$t('errorGettingInvoiceList'),
             savedSuccessText: this.$t('invoiceSaved'),
             savedErrorText: this.$t('errorSavingInvoice'),
             deletedSuccessText: this.$t('invoiceDeleted'),
@@ -208,9 +204,9 @@ export default {
     },
     created() {
         this.$store.commit("SET_SETTINGS_OPEN", false);
-        
+
         eventBus.on('global-search', this.handleSearch);
-        
+
         if (this.$route.query.create === 'true' && this.$route.query.order_ids) {
             this.preselectedOrderIds = this.$route.query.order_ids.split(',').map(id => parseInt(id));
         }
@@ -218,11 +214,18 @@ export default {
 
     mounted() {
         this.fetchItems();
-        
-        if (this.preselectedOrderIds.length > 0) {
-            this.$nextTick(() => {
-                this.showModal(null);
-            });
+    },
+    watch: {
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+                if (this.preselectedOrderIds.length > 0) {
+                    this.$nextTick(() => {
+                        this.showModal(null);
+                    });
+                }
+            }
         }
     },
 
@@ -236,9 +239,9 @@ export default {
         },
         hasActiveFilters() {
             return this.dateFilter !== 'all_time' ||
-                   this.statusFilter !== '' ||
-                   this.startDate !== null ||
-                   this.endDate !== null;
+                this.statusFilter !== '' ||
+                this.startDate !== null ||
+                this.endDate !== null;
         }
     },
     methods: {
@@ -255,7 +258,7 @@ export default {
                     const phone = i.client.phones?.[0]?.phone;
                     return phone ? `<div>${name} (<span>${phone}</span>)</div>` : name;
                 case "status":
-                    return `<span class="px-2 py-1 rounded text-xs ${i.getStatusClass()}">${i.getStatusLabel()}</span>`;
+                    return `<span class="px-2 py-1 rounded text-xs ${i.getStatusClass()}">${i.getStatusLabel(this.$t)}</span>`;
                 case "totalAmount":
                     return i.amountInfo();
                 case "ordersCount":
@@ -279,16 +282,16 @@ export default {
             this.endDate = null;
             this.statusFilter = '';
             this.selectedIds = [];
-            
+
             // Перезагружаем данные со страницы 1
             await this.fetchItems(1, false);
         },
         async fetchItems(page = 1, silent = false) {
             if (!silent) this.loading = true;
             try {
-               
+
                 const per_page = this.perPage;
-                
+
                 const newData = await InvoiceController.getItems(page, this.searchQuery, this.dateFilter, this.startDate, this.endDate, null, this.statusFilter, per_page);
                 this.data = newData;
             } catch (error) {
@@ -297,13 +300,11 @@ export default {
             if (!silent) this.loading = false;
         },
 
-        showModal(item) {
-            this.editingItem = item;
-            this.modalDialog = true;
-        },
-        closeModal() {
-            this.modalDialog = false;
-            this.editingItem = null;
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'Invoices' });
+            }
         },
         resetFilters() {
             this.dateFilter = 'all_time';

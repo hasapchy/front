@@ -219,7 +219,7 @@ export default {
                     this.tableData = response.items.map(order => ({
                         id: order.id,
                         name: order.note || order.description || `Заказ #${order.id}`,
-                        status: order.statusName || (order.status?.name ? translateOrderStatus(order.status.name, this.$t) : '-'),
+                        status: translateOrderStatus(order.statusName || order.status?.name, this.$t) || '-',
                         dateUser: order.formatDate ? `${order.formatDate()} / ${order.user?.name || order.userName || "-"}` : (order.date ? `${new Date(order.date).toLocaleString()} / ${order.user?.name || order.userName || "-"}` : '-'),
                         amount: order.totalPrice || order.price || 0,
                         currencySymbol: order.currencySymbol || this.currencySymbol,

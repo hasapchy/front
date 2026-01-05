@@ -198,7 +198,6 @@ async function loadProductsForSearch(getters, isProducts, limit = 10) {
 async function clearAllCacheOnCompanyChange() {
   try {
     await CacheInvalidator.invalidateAll();
-    localStorage.removeItem("menuItems");
   } catch (error) {
     console.error("Error clearing cache on company change:", error);
   }
@@ -271,7 +270,7 @@ function initializeStorageSync(_store) {
 }
 
 const store = createStore({
-  state: {
+    state: {
     user: null,
     permissions: [],
     permissionsLoaded: false,
@@ -706,15 +705,15 @@ const store = createStore({
         if (hasAccessToOtherCurrencies && onlyDefaultInCache) {
           commit("SET_CURRENCIES", []);
         } else {
-        if (
-          state.currencies[0]?.is_default &&
-          !state.currencies[0]?.isDefault
-        ) {
-          commit(
-            "SET_CURRENCIES",
-            CurrencyDto.fromApiArray(state.currencies)
-          );
-        }
+          if (
+            state.currencies[0]?.is_default &&
+            !state.currencies[0]?.isDefault
+          ) {
+            commit(
+              "SET_CURRENCIES",
+              CurrencyDto.fromApiArray(state.currencies)
+            );
+          }
           return;
         }
       }
@@ -853,7 +852,7 @@ const store = createStore({
         const responseData = response.data || response;
         const plainData = Array.isArray(responseData) ? responseData : [];
         const clients = ClientDto.fromApiArray(plainData);
-        
+
         commit("SET_CLIENTS_DATA", plainData);
         commit("SET_CLIENTS", clients);
         touchKey(cacheKey);
@@ -1431,7 +1430,8 @@ const store = createStore({
       commit("SET_USERS", []);
     },
     initializeMenu({ commit, state }) {
-      const storageKey = "menuItems";
+      const companyId = state.currentCompany?.id || 'default';
+      const storageKey = `menuItems_${companyId}`;
       let saved = null;
       let savedMenu = null;
 
@@ -1545,6 +1545,13 @@ const store = createStore({
           permission: "users_view",
         },
         {
+          id: "org-structure",
+          to: "/org-structure",
+          icon: "fa-solid fa-sitemap mr-2",
+          label: "orgStructure",
+          permission: "departments_view",
+        },
+        {
           id: "roles",
           to: "/roles",
           icon: "fa-solid fa-user-shield mr-2",
@@ -1614,6 +1621,7 @@ const store = createStore({
       ];
       const defaultAvailable = [
         "users",
+        "org-structure",
         "roles",
         "companies",
         "cash-registers",
@@ -1678,7 +1686,8 @@ const store = createStore({
         }
       }
 
-      const storageKey = "menuItems";
+      const companyId = state.currentCompany?.id || 'default';
+      const storageKey = `menuItems_${companyId}`;
       const currentMain =
         type === "main" ? uniqueItems : state.menuItems.main || [];
       const currentAvailable =
@@ -1771,7 +1780,8 @@ const store = createStore({
       commit("SET_MENU_ITEMS", current);
 
       try {
-        localStorage.setItem("menuItems", JSON.stringify(current));
+        const companyId = state.currentCompany?.id || 'default';
+        localStorage.setItem(`menuItems_${companyId}`, JSON.stringify(current));
       } catch (e) {
         console.error("Failed to save menu items to localStorage:", e);
       }

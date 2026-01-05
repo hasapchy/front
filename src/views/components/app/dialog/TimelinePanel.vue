@@ -276,7 +276,8 @@ export default {
                     return formatCurrencyUtil(value, currencySymbol);
                 case 'quantity':
                     const numValue = typeof value === 'string' ? parseFloat(value) : value;
-                    const formattedQuantity = !isNaN(numValue) ? formatNumberUtil(numValue) : value;
+                    const decimals = typeof this.quantityDecimals === 'number' ? this.quantityDecimals : 2;
+                    const formattedQuantity = !isNaN(numValue) ? formatNumberUtil(numValue, decimals) : value;
                     if (meta && meta.product_unit) {
                         return `${formattedQuantity} ${meta.product_unit}`.trim();
                     }
@@ -366,6 +367,13 @@ export default {
             const currencies = this.$store.getters.currencies || [];
             const def = currencies.find(c => c.isDefault);
             return def ? def.symbol : '';
+        },
+        quantityDecimals() {
+            const value = this.$store.getters.roundingQuantityDecimals;
+            if (typeof value === 'number' && value >= 0 && value <= 5) {
+                return value;
+            }
+            return 2;
         }
     }
 };

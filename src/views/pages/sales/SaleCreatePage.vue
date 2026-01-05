@@ -69,7 +69,7 @@
             v-model:discount="discount" v-model:discountType="discountType" required />
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
+        <PrimaryButton v-if="editingItemId != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('sales_delete')">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('sales_update')) ||
@@ -96,10 +96,11 @@ import ClientSearch from "@/views/components/app/search/ClientSearch.vue";
 import ProductSearch from "@/views/components/app/search/ProductSearch.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
     components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch, },
     props: {
@@ -117,11 +118,7 @@ export default {
             products: [],
             discount: 0,
             discountType: "fixed",
-            editingItemId: null,
             selectedClient: null,
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false,
             allWarehouses: [],
             allProjects: [],
             allCashRegisters: [],
@@ -265,77 +262,53 @@ export default {
             // Загружаем клиентов в store для компонента ClientSearch
             await this.$store.dispatch('loadClients');
         },
-        async save() {
-            this.saveLoading = true;
-            try {
-                // Проверяем обязательные поля
-                if (!this.selectedClient?.id) {
-                    throw new Error('Необходимо выбрать клиента');
-                }
-                if (!this.warehouseId) {
-                    throw new Error('Необходимо выбрать склад');
-                }
-                if (!this.products || this.products.length === 0) {
-                    throw new Error('Необходимо добавить товары');
-                }
-
-                // Проверяем, что скидка не превышает сумму продажи
-                const calculatedDiscount = this.discountAmount;
-                if (calculatedDiscount > this.subtotal) {
-                    throw new Error('Скидка не может превышать сумму продажи');
-                }
-
-                var formData = {
-                    client_id: this.selectedClient?.id,
-                    project_id: this.projectId || null,
-                    warehouse_id: this.warehouseId,
-                    currency_id:
-                        this.type === "cash" ? this.selectedCash?.currency_id : this.currencyId,
-                    cash_id: this.cashId, // всегда отправляем выбранную кассу
-                    type: this.type, // "cash" или "balance" - is_debt определяется автоматически
-                    date: this.date,
-                    note: this.note,
-                    discount: this.discount,
-                    discount_type: this.discountType,
-                    products: this.products.map((p) => ({
-                        product_id: p.productId,
-                        quantity: p.quantity,
-                        price: p.price,
-                    })),
-                };
-
-
-                let resp;
-                if (this.editingItemId != null) {
-                    resp = await SaleController.updateItem(this.editingItemId, formData);
-                } else {
-                    resp = await SaleController.storeItem(formData);
-                }
-                if (resp.message) {
-                    this.$emit("saved");
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
+        prepareSave() {
+            if (!this.selectedClient?.id) {
+                throw new Error('Необходимо выбрать клиента');
             }
-            this.saveLoading = false;
+            if (!this.warehouseId) {
+                throw new Error('Необходимо выбрать склад');
+            }
+            if (!this.products || this.products.length === 0) {
+                throw new Error('Необходимо добавить товары');
+            }
+
+            const calculatedDiscount = this.discountAmount;
+            if (calculatedDiscount > this.subtotal) {
+                throw new Error('Скидка не может превышать сумму продажи');
+            }
+
+            return {
+                client_id: this.selectedClient?.id,
+                project_id: this.projectId || null,
+                warehouse_id: this.warehouseId,
+                currency_id: this.type === "cash" ? this.selectedCash?.currency_id : this.currencyId,
+                cash_id: this.cashId,
+                type: this.type,
+                date: this.date,
+                note: this.note,
+                discount: this.discount,
+                discount_type: this.discountType,
+                products: this.products.map((p) => ({
+                    product_id: p.productId,
+                    quantity: p.quantity,
+                    price: p.price,
+                })),
+            };
         },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (this.editingItemId == null) {
-                return;
+        async performSave(data) {
+            if (this.editingItemId != null) {
+                return await SaleController.updateItem(this.editingItemId, data);
+            } else {
+                return await SaleController.storeItem(data);
             }
-            this.deleteLoading = true;
-            try {
-                var resp = await SaleController.deleteItem(this.editingItemId);
-                if (resp.message) {
-                    this.$emit("deleted");
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+        },
+        async performDelete() {
+            const resp = await SaleController.deleteItem(this.editingItemId);
+            if (!resp.message) {
+                throw new Error('Failed to delete sale');
             }
-            this.deleteLoading = false;
+            return resp;
         },
         clearForm() {
             this.date = new Date().toISOString().substring(0, 16);
@@ -347,14 +320,24 @@ export default {
             this.cashId = this.allCashRegisters.length ? this.allCashRegisters[0].id : "";
             this.selectedClient = null;
             this.products = [];
-            this.editingItemId = null;
-            this.resetFormChanges(); // Сбрасываем состояние изменений
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
         },
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
+                this.note = newEditingItem.note || "";
+                this.type = newEditingItem.cashId || newEditingItem.transactionId ? "cash" : "balance";
+                this.warehouseId = newEditingItem.warehouseId || (this.allWarehouses.length ? this.allWarehouses[0].id : "");
+                this.currencyId = newEditingItem.currencyId || "";
+                this.projectId = newEditingItem.projectId || "";
+                this.cashId = newEditingItem.cashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : "");
+                this.selectedClient = newEditingItem.client || null;
+                this.products = newEditingItem.products || [];
+                this.discount = newEditingItem.discount || 0;
+                this.discountType = newEditingItem.discountType || "fixed";
+            }
         },
     },
     watch: {
@@ -373,36 +356,6 @@ export default {
                     }
                 }
             },
-        },
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
-                    this.note = newEditingItem.note || "";
-                    this.type =
-                        newEditingItem.cashId || newEditingItem.transactionId ? "cash" : "balance";
-                    this.warehouseId =
-                        newEditingItem.warehouseId ||
-                        (this.allWarehouses.length ? this.allWarehouses[0].id : "");
-                    this.currencyId = newEditingItem.currencyId || "";
-                    this.projectId = newEditingItem.projectId || "";
-                    this.cashId =
-                        newEditingItem.cashId ||
-                        (this.allCashRegisters.length ? this.allCashRegisters[0].id : "");
-                    this.selectedClient = newEditingItem.client || null;
-                    this.editingItemId = newEditingItem.id || null;
-                    this.products = newEditingItem.products || [];
-                    this.discount = newEditingItem.discount || 0;
-                    this.discountType = newEditingItem.discountType || "fixed";
-                } else {
-                    this.clearForm();
-                }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
-            },
-            deep: true,
-            immediate: true,
         },
         // Отслеживаем изменения в store
         '$store.state.warehouses': {

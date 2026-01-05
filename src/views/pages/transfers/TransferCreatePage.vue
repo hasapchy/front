@@ -84,11 +84,12 @@ import TransferDto from '@/dto/transfer/TransferDto';
 import TransferController from '@/api/TransferController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 import { formatCurrency } from '@/utils/numberUtils';
 
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog },
     props: {
@@ -100,12 +101,8 @@ export default {
             cashIdTo: this.editingItem ? this.editingItem.cashToId : '',
             origAmount: this.editingItem ? this.editingItem.amount : 0,
             note: this.editingItem ? this.editingItem.note : '',
-            editingItemId: this.editingItem ? this.editingItem.id : null,
             currencies: [],
             allCashRegisters: [],
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false,
             exchangeRate: this.editingItem ? this.editingItem.exchangeRate : null
         }
     },
@@ -241,88 +238,58 @@ export default {
             await this.$store.dispatch('loadCashRegisters');
             this.allCashRegisters = this.$store.getters.cashRegisters;
         },
-        async save() {
-            this.saveLoading = true;
-            try {
-                const data = {
-                    cash_id_from: this.cashIdFrom,
-                    cash_id_to: this.cashIdTo,
-                    amount: this.origAmount,
-                    note: this.note
-                };
-                
-                if (this.exchangeRate) {
-                    data.exchange_rate = parseFloat(this.exchangeRate);
-                }
-                
-                var resp = await TransferController.storeItem(data);
-                
-                if (resp && resp.message) {
-                    this.$emit('saved');
-                    this.clearForm();
-                } else {
-                    this.$emit('saved-error', 'Ошибка: ответ сервера не содержит сообщения');
-                }
-            } catch (error) {
-                console.error('[save] Error:', error);
-                this.$emit('saved-error', this.getApiErrorMessage(error));
+        prepareSave() {
+            const data = {
+                cash_id_from: this.cashIdFrom,
+                cash_id_to: this.cashIdTo,
+                amount: this.origAmount,
+                note: this.note
+            };
+            
+            if (this.exchangeRate) {
+                data.exchange_rate = parseFloat(this.exchangeRate);
             }
-            this.saveLoading = false;
-
+            
+            return data;
         },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (this.editingItemId == null) {
-                return;
+        async performSave(data) {
+            if (this.editingItemId) {
+                return await TransferController.updateItem(this.editingItemId, data);
+            } else {
+                return await TransferController.storeItem(data);
             }
-            this.deleteLoading = true;
-            try {
-                const resp = await TransferController.deleteItem(this.editingItemId);
-                if (resp.message) {
-                    this.$emit('deleted');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+        },
+        async performDelete() {
+            const resp = await TransferController.deleteItem(this.editingItemId);
+            if (!resp.message) {
+                throw new Error('Failed to delete transfer');
             }
-            this.deleteLoading = false;
+            return resp;
+        },
+        onSaveSuccess(response) {
+            if (response && response.message) {
+                this.clearForm();
+            }
         },
         clearForm() {
             this.cashIdFrom = '';
             this.cashIdTo = '';
             this.origAmount = 0;
             this.note = '';
-            this.editingItemId = null;
             this.exchangeRate = null;
-            this.resetFormChanges();
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
         },
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
+        onEditingItemChanged(newEditingItem) {
+            this.cashIdFrom = newEditingItem.cashFromId;
+            this.cashIdTo = newEditingItem.cashToId;
+            this.origAmount = newEditingItem.amount;
+            this.note = newEditingItem.note;
+            this.exchangeRate = newEditingItem.exchangeRate || null;
         }
     },
     watch: {
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    this.cashIdFrom = newEditingItem.cashFromId;
-                    this.cashIdTo = newEditingItem.cashToId;
-                    this.origAmount = newEditingItem.amount;
-                    this.note = newEditingItem.note;
-                    this.editingItemId = newEditingItem.id;
-                    this.exchangeRate = newEditingItem.exchangeRate || null;
-                } else {
-                    this.clearForm();
-                }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
-            },
-            deep: true,
-            immediate: true
-        },
         '$store.state.cashRegisters'(newVal) {
             this.allCashRegisters = newVal;
         },

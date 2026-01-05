@@ -69,6 +69,12 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
+    contracts: {
+      has_user_id: true,
+      check_strategy: "user_id",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+    },
     sales: {
       has_user_id: true,
       check_strategy: "user_id",
@@ -139,6 +145,12 @@ export const PERMISSIONS_CONFIG = {
     users: {
       has_user_id: false,
       check_strategy: "user_id",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+    },
+    departments: {
+      has_user_id: false,
+      check_strategy: "default",
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
@@ -253,7 +265,7 @@ export const PERMISSIONS_CONFIG = {
     },
     projects: {
       label: "projects",
-      resources: ["projects", "project_statuses"],
+      resources: ["projects", "project_statuses", "contracts"],
     },
     companies: {
       label: "companies",
@@ -265,7 +277,7 @@ export const PERMISSIONS_CONFIG = {
     },
     users: {
       label: "users",
-      resources: ["users", "roles", "employee_salaries"],
+      resources: ["users", "roles", "employee_salaries", "departments"],
     },
     tasks: {
       label: "tasks",

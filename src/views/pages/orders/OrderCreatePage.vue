@@ -22,7 +22,7 @@
                     <label>{{ $t('date') }}</label>
                     <input type="datetime-local" v-model="date"
                         :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                        :min="!$store.getters.hasPermission('settings_edit_any_date') ? this.getCurrentLocalDateTime() : null" />
+                        :min="!$store.getters.hasPermission('settings_edit_any_date') ? getCurrentLocalDateTime() : null" />
                 </div>
                 <div>
                     <label>{{ $t('description') }}</label>
@@ -105,12 +105,10 @@
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
         :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     <SideModalDialog :showForm="projectModalDialog" :onclose="closeProjectModal" :level="1">
-        <ProjectCreatePage v-if="projectModalDialog" @saved="handleProjectSaved"
-            @saved-error="handleProjectSavedError" />
+        <ProjectCreatePage v-if="projectModalDialog" @saved="handleProjectSaved" />
     </SideModalDialog>
     <SideModalDialog :showForm="productCategoryModalDialog" :onclose="closeProductCategoryModal" :level="1">
-        <CategoriesCreatePage v-if="productCategoryModalDialog" @saved="handleProductCategorySaved"
-            @saved-error="handleProductCategorySavedError" />
+        <CategoriesCreatePage v-if="productCategoryModalDialog" @saved="handleProductCategorySaved" />
     </SideModalDialog>
 </template>
 
@@ -128,11 +126,7 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import { formatCurrency, roundValue } from '@/utils/numberUtils';
-import { formatDatabaseDateTime } from '@/utils/dateUtils';
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-
-dayjs.extend(utc);
+import { formatDatabaseDateTimeForInput, getCurrentLocalDateTime } from '@/utils/dateUtils';
 
 
 export default {
@@ -159,7 +153,7 @@ export default {
             warehouseId: this.editingItem?.warehouseId || '',
             statusId: this.editingItem?.statusId || 1,
             categoryId: this.editingItem?.categoryId || '',
-            date: this.editingItem?.date ? this.formatDatabaseDateTimeForInput(this.editingItem.date) : this.getCurrentLocalDateTime(),
+            date: this.editingItem?.date ? formatDatabaseDateTimeForInput(this.editingItem.date) : getCurrentLocalDateTime(),
             note: this.editingItem?.note || '',
             description: this.editingItem?.description || '',
             products: this.editingItem?.products || [],
@@ -213,13 +207,6 @@ export default {
         currencySymbol() {
             return this.currencies.find(c => c.id === this.currencyId)?.symbol || '';
         },
-        selectedCash() {
-            return this.allCashRegisters.find(c => c.id == this.cashId);
-        },
-        defaultCurrencySymbol() {
-            const def = this.currencies.find(c => c.isDefault);
-            return def ? def.symbol : '';
-        },
         subtotal() {
             const rawSubtotal = this.products.reduce((sum, p) => {
                 const price = parseFloat(p.price) || 0;
@@ -241,12 +228,6 @@ export default {
         },
         totalPrice() {
             return this.subtotal - this.discountAmount;
-        },
-        roundedSubtotal() {
-            return roundValue(this.subtotal);
-        },
-        roundedDiscountAmount() {
-            return roundValue(this.discountAmount);
         },
         roundedTotalPrice() {
             return roundValue(this.totalPrice);
@@ -272,31 +253,6 @@ export default {
         }
     },
     methods: {
-        formatDatabaseDateTimeForInput(date) {
-            if (!date) return '';
-            // Конвертируем дату из базы данных в формат datetime-local без UTC смещения
-            const dateObj = new Date(date);
-            const year = dateObj.getFullYear();
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const day = String(dateObj.getDate()).padStart(2, '0');
-            const hours = String(dateObj.getHours()).padStart(2, '0');
-            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}`;
-        },
-        getCurrentLocalDateTime() {
-            // Получаем текущее время в UTC
-            const now = new Date();
-            // Добавляем 5 часов (Asia/Ashgabat = UTC+5)
-            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-            const asiaTime = new Date(utcTime + (5 * 3600000)); // +5 часов
-            
-            const year = asiaTime.getUTCFullYear();
-            const month = String(asiaTime.getUTCMonth() + 1).padStart(2, '0');
-            const day = String(asiaTime.getUTCDate()).padStart(2, '0');
-            const hours = String(asiaTime.getUTCHours()).padStart(2, '0');
-            const minutes = String(asiaTime.getUTCMinutes()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}`;
-        },
         formatCurrency,
         getFormState() {
             const state = {
@@ -318,14 +274,7 @@ export default {
         },
         async fetchAllWarehouses() {
             await this.$store.dispatch('loadWarehouses');
-
-            let attempts = 0;
-            while (this.$store.getters.warehouses.length === 0 && attempts < 30) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
-
-            this.allWarehouses = this.$store.getters.warehouses;
+            this.allWarehouses = this.$store.getters.warehouses || [];
         },
         async fetchAllProjects() {
             if (this.allProjects.length > 0) return;
@@ -333,7 +282,7 @@ export default {
             await this.$store.dispatch('loadProjects');
             const allProjectsFromStore = this.$store.getters.projects;
 
-            if (this.editingItem && this.editingItem.projectId && this.editingItem.projectName) {
+            if (this.editingItem?.projectId && this.editingItem?.projectName) {
                 const hasProject = allProjectsFromStore.some(p => p.id === this.editingItem.projectId);
                 if (!hasProject) {
                     this.allProjects = [
@@ -362,14 +311,7 @@ export default {
         },
         async fetchAllCashRegisters() {
             await this.$store.dispatch('loadCashRegisters');
-
-            let attempts = 0;
-            while (this.$store.getters.cashRegisters.length === 0 && attempts < 30) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
-
-            this.allCashRegisters = this.$store.getters.cashRegisters;
+            this.allCashRegisters = this.$store.getters.cashRegisters || [];
         },
         async fetchOrderStatuses() {
             await this.$store.dispatch('loadOrderStatuses');
@@ -386,154 +328,64 @@ export default {
                 this.transactionsTabVisited = true;
             }
         },
-        async save() {
-            const validationErrors = [];
-            if (!this.selectedClient) {
-                validationErrors.push('Поле "Клиент" обязательно для заполнения');
-            }
-            if (!this.categoryId) {
-                validationErrors.push('Поле "Категория" обязательно для заполнения');
-            }
-            if (!this.warehouseId) {
-                validationErrors.push('Поле "Склад" обязательно для заполнения');
-            }
-            if (this.discount && !this.discountType) {
-                validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
-            }
-
-            // Проверяем, что скидка не превышает сумму заказа
-            const calculatedDiscount = this.discountAmount;
-            if (calculatedDiscount > this.subtotal) {
-                validationErrors.push('Скидка не может превышать сумму заказа');
-            }
-
-            if (validationErrors.length > 0) {
-                this.$emit('saved-error', validationErrors.join('\n'));
-                return;
-            }
-
-            this.saveLoading = true;
-            try {
-                const formData = this.getFormState();
-                formData.client_id = this.selectedClient?.id || null;
-                formData.cash_id = this.cashId || null;
-
-                formData.products = this.products
-                    .filter(p => !p.isTempProduct)
-                    .map(p => ({
-                        id: p.orderProductId || null,
-                        product_id: p.productId,
-                        quantity: p.quantity,
-                        price: p.price,
-                        width: p.width ?? null,
-                        height: p.height ?? null
-                    }));
-                formData.temp_products = this.products
-                    .filter(p => p.isTempProduct)
-                    .map(p => ({
-                        id: p.orderProductId || null,
-                        name: p.name || p.productName,
-                        description: p.description || '',
-                        quantity: p.quantity,
-                        price: p.price,
-                        unit_id: p.unitId || null,
-                        width: p.width ?? null,
-                        height: p.height ?? null
-                    }));
-                formData.remove_temp_products = this.removedTempProducts;
-                let resp;
-                if (this.editingItemId) {
-                    resp = await OrderController.updateItem(this.editingItemId, formData);
-                } else {
-                    resp = await OrderController.storeItem(formData);
-                    this.editingItemId = resp?.id || null;
-                }
-                if (resp.message) {
-                    await this.refreshSelectedClientData();
-                    this.$emit('saved');
-                    this.resetFormChanges();
-                    this.removedTempProducts = [];
-                }
-            } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
-            }
-            this.saveLoading = false;
+        prepareFormData() {
+            const formData = this.getFormState();
+            formData.client_id = this.selectedClient?.id || null;
+            formData.cash_id = this.cashId || null;
+            formData.products = this.products
+                .filter(p => !p.isTempProduct)
+                .map(p => ({
+                    id: p.orderProductId || null,
+                    product_id: p.productId,
+                    quantity: p.quantity,
+                    price: p.price,
+                    width: p.width ?? null,
+                    height: p.height ?? null
+                }));
+            formData.temp_products = this.products
+                .filter(p => p.isTempProduct)
+                .map(p => ({
+                    id: p.orderProductId || null,
+                    name: p.name || p.productName,
+                    description: p.description || '',
+                    quantity: p.quantity,
+                    price: p.price,
+                    unit_id: p.unitId || null,
+                    width: p.width ?? null,
+                    height: p.height ?? null
+                }));
+            formData.remove_temp_products = this.removedTempProducts;
+            return formData;
         },
-
-        async saveWithoutClose() {
-            const validationErrors = [];
-
-            if (!this.selectedClient) {
-                validationErrors.push('Поле "Клиент" обязательно для заполнения');
-            }
-            if (!this.categoryId) {
-                validationErrors.push('Поле "Категория" обязательно для заполнения');
-            }
-            if (!this.warehouseId) {
-                validationErrors.push('Поле "Склад" обязательно для заполнения');
-            }
-            if (this.discount && !this.discountType) {
-                validationErrors.push('Поле "Тип скидки" обязательно для заполнения, если указана скидка');
-            }
-
-            // Проверяем, что скидка не превышает сумму продажи
-            const calculatedDiscount = this.discountAmount;
-            if (calculatedDiscount > this.subtotal) {
-                validationErrors.push('Скидка не может превышать сумму заказа');
-            }
-
-            if (validationErrors.length > 0) {
-                this.$emit('saved-error', validationErrors.join('\n'));
-                return;
-            }
-
+        async performSave(silent = false) {
             this.saveLoading = true;
             try {
-                const formData = this.getFormState();
-                formData.client_id = this.selectedClient?.id || null;
-                formData.cash_id = this.cashId || null;
-                formData.products = this.products
-                    .filter(p => !p.isTempProduct)
-                    .map(p => ({
-                        id: p.orderProductId || null,
-                        product_id: p.productId,
-                        quantity: p.quantity,
-                        price: p.price,
-                        width: p.width ?? null,
-                        height: p.height ?? null
-                    }));
-                formData.temp_products = this.products
-                    .filter(p => p.isTempProduct)
-                    .map(p => ({
-                        id: p.orderProductId || null,
-                        name: p.name || p.productName,
-                        description: p.description || '',
-                        quantity: p.quantity,
-                        price: p.price,
-                        unit_id: p.unitId || null,
-                        width: p.width ?? null,
-                        height: p.height ?? null
-                    }));
-                formData.remove_temp_products = this.removedTempProducts;
-
-                let resp;
-                if (this.editingItemId) {
-                    resp = await OrderController.updateItem(this.editingItemId, formData);
-                } else {
-                    resp = await OrderController.storeItem(formData);
-                    this.editingItemId = resp?.id || null;
+                const formData = this.prepareFormData();
+                const resp = this.editingItemId
+                    ? await OrderController.updateItem(this.editingItemId, formData)
+                    : await OrderController.storeItem(formData);
+                
+                if (!this.editingItemId && resp?.id) {
+                    this.editingItemId = resp.id;
                 }
-
+                
                 if (resp.message) {
                     await this.refreshSelectedClientData();
-                    this.$emit('saved-silent');
+                    this.$emit(silent ? 'saved-silent' : 'saved');
                     this.resetFormChanges();
                     this.removedTempProducts = [];
                 }
             } catch (error) {
                 this.$emit('saved-error', this.getApiErrorMessage(error));
+            } finally {
+                this.saveLoading = false;
             }
-            this.saveLoading = false;
+        },
+        async save() {
+            await this.performSave(false);
+        },
+        async saveWithoutClose() {
+            await this.performSave(true);
         },
 
         async deleteItem() {
@@ -564,7 +416,7 @@ export default {
             this.warehouseId = this.allWarehouses[0]?.id || '';
             this.statusId = '';
             this.categoryId = '';
-            this.date = this.getCurrentLocalDateTime();
+            this.date = getCurrentLocalDateTime();
             this.note = '';
             this.description = ''
             this.products = [];
@@ -596,8 +448,6 @@ export default {
             }
             this.closeProjectModal();
         },
-        handleProjectSavedError(error) {
-        },
         showProductCategoryModal() {
             this.productCategoryModalDialog = true;
         },
@@ -612,17 +462,10 @@ export default {
             }
             this.closeProductCategoryModal();
         },
-        handleProductCategorySavedError(error) {
-        },
         generateTempProductId() {
             return Date.now() + Math.floor(Math.random() * 1000);
         },
 
-        async handleEditingItemChange(newItem) {
-            if (!newItem) {
-                return;
-            }
-        },
         async refreshSelectedClientData() {
             const clientId = this.selectedClient?.id;
             if (!clientId) {
@@ -648,20 +491,18 @@ export default {
             },
             immediate: true
         },
-        selectedClient(newClient, oldClient) {
-        },
         projectId: {
-            handler(newProjectId, oldVal) {
+            handler(newProjectId) {
                 if (newProjectId && this.products.length > 0) {
                     this.products.forEach(product => {
-                        if (product.wholesalePrice !== undefined && product.wholesalePrice > 0) {
+                        if (product.wholesalePrice > 0) {
                             product.price = product.wholesalePrice;
                             product.priceType = 'wholesale';
                         }
                     });
                 } else if (!newProjectId && this.products.length > 0) {
                     this.products.forEach(product => {
-                        if (product.retailPrice !== undefined) {
+                        if (product.retailPrice != null) {
                             product.price = product.retailPrice;
                             product.priceType = 'retail';
                         }
@@ -682,7 +523,7 @@ export default {
                     if (selectedCash?.currency_id) {
                         this.currencyId = selectedCash.currency_id;
                     } else {
-                        const defaultCurrency = (this.currencies || []).find(c => c.is_default);
+                        const defaultCurrency = (this.currencies || []).find(c => c.isDefault || c.is_default);
                         if (defaultCurrency) {
                             this.currencyId = defaultCurrency.id;
                         }
@@ -713,7 +554,7 @@ export default {
                     this.cashId = newEditingItem.cashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
                     this.statusId = newEditingItem.statusId || '';
                     this.categoryId = newEditingItem.categoryId || '';
-                    this.date = newEditingItem.date ? this.formatDatabaseDateTimeForInput(newEditingItem.date) : this.getCurrentLocalDateTime();
+                    this.date = newEditingItem.date ? formatDatabaseDateTimeForInput(newEditingItem.date) : getCurrentLocalDateTime();
                     this.note = newEditingItem.note || '';
                     this.description = newEditingItem.description || '';
                     const rawProducts = newEditingItem.products || [];

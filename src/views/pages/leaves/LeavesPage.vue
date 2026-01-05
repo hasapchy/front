@@ -4,16 +4,13 @@
         <div v-if="data != null && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.leaves" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="(i) => { showModal(i) }">
+                :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
                         :show-filters="true"
                         :has-active-filters="hasActiveFilters"
                         :active-filters-count="getActiveFiltersCount()"
                         :on-filters-reset="resetFilters"
-                        :show-create-button="true"
-                        :on-create-click="() => { showModal(null) }"
-                        :create-button-disabled="!$store.getters.hasPermission('leaves_create_all')"
                         :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
                         :on-page-change="fetchItems"
@@ -184,7 +181,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <LeaveCreatePage ref="leavecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <LeaveCreatePage :key="editingItem ? editingItem.id : 'new-leave'" ref="leavecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -216,7 +213,7 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 import LeaveCalendarView from '@/views/components/leave/LeaveCalendarView.vue';
 import debounce from "lodash.debounce";
-import { translateLeaveType } from '@/utils/translationUtils';
+import { translateLeaveType as translateLeaveTypeUtil } from '@/utils/translationUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
@@ -240,6 +237,9 @@ export default {
         return {
             controller: LeaveController,
             cacheInvalidationType: 'leaves',
+            itemViewRouteName: 'LeaveView',
+            baseRouteName: 'Leaves',
+            errorGettingItemText: this.$t('errorGettingLeave'),
             savedSuccessText: this.$t('leaveSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingLeave'),
             deletedSuccessText: this.$t('leaveSuccessfullyDeleted'),
@@ -247,7 +247,7 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
-                { name: 'leaveTypeName', label: 'leaveType' },
+                { name: 'leaveTypeName', label: 'leaveType', html: true },
                 { name: 'userName', label: 'user' },
                 { name: 'dateFrom', label: 'dateFrom' },
                 { name: 'dateTo', label: 'dateTo' },
@@ -308,16 +308,26 @@ export default {
         }
     },
     methods: {
+        translateLeaveType(name, t) {
+            return translateLeaveTypeUtil(name, t || this.$t);
+        },
         itemMapper(i, c) {
             switch (c) {
+                case 'leaveTypeName':
+                    const color = i.leaveType?.color || '#3B82F6';
+                    const translatedName = i.leaveTypeName ? translateLeaveTypeUtil(i.leaveTypeName, this.$t) : '-';
+                    return `
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded border border-gray-300" style="background-color: ${color}"></div>
+                            <span>${translatedName}</span>
+                        </div>
+                    `;
                 case 'dateFrom':
                     return i.formatDateFrom();
                 case 'dateTo':
                     return i.formatDateTo();
                 case 'duration':
                     return i.formatDuration(this.$t);
-                case 'leaveTypeName':
-                    return i.leaveTypeName ? translateLeaveType(i.leaveTypeName, this.$t) : '-';
                 default:
                     return i[c];
             }
@@ -438,9 +448,21 @@ export default {
                 this.shouldRestoreScrollOnClose = false;
                 this.closeModal(true);
             }
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'Leaves' });
+            }
         }
     },
     watch: {
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
+        },
         viewMode: {
             handler(newMode) {
                 // Vuex автоматически сохранит через vuex-persistedstate

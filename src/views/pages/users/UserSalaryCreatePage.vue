@@ -1,7 +1,7 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">
-            {{ editingItem ? ($t('editSalary') || 'Редактировать зарплату') : ($t('addSalary') || 'Добавить зарплату') }}
+            {{ editingItemId ? ($t('editSalary') || 'Редактировать зарплату') : ($t('addSalary') || 'Добавить зарплату') }}
         </h2>
         
         <div class="space-y-4 flex-1">
@@ -56,7 +56,7 @@
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton 
-            v-if="editingItem != null" 
+            v-if="editingItemId != null" 
             :onclick="showDeleteDialog" 
             :is-danger="true"
             :is-loading="deleteLoading" 
@@ -72,7 +72,7 @@
     </div>
     <AlertDialog 
         :dialog="deleteDialog" 
-        @confirm="remove" 
+            @confirm="deleteItem"
         @leave="closeDeleteDialog"
         :descr="$t('confirmDelete') || 'Вы уверены, что хотите удалить эту зарплату?'"
         :confirm-text="$t('delete') || 'Удалить'"
@@ -85,10 +85,12 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UsersController from '@/api/UsersController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
+import crudFormMixin from '@/mixins/crudFormMixin';
+import formChangesMixin from '@/mixins/formChangesMixin';
 import { translateCurrency } from '@/utils/translationUtils';
 
 export default {
-    mixins: [notificationMixin, getApiErrorMessage],
+    mixins: [notificationMixin, getApiErrorMessage, crudFormMixin, formChangesMixin],
     components: {
         PrimaryButton,
         AlertDialog,
@@ -110,9 +112,6 @@ export default {
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     data() {
         return {
-            saveLoading: false,
-            deleteLoading: false,
-            deleteDialog: false,
             form: {
                 start_date: '',
                 end_date: '',
@@ -129,7 +128,7 @@ export default {
         },
         canSave() {
             const hasFormData = this.form.start_date && this.form.amount && this.form.currency_id;
-            if (this.editingItem) {
+            if (this.editingItemId) {
                 return hasFormData && (
                     this.$store.getters.hasPermission('employee_salaries_update_all') ||
                     this.$store.getters.hasPermission('employee_salaries_update_own')
@@ -138,32 +137,18 @@ export default {
             return hasFormData && this.$store.getters.hasPermission('employee_salaries_create');
         },
         canDelete() {
-            return this.editingItem != null && (
+            return this.editingItemId != null && (
                 this.$store.getters.hasPermission('employee_salaries_delete_all') ||
                 this.$store.getters.hasPermission('employee_salaries_delete_own')
             );
         }
     },
-    watch: {
-        editingItem: {
-            handler(newItem) {
-                if (newItem) {
-                    this.form.start_date = newItem.start_date ? new Date(newItem.start_date).toISOString().split('T')[0] : '';
-                    this.form.end_date = newItem.end_date ? new Date(newItem.end_date).toISOString().split('T')[0] : '';
-                    this.form.amount = newItem.amount || 0;
-                    this.form.currency_id = newItem.currency_id || null;
-                    this.form.note = newItem.note || '';
-                } else {
-                    this.clearForm();
-                }
-            },
-            immediate: true,
-            deep: true
-        }
-    },
     mounted() {
         this.$nextTick(async () => {
             await this.fetchCurrencies();
+            if (this.saveInitialState) {
+                this.saveInitialState();
+            }
         });
     },
     methods: {
@@ -177,7 +162,7 @@ export default {
                     this.currencies = this.$store.getters.currencies || [];
                 }
                 
-                if (!this.editingItem && !this.form.currency_id && this.currencies.length > 0) {
+                if (!this.editingItemId && !this.form.currency_id && this.currencies.length > 0) {
                     const defaultCurrency = this.currencies.find(c => c.isDefault);
                     if (defaultCurrency) {
                         this.form.currency_id = defaultCurrency.id;
@@ -197,86 +182,57 @@ export default {
                 currency_id: defaultCurrency ? defaultCurrency.id : null,
                 note: '',
             };
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
         },
-        async save() {
+        prepareSave() {
             if (!this.canSave) {
-                this.showNotification(
-                    this.$t('error') || 'Ошибка',
-                    this.$t('fillRequiredFields') || 'Заполните все обязательные поля',
-                    true
-                );
-                return;
+                throw new Error(this.$t('fillRequiredFields') || 'Заполните все обязательные поля');
             }
-
-            this.saveLoading = true;
-            try {
-                const payload = { ...this.form };
-                if (payload.end_date === '') {
-                    payload.end_date = null;
-                }
-
-                if (this.editingItem) {
-                    await this.controller.updateSalary(
-                        this.userId,
-                        this.editingItem.id,
-                        payload
-                    );
-                    this.showNotification(
-                        this.$t('success') || 'Успешно',
-                        this.$t('salarySaved') || 'Зарплата сохранена',
-                        false
-                    );
-                } else {
-                    await this.controller.createSalary(this.userId, payload);
-                    this.showNotification(
-                        this.$t('success') || 'Успешно',
-                        this.$t('salarySaved') || 'Зарплата сохранена',
-                        false
-                    );
-                }
-                
-                this.$emit('saved');
-            } catch (error) {
-                const errorMessage = this.getApiErrorMessage(error);
-                this.showNotification(
-                    this.$t('error') || 'Ошибка',
-                    typeof errorMessage === 'string' ? errorMessage : errorMessage.join(', '),
-                    true
+            const payload = { ...this.form };
+            if (payload.end_date === '') {
+                payload.end_date = null;
+            }
+            return payload;
+        },
+        async performSave(data) {
+            if (this.editingItemId) {
+                return await this.controller.updateSalary(
+                    this.userId,
+                    this.editingItemId,
+                    data
                 );
-                this.$emit('saved-error', error);
-            } finally {
-                this.saveLoading = false;
+            } else {
+                return await this.controller.createSalary(this.userId, data);
             }
         },
-        showDeleteDialog() {
-            this.deleteDialog = true;
+        async performDelete() {
+            return await this.controller.deleteSalary(this.userId, this.editingItemId);
         },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
+        onSaveSuccess(response) {
+            this.showNotification(
+                this.$t('success') || 'Успешно',
+                this.$t('salarySaved') || 'Зарплата сохранена',
+                false
+            );
+            this.clearForm();
         },
-        async remove() {
-            if (!this.editingItem) return;
-
-            this.deleteLoading = true;
-            try {
-                await this.controller.deleteSalary(this.userId, this.editingItem.id);
-                this.showNotification(
-                    this.$t('success') || 'Успешно',
-                    this.$t('salaryDeleted') || 'Зарплата удалена',
-                    false
-                );
-                this.closeDeleteDialog();
-                this.$emit('deleted');
-            } catch (error) {
-                const errorMessage = this.getApiErrorMessage(error);
-                this.showNotification(
-                    this.$t('error') || 'Ошибка',
-                    typeof errorMessage === 'string' ? errorMessage : errorMessage.join(', '),
-                    true
-                );
-                this.$emit('deleted-error', error);
-            } finally {
-                this.deleteLoading = false;
+        onDeleteSuccess() {
+            this.showNotification(
+                this.$t('success') || 'Успешно',
+                this.$t('salaryDeleted') || 'Зарплата удалена',
+                false
+            );
+            this.clearForm();
+        },
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                this.form.start_date = newEditingItem.start_date ? new Date(newEditingItem.start_date).toISOString().split('T')[0] : '';
+                this.form.end_date = newEditingItem.end_date ? new Date(newEditingItem.end_date).toISOString().split('T')[0] : '';
+                this.form.amount = newEditingItem.amount || 0;
+                this.form.currency_id = newEditingItem.currency_id || null;
+                this.form.note = newEditingItem.note || '';
             }
         },
     }

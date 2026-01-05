@@ -71,9 +71,20 @@ const routes = [
         },
       },
       {
+        path: "/sales/:id",
+        name: "SaleView",
+        component: SalesPage,
+        meta: {
+          title: "sales",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "sales_view",
+        },
+      },
+      {
         path: "/tasks",
         name: "Tasks",
-        component: () => import("@/views/pages/tasks/TasksPage.vue"),  
+        component: () => import("@/views/pages/tasks/TasksPage.vue"),
         meta: {
           title: "tasks",
           requiresAuth: true,
@@ -84,6 +95,16 @@ const routes = [
               path: "/task_statuses",
             },
           ],
+        },
+      },
+      {
+        path: "/tasks/:id",
+        name: "TaskView",
+        component: () => import("@/views/pages/tasks/TasksPage.vue"),
+        meta: {
+          title: "tasks",
+          requiresAuth: true,
+          permission: "tasks_view_all",
         },
       },
       {
@@ -121,6 +142,17 @@ const routes = [
               path: "/order_status_categories",
             },
           ],
+        },
+      },
+      {
+        path: "/orders/:id",
+        name: "OrderView",
+        component: OrdersPage,
+        meta: {
+          title: "orders",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "orders_view",
         },
       },
       {
@@ -193,6 +225,17 @@ const routes = [
         },
       },
       {
+        path: "/invoices/:id",
+        name: "InvoiceView",
+        component: InvoicesPage,
+        meta: {
+          title: "invoices",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "invoices_view",
+        },
+      },
+      {
         path: "/transactions",
         name: "Transactions",
         component: TransactionsPage,
@@ -223,6 +266,17 @@ const routes = [
               path: "/transaction_categories",
             },
           ],
+        },
+      },
+      {
+        path: "/transactions/:id",
+        name: "TransactionView",
+        component: TransactionsPage,
+        meta: {
+          title: "finance",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "transactions_view",
         },
       },
       {
@@ -286,6 +340,17 @@ const routes = [
         },
       },
       {
+        path: "/clients/:id",
+        name: "ClientView",
+        component: ClientsPage,
+        meta: {
+          title: "clients",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "clients_view",
+        },
+      },
+      {
         path: "/projects",
         name: "Projects",
         component: ProjectsPage,
@@ -298,7 +363,37 @@ const routes = [
               name: "projectStatuses",
               path: "/project_statuses",
             },
+            {
+              name: "contracts",
+              path: "/contracts",
+            },
           ],
+        },
+      },
+      {
+        path: "/contracts",
+        name: "Contracts",
+        component: () => import("@/views/pages/projects/ProjectContractsPage.vue"),
+        meta: {
+          title: "contracts",
+          requiresAuth: true,
+          permission: "projects_view",
+          binded: [
+            {
+              name: "projects",
+              path: "/projects",
+            },
+          ],
+        },
+      },
+      {
+        path: "/projects/:id",
+        name: "ProjectView",
+        component: ProjectsPage,
+        meta: {
+          title: "projects",
+          requiresAuth: true,
+          permission: "projects_view",
         },
       },
       {
@@ -388,8 +483,26 @@ const routes = [
         meta: { title: "users", requiresAuth: true, permission: "users_view" },
       },
       {
+        path: "/users/:id",
+        name: "UserView",
+        component: UsersPage,
+        meta: { title: "users", requiresAuth: true, permission: "users_view" },
+      },
+      {
+        path: "/org-structure",
+        name: "org-structure",
+        component: () => import("@/views/pages/departments/DepartmentPage.vue"),
+        meta: { title: "orgStructure", requiresAuth: true, permission: "departments_view" },
+      },
+      {
         path: "/roles",
         name: "roles",
+        component: RolesPage,
+        meta: { title: "roles", requiresAuth: true, permission: "roles_view" },
+      },
+      {
+        path: "/roles/:id",
+        name: "RoleView",
         component: RolesPage,
         meta: { title: "roles", requiresAuth: true, permission: "roles_view" },
       },
@@ -425,6 +538,17 @@ const routes = [
         },
       },
       {
+        path: "/products/:id",
+        name: "ProductView",
+        component: ProductsPage,
+        meta: {
+          title: "products",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "products_view",
+        },
+      },
+      {
         path: "/services",
         name: "Sevices",
         component: ServicesPage,
@@ -443,6 +567,17 @@ const routes = [
               path: "/categories",
             },
           ],
+        },
+      },
+      {
+        path: "/services/:id",
+        name: "ServiceView",
+        component: ServicesPage,
+        meta: {
+          title: "services",
+          requiresAuth: true,
+          showSearch: true,
+          permission: "products_view",
         },
       },
       {
@@ -533,6 +668,26 @@ const routes = [
         },
       },
       {
+        path: "/leaves/:id",
+        name: "LeaveView",
+        component: LeavesPage,
+        meta: {
+          title: "leaves",
+          requiresAuth: true,
+          permission: "leaves_view_all",
+        },
+      },
+      {
+        path: "/leaves/:id",
+        name: "LeaveView",
+        component: LeavesPage,
+        meta: {
+          title: "leaves",
+          requiresAuth: true,
+          permission: "leaves_view_all",
+        },
+      },
+      {
         path: "/leave_types",
         name: "leave_types",
         component: LeaveTypesPage,
@@ -546,6 +701,16 @@ const routes = [
               path: "/leaves",
             },
           ],
+        },
+      },
+      {
+        path: "/leave_types/:id",
+        name: "LeaveTypeView",
+        component: LeaveTypesPage,
+        meta: {
+          title: "leaveTypes",
+          requiresAuth: true,
+          permission: "leave_types_view_all",
         },
       },
     ],

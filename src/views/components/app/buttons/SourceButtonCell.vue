@@ -11,20 +11,21 @@
     </div>
 
     <!-- Модальные окна с динамической загрузкой - избегаем циклических зависимостей -->
-    <component 
-        v-if="modalOpen && modalComponent" 
-        :is="modalComponent" 
-        :showForm="modalOpen" 
-        :onclose="() => modalOpen = false">
         <component 
-            v-if="editingItem"
-            :is="modalContentComponent"
-            :editingItem="editingItem" 
-            @saved="handleSaved" 
-            @saved-error="() => modalOpen = false" 
-            @deleted="handleDeleted" 
-            @close-request="() => modalOpen = false" />
-    </component>
+            v-if="modalOpen && modalComponent" 
+            :is="modalComponent" 
+            :showForm="modalOpen" 
+            :onclose="() => modalOpen = false">
+            <component 
+                v-if="editingItem"
+                :is="modalContentComponent"
+                :editingItem="editingItem"
+                :projectId="editingItem?.projectId || null"
+                @saved="handleSaved" 
+                @saved-error="() => modalOpen = false" 
+                @deleted="handleDeleted" 
+                @close-request="() => modalOpen = false" />
+        </component>
 </template>
 
 <script>
@@ -61,6 +62,9 @@ export default {
             return this.sourceType && this.sourceType.includes('EmployeeSalary');
         },
         normalizedSource() {
+            if (this.source === 'project_transaction' || (this.sourceType && this.sourceType.includes('ProjectTransaction'))) {
+                return 'project';
+            }
             if (this.source) {
                 return this.source.toLowerCase();
             }
@@ -75,6 +79,7 @@ export default {
         },
         sourceMap() {
             return {
+                'project': { icon: 'fa-project-diagram', color: 'text-[#9C27B0]', text: 'Проект' },
                 'sale': { icon: 'fa-shopping-cart', color: 'text-[#5CB85C]', text: 'Продажа' },
                 'order': { icon: 'fa-clipboard-list', color: 'text-[#337AB7]', text: 'Заказ' },
                 'receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
@@ -87,6 +92,9 @@ export default {
             return this.sourceMap[this.normalizedSource] || this.sourceMap['transaction'];
         },
         iconClass() {
+            if (this.source === 'project_transaction' || (this.sourceType && this.sourceType.includes('ProjectTransaction'))) {
+                return 'fas fa-project-diagram text-[#9C27B0]';
+            }
             if (this.sourceType && this.sourceId) {
                 if (this.sourceType.includes('Sale')) {
                     return 'fas fa-shopping-cart text-[#5CB85C]';
@@ -105,6 +113,13 @@ export default {
             return `fas ${this.sourceInfo.icon} ${this.sourceInfo.color}`;
         },
         displayText() {
+            if (this.source === 'project_transaction' || (this.sourceType && this.sourceType.includes('ProjectTransaction'))) {
+                const text = `Проект #${this.sourceId || ''}`;
+                if (this.searchQuery && this.searchQuery.trim()) {
+                    return highlightMatches(text, this.searchQuery);
+                }
+                return text;
+            }
             if (this.sourceType && this.sourceId) {
                 let text = '';
                 
@@ -137,7 +152,7 @@ export default {
     },
     methods: {
         async openSourceModal() {
-            if (!this.sourceType || !this.sourceId || this.isSalary) return;
+            if ((!this.sourceType && !this.source) || !this.sourceId || this.isSalary) return;
             
             this.loading = true;
             try {
@@ -146,28 +161,34 @@ export default {
                 this.modalComponent = markRaw(SideModalDialog);
                 
                 // Загружаем данные и компонент содержимого динамически - избегаем циклических зависимостей
-                if (this.sourceType.includes('Sale')) {
+                if (this.source === 'project_transaction' || (this.sourceType && this.sourceType.includes('ProjectTransaction'))) {
+                    const ProjectTransactionController = (await import('@/api/ProjectTransactionController')).default;
+                    const ProjectTransactionCreatePage = (await import('@/views/pages/projects/ProjectTransactionCreatePage.vue')).default;
+                    const transactionData = await ProjectTransactionController.getItem(this.sourceId);
+                    this.editingItem = transactionData;
+                    this.modalContentComponent = markRaw(ProjectTransactionCreatePage);
+                } else if (this.sourceType && this.sourceType.includes('Sale')) {
                     const SaleController = (await import('@/api/SaleController')).default;
                     const SaleCreatePage = (await import('@/views/pages/sales/SaleCreatePage.vue')).default;
                     this.editingItem = await SaleController.getItem(this.sourceId);
                     this.modalContentComponent = markRaw(SaleCreatePage);
-                } else if (this.sourceType.includes('Order')) {
+                } else if (this.sourceType && this.sourceType.includes('Order')) {
                     const OrderController = (await import('@/api/OrderController')).default;
                     const OrderCreatePage = (await import('@/views/pages/orders/OrderCreatePage.vue')).default;
                     this.editingItem = await OrderController.getItem(this.sourceId);
                     this.modalContentComponent = markRaw(OrderCreatePage);
-                } else if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) {
+                } else if (this.sourceType && (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt'))) {
                     const WarehouseReceiptController = (await import('@/api/WarehouseReceiptController')).default;
                     const WarehousesReceiptCreatePage = (await import('@/views/pages/warehouses/WarehousesReceiptCreatePage.vue')).default;
                     this.editingItem = await WarehouseReceiptController.getItem(this.sourceId);
                     this.modalContentComponent = markRaw(WarehousesReceiptCreatePage);
-                } else if (this.sourceType.includes('Transaction')) {
+                } else if (this.sourceType && this.sourceType.includes('Transaction')) {
                     const TransactionController = (await import('@/api/TransactionController')).default;
                     const TransactionCreatePage = (await import('@/views/pages/transactions/TransactionCreatePage.vue')).default;
                     this.editingItem = await TransactionController.getItem(this.sourceId);
                     this.modalContentComponent = markRaw(TransactionCreatePage);
                 } else {
-                    console.warn('[SourceButtonCell] Unknown source type:', this.sourceType);
+                    console.warn('[SourceButtonCell] Unknown source type:', this.sourceType, 'source:', this.source);
                     return;
                 }
                 

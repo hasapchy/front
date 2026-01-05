@@ -63,7 +63,7 @@
     
     <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
         <div class="flex items-center space-x-2">
-            <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
+            <PrimaryButton v-if="editingItemId != null" :onclick="showDeleteDialog" :is-danger="true"
                 :is-loading="deleteLoading" icon="fas fa-trash"
                 :disabled="!$store.getters.hasPermission('warehouse_receipts_delete')">
             </PrimaryButton>
@@ -97,11 +97,12 @@ import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 import { formatDatabaseDateTime } from '@/utils/dateUtils';
 
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch },
     props: {
@@ -115,11 +116,7 @@ export default {
             type: this.editingItem ? this.editingItem.type : 'cash',
             cashId: this.editingItem ? this.editingItem.cashId : '',
             products: this.editingItem ? this.editingItem.products : [],
-            editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false,
             allWarehouses: [],
             currencies: [],
             allCashRegisters: [],
@@ -218,8 +215,7 @@ export default {
             }
         },
 
-        async save() {
-            // Проверяем обязательные поля
+        prepareSave() {
             const validationErrors = [];
             
             if (!this.selectedClient?.id) {
@@ -242,7 +238,6 @@ export default {
                 validationErrors.push('• Добавьте товары');
             }
             
-            // Проверяем, что у всех товаров есть обязательные поля
             const invalidProducts = this.products.filter(p => 
                 !p.productId || !p.quantity || p.quantity <= 0 || !p.price || p.price < 0
             );
@@ -253,76 +248,46 @@ export default {
             
             if (validationErrors.length > 0) {
                 this.$emit('saved-error', validationErrors.join('\n'));
-                return;
+                throw new Error(validationErrors.join('\n'));
             }
 
-            this.saveLoading = true;
-            try {
-                const productsData = this.products.map(product => ({
-                    product_id: product.productId,
-                    quantity: product.quantity,
-                    price: product.price,
-                }));
-                
-                var formData = {
-                    client_id: this.selectedClient?.id,
-                    warehouse_id: this.warehouseId,
-                    date: this.date,
-                    note: this.note,
-                    cash_id: this.cashId, // всегда отправляем выбранную кассу
-                    type: this.type, // "cash" или "balance" - is_debt определяется автоматически
-                    products: productsData
-                };
-
-                if (this.editingItemId != null) {
-                    var resp = await WarehouseReceiptController.updateItem(
-                        this.editingItemId,
-                        formData);
-                } else {
-                    var resp = await WarehouseReceiptController.storeItem(formData);
-                }
-                if (resp.message) {
-                    // Инвалидируем кэш товаров, т.к. остатки изменились
-                    await this.$store.dispatch('invalidateCache', { type: 'products' });
-                    // Перезагружаем список товаров для ProductSearch
-                    await this.$store.dispatch('loadAllProducts');
-                    
-                    this.$emit('saved');
-                    this.clearForm();
-                }
-            } catch (error) {
-                let errorMessage = this.getApiErrorMessage(error);
-                
-                // Если есть детали валидации от Laravel
-                if (error.response?.data?.errors) {
-                    const validationErrors = error.response.data.errors;
-                    const errorMessages = Object.keys(validationErrors).map(field => {
-                        return `${field}: ${validationErrors[field].join(', ')}`;
-                    });
-                    errorMessage = errorMessages.join('\n');
-                }
-                
-                this.$emit('saved-error', errorMessage);
-            }
-            this.saveLoading = false;
+            const productsData = this.products.map(product => ({
+                product_id: product.productId,
+                quantity: product.quantity,
+                price: product.price,
+            }));
+            
+            return {
+                client_id: this.selectedClient?.id,
+                warehouse_id: this.warehouseId,
+                date: this.date,
+                note: this.note,
+                cash_id: this.cashId,
+                type: this.type,
+                products: productsData
+            };
         },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (this.editingItemId == null) {
-                return;
+        async performSave(data) {
+            if (this.editingItemId != null) {
+                return await WarehouseReceiptController.updateItem(this.editingItemId, data);
+            } else {
+                return await WarehouseReceiptController.storeItem(data);
             }
-            this.deleteLoading = true;
-            try {
-                var resp = await WarehouseReceiptController.deleteItem(
-                    this.editingItemId);
-                if (resp.message) {
-                    this.$emit('deleted');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+        },
+        async performDelete() {
+            const resp = await WarehouseReceiptController.deleteItem(this.editingItemId);
+            if (!resp.message) {
+                throw new Error('Failed to delete receipt');
             }
-            this.deleteLoading = false;
+            return resp;
+        },
+        onSaveSuccess(response) {
+            if (response && response.message) {
+                this.$store.dispatch('invalidateCache', { type: 'products' }).then(() => {
+                    return this.$store.dispatch('loadAllProducts');
+                });
+                this.clearForm();
+            }
         },
         clearForm() {
             this.date = this.getCurrentLocalDateTime();
@@ -331,49 +296,32 @@ export default {
             this.currencyId = '';
             this.selectedClient = null;
             this.products = [];
-            this.editingItemId = null;
-            this.type = 'cash'; // Сбрасываем на значение по умолчанию
+            this.type = 'cash';
             this.cashId = this.allCashRegisters.length > 0 ? this.allCashRegisters[0].id : '';
-            this.resetFormChanges();
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
         },
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                this.date = newEditingItem.date || '';
+                this.note = newEditingItem.note || '';
+                this.warehouseId = newEditingItem.warehouseId || '';
+                this.currencyId = newEditingItem.currencyId || '';
+                this.selectedClient = newEditingItem.client || null;
+                this.products = newEditingItem.products || [];
+                this.cashId = newEditingItem.cashId || '';
+                this.type = newEditingItem.type || (newEditingItem.cashId ? 'cash' : 'balance');
+            }
         },
     },
     watch: {
         warehouseId: {
             async handler(newWarehouseId) {
-                // При изменении склада перезагружаем товары в ProductSearch
                 if (newWarehouseId && this.$refs.productSearch) {
                     await this.$refs.productSearch.fetchLastProducts();
                 }
             }
-        },
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    this.date = newEditingItem.date || '';
-                    this.note = newEditingItem.note || '';
-                    this.warehouseId = newEditingItem.warehouseId || '';
-                    this.currencyId = newEditingItem.currencyId || '';
-                    this.selectedClient = newEditingItem.client || null;
-                    this.editingItemId = newEditingItem.id || null;
-                    this.products = newEditingItem.products || [];
-                    this.cashId = newEditingItem.cashId || '';
-                    // Устанавливаем type на основе наличия cashId
-                    this.type = newEditingItem.type || (newEditingItem.cashId ? 'cash' : 'balance');
-                } else {
-                    this.clearForm();
-                }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
-            },
-            deep: true,
-            immediate: true
         }
     }
 }
