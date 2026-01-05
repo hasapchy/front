@@ -5,26 +5,46 @@ import { getStore } from "@/store/storeManager";
 
 window.Pusher = Pusher;
 
-// Значения заголовков должны быть строками, а не функциями.
-const token = TokenUtils.getToken();
-const store = getStore();
-const companyId = store?.getters?.currentCompanyId || import.meta.env.VITE_DEFAULT_COMPANY_ID || "1";
+// Создаем функцию для получения текущих заголовков
+const getAuthHeaders = () => {
+  const token = TokenUtils.getToken();
+  const store = getStore();
+  const companyId = store?.getters?.currentCompanyId || 
+                   import.meta.env.VITE_DEFAULT_COMPANY_ID || 
+                   "1";
+  
+  return {
+    Accept: "application/json",
+    Authorization: token ? `Bearer ${token}` : "",
+    "X-Company-ID": companyId.toString(),
+  };
+};
 
-const echo = new Echo({
-  broadcaster: "reverb",
-  key: import.meta.env.VITE_PUSHER_APP_KEY || "hasapchy-key",
-  wsHost: import.meta.env.VITE_PUSHER_HOST || "192.168.50.71", // ваш сервер, не 127.0.0.1
-  wsPort: import.meta.env.VITE_PUSHER_PORT || 8080,
-  wssPort: import.meta.env.VITE_PUSHER_PORT || 8080,
-  forceTLS: (import.meta.env.VITE_PUSHER_SCHEME || "http") === "https",
-  enabledTransports: ["ws", "wss"],
-  authEndpoint: `${import.meta.env.VITE_APP_BASE_URL}/broadcasting/auth`,
-  auth: {
-    headers: {
-      Accept: "application/json",
-      Authorization: token ? `Bearer ${token}` : "",
-      "X-Company-ID": companyId,
+// Создаем экземпляр Echo с динамическими заголовками
+const createEchoInstance = () => {
+  return new Echo({
+    broadcaster: "reverb",
+    key: import.meta.env.VITE_REVERB_APP_KEY,  // ← Исправлено на REVERB
+    wsHost: import.meta.env.VITE_REVERB_HOST,  // ← Исправлено на REVERB
+    wsPort: import.meta.env.VITE_REVERB_PORT,  // ← Исправлено на REVERB
+    wssPort: import.meta.env.VITE_REVERB_PORT, // ← Исправлено на REVERB
+    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'http') === 'https',
+    enabledTransports: ['ws', 'wss'],
+    authEndpoint: `${import.meta.env.VITE_APP_BASE_URL}/broadcasting/auth`,
+    auth: {
+      headers: getAuthHeaders(), // Функция будет вызываться при каждом запросе
     },
-  },
-});
+  });
+};
+
+// Экспортируем функцию для создания нового экземпляра
+// или создаем один раз с обновляемыми заголовками
+const echo = createEchoInstance();
+
+// Экспортируем также функцию для обновления экземпляра
+export const refreshEchoInstance = () => {
+  echo.disconnect();
+  return createEchoInstance();
+};
+
 export default echo;
