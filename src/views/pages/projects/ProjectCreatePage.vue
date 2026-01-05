@@ -48,8 +48,40 @@
             <FileUploader ref="fileUploader" :files="editingItem ? editingItem.getFormattedFiles() : []"
                 :uploading="uploading" :upload-progress="uploadProgress" :disabled="!editingItemId"
                 :deleting="deletingFiles" @file-change="handleFileChange" @delete-file="showDeleteFileDialog"
-                @delete-multiple-files="showDeleteMultipleFilesDialog" />
+                @delete-multiple-files="showDeleteMultipleFilesDialog" @download-multiple-files="handleDownloadMultipleFiles" />
         </div>
+        <!-- <div v-if="currentTab === 'employees'">
+            <UserSearch
+                :multiple="true"
+                :show-label="true"
+                :allow-deselect="true"
+                :selected-users="selectedUserIds"
+                @update:selectedUsers="handleEmployeesChange"
+            />
+
+            <div class="mt-4 space-y-2" v-if="selectedUserIds && selectedUserIds.length">
+                <label class="text-sm font-semibold">
+                    {{ $t('advance') || 'Выдать аванс' }} — {{ $t('user') || 'Сотрудник' }}
+                </label>
+                <UserSearch
+                    :multiple="false"
+                    :show-label="false"
+                    :allow-deselect="true"
+                    :selected-user="selectedEmployeeForAdvance"
+                    :filter-users="filterAssignedUsers"
+                    :disabled="!editingItemId"
+                    @update:selectedUser="setEmployeeForAdvance"
+                />
+
+                <div v-if="!editingItemId" class="text-xs text-gray-500">
+                    {{ $t('saveProjectFirstThenAttachFiles') || 'Сохраните проект, чтобы работать с авансами' }}
+                </div>
+            </div>
+
+            <div v-if="editingItemId && selectedEmployeeForAdvance" class="mt-4">
+                <UserBalanceTab :editing-item="selectedEmployeeForAdvance" />
+            </div>
+        </div> -->
         <div v-if="currentTab === 'balance' && editingItem && canViewProjectBalance">
             <ProjectBalanceTab :editing-item="editingItem" />
         </div>
@@ -77,7 +109,6 @@
 </template>
 
 <script>
-import UsersController from '@/api/UsersController';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import ProjectDto from '@/dto/project/ProjectDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
@@ -93,13 +124,15 @@ import { translateCurrency } from '@/utils/translationUtils';
 import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
 import ProjectContractsTab from '@/views/pages/projects/ProjectContractsTab.vue';
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
+import UserSearch from '@/views/components/app/search/UserSearch.vue';
+import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
 import dayjs from 'dayjs';
 import { getCurrentLocalDateTime, formatDatabaseDateTimeForInput } from '@/utils/dateUtils';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, companyChangeMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, FileUploader },
+    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, FileUploader, UserSearch, UserBalanceTab },
     props: {
         editingItem: { type: ProjectDto, required: false, default: null }
     },
@@ -128,13 +161,14 @@ export default {
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'info' },
+                { name: 'contracts', label: 'contracts', permission: 'contracts_view' },
                 { name: 'files', label: 'files', permission: 'settings_project_files_view' },
+                // { name: 'employees', label: 'employees' },
                 { name: 'balance', label: 'balance', permission: 'settings_project_balance_view' },
-                { name: 'contracts', label: 'contracts', permission: 'settings_project_contracts_view' },
             ],
 
-
-
+            selectedUserIds: this.editingItem ? this.editingItem.getUserIds?.() || (this.editingItem.users ? this.editingItem.users.map(u => u.id) : []) : [],
+            selectedEmployeeForAdvance: null
         }
     },
     computed: {
@@ -145,10 +179,12 @@ export default {
             return this.$store.getters.hasPermission('settings_project_balance_view');
         },
         canViewProjectContracts() {
-            return this.$store.getters.hasPermission('settings_project_contracts_view');
+            return this.$store.getters.hasPermission('contracts_view') || 
+                   this.$store.getters.hasPermission('contracts_view_all') || 
+                   this.$store.getters.hasPermission('contracts_view_own');
         },
         visibleTabs() {
-            const baseTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name === 'info');
+            const baseTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => ['info'].includes(tab.name));
             return baseTabs.filter(tab => !tab.permission || this.$store.getters.hasPermission(tab.permission));
         },
         translatedTabs() {
@@ -178,6 +214,7 @@ export default {
     mounted() {
         this.$nextTick(async () => {
             await this.fetchCurrencies();
+            await this.$store.dispatch('loadUsers');
             this.saveInitialState();
         });
     },
@@ -194,6 +231,8 @@ export default {
             this.selectedClient = null;
             this.editingItemId = null;
             this.currentTab = 'info';
+            this.selectedUserIds = [];
+            this.selectedEmployeeForAdvance = null;
             this.resetFormChanges(); // Сбрасываем состояние изменений
         },
         changeTab(tabName) {
@@ -210,8 +249,25 @@ export default {
                 exchangeRate: this.exchangeRate,
                 date: this.date,
                 description: this.description,
-                selectedClient: this.selectedClient?.id || null
+                selectedClient: this.selectedClient?.id || null,
+                selectedUserIds: this.selectedUserIds
             };
+        },
+        handleEmployeesChange(ids) {
+            this.selectedUserIds = Array.isArray(ids) ? ids : [];
+            if (!this.selectedUserIds || !this.selectedUserIds.length) {
+                this.selectedEmployeeForAdvance = null;
+            }
+        },
+        setEmployeeForAdvance(user) {
+            this.selectedEmployeeForAdvance = user || null;
+        },
+        filterAssignedUsers(user) {
+            if (!Array.isArray(this.selectedUserIds) || !this.selectedUserIds.length) {
+                return false;
+            }
+            const ids = this.selectedUserIds.map(id => Number(id));
+            return ids.includes(Number(user.id));
         },
         async fetchCurrencies() {
             if (this.$store.getters.currencies && this.$store.getters.currencies.length > 0) {
@@ -274,7 +330,8 @@ export default {
                     name: this.name,
                     date: this.date ? dayjs(this.date).format('YYYY-MM-DD HH:mm:ss') : null,
                     description: this.description || null,
-                    client_id: this.selectedClient?.id
+                    client_id: this.selectedClient?.id,
+                    users: this.selectedUserIds || []
                 };
 
                 // Добавляем поля бюджета только если у пользователя есть права
@@ -404,6 +461,18 @@ export default {
             this.deleteFileIndex = 'multiple';
             this.deleteFileDialog = true;
         },
+        async handleDownloadMultipleFiles(selectedFileIds) {
+            if (!selectedFileIds || selectedFileIds.length === 0 || !this.editingItemId) return;
+            try {
+                await ProjectController.downloadFiles(this.editingItemId, selectedFileIds);
+                if (this.$refs.fileUploader) {
+                    this.$refs.fileUploader.selectedFileIds = [];
+                }
+            } catch (error) {
+                console.error('Ошибка скачивания файлов:', error);
+                alert('Ошибка скачивания файлов');
+            }
+        },
         closeDeleteFileDialog() {
             this.deleteFileDialog = false;
             this.deleteFileIndex = -1;
@@ -475,6 +544,8 @@ export default {
                     this.description = newEditingItem.description || '';
                     this.selectedClient = newEditingItem.client || null;
                     this.editingItemId = newEditingItem.id || null;
+                    this.selectedUserIds = newEditingItem.getUserIds?.() || (newEditingItem.users ? newEditingItem.users.map(u => u.id) : []);
+                    this.selectedEmployeeForAdvance = null;
                     
                     // Всегда открываем вкладку "info" при открытии проекта
                     this.currentTab = 'info';

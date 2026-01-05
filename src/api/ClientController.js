@@ -71,15 +71,15 @@ export default class ClientController extends BaseController {
     );
   }
 
-  static async getListItems(forMutualSettlements = false, cashRegisterIds = null) {
+  static async getListItems(forMutualSettlements = false, cashRegisterId = null) {
     return super.handleRequest(
       async () => {
         const params = {};
         if (forMutualSettlements) {
           params.for_mutual_settlements = true;
         }
-        if (cashRegisterIds && Array.isArray(cashRegisterIds) && cashRegisterIds.length > 0) {
-          params.cash_register_ids = cashRegisterIds;
+        if (cashRegisterId) {
+          params.cash_register_id = cashRegisterId;
         }
         const response = await api.get("/clients/all", { params });
         const responseData = response.data;
@@ -124,10 +124,22 @@ export default class ClientController extends BaseController {
     return super.deleteItem("/clients", id);
   }
 
-  static async getBalanceHistory(id, excludeDebt = null) {
+  static async getBalanceHistory(id, excludeDebt = null, cashRegisterId = null, dateFrom = null, dateTo = null) {
     return super.handleRequest(
       async () => {
-        const params = excludeDebt === true ? { exclude_debt: true } : {};
+        const params = {};
+        if (excludeDebt === true) {
+          params.exclude_debt = true;
+        }
+        if (cashRegisterId) {
+          params.cash_register_id = cashRegisterId;
+        }
+        if (dateFrom) {
+          params.date_from = dateFrom;
+        }
+        if (dateTo) {
+          params.date_to = dateTo;
+        }
         const response = await api.get(`/clients/${id}/balance-history`, {
           params,
         });

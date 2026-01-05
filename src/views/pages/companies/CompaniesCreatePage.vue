@@ -1,19 +1,14 @@
 <template>
     <div class="flex flex-col overflow-auto h-full p-4">
-            <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editCompany') : $t('addCompany') }}</h2>
-    <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
-      changeTab(t);
-    }" />
-    <div>
-      <div v-show="currentTab === 'info'">
+        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editCompany') : $t('addCompany') }}</h2>
+        <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
+            changeTab(t);
+        }" />
+        <div>
+            <div v-show="currentTab === 'info'">
                 <div class="mb-4">
                     <label class="required">{{ $t('companyName') }}</label>
-                    <input 
-                        type="text" 
-                        v-model="form.name" 
-                        :placeholder="$t('enterCompanyName')"
-                        required
-                    />
+                    <input type="text" v-model="form.name" :placeholder="$t('enterCompanyName')" required />
                 </div>
 
                 <div class="mb-4">
@@ -46,187 +41,162 @@
                         </div>
                     </div>
                 </div>
-      </div>
-      <div v-show="currentTab === 'settings' && editingItem" class="mt-4">
+            </div>
+            <div v-show="currentTab === 'settings' && editingItem" class="mt-4">
                 <!-- Настройка отображения удаленных транзакций -->
                 <div class="mb-6 p-4 bg-white border rounded">
-                  <h3 class="text-md font-semibold mb-3">{{ $t('displaySettings') }}</h3>
-                  <label class="flex items-center space-x-2">
-                    <input 
-                      type="checkbox" 
-                      v-model="form.show_deleted_transactions"
-                    />
-                    <span>{{ $t('showDeletedTransactions') }}</span>
-                  </label>
-                  <label class="flex items-center space-x-2 mt-3">
-                    <input 
-                      type="checkbox" 
-                      :checked="form.skip_project_order_balance"
-                      @change="handleSkipProjectOrderBalanceChange"
-                    />
-                    <span>{{ $t('skipProjectOrderBalance') || 'Пропускать баланс заказов проекта' }}</span>
-                  </label>
-                  <div class="text-xs text-red-600 mt-1">
-                    {{ $t('skipProjectOrderBalanceWarningNote') || 'Включение опции пропустит пересчет баланса заказов проекта и исходные данные не сохранятся.' }}
-                  </div>
+                    <h3 class="text-md font-semibold mb-3">{{ $t('displaySettings') }}</h3>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" v-model="form.show_deleted_transactions" />
+                        <span>{{ $t('showDeletedTransactions') }}</span>
+                    </label>
+                    <label class="flex items-center space-x-2 mt-3">
+                        <input type="checkbox" :checked="form.skip_project_order_balance"
+                            @change="handleSkipProjectOrderBalanceChange" />
+                        <span>{{ $t('skipProjectOrderBalance') }}</span>
+                    </label>
+                    <div class="text-xs text-red-600 mt-1">
+                        {{ $t('skipProjectOrderBalanceWarningNote') }}
+                    </div>
                 </div>
-                
+
                 <!-- Настройки округления -->
                 <div class="mb-6 p-4 bg-white border rounded">
-                  <h3 class="text-md font-semibold mb-3">{{ $t('roundingSettings') }}</h3>
-                  
-                  <div class="mb-3">
-                    <label class="block mb-1">{{ $t('decimalPlaces') }}</label>
-                    <select v-model.number="form.rounding_decimals">
-                      <option :value="0">0</option>
-                      <option :value="1">1</option>
-                      <option :value="2">2</option>
-                      <option :value="3">3</option>
-                      <option :value="4">4</option>
-                      <option :value="5">5</option>
-                    </select>
-                    <div class="text-xs text-gray-500 mt-1">
-                      {{ $t('decimalPlacesHint') }}
-                    </div>
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label class="flex items-center space-x-2">
-                      <input 
-                        type="checkbox" 
-                        :checked="form.rounding_enabled"
-                        @change="handleRoundingEnableChange"
-                      />
-                      <span>{{ $t('enableRounding') }}</span>
-                    </label>
-                    <div class="text-xs text-red-600 mt-1">
-                      {{ $t('roundingWarningNote') || 'Включение округления изменит суммы и исходные значения не сохранятся.' }}
-                    </div>
-                  </div>
-                  
-                  <div v-if="form.rounding_enabled">
+                    <h3 class="text-md font-semibold mb-3">{{ $t('roundingSettings') }}</h3>
+
                     <div class="mb-3">
-                      <label class="block mb-1">{{ $t('roundingDirection') }}</label>
-                      <select v-model="form.rounding_direction">
-                        <option value="standard">{{ $t('roundingStandard') }}</option>
-                        <option value="up">{{ $t('roundingUp') }}</option>
-                        <option value="down">{{ $t('roundingDown') }}</option>
-                        <option value="custom">{{ $t('roundingCustom') }}</option>
-                      </select>
+                        <label class="block mb-1">{{ $t('decimalPlaces') }}</label>
+                        <select v-model.number="form.rounding_decimals">
+                            <option :value="0">0</option>
+                            <option :value="1">1</option>
+                            <option :value="2">2</option>
+                            <option :value="3">3</option>
+                            <option :value="4">4</option>
+                            <option :value="5">5</option>
+                        </select>
+                        <div class="text-xs text-gray-500 mt-1">
+                            {{ $t('decimalPlacesHint') }}
+                        </div>
                     </div>
-                    
-                    <div v-if="form.rounding_direction === 'custom'">
-                      <label class="block mb-1">{{ $t('roundingThreshold') }}</label>
-                      <input 
-                        type="number" 
-                        step="0.01" 
-                        min="0" 
-                        max="1"
-                        v-model.number="form.rounding_custom_threshold"
-                      />
-                      <div class="text-xs text-gray-500 mt-1">
-                        {{ $t('roundingThresholdHint') }}
-                      </div>
+
+                    <div class="mb-3">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" :checked="form.rounding_enabled"
+                                @change="handleRoundingEnableChange" />
+                            <span>{{ $t('enableRounding') }}</span>
+                        </label>
+                        <div class="text-xs text-red-600 mt-1">
+                            {{ $t('roundingWarningNote') }}
+                        </div>
                     </div>
-                  </div>
+
+                    <div v-if="form.rounding_enabled">
+                        <div class="mb-3">
+                            <label class="block mb-1">{{ $t('roundingDirection') }}</label>
+                            <select v-model="form.rounding_direction">
+                                <option value="standard">{{ $t('roundingStandard') }}</option>
+                                <option value="up">{{ $t('roundingUp') }}</option>
+                                <option value="down">{{ $t('roundingDown') }}</option>
+                                <option value="custom">{{ $t('roundingCustom') }}</option>
+                            </select>
+                        </div>
+
+                        <div v-if="form.rounding_direction === 'custom'">
+                            <label class="block mb-1">{{ $t('roundingThreshold') }}</label>
+                            <input type="number" step="0.01" min="0" max="1"
+                                v-model.number="form.rounding_custom_threshold" />
+                            <div class="text-xs text-gray-500 mt-1">
+                                {{ $t('roundingThresholdHint') }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
+
                 <!-- Настройки округления количества товара -->
                 <div class="mb-6 p-4 bg-white border rounded">
-                  <h3 class="text-md font-semibold mb-3">{{ $t('quantityRoundingSettings') || 'Округление количества товара' }}</h3>
-                  
-                  <div class="mb-3">
-                    <label class="block mb-1">{{ $t('decimalPlaces') }} ({{ $t('forQuantity') || 'для количества' }})</label>
-                    <select v-model.number="form.rounding_quantity_decimals">
-                      <option :value="0">0</option>
-                      <option :value="1">1</option>
-                      <option :value="2">2</option>
-                      <option :value="3">3</option>
-                      <option :value="4">4</option>
-                      <option :value="5">5</option>
-                    </select>
-                    <div class="text-xs text-gray-500 mt-1">
-                      {{ $t('decimalPlacesHint') }}
-                    </div>
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label class="flex items-center space-x-2">
-                      <input 
-                        type="checkbox" 
-                        :checked="form.rounding_quantity_enabled"
-                        @change="handleQuantityRoundingEnableChange"
-                      />
-                      <span>{{ $t('enableRounding') }} ({{ $t('forQuantity') || 'для количества' }})</span>
-                    </label>
-                    <div class="text-xs text-red-600 mt-1">
-                      {{ $t('roundingQuantityWarningNote') || 'Включение округления количества изменит значения и исходные данные не сохранятся.' }}
-                    </div>
-                  </div>
-                  
-                  <div v-if="form.rounding_quantity_enabled">
+                    <h3 class="text-md font-semibold mb-3">{{ $t('quantityRoundingSettings') }}</h3>
+
                     <div class="mb-3">
-                      <label class="block mb-1">{{ $t('roundingDirection') }} ({{ $t('forQuantity') || 'для количества' }})</label>
-                      <select v-model="form.rounding_quantity_direction">
-                        <option value="standard">{{ $t('roundingStandard') }}</option>
-                        <option value="up">{{ $t('roundingUp') }}</option>
-                        <option value="down">{{ $t('roundingDown') }}</option>
-                        <option value="custom">{{ $t('roundingCustom') }}</option>
-                      </select>
+                        <label class="block mb-1">{{ $t('decimalPlaces') }} ({{ $t('forQuantity') }})</label>
+                        <select v-model.number="form.rounding_quantity_decimals">
+                            <option :value="0">0</option>
+                            <option :value="1">1</option>
+                            <option :value="2">2</option>
+                            <option :value="3">3</option>
+                            <option :value="4">4</option>
+                            <option :value="5">5</option>
+                        </select>
+                        <div class="text-xs text-gray-500 mt-1">
+                            {{ $t('decimalPlacesHint') }}
+                        </div>
                     </div>
-                    
-                    <div v-if="form.rounding_quantity_direction === 'custom'">
-                      <label class="block mb-1">{{ $t('roundingThreshold') }} ({{ $t('forQuantity') || 'для количества' }})</label>
-                      <input 
-                        type="number" 
-                        step="0.01" 
-                        min="0" 
-                        max="1"
-                        v-model.number="form.rounding_quantity_custom_threshold"
-                      />
-                      <div class="text-xs text-gray-500 mt-1">
-                        {{ $t('roundingThresholdHint') }}
-                      </div>
+
+                    <div class="mb-3">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" :checked="form.rounding_quantity_enabled"
+                                @change="handleQuantityRoundingEnableChange" />
+                            <span>{{ $t('enableRounding') }} ({{ $t('forQuantity') }})</span>
+                        </label>
+                        <div class="text-xs text-red-600 mt-1">
+                            {{ $t('roundingQuantityWarningNote') }}
+                        </div>
                     </div>
-                  </div>
+
+                    <div v-if="form.rounding_quantity_enabled">
+                        <div class="mb-3">
+                            <label class="block mb-1">{{ $t('roundingDirection') }} ({{ $t('forQuantity') }})</label>
+                            <select v-model="form.rounding_quantity_direction">
+                                <option value="standard">{{ $t('roundingStandard') }}</option>
+                                <option value="up">{{ $t('roundingUp') }}</option>
+                                <option value="down">{{ $t('roundingDown') }}</option>
+                                <option value="custom">{{ $t('roundingCustom') }}</option>
+                            </select>
+                        </div>
+
+                        <div v-if="form.rounding_quantity_direction === 'custom'">
+                            <label class="block mb-1">{{ $t('roundingThreshold') }} ({{ $t('forQuantity') }})</label>
+                            <input type="number" step="0.01" min="0" max="1"
+                                v-model.number="form.rounding_quantity_custom_threshold" />
+                            <div class="text-xs text-gray-500 mt-1">
+                                {{ $t('roundingThresholdHint') }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-      </div>
+            </div>
+        </div>
+
+    </div>
+    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+        <PrimaryButton v-if="editingItem != null" :onclick="deleteItem" :is-danger="true" :is-loading="deleteLoading"
+            icon="fas fa-trash">
+        </PrimaryButton>
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('companies_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('companies_create'))">
+        </PrimaryButton>
     </div>
 
-  </div>
-  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-    <PrimaryButton v-if="editingItem != null" :onclick="deleteItem" :is-danger="true"
-      :is-loading="deleteLoading" icon="fas fa-trash">
-    </PrimaryButton>
-    <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading"
-      :disabled="(editingItemId != null && !$store.getters.hasPermission('companies_update')) ||
-      (editingItemId == null && !$store.getters.hasPermission('companies_create'))">
-    </PrimaryButton>
-  </div>
-
-    <AlertDialog :dialog="deleteDialog" @confirm="confirmDelete" @leave="closeDeleteDialog"
-        :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
+        :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
+        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     <AlertDialog :dialog="roundingConfirmDialog" @confirm="confirmRoundingEnable" @leave="cancelRoundingEnable"
         :descr="$t('roundingEnableConfirmDescription') || 'Вы уверены, что хотите включить округление? Суммы будут округляться без сохранения исходного значения.'"
         :confirm-text="$t('enable') || 'Включить'" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="roundingQuantityConfirmDialog" @confirm="confirmQuantityRoundingEnable" @leave="cancelQuantityRoundingEnable"
+    <AlertDialog :dialog="roundingQuantityConfirmDialog" @confirm="confirmQuantityRoundingEnable"
+        @leave="cancelQuantityRoundingEnable"
         :descr="$t('roundingQuantityEnableConfirmDescription') || 'Вы уверены, что хотите включить округление количества? Значения будут округляться без сохранения исходных данных.'"
         :confirm-text="$t('enable') || 'Включить'" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="skipProjectOrderBalanceConfirmDialog" @confirm="confirmSkipProjectOrderBalance" @leave="cancelSkipProjectOrderBalance"
+    <AlertDialog :dialog="skipProjectOrderBalanceConfirmDialog" @confirm="confirmSkipProjectOrderBalance"
+        @leave="cancelSkipProjectOrderBalance"
         :descr="$t('skipProjectOrderBalanceEnableConfirmDescription') || 'Вы уверены, что хотите пропускать баланс заказов проекта? Значения будут изменены без сохранения исходных данных.'"
         :confirm-text="$t('enable') || 'Включить'" :leave-text="$t('cancel')" />
-        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-            :is-danger="notificationIsDanger" @close="closeNotification" />
-        
-        <!-- Image Cropper Modal -->
-        <ImageCropperModal
-            :show="showCropperModal"
-            :imageSrc="tempImageSrc"
-            @close="closeCropperModal"
-            @cropped="handleCroppedImage"
-        />
+    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
+        :is-danger="notificationIsDanger" @close="closeNotification" />
+
+    <!-- Image Cropper Modal -->
+    <ImageCropperModal :show="showCropperModal" :imageSrc="tempImageSrc" @close="closeCropperModal"
+        @cropped="handleCroppedImage" />
 </template>
 
 <script>
@@ -239,10 +209,11 @@ import CompaniesController from '@/api/CompaniesController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 import { eventBus } from '@/eventBus';
 
 export default {
-    mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
+    mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
     components: { PrimaryButton, AlertDialog, NotificationToast, ImageCropperModal, TabBar },
     props: {
         editingItem: {
@@ -267,10 +238,6 @@ export default {
                 rounding_quantity_custom_threshold: null,
                 skip_project_order_balance: true,
             },
-            editingItemId: null,
-            saveLoading: false,
-            deleteLoading: false,
-            deleteDialog: false,
             currentLogo: '',
             selected_logo: null,
             showCropperModal: false,
@@ -301,8 +268,9 @@ export default {
             if (!this.editingItem) {
                 this.clearForm();
             }
-            
-            this.saveInitialState();
+            if (this.saveInitialState) {
+                this.saveInitialState();
+            }
         });
     },
     methods: {
@@ -334,7 +302,6 @@ export default {
             this.form.rounding_quantity_direction = 'standard';
             this.form.rounding_quantity_custom_threshold = null;
             this.form.skip_project_order_balance = true;
-            this.editingItemId = null;
             this.currentLogo = '';
             this.selected_logo = null;
             this.croppedFile = null;
@@ -344,93 +311,69 @@ export default {
             if (this.$refs.logoInput) {
                 this.$refs.logoInput.value = null;
             }
-            this.resetFormChanges();
-            this.$nextTick(() => {
-                this.saveInitialState();
-            });
-        },
-        async save() {
-            this.saveLoading = true;
-            try {
-                // Определяем rounding_custom_threshold: null если округление выключено или не custom, иначе значение или null
-                let rounding_custom_threshold = null;
-                if (this.form.rounding_enabled && this.form.rounding_direction === 'custom') {
-                    const value = this.form.rounding_custom_threshold;
-                    // Преобразуем пустую строку в null, иначе используем значение
-                    rounding_custom_threshold = (value === '' || value === null || value === undefined) ? null : value;
-                }
-
-                // Определяем rounding_quantity_custom_threshold: null если округление выключено или не custom, иначе значение или null
-                let rounding_quantity_custom_threshold = null;
-                if (this.form.rounding_quantity_enabled && this.form.rounding_quantity_direction === 'custom') {
-                    const value = this.form.rounding_quantity_custom_threshold;
-                    // Преобразуем пустую строку в null, иначе используем значение
-                    rounding_quantity_custom_threshold = (value === '' || value === null || value === undefined) ? null : value;
-                }
-
-                const item = {
-                    name: this.form.name,
-                    show_deleted_transactions: this.form.show_deleted_transactions,
-                    rounding_decimals: this.form.rounding_decimals,
-                    rounding_enabled: this.form.rounding_enabled,
-                    rounding_direction: this.form.rounding_enabled ? this.form.rounding_direction : null,
-                    rounding_custom_threshold: rounding_custom_threshold,
-                    rounding_quantity_decimals: this.form.rounding_quantity_decimals,
-                    rounding_quantity_enabled: this.form.rounding_quantity_enabled,
-                    rounding_quantity_direction: this.form.rounding_quantity_enabled ? this.form.rounding_quantity_direction : null,
-                    rounding_quantity_custom_threshold: rounding_quantity_custom_threshold,
-                    skip_project_order_balance: Boolean(this.form.skip_project_order_balance),
-                };
-
-                // Используем обрезанный файл, если он есть, иначе файл из input
-                const fileToUpload = this.croppedFile || this.$refs.logoInput?.files[0];
-
-                if (this.editingItem) {
-                    await CompaniesController.updateItem(
-                        this.editingItemId,
-                        item,
-                        fileToUpload
-                    );
-                } else {
-                    await CompaniesController.storeItem(item, fileToUpload);
-                }
-
-                this.$emit('saved');
-                // Отправляем событие об обновлении компании
-                eventBus.emit('company-updated');
-                this.clearForm();
-            } catch (error) {
-                const errorMessage = this.getApiErrorMessage(error);
-                this.$emit('saved-error', errorMessage);
-            } finally {
-                this.saveLoading = false;
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
             }
         },
-        deleteItem() {
-            this.deleteDialog = true;
+        prepareSave() {
+            // Определяем rounding_custom_threshold: null если округление выключено или не custom, иначе значение или null
+            let rounding_custom_threshold = null;
+            if (this.form.rounding_enabled && this.form.rounding_direction === 'custom') {
+                const value = this.form.rounding_custom_threshold;
+                rounding_custom_threshold = (value === '' || value === null || value === undefined) ? null : value;
+            }
+
+            // Определяем rounding_quantity_custom_threshold: null если округление выключено или не custom, иначе значение или null
+            let rounding_quantity_custom_threshold = null;
+            if (this.form.rounding_quantity_enabled && this.form.rounding_quantity_direction === 'custom') {
+                const value = this.form.rounding_quantity_custom_threshold;
+                rounding_quantity_custom_threshold = (value === '' || value === null || value === undefined) ? null : value;
+            }
+
+            return {
+                name: this.form.name,
+                show_deleted_transactions: this.form.show_deleted_transactions,
+                rounding_decimals: this.form.rounding_decimals,
+                rounding_enabled: this.form.rounding_enabled,
+                rounding_direction: this.form.rounding_enabled ? this.form.rounding_direction : null,
+                rounding_custom_threshold: rounding_custom_threshold,
+                rounding_quantity_decimals: this.form.rounding_quantity_decimals,
+                rounding_quantity_enabled: this.form.rounding_quantity_enabled,
+                rounding_quantity_direction: this.form.rounding_quantity_enabled ? this.form.rounding_quantity_direction : null,
+                rounding_quantity_custom_threshold: rounding_quantity_custom_threshold,
+                skip_project_order_balance: Boolean(this.form.skip_project_order_balance),
+            };
         },
-        async confirmDelete() {
-            this.closeDeleteDialog();
-            if (!this.editingItemId) return;
-            
-            this.deleteLoading = true;
-            try {
-                await CompaniesController.deleteItem(this.editingItemId);
-                this.$emit('deleted');
-            } catch (error) {
-                const errorMessage = this.getApiErrorMessage(error);
-                this.$emit('deleted-error', errorMessage);
-            } finally {
-                this.deleteLoading = false;
+        async performSave(data) {
+            // Используем обрезанный файл, если он есть, иначе файл из input
+            const fileToUpload = this.croppedFile || this.$refs.logoInput?.files[0];
+
+            if (this.editingItemId) {
+                return await CompaniesController.updateItem(this.editingItemId, data, fileToUpload);
+            } else {
+                return await CompaniesController.storeItem(data, fileToUpload);
             }
         },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
+        async performDelete() {
+            const resp = await CompaniesController.deleteItem(this.editingItemId);
+            if (!resp) {
+                throw new Error('Failed to delete company');
+            }
+            return resp;
+        },
+        onSaveSuccess(response) {
+            eventBus.emit('company-updated');
+            this.clearForm();
+        },
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                this.loadCompanyData(newEditingItem);
+            }
         },
         closeModal() {
             this.closeForm();
         },
-        
+
         handleLogoChange(event) {
             const file = event.target.files[0];
             if (file) {
@@ -472,30 +415,30 @@ export default {
             }
             this.form.skip_project_order_balance = false;
         },
-        
+
         closeCropperModal() {
             this.showCropperModal = false;
             this.tempImageSrc = '';
-            
+
             if (this.$refs.logoInput) {
                 this.$refs.logoInput.value = '';
             }
         },
-        
+
         handleCroppedImage(blob) {
-            
+
             const fileName = `cropped_logo_${Date.now()}.jpg`;
             const file = new File([blob], fileName, { type: 'image/jpeg' });
-            
+
             // Сохраняем обрезанный файл
             this.croppedFile = file;
             this.selected_logo = URL.createObjectURL(blob);
             this.form.logo = file;
-            
-            
+
+
             this.closeCropperModal();
         },
-        
+
         getCompanyLogoSrc(item) {
             if (!item) return '';
             if (item.logoUrl && typeof item.logoUrl === 'function') {
@@ -508,7 +451,7 @@ export default {
             }
             return '';
         },
-        
+
         loadCompanyData(company) {
             this.form.name = company.name || '';
             this.form.show_deleted_transactions = company.show_deleted_transactions || false;
@@ -548,24 +491,6 @@ export default {
         cancelSkipProjectOrderBalance() {
             this.skipProjectOrderBalanceConfirmDialog = false;
         }
-    },
-    watch: {
-        editingItem: {
-            handler(newEditingItem, oldEditingItem) {
-                if (newEditingItem) {
-                    this.editingItemId = newEditingItem.id || null;
-                    this.loadCompanyData(newEditingItem);
-                } else {
-                    if (oldEditingItem !== undefined) {
-                        this.clearForm();
-                    }
-                }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
-            },
-            immediate: true
-        }
     }
-};
+}
 </script>

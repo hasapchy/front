@@ -2,13 +2,10 @@
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="common.clients" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" :onItemClick="(i) => { showModal(i) }"
+                :item-mapper="itemMapper" :onItemClick="onItemClick"
                 @selectionChange="selectedIds = $event">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
-                        :show-create-button="true"
-                        :on-create-click="() => { showModal(null) }"
-                        :create-button-disabled="!$store.getters.hasPermission('clients_create')"
                         :show-filters="true"
                         :has-active-filters="hasActiveFilters"
                         :active-filters-count="getActiveFiltersCount()"
@@ -22,6 +19,11 @@
                         :toggleVisible="toggleVisible"
                         :log="log">
                         <template #left>
+                            <PrimaryButton 
+                                :onclick="() => { showModal(null) }"
+                                icon="fas fa-plus"
+                                :disabled="!$store.getters.hasPermission('clients_create')">
+                            </PrimaryButton>
                             <transition name="fade">
                                 <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
                             </transition>
@@ -92,7 +94,7 @@
     </transition>
 
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <ClientCreatePage v-if="modalDialog" ref="clientForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <ClientCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new'" ref="clientForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -139,6 +141,9 @@ export default {
             controller: ClientController,
             cacheInvalidationType: 'clients',
             deletePermission: 'clients_delete',
+            itemViewRouteName: 'ClientView',
+            baseRouteName: 'Clients',
+            errorGettingItemText: this.$t('errorGettingClient'),
             statusFilter: '',
             typeFilter: '',
             savedSuccessText: this.$t('clientSuccessfullyAdded'),
@@ -151,6 +156,14 @@ export default {
         this.$store.commit('SET_SETTINGS_OPEN', false);
         
         eventBus.on('global-search', this.handleSearch);
+    },
+    watch: {
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
+        }
     },
 
     mounted() {
@@ -216,7 +229,13 @@ export default {
             if (this.statusFilter !== '') count++;
             if (this.typeFilter !== '') count++;
             return count;
-        }
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'Clients' });
+            }
+        },
     },
     computed: {
         searchQuery() {

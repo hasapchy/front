@@ -1,13 +1,5 @@
 <template>
     <div class="mt-4">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-md font-semibold">{{ $t('contracts') }}</h3>
-            <PrimaryButton v-if="$store.getters.hasPermission('projects_create')" icon="fas fa-plus"
-                :onclick="showAddContractModal" :is-small="true">
-                {{ $t('addContract') }}
-            </PrimaryButton>
-        </div>
-
         <div v-if="loading" class="text-gray-500">{{ $t('loading') }}</div>
         <div v-else-if="contracts.length === 0" class="text-gray-500">
             {{ $t('noContracts') }}
@@ -55,13 +47,13 @@ export default {
             editingContractItem: null,
             contractLoading: false,
             columnsConfig: [
+                { name: "id", label: "ID", size: 80 },
                 { name: "number", label: this.$t("contractNumber"), size: 150 },
                 { name: "amount", label: this.$t("amount"), size: 120, html: true },
-                { name: "description", label: this.$t("description"), size: 200 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 100 },
                 { name: "returned", label: this.$t("status"), size: 100, html: true },
+                { name: "isPaid", label: this.$t("paid"), size: 120, html: true },
                 { name: "note", label: this.$t("note"), size: 200 },
-                { name: "files", label: this.$t("files"), size: 80, html: true },
             ],
         };
     },
@@ -87,10 +79,10 @@ export default {
                         const color = contract.returned ? '#5CB85C' : '#EE4F47';
                         return `<span style="color:${color};font-weight:bold">${status}</span>`;
                     },
-                    formatFiles() {
-                        const count = contract.files ? contract.files.length : 0;
-                        if (count === 0) return '-';
-                        return `<span class="text-blue-600"><i class="fas fa-file"></i> ${count}</span>`;
+                    formatPaidStatus() {
+                        const status = contract.getPaidStatus();
+                        const color = contract.isPaid ? '#5CB85C' : '#EE4F47';
+                        return `<span style="color:${color};font-weight:bold">${status}</span>`;
                     }
                 }));
             } catch (error) {
@@ -105,16 +97,14 @@ export default {
                     return item.number;
                 case "amount":
                     return item.formatAmount();
-                case "description":
-                    return item.note || '-';
                 case "dateUser":
                     return item.formatDateUser ? item.formatDateUser() : `${item.formatDate()} / -`;
                 case "returned":
                     return item.formatReturnedStatus();
+                case "isPaid":
+                    return item.formatPaidStatus();
                 case "note":
                     return item.note || '-';
-                case "files":
-                    return item.formatFiles();
                 default:
                     return item[column];
             }

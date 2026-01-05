@@ -37,9 +37,10 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog },
     props: {
@@ -49,10 +50,6 @@ export default {
         return {
             name: this.editingItem ? this.editingItem.name : '',
             type: this.editingItem ? (this.editingItem.type ? '1' : '0') : '1',
-            editingItemId: this.editingItem ? this.editingItem.id : null,
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false
         }
     },
     mounted() {
@@ -76,69 +73,41 @@ export default {
                 type: this.type
             };
         },
-        async save() {
-            this.saveLoading = true;
-            try {
-                let resp;
-                if (this.editingItemId != null) {
-                    resp = await TransactionCategoryController.updateItem(this.editingItemId, { 
-                        name: this.name,
-                        type: this.type === '1'
-                    });
-                } else {
-                    resp = await TransactionCategoryController.storeItem({ 
-                        name: this.name,
-                        type: this.type === '1'
-                    });
-                }
-                if (resp.message) {
-                    this.$emit('saved');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
-            }
-            this.saveLoading = false;
+        prepareSave() {
+            return {
+                name: this.name,
+                type: this.type === '1'
+            };
         },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (!this.editingItemId) return;
-            this.deleteLoading = true;
-            try {
-                const resp = await TransactionCategoryController.deleteItem(this.editingItemId);
-                if (resp.message) {
-                    this.$emit('deleted');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+        async performSave(data) {
+            if (this.editingItemId != null) {
+                return await TransactionCategoryController.updateItem(this.editingItemId, data);
+            } else {
+                return await TransactionCategoryController.storeItem(data);
             }
-            this.deleteLoading = false;
+        },
+        async performDelete() {
+            const resp = await TransactionCategoryController.deleteItem(this.editingItemId);
+            if (!resp.message) {
+                throw new Error('Failed to delete transaction category');
+            }
+            return resp;
+        },
+        onSaveSuccess(response) {
+            if (response && response.message) {
+                this.clearForm();
+            }
         },
         clearForm() {
             this.name = '';
             this.type = '1';
-            this.editingItemId = null;
-            this.resetFormChanges();
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
         },
-        showDeleteDialog() { this.deleteDialog = true; },
-        closeDeleteDialog() { this.deleteDialog = false; }
-    },
-    watch: {
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    this.name = newEditingItem.name || '';
-                    this.type = newEditingItem.type ? '1' : '0';
-                    this.editingItemId = newEditingItem.id || null;
-                } else {
-                    this.name = '';
-                    this.type = '1';
-                    this.editingItemId = null;
-                }
-            },
-            deep: true,
-            immediate: true
+        onEditingItemChanged(newEditingItem) {
+            this.name = newEditingItem.name || '';
+            this.type = newEditingItem.type ? '1' : '0';
         }
     }
 }

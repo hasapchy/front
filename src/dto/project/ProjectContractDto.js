@@ -13,10 +13,12 @@ class ProjectContractDto {
         currencySymbol,
         date,
         returned,
+        isPaid,
         files,
         note,
         createdAt,
-        updatedAt
+        updatedAt,
+        projectName
     ) {
         this.id = id;
         this.projectId = projectId;
@@ -27,10 +29,12 @@ class ProjectContractDto {
         this.currencySymbol = currencySymbol;
         this.date = date;
         this.returned = returned;
+        this.isPaid = isPaid;
         this.files = files || [];
         this.note = note;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.projectName = projectName || null;
     }
 
 
@@ -46,6 +50,10 @@ class ProjectContractDto {
         return this.returned ? 'Возвращен' : 'Не возвращен';
     }
 
+    getPaidStatus() {
+        return this.isPaid ? 'Оплачено' : 'Не оплачено';
+    }
+
     toApi() {
         return {
             project_id: this.projectId,
@@ -54,6 +62,7 @@ class ProjectContractDto {
             currency_id: this.currencyId,
             date: this.date,
             returned: this.returned,
+            is_paid: this.isPaid,
             files: this.files,
             note: this.note
         };
@@ -71,10 +80,12 @@ class ProjectContractDto {
                 data.currency_symbol || data.currencySymbol,
                 data.date,
                 data.returned,
+                data.is_paid || data.isPaid,
                 data.files,
                 data.note,
                 data.created_at || data.createdAt,
-                data.updated_at || data.updatedAt
+                data.updated_at || data.updatedAt,
+                data.project_name || data.projectName || (data.project?.name || null)
             );
         }).filter(Boolean);
     }

@@ -719,7 +719,7 @@ export default {
   view: 'Просмотр',
   create: 'Создание',
   update: 'Редактирование',
-  delete: 'Удалить',
+  delete: 'Удаление',
   all: 'Все',
   
   // Группы прав
@@ -839,6 +839,8 @@ export default {
   
   // Транзакции
   addTransaction: 'Добавить транзакцию',
+  addProjectTransaction: 'Добавить проектную транзакцию',
+  projectTransactionInfo: 'Проектная транзакция не влияет на кассу и долг клиента. Она служит для дополнительной фиксации операций по проекту и участвует только в расчете баланса проекта.',
   allCashRegisters: 'Все кассы',
   allTime: 'За все время',
   lastWeek: 'Прошлая неделя',
@@ -889,14 +891,14 @@ export default {
   currency: 'Валюта',
   selectCurrency: 'Выберите валюту',
   present: 'по н.в.',
-  bonus: 'Премия',
-  penalty: 'Штраф',
-  advance: 'Аванс',
-  accrueSalary: 'Зарплата',
+  bonus: 'Начислить премию',
+  penalty: 'Выписать штраф',
+  advance: 'Выдать аванс',
+  accrueSalary: 'Начислить зарплату',
   accrueSalaries: 'Начислить зарплаты',
   accrueSalariesForCompany: 'Начислить зарплаты сотрудникам компании',
   accrueSalariesForSelected: 'Начислить зарплаты выбранным сотрудникам',
-  paySalary: 'Выплата',
+  paySalary: 'Выплатить зарплату',
   paySalariesForSelected: 'Выплатить зарплаты выбранным сотрудникам',
   accrueBonusesForSelected: 'Начислить премии выбранным сотрудникам',
   issuePenaltiesForSelected: 'Выписать штрафы выбранным сотрудникам',
@@ -1314,6 +1316,10 @@ export default {
   note: 'Примечание',
   enterNote: 'Введите примечание',
   contractReturned: 'Контракт возвращен',
+  returned: 'Возвращен',
+  notReturned: 'Не возвращен',
+  notPaid: 'Не оплачено',
+  contractStatus: 'Статус контракта',
   noContracts: 'Нет контрактов',
   contractSaved: 'Контракт сохранен',
   contractDeleted: 'Контракт удален',
@@ -1499,7 +1505,6 @@ export default {
   'unit.ROLL': 'Рулон',
   
   // Task Statuses
-  'taskStatus.NEW': 'Новый',
   'taskStatus.PENDING': 'Ожидает',
   'taskStatus.IN_PROGRESS': 'В работе',
   'taskStatus.COMPLETED': 'Завершен',
@@ -1521,6 +1526,13 @@ export default {
   'orderStatus.READY': 'Готово',
   'orderStatus.COMPLETED': 'Завершено',
   'orderStatus.CANCELLED': 'Отменено',
+  
+  // Project Statuses
+  'projectStatus.NEW': 'Новый',
+  'projectStatus.IN_PROGRESS': 'В работе',
+  'projectStatus.PENDING': 'Ожидание оплаты',
+  'projectStatus.COMPLETED': 'Завершено',
+  'projectStatus.CANCELLED': 'Отменено',
   
   // Leave Types
   'leaveType.TIME_OFF': 'Отгул',

@@ -3,7 +3,7 @@
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.products" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="(i) => { showModal(i) }">
+                :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
                         :show-filters="true"
@@ -84,7 +84,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <ProductsCreatePage v-if="modalDialog" ref="productForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <ProductsCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-product'" ref="productForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" :defaultType="'product'" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -130,6 +130,9 @@ export default {
             selectedCategoryId: '',
             controller: ProductController,
             cacheInvalidationType: 'products',
+            itemViewRouteName: 'ProductView',
+            baseRouteName: 'Products',
+            errorGettingItemText: this.$t('errorGettingProduct'),
             deletePermission: 'products_delete',
             savedSuccessText: this.$t('productSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProduct'),
@@ -158,6 +161,14 @@ export default {
     mounted() {
         this.fetchCategories();
         this.fetchItems();
+    },
+    watch: {
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
+        }
     },
 
     beforeUnmount() {
@@ -255,7 +266,13 @@ export default {
             let count = 0;
             if (this.selectedCategoryId !== '') count++;
             return count;
-        }
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'Products' });
+            }
+        },
     },
     computed: {
         searchQuery() {

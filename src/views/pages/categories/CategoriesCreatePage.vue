@@ -46,13 +46,14 @@ import UsersController from '@/api/UsersController';
 import CategoryDto from '@/dto/category/CategoryDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, UserSearch },
     props: {
@@ -63,12 +64,8 @@ export default {
             name: this.editingItem ? this.editingItem.name : '',
             selectedUsers: this.editingItem ? this.editingItem.getUserIds() : [],
             selectedParentCategoryId: this.editingItem ? this.editingItem.parentId : "",
-            editingItemId: this.editingItem ? this.editingItem.id : null,
             users: [],
             allCategories: [],
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false
         }
     },
     mounted() {
@@ -140,101 +137,52 @@ export default {
             await this.$store.dispatch('loadCategories');
             this.allCategories = this.$store.getters.categories;
         },
-        async save() {
-            if (!this.selectedUsers || this.selectedUsers.length === 0) {
-                this.$emit('saved-error', this.$t('categoryMustHaveAtLeastOneUser'));
-                return;
-            }
-
-            this.saveLoading = true;
-            try {
-                if (this.editingItemId != null) {
-                    var resp = await CategoryController.updateItem(
-                        this.editingItemId,
-                        {
-                            name: this.name,
-                            parent_id: this.selectedParentCategoryId,
-                            users: this.selectedUsers,
-                        });
-                } else {
-                    var resp = await CategoryController.storeItem({
-                        name: this.name,
-                        parent_id: this.selectedParentCategoryId,
-                        users: this.selectedUsers
-                    });
-                }
-                if (resp.message) {
-                    this.$emit('saved');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
-            }
-            this.saveLoading = false;
-
+        prepareSave() {
+            return {
+                name: this.name,
+                parent_id: this.selectedParentCategoryId,
+                users: this.selectedUsers,
+            };
         },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (this.editingItemId == null) {
-                return;
+        async performSave(data) {
+            if (this.editingItemId != null) {
+                return await CategoryController.updateItem(this.editingItemId, data);
+            } else {
+                return await CategoryController.storeItem(data);
             }
-            this.deleteLoading = true;
-            try {
-                var resp = await CategoryController.deleteItem(
-                    this.editingItemId);
-                if (resp.message) {
-                    this.$emit('deleted');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+        },
+        async performDelete() {
+            const resp = await CategoryController.deleteItem(this.editingItemId);
+            if (!resp.message) {
+                throw new Error('Failed to delete category');
             }
-            this.deleteLoading = false;
+            return resp;
+        },
+        onSaveSuccess(response) {
+            if (response && response.message) {
+                this.clearForm();
+            }
         },
         clearForm() {
             this.name = '';
             this.selectedUsers = [];
             this.selectedParentCategoryId = '';
-            this.editingItemId = null;
             this.fetchAllCategories();
             this.fetchUsers();
-            this.resetFormChanges();
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
         },
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
-        }
-    },
-    watch: {
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    this.name = newEditingItem.name || '';
-                    this.selectedUsers = newEditingItem.getUserIds() || [];
-                    this.editingItemId = newEditingItem.id || null;
-                    
-                    // Проверяем, что родительская категория не является самой собой
-                    const parentId = newEditingItem.parentId || '';
-                    if (parentId == this.editingItemId) {
-                        // Если категория ссылается сама на себя, сбрасываем родительскую категорию
-                        this.selectedParentCategoryId = '';
-                    } else {
-                        this.selectedParentCategoryId = parentId;
-                    }
-                } else {
-                    this.name = '';
-                    this.selectedUsers = [];
-                    this.selectedParentCategoryId = '';
-                    this.editingItemId = null;
-                }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
-            },
-            deep: true,
-            immediate: true
+        onEditingItemChanged(newEditingItem) {
+            this.name = newEditingItem.name || '';
+            this.selectedUsers = newEditingItem.getUserIds() || [];
+            
+            const parentId = newEditingItem.parentId || '';
+            if (parentId == this.editingItemId) {
+                this.selectedParentCategoryId = '';
+            } else {
+                this.selectedParentCategoryId = parentId;
+            }
         }
     }
 }

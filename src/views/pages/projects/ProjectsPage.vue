@@ -1,10 +1,10 @@
 <template>
     <transition name="fade" mode="out-in">
         <!-- Табличный вид -->
-        <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
+        <div v-if="data?.items && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.projects" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="(i) => { showModal(i) }">
+                :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
                         :show-filters="true"
@@ -31,53 +31,19 @@
                                     :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
                             </transition>
                             
-                            <FiltersContainer
-                                :has-active-filters="hasActiveFilters"
-                                :active-filters-count="getActiveFiltersCount()"
-                                @reset="resetFilters"
-                                @apply="applyFilters">
-                                <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
-                                    <select v-model="statusFilter" class="w-full">
-                                        <option value="">{{ $t('allStatuses') }}</option>
-                                        <option v-for="status in statuses" :key="status.id" :value="status.id">
-                                            {{ translateTaskStatus(status.name, $t) }}
-                                        </option>
-                                    </select>
-                                </div>
+                            <ProjectFilters v-model:statusFilter="statusFilter" v-model:clientFilter="clientFilter"
+                                :statuses="statuses" :clients="clients"
+                                :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"
+                                @reset="resetFilters" @apply="applyFilters" />
 
-                                <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент' }}</label>
-                                    <select v-model="clientFilter" class="w-full">
-                                        <option value="">{{ $t('allClients') }}</option>
-                                        <option v-for="client in clients" :key="client.id" :value="client.id">
-                                            {{ client.first_name }} {{ client.last_name || client.contact_person }}
-                                        </option>
-                                    </select>
-                                </div>
-                            </FiltersContainer>
-
-                            <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                                <button 
-                                    @click="viewMode = 'table'"
-                                    class="px-3 py-2 transition-colors"
-                                    :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                                    <i class="fas fa-table"></i>
-                                </button>
-                                <button 
-                                    @click="viewMode = 'kanban'"
-                                    class="px-3 py-2 transition-colors"
-                                    :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                                    <i class="fas fa-columns"></i>
-                                </button>
-                            </div>
+                            <ViewModeToggle :view-mode="viewMode" @change="changeViewMode" />
                         </template>
 
                         <template #right="{ resetColumns, columns, toggleVisible, log }">
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
                                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-                            <TableFilterButton v-if="viewMode === 'table' && columns && columns.length" :onReset="resetColumns">
+                            <TableFilterButton v-if="viewMode === 'table' && columns?.length" :onReset="resetColumns">
                                 <ul>
                                     <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                         @change="log">
@@ -121,51 +87,12 @@
                         :disabled="!$store.getters.hasPermission('projects_create')">
                     </PrimaryButton>
                     
-                    <transition name="fade">
-                        <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
-                            :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
-                    </transition>
-                    
-                    <FiltersContainer
-                        :has-active-filters="hasActiveFilters"
-                        :active-filters-count="getActiveFiltersCount()"
-                        @reset="resetFilters"
-                        @apply="applyFilters">
-                        <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
-                            <select v-model="statusFilter" class="w-full">
-                                <option value="">{{ $t('allStatuses') }}</option>
-                                <option v-for="status in statuses" :key="status.id" :value="status.id">
-                                    {{ translateTaskStatus(status.name, $t) }}
-                                </option>
-                            </select>
-                        </div>
+                    <ProjectFilters v-model:statusFilter="statusFilter" v-model:clientFilter="clientFilter"
+                        :statuses="statuses" :clients="clients"
+                        :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"
+                        @reset="resetFilters" @apply="applyFilters" />
 
-                        <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('client') || 'Клиент' }}</label>
-                            <select v-model="clientFilter" class="w-full">
-                                <option value="">{{ $t('allClients') }}</option>
-                                <option v-for="client in clients" :key="client.id" :value="client.id">
-                                    {{ client.first_name }} {{ client.last_name || client.contact_person }}
-                                </option>
-                            </select>
-                        </div>
-                    </FiltersContainer>
-
-                    <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                        <button 
-                            @click="viewMode = 'table'"
-                            class="px-3 py-2 transition-colors"
-                            :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                            <i class="fas fa-table"></i>
-                        </button>
-                        <button 
-                            @click="viewMode = 'kanban'"
-                            class="px-3 py-2 transition-colors"
-                            :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                            <i class="fas fa-columns"></i>
-                        </button>
-                    </div>
+                    <ViewModeToggle :view-mode="viewMode" @change="changeViewMode" />
                 </template>
                 <template #right>
                     <KanbanFieldsButton mode="projects" />
@@ -182,7 +109,7 @@
                 :is-project-mode="true"
                 :batch-status-id="batchStatusId"
                 @order-moved="handleProjectMoved"
-                @card-dblclick="showModal"
+                @card-dblclick="onItemClick"
                 @card-select-toggle="toggleSelectRow"
                 @column-select-toggle="handleColumnSelectToggle"
                 @batch-status-change="handleBatchStatusChangeFromToolbar"
@@ -197,7 +124,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <ProjectCreatePage v-if="modalDialog" ref="projectcreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <ProjectCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-project'" ref="projectcreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -217,7 +144,6 @@ import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vu
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import KanbanBoard from '@/views/components/app/kanban/KanbanBoard.vue';
 import ProjectController from '@/api/ProjectController';
-import ProjectStatusController from '@/api/ProjectStatusController';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
@@ -236,10 +162,12 @@ import { eventBus } from '@/eventBus';
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
 import { translateTaskStatus } from '@/utils/translationUtils';
+import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
+import ProjectFilters from '@/views/components/projects/ProjectFilters.vue';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell, TableControlsBar, TableFilterButton, FiltersContainer, KanbanFieldsButton, draggable: VueDraggableNext },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell, TableControlsBar, TableFilterButton, FiltersContainer, KanbanFieldsButton, ViewModeToggle, ProjectFilters, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -252,11 +180,13 @@ export default {
             controller: ProjectController,
             cacheInvalidationType: 'projects',
             deletePermission: 'projects_delete',
+            itemViewRouteName: 'ProjectView',
+            baseRouteName: 'Projects',
+            errorGettingItemText: this.$t('errorGettingProject'),
             savedSuccessText: this.$t('projectSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProject'),
             deletedSuccessText: this.$t('projectSuccessfullyDeleted'),
             deletedErrorText: this.$t('errorDeletingProject'),
-            debounceTimer: null,
             pendingStatusUpdates: new Map(),
             batchStatusId: '',
             allKanbanItems: [],
@@ -267,68 +197,45 @@ export default {
     },
 
     async mounted() {
-        // Загружаем статусы первыми, чтобы они были доступны при создании проекта
         await this.fetchProjectStatuses();
+        this.clients = this.$store.getters.clients || [];
         
-        // Клиенты уже загружаются глобально в App.vue через loadCompanyData
-        this.clients = this.$store.getters.clients;
-        
-        // Восстанавливаем режим просмотра из localStorage
         const savedViewMode = localStorage.getItem('projects_viewMode');
-        let shouldFetch = true;
-        
         if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
-            if (this.viewMode !== savedViewMode) {
-                shouldFetch = false;
-            }
             this.viewMode = savedViewMode;
-            
-            if (savedViewMode === 'kanban') {
-                this.allKanbanItems = [];
-                this.kanbanCurrentPage = 1;
-            } else {
-                const savedPerPage = localStorage.getItem('perPage');
-                this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
-            }
         } else {
-            if (this.viewMode === 'kanban') {
-                this.allKanbanItems = [];
-                this.kanbanCurrentPage = 1;
-            } else {
-                const savedPerPage = localStorage.getItem('perPage');
-                this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
+            try {
+                localStorage.setItem('projects_viewMode', this.viewMode);
+            } catch (error) {
+                console.warn('Failed to save view mode to localStorage:', error);
             }
         }
         
-        // Вызываем fetchItems только если viewMode не изменился (чтобы не было двойного вызова)
-        if (shouldFetch) {
-            this.fetchItems();
+        if (this.viewMode === 'kanban') {
+            this.allKanbanItems = [];
+        } else {
+            const savedPerPage = localStorage.getItem('perPage');
+            this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
         }
         
-        // Слушаем события инвалидации кэша
+        this.fetchItems();
         eventBus.on('cache:invalidate', this.handleCacheInvalidate);
     },
     beforeUnmount() {
-        // Очищаем таймер при уничтожении компонента
-        if (this.debounceTimer) {
-            clearTimeout(this.debounceTimer);
-        }
-        
-        // Отписываемся от события
         eventBus.off('cache:invalidate', this.handleCacheInvalidate);
     },
     methods: {
-        translateTaskStatus,
+        translateProjectStatus,
         itemMapper(i, c) {
             switch (c) {
                 case 'users':
-                    return (i.users || '').length + ' ' + this.$t('users');
+                    return `${i.users?.length || 0} ${this.$t('users')}`;
                 case 'budget':
-                    return i.getBudgetDisplay ? i.getBudgetDisplay() : '';
+                    return i.getBudgetDisplay?.() || '';
                 case 'createdAt':
-                    return i.formatCreatedAt();
+                    return i.formatCreatedAt?.() || '';
                 case 'dateUser':
-                    return `${i.formatDate()} / ${i.creator?.name || this.$t('notSpecified')}`;
+                    return `${i.formatDate?.() || ''} / ${i.creator?.name || this.$t('notSpecified')}`;
                 case 'description':
                     return i.description || 'Не указано';
                 default:
@@ -362,41 +269,20 @@ export default {
         },
         async handleCacheInvalidate({ type }) {
             if (type === 'projectStatuses') {
-                console.log('[ProjectsPage] Перезагрузка статусов проектов из-за инвалидации кэша');
                 await this.fetchProjectStatuses();
             } else if (type === 'projects') {
                 await this.$store.dispatch('loadProjects');
-                if (this.fetchItems) {
-                    await this.fetchItems(this.data?.currentPage || 1, true);
-                }
+                await this.fetchItems(this.data?.currentPage || 1, true);
             }
         },
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
         },
-        debouncedFetchItems() {
-            // Очищаем предыдущий таймер
-            if (this.debounceTimer) {
-                clearTimeout(this.debounceTimer);
-            }
-            // Устанавливаем новый таймер на 300ms
-            this.debounceTimer = setTimeout(() => {
-                // В канбане обновляем без размонтирования
-                if (this.viewMode === 'kanban') {
-                    this.fetchItems(1, true);
-                } else {
-                    this.fetchItems();
-                }
-            }, 300);
-        },
         async fetchItems(page = 1, silent = false) {
-            if (!silent) {
-                this.loading = true;
-            }
+            if (!silent) this.loading = true;
             try {
                 const per_page = this.viewMode === 'kanban' ? 1000 : this.perPage;
-                
                 const filters = {};
                 if (this.statusFilter) filters.status_id = this.statusFilter;
                 if (this.clientFilter) filters.client_id = this.clientFilter;
@@ -411,13 +297,9 @@ export default {
                 }
             } catch (error) {
                 this.showNotification(this.$t('errorGettingProjectList'), error.message, true);
+            } finally {
+                if (!silent) this.loading = false;
             }
-            if (!silent) {
-                this.loading = false;
-            }
-        },
-        async loadMoreItems() {
-            return;
         },
         async handleChangeStatus(ids, statusId) {
             if (!ids.length) return;
@@ -437,36 +319,35 @@ export default {
         resetFilters() {
             this.statusFilter = '';
             this.clientFilter = '';
-            if (this.viewMode === 'kanban') {
-                this.fetchItems(1, true);
-            } else {
-                this.fetchItems(1);
-            }
+            this.fetchItems(1, this.viewMode === 'kanban');
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.statusFilter !== '') count++;
-            if (this.clientFilter !== '') count++;
-            return count;
+            return (this.statusFilter ? 1 : 0) + (this.clientFilter ? 1 : 0);
         },
-        // Переопределяем метод из modalMixin для добавления специфичной логики
         showModal(item = null) {
             this.modalDialog = true;
-            this.showTimeline = true;
             this.editingItem = item;
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'Projects' });
+            }
         },
 
         // Обработчик перемещения проекта в канбане
+        getCurrentItems() {
+            return this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
+        },
         handleProjectMoved(updateData) {
             try {
                 if (updateData.type === 'status') {
-                    const items = this.viewMode === 'kanban' ? this.allKanbanItems : this.data.items;
-                    const project = items.find(p => p.id === updateData.orderId);
+                    const project = this.getCurrentItems().find(p => p.id === updateData.orderId);
                     if (project) {
                         project.statusId = updateData.statusId;
                         const status = this.statuses.find(s => s.id === updateData.statusId);
                         if (status) {
-                            project.statusName = translateTaskStatus(status.name, this.$t);
+                            project.statusName = translateProjectStatus(status.name, this.$t);
                         }
                     }
                     
@@ -521,77 +402,79 @@ export default {
             });
         }, 500),
 
-        // Переключение выбора строки (для канбана)
         toggleSelectRow(id) {
-            if (this.selectedIds.includes(id)) {
-                this.selectedIds = this.selectedIds.filter(x => x !== id);
+            const index = this.selectedIds.indexOf(id);
+            if (index > -1) {
+                this.selectedIds.splice(index, 1);
             } else {
-                this.selectedIds = [...this.selectedIds, id];
+                this.selectedIds.push(id);
             }
         },
 
-        // Обработка выбора всех карточек в колонке
         handleColumnSelectToggle(orderIds, select) {
             if (select) {
-                // Добавляем все ID колонки к выбранным
-                const newSelectedIds = [...this.selectedIds];
                 orderIds.forEach(id => {
-                    if (!newSelectedIds.includes(id)) {
-                        newSelectedIds.push(id);
+                    if (!this.selectedIds.includes(id)) {
+                        this.selectedIds.push(id);
                     }
                 });
-                this.selectedIds = newSelectedIds;
             } else {
-                // Убираем все ID колонки из выбранных
                 this.selectedIds = this.selectedIds.filter(id => !orderIds.includes(id));
             }
         },
 
         // Массовое изменение статуса в канбане
-        handleBatchStatusChange() {
-            if (!this.batchStatusId || this.selectedIds.length === 0) return;
+        handleBatchStatusChange(statusId = null) {
+            const targetStatusId = statusId || this.batchStatusId;
+            if (!targetStatusId || !this.selectedIds.length) return;
             
-            this.handleChangeStatus(this.selectedIds, this.batchStatusId);
+            this.handleChangeStatus(this.selectedIds, targetStatusId);
             this.batchStatusId = '';
             this.selectedIds = [];
         },
 
-        // Обработка смены статуса из toolbar канбана
         handleBatchStatusChangeFromToolbar(statusId) {
-            if (!statusId || this.selectedIds.length === 0) return;
-            
-            this.handleChangeStatus(this.selectedIds, statusId);
-            this.batchStatusId = '';
-            this.selectedIds = [];
+            this.handleBatchStatusChange(statusId);
+        },
+        changeViewMode(mode) {
+            if (!['table', 'kanban'].includes(mode)) {
+                return;
+            }
+            this.viewMode = mode;
         }
     },
     watch: {
         viewMode: {
             handler(newMode) {
-                localStorage.setItem('projects_viewMode', newMode);
+                try {
+                    localStorage.setItem('projects_viewMode', newMode);
+                } catch (error) {
+                    console.warn('Failed to save view mode to localStorage:', error);
+                }
                 
                 if (newMode === 'kanban') {
                     this.allKanbanItems = [];
-                    this.kanbanCurrentPage = 1;
-                    this.$nextTick(() => {
-                        this.fetchItems(1, false);
-                    });
                 } else {
                     const savedPerPage = localStorage.getItem('perPage');
-                    const newPerPage = savedPerPage ? parseInt(savedPerPage) : 10;
-                    this.perPage = newPerPage;
-                    this.allKanbanItems = [];
-                    this.$nextTick(() => {
-                        this.fetchItems(1, false);
-                    });
+                    this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
                 }
+                
+                this.$nextTick(() => {
+                    this.fetchItems(1, false);
+                });
             },
             immediate: false
+        },
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
         }
     },
     computed: {
         hasActiveFilters() {
-            return this.statusFilter !== '' || this.clientFilter !== '';
+            return !!(this.statusFilter || this.clientFilter);
         },
         columnsConfig() {
             return [

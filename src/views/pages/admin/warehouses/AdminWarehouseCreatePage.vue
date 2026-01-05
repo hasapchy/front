@@ -8,12 +8,8 @@
 
         <div class="mt-4">
             <label>{{ $t('assignUsers') }}</label>
-            <UserSearch
-                v-model:selectedUsers="selectedUsers"
-                :multiple="true"
-                :filterUsers="userHasWarehouseAccess"
-                :showLabel="false"
-            />
+            <UserSearch v-model:selectedUsers="selectedUsers" :multiple="true" :filterUsers="userHasWarehouseAccess"
+                :showLabel="false" />
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -25,10 +21,10 @@
             (editingItem == null && !$store.getters.hasPermission('warehouses_create'))">
         </PrimaryButton>
     </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="$t('deleteWarehouse')" :confirm-text="$t('deleteWarehouse')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('deleteWarehouse')"
+        :confirm-text="$t('deleteWarehouse')" :leave-text="$t('cancel')" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
+        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 
@@ -41,8 +37,9 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     components: {
         PrimaryButton,
         AlertDialog,
@@ -62,9 +59,6 @@ export default {
             warehouseId: this.warehouse ? this.warehouse.id : null,
             editingItem: this.warehouse,
             users: [],
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false
         }
     },
     created() {
@@ -118,85 +112,50 @@ export default {
                 this.selectedUsers = filtered;
             }
         },
-        async save() {
-            if (!this.selectedUsers || this.selectedUsers.length === 0) {
-                this.$emit('saved-error', this.$t('warehouseMustHaveAtLeastOneUser'));
-                return;
-            }
-
-            this.saveLoading = true;
-            try {
-                if (this.editingItem?.id != null) {
-                    var resp = await WarehouseController.updateItem(
-                        this.editingItem.id,
-                        {
-                            name: this.name,
-                            users: this.selectedUsers
-                        });
-                } else {
-                    var resp = await WarehouseController.storeItem({
-                        name: this.name,
-                        users: this.selectedUsers
-                    });
-                }
-                if (resp.message) {
-                    this.$emit('saved');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
-            }
-            this.saveLoading = false;
-
+        prepareSave() {
+            return {
+                name: this.name,
+                users: this.selectedUsers
+            };
         },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (this.editingItem?.id == null) {
-                return;
+        async performSave(data) {
+            if (this.editingItemId != null) {
+                return await WarehouseController.updateItem(this.editingItemId, data);
+            } else {
+                return await WarehouseController.storeItem(data);
             }
-            this.deleteLoading = true;
-            try {
-                var resp = await WarehouseController.deleteItem(
-                    this.editingItem.id);
-                if (resp.message) {
-                    this.$emit('deleted');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+        },
+        async performDelete() {
+            const resp = await WarehouseController.deleteItem(this.editingItemId);
+            if (!resp.message) {
+                throw new Error('Failed to delete warehouse');
             }
-            this.deleteLoading = false;
+            return resp;
+        },
+        onSaveSuccess(response) {
+            if (response && response.message) {
+                this.clearForm();
+            }
         },
         clearForm() {
             this.name = '';
             this.selectedUsers = [];
-            this.resetFormChanges();
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
         },
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
-        },
-
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                this.name = newEditingItem.name || '';
+                this.selectedUsers = newEditingItem.getUserIds() || [];
+                this.warehouseId = newEditingItem.id || null;
+            }
+        }
     },
     watch: {
         warehouse: {
             handler(newWarehouse) {
-                if (newWarehouse) {
-                    this.name = newWarehouse.name || '';
-                    this.selectedUsers = newWarehouse.getUserIds() || [];
-                    this.warehouseId = newWarehouse.id || null;
-                    this.editingItem = newWarehouse;
-                } else {
-                    this.name = '';
-                    this.selectedUsers = [];
-                    this.warehouseId = null;
-                    this.editingItem = null;
-                }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
+                this.editingItem = newWarehouse;
             },
             deep: true,
             immediate: true

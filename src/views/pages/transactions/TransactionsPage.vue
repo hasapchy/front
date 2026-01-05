@@ -7,7 +7,7 @@
         <div v-if="data != null && !loading" key="table">
             <DraggableTable ref="draggableTable" table-key="admin.transactions" :columns-config="columnsConfig"
                 :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="(i) => { showModal(i) }">
+                :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
                         :show-pagination="true"
@@ -149,7 +149,7 @@
     </transition>
 
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <TransactionCreatePage v-if="modalDialog" ref="transactioncreatepageForm" @saved="handleSaved"
+        <TransactionCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-transaction'" ref="transactioncreatepageForm" @saved="handleSaved"
             @saved-error="handleSavedError" @deleted="handleDeleted" @deleted-error="handleDeletedError"
             @close-request="closeModal" @copy-transaction="handleCopyTransaction" :editingItem="editingItem"
             :default-cash-id="cashRegisterId || null" :form-config="activeFormConfig" />
@@ -172,10 +172,12 @@ import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import TransactionController from '@/api/TransactionController';
+import TransactionCategoryController from '@/api/TransactionCategoryController';
 import TransactionCreatePage from '@/views/pages/transactions/TransactionCreatePage.vue';
 import CashRegisterController from '@/api/CashRegisterController';
 import ProjectController from '@/api/ProjectController';
 import TransactionsBalanceWrapper from '@/views/pages/transactions/TransactionsBalanceWrapper.vue';
+import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import SourceButtonCell from '@/views/components/app/buttons/SourceButtonCell.vue';
 import TransactionTypeCell from '@/views/components/app/buttons/TransactionTypeCell.vue';
@@ -198,7 +200,7 @@ import TRANSACTION_FORM_PRESETS from '@/constants/transactionFormPresets';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
-    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
+    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -206,6 +208,9 @@ export default {
             controller: TransactionController,
             cacheInvalidationType: 'transactions',
             deletePermission: 'transactions_delete',
+            itemViewRouteName: 'TransactionView',
+            baseRouteName: 'Transactions',
+            errorGettingItemText: this.$t('errorGettingTransaction'),
             showStatusSelect: false,
             allCashRegisters: [],
             cashRegisterId: '',
@@ -274,7 +279,9 @@ export default {
                 { value: 'sale', label: this.$t('sale') },
                 { value: 'order', label: this.$t('order') },
                 { value: 'other', label: this.$t('other') },
-            ]
+            ],
+            categoryFilter: [],
+            allTransactionCategories: []
         }
     },
     created() {
@@ -340,6 +347,7 @@ export default {
                 const per_page = this.perPage;
 
                 const debtFilter = this.debtFilter === 'all' ? null : this.debtFilter;
+                const categoryIds = this.categoryFilter.length > 0 ? this.categoryFilter.map(id => parseInt(id)) : null;
                 const new_data = await TransactionController.getItems(
                     page,
                     this.cashRegisterId,
@@ -352,7 +360,8 @@ export default {
                     per_page,
                     this.startDate,
                     this.endDate,
-                    debtFilter
+                    debtFilter,
+                    categoryIds
                 );
 
                 // Обычная пагинация
@@ -369,6 +378,15 @@ export default {
             this.currentFormConfig = formConfig || TRANSACTION_FORM_PRESETS.full;
             this.modalDialog = true;
             this.editingItem = item;
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'Transactions' });
+            }
+        },
+        beforeShowModal(item) {
+            this.currentFormConfig = TRANSACTION_FORM_PRESETS.full;
         },
         handleBalanceClick(data) {
             // Проверяем, установлены ли уже такие же фильтры
@@ -393,23 +411,24 @@ export default {
             this.sourceFilter = '';
             this.projectId = '';
             this.debtFilter = 'all';
+            this.categoryFilter = [];
             this.dateFilter = 'this_month';
             this.startDate = null;
             this.endDate = null;
             this.fetchItems();
         },
-        // ✅ Обработчик смены компании
         async handleCompanyChanged(companyId) {
-            // ✅ Очищаем фильтры
             this.cashRegisterId = '';
             this.transactionTypeFilter = '';
             this.sourceFilter = '';
             this.projectId = '';
             this.debtFilter = 'all';
+            this.categoryFilter = [];
             this.dateFilter = 'this_month';
             this.startDate = null;
             this.endDate = null;
             this.selectedIds = [];
+            await this.loadTransactionCategories();
 
             // ✅ Перезагружаем данные со страницы 1
             await this.fetchItems(1, false);
@@ -517,10 +536,24 @@ export default {
             if (this.sourceFilter !== '') count++;
             if (this.projectId !== '') count++;
             if (this.debtFilter !== 'all') count++;
+            if (this.categoryFilter.length > 0) count++;
             if (this.dateFilter !== 'this_month' && this.dateFilter !== 'all_time') count++;
             if (this.startDate !== null) count++;
             if (this.endDate !== null) count++;
             return count;
+        },
+        async loadTransactionCategories() {
+            try {
+                const categories = await TransactionCategoryController.getListItems();
+                this.allTransactionCategories = categories || [];
+            } catch (error) {
+                console.error('Ошибка загрузки категорий транзакций:', error);
+                this.allTransactionCategories = [];
+            }
+        },
+        handleCategoryFilterChange(value) {
+            const selected = Array.isArray(value) ? value : [];
+            this.categoryFilter = selected;
         },
     },
     computed: {
@@ -532,6 +565,23 @@ export default {
         },
         activeFormConfig() {
             return this.currentFormConfig || TRANSACTION_FORM_PRESETS.full;
+        },
+        transactionCategoryOptions() {
+            return this.allTransactionCategories.map(category => ({
+                value: category.id,
+                label: translateTransactionCategory(category.name, this.$t) || category.name
+            }));
+        },
+        hasActiveFilters() {
+            return this.cashRegisterId !== '' ||
+                this.transactionTypeFilter !== '' ||
+                this.sourceFilter !== '' ||
+                this.projectId !== '' ||
+                this.debtFilter !== 'all' ||
+                this.categoryFilter.length > 0 ||
+                (this.dateFilter !== 'this_month' && this.dateFilter !== 'all_time') ||
+                this.startDate !== null ||
+                this.endDate !== null;
         }
     },
     watch: {
@@ -541,6 +591,12 @@ export default {
         },
         '$store.state.projects'(newVal) {
             this.allProjects = newVal;
+        },
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
         }
     },
 }

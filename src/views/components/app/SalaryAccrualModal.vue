@@ -501,6 +501,10 @@ export default {
         },
         async confirmOperation() {
             this.confirmDialog = false;
+            if (this.pendingAccrue) {
+                await this.confirmAccrue();
+                return;
+            }
             if (this.pendingOperation) {
                 const operation = this.pendingOperation;
                 this.pendingOperation = null;
