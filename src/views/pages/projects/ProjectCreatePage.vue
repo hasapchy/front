@@ -26,7 +26,7 @@
                 </div>
                 <div class="w-full">
                     <label class="required">{{ $t('projectCurrency') }}</label>
-                    <select v-model="currencyId" @change="onCurrencyChange">
+                    <select v-model="currencyId">
                         <option value="">{{ $t('no') }}</option>
                         <template v-if="currencies.length">
                             <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
@@ -35,12 +35,6 @@
                         </template>
                     </select>
                 </div>
-            </div>
-            <div v-if="currencyId && canViewProjectBudget" class="mt-2">
-                <label class="required">{{ $t('projectExchangeRate') }}</label>
-                <input type="number" v-model="exchangeRate" step="0.000001" min="0.000001"
-                    :placeholder="defaultExchangeRate" class="w-full">
-                <small class="text-gray-500">{{ $t('exchangeRateHelp') }}</small>
             </div>
 
         </div>
@@ -119,7 +113,6 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
-import AppController from '@/api/AppController';
 import { translateCurrency } from '@/utils/translationUtils';
 
 import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
@@ -142,7 +135,6 @@ export default {
             name: this.editingItem ? this.editingItem.name : '',
             budget: this.editingItem ? this.editingItem.budget : 0,
             currencyId: this.editingItem ? this.editingItem.currencyId : '',
-            exchangeRate: this.editingItem ? this.editingItem.exchangeRate : null,
             date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
             description: this.editingItem ? this.editingItem.description : '',
             editingItemId: this.editingItem ? this.editingItem.id : null,
@@ -206,18 +198,6 @@ export default {
                 label: this.$t(tab.label)
             }));
         },
-        defaultExchangeRate() {
-            if (!this.currencyId) return '1.000000';
-            const currency = this.currencies.find(c => c.id === this.currencyId);
-            if (!currency) return '1.000000';
-
-            // Если валюта не дефолтная (не манат), показываем 1/курс
-            if (!currency.isDefault && currency.exchange_rate) {
-                return (1 / currency.exchange_rate).toFixed(6);
-            }
-
-            return currency.exchange_rate?.toFixed(6) || '1.000000';
-        }
     },
     created() {
         window.deleteFile = (filePath) => {
@@ -237,7 +217,6 @@ export default {
             this.name = '';
             this.budget = 0;
             this.currencyId = '';
-            this.exchangeRate = null;
             this.date = this.getCurrentLocalDateTime();
             this.description = '';
             this.selectedClient = null;
@@ -258,7 +237,6 @@ export default {
                 name: this.name,
                 budget: this.budget,
                 currencyId: this.currencyId,
-                exchangeRate: this.exchangeRate,
                 date: this.date,
                 description: this.description,
                 selectedClient: this.selectedClient?.id || null,
@@ -292,31 +270,10 @@ export default {
                         const defaultCurrency = currencies.find(c => c.isDefault);
                         if (defaultCurrency) {
                             this.currencyId = defaultCurrency.id;
-                            this.exchangeRate = 1;
                         }
                     }
                 }
             });
-        },
-        async onCurrencyChange() {
-            if (this.currencyId) {
-                try {
-                    const rateData = await AppController.getCurrencyExchangeRate(this.currencyId);
-                    const selectedCurrency = this.currencies.find(c => c.id === this.currencyId);
-                    if (selectedCurrency && !selectedCurrency.isDefault) {
-                        // Для не-дефолтной валюты курс = 1/курс_валюты (сколько манат за 1 единицу валюты)
-                        this.exchangeRate = 1 / rateData.exchange_rate;
-                    } else {
-                        // Для дефолтной валюты (манат) курс = 1
-                        this.exchangeRate = 1;
-                    }
-                } catch (error) {
-                    console.error('Error fetching exchange rate:', error);
-                    this.exchangeRate = null;
-                }
-            } else {
-                this.exchangeRate = null;
-            }
         },
         // Методы для crudFormMixin
         prepareSave() {
@@ -328,9 +285,6 @@ export default {
             if (this.canViewProjectBudget) {
                 if (!this.currencyId) {
                     throw new Error('Пожалуйста, выберите валюту проекта');
-                }
-                if (!this.exchangeRate || this.exchangeRate <= 0) {
-                    throw new Error('Пожалуйста, введите корректный курс обмена');
                 }
             }
 
@@ -346,7 +300,6 @@ export default {
             if (this.canViewProjectBudget) {
                 formData.budget = this.budget;
                 formData.currency_id = this.currencyId || null;
-                formData.exchange_rate = this.exchangeRate || null;
             }
 
             return formData;
@@ -536,7 +489,6 @@ export default {
                 this.name = newEditingItem.name || '';
                 this.budget = newEditingItem.budget || 0;
                 this.currencyId = newEditingItem.currencyId || '';
-                this.exchangeRate = newEditingItem.exchangeRate || null;
                 this.date = newEditingItem.date
                     ? this.getFormattedDate(newEditingItem.date)
                     : this.getCurrentLocalDateTime();
