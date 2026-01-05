@@ -65,6 +65,7 @@
         <SalaryAccrualModal 
             v-if="salaryAccrualModalOpen"
             :user-ids="selectedIds"
+            :users="getSelectedUsers()"
             :operation-type="salaryOperationType"
             @success="handleSalaryAccrualSuccess"
             @cancel="closeSalaryAccrualModal"
@@ -204,7 +205,7 @@ export default {
             });
         },
         openSalaryAccrualModal() {
-            if (this.selectedIds.length === 0) {
+            if (!this.selectedIds?.length) {
                 this.showNotification(
                     this.$t('error') || 'Ошибка',
                     this.$t('selectUsersFirst') || 'Выберите сотрудников для начисления зарплаты',
@@ -284,8 +285,12 @@ export default {
             
             return actions;
         },
+        getSelectedUsers() {
+            if (!this.data || !this.data.items) return [];
+            return this.data.items.filter(user => this.selectedIds.includes(user.id));
+        },
         openSalaryOperationModal(operationType) {
-            if (this.selectedIds.length === 0) {
+            if (!this.selectedIds?.length) {
                 this.showNotification(
                     this.$t('error') || 'Ошибка',
                     this.$t('selectUsersFirst') || 'Выберите сотрудников',

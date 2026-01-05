@@ -6,6 +6,7 @@ export default class ProjectStatusDto {
     id,
     name,
     color = "#6c757d",
+    isTrVisible = true,
     userId = null,
     user = null,
     createdAt = "",
@@ -14,6 +15,7 @@ export default class ProjectStatusDto {
     this.id = id;
     this.name = name;
     this.color = color;
+    this.isTrVisible = isTrVisible;
     this.userId = userId;
     this.user = user;
     this.createdAt = createdAt;
@@ -34,6 +36,7 @@ export default class ProjectStatusDto {
         data.id,
         data.name,
         data.color,
+        data.is_tr_visible ?? true,
         data.user_id,
         data.user,
         data.created_at,

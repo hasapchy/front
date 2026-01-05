@@ -33,7 +33,7 @@
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('cash_registers_delete')">
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!selectedUsers || selectedUsers.length === 0 || (editingItemId != null && !$store.getters.hasPermission('cash_registers_update')) ||
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!selectedUsers?.length || (editingItemId != null && !$store.getters.hasPermission('cash_registers_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('cash_registers_create'))">
         </PrimaryButton>
     </div>

@@ -8,8 +8,8 @@
         <div>
             <label>{{ $t('date') }}</label>
             <input type="datetime-local" v-model="date"
-                :disabled="!!editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                :min="!$store.getters.hasPermission('settings_edit_any_date') ? this.getCurrentLocalDateTime() : null" />
+                :disabled="!!editingItemId && !canEditDate()"
+                        :min="this.getMinDate()" />
         </div>
         <div class="mt-2">
             <label class="block mb-1 required">{{ $t('warehouse') }}</label>
@@ -98,11 +98,12 @@ import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
+import dateFormMixin from "@/mixins/dateFormMixin";
 import { formatDatabaseDateTime } from '@/utils/dateUtils';
 
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin, dateFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch },
     props: {
@@ -110,7 +111,7 @@ export default {
     },
     data() {
         return {
-            date: this.editingItem ? this.formatDatabaseDateTimeForInput(this.editingItem.date) : this.getCurrentLocalDateTime(),
+            date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
             note: this.editingItem ? this.editingItem.note : '',
             warehouseId: this.editingItem ? this.editingItem.warehouseId || '' : '',
             type: this.editingItem ? this.editingItem.type : 'cash',
@@ -124,7 +125,7 @@ export default {
     },
     computed: {
         totalAmount() {
-            if (!this.products || this.products.length === 0) return 0;
+            if (!this.products?.length) return 0;
             return this.products.reduce((sum, product) => {
                 if (product.amount !== null && product.amount !== undefined) {
                     return sum + (Number(product.amount) || 0);
@@ -148,7 +149,7 @@ export default {
             ]);
             
             if (!this.editingItem) {
-                if (this.allWarehouses.length > 0 && !this.warehouseId) {
+                if (this.allWarehouses?.length && !this.warehouseId) {
                     this.warehouseId = this.allWarehouses[0].id;
                 }
             }
@@ -157,26 +158,7 @@ export default {
         });
     },
     methods: {
-        formatDatabaseDateTimeForInput(date) {
-            if (!date) return '';
-            // Конвертируем дату из базы данных в формат datetime-local без UTC смещения
-            const dateObj = new Date(date);
-            const year = dateObj.getFullYear();
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const day = String(dateObj.getDate()).padStart(2, '0');
-            const hours = String(dateObj.getHours()).padStart(2, '0');
-            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}`;
-        },
-        getCurrentLocalDateTime() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}`;
-        },
+        // Методы formatDatabaseDateTimeForInput и getCurrentLocalDateTime теперь используются из dateFormMixin
         
         getFormState() {
             return {
@@ -188,7 +170,7 @@ export default {
             };
         },
         async fetchAllWarehouses() {
-            if (this.$store.getters.warehouses && this.$store.getters.warehouses.length > 0) {
+            if (this.$store.getters.warehouses?.length) {
                 this.allWarehouses = this.$store.getters.warehouses;
                 return;
             }
@@ -196,7 +178,7 @@ export default {
             this.allWarehouses = this.$store.getters.warehouses;
         },
         async fetchCurrencies() {
-            if (this.$store.getters.currencies && this.$store.getters.currencies.length > 0) {
+            if (this.$store.getters.currencies?.length) {
                 this.currencies = this.$store.getters.currencies;
                 return;
             }
@@ -204,13 +186,13 @@ export default {
             this.currencies = this.$store.getters.currencies;
         },
         async fetchAllCashRegisters() {
-            if (this.$store.getters.cashRegisters && this.$store.getters.cashRegisters.length > 0) {
+            if (this.$store.getters.cashRegisters?.length) {
                 this.allCashRegisters = this.$store.getters.cashRegisters;
             } else {
                 await this.$store.dispatch('loadCashRegisters');
                 this.allCashRegisters = this.$store.getters.cashRegisters;
             }
-            if (!this.cashId && this.allCashRegisters.length) {
+            if (!this.cashId && this.allCashRegisters?.length) {
                 this.cashId = this.allCashRegisters[0].id;
             }
         },
@@ -234,7 +216,7 @@ export default {
                 validationErrors.push('• Выберите тип оплаты (В кассу или В кредит)');
             }
             
-            if (!this.products || this.products.length === 0) {
+            if (!this.products?.length) {
                 validationErrors.push('• Добавьте товары');
             }
             
@@ -242,11 +224,11 @@ export default {
                 !p.productId || !p.quantity || p.quantity <= 0 || !p.price || p.price < 0
             );
             
-            if (invalidProducts.length > 0) {
+            if (invalidProducts?.length) {
                 validationErrors.push('• У некоторых товаров не заполнены обязательные поля (ID, количество, цена)');
             }
             
-            if (validationErrors.length > 0) {
+            if (validationErrors?.length) {
                 this.$emit('saved-error', validationErrors.join('\n'));
                 throw new Error(validationErrors.join('\n'));
             }
@@ -297,7 +279,7 @@ export default {
             this.selectedClient = null;
             this.products = [];
             this.type = 'cash';
-            this.cashId = this.allCashRegisters.length > 0 ? this.allCashRegisters[0].id : '';
+            this.cashId = this.allCashRegisters?.length ? this.allCashRegisters[0].id : '';
             if (this.resetFormChanges) {
                 this.resetFormChanges();
             }

@@ -5,8 +5,8 @@
         <div>
             <label>{{ $t('date') }}</label>
             <input type="datetime-local" v-model="date"
-                :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
+                :disabled="editingItemId && !canEditDate()"
+                        :min="this.getMinDate()" />
         </div>
         <div class="mt-2">
             <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
@@ -97,10 +97,12 @@ import ProductSearch from "@/views/components/app/search/ProductSearch.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
+import dateFormMixin from "@/mixins/dateFormMixin";
+import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
     emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
     components: { PrimaryButton, AlertDialog, ClientSearch, ProductSearch, },
     props: {
@@ -108,7 +110,7 @@ export default {
     },
     data() {
         return {
-            date: new Date().toISOString().substring(0, 16),
+            date: this.getCurrentLocalDateTime(),
             note: "",
             type: "cash",
             warehouseId: "",
@@ -202,65 +204,53 @@ export default {
             };
         },
         async fetchAllWarehouses() {
-            // Всегда загружаем данные заново и ждем их появления в store
-            await this.$store.dispatch('loadWarehouses');
-            
-            // Ждем пока данные появятся в store (максимум 3 секунды)
-            let attempts = 0;
-            while (this.$store.getters.warehouses.length === 0 && attempts < 30) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
-            
-            this.allWarehouses = this.$store.getters.warehouses;
+            await this.forceLoadStoreData({
+                getterName: 'warehouses',
+                dispatchName: 'loadWarehouses',
+                localProperty: 'allWarehouses',
+                defaultValue: []
+            });
         },
     async fetchAllProjects() {
-      // Используем данные из store
-      await this.$store.dispatch('loadProjects');
-      // Фильтруем только активные проекты
-      const activeProjects = this.$store.getters.activeProjects;
-      
-      // Если редактируем продажу и у неё есть проект, который завершен (его нет в activeProjects),
-      // добавляем его в список опций
-      if (this.editingItem && this.editingItem.projectId && this.editingItem.projectName) {
-        const hasProject = activeProjects.some(p => p.id === this.editingItem.projectId);
-        if (!hasProject) {
-          // Проект завершен, добавляем его вручную
-          this.allProjects = [
-            ...activeProjects,
-            { id: this.editingItem.projectId, name: this.editingItem.projectName }
-          ];
-          return;
+      await this.loadStoreData({
+        getterName: 'activeProjects',
+        dispatchName: 'loadProjects',
+        onLoaded: (activeProjects) => {
+          if (this.editingItem?.projectId && this.editingItem?.projectName) {
+            const hasProject = activeProjects.some(p => p.id === this.editingItem.projectId);
+            if (!hasProject) {
+              this.allProjects = [
+                ...activeProjects,
+                { id: this.editingItem.projectId, name: this.editingItem.projectName }
+              ];
+              return;
+            }
+          }
+          this.allProjects = activeProjects;
         }
-      }
-      
-      this.allProjects = activeProjects;
+      });
     },
         async fetchCurrencies() {
-            // Используем данные из store
-            if (this.$store.getters.currencies.length > 0) {
-                this.currencies = this.$store.getters.currencies;
-            } else {
-                await this.$store.dispatch('loadCurrencies');
-                this.currencies = this.$store.getters.currencies;
-            }
+            await this.loadStoreData({
+                getterName: 'currencies',
+                dispatchName: 'loadCurrencies',
+                localProperty: 'currencies',
+                defaultValue: []
+            });
         },
         async fetchAllCashRegisters() {
-            // Всегда загружаем данные заново и ждем их появления в store
-            await this.$store.dispatch('loadCashRegisters');
-            
-            // Ждем пока данные появятся в store (максимум 3 секунды)
-            let attempts = 0;
-            while (this.$store.getters.cashRegisters.length === 0 && attempts < 30) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
-            
-            this.allCashRegisters = this.$store.getters.cashRegisters;
+            await this.forceLoadStoreData({
+                getterName: 'cashRegisters',
+                dispatchName: 'loadCashRegisters',
+                localProperty: 'allCashRegisters',
+                defaultValue: []
+            });
         },
         async fetchClients() {
-            // Загружаем клиентов в store для компонента ClientSearch
-            await this.$store.dispatch('loadClients');
+            await this.loadStoreData({
+                getterName: 'clients',
+                dispatchName: 'loadClients'
+            });
         },
         prepareSave() {
             if (!this.selectedClient?.id) {
@@ -269,7 +259,7 @@ export default {
             if (!this.warehouseId) {
                 throw new Error('Необходимо выбрать склад');
             }
-            if (!this.products || this.products.length === 0) {
+            if (!this.products?.length) {
                 throw new Error('Необходимо добавить товары');
             }
 
@@ -311,13 +301,13 @@ export default {
             return resp;
         },
         clearForm() {
-            this.date = new Date().toISOString().substring(0, 16);
+            this.date = this.getCurrentLocalDateTime();
             this.note = "";
             this.type = "cash";
-            this.warehouseId = this.allWarehouses.length ? this.allWarehouses[0].id : "";
+            this.warehouseId = this.allWarehouses?.[0]?.id || "";
             this.currencyId = "";
             this.projectId = "";
-            this.cashId = this.allCashRegisters.length ? this.allCashRegisters[0].id : "";
+            this.cashId = this.allCashRegisters?.[0]?.id || "";
             this.selectedClient = null;
             this.products = [];
             if (this.resetFormChanges) {
@@ -326,13 +316,13 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
-                this.date = newEditingItem.date || new Date().toISOString().substring(0, 16);
+                this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date) : this.getCurrentLocalDateTime();
                 this.note = newEditingItem.note || "";
                 this.type = newEditingItem.cashId || newEditingItem.transactionId ? "cash" : "balance";
-                this.warehouseId = newEditingItem.warehouseId || (this.allWarehouses.length ? this.allWarehouses[0].id : "");
+                this.warehouseId = newEditingItem.warehouseId || this.allWarehouses?.[0]?.id || "";
                 this.currencyId = newEditingItem.currencyId || "";
                 this.projectId = newEditingItem.projectId || "";
-                this.cashId = newEditingItem.cashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : "");
+                this.cashId = newEditingItem.cashId || this.allCashRegisters?.[0]?.id || "";
                 this.selectedClient = newEditingItem.client || null;
                 this.products = newEditingItem.products || [];
                 this.discount = newEditingItem.discount || 0;
@@ -350,8 +340,7 @@ export default {
                         this.currencyId = defaultCurrency.id;
                     }
                 } else if (newType === "cash" && oldType === "balance") {
-                    // При переключении обратно на кассу, если касса не выбрана, выбираем первую
-                    if (!this.cashId && this.allCashRegisters.length > 0) {
+                    if (!this.cashId && this.allCashRegisters?.length) {
                         this.cashId = this.allCashRegisters[0].id;
                     }
                 }
@@ -361,8 +350,7 @@ export default {
         '$store.state.warehouses': {
             handler(newVal) {
                 this.allWarehouses = newVal;
-                // Автоматически выбираем первый склад при создании новой продажи
-                if (newVal.length && !this.warehouseId && !this.editingItem) {
+                if (newVal?.length && !this.warehouseId && !this.editingItem) {
                     this.warehouseId = newVal[0].id;
                 }
             },
@@ -371,8 +359,7 @@ export default {
         '$store.state.cashRegisters': {
             handler(newVal) {
                 this.allCashRegisters = newVal;
-                // Автоматически выбираем первую кассу при создании новой продажи
-                if (newVal.length && !this.cashId && !this.editingItem) {
+                if (newVal?.length && !this.cashId && !this.editingItem) {
                     this.cashId = newVal[0].id;
                 }
             },
@@ -393,8 +380,7 @@ export default {
         },
         '$store.state.clients': {
             handler(newClients) {
-                // Автоматически обновляем selectedClient из Store если он есть
-                if (this.selectedClient?.id && newClients.length) {
+                if (this.selectedClient?.id && newClients?.length) {
                     const updated = newClients.find(c => c.id === this.selectedClient.id);
                     if (updated && typeof updated.fullName === 'function') {
                         this.selectedClient = updated;

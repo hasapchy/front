@@ -110,6 +110,7 @@ import OperationTypeCell from "@/views/components/app/buttons/OperationTypeCell.
 import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
+import filtersMixin from "@/mixins/filtersMixin";
 import { defineAsyncComponent, markRaw } from 'vue';
 
 const TransactionCreatePage = defineAsyncComponent(() => 
@@ -122,7 +123,7 @@ import TransactionDto from "@/dto/transaction/TransactionDto";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 
 export default {
-    mixins: [notificationMixin, getApiErrorMessage],
+    mixins: [notificationMixin, getApiErrorMessage, filtersMixin],
     components: {
         DraggableTable,
         SideModalDialog,
@@ -228,7 +229,7 @@ export default {
     },
     async mounted() {
         await this.fetchDefaultCurrency();
-        if (!this.$store.getters.cashRegisters || this.$store.getters.cashRegisters.length === 0) {
+        if (!this.$store.getters.cashRegisters?.length) {
             await this.$store.dispatch('loadCashRegisters');
         }
     },
@@ -310,25 +311,24 @@ export default {
             }
         },
         resetFilters() {
-            this.selectedCashRegisterId = null;
-            this.dateFrom = null;
-            this.dateTo = null;
-            this.fetchBalanceHistory();
+            this.resetFiltersFromConfig({
+                selectedCashRegisterId: null,
+                dateFrom: null,
+                dateTo: null
+            }, () => {
+                this.fetchBalanceHistory();
+            });
         },
 
         async handleBalanceItemClick(item) {
-            if (!this.editingItem || !this.editingItem.id) return;
+            if (!item?.sourceId) return;
             
             try {
                 this.entityLoading = true;
                 const data = await this.ENTITY_CONFIG.transaction.fetch(item.sourceId);
                 this.editingTransactionItem = data;
-                
                 this.entityModalOpen = true;
-                this.selectedEntity = {
-                    type: 'transaction',
-                    data,
-                };
+                this.selectedEntity = { type: 'transaction', data };
             } catch (error) {
                 console.error('Error loading transaction:', error);
                 this.$notify?.({ type: 'error', text: 'Ошибка при загрузке транзакции' });

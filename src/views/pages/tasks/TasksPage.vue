@@ -545,21 +545,18 @@ export default {
             this.fetchItems(1, false);
         },
         resetFilters() {
-            this.statusFilter = 'all';
-            this.dateFilter = 'all_time';
-            this.startDate = '';
-            this.endDate = '';
-            if (this.viewMode === 'kanban') {
-                this.fetchItems(1, true);
-            } else {
-                this.fetchItems(1);
-            }
+            this.resetFiltersFromConfig({
+                statusFilter: 'all',
+                dateFilter: 'all_time',
+                startDate: '',
+                endDate: ''
+            });
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.statusFilter !== 'all') count++;
-            if (this.dateFilter !== 'all_time') count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.statusFilter, defaultValue: 'all' },
+                { value: this.dateFilter, defaultValue: 'all_time' }
+            ]);
         },
         // Переопределяем метод из crudEventMixin для правильной работы с data
         refreshDataAfterOperation() {
@@ -689,7 +686,20 @@ export default {
             // Вызываем стандартную обработку из crudEventMixin
             this.refreshDataAfterOperation();
         },
-        
+        async handleCompanyChanged(companyId) {
+            this.statusFilter = 'all';
+            this.dateFilter = 'all_time';
+            this.startDate = '';
+            this.endDate = '';
+            this.selectedIds = [];
+            
+            await this.fetchItems(1, false);
+            
+            this.$store.dispatch('showNotification', {
+                title: 'Компания изменена',
+                isDanger: false
+            });
+        },
     },
     watch: {
         viewMode: {

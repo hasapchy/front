@@ -154,6 +154,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import filtersMixin from '@/mixins/filtersMixin';
+import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import StatusSelectCell from '@/views/components/app/buttons/StatusSelectCell.vue';
 import ClientButtonCell from '@/views/components/app/buttons/ClientButtonCell.vue';
 import { markRaw } from 'vue';
@@ -161,12 +162,12 @@ import debounce from "lodash.debounce";
 import { eventBus } from '@/eventBus';
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanFieldsButton from '@/views/components/app/kanban/KanbanFieldsButton.vue';
-import { translateTaskStatus } from '@/utils/translationUtils';
+import { translateProjectStatus } from '@/utils/translationUtils';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import ProjectFilters from '@/views/components/projects/ProjectFilters.vue';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin, storeDataLoaderMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, KanbanBoard, ProjectCreatePage, BatchButton, AlertDialog, StatusSelectCell, ClientButtonCell, TableControlsBar, TableFilterButton, FiltersContainer, KanbanFieldsButton, ViewModeToggle, ProjectFilters, draggable: VueDraggableNext },
     data() {
         return {
@@ -259,13 +260,12 @@ export default {
             });
         },
         async fetchProjectStatuses() {
-            try {
-                // Используем данные из store
-                await this.$store.dispatch('loadProjectStatuses');
-                this.statuses = this.$store.getters.projectStatuses;
-            } catch (error) {
-                console.error('Error fetching project statuses:', error);
-            }
+            await this.loadStoreData({
+                getterName: 'projectStatuses',
+                dispatchName: 'loadProjectStatuses',
+                localProperty: 'statuses',
+                defaultValue: []
+            });
         },
         async handleCacheInvalidate({ type }) {
             if (type === 'projectStatuses') {
@@ -317,12 +317,16 @@ export default {
             this.loading = false;
         },
         resetFilters() {
-            this.statusFilter = '';
-            this.clientFilter = '';
-            this.fetchItems(1, this.viewMode === 'kanban');
+            this.resetFiltersFromConfig({
+                statusFilter: '',
+                clientFilter: ''
+            });
         },
         getActiveFiltersCount() {
-            return (this.statusFilter ? 1 : 0) + (this.clientFilter ? 1 : 0);
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.statusFilter, defaultValue: '' },
+                { value: this.clientFilter, defaultValue: '' }
+            ]);
         },
         showModal(item = null) {
             this.modalDialog = true;
@@ -476,6 +480,9 @@ export default {
         hasActiveFilters() {
             return !!(this.statusFilter || this.clientFilter);
         },
+        canViewProjectBudget() {
+            return this.$store.getters.hasPermission('settings_project_budget_view');
+        },
         columnsConfig() {
             return [
                 { name: 'select', label: '#', size: 15 },
@@ -490,7 +497,7 @@ export default {
                         client: item.client,
                     })
                 },
-                ...(this.$store.getters.hasPermission('settings_project_budget_view') ? [{ name: 'budget', label: 'budget', html: true }] : []),
+                ...(this.canViewProjectBudget ? [{ name: 'budget', label: 'budget', html: true }] : []),
                 { name: 'name', label: 'name' },
             ];
         }

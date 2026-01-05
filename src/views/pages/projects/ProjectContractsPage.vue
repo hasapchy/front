@@ -114,10 +114,11 @@ import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue"
 import ProjectContractCreatePage from "./ProjectContractCreatePage.vue";
 import ProjectContractController from "@/api/ProjectContractController";
 import notificationMixin from "@/mixins/notificationMixin";
+import filtersMixin from "@/mixins/filtersMixin";
 import { VueDraggableNext } from 'vue-draggable-next';
 
 export default {
-    mixins: [notificationMixin],
+    mixins: [notificationMixin, filtersMixin],
     components: {
         DraggableTable,
         SideModalDialog,
@@ -232,10 +233,13 @@ export default {
             }
         },
         resetFilters() {
-            this.projectFilter = '';
-            this.paymentStatusFilter = '';
-            this.contractStatusFilter = '';
-            this.fetchContracts(1);
+            this.resetFiltersFromConfig({
+                projectFilter: '',
+                paymentStatusFilter: '',
+                contractStatusFilter: ''
+            }, () => {
+                this.fetchContracts(1);
+            });
         },
         applyFilters() {
             this.fetchContracts(1);

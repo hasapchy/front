@@ -3,6 +3,7 @@ import { formatNumber, formatCurrency } from "@/utils/numberUtils";
 import { createFromApiArray, getUserIdsFromArray } from "@/utils/dtoUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import CurrencyDto from "@/dto/app/CurrencyDto";
+import ProjectStatusDto from "@/dto/project/ProjectStatusDto";
 import "dayjs/locale/ru";
 
 export default class ProjectDto {
@@ -165,6 +166,8 @@ export default class ProjectDto {
         status: data.currency.status
       }) : null;
       
+      const status = data.status ? ProjectStatusDto.fromApiArray([data.status])[0] : null;
+      
       return new ProjectDto(
         data.id,
         data.name,
@@ -185,7 +188,7 @@ export default class ProjectDto {
         data.description,
         data.creator,
         data.status_id,
-        data.status
+        status
       );
     }).filter(Boolean);
   }
