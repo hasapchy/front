@@ -213,7 +213,7 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 import LeaveCalendarView from '@/views/components/leave/LeaveCalendarView.vue';
 import debounce from "lodash.debounce";
-import { translateLeaveType } from '@/utils/translationUtils';
+import { translateLeaveType as translateLeaveTypeUtil } from '@/utils/translationUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
@@ -247,7 +247,7 @@ export default {
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
-                { name: 'leaveTypeName', label: 'leaveType' },
+                { name: 'leaveTypeName', label: 'leaveType', html: true },
                 { name: 'userName', label: 'user' },
                 { name: 'dateFrom', label: 'dateFrom' },
                 { name: 'dateTo', label: 'dateTo' },
@@ -308,16 +308,26 @@ export default {
         }
     },
     methods: {
+        translateLeaveType(name, t) {
+            return translateLeaveTypeUtil(name, t || this.$t);
+        },
         itemMapper(i, c) {
             switch (c) {
+                case 'leaveTypeName':
+                    const color = i.leaveType?.color || '#3B82F6';
+                    const translatedName = i.leaveTypeName ? translateLeaveTypeUtil(i.leaveTypeName, this.$t) : '-';
+                    return `
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded border border-gray-300" style="background-color: ${color}"></div>
+                            <span>${translatedName}</span>
+                        </div>
+                    `;
                 case 'dateFrom':
                     return i.formatDateFrom();
                 case 'dateTo':
                     return i.formatDateTo();
                 case 'duration':
                     return i.formatDuration(this.$t);
-                case 'leaveTypeName':
-                    return i.leaveTypeName ? translateLeaveType(i.leaveTypeName, this.$t) : '-';
                 default:
                     return i[c];
             }

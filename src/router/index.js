@@ -84,7 +84,7 @@ const routes = [
       {
         path: "/tasks",
         name: "Tasks",
-        component: () => import("@/views/pages/tasks/TasksPage.vue"),  
+        component: () => import("@/views/pages/tasks/TasksPage.vue"),
         meta: {
           title: "tasks",
           requiresAuth: true,
@@ -487,6 +487,12 @@ const routes = [
         name: "UserView",
         component: UsersPage,
         meta: { title: "users", requiresAuth: true, permission: "users_view" },
+      },
+      {
+        path: "/org-structure",
+        name: "org-structure",
+        component: () => import("@/views/pages/departments/DepartmentPage.vue"),
+        meta: { title: "orgStructure", requiresAuth: true, permission: "departments_view" },
       },
       {
         path: "/roles",

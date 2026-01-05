@@ -705,15 +705,15 @@ const store = createStore({
         if (hasAccessToOtherCurrencies && onlyDefaultInCache) {
           commit("SET_CURRENCIES", []);
         } else {
-        if (
-          state.currencies[0]?.is_default &&
-          !state.currencies[0]?.isDefault
-        ) {
-          commit(
-            "SET_CURRENCIES",
-            CurrencyDto.fromApiArray(state.currencies)
-          );
-        }
+          if (
+            state.currencies[0]?.is_default &&
+            !state.currencies[0]?.isDefault
+          ) {
+            commit(
+              "SET_CURRENCIES",
+              CurrencyDto.fromApiArray(state.currencies)
+            );
+          }
           return;
         }
       }
@@ -852,7 +852,7 @@ const store = createStore({
         const responseData = response.data || response;
         const plainData = Array.isArray(responseData) ? responseData : [];
         const clients = ClientDto.fromApiArray(plainData);
-        
+
         commit("SET_CLIENTS_DATA", plainData);
         commit("SET_CLIENTS", clients);
         touchKey(cacheKey);
@@ -1545,6 +1545,13 @@ const store = createStore({
           permission: "users_view",
         },
         {
+          id: "org-structure",
+          to: "/org-structure",
+          icon: "fa-solid fa-sitemap mr-2",
+          label: "orgStructure",
+          permission: "departments_view",
+        },
+        {
           id: "roles",
           to: "/roles",
           icon: "fa-solid fa-user-shield mr-2",
@@ -1614,6 +1621,7 @@ const store = createStore({
       ];
       const defaultAvailable = [
         "users",
+        "org-structure",
         "roles",
         "companies",
         "cash-registers",
