@@ -210,13 +210,14 @@ import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import filtersMixin from '@/mixins/filtersMixin';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 import LeaveCalendarView from '@/views/components/leave/LeaveCalendarView.vue';
 import debounce from "lodash.debounce";
 import { translateLeaveType } from '@/utils/translationUtils';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, filtersMixin],
     components: {
         NotificationToast,
         PrimaryButton,
@@ -339,18 +340,20 @@ export default {
             }
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.userFilter) count++;
-            if (this.leaveTypeFilter) count++;
-            if (this.dateFromFilter) count++;
-            if (this.dateToFilter) count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.userFilter, defaultValue: '' },
+                { value: this.leaveTypeFilter, defaultValue: '' },
+                { value: this.dateFromFilter, defaultValue: '' },
+                { value: this.dateToFilter, defaultValue: '' }
+            ]);
         },
         resetFilters() {
-            this.userFilter = '';
-            this.leaveTypeFilter = '';
-            this.dateFromFilter = '';
-            this.dateToFilter = '';
+            this.resetFiltersFromConfig({
+                userFilter: '',
+                leaveTypeFilter: '',
+                dateFromFilter: '',
+                dateToFilter: ''
+            });
             if (this.viewMode === 'calendar') {
                 this.fetchCalendarItems();
             } else {

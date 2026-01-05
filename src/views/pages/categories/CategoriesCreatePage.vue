@@ -29,7 +29,7 @@
             :is-loading="deleteLoading" icon="fas fa-trash"
             :disabled="!$store.getters.hasPermission('categories_delete_all')">
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!selectedUsers || selectedUsers.length === 0 || (editingItemId != null && !$store.getters.hasPermission('categories_update_all')) ||
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!selectedUsers?.length || (editingItemId != null && !$store.getters.hasPermission('categories_update_all')) ||
             (editingItemId == null && !$store.getters.hasPermission('categories_create'))">
         </PrimaryButton>
     </div>
@@ -104,7 +104,7 @@ export default {
             };
         },
         async fetchUsers() {
-            if (this.$store.getters.usersForCurrentCompany && this.$store.getters.usersForCurrentCompany.length > 0) {
+            if (this.$store.getters.usersForCurrentCompany?.length) {
                 this.users = this.$store.getters.usersForCurrentCompany;
                 this.filterSelectedUsers();
                 return;
@@ -120,7 +120,7 @@ export default {
             return user.permissions.some(permission => permission === 'categories_view_all' || permission.startsWith('categories_view_'));
         },
         filterSelectedUsers() {
-            if (!Array.isArray(this.users) || this.users.length === 0) {
+            if (!Array.isArray(this.users) || !this.users.length) {
                 return;
             }
             const availableIds = new Set(this.assignableUsers.map(user => user.id.toString()));
@@ -130,7 +130,7 @@ export default {
             }
         },
         async fetchAllCategories() {
-            if (this.$store.getters.categories && this.$store.getters.categories.length > 0) {
+            if (this.$store.getters.categories?.length) {
                 this.allCategories = this.$store.getters.categories;
                 return;
             }

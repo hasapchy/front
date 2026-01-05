@@ -195,6 +195,7 @@ import debounce from "lodash.debounce";
 import companyChangeMixin from "@/mixins/companyChangeMixin";
 import searchMixin from "@/mixins/searchMixin";
 import filtersMixin from "@/mixins/filtersMixin";
+import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import { formatCurrency } from "@/utils/numberUtils";
 import { highlightMatches } from "@/utils/searchUtils";
 import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
@@ -210,7 +211,7 @@ const TimelinePanel = defineAsyncComponent(() =>
 );
 
 export default {
-    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin, printInvoiceMixin],
+    mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin, printInvoiceMixin, storeDataLoaderMixin],
     components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, draggable: VueDraggableNext },
     data() {
         return {
@@ -473,9 +474,13 @@ export default {
 
 
         async fetchStatuses() {
-            await this.$store.dispatch('loadOrderStatuses');
-            // Фильтруем только активные статусы (isActive !== false, чтобы включить undefined как активный)
-            this.statuses = this.$store.getters.orderStatuses.filter(status => status.isActive !== false);
+            await this.loadStoreData({
+                getterName: 'orderStatuses',
+                dispatchName: 'loadOrderStatuses',
+                localProperty: 'statuses',
+                transform: (statuses) => statuses.filter(status => status.isActive !== false),
+                defaultValue: []
+            });
         },
 
         async handleChangeStatus(ids, statusId) {
@@ -549,28 +554,26 @@ export default {
             this.timelineCollapsed = true;
         },
         resetFilters() {
-            this.dateFilter = 'all_time';
-            this.startDate = null;
-            this.endDate = null;
-            this.statusFilter = '';
-            this.projectFilter = '';
-            this.clientFilter = '';
-            this.paidOrdersFilter = false;
-            if (this.viewMode === 'kanban') {
-                this.resetKanbanPagination();
-            }
-            this.fetchItems();
+            this.resetFiltersFromConfig({
+                dateFilter: 'all_time',
+                startDate: null,
+                endDate: null,
+                statusFilter: '',
+                projectFilter: '',
+                clientFilter: '',
+                paidOrdersFilter: false
+            });
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.dateFilter !== 'all_time') count++;
-            if (this.statusFilter !== '') count++;
-            if (this.projectFilter !== '') count++;
-            if (this.clientFilter !== '') count++;
-            if (this.paidOrdersFilter !== false) count++;
-            if (this.startDate) count++;
-            if (this.endDate) count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.dateFilter, defaultValue: 'all_time' },
+                { value: this.statusFilter, defaultValue: '' },
+                { value: this.projectFilter, defaultValue: '' },
+                { value: this.clientFilter, defaultValue: '' },
+                { value: this.paidOrdersFilter, defaultValue: false },
+                { value: this.startDate, defaultValue: null },
+                { value: this.endDate, defaultValue: null }
+            ]);
         },
         handlePaidOrdersFilterChange(isActive) {
             this.paidOrdersFilter = isActive;
@@ -581,7 +584,7 @@ export default {
         },
 
         createInvoiceFromOrders() {
-            if (this.selectedIds.length === 0) {
+            if (!this.selectedIds?.length) {
                 this.showNotification(this.$t('error'), this.$t('selectOrdersFirst'), true);
                 return;
             }
@@ -590,7 +593,7 @@ export default {
         },
 
         showPrintInvoiceDialog() {
-            if (this.selectedIds.length === 0) {
+            if (!this.selectedIds?.length) {
                 this.showNotification(this.$t('error'), this.$t('selectOrdersFirst'), true);
                 return;
             }
@@ -812,7 +815,7 @@ export default {
 
         handleBatchStatusChange(statusId = null) {
             const targetStatusId = statusId || this.batchStatusId;
-            if (!targetStatusId || this.selectedIds.length === 0) return;
+            if (!targetStatusId || !this.selectedIds?.length) return;
 
             this.handleChangeStatus(this.selectedIds, targetStatusId);
             this.batchStatusId = '';

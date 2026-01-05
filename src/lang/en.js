@@ -128,6 +128,7 @@ export default {
   type: 'Type',
   category: 'Category',
   selectedCategories: 'Selected Categories',
+  selectCategories: 'Select categories',
   selectMainCategory: 'Select main category',
   selectSubCategory: 'Select subcategory',
   selectSubCategories: 'Select subcategories',
@@ -145,6 +146,7 @@ export default {
   errorSavingOrder: 'Error saving order',
   orderDeleted: 'Order deleted',
   errorDeletingOrder: 'Error deleting order',
+  errorGettingOrder: 'Error getting order',
   errorGettingOrderList: 'Error getting order list',
   saveOrderFirst: 'Save order first',
   toPay: 'To Pay',
@@ -480,6 +482,8 @@ export default {
     editProjectStatus: 'Edit Project Status',
     deleteProjectStatus: 'Delete Project Status',
     statusColor: 'Status Color',
+    showInProjectSelect: 'Show in project select list',
+    showInProjectSelectDescription: 'If this setting is not enabled, projects with this status will not be available for selection in the field',
     projectStatusSuccessfullyAdded: 'Project status successfully added',
     projectStatusSuccessfullyDeleted: 'Project status successfully deleted',
     errorSavingProjectStatus: 'Error saving project status',
@@ -618,6 +622,7 @@ export default {
     'unit.ROLL': 'Roll',
     
     // Task Statuses
+    'taskStatus.NEW': 'New',
     'taskStatus.PENDING': 'Pending',
     'taskStatus.IN_PROGRESS': 'In Progress',
     'taskStatus.COMPLETED': 'Completed',

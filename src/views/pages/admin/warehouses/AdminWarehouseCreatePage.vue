@@ -17,7 +17,7 @@
             :is-loading="deleteLoading" icon="fas fa-trash"
             :disabled="!$store.getters.hasPermission('warehouses_delete')">
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!selectedUsers || selectedUsers.length === 0 || (editingItem != null && !$store.getters.hasPermission('warehouses_update')) ||
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!selectedUsers?.length || (editingItem != null && !$store.getters.hasPermission('warehouses_update')) ||
             (editingItem == null && !$store.getters.hasPermission('warehouses_create'))">
         </PrimaryButton>
     </div>
@@ -87,7 +87,7 @@ export default {
             };
         },
         async fetchUsers() {
-            if (this.$store.getters.usersForCurrentCompany && this.$store.getters.usersForCurrentCompany.length > 0) {
+            if (this.$store.getters.usersForCurrentCompany?.length) {
                 this.users = this.$store.getters.usersForCurrentCompany;
                 this.filterSelectedUsers();
                 return;
@@ -103,7 +103,7 @@ export default {
             return user.permissions.some(permission => permission === 'warehouses_view' || permission === 'warehouses_view_all' || permission.startsWith('warehouses_view_'));
         },
         filterSelectedUsers() {
-            if (!Array.isArray(this.users) || this.users.length === 0) {
+            if (!Array.isArray(this.users) || !this.users.length) {
                 return;
             }
             const availableIds = new Set(this.assignableUsers.map(user => user.id.toString()));

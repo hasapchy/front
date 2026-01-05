@@ -31,8 +31,8 @@
         <div>
             <label>{{ $t('date') }}</label>
             <input type="datetime-local" v-model="date"
-                :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
+                :disabled="editingItemId && !canEditDate()"
+                        :min="this.getMinDate()" />
         </div>
         <div class="mt-2">
             <label>{{ $t('note') }}</label>
@@ -51,10 +51,10 @@
             (editingItemId == null && !$store.getters.hasPermission('warehouse_movements_create'))">
         </PrimaryButton>
     </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
+    <AlertDialog :dialog="deleteDialog" :onConfirm="deleteItem" :onLeave="closeDeleteDialog"
                   :descr="$t('confirmCancelMovement')"
                   :confirm-text="$t('deleteMovement')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+    <AlertDialog :dialog="closeConfirmDialog" :onConfirm="confirmClose" :onLeave="cancelClose"
         :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
@@ -69,18 +69,19 @@ import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
+import dateFormMixin from "@/mixins/dateFormMixin";
 
 
 export default {
     emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin, dateFormMixin],
     components: { PrimaryButton, AlertDialog, ProductSearch },
     props: {
         editingItem: { type: WarehouseMovementDto, required: false, default: null }
     },
     data() {
         return {
-            date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
+            date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
             note: this.editingItem ? this.editingItem.note : '',
             warehouseFromId: this.editingItem ? this.editingItem.warehouseFromId || '' : '',
             warehouseToId: this.editingItem ? this.editingItem.warehouseToId || '' : '',
@@ -93,7 +94,7 @@ export default {
             await this.fetchAllWarehouses();
             
             if (!this.editingItem) {
-                if (this.allWarehouses.length > 0) {
+                if (this.allWarehouses?.length) {
                     if (!this.fromWarehouseId) {
                         this.fromWarehouseId = this.allWarehouses[0].id;
                     }
@@ -106,18 +107,36 @@ export default {
             this.saveInitialState();
         });
     },
+    computed: {
+        fromWarehouseId: {
+            get() {
+                return this.warehouseFromId;
+            },
+            set(value) {
+                this.warehouseFromId = value;
+            }
+        },
+        toWarehouseId: {
+            get() {
+                return this.warehouseToId;
+            },
+            set(value) {
+                this.warehouseToId = value;
+            }
+        }
+    },
     methods: {
         getFormState() {
             return {
-                fromWarehouseId: this.fromWarehouseId,
-                toWarehouseId: this.toWarehouseId,
+                fromWarehouseId: this.warehouseFromId,
+                toWarehouseId: this.warehouseToId,
                 date: this.date,
                 note: this.note,
                 products: [...this.products]
             };
         },
         async fetchAllWarehouses() {
-            if (this.$store.getters.warehouses && this.$store.getters.warehouses.length > 0) {
+            if (this.$store.getters.warehouses?.length) {
                 this.allWarehouses = this.$store.getters.warehouses;
                 return;
             }
@@ -151,7 +170,7 @@ export default {
             return resp;
         },
         clearForm() {
-            this.date = new Date().toISOString().substring(0, 16);
+            this.date = this.getCurrentLocalDateTime();
             this.note = '';
             this.warehouseFromId = '';
             this.warehouseToId = '';

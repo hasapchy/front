@@ -137,7 +137,7 @@ export default {
 
     watch: {
         searchQuery() {
-            if (this.allClientsRaw && this.allClientsRaw.length > 0) {
+            if (this.allClientsRaw?.length) {
                 this.applyFilters();
             }
         }
@@ -177,7 +177,7 @@ export default {
         },
 
         applyLocalFilters() {
-            if (!this.allClientsRaw || this.allClientsRaw.length === 0) {
+            if (!this.allClientsRaw?.length) {
                 this.clientBalances = [];
                 return;
             }
@@ -300,11 +300,11 @@ export default {
             this.loadClientBalances();
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.clientTypeFilter.length) count++;
-            if (this.cashRegisterFilter) count++;
-            if (this.searchQuery.trim()) count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.clientTypeFilter, defaultValue: [], isArray: true },
+                { value: this.cashRegisterFilter, defaultValue: null },
+                { value: this.searchQuery?.trim(), defaultValue: '' }
+            ]);
         },
         handleClientTypeChange(value) {
             const selected = Array.isArray(value) ? value : [];

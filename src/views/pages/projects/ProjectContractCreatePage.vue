@@ -74,10 +74,12 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
+import dateFormMixin from "@/mixins/dateFormMixin";
+import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import { translateCurrency } from '@/utils/translationUtils';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, notificationMixin, crudFormMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, notificationMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
     components: { /* FileUploader, */ PrimaryButton, AlertDialog },
     emits: ['saved', 'saved-error', 'close-request'],
     props: {
@@ -96,9 +98,7 @@ export default {
             number: this.editingItem ? this.editingItem.number : '',
             amount: this.editingItem ? this.editingItem.amount : '',
             currencyId: this.editingItem ? this.editingItem.currencyId : '',
-            date: this.editingItem && this.editingItem.date
-                ? new Date(this.editingItem.date).toISOString().substring(0, 16)
-                : new Date().toISOString().substring(0, 16),
+            date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
             returned: this.editingItem ? this.editingItem.returned : false,
             isPaid: this.editingItem ? this.editingItem.isPaid : false,
             note: this.editingItem ? this.editingItem.note : '',
@@ -132,12 +132,9 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
-                let formattedDate = new Date().toISOString().substring(0, 16);
+                let formattedDate = this.getCurrentLocalDateTime();
                 if (newEditingItem.date) {
-                    const date = new Date(newEditingItem.date);
-                    if (!isNaN(date.getTime())) {
-                        formattedDate = date.toISOString().substring(0, 16);
-                    }
+                    formattedDate = this.getFormattedDate(newEditingItem.date);
                 }
                 this.number = newEditingItem.number || '';
                 this.amount = newEditingItem.amount || '';
@@ -161,23 +158,20 @@ export default {
             };
         },
         async fetchCurrencies() {
-            try {
-                await this.$store.dispatch('loadCurrencies');
-                this.currencies = this.$store.getters.currencies || [];
-            } catch (error) {
-                console.error('Error fetching currencies:', error);
-                this.currencies = [];
-            }
+            await this.loadStoreData({
+                getterName: 'currencies',
+                dispatchName: 'loadCurrencies',
+                localProperty: 'currencies',
+                defaultValue: []
+            });
         },
         async fetchProjects() {
-            try {
-                await this.$store.dispatch('loadActiveProjects');
-                const activeProjects = this.$store.getters.activeProjects || [];
-                this.projects = activeProjects;
-            } catch (error) {
-                console.error('Error fetching projects:', error);
-                this.projects = [];
-            }
+            await this.loadStoreData({
+                getterName: 'activeProjects',
+                dispatchName: 'loadActiveProjects',
+                localProperty: 'projects',
+                defaultValue: []
+            });
         },
         prepareSave() {
             const formData = {

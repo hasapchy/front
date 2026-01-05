@@ -406,16 +406,17 @@ export default {
             this.fetchItems(1);
         },
         resetFilters() {
-            this.cashRegisterId = '';
-            this.transactionTypeFilter = '';
-            this.sourceFilter = '';
-            this.projectId = '';
-            this.debtFilter = 'all';
-            this.categoryFilter = [];
-            this.dateFilter = 'this_month';
-            this.startDate = null;
-            this.endDate = null;
-            this.fetchItems();
+            this.resetFiltersFromConfig({
+                cashRegisterId: '',
+                transactionTypeFilter: '',
+                sourceFilter: '',
+                projectId: '',
+                debtFilter: 'all',
+                categoryFilter: [],
+                dateFilter: 'this_month',
+                startDate: null,
+                endDate: null
+            });
         },
         async handleCompanyChanged(companyId) {
             this.cashRegisterId = '';
@@ -530,16 +531,20 @@ export default {
             ];
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.cashRegisterId !== '') count++;
-            if (this.transactionTypeFilter !== '') count++;
-            if (this.sourceFilter !== '') count++;
-            if (this.projectId !== '') count++;
-            if (this.debtFilter !== 'all') count++;
-            if (this.categoryFilter.length > 0) count++;
-            if (this.dateFilter !== 'this_month' && this.dateFilter !== 'all_time') count++;
-            if (this.startDate !== null) count++;
-            if (this.endDate !== null) count++;
+            const filters = [
+                { value: this.cashRegisterId, defaultValue: '' },
+                { value: this.transactionTypeFilter, defaultValue: '' },
+                { value: this.sourceFilter, defaultValue: '' },
+                { value: this.projectId, defaultValue: '' },
+                { value: this.debtFilter, defaultValue: 'all' },
+                { value: this.categoryFilter, defaultValue: [], isArray: true },
+                { value: this.startDate, defaultValue: null },
+                { value: this.endDate, defaultValue: null }
+            ];
+            let count = this.getActiveFiltersCountFromConfig(filters);
+            if (this.dateFilter !== 'this_month' && this.dateFilter !== 'all_time') {
+                count++;
+            }
             return count;
         },
         async loadTransactionCategories() {
@@ -573,15 +578,7 @@ export default {
             }));
         },
         hasActiveFilters() {
-            return this.cashRegisterId !== '' ||
-                this.transactionTypeFilter !== '' ||
-                this.sourceFilter !== '' ||
-                this.projectId !== '' ||
-                this.debtFilter !== 'all' ||
-                this.categoryFilter.length > 0 ||
-                (this.dateFilter !== 'this_month' && this.dateFilter !== 'all_time') ||
-                this.startDate !== null ||
-                this.endDate !== null;
+            return this.getActiveFiltersCount() > 0;
         }
     },
     watch: {
