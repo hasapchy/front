@@ -177,7 +177,7 @@
             <div v-show="currentTab === 'salaries' && editingItem && canViewSalariesTab" class="mt-4">
                 <UserSalaryTab :editing-item="editingItem" />
             </div>
-            <div v-show="currentTab === 'balance' && editingItem && $store.getters.hasPermission('settings_client_balance_view')" class="mt-4">
+            <div v-show="currentTab === 'balance' && editingItem && canViewBalanceTab" class="mt-4">
                 <UserBalanceTab :editing-item="editingItem" />
             </div>
         </div>
@@ -277,10 +277,16 @@ export default {
             if (!this.canViewRolesTab) {
                 visibleTabs = visibleTabs.filter(tab => tab.name !== 'roles');
             }
+            if (!this.canViewBalanceTab) {
+                visibleTabs = visibleTabs.filter(tab => tab.name !== 'balance');
+            }
             return visibleTabs.map(tab => ({
                 ...tab,
                 label: this.$t(tab.label)
             }));
+        },
+        canViewBalanceTab() {
+            return this.$store.getters.hasPermission('users_view');
         },
         canViewSalariesTab() {
             if (!this.$store.getters.hasPermission('employee_salaries_view')) {
