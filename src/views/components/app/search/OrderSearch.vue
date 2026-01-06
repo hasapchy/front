@@ -349,6 +349,47 @@ export default {
         getUnitShortName(unitId) {
             if (!unitId) return '';
             return this.$store.getters.getUnitShortName(unitId);
+        },
+
+        setProductsFromInvoice(products) {
+            if (!products || !Array.isArray(products)) {
+                return;
+            }
+
+            const formattedProducts = products.map(product => {
+                const quantity = parseFloat(product.quantity || 0);
+                const price = parseFloat(product.price || 0);
+                const totalPrice = product.totalPrice || product.total_price || (quantity * price);
+
+                return {
+                    id: product.id,
+                    productId: product.productId,
+                    productName: product.productName || product.name,
+                    name: product.productName || product.name,
+                    productDescription: product.productDescription || '',
+                    quantity: quantity,
+                    price: price,
+                    totalPrice: totalPrice,
+                    total_price: totalPrice,
+                    unitId: product.unitId,
+                    unitName: product.unitName || '',
+                    unitShortName: product.unitShortName || '',
+                    orderId: product.orderId,
+                    type: product.type || 1,
+                    productImage: product.productImage,
+                    imgUrl() {
+                        return this.productImage?.length
+                            ? `${import.meta.env.VITE_APP_BASE_URL}/storage/${this.productImage}`
+                            : null;
+                    },
+                    icons() {
+                        return '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>';
+                    }
+                };
+            });
+
+            this.allProductsFromOrders = formattedProducts;
+            this.updateTotals();
         }
     }
 };
