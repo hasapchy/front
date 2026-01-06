@@ -25,6 +25,14 @@
                 </select>
             </div>
 
+            <div v-if="operationType === 'salaryAccrual' || operationType === 'salaryPayment'">
+                <label class="required">{{ $t('salaryPaymentType') || 'Тип оплаты' }}</label>
+                <select v-model.number="form.payment_type" required>
+                    <option :value="0">{{ $t('salaryPaymentTypeNonCash') || 'Безналичный' }}</option>
+                    <option :value="1">{{ $t('salaryPaymentTypeCash') || 'Наличный' }}</option>
+                </select>
+            </div>
+
             <div v-if="operationType && operationType !== 'salaryAccrual' && operationType !== 'salaryPayment'">
                 <label class="required">{{ $t('amount') || 'Сумма' }}</label>
                 <input 
@@ -79,6 +87,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import CompaniesController from '@/api/CompaniesController';
 import TransactionController from '@/api/TransactionController';
+import UsersController from '@/api/UsersController';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 
@@ -119,7 +128,8 @@ export default {
                 date: today.toISOString().substring(0, 16),
                 cash_id: null,
                 note: null,
-                amount: null
+                amount: null,
+                payment_type: 0
             },
             loading: false,
             checking: false,
@@ -138,11 +148,14 @@ export default {
             if (!this.form.date || !this.form.cash_id || !this.form.company_id) {
                 return false;
             }
+            if ((this.operationType === 'salaryAccrual' || this.operationType === 'salaryPayment') && (this.form.payment_type !== 0 && this.form.payment_type !== 1)) {
+                return false;
+            }
             if (this.operationType !== 'salaryAccrual' && this.operationType !== 'salaryPayment') {
                 return this.form.amount && parseFloat(this.form.amount) > 0;
             }
             if (this.operationType === 'salaryPayment') {
-                return this.users.every(user => user.lastSalary?.amount && parseFloat(user.lastSalary.amount) > 0);
+                return true;
             }
             return true;
         }
@@ -172,6 +185,10 @@ export default {
         this.form.company_id = companyId;
         await this.loadCashRegisters();
         
+        if (this.operationType === 'salaryPayment') {
+            await this.loadUserSalaries();
+        }
+        
         if (this.operationType === 'salaryAccrual') {
             const month = new Date().toLocaleString('ru-RU', { month: 'long' });
             const year = new Date().getFullYear();
@@ -192,6 +209,12 @@ export default {
                     'Не удалось загрузить список касс',
                     true
                 );
+            }
+        },
+        async loadUserSalaries() {
+            for (const user of this.users) {
+                const data = await UsersController.getSalaries(user.id);
+                this.$set(user, 'salaries', data.salaries || []);
             }
         },
         async handleAccrue() {
@@ -216,7 +239,8 @@ export default {
                         date: this.form.date,
                         cash_id: this.form.cash_id,
                         note: this.form.note || null,
-                        user_ids: this.userIds
+                        user_ids: this.userIds,
+                        payment_type: this.form.payment_type
                     };
                     this.confirmDialog = true;
                     this.checking = false;
@@ -228,7 +252,8 @@ export default {
                     date: this.form.date,
                     cash_id: this.form.cash_id,
                     note: this.form.note || null,
-                    user_ids: this.userIds
+                    user_ids: this.userIds,
+                    payment_type: this.form.payment_type
                 });
             } catch (error) {
                 console.error('Error checking existing accruals:', error);
@@ -425,8 +450,9 @@ export default {
             
             if (this.operationType === 'salaryPayment' && userId) {
                 const user = this.users.find(u => u.id === userId);
-                if (user?.lastSalary?.amount) {
-                    amount = parseFloat(user.lastSalary.amount);
+                const salary = user?.salaries?.find(s => Number(s.payment_type) === Number(this.form.payment_type) && !s.end_date);
+                if (salary?.amount) {
+                    amount = parseFloat(salary.amount);
                 }
             }
 

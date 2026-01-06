@@ -46,6 +46,16 @@
             </div>
 
             <div>
+                <label class="required">{{ $t('salaryPaymentType') || 'Тип оплаты' }}</label>
+                <select 
+                    v-model="form.payment_type"
+                    required>
+                    <option :value="false">{{ $t('salaryPaymentTypeNonCash') || 'Безналичный' }}</option>
+                    <option :value="true">{{ $t('salaryPaymentTypeCash') || 'Наличный' }}</option>
+                </select>
+            </div>
+
+            <div>
                 <label>{{ $t('note') || 'Примечание' }}</label>
                 <textarea 
                     v-model="form.note"
@@ -117,6 +127,7 @@ export default {
                 end_date: '',
                 amount: 0,
                 currency_id: null,
+                payment_type: false,
                 note: '',
             },
             currencies: [],
@@ -127,7 +138,7 @@ export default {
             return this.usersController || UsersController;
         },
         canSave() {
-            const hasFormData = this.form.start_date && this.form.amount && this.form.currency_id;
+            const hasFormData = this.form.start_date && this.form.amount && this.form.currency_id && typeof this.form.payment_type === 'boolean';
             if (this.editingItemId) {
                 return hasFormData && (
                     this.$store.getters.hasPermission('employee_salaries_update_all') ||
@@ -180,6 +191,7 @@ export default {
                 end_date: '',
                 amount: 0,
                 currency_id: defaultCurrency ? defaultCurrency.id : null,
+                payment_type: false,
                 note: '',
             };
             if (this.resetFormChanges) {
@@ -232,6 +244,7 @@ export default {
                 this.form.end_date = newEditingItem.end_date ? new Date(newEditingItem.end_date).toISOString().split('T')[0] : '';
                 this.form.amount = newEditingItem.amount || 0;
                 this.form.currency_id = newEditingItem.currency_id || null;
+                this.form.payment_type = newEditingItem.payment_type !== undefined ? Boolean(newEditingItem.payment_type) : false;
                 this.form.note = newEditingItem.note || '';
             }
         },

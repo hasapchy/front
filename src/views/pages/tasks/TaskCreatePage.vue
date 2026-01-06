@@ -268,6 +268,8 @@ export default {
                 this.projectId = newEditingItem.project?.id || null;
                 this.selectedSupervisor = newEditingItem.supervisor?.id ? { id: newEditingItem.supervisor.id } : null;
                 this.selectedExecutor = newEditingItem.executor?.id ? { id: newEditingItem.executor.id } : null;
+                this.priority = newEditingItem.priority || 'low';
+                this.complexity = newEditingItem.complexity || 'normal';
                 this.currentTab = 'info';
             }
         },
@@ -606,6 +608,8 @@ export default {
                 project_id: this.projectId || null,
                 supervisor_id: this.supervisorId,
                 executor_id: this.executorId,
+                priority: this.priority || 'low',
+                complexity: this.complexity || 'normal',
             };
         },
         async performSave(data) {

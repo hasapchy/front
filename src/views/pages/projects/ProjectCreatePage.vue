@@ -460,6 +460,23 @@ export default {
                 this.closeDeleteFileDialog();
             }
         },
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                this.name = newEditingItem.name || '';
+                this.budget = newEditingItem.budget || 0;
+                this.currencyId = newEditingItem.currencyId || '';
+                this.date = newEditingItem.date
+                    ? this.getFormattedDate(newEditingItem.date)
+                    : this.getCurrentLocalDateTime();
+                this.description = newEditingItem.description || '';
+                this.selectedClient = newEditingItem.client || null;
+                this.selectedUserIds = newEditingItem.getUserIds?.() || (newEditingItem.users ? newEditingItem.users.map(u => u.id) : []);
+                this.selectedEmployeeForAdvance = null;
+                this.currentTab = 'info';
+            } else {
+                this.currentTab = 'info';
+            }
+        }
     },
 
     beforeUnmount() {
@@ -481,28 +498,6 @@ export default {
             },
             immediate: true,
             deep: true,
-        },
-        // Метод для crudFormMixin - обработка изменения editingItem
-        onEditingItemChanged(newEditingItem) {
-            if (newEditingItem) {
-                // Заполняем форму данными проекта
-                this.name = newEditingItem.name || '';
-                this.budget = newEditingItem.budget || 0;
-                this.currencyId = newEditingItem.currencyId || '';
-                this.date = newEditingItem.date
-                    ? this.getFormattedDate(newEditingItem.date)
-                    : this.getCurrentLocalDateTime();
-                this.description = newEditingItem.description || '';
-                this.selectedClient = newEditingItem.client || null;
-                this.selectedUserIds = newEditingItem.getUserIds?.() || (newEditingItem.users ? newEditingItem.users.map(u => u.id) : []);
-                this.selectedEmployeeForAdvance = null;
-                
-                // Всегда открываем вкладку "info" при открытии проекта
-                this.currentTab = 'info';
-            } else {
-                // Сбрасываем вкладку и при закрытии
-                this.currentTab = 'info';
-            }
         }
     }
 

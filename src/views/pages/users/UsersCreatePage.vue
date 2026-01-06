@@ -574,9 +574,6 @@ export default {
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
-    },
-    watch: {
-        // Метод для crudFormMixin - обработка изменения editingItem
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
                 this.form.name = newEditingItem.name || '';
@@ -603,7 +600,7 @@ export default {
                     this.form.company_roles = [];
                 }
                 
-                this.currentTab = 'info'; // Всегда открываем первую вкладку
+                this.currentTab = 'info';
 
                 if (newEditingItem.photo) {
                     this.selected_image = this.getUserPhotoSrc(newEditingItem);
