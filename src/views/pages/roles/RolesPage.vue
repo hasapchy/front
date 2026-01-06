@@ -144,13 +144,14 @@ export default {
         },
         async handleCompanyChanged(companyId) {
             this.selectedIds = [];
-            
+            if (this.modalDialog) {
+                this.closeModal(true);
+            }
+            this.editingItem = null;
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'roles' });
+            }
             await this.fetchItems(1, false);
-            
-            this.$store.dispatch('showNotification', {
-                title: 'Компания изменена',
-                isDanger: false
-            });
         },
         itemMapper(item, column) {
             switch (column) {
