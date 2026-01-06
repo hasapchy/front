@@ -274,6 +274,9 @@ export default {
             if (!this.canViewSalariesTab) {
                 visibleTabs = visibleTabs.filter(tab => tab.name !== 'salaries');
             }
+            if (!this.canViewRolesTab) {
+                visibleTabs = visibleTabs.filter(tab => tab.name !== 'roles');
+            }
             return visibleTabs.map(tab => ({
                 ...tab,
                 label: this.$t(tab.label)
@@ -295,6 +298,9 @@ export default {
             
             return false;
         },
+        canViewRolesTab() {
+            return this.$store.getters.hasPermission('roles_view');
+        },
         selectedCompanies() {
             if (this.form.companies && this.form.companies.length > 0) {
                 return this.companies.filter(c => this.form.companies.includes(c.id));
@@ -308,10 +314,11 @@ export default {
         }
 
         this.$nextTick(async () => {
-            await Promise.all([
-                this.fetchCompanies(),
-                this.fetchRoles()
-            ]);
+            const promises = [this.fetchCompanies()];
+            if (this.canViewRolesTab) {
+                promises.push(this.fetchRoles());
+            }
+            await Promise.all(promises);
 
             if (!this.editingItem) {
                 this.clearForm();
