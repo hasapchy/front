@@ -286,7 +286,7 @@ export default {
             }));
         },
         canViewBalanceTab() {
-            return this.$store.getters.hasPermission('users_view');
+            return this.$store.getters.hasPermission('settings_client_balance_view');
         },
         canViewSalariesTab() {
             if (!this.$store.getters.hasPermission('employee_salaries_view')) {
