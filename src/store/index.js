@@ -1227,7 +1227,7 @@ const store = createStore({
 
           try {
             await dispatch("loadUserCompanies");
-            await dispatch("loadCurrentCompany", { skipPermissionRefresh: true });
+            await dispatch("loadCurrentCompany", { skipPermissionRefresh: false });
           } catch (error) {
             console.error("Ошибка загрузки компаний:", error);
           }
