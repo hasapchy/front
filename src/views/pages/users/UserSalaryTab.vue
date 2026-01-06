@@ -84,6 +84,7 @@ export default {
             columnsConfig: [
                 { name: 'id', label: '№', size: 60 },
                 { name: 'amount', label: 'amount', size: 150, html: true },
+                { name: 'paymentType', label: 'salaryPaymentType', size: 120, html: true },
                 { name: 'startDate', label: 'startDate', size: 120 },
                 { name: 'endDate', label: 'endDate', size: 120, html: true },
                 { name: 'note', label: 'note', size: 200 },
@@ -176,6 +177,12 @@ export default {
                     const amount = parseFloat(item.amount || 0);
                     const symbol = item.currency?.symbol || '';
                     return `<span class="font-semibold">${this.$formatNumber(amount, null, true)} ${symbol}</span>`;
+                case 'paymentType':
+                    const paymentType = item.payment_type !== undefined ? Boolean(item.payment_type) : false;
+                    const paymentTypeLabel = paymentType 
+                        ? (this.$t('salaryPaymentTypeCash') || 'Наличный')
+                        : (this.$t('salaryPaymentTypeNonCash') || 'Безналичный');
+                    return `<span>${paymentTypeLabel}</span>`;
                 case 'startDate':
                     return item.start_date ? this.formatDatabaseDate(item.start_date) : '-';
                 case 'endDate':

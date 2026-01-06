@@ -416,22 +416,6 @@ export default {
                 return import.meta.env.VITE_APP_BASE_URL + '/storage/' + item.productImage;
             return '';
         },
-    },
-    watch: {
-        defaultName(newVal) {
-            if (!this.editingItem && !this.editingItemId) {
-                this.name = newVal || '';
-            }
-        },
-        barcode(newVal) {
-            if (newVal) {
-                this.$nextTick(() => {
-                    JsBarcode("#barcode-svg", newVal, { format: "ean13", displayValue: true });
-                    this.renderBarcodeToCanvas(newVal);
-                });
-            }
-        },
-        // Метод для crudFormMixin - обработка изменения editingItem
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
                 if (this.defaultType) {
@@ -473,6 +457,21 @@ export default {
                 this.purchase_price = purchasePriceValue ?? 0;
             } else {
                 this.selected_image = null;
+            }
+        }
+    },
+    watch: {
+        defaultName(newVal) {
+            if (!this.editingItem && !this.editingItemId) {
+                this.name = newVal || '';
+            }
+        },
+        barcode(newVal) {
+            if (newVal) {
+                this.$nextTick(() => {
+                    JsBarcode("#barcode-svg", newVal, { format: "ean13", displayValue: true });
+                    this.renderBarcodeToCanvas(newVal);
+                });
             }
         },
         defaultType(newVal) {
