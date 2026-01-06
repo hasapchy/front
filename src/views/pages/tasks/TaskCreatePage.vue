@@ -109,24 +109,24 @@
 
     <AlertDialog 
         :dialog="deleteDialog" 
-        @confirm="deleteItem" 
-        @leave="closeDeleteDialog" 
+        :onConfirm="deleteItem" 
+        :onLeave="closeDeleteDialog" 
         :descr="$t('confirmDelete')"
         :confirm-text="$t('delete')" 
         :leave-text="$t('cancel')" />
     
     <AlertDialog 
         :dialog="closeConfirmDialog" 
-        @confirm="confirmClose" 
-        @leave="cancelClose" 
+        :onConfirm="confirmClose" 
+        :onLeave="cancelClose" 
         :descr="$t('unsavedChanges')"
         :confirm-text="$t('closeWithoutSaving')" 
         :leave-text="$t('stay')" />
     
     <AlertDialog 
         :dialog="deleteFileDialog" 
-        @confirm="confirmDeleteFile" 
-        @leave="closeDeleteFileDialog"
+        :onConfirm="confirmDeleteFile" 
+        :onLeave="closeDeleteFileDialog"
         :descr="deleteFileIndex === 'multiple' ?
             `${$t('confirmDeleteSelected')} (${selectedFileIds.length})?` :
             `${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`" 
@@ -157,12 +157,13 @@ import TaskDto from '@/dto/task/TaskDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
+import crudFormMixin from '@/mixins/crudFormMixin';
 import dayjs from 'dayjs';
-import { formatDatabaseDateTimeForInput, getCurrentLocalDateTime } from '@/utils/dateUtils';
+import dateFormMixin from '@/mixins/dateFormMixin';
 import { translateTaskStatus } from '@/utils/translationUtils';
 
 export default {
-    mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
+    mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, dateFormMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request','update:editingItem'],
     components: { 
         PrimaryButton, 
@@ -181,9 +182,7 @@ export default {
             title: this.editingItem ? this.editingItem.title : '',
             description: this.editingItem ? this.editingItem.description : '',
             statusId: this.editingItem ? (this.editingItem.statusId || this.editingItem.status?.id) : null,
-            deadline: this.editingItem && this.editingItem.deadline
-                ? formatDatabaseDateTimeForInput(this.editingItem.deadline)
-                : getCurrentLocalDateTime(),
+            deadline: this.editingItem?.deadline ? this.getFormattedDate(this.editingItem.deadline) : this.getCurrentLocalDateTime(),
             minDeadline: dayjs().format('YYYY-MM-DDTHH:mm'),
             projectId: this.editingItem && this.editingItem.project 
                 ? this.editingItem.project.id 
@@ -235,38 +234,9 @@ export default {
             return this.selectedExecutor?.id || null;
         },
     },
-    watch: {
-        editingItem: {
-            handler(newEditingItem) {
-                
-                if (newEditingItem) {
-                    this.title = newEditingItem.title || '';
-                    this.description = newEditingItem.description || '';
-                    this.statusId = newEditingItem.statusId || newEditingItem.status?.id || null;
-                    this.deadline = newEditingItem.deadline
-                        ? formatDatabaseDateTimeForInput(newEditingItem.deadline)
-                        : getCurrentLocalDateTime();
-                    this.projectId = newEditingItem.project?.id || null;
-                    this.selectedSupervisor = newEditingItem.supervisor?.id ? { id: newEditingItem.supervisor.id } : null;
-                    this.selectedExecutor = newEditingItem.executor?.id ? { id: newEditingItem.executor.id } : null;
-                    this.priority = newEditingItem.priority || 'low';        
-                    this.complexity = newEditingItem.complexity || 'normal';
-                    this.editingItemId = newEditingItem.id || null;
-                    this.currentTab = 'info';
-                } else {
-                    this.clearForm();
-                }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
-            },
-            deep: true,
-            immediate: true
-        }
-    },
     mounted() {
         this.$nextTick(async () => {
-            if (!this.$store.getters.taskStatuses || this.$store.getters.taskStatuses.length === 0) {
+            if (!this.$store.getters.taskStatuses?.length) {
                 await this.$store.dispatch('loadTaskStatuses');
             }
             await this.fetchProjects();
@@ -279,16 +249,27 @@ export default {
             this.title = '';
             this.description = '';
             this.statusId = 1;
-            this.deadline = getCurrentLocalDateTime();
+            this.deadline = this.getCurrentLocalDateTime();
             this.projectId = null;
             this.priority = 'low';
             this.complexity = 'normal';
             this.selectedSupervisor = null;
             this.selectedExecutor = null;
-            this.editingItemId = null;
             this.currentTab = 'info';
-            this.pendingFiles = []; // Очищаем pending файлы
+            this.pendingFiles = [];
             this.resetFormChanges();
+        },
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                this.title = newEditingItem.title || '';
+                this.description = newEditingItem.description || '';
+                this.statusId = newEditingItem.statusId || newEditingItem.status?.id || null;
+                this.deadline = newEditingItem.deadline ? this.getFormattedDate(newEditingItem.deadline) : this.getCurrentLocalDateTime();
+                this.projectId = newEditingItem.project?.id || null;
+                this.selectedSupervisor = newEditingItem.supervisor?.id ? { id: newEditingItem.supervisor.id } : null;
+                this.selectedExecutor = newEditingItem.executor?.id ? { id: newEditingItem.executor.id } : null;
+                this.currentTab = 'info';
+            }
         },
         changeTab(tabName) {
             if (!this.visibleTabs.find(tab => tab.name === tabName)) {
@@ -332,8 +313,7 @@ export default {
                 return taskDto.getFormattedFiles();
             }
             
-            // Если задача еще не создана, форматируем pendingFiles
-            if (this.pendingFiles.length > 0) {
+            if (this.pendingFiles?.length) {
                 return this.pendingFiles.map((file, index) => ({
                     name: file.name,
                     url: URL.createObjectURL(file),
@@ -369,7 +349,7 @@ export default {
         },
 
         async handleFileChange(files) {
-            if (!files || !files.length) return;
+            if (!files?.length) return;
 
             const fileArray = Array.from(files);
 
@@ -433,37 +413,27 @@ export default {
                 }, 3000);
             }
         },
-        async deleteItem() {
-            this.deleteLoading = true;
-            try {
-                await TaskController.deleteItem(this.editingItemId);
-                this.showNotification(
-                    this.$t('success'), 
-                    this.$t('taskSuccessfullyDeleted'), 
-                    false
-                );
-                this.$emit('deleted', this.editingItemId);
-            } catch (error) {
-                const errorMessage = this.getApiErrorMessage(error);
-                this.showNotification(
-                    this.$t('error'), 
-                    errorMessage, 
-                    true
-                );
-                this.$emit('deleted-error', error);
-            } finally {
-                this.deleteLoading = false;
-                this.deleteDialog = false;
-            }
+        async performDelete() {
+            return await TaskController.deleteItem(this.editingItemId);
         },
-        showDeleteDialog() {
-            this.deleteDialog = true;
+        onDeleteSuccess() {
+            this.showNotification(
+                this.$t('success'), 
+                this.$t('taskSuccessfullyDeleted'), 
+                false
+            );
+            this.$emit('deleted', this.editingItemId);
         },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
+        onDeleteError(error) {
+            const errorMessage = this.getApiErrorMessage(error);
+            this.showNotification(
+                this.$t('error'), 
+                errorMessage, 
+                true
+            );
         },
         async handleFileChange(files) {
-            if (!files || !files.length) return;
+            if (!files?.length) return;
 
             const fileArray = Array.from(files);
 
@@ -560,7 +530,7 @@ export default {
             this.deleteFileDialog = true;
         },
         showDeleteMultipleFilesDialog(selectedFileIds) {
-            if (!selectedFileIds || selectedFileIds.length === 0) return;
+            if (!selectedFileIds?.length) return;
             
             // Фильтруем pending файлы
             const pendingIndices = selectedFileIds
@@ -573,9 +543,8 @@ export default {
                 this.pendingFiles.splice(index, 1);
             });
             
-            // Остальные файлы удаляем через диалог (если задача создана)
             const remainingIds = selectedFileIds.filter(id => !id.startsWith('pending_'));
-            if (remainingIds.length > 0 && this.editingItemId) {
+            if (remainingIds?.length && this.editingItemId) {
                 this.selectedFileIds = remainingIds;
                 this.deleteFileIndex = 'multiple';
                 this.deleteFileDialog = true;
@@ -618,85 +587,86 @@ export default {
 
             this.saveLoading = true;
             try {
-                const data = {
-                    title: this.title.trim(),
-                    description: this.description || null,
-                    status_id: this.statusId || null,
-                    deadline: this.deadline ? dayjs(this.deadline).format('YYYY-MM-DD HH:mm:ss') : null,
-                    project_id: this.projectId || null,
-                    supervisor_id: this.supervisorId,
-                    executor_id: this.executorId,
-                    priority: this.priority,        
-                    complexity: this.complexity,
-                };
-
-                let response;
-                if (this.editingItemId) {
-                    response = await TaskController.updateItem(this.editingItemId, data);
-                    
-                    // Получаем обновленную задачу с сервера, чтобы получить актуальный список файлов
+                const data = this.prepareSave();
+                const response = await this.performSave(data);
+                this.$emit('saved', response);
+                this.onSaveSuccess(response);
+            } catch (error) {
+                this.$emit('saved-error', this.getApiErrorMessage ? this.getApiErrorMessage(error) : error);
+                this.onSaveError(error);
+            }
+            this.saveLoading = false;
+        },
+        prepareSave() {
+            return {
+                title: this.title.trim(),
+                description: this.description || null,
+                status_id: this.statusId || null,
+                deadline: this.deadline ? dayjs(this.deadline).format('YYYY-MM-DD HH:mm:ss') : null,
+                project_id: this.projectId || null,
+                supervisor_id: this.supervisorId,
+                executor_id: this.executorId,
+            };
+        },
+        async performSave(data) {
+            let response;
+            if (this.editingItemId) {
+                response = await TaskController.updateItem(this.editingItemId, data);
+                
+                try {
+                    const updatedTask = await TaskController.getItem(this.editingItemId);
+                    if (updatedTask) {
+                        response.data = updatedTask;
+                    }
+                } catch (error) {
+                    console.error('Ошибка при получении обновленной задачи:', error);
+                }
+            } else {
+                response = await TaskController.createItem(data);
+                this.editingItemId = response.data.id;
+                
+                if (this.pendingFiles?.length) {
                     try {
+                        await TaskController.uploadFiles(this.editingItemId, this.pendingFiles);
+                        this.pendingFiles = [];
+                        
                         const updatedTask = await TaskController.getItem(this.editingItemId);
                         if (updatedTask) {
                             response.data = updatedTask;
                         }
-                    } catch (error) {
-                        console.error('Ошибка при получении обновленной задачи:', error);
-                        // Продолжаем с response.data, даже если не удалось получить обновленную задачу
-                    }
-                } else {
-                    // Создаем задачу
-                    response = await TaskController.createItem(data);
-                    this.editingItemId = response.data.id;
-                    
-                    // Если есть pending файлы, загружаем их после создания задачи
-                    if (this.pendingFiles.length > 0) {
-                        try {
-                            await TaskController.uploadFiles(this.editingItemId, this.pendingFiles);
-                            
-                            // Очищаем pending файлы
-                            this.pendingFiles = [];
-                            
-                            // Получаем обновленную задачу с сервера, чтобы получить актуальный список файлов
-                            const updatedTask = await TaskController.getItem(this.editingItemId);
-                            if (updatedTask) {
-                                response.data = updatedTask;
-                            }
-                        } catch (fileError) {
-                            console.error('Ошибка при загрузке файлов после создания задачи:', fileError);
-                            this.showNotification(
-                                this.$t('error'), 
-                                'Задача создана, но произошла ошибка при загрузке файлов', 
-                                true
-                            );
-                        }
+                    } catch (fileError) {
+                        console.error('Ошибка при загрузке файлов после создания задачи:', fileError);
+                        this.showNotification(
+                            this.$t('error'), 
+                            'Задача создана, но произошла ошибка при загрузке файлов', 
+                            true
+                        );
                     }
                 }
-
-                // Обновляем editingItem актуальными данными с сервера
-                if (response && response.data) {
-                    this.$emit('update:editingItem', response.data);
-                }
-
-                this.showNotification(
-                    this.$t('success'), 
-                    this.editingItemId ? this.$t('taskSuccessfullyUpdated') : this.$t('taskSuccessfullyAdded'), 
-                    false
-                );
-                
-                this.saveInitialState();
-                this.$emit('saved', response.data);
-            } catch (error) {
-                const errorMessage = this.getApiErrorMessage(error);
-                this.showNotification(
-                    this.$t('error'), 
-                    errorMessage, 
-                    true
-                );
-                this.$emit('saved-error', error);
-            } finally {
-                this.saveLoading = false;
             }
+
+            return response.data;
+        },
+        onSaveSuccess(response) {
+            if (response) {
+                this.$emit('update:editingItem', response);
+            }
+
+            this.showNotification(
+                this.$t('success'), 
+                this.editingItemId ? this.$t('taskSuccessfullyUpdated') : this.$t('taskSuccessfullyAdded'), 
+                false
+            );
+            
+            this.saveInitialState();
+        },
+        onSaveError(error) {
+            const errorMessage = this.getApiErrorMessage(error);
+            this.showNotification(
+                this.$t('error'), 
+                errorMessage, 
+                true
+            );
         },
         closeDeleteFileDialog() {
             this.deleteFileDialog = false;

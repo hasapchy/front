@@ -12,6 +12,13 @@
                 <input type="text" v-model="color" class="flex-1" placeholder="#6c757d">
             </div>
         </div>
+        <div class="mt-4">
+            <label class="flex items-center space-x-2">
+                <input type="checkbox" v-model="isTrVisible" class="w-4 h-4">
+                <span>{{ $t('showInProjectSelect') }}</span>
+            </label>
+            <p class="text-sm text-gray-600 mt-2 ml-6">{{ $t('showInProjectSelectDescription') }}</p>
+        </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
@@ -48,6 +55,7 @@ export default {
         return {
             name: this.editingItem ? this.editingItem.name : '',
             color: this.editingItem ? this.editingItem.color : '#6c757d',
+            isTrVisible: this.editingItem?.isTrVisible ?? true,
         }
     },
     mounted() {
@@ -59,13 +67,15 @@ export default {
         getFormState() {
             return {
                 name: this.name,
-                color: this.color
+                color: this.color,
+                is_tr_visible: this.isTrVisible
             };
         },
         prepareSave() {
             return {
                 name: this.name,
-                color: this.color
+                color: this.color,
+                is_tr_visible: this.isTrVisible
             };
         },
         async performSave(data) {
@@ -90,6 +100,7 @@ export default {
         clearForm() {
             this.name = '';
             this.color = '#6c757d';
+            this.isTrVisible = true;
             if (this.resetFormChanges) {
                 this.resetFormChanges();
             }
@@ -97,6 +108,7 @@ export default {
         onEditingItemChanged(newEditingItem) {
             this.name = newEditingItem.name || '';
             this.color = newEditingItem.color || '#6c757d';
+            this.isTrVisible = newEditingItem.isTrVisible ?? true;
         }
     }
 }

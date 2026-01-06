@@ -307,19 +307,20 @@ export default {
             }
         },
         resetFilters() {
-            this.dateFilter = 'all_time';
-            this.startDate = '';
-            this.endDate = '';
-            this.statusFilter = '';
-            this.fetchItems();
+            this.resetFiltersFromConfig({
+                dateFilter: 'all_time',
+                startDate: '',
+                endDate: '',
+                statusFilter: ''
+            });
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.dateFilter !== 'all_time') count++;
-            if (this.statusFilter !== '') count++;
-            if (this.startDate !== null && this.startDate !== '') count++;
-            if (this.endDate !== null && this.endDate !== '') count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.dateFilter, defaultValue: 'all_time' },
+                { value: this.statusFilter, defaultValue: '' },
+                { value: this.startDate, defaultValue: null },
+                { value: this.endDate, defaultValue: null }
+            ]);
         },
 
     }

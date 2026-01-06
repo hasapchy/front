@@ -11,8 +11,8 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('invoiceDate') }}</label>
                     <input type="datetime-local" v-model="formData.invoice_date" class="w-full p-2 border rounded h-10"
-                        :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                        :min="!$store.getters.hasPermission('settings_edit_any_date') ? this.getCurrentLocalDateTime() : null" />
+                        :disabled="editingItemId && !canEditDate()"
+                        :min="this.getMinDate()" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('status') }}</label>
@@ -99,12 +99,13 @@ import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
+import dateFormMixin from "@/mixins/dateFormMixin";
 import { generateInvoicePdf, InvoicePdfGenerator } from "@/utils/pdfUtils";
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 
 export default {
-    mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
+    mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin, dateFormMixin],
     emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
     components: {
         PrimaryButton,
@@ -157,7 +158,7 @@ export default {
     },
     mounted() {
         this.$nextTick(async () => {
-            if (this.preselectedOrderIds.length > 0) {
+            if (this.preselectedOrderIds?.length) {
                 await this.loadPreselectedOrders();
             }
 
@@ -185,7 +186,7 @@ export default {
 
         async loadPreselectedOrders() {
             try {
-                if (!this.preselectedOrderIds || this.preselectedOrderIds.length === 0) {
+                if (!this.preselectedOrderIds?.length) {
                     return;
                 }
 
@@ -203,7 +204,7 @@ export default {
         },
 
         async loadOrdersData() {
-            if (this.selectedOrders.length === 0) {
+            if (!this.selectedOrders?.length) {
                 this.formData.order_ids = [];
                 return;
             }
@@ -230,11 +231,11 @@ export default {
             }
 
             const orderSearch = this.$refs.orderSearch;
-            if (!orderSearch || !orderSearch.allProductsFromOrders || orderSearch.allProductsFromOrders.length === 0) {
+            if (!orderSearch?.allProductsFromOrders?.length) {
                 validationErrors.push('Необходимо выбрать заказы с товарами');
             }
 
-            if (validationErrors.length > 0) {
+            if (validationErrors?.length) {
                 this.$emit('saved-error', validationErrors.join('\n'));
                 throw new Error(validationErrors.join('\n'));
             }
@@ -300,7 +301,7 @@ export default {
                 this.selectedClient = newEditingItem.client || null;
                 
                 this.formData = {
-                    invoice_date: newEditingItem.invoiceDate ? this.formatDateTimeForInput(newEditingItem.invoiceDate) : this.getCurrentLocalDateTime(),
+                    invoice_date: newEditingItem.invoiceDate ? this.getFormattedDate(newEditingItem.invoiceDate) : this.getCurrentLocalDateTime(),
                     status: newEditingItem.status || 'new',
                     note: newEditingItem.note,
                     order_ids: newEditingItem.orders ? newEditingItem.orders.map(o => o.id) : []
@@ -316,9 +317,9 @@ export default {
                             let orderId = null;
                             if (product.orderId || product.order_id) {
                                 orderId = product.orderId || product.order_id;
-                            } else if (newEditingItem.orders && newEditingItem.orders.length > 0) {
+                            } else if (newEditingItem.orders?.length) {
                                 const matchingOrder = newEditingItem.orders.find(order => 
-                                    order.products && order.products.some(op => 
+                                    order.products?.some(op => 
                                         op.productName === product.productName ||
                                         op.product_id === product.productId ||
                                         op.id === product.productId
@@ -377,7 +378,7 @@ export default {
                 return;
             }
 
-            if (this.pdfVariant.length === 0) {
+            if (!this.pdfVariant?.length) {
                 this.showNotification(this.$t('error'), 'Выберите вариант PDF', true);
                 return;
             }
@@ -399,7 +400,7 @@ export default {
                 return;
             }
 
-            if (this.pdfVariant.length === 0) {
+            if (!this.pdfVariant?.length) {
                 this.showNotification(this.$t('error'), 'Выберите вариант PDF', true);
                 return;
             }
@@ -507,37 +508,12 @@ export default {
             });
         },
 
-        formatDatabaseDateTimeForInput(date) {
-            if (!date) return '';
-            // Конвертируем дату из базы данных в формат datetime-local без UTC смещения
-            const dateObj = new Date(date);
-            const year = dateObj.getFullYear();
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const day = String(dateObj.getDate()).padStart(2, '0');
-            const hours = String(dateObj.getHours()).padStart(2, '0');
-            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}`;
-        },
-
-        formatDateTimeForInput(dateString) {
-            if (!dateString) return this.getCurrentLocalDateTime();
-            return this.formatDatabaseDateTimeForInput(dateString);
-        },
-
-        getCurrentLocalDateTime() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}`;
-        }
+        // Методы formatDatabaseDateTimeForInput, formatDateTimeForInput и getCurrentLocalDateTime теперь используются из dateFormMixin
     },
     watch: {
         preselectedOrderIds: {
             handler(newIds) {
-                if (newIds && newIds.length > 0) {
+                if (newIds?.length) {
                     this.loadPreselectedOrders();
                 }
             },

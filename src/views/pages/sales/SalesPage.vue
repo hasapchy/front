@@ -247,17 +247,18 @@ export default {
             }
         },
         resetFilters() {
-            this.dateFilter = 'all_time';
-            this.startDate = null;
-            this.endDate = null;
-            this.fetchItems(1);
+            this.resetFiltersFromConfig({
+                dateFilter: 'all_time',
+                startDate: null,
+                endDate: null
+            });
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.dateFilter !== 'all_time') count++;
-            if (this.startDate !== null && this.startDate !== '') count++;
-            if (this.endDate !== null && this.endDate !== '') count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.dateFilter, defaultValue: 'all_time' },
+                { value: this.startDate, defaultValue: null },
+                { value: this.endDate, defaultValue: null }
+            ]);
         },
         async onAfterSaved() {
             await this.$store.dispatch('invalidateCache', { type: 'clients' });

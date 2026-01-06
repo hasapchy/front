@@ -75,6 +75,7 @@ export const CACHE_CONFIG = {
     movements: [],
     transfers: ["cashRegisters"],
     invoices: [],
+    projectStatuses: ["projects"],
   },
 
   indexedDB: {

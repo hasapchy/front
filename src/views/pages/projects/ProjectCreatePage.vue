@@ -15,10 +15,10 @@
             <div>
                 <label>{{ $t('projectDate') }}</label>
                 <input type="datetime-local" v-model="date"
-                    :disabled="!!editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                    :min="!$store.getters.hasPermission('settings_edit_any_date') ? this.getCurrentLocalDateTime() : null" />
+                    :disabled="!!editingItemId && !canEditDate()"
+                    :min="this.getMinDate()" />
             </div>
-            <div v-if="$store.getters.hasPermission('settings_project_budget_view')"
+            <div v-if="canViewProjectBudget"
                 class="flex items-center space-x-2">
                 <div class="w-full">
                     <label class="required">{{ $t('projectBudget') }}</label>
@@ -26,7 +26,7 @@
                 </div>
                 <div class="w-full">
                     <label class="required">{{ $t('projectCurrency') }}</label>
-                    <select v-model="currencyId" @change="onCurrencyChange">
+                    <select v-model="currencyId">
                         <option value="">{{ $t('no') }}</option>
                         <template v-if="currencies.length">
                             <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
@@ -35,12 +35,6 @@
                         </template>
                     </select>
                 </div>
-            </div>
-            <div v-if="currencyId && $store.getters.hasPermission('settings_project_budget_view')" class="mt-2">
-                <label class="required">{{ $t('projectExchangeRate') }}</label>
-                <input type="number" v-model="exchangeRate" step="0.000001" min="0.000001"
-                    :placeholder="defaultExchangeRate" class="w-full">
-                <small class="text-gray-500">{{ $t('exchangeRateHelp') }}</small>
             </div>
 
         </div>
@@ -90,11 +84,10 @@
         </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null && $store.getters.hasPermission('projects_delete')"
+        <PrimaryButton v-if="editingItem != null && canDeleteProject"
             :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading" icon="fas fa-trash">
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('projects_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('projects_create'))">
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!canEditProject">
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('deleteProject')"
@@ -118,7 +111,8 @@ import ClientSearch from '@/views/components/app/search/ClientSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import companyChangeMixin from '@/mixins/companyChangeMixin';
-import AppController from '@/api/AppController';
+import crudFormMixin from '@/mixins/crudFormMixin';
+import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import { translateCurrency } from '@/utils/translationUtils';
 
 import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
@@ -127,10 +121,10 @@ import FileUploader from '@/views/components/app/forms/FileUploader.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
 import dayjs from 'dayjs';
-import { getCurrentLocalDateTime, formatDatabaseDateTimeForInput } from '@/utils/dateUtils';
+import dateFormMixin from '@/mixins/dateFormMixin';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, companyChangeMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, companyChangeMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, FileUploader, UserSearch, UserBalanceTab },
     props: {
@@ -141,9 +135,7 @@ export default {
             name: this.editingItem ? this.editingItem.name : '',
             budget: this.editingItem ? this.editingItem.budget : 0,
             currencyId: this.editingItem ? this.editingItem.currencyId : '',
-            exchangeRate: this.editingItem ? this.editingItem.exchangeRate : null,
-            date: this.editingItem && this.editingItem.date ? this.formatDatabaseDateTimeForInput(this.editingItem.date)
-                : getCurrentLocalDateTime(),
+            date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
             description: this.editingItem ? this.editingItem.description : '',
             editingItemId: this.editingItem ? this.editingItem.id : null,
             selectedClient: this.editingItem ? this.editingItem.client : null,
@@ -172,6 +164,9 @@ export default {
         }
     },
     computed: {
+        canViewProjectBudget() {
+            return this.$store.getters.hasPermission('settings_project_budget_view');
+        },
         canViewProjectFiles() {
             return this.$store.getters.hasPermission('settings_project_files_view');
         },
@@ -183,6 +178,16 @@ export default {
                    this.$store.getters.hasPermission('contracts_view_all') || 
                    this.$store.getters.hasPermission('contracts_view_own');
         },
+        canDeleteProject() {
+            return this.$store.getters.hasPermission('projects_delete');
+        },
+        canEditProject() {
+            if (this.editingItemId != null) {
+                return this.$store.getters.hasPermission('projects_update');
+            } else {
+                return this.$store.getters.hasPermission('projects_create');
+            }
+        },
         visibleTabs() {
             const baseTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => ['info'].includes(tab.name));
             return baseTabs.filter(tab => !tab.permission || this.$store.getters.hasPermission(tab.permission));
@@ -193,18 +198,6 @@ export default {
                 label: this.$t(tab.label)
             }));
         },
-        defaultExchangeRate() {
-            if (!this.currencyId) return '1.000000';
-            const currency = this.currencies.find(c => c.id === this.currencyId);
-            if (!currency) return '1.000000';
-
-            // Если валюта не дефолтная (не манат), показываем 1/курс
-            if (!currency.isDefault && currency.exchange_rate) {
-                return (1 / currency.exchange_rate).toFixed(6);
-            }
-
-            return currency.exchange_rate?.toFixed(6) || '1.000000';
-        }
     },
     created() {
         window.deleteFile = (filePath) => {
@@ -219,14 +212,12 @@ export default {
         });
     },
     methods: {
-        formatDatabaseDateTimeForInput,
         translateCurrency,
         clearForm() {
             this.name = '';
             this.budget = 0;
             this.currencyId = '';
-            this.exchangeRate = null;
-            this.date = getCurrentLocalDateTime();
+            this.date = this.getCurrentLocalDateTime();
             this.description = '';
             this.selectedClient = null;
             this.editingItemId = null;
@@ -246,7 +237,6 @@ export default {
                 name: this.name,
                 budget: this.budget,
                 currencyId: this.currencyId,
-                exchangeRate: this.exchangeRate,
                 date: this.date,
                 description: this.description,
                 selectedClient: this.selectedClient?.id || null,
@@ -270,111 +260,73 @@ export default {
             return ids.includes(Number(user.id));
         },
         async fetchCurrencies() {
-            if (this.$store.getters.currencies && this.$store.getters.currencies.length > 0) {
-                this.currencies = this.$store.getters.currencies;
-            } else {
-                await this.$store.dispatch('loadCurrencies');
-                this.currencies = this.$store.getters.currencies;
-            }
-            
-            if (!this.editingItem && !this.currencyId) {
-                const defaultCurrency = this.currencies.find(c => c.isDefault);
-                if (defaultCurrency) {
-                    this.currencyId = defaultCurrency.id;
-                    this.exchangeRate = 1;
-                }
-            }
-        },
-        async onCurrencyChange() {
-            if (this.currencyId) {
-                try {
-                    const rateData = await AppController.getCurrencyExchangeRate(this.currencyId);
-                    const selectedCurrency = this.currencies.find(c => c.id === this.currencyId);
-                    if (selectedCurrency && !selectedCurrency.isDefault) {
-                        // Для не-дефолтной валюты курс = 1/курс_валюты (сколько манат за 1 единицу валюты)
-                        this.exchangeRate = 1 / rateData.exchange_rate;
-                    } else {
-                        // Для дефолтной валюты (манат) курс = 1
-                        this.exchangeRate = 1;
+            await this.loadStoreData({
+                getterName: 'currencies',
+                dispatchName: 'loadCurrencies',
+                localProperty: 'currencies',
+                defaultValue: [],
+                onLoaded: (currencies) => {
+                    if (!this.editingItem && !this.currencyId) {
+                        const defaultCurrency = currencies.find(c => c.isDefault);
+                        if (defaultCurrency) {
+                            this.currencyId = defaultCurrency.id;
+                        }
                     }
-                } catch (error) {
-                    console.error('Error fetching exchange rate:', error);
-                    this.exchangeRate = null;
                 }
-            } else {
-                this.exchangeRate = null;
-            }
+            });
         },
-        async save() {
+        // Методы для crudFormMixin
+        prepareSave() {
             if (this.uploading) {
-                alert(this.$t('waitForFileUpload'));
-                return;
+                throw new Error(this.$t('waitForFileUpload'));
             }
 
             // Валидация обязательных полей (только если у пользователя есть права на просмотр бюджета)
-            if (this.$store.getters.hasPermission('settings_project_budget_view')) {
+            if (this.canViewProjectBudget) {
                 if (!this.currencyId) {
-                    alert('Пожалуйста, выберите валюту проекта');
-                    return;
-                }
-                if (!this.exchangeRate || this.exchangeRate <= 0) {
-                    alert('Пожалуйста, введите корректный курс обмена');
-                    return;
+                    throw new Error('Пожалуйста, выберите валюту проекта');
                 }
             }
 
-            this.saveLoading = true;
-            try {
-                let resp;
-                const formData = {
-                    name: this.name,
-                    date: this.date ? dayjs(this.date).format('YYYY-MM-DD HH:mm:ss') : null,
-                    description: this.description || null,
-                    client_id: this.selectedClient?.id,
-                    users: this.selectedUserIds || []
-                };
+            const formData = {
+                name: this.name,
+                date: this.date ? dayjs(this.date).format('YYYY-MM-DD HH:mm:ss') : null,
+                description: this.description || null,
+                client_id: this.selectedClient?.id,
+                users: this.selectedUserIds || []
+            };
 
-                // Добавляем поля бюджета только если у пользователя есть права
-                if (this.$store.getters.hasPermission('settings_project_budget_view')) {
-                    formData.budget = this.budget;
-                    formData.currency_id = this.currencyId || null;
-                    formData.exchange_rate = this.exchangeRate || null;
-                }
-
-                if (this.editingItemId != null) {
-                    resp = await ProjectController.updateItem(this.editingItemId, formData);
-                } else {
-                    resp = await ProjectController.storeItem(formData);
-                }
-
-                if (resp.message) {
-                    // ✅ Очищаем Store проектов, чтобы они перезагрузились
-                    this.$store.commit('SET_PROJECTS', []);
-                    this.$store.commit('SET_PROJECTS_DATA', []);
-                    
-                    this.$emit('saved');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
+            // Добавляем поля бюджета только если у пользователя есть права
+            if (this.canViewProjectBudget) {
+                formData.budget = this.budget;
+                formData.currency_id = this.currencyId || null;
             }
 
-            this.saveLoading = false;
+            return formData;
         },
-        async deleteItem() {
-            if (!this.editingItemId) return;
-
-            this.deleteLoading = true;
-            try {
-                await ProjectController.deleteItem(this.editingItemId);
-                this.$emit('deleted');
-                this.clearForm();
-                this.closeDeleteDialog(); // Закрываем диалог после успешного удаления
-            } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+        async performSave(data) {
+            let resp;
+            if (this.editingItemId != null) {
+                resp = await ProjectController.updateItem(this.editingItemId, data);
+            } else {
+                resp = await ProjectController.storeItem(data);
             }
-            this.deleteLoading = false;
+
+            if (resp.message) {
+                // ✅ Очищаем Store проектов, чтобы они перезагрузились
+                this.$store.commit('SET_PROJECTS', []);
+                this.$store.commit('SET_PROJECTS_DATA', []);
+                return resp.item || data;
+            }
+            throw new Error('Failed to save');
         },
+        // Метод save() теперь используется из crudFormMixin
+        // Метод для crudFormMixin
+        async performDelete() {
+            await ProjectController.deleteItem(this.editingItemId);
+            return { message: 'deleted' };
+        },
+        // Метод deleteItem() теперь используется из crudFormMixin
         showDeleteDialog() {
             this.deleteDialog = true;
         },
@@ -386,7 +338,7 @@ export default {
                 alert(this.$t('saveProjectFirstThenAttachFiles'));
                 return;
             }
-            if (!files || !files.length) return;
+            if (!files?.length) return;
 
             const fileArray = Array.from(files);
 
@@ -456,13 +408,13 @@ export default {
         },
 
         showDeleteMultipleFilesDialog(selectedFileIds) {
-            if (!selectedFileIds || selectedFileIds.length === 0) return;
+            if (!selectedFileIds?.length) return;
             this.selectedFileIds = selectedFileIds;
             this.deleteFileIndex = 'multiple';
             this.deleteFileDialog = true;
         },
         async handleDownloadMultipleFiles(selectedFileIds) {
-            if (!selectedFileIds || selectedFileIds.length === 0 || !this.editingItemId) return;
+            if (!selectedFileIds?.length || !this.editingItemId) return;
             try {
                 await ProjectController.downloadFiles(this.editingItemId, selectedFileIds);
                 if (this.$refs.fileUploader) {
@@ -519,7 +471,7 @@ export default {
     watch: {
         visibleTabs: {
             handler(tabs) {
-                if (!tabs || !tabs.length) {
+                if (!tabs?.length) {
                     this.currentTab = 'info';
                     return;
                 }
@@ -530,36 +482,27 @@ export default {
             immediate: true,
             deep: true,
         },
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    // Заполняем форму данными проекта
-                    this.name = newEditingItem.name || '';
-                    this.budget = newEditingItem.budget || 0;
-                    this.currencyId = newEditingItem.currencyId || '';
-                    this.exchangeRate = newEditingItem.exchangeRate || null;
-                    this.date = newEditingItem.date
-                        ? this.formatDatabaseDateTimeForInput(newEditingItem.date)
-                        : this.getCurrentLocalDateTime();
-                    this.description = newEditingItem.description || '';
-                    this.selectedClient = newEditingItem.client || null;
-                    this.editingItemId = newEditingItem.id || null;
-                    this.selectedUserIds = newEditingItem.getUserIds?.() || (newEditingItem.users ? newEditingItem.users.map(u => u.id) : []);
-                    this.selectedEmployeeForAdvance = null;
-                    
-                    // Всегда открываем вкладку "info" при открытии проекта
-                    this.currentTab = 'info';
-                } else {
-                    // Очищаем форму для создания нового проекта
-                    this.clearForm();
-                    this.currentTab = 'info'; // Сбрасываем вкладку и при закрытии
-                }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
-            },
-            deep: true,
-            immediate: true
+        // Метод для crudFormMixin - обработка изменения editingItem
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                // Заполняем форму данными проекта
+                this.name = newEditingItem.name || '';
+                this.budget = newEditingItem.budget || 0;
+                this.currencyId = newEditingItem.currencyId || '';
+                this.date = newEditingItem.date
+                    ? this.getFormattedDate(newEditingItem.date)
+                    : this.getCurrentLocalDateTime();
+                this.description = newEditingItem.description || '';
+                this.selectedClient = newEditingItem.client || null;
+                this.selectedUserIds = newEditingItem.getUserIds?.() || (newEditingItem.users ? newEditingItem.users.map(u => u.id) : []);
+                this.selectedEmployeeForAdvance = null;
+                
+                // Всегда открываем вкладку "info" при открытии проекта
+                this.currentTab = 'info';
+            } else {
+                // Сбрасываем вкладку и при закрытии
+                this.currentTab = 'info';
+            }
         }
     }
 
