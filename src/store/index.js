@@ -1500,7 +1500,7 @@ const store = createStore({
           to: "/tasks",
           icon: "fas fa-tasks mr-2",
           label: "tasks",
-          permission: "tasks_view_all", //tasks_view
+          permission: "tasks_view",
         },
         {
           id: "messenger",
