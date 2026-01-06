@@ -145,6 +145,7 @@ import searchMixin from '@/mixins/searchMixin';
 import filtersMixin from '@/mixins/filtersMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import { highlightMatches } from '@/utils/searchUtils';
+import { CacheInvalidator } from '@/cache';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, companyChangeMixin, searchMixin, filtersMixin],
@@ -235,6 +236,11 @@ export default {
             this.editingItem = null;
             this.modalDialog = false;
             
+            // Инвалидируем кэш для stocks и связанных данных
+            await CacheInvalidator.invalidateByType('stocks', companyId);
+            await CacheInvalidator.invalidateByType('products', companyId);
+            await CacheInvalidator.invalidateByType('warehouses', companyId);
+            
             // Перезагружаем данные со страницы 1
             await this.fetchAllCategories();
             await this.fetchAllWarehouses();
@@ -307,21 +313,23 @@ export default {
         },
         async showModal(item) {
             try {
-                if (!item.productId) {
+                if (!item || !item.productId) {
                     this.showNotification('Товар не найден', 'ID товара отсутствует', true);
                     return;
                 }
                 
                 const product = await ProductController.getItem(item.productId);
                 
-                if (product) {
-                    this.editingItem = product;
-                    this.modalDialog = true;
-                } else {
+                if (!product) {
                     this.showNotification('Товар не найден', '', true);
+                    return;
                 }
+                
+                this.editingItem = product;
+                this.modalDialog = true;
             } catch (error) {
-                this.showNotification('Ошибка загрузки товара', error.message, true);
+                const errorMessage = error.response?.data?.message || error.message || 'Неизвестная ошибка';
+                this.showNotification('Ошибка загрузки товара', errorMessage, true);
             }
         },
     },
