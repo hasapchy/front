@@ -120,6 +120,7 @@ export default class InvoiceDto {
       
       const orders = data.orders ? OrderDto.fromApiArray(data.orders.map(order => ({
         ...order,
+        total_price: order.total_price ?? ((order.price || 0) - (order.discount || 0)),
         currency_id: order.currency_id ?? order.cash?.currency?.id ?? null,
         currency_name: order.currency_name ?? order.cash?.currency?.name ?? null,
         currency_symbol: order.currency_symbol ?? order.cash?.currency?.symbol ?? null,
