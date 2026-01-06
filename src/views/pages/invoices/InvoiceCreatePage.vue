@@ -125,7 +125,6 @@ export default {
     },
     data() {
         return {
-            editingItem: null, // сохраняем ссылку для других методов
             selectedOrders: [],
             selectedClient: null,
             currencySymbol: 'Нет валюты',
@@ -297,7 +296,6 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
-                this.editingItem = newEditingItem; // сохраняем ссылку для других методов
                 this.selectedClient = newEditingItem.client || null;
                 
                 this.formData = {
