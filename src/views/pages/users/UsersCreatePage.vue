@@ -177,7 +177,7 @@
             <div v-show="currentTab === 'salaries' && editingItem && canViewSalariesTab" class="mt-4">
                 <UserSalaryTab :editing-item="editingItem" />
             </div>
-            <div v-show="currentTab === 'balance' && editingItem && canViewBalanceTab" class="mt-4">
+            <div v-if="currentTab === 'balance' && editingItem && canViewBalanceTab" class="mt-4">
                 <UserBalanceTab :editing-item="editingItem" />
             </div>
         </div>
