@@ -307,9 +307,12 @@ export default {
         },
         async showModal(item) {
             try {
-                // Используем поиск по имени товара (быстрее чем загружать все страницы)
-                const searchResults = await ProductController.searchItems(item.productName);
-                const product = searchResults.find(p => p.id === item.productId);
+                if (!item.productId) {
+                    this.showNotification('Товар не найден', 'ID товара отсутствует', true);
+                    return;
+                }
+                
+                const product = await ProductController.getItem(item.productId);
                 
                 if (product) {
                     this.editingItem = product;
