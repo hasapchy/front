@@ -10,9 +10,8 @@ window.Pusher = Pusher;
 const getAuthHeaders = () => {
   const token = TokenUtils.getToken();
   const store = getStore();
-  const companyId = store?.getters?.currentCompanyId || 
-                   import.meta.env.VITE_DEFAULT_COMPANY_ID || 
-                   "1";
+  const companyId = store?.getters?.currentCompanyId || "1";
+
   
   return {
     Accept: "application/json",
