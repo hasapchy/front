@@ -501,6 +501,9 @@ export default {
       // Delete chat confirmation
       showDeleteConfirm: false,
       deletingChat: false,
+      
+      // WebSocket connection check
+      connectionCheckInterval: null,
     };
   },
   computed: {
@@ -642,7 +645,6 @@ export default {
       );
     },
     showDeleteButton() {
-      console.log('showDeleteButton', this.selectedChat, this.isChatCreator(this.selectedChat));
       return this.selectedChat && this.isChatCreator(this.selectedChat);
     },
   },
@@ -653,6 +655,23 @@ export default {
       await this.loadChats();
       this.syncRealtime();
       this.subscribeToPresence();
+      
+      // Проверяем статус подключения через небольшую задержку
+      setTimeout(() => {
+        this.checkWebSocketStatus();
+      }, 2000);
+      
+      // Периодическая проверка подключения (каждые 30 секунд)
+      this.connectionCheckInterval = setInterval(() => {
+        if (this.realtime) {
+          const status = this.realtime.checkAllSubscriptions();
+          if (!status.echoConnected) {
+            console.warn('[WebSocket] Потеряно подключение, попытка переподключения...');
+            // Можно попробовать переподключиться
+            this.initRealtime();
+          }
+        }
+      }, 30000);
     } catch (error) {
       console.error("[Messenger] Ошибка при инициализации:", error);
       this.$store.dispatch("showNotification", {
@@ -664,6 +683,9 @@ export default {
     }
   },
   beforeUnmount() {
+    if (this.connectionCheckInterval) {
+      clearInterval(this.connectionCheckInterval);
+    }
     this.realtime?.cleanup?.();
     this.realtime = null;
     this.onlineUserIds = [];
@@ -671,10 +693,36 @@ export default {
   methods: {
     initRealtime() {
       if (this.realtime) return;
+      
+      // Проверяем подключение Echo перед созданием realtime
+      if (echo.isConnected && !echo.isConnected()) {
+        console.warn('[WebSocket] Ожидание подключения...');
+        echo.waitForConnection(5000)
+          .then(() => {
+            console.log('[WebSocket] ✅ Подключение установлено');
+            this.createRealtimeInstance();
+          })
+          .catch((error) => {
+            console.error('[WebSocket] ❌ Не удалось подключиться:', error);
+            this.$store.dispatch("showNotification", {
+              title: "Ошибка WebSocket",
+              subtitle: "Не удалось подключиться к серверу в реальном времени",
+              isDanger: true,
+              duration: 5000,
+            });
+          });
+      } else {
+        this.createRealtimeInstance();
+      }
+    },
+    createRealtimeInstance() {
       this.realtime = createChatRealtime(echo, {
         onMessage: (event) => handleIncomingChatEvent(this, event),
         onRead: (event) => handleChatReadEvent(this, event),
         onChatError: (error) => console.error("[WebSocket] Ошибка подписки на канал:", error),
+        onChannelSubscribed: (chatId, channelName) => {
+          console.log(`[WebSocket] ✅ Подписан на чат ${chatId}`);
+        },
         onPresenceHere: (users) => {
           console.log("[Presence] Пользователи онлайн:", users);
           const ids = (users || []).map((u) => Number(u.id)).filter((id) => !Number.isNaN(id));
@@ -698,6 +746,26 @@ export default {
         onPresenceError: (err) => console.error("[WebSocket] Ошибка presence-канала:", err),
         log: (msg) => console.log(msg),
       });
+    },
+    checkWebSocketStatus() {
+      if (!this.realtime) {
+        console.log('[WebSocket] Realtime не инициализирован');
+        return null;
+      }
+
+      const status = this.realtime.checkAllSubscriptions();
+      console.log('[WebSocket] Статус подключений:', status);
+      
+      // Проверяем, что все подключено
+      const allGood = status.echoConnected && 
+                      status.presenceSubscribed && 
+                      Object.values(status.chatChannels).every(ch => ch.subscribed);
+      
+      if (!allGood) {
+        console.warn('[WebSocket] ⚠️ Не все каналы подписаны:', status);
+      }
+      
+      return status;
     },
     syncRealtime() {
       const companyId = this.$store.getters.currentCompanyId;
@@ -1249,7 +1317,6 @@ export default {
         return false;
       }
       
-      console.log('fulllll', createdBy, myId);
       return Number(createdBy) === Number(myId);
     },
     confirmDeleteChat() {

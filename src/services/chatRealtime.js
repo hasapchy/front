@@ -10,6 +10,7 @@
  * @property {(user:Object)=>void} [onPresenceJoining]
  * @property {(user:Object)=>void} [onPresenceLeaving]
  * @property {(error:any)=>void} [onPresenceError]
+ * @property {(chatId:number, channelName:string)=>void} [onChannelSubscribed]
  * @property {(msg:string)=>void} [log]
  */
 
@@ -20,11 +21,13 @@
 export function createChatRealtime(echo, options) {
   const log = options?.log || (() => {});
 
-  /** @type {Map<number, { channel:any, channelName:string }>} */
+  /** @type {Map<number, { channel:any, channelName:string, subscribed:boolean }>} */
   const chatChannels = new Map();
 
   /** @type {string|null} */
   let presenceChannelName = null;
+  let presenceChannel = null;
+  let presenceSubscribed = false;
 
   const safeLeave = (name) => {
     if (!name) return;
@@ -39,7 +42,14 @@ export function createChatRealtime(echo, options) {
     if (!companyId || !chatId) return;
     const chatIdNum = Number(chatId);
     if (Number.isNaN(chatIdNum)) return;
-    if (chatChannels.has(chatIdNum)) return;
+    if (chatChannels.has(chatIdNum)) {
+      // Проверяем, что канал действительно подписан
+      const entry = chatChannels.get(chatIdNum);
+      if (entry.subscribed) {
+        log(`[WebSocket] Канал ${chatIdNum} уже подписан`);
+        return;
+      }
+    }
 
     const channelName = `company.${companyId}.chat.${chatIdNum}`;
     log(`[WebSocket] Подписка на канал: ${channelName}`);
@@ -53,10 +63,33 @@ export function createChatRealtime(echo, options) {
         options?.onRead?.(event);
       })
       .error((error) => {
+        log(`[WebSocket] ❌ Ошибка канала ${chatIdNum}:`, error);
         options?.onChatError?.(error);
+        // Помечаем как неподписанный при ошибке
+        const entry = chatChannels.get(chatIdNum);
+        if (entry) {
+          entry.subscribed = false;
+        }
       });
 
-    chatChannels.set(chatIdNum, { channel, channelName });
+    // Проверка успешной подписки
+    channel.subscribed(() => {
+      log(`[WebSocket] ✅ Успешно подписан на канал: ${channelName}`);
+      chatChannels.set(chatIdNum, { channel, channelName, subscribed: true });
+      if (options?.onChannelSubscribed) {
+        options.onChannelSubscribed(chatIdNum, channelName);
+      }
+    });
+
+    // Обработка ошибки подписки
+    channel.error((error) => {
+      log(`[WebSocket] ❌ Ошибка подписки на канал ${chatIdNum}:`, error);
+      chatChannels.set(chatIdNum, { channel, channelName, subscribed: false });
+      options?.onChatError?.(error);
+    });
+
+    // Сохраняем канал даже если еще не подписан
+    chatChannels.set(chatIdNum, { channel, channelName, subscribed: false });
   };
 
   const unsubscribeChat = (chatId) => {
@@ -111,17 +144,33 @@ export function createChatRealtime(echo, options) {
       unsubscribePresence();
     }
     presenceChannelName = channelName;
+    presenceSubscribed = false;
 
     log(`[Presence] Подписка на канал: ${channelName}`);
 
     try {
-      echo
+      presenceChannel = echo
         .join(channelName)
-        .here((users) => options?.onPresenceHere?.(users || []))
-        .joining((user) => options?.onPresenceJoining?.(user))
-        .leaving((user) => options?.onPresenceLeaving?.(user))
-        .error((err) => options?.onPresenceError?.(err));
+        .here((users) => {
+          log(`[Presence] ✅ Подписан на presence канал, пользователей онлайн: ${users?.length || 0}`);
+          presenceSubscribed = true;
+          options?.onPresenceHere?.(users || []);
+        })
+        .joining((user) => {
+          log(`[Presence] Пользователь зашел:`, user);
+          options?.onPresenceJoining?.(user);
+        })
+        .leaving((user) => {
+          log(`[Presence] Пользователь вышел:`, user);
+          options?.onPresenceLeaving?.(user);
+        })
+        .error((err) => {
+          log(`[Presence] ❌ Ошибка presence канала:`, err);
+          presenceSubscribed = false;
+          options?.onPresenceError?.(err);
+        });
     } catch (error) {
+      presenceSubscribed = false;
       options?.onPresenceError?.(error);
     }
   };
@@ -134,6 +183,8 @@ export function createChatRealtime(echo, options) {
     safeLeave(`presence-${presenceChannelName}`);
 
     presenceChannelName = null;
+    presenceChannel = null;
+    presenceSubscribed = false;
   };
 
   const cleanup = () => {
@@ -144,6 +195,44 @@ export function createChatRealtime(echo, options) {
     unsubscribePresence();
   };
 
+  // Методы для проверки состояния
+  const isChannelSubscribed = (chatId) => {
+    const entry = chatChannels.get(Number(chatId));
+    return entry?.subscribed === true;
+  };
+
+  const getSubscribedChannels = () => {
+    const subscribed = [];
+    for (const [chatId, entry] of chatChannels.entries()) {
+      if (entry.subscribed) {
+        subscribed.push(chatId);
+      }
+    }
+    return subscribed;
+  };
+
+  const isPresenceSubscribed = () => {
+    return presenceSubscribed;
+  };
+
+  const checkAllSubscriptions = () => {
+    const result = {
+      echoConnected: echo.isConnected ? echo.isConnected() : false,
+      echoState: echo.getConnectionState ? echo.getConnectionState() : 'unknown',
+      presenceSubscribed: presenceSubscribed,
+      chatChannels: {},
+    };
+
+    for (const [chatId, entry] of chatChannels.entries()) {
+      result.chatChannels[chatId] = {
+        subscribed: entry.subscribed,
+        channelName: entry.channelName,
+      };
+    }
+
+    return result;
+  };
+
   return {
     syncChats,
     subscribePresence,
@@ -151,6 +240,11 @@ export function createChatRealtime(echo, options) {
     unsubscribeChat,
     cleanup,
     getSubscribedChatIds: () => Array.from(chatChannels.keys()),
+    // Новые методы для проверки
+    isChannelSubscribed,
+    getSubscribedChannels,
+    isPresenceSubscribed,
+    checkAllSubscriptions,
   };
 }
 
