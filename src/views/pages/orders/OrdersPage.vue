@@ -146,6 +146,7 @@
         <TransactionCreatePage v-if="editingTransaction" :editingItem="null" :initial-client="editingTransaction.client"
             :initial-project-id="editingTransaction.projectId" :order-id="editingTransaction.orderId"
             :default-cash-id="editingTransaction.cashId" :prefill-amount="editingTransaction.prefillAmount"
+            :prefill-currency-id="editingTransaction.prefillCurrencyId"
             :is-payment-modal="true" :form-config="orderTransactionFormConfig" @saved="handleTransactionSaved"
             @saved-error="handleTransactionSavedError" @close-request="() => transactionModal = false" />
     </SideModalDialog>
@@ -532,6 +533,7 @@ export default {
                     projectId: order.projectId,
                     cashId: order.cashId,
                     prefillAmount: paymentData.remaining_amount,
+                    prefillCurrencyId: order.currencyId,
                 };
                 this.transactionModal = true;
             }
