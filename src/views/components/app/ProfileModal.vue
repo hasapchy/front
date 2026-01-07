@@ -95,7 +95,7 @@
         </div>
         
         <div v-show="currentTab === 'balance'">
-            <UserClientBalanceTab :editingItem="currentClientAccount" />
+            <UserClientBalanceTab :editingItem="currentUser" :hideActions="true" />
         </div>
         
         <div v-show="currentTab === 'salary'">
