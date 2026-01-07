@@ -3,6 +3,7 @@ import { formatNumber, formatCurrency } from "@/utils/numberUtils";
 import { createFromApiArray, getUserIdsFromArray } from "@/utils/dtoUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import CurrencyDto from "@/dto/app/CurrencyDto";
+import ProjectStatusDto from "@/dto/project/ProjectStatusDto";
 import "dayjs/locale/ru";
 
 export default class ProjectDto {
@@ -11,7 +12,6 @@ export default class ProjectDto {
     name,
     budget,
     currencyId = null,
-    exchangeRate = null,
     date = null,
     clientId = null,
     client = null,
@@ -33,7 +33,6 @@ export default class ProjectDto {
     this.date = date;
     this.budget = budget;
     this.currencyId = currencyId;
-    this.exchangeRate = exchangeRate;
     this.clientId = clientId;
     /** @type {ClientDto | null} */
     this.client = client;
@@ -123,34 +122,11 @@ export default class ProjectDto {
     return this.files ? this.files.length : 0;
   }
 
-  getExchangeRateDisplay() {
-    return this.exchangeRate ? formatNumber(this.exchangeRate, 6, true) : '1.000000';
-  }
-
-  getBudgetInManat() {
-    if (!this.currencyId) {
-      return this.budget;
-    }
-    
-    if (this.currency && this.currency.isDefault) {
-      return this.budget;
-    }
-    
-    const rate = this.exchangeRate || 1;
-    return this.budget * rate;
-  }
-
   getBudgetDisplay() {
     if (!this.currencyId || !this.currency) {
       return formatNumber(this.budget);
     }
-    
-    if (this.currency.isDefault) {
-      return formatCurrency(this.budget, this.currency.symbol);
-    }
-    
-    const budgetInManat = this.getBudgetInManat();
-    return `${formatCurrency(this.budget, this.currency.symbol)} (${formatNumber(budgetInManat)} TMT)`;
+    return formatCurrency(this.budget, this.currency.symbol);
   }
 
   static fromApiArray(dataArray) {
@@ -165,12 +141,13 @@ export default class ProjectDto {
         status: data.currency.status
       }) : null;
       
+      const status = data.status ? ProjectStatusDto.fromApiArray([data.status])[0] : null;
+      
       return new ProjectDto(
         data.id,
         data.name,
         data.budget,
         data.currency_id,
-        data.exchange_rate,
         data.date,
         data.client_id,
         client,
@@ -185,7 +162,7 @@ export default class ProjectDto {
         data.description,
         data.creator,
         data.status_id,
-        data.status
+        status
       );
     }).filter(Boolean);
   }

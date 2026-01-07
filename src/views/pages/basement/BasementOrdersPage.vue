@@ -245,19 +245,22 @@ export default {
       this.fetchOrders(1)
     },
     resetFilters() {
-      this.dateFilter = 'all_time'
-      this.startDate = null
-      this.endDate = null
-      this.projectFilter = ''
-      this.fetchOrders(1)
+      this.resetFiltersFromConfig({
+        dateFilter: 'all_time',
+        startDate: null,
+        endDate: null,
+        projectFilter: ''
+      }, () => {
+        this.fetchOrders(1);
+      });
     },
     getActiveFiltersCount() {
-      let count = 0
-      if (this.dateFilter !== 'all_time') count++
-      if (this.projectFilter !== '') count++
-      if (this.startDate !== null && this.startDate !== '') count++
-      if (this.endDate !== null && this.endDate !== '') count++
-      return count
+      return this.getActiveFiltersCountFromConfig([
+        { value: this.dateFilter, defaultValue: 'all_time' },
+        { value: this.projectFilter, defaultValue: '' },
+        { value: this.startDate, defaultValue: null },
+        { value: this.endDate, defaultValue: null }
+      ]);
     },
     handlePerPageChange(newPerPage) {
       this.perPage = newPerPage
@@ -284,7 +287,7 @@ export default {
       }
     },
     formatProducts(products) {
-      if (!products || products.length === 0) {
+      if (!products?.length) {
         return `<span class="text-gray-500">${this.$t('noProducts')}</span>`
       }
       

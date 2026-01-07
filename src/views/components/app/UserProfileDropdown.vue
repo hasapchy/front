@@ -68,7 +68,11 @@ export default {
         const isOpen = ref(false);
         const showProfileModal = ref(false);
 
-        const userName = computed(() => store.state.user?.name || '');
+        const userName = computed(() => {
+            const name = store.state.user?.name || '';
+            const surname = store.state.user?.surname || '';
+            return [name, surname].filter((value) => value && value.trim() !== '').join(' ').trim();
+        });
         const userEmail = computed(() => store.state.user?.email || '');
         const userPosition = computed(() => store.state.user?.position || '');
         const userRole = computed(() => {

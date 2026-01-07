@@ -46,6 +46,8 @@ import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import transactionFormConfigMixin from "@/mixins/transactionFormConfigMixin";
+import dateFormMixin from "@/mixins/dateFormMixin";
+import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import { roundValue } from '@/utils/numberUtils';
 import AppController from '@/api/AppController';
 import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
@@ -57,7 +59,7 @@ import TransactionFormActions from '@/views/components/transactions/TransactionF
 
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin, transactionFormConfigMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin, transactionFormConfigMixin, dateFormMixin, storeDataLoaderMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request", 'copy-transaction'],
     components: {
         AlertDialog,
@@ -94,20 +96,15 @@ export default {
         return {
             // Для заказов всегда тип "income" и не долговая
             type: this.orderId ? "income" : (this.editingItem ? this.editingItem.typeName() : "income"),
-            cashId: this.editingItem ? (this.editingItem.cashId || this.defaultCashId || '') : (this.defaultCashId || ''),
-            origAmount: this.editingItem ? this.editingItem.origAmount : (this.prefillAmount ? parseFloat(this.prefillAmount) || 0 : 0),
-            currencyId: this.editingItem ? this.editingItem.origCurrencyId : (this.prefillCurrencyId || ''),
-            categoryId: this.editingItem ? this.editingItem.categoryId : 4, // По умолчанию id = 4 для типа income
-            projectId: this.editingItem ? this.editingItem.projectId : (this.initialProjectId || ''),
-            date: this.editingItem?.date ? (typeof this.editingItem.date === 'string' 
-                ? this.editingItem.date.substring(0, 16) 
-                : (this.editingItem.date instanceof Date || this.editingItem.date?.toISOString
-                    ? new Date(this.editingItem.date).toISOString().substring(0, 16)
-                    : new Date().toISOString().substring(0, 16))) 
-                : new Date().toISOString().substring(0, 16),
-            note: this.editingItem ? this.editingItem.note : '',
-            isDebt: this.orderId ? false : (this.editingItem ? this.editingItem.isDebt : (this.fieldConfig('debt').enforcedValue ?? false)),
-            selectedClient: this.editingItem ? (this.editingItem.client || this.initialClient) : this.initialClient,
+            cashId: this.editingItem?.cashId || this.defaultCashId || '',
+            origAmount: this.editingItem?.origAmount ?? (this.prefillAmount ? parseFloat(this.prefillAmount) || 0 : 0),
+            currencyId: this.editingItem?.origCurrencyId || this.prefillCurrencyId || '',
+            categoryId: this.editingItem?.categoryId ?? 4, // По умолчанию id = 4 для типа income
+            projectId: this.editingItem?.projectId || this.initialProjectId || '',
+            date: this.getFormattedDate(this.editingItem?.date),
+            note: this.editingItem?.note || '',
+            isDebt: this.orderId ? false : (this.editingItem?.isDebt ?? this.fieldConfig('debt').enforcedValue ?? false),
+            selectedClient: this.editingItem?.client || this.initialClient,
             selectedSource: null,
             sourceType: '',
             currencies: [],
@@ -126,7 +123,7 @@ export default {
             return this.editingItem ? this.$t('editTransaction') : this.$t('createTransaction');
         },
         isDeletedTransaction() {
-            return !!(this.editingItem?.isDeleted || this.editingItem?.is_deleted);
+            return Boolean(this.editingItem?.isDeleted || this.editingItem?.is_deleted);
         },
         isTransferTransaction() {
             return this.editingItem?.isTransfer == 1;
@@ -239,7 +236,7 @@ export default {
             if (!selectedCash) return false;
             const cashCurrencyId = selectedCash.currency_id || selectedCash.currencyId;
             const transactionCurrencyId = this.currencyId;
-            return this.calculatedCashAmount && cashCurrencyId != transactionCurrencyId;
+            return !!(this.calculatedCashAmount && cashCurrencyId != transactionCurrencyId);
         },
     },
     mounted() {
@@ -341,39 +338,36 @@ export default {
             return typeMap[this.sourceType] || null;
         },
         async fetchCurrencies() {
-            if (this.$store.getters.currencies?.length) {
-                this.currencies = this.$store.getters.currencies;
-                return;
-            }
-            await this.$store.dispatch('loadCurrencies');
-            this.currencies = this.$store.getters.currencies;
+            await this.loadStoreData({
+                getterName: 'currencies',
+                dispatchName: 'loadCurrencies',
+                localProperty: 'currencies',
+                defaultValue: []
+            });
         },
         async fetchAllCategories() {
-            try {
-                if (this.$store.getters.transactionCategories?.length) {
-                    this.allCategories = this.$store.getters.transactionCategories;
-                    return;
-                }
-                await this.$store.dispatch('loadTransactionCategories');
-                this.allCategories = this.$store.getters.transactionCategories;
-            } catch (error) {
-                this.allCategories = [];
-            }
+            await this.loadStoreData({
+                getterName: 'transactionCategories',
+                dispatchName: 'loadTransactionCategories',
+                localProperty: 'allCategories',
+                defaultValue: []
+            });
         },
         async fetchAllCashRegisters() {
-            if (this.$store.getters.cashRegisters?.length) {
-                this.allCashRegisters = this.$store.getters.cashRegisters;
-            } else {
-                await this.$store.dispatch('loadCashRegisters');
-                this.allCashRegisters = this.$store.getters.cashRegisters;
-            }
-            if (this.allCashRegisters.length && !this.cashId) {
-                this.cashId = this.defaultCashId || this.allCashRegisters[0].id;
-                const selectedCash = this.allCashRegisters.find(c => c.id == this.cashId);
-                if (selectedCash?.currency_id && !this.currencyId) {
-                    this.currencyId = selectedCash.currency_id;
+            await this.loadStoreData({
+                getterName: 'cashRegisters',
+                dispatchName: 'loadCashRegisters',
+                localProperty: 'allCashRegisters',
+                defaultValue: [],
+                onLoaded: (cashRegisters) => {
+                    if (cashRegisters?.length && !this.cashId) {
+                        this.cashId = this.defaultCashId || cashRegisters[0].id;
+                        if (!this.currencyId) {
+                            this.updateCurrencyFromCash(this.cashId);
+                        }
+                    }
                 }
-            }
+            });
         },
         async calculateExchangeRate() {
             if (!this.showExchangeRate || this.isExchangeRateManual || !this.currencyId || !this.cashId) {
@@ -549,7 +543,7 @@ export default {
             this.isDebt = this.fieldConfig('debt').enforcedValue ?? false;
             this.categoryId = 4;
             this.projectId = this.initialProjectId || '';
-            this.date = new Date().toISOString().substring(0, 16);
+            this.date = this.getCurrentLocalDateTime();
             this.selectedClient = this.initialClient || null;
             this.selectedSource = null;
             this.sourceType = '';
@@ -587,6 +581,25 @@ export default {
         },
 
         // Загружаем источник при редактировании
+        handleSourceFromEditingItem(newEditingItem) {
+            if (newEditingItem.sourceType && newEditingItem.sourceId) {
+                this.loadSourceForEdit(newEditingItem.sourceType, newEditingItem.sourceId);
+            } else {
+                this.selectedSource = null;
+                this.sourceType = '';
+            }
+        },
+        updateCurrencyFromCash(cashId) {
+            const cash = this.allCashRegisters.find(c => c.id === cashId);
+            if (cash?.currency_id) {
+                this.currencyId = cash.currency_id;
+                return;
+            }
+            const defaultCurrency = this.currencies?.find(c => c.isDefault);
+            if (defaultCurrency) {
+                this.currencyId = defaultCurrency.id;
+            }
+        },
         async loadSourceForEdit(sourceType, sourceId) {
             try {
                 // Определяем тип источника
@@ -643,6 +656,17 @@ export default {
                 }
             } catch (error) {
                 // Ошибка при проверке закрытия заказа
+            }
+        },
+        handleCurrencyOrCashChange() {
+            if (!this.isExchangeRateManual && !this.editingItemId) {
+                this.$nextTick(() => {
+                    if (this.showExchangeRate) {
+                        this.calculateExchangeRate();
+                    } else {
+                        this.exchangeRate = null;
+                    }
+                });
             }
         }
     },
@@ -712,22 +736,13 @@ export default {
                 this.currencyId = newEditingItem.origCurrencyId || '';
                 this.categoryId = newEditingItem.categoryId || '';
                 this.projectId = newEditingItem.projectId || '';
-                this.date = newEditingItem.date ? (typeof newEditingItem.date === 'string' 
-                    ? newEditingItem.date.substring(0, 16) 
-                    : (newEditingItem.date instanceof Date || newEditingItem.date?.toISOString
-                        ? new Date(newEditingItem.date).toISOString().substring(0, 16)
-                        : new Date().toISOString().substring(0, 16))) 
-                    : new Date().toISOString().substring(0, 16);
+                this.date = newEditingItem.date                     ? this.getFormattedDate(newEditingItem.date)
+                    : this.getCurrentLocalDateTime();
                 this.selectedClient = newEditingItem.client || this.initialClient || null;
                 this.isDebt = newEditingItem.isDebt || false;
                 this.exchangeRate = newEditingItem.exchangeRate || null;
                 this.isExchangeRateManual = !!newEditingItem.exchangeRate;
-                if (newEditingItem.sourceType && newEditingItem.sourceId) {
-                    this.loadSourceForEdit(newEditingItem.sourceType, newEditingItem.sourceId);
-                } else {
-                    this.selectedSource = null;
-                    this.sourceType = '';
-                }
+                this.handleSourceFromEditingItem(newEditingItem);
                 this.applyTypeConstraints();
                 this.applyDebtConstraints();
                 this.applyCategoryConstraints();
@@ -750,11 +765,8 @@ export default {
         },
         '$store.state.currencies'(newVal) {
             this.currencies = newVal;
-            if (!this.currencyId) {
-                const defaultCurrency = this.currencies?.find(c => c.isDefault);
-                if (defaultCurrency && !this.allCashRegisters.find(c => c.id == this.cashId)?.currency_id) {
-                    this.currencyId = defaultCurrency.id;
-                }
+            if (!this.currencyId && this.cashId) {
+                this.updateCurrencyFromCash(this.cashId);
             }
             this.handleCurrencyOrCashChange();
         },
@@ -783,31 +795,12 @@ export default {
         },
         cashId(newCashId) {
             if (!this.editingItemId && newCashId) {
-                const cash = this.allCashRegisters.find(c => c.id === newCashId);
-                if (cash?.currency_id) {
-                    this.currencyId = cash.currency_id;
-                } else {
-                    const defaultCurrency = (this.currencies || []).find(c => c.isDefault);
-                    if (defaultCurrency) {
-                        this.currencyId = defaultCurrency.id;
-                    }
-                }
+                this.updateCurrencyFromCash(newCashId);
             }
             this.handleCurrencyOrCashChange();
         },
         currencyId() {
             this.handleCurrencyOrCashChange();
-        },
-        handleCurrencyOrCashChange() {
-            if (!this.isExchangeRateManual && !this.editingItemId) {
-                this.$nextTick(() => {
-                    if (this.showExchangeRate) {
-                        this.calculateExchangeRate();
-                    } else {
-                        this.exchangeRate = null;
-                    }
-                });
-            }
         }
     }
 }

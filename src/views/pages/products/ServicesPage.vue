@@ -255,13 +255,14 @@ export default {
             }
         },
         resetFilters() {
-            this.selectedCategoryId = '';
-            this.fetchItems(1);
+            this.resetFiltersFromConfig({
+                selectedCategoryId: ''
+            });
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.selectedCategoryId !== '') count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.selectedCategoryId, defaultValue: '' }
+            ]);
         },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);

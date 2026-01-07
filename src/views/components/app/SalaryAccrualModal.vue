@@ -8,7 +8,7 @@
             <div>
                 <label class="required">{{ $t('date') || 'Дата начисления' }}</label>
                 <input 
-                    type="date" 
+                    type="datetime-local" 
                     v-model="form.date" 
                     :max="maxDate"
                     required
@@ -25,7 +25,15 @@
                 </select>
             </div>
 
-            <div v-if="operationType && operationType !== 'salaryAccrual'">
+            <div v-if="operationType === 'salaryAccrual' || operationType === 'salaryPayment'">
+                <label class="required">{{ $t('salaryPaymentType') || 'Тип оплаты' }}</label>
+                <select v-model.number="form.payment_type" required>
+                    <option :value="0">{{ $t('salaryPaymentTypeNonCash') || 'Безналичный' }}</option>
+                    <option :value="1">{{ $t('salaryPaymentTypeCash') || 'Наличный' }}</option>
+                </select>
+            </div>
+
+            <div v-if="operationType && operationType !== 'salaryAccrual' && operationType !== 'salaryPayment'">
                 <label class="required">{{ $t('amount') || 'Сумма' }}</label>
                 <input 
                     type="number" 
@@ -78,9 +86,8 @@
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import CompaniesController from '@/api/CompaniesController';
-import CashRegisterController from '@/api/CashRegisterController';
 import TransactionController from '@/api/TransactionController';
-import ClientController from '@/api/ClientController';
+import UsersController from '@/api/UsersController';
 import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 
@@ -101,6 +108,11 @@ export default {
             required: false,
             default: () => []
         },
+        users: {
+            type: Array,
+            required: false,
+            default: () => []
+        },
         operationType: {
             type: String,
             required: false,
@@ -110,35 +122,40 @@ export default {
     emits: ['success', 'cancel'],
     data() {
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
         return {
             form: {
                 company_id: null,
-                date: today.toISOString().split('T')[0],
+                date: today.toISOString().substring(0, 16),
                 cash_id: null,
                 note: null,
-                amount: null
+                amount: null,
+                payment_type: 0
             },
             loading: false,
             checking: false,
             cashRegisters: [],
             confirmDialog: false,
             confirmMessage: '',
-            pendingAccrue: null,
-            pendingOperation: null
+            pendingAccrue: null
         };
     },
     computed: {
         maxDate() {
             const today = new Date();
-            return today.toISOString().split('T')[0];
+            return today.toISOString().substring(0, 16);
         },
         isFormValid() {
             if (!this.form.date || !this.form.cash_id || !this.form.company_id) {
                 return false;
             }
-            if (this.operationType && this.operationType !== 'salaryAccrual') {
+            if ((this.operationType === 'salaryAccrual' || this.operationType === 'salaryPayment') && (this.form.payment_type !== 0 && this.form.payment_type !== 1)) {
+                return false;
+            }
+            if (this.operationType !== 'salaryAccrual' && this.operationType !== 'salaryPayment') {
                 return this.form.amount && parseFloat(this.form.amount) > 0;
+            }
+            if (this.operationType === 'salaryPayment') {
+                return true;
             }
             return true;
         }
@@ -168,6 +185,10 @@ export default {
         this.form.company_id = companyId;
         await this.loadCashRegisters();
         
+        if (this.operationType === 'salaryPayment') {
+            await this.loadUserSalaries();
+        }
+        
         if (this.operationType === 'salaryAccrual') {
             const month = new Date().toLocaleString('ru-RU', { month: 'long' });
             const year = new Date().getFullYear();
@@ -190,41 +211,18 @@ export default {
                 );
             }
         },
+        async loadUserSalaries() {
+            for (const user of this.users) {
+                const data = await UsersController.getSalaries(user.id);
+                this.$set(user, 'salaries', data.salaries || []);
+            }
+        },
         async handleAccrue() {
-            if (!this.form.company_id) {
-                this.showNotification(
-                    this.$t('error') || 'Ошибка',
-                    this.$t('companyRequired') || 'Компания обязательна для выбора',
-                    true
-                );
-                return;
-            }
-
-            if (!this.form.date) {
-                this.showNotification(
-                    this.$t('error') || 'Ошибка',
-                    this.$t('dateRequired') || 'Дата обязательна для заполнения',
-                    true
-                );
-                return;
-            }
-
-            if (!this.form.cash_id) {
-                this.showNotification(
-                    this.$t('error') || 'Ошибка',
-                    this.$t('cashRegisterRequired') || 'Касса обязательна для выбора',
-                    true
-                );
-                return;
-            }
-
             this.checking = true;
             try {
                 const checkResult = await CompaniesController.checkExistingSalaries(this.form.company_id, this.form.date, this.userIds);
                 
-                console.log('Check result:', checkResult);
-                
-                if (checkResult && checkResult.has_existing === true && checkResult.affected_users && Array.isArray(checkResult.affected_users) && checkResult.affected_users.length > 0) {
+                if (checkResult?.has_existing && checkResult.affected_users?.length > 0) {
                     const month = checkResult.month || new Date(this.form.date).toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
                     const userNames = checkResult.affected_users
                         .map(u => u.user_name || `ID: ${u.user_id}`)
@@ -241,7 +239,8 @@ export default {
                         date: this.form.date,
                         cash_id: this.form.cash_id,
                         note: this.form.note || null,
-                        user_ids: this.userIds
+                        user_ids: this.userIds,
+                        payment_type: this.form.payment_type
                     };
                     this.confirmDialog = true;
                     this.checking = false;
@@ -253,7 +252,8 @@ export default {
                     date: this.form.date,
                     cash_id: this.form.cash_id,
                     note: this.form.note || null,
-                    user_ids: this.userIds
+                    user_ids: this.userIds,
+                    payment_type: this.form.payment_type
                 });
             } catch (error) {
                 console.error('Error checking existing accruals:', error);
@@ -328,19 +328,6 @@ export default {
             await this.performBatchTransaction();
         },
         async performBatchTransaction() {
-            if (!this.form.company_id || !this.form.date || !this.form.cash_id) {
-                return;
-            }
-
-            if (this.operationType !== 'salaryAccrual' && (!this.form.amount || parseFloat(this.form.amount) <= 0)) {
-                this.showNotification(
-                    this.$t('error') || 'Ошибка',
-                    this.$t('amountRequired') || 'Укажите сумму',
-                    true
-                );
-                return;
-            }
-
             this.loading = true;
             try {
                 await this.$store.dispatch('loadClients');
@@ -372,15 +359,7 @@ export default {
                                 };
                             }
 
-                            const transactionData = this.buildTransactionData(client, cashRegister);
-                            
-                            if (!transactionData.orig_amount || transactionData.orig_amount <= 0) {
-                                return {
-                                    success: false,
-                                    error: `Сотрудник ID ${userId}: Не указана сумма`
-                                };
-                            }
-                            
+                            const transactionData = this.buildTransactionData(client, cashRegister, userId);
                             await TransactionController.storeItem(transactionData);
                             return { success: true };
                         } catch (error) {
@@ -445,7 +424,7 @@ export default {
                 this.loading = false;
             }
         },
-        buildTransactionData(client, cashRegister) {
+        buildTransactionData(client, cashRegister, userId = null) {
             const categoryIds = {
                 'salaryPayment': 7,
                 'bonus': 26,
@@ -467,13 +446,23 @@ export default {
                 'advance': 0
             };
 
+            let amount = parseFloat(this.form.amount);
+            
+            if (this.operationType === 'salaryPayment' && userId) {
+                const user = this.users.find(u => u.id === userId);
+                const salary = user?.salaries?.find(s => Number(s.payment_type) === Number(this.form.payment_type) && !s.end_date);
+                if (salary?.amount) {
+                    amount = parseFloat(salary.amount);
+                }
+            }
+
             return {
                 type: transactionType[this.operationType],
                 client_id: client.id,
                 cash_id: this.form.cash_id,
                 category_id: categoryIds[this.operationType],
                 date: this.form.date,
-                orig_amount: parseFloat(this.form.amount),
+                orig_amount: amount,
                 currency_id: cashRegister.currencyId || cashRegister.currency_id,
                 note: this.form.note || this.getDefaultNote(),
                 is_debt: isDebt[this.operationType],
@@ -503,13 +492,6 @@ export default {
             this.confirmDialog = false;
             if (this.pendingAccrue) {
                 await this.confirmAccrue();
-                return;
-            }
-            if (this.pendingOperation) {
-                const operation = this.pendingOperation;
-                this.pendingOperation = null;
-                this.form.amount = operation.amount;
-                await this.performBatchTransaction();
             }
         }
     }

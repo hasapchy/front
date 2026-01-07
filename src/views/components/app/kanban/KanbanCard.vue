@@ -273,12 +273,10 @@ export default {
         },
         isAdmin() {
             const user = this.$store.getters.user;
-            console.log(user);
-            return user?.is_admin === true;  // или просто: return !!user?.is_admin;
+            return user?.is_admin === true;
         },
         isExecutor() {
             const user = this.$store.getters.user;
-            console.log(this.order?.executor);
             return user?.id === this.order?.executor?.id;
         },
         isSupervisor() {

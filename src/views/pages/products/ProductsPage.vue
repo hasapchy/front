@@ -117,10 +117,11 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import searchMixin from '@/mixins/searchMixin';
 import filtersMixin from '@/mixins/filtersMixin';
+import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,  companyChangeMixin, searchMixin, filtersMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,  companyChangeMixin, searchMixin, filtersMixin, storeDataLoaderMixin],
     components: { NotificationToast, PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, draggable: VueDraggableNext },
     data() {
         return {
@@ -177,13 +178,12 @@ export default {
 
     methods: {
         async fetchCategories() {
-            try {
-                // ✅ Используем данные из store (кэшированные!)
-                await this.$store.dispatch('loadCategories');
-                this.categories = this.$store.getters.categories;
-            } catch (error) {
-                console.error('Ошибка при загрузке категорий:', error);
-            }
+            await this.loadStoreData({
+                getterName: 'categories',
+                dispatchName: 'loadCategories',
+                localProperty: 'categories',
+                defaultValue: []
+            });
         },
 
         onCategoryFilterChange() {
@@ -259,13 +259,14 @@ export default {
             }
         },
         resetFilters() {
-            this.selectedCategoryId = '';
-            this.fetchItems(1);
+            this.resetFiltersFromConfig({
+                selectedCategoryId: ''
+            });
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.selectedCategoryId !== '') count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.selectedCategoryId, defaultValue: '' }
+            ]);
         },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);

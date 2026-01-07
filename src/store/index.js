@@ -1227,7 +1227,7 @@ const store = createStore({
 
           try {
             await dispatch("loadUserCompanies");
-            await dispatch("loadCurrentCompany", { skipPermissionRefresh: true });
+            await dispatch("loadCurrentCompany", { skipPermissionRefresh: false });
           } catch (error) {
             console.error("Ошибка загрузки компаний:", error);
           }
@@ -1500,7 +1500,7 @@ const store = createStore({
           to: "/tasks",
           icon: "fas fa-tasks mr-2",
           label: "tasks",
-          permission: "tasks_view_all", //tasks_view
+          permission: "tasks_view",
         },
         {
           id: "messenger",
@@ -1829,7 +1829,7 @@ const store = createStore({
     categories: (state) => state.categories,
     projects: (state) => state.projects,
     activeProjects: (state) =>
-      state.projects.filter((p) => p.statusId !== 4 && p.statusId !== 5),
+      state.projects.filter((p) => p.status?.isTrVisible ?? true),
     orderStatuses: (state) => state.orderStatuses,
     projectStatuses: (state) => state.projectStatuses,
     taskStatuses: (state) => state.taskStatuses,

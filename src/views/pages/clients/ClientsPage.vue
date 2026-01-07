@@ -220,15 +220,16 @@ export default {
             }
         },
         resetFilters() {
-            this.statusFilter = '';
-            this.typeFilter = '';
-            this.fetchItems(1);
+            this.resetFiltersFromConfig({
+                statusFilter: '',
+                typeFilter: ''
+            });
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.statusFilter !== '') count++;
-            if (this.typeFilter !== '') count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.statusFilter, defaultValue: '' },
+                { value: this.typeFilter, defaultValue: '' }
+            ]);
         },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);

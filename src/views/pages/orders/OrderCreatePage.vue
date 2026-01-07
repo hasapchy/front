@@ -21,8 +21,8 @@
                 <div>
                     <label>{{ $t('date') }}</label>
                     <input type="datetime-local" v-model="date"
-                        :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                        :min="!$store.getters.hasPermission('settings_edit_any_date') ? getCurrentLocalDateTime() : null" />
+                        :disabled="editingItemId && !canEditDate()"
+                        :min="this.getMinDate()" />
                 </div>
                 <div>
                     <label>{{ $t('description') }}</label>
@@ -126,11 +126,13 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import ProjectCreatePage from '@/views/pages/projects/ProjectCreatePage.vue';
 import CategoriesCreatePage from '@/views/pages/categories/CategoriesCreatePage.vue';
 import { formatCurrency, roundValue } from '@/utils/numberUtils';
-import { formatDatabaseDateTimeForInput, getCurrentLocalDateTime } from '@/utils/dateUtils';
+import dateFormMixin from '@/mixins/dateFormMixin';
+import crudFormMixin from '@/mixins/crudFormMixin';
+import storeDataLoaderMixin from '@/mixins/storeDataLoaderMixin';
 
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
     emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { ClientSearch, ProductSearch, PrimaryButton, AlertDialog, TabBar, OrderTransactionsTab, SideModalDialog, ProjectCreatePage, CategoriesCreatePage },
     props: {
@@ -153,7 +155,7 @@ export default {
             warehouseId: this.editingItem?.warehouseId || '',
             statusId: this.editingItem?.statusId || 1,
             categoryId: this.editingItem?.categoryId || '',
-            date: this.editingItem?.date ? formatDatabaseDateTimeForInput(this.editingItem.date) : getCurrentLocalDateTime(),
+            date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
             note: this.editingItem?.note || '',
             description: this.editingItem?.description || '',
             products: this.editingItem?.products || [],
@@ -186,13 +188,13 @@ export default {
         ]);
 
         if (!this.editingItem) {
-            if (this.allWarehouses.length > 0 && !this.warehouseId) {
+            if (!this.warehouseId && this.allWarehouses?.length) {
                 this.warehouseId = this.allWarehouses[0].id;
             }
-            if (this.allCashRegisters.length > 0 && !this.cashId) {
+            if (!this.cashId && this.allCashRegisters?.length) {
                 this.cashId = this.allCashRegisters[0].id;
             }
-            const defaultCurrency = (this.currencies || []).find((c) => c.isDefault);
+            const defaultCurrency = this.currencies?.find((c) => c.isDefault);
             if (!this.currencyId && defaultCurrency) {
                 this.currencyId = defaultCurrency.id;
             }
@@ -273,50 +275,66 @@ export default {
             return state;
         },
         async fetchAllWarehouses() {
-            await this.$store.dispatch('loadWarehouses');
-            this.allWarehouses = this.$store.getters.warehouses || [];
+            await this.loadStoreData({
+                getterName: 'warehouses',
+                dispatchName: 'loadWarehouses',
+                localProperty: 'allWarehouses',
+                defaultValue: []
+            });
         },
         async fetchAllProjects() {
-            if (this.allProjects.length > 0) return;
+            if (this.allProjects?.length) return;
 
-            await this.$store.dispatch('loadProjects');
-            const allProjectsFromStore = this.$store.getters.projects;
-
-            if (this.editingItem?.projectId && this.editingItem?.projectName) {
-                const hasProject = allProjectsFromStore.some(p => p.id === this.editingItem.projectId);
-                if (!hasProject) {
-                    this.allProjects = [
-                        ...allProjectsFromStore,
-                        { id: this.editingItem.projectId, name: this.editingItem.projectName }
-                    ];
-                    return;
+            await this.loadStoreData({
+                getterName: 'projects',
+                dispatchName: 'loadProjects',
+                onLoaded: (allProjectsFromStore) => {
+                    if (this.editingItem?.projectId && this.editingItem?.projectName) {
+                        const hasProject = allProjectsFromStore.some(p => p.id === this.editingItem.projectId);
+                        if (!hasProject) {
+                            this.allProjects = [
+                                ...allProjectsFromStore,
+                                { id: this.editingItem.projectId, name: this.editingItem.projectName }
+                            ];
+                            return;
+                        }
+                    }
+                    this.allProjects = allProjectsFromStore;
                 }
-            }
-
-            this.allProjects = allProjectsFromStore;
+            });
         },
         async fetchAllProductCategories() {
-            try {
-                await this.$store.dispatch('loadCategories');
-                const allCategories = this.$store.getters.categories;
-
-                this.allProductCategories = allCategories.filter(c => !c.parentId);
-            } catch (error) {
-                this.allProductCategories = [];
-            }
+            await this.loadStoreData({
+                getterName: 'categories',
+                dispatchName: 'loadCategories',
+                localProperty: 'allProductCategories',
+                transform: (categories) => categories.filter(c => !c.parentId),
+                defaultValue: []
+            });
         },
         async fetchCurrencies() {
-            await this.$store.dispatch('loadCurrencies');
-            this.currencies = this.$store.getters.currencies;
+            await this.loadStoreData({
+                getterName: 'currencies',
+                dispatchName: 'loadCurrencies',
+                localProperty: 'currencies'
+            });
         },
         async fetchAllCashRegisters() {
-            await this.$store.dispatch('loadCashRegisters');
-            this.allCashRegisters = this.$store.getters.cashRegisters || [];
+            await this.loadStoreData({
+                getterName: 'cashRegisters',
+                dispatchName: 'loadCashRegisters',
+                localProperty: 'allCashRegisters',
+                defaultValue: []
+            });
         },
         async fetchOrderStatuses() {
-            await this.$store.dispatch('loadOrderStatuses');
-            // Фильтруем только активные статусы
-            this.statuses = this.$store.getters.orderStatuses.filter(status => status.isActive !== false);
+            await this.loadStoreData({
+                getterName: 'orderStatuses',
+                dispatchName: 'loadOrderStatuses',
+                localProperty: 'statuses',
+                transform: (statuses) => statuses.filter(status => status.isActive !== false),
+                defaultValue: []
+            });
         },
         changeTab(tabName) {
             this.currentTab = tabName;
@@ -327,6 +345,42 @@ export default {
             if (tabName === 'transactions' && !this.transactionsTabVisited) {
                 this.transactionsTabVisited = true;
             }
+        },
+        mapProductFromEditingItem(p) {
+            const isTemp = p.isTempProduct || (p.productId == null);
+            if (isTemp) {
+                return {
+                    orderProductId: p.id || null,
+                    name: p.productName || p.name,
+                    productName: p.productName || p.name,
+                    description: p.description || '',
+                    quantity: Number(p.quantity) || 0,
+                    price: Number(p.price) || 0,
+                    unitId: p.unitId ?? null,
+                    width: p.width ?? null,
+                    height: p.height ?? null,
+                    productId: p.productId || this.generateTempProductId(),
+                    isTempProduct: true,
+                    icons() { return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>'; },
+                };
+            }
+            return {
+                orderProductId: p.id || null,
+                productId: p.productId,
+                productName: p.productName || p.name,
+                name: p.productName || p.name,
+                quantity: Number(p.quantity) || 0,
+                price: Number(p.price) || 0,
+                unitId: p.unitId ?? null,
+                width: p.width ?? null,
+                height: p.height ?? null,
+                icons() {
+                    const isProduct = p.product_type == 1 || p.type == 1;
+                    return isProduct
+                        ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
+                        : '<i class="fas fa-concierge-bell text-[#EAB308]" title="Услуга"></i>';
+                }
+            };
         },
         prepareFormData() {
             const formData = this.getFormState();
@@ -357,7 +411,31 @@ export default {
             formData.remove_temp_products = this.removedTempProducts;
             return formData;
         },
-        async performSave(silent = false) {
+        // Методы для crudFormMixin
+        prepareSave() {
+            return this.prepareFormData();
+        },
+        async performSave(data) {
+            try {
+                const resp = this.editingItemId
+                    ? await OrderController.updateItem(this.editingItemId, data)
+                    : await OrderController.storeItem(data);
+                
+                if (!this.editingItemId && resp?.id) {
+                    this.editingItemId = resp.id;
+                }
+                
+                if (resp.message) {
+                    await this.refreshSelectedClientData();
+                    this.resetFormChanges();
+                    this.removedTempProducts = [];
+                    return resp;
+                }
+            } catch (error) {
+                throw error;
+            }
+        },
+        async performSaveInternal(silent = false) {
             this.saveLoading = true;
             try {
                 const formData = this.prepareFormData();
@@ -382,22 +460,29 @@ export default {
             }
         },
         async save() {
-            await this.performSave(false);
+            await this.performSaveInternal(false);
         },
         async saveWithoutClose() {
             await this.performSave(true);
         },
 
+        // Метод для crudFormMixin
+        async performDelete() {
+            const resp = await OrderController.deleteItem(this.editingItemId);
+            if (resp.message) {
+                return resp;
+            }
+            throw new Error('Failed to delete');
+        },
         async deleteItem() {
+            // Используем метод из crudFormMixin
             this.closeDeleteDialog();
             if (!this.editingItemId) return;
             this.deleteLoading = true;
             try {
-                const resp = await OrderController.deleteItem(this.editingItemId);
-                if (resp.message) {
-                    this.$emit('deleted');
-                    this.clearForm();
-                }
+                await this.performDelete();
+                this.$emit('deleted');
+                this.clearForm();
             } catch (error) {
                 this.$emit('deleted-error', this.getApiErrorMessage(error));
             }
@@ -416,7 +501,7 @@ export default {
             this.warehouseId = this.allWarehouses[0]?.id || '';
             this.statusId = '';
             this.categoryId = '';
-            this.date = getCurrentLocalDateTime();
+            this.date = this.getCurrentLocalDateTime();
             this.note = '';
             this.description = ''
             this.products = [];
@@ -479,11 +564,33 @@ export default {
                 this.selectedClient = updatedClient;
             }
         },
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                if (newEditingItem.id) {
+                    this.productsTabVisited = true;
+                    this.transactionsTabVisited = true;
+                }
+
+                this.selectedClient = newEditingItem.client || null;
+                this.projectId = newEditingItem.projectId || '';
+                this.warehouseId = newEditingItem.warehouseId || this.allWarehouses?.[0]?.id || '';
+                this.cashId = newEditingItem.cashId || this.allCashRegisters?.[0]?.id || '';
+                this.statusId = newEditingItem.statusId || '';
+                this.categoryId = newEditingItem.categoryId || '';
+                this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date) : this.getCurrentLocalDateTime();
+                this.note = newEditingItem.note || '';
+                this.description = newEditingItem.description || '';
+                const rawProducts = newEditingItem.products || [];
+                this.products = rawProducts.map(p => this.mapProductFromEditingItem(p));
+                this.discount = newEditingItem.discount || 0;
+                this.discountType = newEditingItem.discount_type || 'fixed';
+            }
+        }
     },
     watch: {
         cashId: {
             handler(newCashId) {
-                if (!newCashId || !this.allCashRegisters.length) return;
+                if (!newCashId || !this.allCashRegisters?.length) return;
                 const selectedCash = this.allCashRegisters.find(c => c.id == newCashId);
                 if (selectedCash?.currency_id) {
                     this.currencyId = selectedCash.currency_id;
@@ -493,14 +600,16 @@ export default {
         },
         projectId: {
             handler(newProjectId) {
-                if (newProjectId && this.products.length > 0) {
+                if (!this.products?.length) return;
+                
+                if (newProjectId) {
                     this.products.forEach(product => {
                         if (product.wholesalePrice > 0) {
                             product.price = product.wholesalePrice;
                             product.priceType = 'wholesale';
                         }
                     });
-                } else if (!newProjectId && this.products.length > 0) {
+                } else {
                     this.products.forEach(product => {
                         if (product.retailPrice != null) {
                             product.price = product.retailPrice;
@@ -517,7 +626,7 @@ export default {
                     this.editingItem &&
                     this.cashId &&
                     !this.currencyId &&
-                    newCashRegisters.length
+                    newCashRegisters?.length
                 ) {
                     const selectedCash = newCashRegisters.find(c => c.id == this.cashId);
                     if (selectedCash?.currency_id) {
@@ -534,77 +643,10 @@ export default {
         },
         allWarehouses: {
             handler(newWarehouses) {
-                if (newWarehouses.length && !this.warehouseId && !this.editingItem) {
+                if (newWarehouses?.length && !this.warehouseId && !this.editingItem) {
                     this.warehouseId = newWarehouses[0].id;
                 }
             },
-            immediate: true
-        },
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    if (newEditingItem.id) {
-                        this.productsTabVisited = true;
-                        this.transactionsTabVisited = true;
-                    }
-
-                    this.selectedClient = newEditingItem.client || null;
-                    this.projectId = newEditingItem.projectId || '';
-                    this.warehouseId = newEditingItem.warehouseId || (this.allWarehouses.length ? this.allWarehouses[0].id : '');
-                    this.cashId = newEditingItem.cashId || (this.allCashRegisters.length ? this.allCashRegisters[0].id : '');
-                    this.statusId = newEditingItem.statusId || '';
-                    this.categoryId = newEditingItem.categoryId || '';
-                    this.date = newEditingItem.date ? formatDatabaseDateTimeForInput(newEditingItem.date) : getCurrentLocalDateTime();
-                    this.note = newEditingItem.note || '';
-                    this.description = newEditingItem.description || '';
-                    const rawProducts = newEditingItem.products || [];
-                    this.products = rawProducts.map(p => {
-                        const isTemp = p.isTempProduct || (p.productId == null);
-                        if (isTemp) {
-                            return {
-                                orderProductId: p.id || null,
-                                name: p.productName || p.name,
-                                productName: p.productName || p.name,
-                                description: p.description || '',
-                                quantity: Number(p.quantity) || 0,
-                                price: Number(p.price) || 0,
-                                unitId: p.unitId ?? null,
-                                width: p.width ?? null,
-                                height: p.height ?? null,
-                                productId: p.productId || this.generateTempProductId(),
-                                isTempProduct: true,
-                                icons() { return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>'; },
-                            };
-                        }
-                        return {
-                            orderProductId: p.id || null,
-                            productId: p.productId,
-                            productName: p.productName || p.name,
-                            name: p.productName || p.name,
-                            quantity: Number(p.quantity) || 0,
-                            price: Number(p.price) || 0,
-                            unitId: p.unitId ?? null,
-                            width: p.width ?? null,
-                            height: p.height ?? null,
-                            icons() {
-                                const isProduct = p.product_type == 1 || p.type == 1;
-                                return isProduct
-                                    ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
-                                    : '<i class="fas fa-concierge-bell text-[#EAB308]" title="Услуга"></i>';
-                            }
-                        };
-                    });
-                    this.discount = newEditingItem.discount || 0;
-                    this.discountType = newEditingItem.discount_type || 'fixed';
-                    this.editingItemId = newEditingItem.id || null;
-                } else {
-                    this.clearForm();
-                }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
-            },
-            deep: true,
             immediate: true
         },
         '$store.state.warehouses'(newVal) {
@@ -624,7 +666,7 @@ export default {
         },
         '$store.state.clients': {
             handler(newClients) {
-                if (this.selectedClient?.id && newClients.length) {
+                if (this.selectedClient?.id && newClients?.length) {
                     const updated = newClients.find(c => c.id === this.selectedClient.id);
                     if (updated) {
                         this.selectedClient = updated;

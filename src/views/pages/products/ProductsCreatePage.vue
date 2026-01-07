@@ -148,11 +148,12 @@ import AdminCategoryCreatePage from '@/views/pages/categories/CategoriesCreatePa
 import CheckboxFilter from '@/views/components/app/forms/CheckboxFilter.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
+import crudFormMixin from '@/mixins/crudFormMixin';
 import JsBarcode from "jsbarcode";
 import { CacheInvalidator } from '@/cache';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     components: { PrimaryButton, AlertDialog, SideModalDialog, AdminCategoryCreatePage, CheckboxFilter },
     props: {
@@ -210,14 +211,14 @@ export default {
         isFormValid() {
             const isValid = this.name && this.name.trim() !== '' && 
                            this.sku && this.sku.trim() !== '' &&
-                           this.selectedCategoryIds.length > 0;
+                           this.selectedCategoryIds?.length > 0;
             return isValid;
         },
     },
     methods: {
         async fetchUnits() {
             // Используем данные из store
-            if (this.$store.getters.units.length > 0) {
+            if (this.$store.getters.units?.length) {
                 this.units = this.$store.getters.units;
             } else {
                 await this.$store.dispatch('loadUnits');
@@ -225,7 +226,7 @@ export default {
             }
         },
         async fetchAllCategories() {
-            if (this.$store.getters.categories && this.$store.getters.categories.length > 0) {
+            if (this.$store.getters.categories?.length) {
                 this.allCategories = this.$store.getters.categories;
                 return;
             }
@@ -259,61 +260,48 @@ export default {
                 this.selected_image = URL.createObjectURL(file);
             }
         },
-        async save() {
-            this.saveLoading = true;
-            try {
-                const typeToUse = this.defaultType || this.type;
-                var item = {
-                    type: typeToUse == "product" ? 1 : 0,
-                    name: this.name,
-                    description: this.description,
-                    sku: this.sku,
-                    category_id: this.selectedCategoryIds.length > 0 ? parseInt(this.selectedCategoryIds[0]) : this.category_id,
-                    categories: this.selectedCategoryIds.map(id => parseInt(id)),
-                    unit_id: this.unit_id,
-                    barcode: this.barcode,
-                    retail_price: parseFloat(this.retail_price) || 0,
-                    wholesale_price: parseFloat(this.wholesale_price) || 0,
-                    purchase_price: parseFloat(this.purchase_price) || 0,
-                };
-                if (this.editingItemId != null) {
-                    const itemId = this.editingItem && this.editingItem.productId ? this.editingItem.productId : this.editingItemId;
-                    var resp = await ProductController.updateItem(
-                        itemId,
-                        item,
-                        this.$refs.imageInput?.files[0]
-                    );
-                } else {
-                    var resp = await ProductController.storeItem(item, this.$refs.imageInput?.files[0]);
-                }
-                if (resp.message) {
-                    this.$emit('saved', resp.item || item);
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
-            }
-            this.saveLoading = false;
-
+        // Методы для crudFormMixin
+        prepareSave() {
+            const typeToUse = this.defaultType || this.type;
+            return {
+                type: typeToUse == "product" ? 1 : 0,
+                name: this.name,
+                description: this.description,
+                sku: this.sku,
+                category_id: this.selectedCategoryIds?.length > 0 ? parseInt(this.selectedCategoryIds[0]) : this.category_id,
+                categories: this.selectedCategoryIds.map(id => parseInt(id)),
+                unit_id: this.unit_id,
+                barcode: this.barcode,
+                retail_price: parseFloat(this.retail_price) || 0,
+                wholesale_price: parseFloat(this.wholesale_price) || 0,
+                purchase_price: parseFloat(this.purchase_price) || 0,
+            };
         },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (this.editingItemId == null) {
-                return;
-            }
-            this.deleteLoading = true;
-            try {
+        async performSave(data) {
+            const imageFile = this.$refs.imageInput?.files[0];
+            let resp;
+            if (this.editingItemId != null) {
                 const itemId = this.editingItem && this.editingItem.productId ? this.editingItem.productId : this.editingItemId;
-                const resp = await ProductController.deleteItem(itemId);
-                if (resp.message) {
-                    this.$emit('deleted');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+                resp = await ProductController.updateItem(itemId, data, imageFile);
+            } else {
+                resp = await ProductController.storeItem(data, imageFile);
             }
-            this.deleteLoading = false;
+            if (resp.message) {
+                return resp.item || data;
+            }
+            throw new Error('Failed to save');
         },
+        // Метод save() теперь используется из crudFormMixin
+        // Метод для crudFormMixin
+        async performDelete() {
+            const itemId = this.editingItem && this.editingItem.productId ? this.editingItem.productId : this.editingItemId;
+            const resp = await ProductController.deleteItem(itemId);
+            if (resp.message) {
+                return resp;
+            }
+            throw new Error('Failed to delete');
+        },
+        // Метод deleteItem() теперь используется из crudFormMixin
         generateBarcode() {
             const prefix = Math.floor(Math.random() * 10) + 20;
             const ean = String(prefix) + String(Math.floor(Math.random() * 9999999999)).padStart(10, '0');
@@ -428,6 +416,49 @@ export default {
                 return import.meta.env.VITE_APP_BASE_URL + '/storage/' + item.productImage;
             return '';
         },
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                if (this.defaultType) {
+                    this.type = this.defaultType;
+                } else {
+                    this.type = newEditingItem.typeName ? newEditingItem.typeName() : 'product';
+                }
+                this.name = newEditingItem.name || newEditingItem.productName || '';
+                this.description = newEditingItem.description || '';
+                this.sku = newEditingItem.sku || '';
+                this.image = newEditingItem.image || newEditingItem.productImage || '';
+                this.category_id = newEditingItem.category_id || newEditingItem.categoryId || '';
+
+                const purchasePriceValue = newEditingItem.purchasePrice ?? 0;
+                if (newEditingItem.categories?.length) {
+                    this.selectedCategoryIds = newEditingItem.categories.map(cat => cat.id.toString());
+                    this.selectedCategories = newEditingItem.categories.map((cat, index) => ({
+                        id: parseInt(cat.id),
+                        name: cat.name,
+                        is_primary: index === 0
+                    }));
+                } else if (this.category_id) {
+                    const category = this.allCategories.find(cat => cat.id == this.category_id);
+                    this.selectedCategoryIds = [this.category_id.toString()];
+                    this.selectedCategories = [{
+                        id: parseInt(this.category_id),
+                        name: category?.name || 'Категория',
+                        is_primary: true
+                    }];
+                } else {
+                    this.selectedCategoryIds = [];
+                    this.selectedCategories = [];
+                }
+
+                this.unit_id = newEditingItem.unit_id || newEditingItem.unitId || '';
+                this.barcode = newEditingItem.barcode || '';
+                this.retail_price = newEditingItem.retailPrice ?? 0;
+                this.wholesale_price = newEditingItem.wholesalePrice ?? 0;
+                this.purchase_price = purchasePriceValue ?? 0;
+            } else {
+                this.selected_image = null;
+            }
+        }
     },
     watch: {
         defaultName(newVal) {
@@ -442,71 +473,6 @@ export default {
                     this.renderBarcodeToCanvas(newVal);
                 });
             }
-        },
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    if (this.defaultType) {
-                        this.type = this.defaultType;
-                    } else {
-                        this.type = newEditingItem.typeName ? newEditingItem.typeName() : 'product';
-                    }
-                    this.name = newEditingItem.name || newEditingItem.productName || '';
-                    this.description = newEditingItem.description || '';
-                    this.sku = newEditingItem.sku || '';
-                    this.image = newEditingItem.image || newEditingItem.productImage || '';
-                    this.category_id = newEditingItem.category_id || newEditingItem.categoryId || '';
-
-                    const purchasePriceValue = newEditingItem.purchasePrice ?? 0;
-                    if (newEditingItem.categories && newEditingItem.categories.length > 0) {
-                        this.selectedCategoryIds = newEditingItem.categories.map(cat => cat.id.toString());
-                        this.selectedCategories = newEditingItem.categories.map((cat, index) => ({
-                            id: parseInt(cat.id),
-                            name: cat.name,
-                            is_primary: index === 0
-                        }));
-                    } else if (this.category_id) {
-                        const category = this.allCategories.find(cat => cat.id == this.category_id);
-                        this.selectedCategoryIds = [this.category_id.toString()];
-                        this.selectedCategories = [{
-                            id: parseInt(this.category_id),
-                            name: category?.name || 'Категория',
-                            is_primary: true
-                        }];
-                    } else {
-                        this.selectedCategoryIds = [];
-                        this.selectedCategories = [];
-                    }
-
-                    this.unit_id = newEditingItem.unit_id || newEditingItem.unitId || '';
-                    this.barcode = newEditingItem.barcode || '';
-                    this.retail_price = newEditingItem.retailPrice ?? 0;
-                    this.wholesale_price = newEditingItem.wholesalePrice ?? 0;
-                    this.purchase_price = purchasePriceValue ?? 0;
-                    this.editingItemId = newEditingItem.id || newEditingItem.productId || null;
-                } else {
-                    this.type = this.defaultType || 'product';
-                    this.name = '';
-                    this.description = '';
-                    this.sku = '';
-                    this.image = '';
-                    this.category_id = '';
-                    this.selectedCategoryIds = [];
-                    this.selectedCategories = [];
-                    this.unit_id = '';
-                    this.barcode = '';
-                    this.retail_price = 0;
-                    this.wholesale_price = 0;
-                    this.purchase_price = 0;
-                    this.editingItemId = null;
-                    this.selected_image = null;
-                }
-                this.$nextTick(() => {
-                    this.saveInitialState();
-                });
-            },
-            deep: true,
-            immediate: true
         },
         defaultType(newVal) {
             if (newVal) {

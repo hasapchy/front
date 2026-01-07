@@ -75,9 +75,10 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
 
 export default {
-    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
+    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
     components: { 
         NotificationToast, 
         PrimaryButton, 
@@ -140,6 +141,17 @@ export default {
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
+        },
+        async handleCompanyChanged(companyId) {
+            this.selectedIds = [];
+            if (this.modalDialog) {
+                this.closeModal(true);
+            }
+            this.editingItem = null;
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'roles' });
+            }
+            await this.fetchItems(1, false);
         },
         itemMapper(item, column) {
             switch (column) {
