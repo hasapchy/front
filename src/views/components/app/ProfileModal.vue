@@ -180,7 +180,8 @@ export default {
             
             visibleTabs.push(this.tabs[0]);
             
-            if (this.hasClientAccount) {
+            if (this.$store.getters.hasPermission('settings_client_balance_view') || 
+                this.$store.getters.hasPermission('settings_client_balance_view_own')) {
                 visibleTabs.push(this.tabs[1]);
             }
             

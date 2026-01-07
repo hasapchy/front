@@ -100,6 +100,7 @@ import localeData from 'dayjs/plugin/localeData';
 import 'dayjs/locale/ru';
 import 'dayjs/locale/en';
 import 'dayjs/locale/tk';
+import { translateLeaveType } from '@/utils/translationUtils';
 
 dayjs.extend(isoWeek);
 dayjs.extend(localeData);
