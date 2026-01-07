@@ -132,18 +132,6 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('departments') || 'Департаменты' }}</label>
-                    <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
-                        <div v-for="dept in departments" :key="dept.id" class="flex items-center space-x-2 mb-2">
-                            <input type="checkbox" :id="`dept-${dept.id}`" :value="dept.id"
-                                v-model="form.departments"
-                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                            <label :for="`dept-${dept.id}`" class="text-sm text-gray-700 cursor-pointer">{{ dept.title }}</label>
-                        </div>
-                    </div>
-                </div>
             </div>
             <div v-show="currentTab === 'roles'">
                 <div class="mb-4">
@@ -220,7 +208,6 @@ import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
 import UsersController from '@/api/UsersController';
 import CompaniesController from '@/api/CompaniesController';
 import RolesController from '@/api/RolesController';
-import DepartmentController from '@/api/DepartmentController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import userPhotoMixin from '@/mixins/userPhotoMixin';
@@ -254,11 +241,9 @@ export default {
                 companies: [],
                 roles: [],
                 company_roles: [],
-                departments: [],
             },
             editingItemId: null,
             companies: [],
-            departments: [],
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
@@ -335,19 +320,10 @@ export default {
         }
 
         this.$nextTick(async () => {
-<<<<<<< HEAD
             await Promise.all([
                 this.fetchCompanies(),
-                this.fetchRoles(),
-                this.fetchDepartments()
+                this.fetchRoles()
             ]);
-=======
-            const promises = [this.fetchCompanies()];
-            if (this.canViewRolesTab) {
-                promises.push(this.fetchRoles());
-            }
-            await Promise.all(promises);
->>>>>>> main
 
             if (!this.editingItem) {
                 this.clearForm();
@@ -372,7 +348,6 @@ export default {
                 is_admin: this.form.is_admin,
                 companies: [...this.form.companies],
                 roles: [...this.form.roles],
-                departments: [...this.form.departments],
                 selected_image: this.selected_image,
                 image: this.image
             };
@@ -433,14 +408,6 @@ export default {
                 this.allRoles = [];
             }
         },
-        async fetchDepartments() {
-            try {
-                this.departments = await DepartmentController.getAllItems();
-            } catch (error) {
-                console.error('Error fetching departments:', error);
-                this.departments = [];
-            }
-        },
         clearForm() {
             this.form.name = '';
             this.form.surname = '';
@@ -456,7 +423,6 @@ export default {
             this.form.companies = [];
             this.form.roles = [];
             this.form.company_roles = [];
-            this.form.departments = [];
             this.selected_image = null;
             this.image = null;
             this.hasNewFile = false;

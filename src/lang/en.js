@@ -661,4 +661,9 @@ export default {
     
     // Currencies
     'currency.RUSSIAN_RUBLE': 'Russian Ruble',
+    
+    // Date labels
+    today: 'Today',
+    yesterday: 'Yesterday',
+    dayBeforeYesterday: 'Day before yesterday',
 }

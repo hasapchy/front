@@ -5,13 +5,6 @@
       <!-- Search row -->
       <div class="px-3 py-2 border-b border-gray-200">
         <div class="flex items-center gap-2">
-          <button
-            class="w-9 h-9 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100"
-            title="Filters"
-            type="button"
-          >
-            <i class="fas fa-sliders-h text-sm"></i>
-          </button>
 
           <div class="flex-1 relative">
             <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
@@ -25,10 +18,11 @@
 
           <button
             class="w-9 h-9 rounded-lg bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center shrink-0"
-            title="Создать чат"
+            title="Создать групповой чат"
             type="button"
+            @click="showCreateGroupModal = true"
           >
-            <i class="fas fa-pen text-sm"></i>
+            <i class="fas fa-users text-sm"></i>
           </button>
         </div>
       </div>
@@ -97,7 +91,7 @@
                 </div>
                 <div class="text-[11px] shrink-0 flex items-center gap-1" :class="isItemActive(item) ? 'text-white/80' : 'text-gray-400'">
                   <span v-if="item.last_message_at || item.last_message">{{ formatChatTime(item) }}</span>
-                  <span v-if="item.type === 'user' && isMyMessageInChat(item)" class="text-sky-600">✓✓</span>
+                  <span v-if="item.type === 'user' && chatLastTicks(item)" class="text-sky-600">{{ chatLastTicks(item) }}</span>
                 </div>
               </div>
               <div class="flex items-center justify-between gap-2 mt-0.5">
@@ -151,66 +145,39 @@
               </div>
             </div>
           </div>
-
-          <!-- Right: Disk info and actions -->
-          <div class="flex items-center gap-4 shrink-0">
-            <!-- Disk info (optional, can be hidden on mobile) -->
-            <div class="hidden lg:block text-right text-xs text-gray-500">
-              <div>Размер диска: 9.8G</div>
-              <div>Использовано: 9.0G (97%)</div>
-              <div>Свободно: 322M</div>
-            </div>
-
-            <!-- Action buttons -->
-            <div class="flex items-center gap-2">
-              <div class="relative">
-                <button class="h-9 px-3 rounded-full bg-sky-500 text-white hover:bg-sky-600 text-sm flex items-center gap-2" type="button">
-                  <i class="fas fa-video"></i>
-                  <span class="inline">Видеозвонок</span>
-                  <i class="fas fa-chevron-down text-xs ml-1"></i>
-                </button>
-              </div>
-              <button class="w-9 h-9 rounded-full hover:bg-gray-100 text-gray-500 flex items-center justify-center" type="button" title="Добавить участника">
-                <i class="fas fa-user-plus"></i>
-              </button>
-              <button class="w-9 h-9 rounded-full hover:bg-gray-100 text-gray-500 flex items-center justify-center" type="button" title="Поиск">
-                <i class="fas fa-search"></i>
-              </button>
-              <button class="w-9 h-9 rounded-full hover:bg-gray-100 text-gray-500 flex items-center justify-center" type="button" title="Настройки">
-                <i class="fas fa-bell"></i>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
       
       <!-- Fallback header for non-direct chats -->
       <div v-else-if="selectedChat" class="h-14 px-4 border-b border-gray-200 flex items-center justify-between bg-white">
-        <div class="flex items-center gap-3 min-w-0">
+        <div class="flex items-center gap-3 min-w-0 flex-1">
           <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
             <i class="fas" :class="chatIcon(selectedChat)"></i>
           </div>
-          <div class="min-w-0">
+          <div class="min-w-0 flex-1">
             <div class="font-semibold text-gray-900 truncate">
               {{ chatTitle(selectedChat) }}
             </div>
             <div class="text-xs text-gray-400 truncate">
-              {{ presenceStatusText }}
+              <span v-if="selectedChat.type === 'group' && selectedChat.creator">
+                Создал: {{ selectedChat.creator.name }} {{ selectedChat.creator.surname || "" }}
+              </span>
+              <span v-else>{{ presenceStatusText }}</span>
             </div>
           </div>
         </div>
 
         <div class="flex items-center gap-2">
-          <button class="h-9 px-3 rounded-full bg-sky-500 text-white hover:bg-sky-600 text-sm flex items-center gap-2" type="button">
-            <i class="fas fa-video"></i>
-            <span class="hidden md:inline">Видеозвонок</span>
+          <button
+            v-if="showDeleteButton"
+            class="w-9 h-9 rounded-full hover:bg-red-100 text-red-600 flex items-center justify-center"
+            type="button"
+            title="Удалить чат"
+            @click="confirmDeleteChat"
+          >
+            <i class="fas fa-trash text-sm"></i>
           </button>
-          <button class="w-9 h-9 rounded-full hover:bg-gray-100 text-gray-500" type="button" title="Search">
-            <i class="fas fa-search"></i>
-          </button>
-          <button class="w-9 h-9 rounded-full hover:bg-gray-100 text-gray-500" type="button" title="More">
-            <i class="fas fa-ellipsis-v"></i>
-          </button>
+          
         </div>
       </div>
       
@@ -245,9 +212,9 @@
             </div>
 
             <template v-for="(item, index) in messagesWithDates" :key="`${item.type}-${item.type === 'date' ? item.date?.getTime() : item.data?.id}-${index}`">
-              <!-- Date separator -->
-              <div v-if="item.type === 'date'" class="flex justify-center my-3">
-                <div class="px-3 py-1 rounded-full bg-white/70 text-xs text-gray-600 border border-white/60">
+              <!-- Date separator with sticky positioning -->
+              <div v-if="item.type === 'date'" class="sticky top-0 z-10 flex justify-center my-3 -mx-4 md:-mx-6 py-2 bg-transparent">
+                <div class="px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-xs text-gray-600 border border-white/80 shadow-sm">
                   {{ item.data }}
                 </div>
               </div>
@@ -278,7 +245,7 @@
 
                   <div class="mt-1 flex items-center justify-end gap-1 text-[11px] text-gray-500">
                     <span>{{ messageTime(item.data) }}</span>
-                    <span v-if="isMyMessage(item.data)" class="text-sky-700">✓✓</span>
+                    <span v-if="isMyMessage(item.data)" class="text-sky-700">{{ messageTicks(item.data) }}</span>
                   </div>
                 </div>
               </div>
@@ -296,7 +263,7 @@
             <textarea
               v-model="draft"
               class="w-full bg-transparent resize-none outline-none text-sm text-gray-900 placeholder:text-gray-400 min-h-[40px] max-h-32"
-              placeholder="Нажмите @, чтобы упомянуть человека или чат"
+              placeholder="***************** Нажмите Enter для отправки *****************"
               :disabled="!selectedChat || !canWrite"
               @keydown.enter.exact.prevent="handleEnterKey"
               @keydown.enter.shift.exact="handleShiftEnter"
@@ -311,22 +278,6 @@
 
           <div class="flex items-center gap-1">
             <button
-              class="w-9 h-9 rounded-full hover:bg-gray-100 text-gray-500 flex items-center justify-center disabled:opacity-50"
-              :disabled="!selectedChat || !canWrite"
-              type="button"
-              title="Эмодзи"
-            >
-              <i class="far fa-smile"></i>
-            </button>
-            <button
-              class="w-9 h-9 rounded-full hover:bg-gray-100 text-gray-500 flex items-center justify-center disabled:opacity-50"
-              :disabled="!selectedChat || !canWrite"
-              type="button"
-              title="Голосовое сообщение"
-            >
-              <i class="fas fa-microphone"></i>
-            </button>
-            <button
               class="w-9 h-9 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300"
               :disabled="!selectedChat || !canWrite || sending || (!draft.trim() && selectedFiles.length === 0)"
               type="button"
@@ -340,12 +291,183 @@
       </div>
     </section>
 
+    <!-- Delete Chat Confirmation Modal -->
+    <div
+      v-if="showDeleteConfirm"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      @click.self="showDeleteConfirm = false"
+    >
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900">Удалить групповой чат?</h3>
+        </div>
+        <div class="px-6 py-4">
+          <p class="text-sm text-gray-600">
+            Вы уверены, что хотите удалить чат "{{ selectedChat?.title }}"? 
+            Это действие нельзя отменить. Все сообщения и участники будут удалены.
+          </p>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
+            :disabled="deletingChat"
+            @click="showDeleteConfirm = false"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="deletingChat"
+            @click="deleteChat"
+          >
+            <span v-if="deletingChat">Удаление...</span>
+            <span v-else>Удалить</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Group Chat Modal -->
+    <div
+      v-if="showCreateGroupModal"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      @click.self="closeCreateGroupModal"
+    >
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900">Создать групповой чат</h3>
+          <button
+            type="button"
+            class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500"
+            @click="closeCreateGroupModal"
+          >
+            <i class="fas fa-times text-sm"></i>
+          </button>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <!-- Title input -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Название чата</label>
+            <input
+              v-model="groupTitle"
+              type="text"
+              class="w-full h-10 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
+              placeholder="Введите название группы"
+              maxlength="255"
+            />
+          </div>
+
+          <!-- Users selection -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Участники ({{ selectedUserIds.length }} выбрано)
+            </label>
+            <div class="border border-gray-300 rounded-lg max-h-64 overflow-y-auto">
+              <div
+                v-for="user in usersForCompany.filter(u => u && u.id !== $store.state.user?.id)"
+                :key="user.id"
+                class="px-3 py-2 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
+                @click="toggleUserSelection(user.id)"
+              >
+                <div class="relative shrink-0">
+                  <img
+                    v-if="user.photo"
+                    :src="userPhotoUrl(user.photo)"
+                    class="w-10 h-10 rounded-full object-cover border border-gray-200"
+                    alt="user"
+                  />
+                  <div
+                    v-else
+                    class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold bg-green-100 text-green-700"
+                  >
+                    {{ getUserInitials(user) }}
+                  </div>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="font-medium text-sm text-gray-900 truncate">
+                    {{ user.name }} {{ user.surname || "" }}
+                  </div>
+                  <div v-if="user.position" class="text-xs text-gray-500 truncate">
+                    {{ user.position }}
+                  </div>
+                </div>
+                <div
+                  class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0"
+                  :class="selectedUserIds.includes(Number(user.id)) ? 'bg-sky-500 border-sky-500' : 'border-gray-300'"
+                >
+                  <i
+                    v-if="selectedUserIds.includes(Number(user.id))"
+                    class="fas fa-check text-white text-xs"
+                  ></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
+            @click="closeCreateGroupModal"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!canCreateGroup"
+            @click="createGroupChat"
+          >
+            <span v-if="creatingGroup">Создание...</span>
+            <span v-else>Создать</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script>
 import ChatController from "@/api/ChatController";
 import echo from "@/services/echo";
+import { applySentMessage, handleChatReadEvent, handleIncomingChatEvent } from "@/services/messengerFacade";
+import { createChatRealtime } from "@/services/chatRealtime";
+
+// ===== Helpers (pure functions) =====
+const buildStorageUrl = (path) => `${import.meta.env.VITE_APP_BASE_URL}/storage/${path}`;
+
+const parseDateSafe = (dateString) => {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+};
+
+const extractHHmm = (raw) => {
+  if (!raw) return "";
+  const s = String(raw);
+  // ISO вида 2025-12-27T09:17:28.000000Z -> берём HH:mm после 'T'
+  if (s.includes("T")) {
+    const timePart = (s.split("T")[1] || "").trim();
+    const hhmm = timePart.slice(0, 5);
+    if (/^\d{2}:\d{2}$/.test(hhmm)) return hhmm;
+  }
+  // Формат "YYYY-MM-DD HH:mm:ss" или похожий -> ищем первую HH:mm
+  const match = s.match(/(\d{2}:\d{2})/);
+  return match ? match[1] : s;
+};
+
+// formatDayLabel will be a method that uses i18n
+
+// formatChatTime will be a method that uses i18n
 
 export default {
   data() {
@@ -366,17 +488,22 @@ export default {
       selectedFiles: [],
       sending: false,
 
-      currentChannel: null, // WebSocket channel subscription
-      presenceChannel: null,
-      presenceChannelName: null,
+      realtime: null,
       onlineUserIds: [], // Массив для реактивности Vue
-      subscribedChannels: new Map(),
+      peerReadByChatId: {},
+      
+      // Group chat creation modal
+      showCreateGroupModal: false,
+      groupTitle: "",
+      selectedUserIds: [],
+      creatingGroup: false,
+      
+      // Delete chat confirmation
+      showDeleteConfirm: false,
+      deletingChat: false,
     };
   },
   computed: {
-    isDevelopment() {
-      return import.meta.env.DEV || import.meta.env.MODE === 'development';
-    },
     hasChatsView() {
       return this.$store.getters.hasPermission("chats_view");
     },
@@ -421,6 +548,7 @@ export default {
                 type: 'user',
                 ...user,
                 displayTitle: title,
+                chat_id: chat.id, // preserve chat id (because ...user overrides id)
               });
             }
           }
@@ -487,14 +615,6 @@ export default {
       
       return grouped;
     },
-    generalChatPreview() {
-      if (!this.generalChat) return "Нажмите, чтобы открыть общий чат";
-      if (this.selectedChatId === this.generalChat.id && Array.isArray(this.messages) && this.messages.length) {
-        const last = this.messages[this.messages.length - 1];
-        return last?.body || "";
-      }
-      return "Нажмите, чтобы открыть общий чат";
-    },
     presenceStatusText() {
       if (!this.selectedChat) return "Выберите сотрудника или общий чат слева";
       if (this.selectedChat.type === "direct" && this.activePeerUser) {
@@ -514,14 +634,25 @@ export default {
       // Это упрощенная версия - можно улучшить
       return false;
     },
+    canCreateGroup() {
+      return (
+        !this.creatingGroup &&
+        this.groupTitle.trim().length > 0 &&
+        this.selectedUserIds.length > 0
+      );
+    },
+    showDeleteButton() {
+      console.log('showDeleteButton', this.selectedChat, this.isChatCreator(this.selectedChat));
+      return this.selectedChat && this.isChatCreator(this.selectedChat);
+    },
   },
   async mounted() {
     try {
+      this.initRealtime();
       await this.ensureUsersLoaded();
       await this.loadChats();
+      this.syncRealtime();
       this.subscribeToPresence();
-      // Подписываемся на список чатов для получения обновлений (unread_count, last_message)
-      this.subscribeToChatsUpdates();
     } catch (error) {
       console.error("[Messenger] Ошибка при инициализации:", error);
       this.$store.dispatch("showNotification", {
@@ -533,14 +664,47 @@ export default {
     }
   },
   beforeUnmount() {
-     // Отписываемся от всех каналов
-    for (const [chatId, channel] of this.subscribedChannels.entries()) {
-      this.unsubscribeFromChatById(Number(chatId));
-    }
-    this.subscribedChannels.clear();
-    this.unsubscribeFromPresence();
+    this.realtime?.cleanup?.();
+    this.realtime = null;
+    this.onlineUserIds = [];
   },
   methods: {
+    initRealtime() {
+      if (this.realtime) return;
+      this.realtime = createChatRealtime(echo, {
+        onMessage: (event) => handleIncomingChatEvent(this, event),
+        onRead: (event) => handleChatReadEvent(this, event),
+        onChatError: (error) => console.error("[WebSocket] Ошибка подписки на канал:", error),
+        onPresenceHere: (users) => {
+          console.log("[Presence] Пользователи онлайн:", users);
+          const ids = (users || []).map((u) => Number(u.id)).filter((id) => !Number.isNaN(id));
+          this.onlineUserIds = [...ids];
+          console.log("[Presence] Online IDs:", this.onlineUserIds);
+        },
+        onPresenceJoining: (user) => {
+          console.log("[Presence] Пользователь зашел:", user);
+          const id = Number(user?.id);
+          if (Number.isNaN(id)) return;
+          if (!this.onlineUserIds.includes(id)) {
+            this.onlineUserIds = [...this.onlineUserIds, id];
+          }
+        },
+        onPresenceLeaving: (user) => {
+          console.log("[Presence] Пользователь вышел:", user);
+          const id = Number(user?.id);
+          if (Number.isNaN(id)) return;
+          this.onlineUserIds = this.onlineUserIds.filter((uid) => uid !== id);
+        },
+        onPresenceError: (err) => console.error("[WebSocket] Ошибка presence-канала:", err),
+        log: (msg) => console.log(msg),
+      });
+    },
+    syncRealtime() {
+      const companyId = this.$store.getters.currentCompanyId;
+      if (!companyId || !this.realtime) return;
+      const chatsForSync = [...(this.chats || []), this.generalChat].filter((c) => c && c.id);
+      this.realtime.syncChats(companyId, chatsForSync);
+    },
     async ensureUsersLoaded() {
       // Для мессенджера всегда загружаем пользователей, чтобы получить актуальный список
       // Очищаем state перед загрузкой, чтобы гарантировать свежие данные
@@ -582,138 +746,42 @@ export default {
         this.chats = Array.isArray(items) ? items : [];
         const foundGeneral = this.chats.find((c) => c && c.type === "general") || null;
         this.generalChat = foundGeneral || prevGeneral || null;
-        // Подписываемся на ВСЕ чаты для получения обновлений unread_count
-        this.subscribeToAllChats();
+
+        // Initialize peer read state for direct chats (non-breaking extra fields from backend)
+        const peerMap = {};
+        (this.chats || []).forEach((c) => {
+          if (c && c.type === "direct" && c.id) {
+            const peerId = Number(c.peer_last_read_message_id || 0);
+            if (peerId) peerMap[Number(c.id)] = peerId;
+          }
+        });
+        this.peerReadByChatId = { ...this.peerReadByChatId, ...peerMap };
+
+        this.syncRealtime();
       } finally {
         this.loadingChats = false;
       }
     },
-    subscribeToAllChats() {
-      const companyId = this.$store.getters.currentCompanyId;
-      if (!companyId) return;
-      
-      // Отписываемся от старых каналов, которых больше нет в списке
-      const currentChatIds = new Set(
-        [...this.chats, this.generalChat]
-          .filter(c => c && c.id)
-          .map(c => Number(c.id))
-      );
-      
-      // Удаляем подписки на чаты, которых больше нет
-      for (const [chatId, channel] of this.subscribedChannels.entries()) {
-        if (!currentChatIds.has(Number(chatId))) {
-          this.unsubscribeFromChatById(Number(chatId));
-        }
-      }
-      
-      // Подписываемся на все чаты
-      [...this.chats, this.generalChat].forEach(chat => {
-        if (chat && chat.id && !this.subscribedChannels.has(Number(chat.id))) {
-          this.subscribeToChatById(chat.id, companyId);
-        }
-      });
-    },
-    subscribeToChatsUpdates() {
-      // Метод для подписки на обновления списка чатов
-      // WebSocket обновления уже обрабатываются через subscribeToAllChats()
-      // Можно оставить пустым или добавить дополнительную логику
-    },
-    subscribeToChatById(chatId, companyId) {
-      if (!chatId || !companyId) return;
-      
-      const channelName = `company.${companyId}.chat.${chatId}`;
-      console.log(`[WebSocket] Подписка на канал: ${channelName}`);
-      
-      const channel = echo.private(channelName)
-        .listen('.chat.message.sent', (event) => {
-          this.handleIncomingMessage(event);
-        })
-        .error((error) => {
-          console.error(`[WebSocket] Ошибка подписки на канал ${channelName}:`, error);
-        });
-      
-      this.subscribedChannels.set(Number(chatId), channel);
-    },
 
-    handleIncomingMessage(event) {
-      console.log('[WebSocket] Получено новое сообщение:', event);
-      
-      const newMessage = {
-        id: event.id,
-        chat_id: event.chat_id,
-        user_id: event.user?.id,
-        body: event.body,
-        files: event.files,
-        created_at: event.created_at,
-        user: event.user,
-      };
+    // NOTE: updateChatLastMessage/incrementUnreadCount/applyLocalMessageMeta
+    // logic moved to src/services/chatState.js to keep MessengerPage thin.
 
-      const myUserId = this.$store.state.user?.id;
-      const isMyMessage = myUserId && Number(event.user?.id) === Number(myUserId);
-      const isCurrentChat = Number(event.chat_id) === Number(this.selectedChatId);
-
-      // Если это текущий открытый чат
-      if (isCurrentChat) {
-        // Проверяем, что сообщение еще не в списке (избегаем дублей)
-        const exists = this.messages.some(m => Number(m.id) === Number(newMessage.id));
-        if (!exists) {
-          this.messages.push(newMessage);
-          this.$nextTick(() => this.scrollToBottom());
-        }
-        
-        // Обновляем метаданные чата (last_message, но unread_count = 0 для открытого чата)
-        this.applyLocalMessageMeta(newMessage);
-      } else {
-        // Если это НЕ текущий чат - обновляем unread_count
-        if (!isMyMessage) {
-          // Увеличиваем счетчик непрочитанных
-          this.incrementUnreadCount(event.chat_id, newMessage);
-        } else {
-          // Если это наше сообщение в другом чате - просто обновляем last_message
-          this.updateChatLastMessage(event.chat_id, newMessage);
-        }
-      }
-    },
-
-    updateChatLastMessage(chatId, message) {
-      const chatIdNum = Number(chatId);
-      
-      // Обновляем в списке chats
-      this.chats = (this.chats || []).map((c) => {
-        if (!c || Number(c.id) !== chatIdNum) return c;
-        return {
-          ...c,
-          last_message: message,
-          last_message_at: message.created_at || c.last_message_at || null,
-          // unread_count не меняем
-        };
-      });
-      
-      // Обновляем generalChat если это он
-      if (this.generalChat && Number(this.generalChat.id) === chatIdNum) {
-        this.generalChat = {
-          ...this.generalChat,
-          last_message: message,
-          last_message_at: message.created_at || this.generalChat.last_message_at || null,
-        };
-      }
-    },
-
-    unsubscribeFromChatById(chatId) {
-      const channel = this.subscribedChannels.get(Number(chatId));
-      if (channel) {
-        console.log(`[WebSocket] Отписка от канала чата ${chatId}`);
-        channel.stopListening('.chat.message.sent');
-        echo.leave(channel.name);
-        this.subscribedChannels.delete(Number(chatId));
-      }
-    },
     chatTitle(chat) {
+      // Для direct чатов используем имя пользователя из activePeerUser
       if (chat?.type === "direct" && this.activePeerUser) {
         const u = this.activePeerUser;
         return `${u.name || ""} ${u.surname || ""}`.trim() || "Личный чат";
       }
-      return chat.title || chat.name || (chat.type === "general" ? "General chat" : `Chat #${chat.id}`);
+      // Для групповых чатов используем title из данных чата
+      if (chat?.type === "group") {
+        return chat.title || `Групповой чат #${chat.id}`;
+      }
+      // Для general чата
+      if (chat?.type === "general") {
+        return chat.title || "Общий чат";
+      }
+      // Fallback
+      return chat.title || chat.name || `Chat #${chat.id}`;
     },
     chatIcon(chat) {
       if (chat.type === "general") return "fa-globe";
@@ -730,78 +798,61 @@ export default {
         console.warn("[Presence] Нет companyId для подписки");
         return;
       }
-
-      const channelName = `company.${companyId}.presence`;
-      this.unsubscribeFromPresence();
-      this.presenceChannelName = channelName;
-
-      console.log(`[Presence] Подписка на канал: ${channelName}`);
-
-      try {
-        this.presenceChannel = echo.join(channelName)
-          .here((users) => {
-            console.log("[Presence] Пользователи онлайн:", users);
-            const ids = (users || []).map((u) => Number(u.id)).filter((id) => !Number.isNaN(id));
-            // Используем массив вместо Set для реактивности Vue
-            this.onlineUserIds = [...ids];
-            console.log("[Presence] Online IDs:", this.onlineUserIds);
-          })
-          .joining((user) => {
-            console.log("[Presence] Пользователь зашел:", user);
-            const id = Number(user?.id);
-            if (Number.isNaN(id)) return;
-            if (!this.onlineUserIds.includes(id)) {
-              this.onlineUserIds = [...this.onlineUserIds, id];
-            }
-          })
-          .leaving((user) => {
-            console.log("[Presence] Пользователь вышел:", user);
-            const id = Number(user?.id);
-            if (Number.isNaN(id)) return;
-            this.onlineUserIds = this.onlineUserIds.filter(uid => uid !== id);
-          })
-          .error((err) => {
-            console.error("[WebSocket] Ошибка presence-канала:", err);
-          });
-      } catch (error) {
-        console.error("[Presence] Ошибка при подписке:", error);
-      }
-    },
-    unsubscribeFromPresence() {
-      if (this.presenceChannelName) {
-        console.log(`[Presence] Отписка от канала: ${this.presenceChannelName}`);
-        echo.leave(this.presenceChannelName);
-      }
-      this.presenceChannel = null;
-      this.presenceChannelName = null;
-      this.onlineUserIds = []; // Используем массив
+      this.realtime?.subscribePresence?.(companyId);
     },
   
     async selectChat(chat) {
-      this.unsubscribeFromChat();
-      this.selectedChat = chat;
-      this.selectedChatId = chat.id;
+      // Убеждаемся, что у нас есть полная информация о чате из списка
+      let fullChat = chat;
+      if (chat && chat.id) {
+        // Ищем полную информацию о чате в списке чатов
+        const foundChat = this.chats.find(c => Number(c.id) === Number(chat.id));
+        if (foundChat) {
+          // Объединяем данные, приоритет отдаём найденному чату (более полные данные)
+          fullChat = { ...foundChat, ...chat };
+        }
+        
+        // Отладка для групповых чатов
+        if (import.meta.env.DEV && (chat.type === 'group' || foundChat?.type === 'group')) {
+          console.log('[Messenger] Selecting group chat:', {
+            originalChat: chat,
+            foundChat: foundChat,
+            fullChat: fullChat,
+            isCreator: this.isChatCreator(fullChat)
+          });
+        }
+      }
+      
+      this.selectedChat = fullChat;
+      this.selectedChatId = fullChat.id;
       this.messages = [];
       
+      // Очищаем activePeerUser для не-direct чатов
+      if (fullChat.type !== 'direct') {
+        this.activePeerUser = null;
+      }
+      
       // Сбрасываем unread_count для открытого чата
-      if (chat) {
+      if (fullChat) {
         this.chats = (this.chats || []).map((c) => {
-          if (c && Number(c.id) === Number(chat.id)) {
+          if (c && Number(c.id) === Number(fullChat.id)) {
             return { ...c, unread_count: 0 };
           }
           return c;
         });
         
-        if (this.generalChat && Number(this.generalChat.id) === Number(chat.id)) {
+        if (this.generalChat && Number(this.generalChat.id) === Number(fullChat.id)) {
           this.generalChat = { ...this.generalChat, unread_count: 0 };
         }
       }
       
       try {
-        await this.loadMessages(chat.id);
-        // После загрузки сообщений обновим last_read_message_id на сервере
-        await this.markAsRead(chat.id);
-        this.subscribeToChat(chat);
+        // Сразу помечаем все сообщения как прочитанные (не ждём загрузки)
+        // Передаём null чтобы сервер сам нашёл последнее сообщение в чате
+        await this.markAsRead(fullChat.id, null);
+        
+        // Загружаем сообщения
+        await this.loadMessages(fullChat.id);
         
         // Финальная прокрутка после всех операций
         await this.$nextTick();
@@ -813,20 +864,43 @@ export default {
       }
     },
 
-    async markAsRead(chatId) {
-      if (!chatId || !this.messages.length) return;
+    async markAsRead(chatId, messageId = null) {
+      if (!chatId) return;
       
       try {
-        // Находим последнее сообщение
-        const lastMessage = this.messages[this.messages.length - 1];
-        if (lastMessage && lastMessage.id) {
-          // Отправляем запрос на сервер для обновления last_read_message_id
-          // Это уже делается в ChatController@messages, но можно добавить отдельный endpoint
-          // Пока просто обновляем локально, сервер обновит при следующей загрузке
+        // Если messageId не передан, используем последнее загруженное сообщение
+        // Если и его нет - передаём null (сервер найдёт последнее сообщение в чате сам)
+        let finalMessageId = messageId;
+        if (finalMessageId === null && this.messages.length > 0) {
+          const lastMessage = this.messages[this.messages.length - 1];
+          finalMessageId = lastMessage?.id || null;
         }
+        
+        await ChatController.markAsRead(chatId, finalMessageId);
       } catch (e) {
         console.error("[Messenger] Ошибка при отметке как прочитано:", e);
       }
+    },
+
+    messageTicks(m) {
+      // Only for my messages: ✓ if peer hasn't read yet; ✓✓ if peer read id >= message id
+      if (!this.isMyMessage(m)) return "";
+      const chatId = Number(m?.chat_id || m?.chatId || this.selectedChatId);
+      const peerReadId = Number(this.peerReadByChatId?.[chatId] || 0);
+      const msgId = Number(m?.id || 0);
+      if (!chatId || !msgId) return "✓";
+      return peerReadId >= msgId ? "✓✓" : "✓";
+    },
+
+    chatLastTicks(item) {
+      // Left list: show ✓/✓✓ only if last message is mine and chat is direct
+      const msg = item?.last_message;
+      if (!msg || !this.isMyMessageInChat(item)) return "";
+      const chatId = Number(item?.chat_id || msg?.chat_id || item?.id);
+      const peerReadId = Number(this.peerReadByChatId?.[chatId] || item?.peer_last_read_message_id || 0);
+      const msgId = Number(msg?.id || 0);
+      if (!chatId || !msgId) return "✓";
+      return peerReadId >= msgId ? "✓✓" : "✓";
     },
     openGeneralChat() {
       this.activePeerUser = null;
@@ -886,73 +960,17 @@ export default {
       }
     },
 
-    subscribeToChat(chat) {
-      if (!chat || !chat.id) return;
-      
-      // Убеждаемся, что подписка на этот чат уже есть
-      if (!this.subscribedChannels.has(Number(chat.id))) {
-        const companyId = this.$store.getters.currentCompanyId;
-        if (companyId) {
-          this.subscribeToChatById(chat.id, companyId);
-        }
-      }
-      
-      // Устанавливаем текущий канал для отображения сообщений
-      this.currentChannel = this.subscribedChannels.get(Number(chat.id));
-    },
-
-    incrementUnreadCount(chatId, message) {
-      const chatIdNum = Number(chatId);
-      
-      // Обновляем в списке chats
-      this.chats = (this.chats || []).map((c) => {
-        if (!c || Number(c.id) !== chatIdNum) return c;
-        
-        return {
-          ...c,
-          last_message: message,
-          last_message_at: message.created_at || c.last_message_at || null,
-          unread_count: (c.unread_count || 0) + 1, // Увеличиваем счетчик
-        };
-      });
-      
-      // Обновляем generalChat если это он
-      if (this.generalChat && Number(this.generalChat.id) === chatIdNum) {
-        this.generalChat = {
-          ...this.generalChat,
-          last_message: message,
-          last_message_at: message.created_at || this.generalChat.last_message_at || null,
-          unread_count: (this.generalChat.unread_count || 0) + 1,
-        };
-      }
-    },
-    
-    unsubscribeFromChat() {
-      this.currentChannel = null;
-    },
+    // subscribeToChat/unsubscribeFromChat moved to src/services/chatRealtime.js (we keep all-chats subscriptions synced)
     scrollToBottom() {
       const el = this.$refs.messagesWrap;
       if (!el) return;
       
-      // Используем несколько попыток для надежности
       const scroll = () => {
-        if (el.scrollHeight !== undefined) {
-          el.scrollTop = el.scrollHeight;
-        }
+        if (el.scrollHeight !== undefined) el.scrollTop = el.scrollHeight;
       };
-      
-      // Первая попытка сразу
-      scroll();
-      
-      // Вторая попытка после небольшой задержки (на случай если DOM еще обновляется)
-      setTimeout(() => {
-        scroll();
-      }, 100);
-      
-      // Третья попытка после еще одной задержки
-      setTimeout(() => {
-        scroll();
-      }, 300);
+
+      // Несколько попыток (DOM/изображения/рефлоу)
+      [0, 100, 300].forEach((ms) => setTimeout(scroll, ms));
     },
     isMyMessage(m) {
       const myId = this.$store.state.user?.id;
@@ -961,25 +979,13 @@ export default {
     },
     messageTime(m) {
       const raw = m.created_at || m.createdAt || null;
-      if (!raw) return "";
-      const s = String(raw);
-
-      // ISO вида 2025-12-27T09:17:28.000000Z -> берём HH:mm после 'T'
-      if (s.includes("T")) {
-        const timePart = (s.split("T")[1] || "").trim();
-        const hhmm = timePart.slice(0, 5);
-        if (/^\d{2}:\d{2}$/.test(hhmm)) return hhmm;
-      }
-
-      // Формат "YYYY-MM-DD HH:mm:ss" или похожий -> ищем первую HH:mm
-      const match = s.match(/(\d{2}:\d{2})/);
-      return match ? match[1] : s;
+      return extractHHmm(raw);
     },
     userPhotoUrl(path) {
-      return `${import.meta.env.VITE_APP_BASE_URL}/storage/${path}`;
+      return buildStorageUrl(path);
     },
     fileUrl(path) {
-      return `${import.meta.env.VITE_APP_BASE_URL}/storage/${path}`;
+      return buildStorageUrl(path);
     },
     onFilesSelected(e) {
       const files = Array.from(e.target.files || []);
@@ -1003,44 +1009,13 @@ export default {
           this.draft = "";
           this.selectedFiles = [];
           // моментально обновим метаданные чата для отправителя
-          this.applyLocalMessageMeta(msg);
-          this.$nextTick(() => this.scrollToBottom());
+          applySentMessage(this, msg);
         } else {
           await this.loadMessages(this.selectedChatId);
         }
       } finally {
         this.sending = false;
       }
-    },
-
-    applyLocalMessageMeta(msg) {
-      if (!msg) return;
-      const chatId = Number(msg.chat_id || msg.chatId || this.selectedChatId);
-      if (!chatId) return;
-      
-      const myUserId = this.$store.state.user?.id;
-      const isMyMessage = myUserId && Number(msg.user_id || msg.user?.id) === Number(myUserId);
-      
-      // Обновляем в generalChat
-      if (this.generalChat && Number(this.generalChat.id) === chatId) {
-        this.generalChat = {
-          ...this.generalChat,
-          last_message: msg,
-          last_message_at: msg.created_at || this.generalChat.last_message_at || null,
-          unread_count: isMyMessage ? 0 : (this.generalChat.unread_count || 0), // Не увеличиваем для открытого чата
-        };
-      }
-      
-      // Обновляем в списке chats
-      this.chats = (this.chats || []).map((c) => {
-        if (!c || Number(c.id) !== chatId) return c;
-        return {
-          ...c,
-          last_message: msg,
-          last_message_at: msg.created_at || c.last_message_at || null,
-          unread_count: isMyMessage ? 0 : (c.unread_count || 0), // Не увеличиваем для открытого чата
-        };
-      });
     },
 
     async openDirect(user) {
@@ -1054,107 +1029,47 @@ export default {
         const exists = (this.chats || []).some((c) => Number(c.id) === Number(chat.id));
         if (!exists) {
           this.chats = [...(this.chats || []), chat];
-          // Подписываемся на новый чат
-          const companyId = this.$store.getters.currentCompanyId;
-          if (companyId) {
-            this.subscribeToChatById(chat.id, companyId);
-          }
+          this.syncRealtime();
         }
         await this.selectChat(chat);
       } catch (e) {
         // ignore
       }
     },
-    isActiveUser(u) {
-      if (!u || !this.activePeerUser || !this.selectedChat) return false;
-      return this.selectedChat.type === "direct" && Number(this.activePeerUser.id) === Number(u.id);
-    },
-    directChatByUserId() {
-      const myId = this.$store.state.user?.id;
-      const map = new Map();
-      if (!myId) return map;
-
-      (this.chats || []).forEach((c) => {
-        if (!c || c.type !== "direct" || !c.direct_key) return;
-        const parts = String(c.direct_key).split(":").map((x) => parseInt(x, 10)).filter((x) => !isNaN(x));
-        if (parts.length !== 2) return;
-        const [a, b] = parts;
-        if (Number(a) !== Number(myId) && Number(b) !== Number(myId)) return;
-        const otherId = Number(a) === Number(myId) ? b : a;
-        map.set(Number(otherId), c);
-      });
-
-      return map;
-    },
-    userPreview(u) {
-      const chat = this.directChatByUserId().get(Number(u.id));
-      return chat?.last_message?.body || "";
-    },
-    userUnread(u) {
-      const chat = this.directChatByUserId().get(Number(u.id));
-      return chat?.unread_count || 0;
-    },
-    userLastTime(u) {
-      const chat = this.directChatByUserId().get(Number(u.id));
-      const raw = chat?.last_message_at || chat?.last_message?.created_at || "";
-      if (!raw) return "";
-      const s = String(raw);
-      const match = s.match(/(\d{2}:\d{2})(?::\d{2})?$/);
-      return match ? match[1] : "";
-    },
     parseDate(dateString) {
-      if (!dateString) return null;
-      
-      // Парсим ISO формат: "2025-12-27T09:17:28.000000Z" или "2025-12-27 09:17:28"
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return null;
-      return date;
+      return parseDateSafe(dateString);
     },
-    
-    formatDate(date, options = {}) {
-      if (!date) return "";
-      
-      const dateObj = date instanceof Date ? date : new Date(date);
-      if (isNaN(dateObj.getTime())) return "";
-      
-      const defaultOptions = {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      };
-      
-      const formatOptions = { ...defaultOptions, ...options };
-      
-      // Используем локализацию для русского языка
-      return dateObj.toLocaleDateString('ru-RU', formatOptions);
-    },
-    
     formatDayLabel(date) {
-      if (!date) return "Сегодня";
-      
+      if (!date) return this.$t('today');
       const dateObj = date instanceof Date ? date : new Date(date);
-      if (isNaN(dateObj.getTime())) return "Сегодня";
-      
+      if (Number.isNaN(dateObj.getTime())) return this.$t('today');
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       const messageDay = new Date(dateObj);
       messageDay.setHours(0, 0, 0, 0);
-      
+
       const diffTime = today - messageDay;
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      const locale = this.$i18n.locale || 'ru';
       
-      if (diffDays === 0) {
-        return "Сегодня";
-      } else if (diffDays === 1) {
-        return "Вчера";
-      } else if (diffDays === 2) {
-        return "Позавчера";
-      } else if (diffDays < 7) {
-        return dateObj.toLocaleDateString('ru-RU', { weekday: 'long' });
-      } else {
-        return dateObj.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+      if (diffDays === 0) return this.$t('today');
+      if (diffDays === 1) return this.$t('yesterday');
+      if (diffDays === 2) return this.$t('dayBeforeYesterday');
+      
+      // For days within a week, use localized weekday
+      if (diffDays < 7) {
+        const localeMap = { ru: 'ru-RU', en: 'en-US', tm: 'tk-TM' };
+        const dateLocale = localeMap[locale] || 'ru-RU';
+        return dateObj.toLocaleDateString(dateLocale, { weekday: "long" });
       }
+      
+      // For older dates, use full date format
+      const localeMap = { ru: 'ru-RU', en: 'en-US', tm: 'tk-TM' };
+      const dateLocale = localeMap[locale] || 'ru-RU';
+      return dateObj.toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" });
     },
     getItemTitle(item) {
       if (item.type === 'user') {
@@ -1176,27 +1091,25 @@ export default {
       if (!raw) return "";
       
       const date = this.parseDate(raw);
-      if (!date) return "";
+      if (!date) return extractHHmm(raw);
       
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       const messageDay = new Date(date);
       messageDay.setHours(0, 0, 0, 0);
-      
+
       const diffTime = today - messageDay;
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      
-      if (diffDays === 0) {
-        // Сегодня - показываем время
-        return this.messageTime(item.last_message || { created_at: raw });
-      } else if (diffDays === 1) {
-        return "Вчера";
-      } else if (diffDays < 7) {
-        return date.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
-      } else {
-        return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
-      }
+
+      const locale = this.$i18n.locale || 'ru';
+      const localeMap = { ru: 'ru-RU', en: 'en-US', tm: 'tk-TM' };
+      const dateLocale = localeMap[locale] || 'ru-RU';
+
+      if (diffDays === 0) return extractHHmm(raw);
+      if (diffDays === 1) return this.$t('yesterday');
+      if (diffDays < 7) return date.toLocaleDateString(dateLocale, { weekday: "short", day: "numeric", month: "short" });
+      return date.toLocaleDateString(dateLocale, { day: "numeric", month: "short", year: "numeric" });
     },
     getUserInitials(user) {
       if (!user) return "";
@@ -1249,6 +1162,141 @@ export default {
     },
     handleShiftEnter() {
       // Shift+Enter добавляет новую строку - ничего не делаем
+    },
+    closeCreateGroupModal() {
+      this.showCreateGroupModal = false;
+      this.groupTitle = "";
+      this.selectedUserIds = [];
+    },
+    toggleUserSelection(userId) {
+      const id = Number(userId);
+      const index = this.selectedUserIds.indexOf(id);
+      if (index > -1) {
+        this.selectedUserIds.splice(index, 1);
+      } else {
+        this.selectedUserIds.push(id);
+      }
+    },
+    async createGroupChat() {
+      if (!this.canCreateGroup) return;
+      
+      this.creatingGroup = true;
+      try {
+        const chat = await ChatController.createGroupChat({
+          title: this.groupTitle.trim(),
+          user_ids: this.selectedUserIds,
+        });
+        
+        if (chat) {
+          // Добавляем чат в список если его там нет
+          const exists = (this.chats || []).some((c) => Number(c.id) === Number(chat.id));
+          if (!exists) {
+            this.chats = [...(this.chats || []), chat];
+            this.syncRealtime();
+          }
+          
+          // Закрываем модальное окно
+          this.closeCreateGroupModal();
+          
+          // Открываем созданный чат
+          await this.selectChat(chat);
+          
+          this.$store.dispatch("showNotification", {
+            title: "Групповой чат создан",
+            subtitle: `Чат "${chat.title}" успешно создан`,
+            isDanger: false,
+            duration: 3000,
+          });
+        }
+      } catch (error) {
+        console.error("[Messenger] Ошибка при создании группового чата:", error);
+        this.$store.dispatch("showNotification", {
+          title: "Ошибка создания чата",
+          subtitle: error?.response?.data?.message || error?.message || "Не удалось создать групповой чат",
+          isDanger: true,
+          duration: 5000,
+        });
+      } finally {
+        this.creatingGroup = false;
+      }
+    },
+    isChatCreator(chat) {
+      if (!chat || !chat.id) return false;
+      
+      const myId = this.$store.state.user?.id;
+      if (!myId) return false;
+      
+      // Находим полную информацию о чате в списке
+      const foundChat = this.chats.find(c => Number(c.id) === Number(chat.id));
+      const fullChat = foundChat || chat;
+      
+      // Проверяем тип чата
+      if (fullChat.type !== 'group') return false;
+      
+      // Проверяем created_by
+      const createdBy = fullChat.created_by;
+      if (!createdBy) {
+        // Отладка: выводим информацию о чате
+        if (import.meta.env.DEV) {
+          console.log('[Messenger] Chat data for creator check:', {
+            chatId: chat.id,
+            chatType: fullChat.type,
+            createdBy: createdBy,
+            myId: myId,
+            fullChat: fullChat
+          });
+        }
+        return false;
+      }
+      
+      console.log('fulllll', createdBy, myId);
+      return Number(createdBy) === Number(myId);
+    },
+    confirmDeleteChat() {
+      if (!this.selectedChat || !this.isChatCreator(this.selectedChat)) return;
+      this.showDeleteConfirm = true;
+    },
+    async deleteChat() {
+      if (!this.selectedChat || !this.isChatCreator(this.selectedChat)) return;
+      
+      const chatId = this.selectedChat.id;
+      this.deletingChat = true;
+      try {
+        await ChatController.deleteChat(chatId);
+        
+        // Отписываемся от WebSocket перед удалением
+        if (this.realtime) {
+          this.realtime.unsubscribeChat(chatId);
+        }
+        
+        // Удаляем чат из списка
+        this.chats = (this.chats || []).filter((c) => Number(c.id) !== Number(chatId));
+        
+        // Закрываем чат
+        this.selectedChat = null;
+        this.selectedChatId = null;
+        this.messages = [];
+        this.activePeerUser = null;
+        
+        this.showDeleteConfirm = false;
+        
+        this.$store.dispatch("showNotification", {
+          title: "Чат удалён",
+          subtitle: "Групповой чат успешно удалён",
+          isDanger: false,
+          duration: 3000,
+        });
+      } catch (error) {
+        console.error("[Messenger] Ошибка при удалении чата:", error);
+        this.$store.dispatch("showNotification", {
+          title: "Ошибка удаления чата",
+          subtitle: error?.response?.data?.message || error?.message || "Не удалось удалить чат",
+          isDanger: true,
+          duration: 5000,
+        });
+      } finally {
+        this.deletingChat = false;
+      }
     },
   },
 };
