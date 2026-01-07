@@ -591,8 +591,9 @@ export default {
         },
         updateCurrencyFromCash(cashId) {
             const cash = this.allCashRegisters.find(c => c.id === cashId);
-            if (cash?.currency_id) {
-                this.currencyId = cash.currency_id;
+            const cashCurrencyId = cash?.currencyId ?? cash?.currency_id;
+            if (cashCurrencyId) {
+                this.currencyId = cashCurrencyId;
                 return;
             }
             const defaultCurrency = this.currencies?.find(c => c.isDefault);
