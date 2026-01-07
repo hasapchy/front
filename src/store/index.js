@@ -253,7 +253,9 @@ function initializeStorageSync(_store) {
             _store.commit("SET_CURRENT_COMPANY", updatedCompany);
             await clearAllCacheOnCompanyChange();
             _store.commit("CLEAR_COMPANY_DATA");
+            _store.commit("SET_CURRENCIES", []);
             await _store.dispatch("loadCompanyData");
+            await _store.dispatch("loadCurrencies");
             lastEmittedCompanyId = updatedCompany.id;
             eventBus.emit("company-changed", updatedCompany.id);
           }
@@ -1347,7 +1349,9 @@ const store = createStore({
         }
 
         commit("CLEAR_COMPANY_DATA");
+        commit("SET_CURRENCIES", []);
         await dispatch("loadCompanyData");
+        await dispatch("loadCurrencies");
         await dispatch("refreshUserPermissions", { skipIfAlreadyLoaded: false });
         eventBus.emit("company-changed", companyId);
 
