@@ -410,7 +410,6 @@ export default {
                         permission && permission.name && !permission.name.startsWith('system_settings_')
                     )
                     : [];
-                console.log(this.allPermissions);
             } catch (error) {
                 console.error('Ошибка при загрузке прав:', error);
                 this.allPermissions = [];
@@ -516,6 +515,7 @@ export default {
                 'settings_currencies_view': 'Просмотр валют',
                 'settings_cash_balance_view': 'Просмотр баланса кассы',
                 'settings_client_balance_view': 'Просмотр баланса клиентов',
+                'settings_client_balance_view_own': 'Просмотр своего баланса',
                 'settings_client_balance_adjustment': 'Корректировка баланса клиента',
                 'products_create_temp': 'Создание временного товара',
                 'transactions_view_sale': 'Просмотр транзакций из продаж',
@@ -527,6 +527,10 @@ export default {
                 'mutual_settlements_view_company': 'Просмотр взаиморасчетов с компаниями',
                 'mutual_settlements_view_employee': 'Просмотр взаиморасчетов с сотрудниками',
                 'mutual_settlements_view_investor': 'Просмотр взаиморасчетов с инвесторами',
+                'employee_salaries_accrue': 'Начисление зарплат',
+                'chats_write': 'Написание в чатах',
+                'chats_write_general': 'Написание в общем чате',
+                'chats_group_create': 'Создание групповых чатов',
             };
 
             const translation = this.getTranslation(permissionName);

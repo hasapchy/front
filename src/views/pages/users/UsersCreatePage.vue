@@ -286,7 +286,16 @@ export default {
             }));
         },
         canViewBalanceTab() {
-            return this.$store.getters.hasPermission('settings_client_balance_view');
+            if (this.$store.getters.hasPermission('settings_client_balance_view')) {
+                return true;
+            }
+            
+            if (this.$store.getters.hasPermission('settings_client_balance_view_own')) {
+                const currentUser = this.$store.getters.user;
+                return currentUser && this.editingItem && currentUser.id === this.editingItem.id;
+            }
+            
+            return false;
         },
         canViewSalariesTab() {
             if (!this.$store.getters.hasPermission('employee_salaries_view')) {

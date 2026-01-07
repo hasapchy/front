@@ -215,6 +215,7 @@ export const PERMISSIONS_CONFIG = {
     "settings_currencies_view",
     "settings_cash_balance_view",
     "settings_client_balance_view",
+    "settings_client_balance_view_own",
     "settings_client_balance_adjustment",
     "products_create_temp",
   ],
@@ -297,6 +298,7 @@ export const PERMISSIONS_CONFIG = {
     finance: ["settings_cash_balance_view", "settings_currencies_view"],
     clients: [
       "settings_client_balance_view",
+      "settings_client_balance_view_own",
       "settings_client_balance_adjustment",
     ],
   },
