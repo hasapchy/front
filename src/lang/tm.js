@@ -1316,4 +1316,9 @@ export default {
   
   // Currencies
   'currency.RUSSIAN_RUBLE': 'Rus rubly',
+  
+  // Date labels
+  today: 'Şu gün',
+  yesterday: 'Düýn',
+  dayBeforeYesterday: 'Öňki gün',
 }

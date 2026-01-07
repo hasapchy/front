@@ -1569,4 +1569,9 @@ export default {
   
   // Currencies
   'currency.RUSSIAN_RUBLE': 'Российский рубль',
+  
+  // Date labels
+  today: 'Сегодня',
+  yesterday: 'Вчера',
+  dayBeforeYesterday: 'Позавчера',
 }

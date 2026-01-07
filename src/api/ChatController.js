@@ -88,6 +88,16 @@ export default class ChatController extends BaseController {
       "Ошибка при отправке сообщения:"
     );
   }
+
+  static async deleteChat(chatId) {
+    return super.handleRequest(
+      async () => {
+        const { data } = await api.delete(`/chats/${chatId}`);
+        return data.data || data;
+      },
+      "Ошибка при удалении чата:"
+    );
+  }
 }
 
 

@@ -150,31 +150,34 @@
       
       <!-- Fallback header for non-direct chats -->
       <div v-else-if="selectedChat" class="h-14 px-4 border-b border-gray-200 flex items-center justify-between bg-white">
-        <div class="flex items-center gap-3 min-w-0">
+        <div class="flex items-center gap-3 min-w-0 flex-1">
           <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
             <i class="fas" :class="chatIcon(selectedChat)"></i>
           </div>
-          <div class="min-w-0">
+          <div class="min-w-0 flex-1">
             <div class="font-semibold text-gray-900 truncate">
               {{ chatTitle(selectedChat) }}
             </div>
             <div class="text-xs text-gray-400 truncate">
-              {{ presenceStatusText }}
+              <span v-if="selectedChat.type === 'group' && selectedChat.creator">
+                Создал: {{ selectedChat.creator.name }} {{ selectedChat.creator.surname || "" }}
+              </span>
+              <span v-else>{{ presenceStatusText }}</span>
             </div>
           </div>
         </div>
 
         <div class="flex items-center gap-2">
-          <button class="h-9 px-3 rounded-full bg-sky-500 text-white hover:bg-sky-600 text-sm flex items-center gap-2" type="button">
-            <i class="fas fa-video"></i>
-            <span class="hidden md:inline">Видеозвонок</span>
+          <button
+            v-if="showDeleteButton"
+            class="w-9 h-9 rounded-full hover:bg-red-100 text-red-600 flex items-center justify-center"
+            type="button"
+            title="Удалить чат"
+            @click="confirmDeleteChat"
+          >
+            <i class="fas fa-trash text-sm"></i>
           </button>
-          <button class="w-9 h-9 rounded-full hover:bg-gray-100 text-gray-500" type="button" title="Search">
-            <i class="fas fa-search"></i>
-          </button>
-          <button class="w-9 h-9 rounded-full hover:bg-gray-100 text-gray-500" type="button" title="More">
-            <i class="fas fa-ellipsis-v"></i>
-          </button>
+          
         </div>
       </div>
       
@@ -209,9 +212,9 @@
             </div>
 
             <template v-for="(item, index) in messagesWithDates" :key="`${item.type}-${item.type === 'date' ? item.date?.getTime() : item.data?.id}-${index}`">
-              <!-- Date separator -->
-              <div v-if="item.type === 'date'" class="flex justify-center my-3">
-                <div class="px-3 py-1 rounded-full bg-white/70 text-xs text-gray-600 border border-white/60">
+              <!-- Date separator with sticky positioning -->
+              <div v-if="item.type === 'date'" class="sticky top-0 z-10 flex justify-center my-3 -mx-4 md:-mx-6 py-2 bg-transparent">
+                <div class="px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-xs text-gray-600 border border-white/80 shadow-sm">
                   {{ item.data }}
                 </div>
               </div>
@@ -287,6 +290,44 @@
         </div>
       </div>
     </section>
+
+    <!-- Delete Chat Confirmation Modal -->
+    <div
+      v-if="showDeleteConfirm"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      @click.self="showDeleteConfirm = false"
+    >
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900">Удалить групповой чат?</h3>
+        </div>
+        <div class="px-6 py-4">
+          <p class="text-sm text-gray-600">
+            Вы уверены, что хотите удалить чат "{{ selectedChat?.title }}"? 
+            Это действие нельзя отменить. Все сообщения и участники будут удалены.
+          </p>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
+            :disabled="deletingChat"
+            @click="showDeleteConfirm = false"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="deletingChat"
+            @click="deleteChat"
+          >
+            <span v-if="deletingChat">Удаление...</span>
+            <span v-else>Удалить</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Create Group Chat Modal -->
     <div
@@ -424,43 +465,9 @@ const extractHHmm = (raw) => {
   return match ? match[1] : s;
 };
 
-const formatDayLabelRu = (date) => {
-  if (!date) return "Сегодня";
-  const dateObj = date instanceof Date ? date : new Date(date);
-  if (Number.isNaN(dateObj.getTime())) return "Сегодня";
+// formatDayLabel will be a method that uses i18n
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const messageDay = new Date(dateObj);
-  messageDay.setHours(0, 0, 0, 0);
-
-  const diffTime = today - messageDay;
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return "Сегодня";
-  if (diffDays === 1) return "Вчера";
-  if (diffDays === 2) return "Позавчера";
-  if (diffDays < 7) return dateObj.toLocaleDateString("ru-RU", { weekday: "long" });
-  return dateObj.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
-};
-
-const formatChatTimeRu = (raw, date) => {
-  if (!raw || !date) return "";
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const messageDay = new Date(date);
-  messageDay.setHours(0, 0, 0, 0);
-
-  const diffTime = today - messageDay;
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return extractHHmm(raw);
-  if (diffDays === 1) return "Вчера";
-  if (diffDays < 7) return date.toLocaleDateString("ru-RU", { weekday: "short", day: "numeric", month: "short" });
-  return date.toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" });
-};
+// formatChatTime will be a method that uses i18n
 
 export default {
   data() {
@@ -490,6 +497,10 @@ export default {
       groupTitle: "",
       selectedUserIds: [],
       creatingGroup: false,
+      
+      // Delete chat confirmation
+      showDeleteConfirm: false,
+      deletingChat: false,
     };
   },
   computed: {
@@ -630,6 +641,10 @@ export default {
         this.selectedUserIds.length > 0
       );
     },
+    showDeleteButton() {
+      console.log('showDeleteButton', this.selectedChat, this.isChatCreator(this.selectedChat));
+      return this.selectedChat && this.isChatCreator(this.selectedChat);
+    },
   },
   async mounted() {
     try {
@@ -752,11 +767,21 @@ export default {
     // logic moved to src/services/chatState.js to keep MessengerPage thin.
 
     chatTitle(chat) {
+      // Для direct чатов используем имя пользователя из activePeerUser
       if (chat?.type === "direct" && this.activePeerUser) {
         const u = this.activePeerUser;
         return `${u.name || ""} ${u.surname || ""}`.trim() || "Личный чат";
       }
-      return chat.title || chat.name || (chat.type === "general" ? "General chat" : `Chat #${chat.id}`);
+      // Для групповых чатов используем title из данных чата
+      if (chat?.type === "group") {
+        return chat.title || `Групповой чат #${chat.id}`;
+      }
+      // Для general чата
+      if (chat?.type === "general") {
+        return chat.title || "Общий чат";
+      }
+      // Fallback
+      return chat.title || chat.name || `Chat #${chat.id}`;
     },
     chatIcon(chat) {
       if (chat.type === "general") return "fa-globe";
@@ -777,20 +802,46 @@ export default {
     },
   
     async selectChat(chat) {
-      this.selectedChat = chat;
-      this.selectedChatId = chat.id;
+      // Убеждаемся, что у нас есть полная информация о чате из списка
+      let fullChat = chat;
+      if (chat && chat.id) {
+        // Ищем полную информацию о чате в списке чатов
+        const foundChat = this.chats.find(c => Number(c.id) === Number(chat.id));
+        if (foundChat) {
+          // Объединяем данные, приоритет отдаём найденному чату (более полные данные)
+          fullChat = { ...foundChat, ...chat };
+        }
+        
+        // Отладка для групповых чатов
+        if (import.meta.env.DEV && (chat.type === 'group' || foundChat?.type === 'group')) {
+          console.log('[Messenger] Selecting group chat:', {
+            originalChat: chat,
+            foundChat: foundChat,
+            fullChat: fullChat,
+            isCreator: this.isChatCreator(fullChat)
+          });
+        }
+      }
+      
+      this.selectedChat = fullChat;
+      this.selectedChatId = fullChat.id;
       this.messages = [];
       
+      // Очищаем activePeerUser для не-direct чатов
+      if (fullChat.type !== 'direct') {
+        this.activePeerUser = null;
+      }
+      
       // Сбрасываем unread_count для открытого чата
-      if (chat) {
+      if (fullChat) {
         this.chats = (this.chats || []).map((c) => {
-          if (c && Number(c.id) === Number(chat.id)) {
+          if (c && Number(c.id) === Number(fullChat.id)) {
             return { ...c, unread_count: 0 };
           }
           return c;
         });
         
-        if (this.generalChat && Number(this.generalChat.id) === Number(chat.id)) {
+        if (this.generalChat && Number(this.generalChat.id) === Number(fullChat.id)) {
           this.generalChat = { ...this.generalChat, unread_count: 0 };
         }
       }
@@ -798,10 +849,10 @@ export default {
       try {
         // Сразу помечаем все сообщения как прочитанные (не ждём загрузки)
         // Передаём null чтобы сервер сам нашёл последнее сообщение в чате
-        await this.markAsRead(chat.id, null);
+        await this.markAsRead(fullChat.id, null);
         
         // Загружаем сообщения
-        await this.loadMessages(chat.id);
+        await this.loadMessages(fullChat.id);
         
         // Финальная прокрутка после всех операций
         await this.$nextTick();
@@ -989,7 +1040,36 @@ export default {
       return parseDateSafe(dateString);
     },
     formatDayLabel(date) {
-      return formatDayLabelRu(date);
+      if (!date) return this.$t('today');
+      const dateObj = date instanceof Date ? date : new Date(date);
+      if (Number.isNaN(dateObj.getTime())) return this.$t('today');
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const messageDay = new Date(dateObj);
+      messageDay.setHours(0, 0, 0, 0);
+
+      const diffTime = today - messageDay;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      const locale = this.$i18n.locale || 'ru';
+      
+      if (diffDays === 0) return this.$t('today');
+      if (diffDays === 1) return this.$t('yesterday');
+      if (diffDays === 2) return this.$t('dayBeforeYesterday');
+      
+      // For days within a week, use localized weekday
+      if (diffDays < 7) {
+        const localeMap = { ru: 'ru-RU', en: 'en-US', tm: 'tk-TM' };
+        const dateLocale = localeMap[locale] || 'ru-RU';
+        return dateObj.toLocaleDateString(dateLocale, { weekday: "long" });
+      }
+      
+      // For older dates, use full date format
+      const localeMap = { ru: 'ru-RU', en: 'en-US', tm: 'tk-TM' };
+      const dateLocale = localeMap[locale] || 'ru-RU';
+      return dateObj.toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" });
     },
     getItemTitle(item) {
       if (item.type === 'user') {
@@ -1011,7 +1091,25 @@ export default {
       if (!raw) return "";
       
       const date = this.parseDate(raw);
-      return formatChatTimeRu(raw, date);
+      if (!date) return extractHHmm(raw);
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const messageDay = new Date(date);
+      messageDay.setHours(0, 0, 0, 0);
+
+      const diffTime = today - messageDay;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      const locale = this.$i18n.locale || 'ru';
+      const localeMap = { ru: 'ru-RU', en: 'en-US', tm: 'tk-TM' };
+      const dateLocale = localeMap[locale] || 'ru-RU';
+
+      if (diffDays === 0) return extractHHmm(raw);
+      if (diffDays === 1) return this.$t('yesterday');
+      if (diffDays < 7) return date.toLocaleDateString(dateLocale, { weekday: "short", day: "numeric", month: "short" });
+      return date.toLocaleDateString(dateLocale, { day: "numeric", month: "short", year: "numeric" });
     },
     getUserInitials(user) {
       if (!user) return "";
@@ -1120,6 +1218,84 @@ export default {
         });
       } finally {
         this.creatingGroup = false;
+      }
+    },
+    isChatCreator(chat) {
+      if (!chat || !chat.id) return false;
+      
+      const myId = this.$store.state.user?.id;
+      if (!myId) return false;
+      
+      // Находим полную информацию о чате в списке
+      const foundChat = this.chats.find(c => Number(c.id) === Number(chat.id));
+      const fullChat = foundChat || chat;
+      
+      // Проверяем тип чата
+      if (fullChat.type !== 'group') return false;
+      
+      // Проверяем created_by
+      const createdBy = fullChat.created_by;
+      if (!createdBy) {
+        // Отладка: выводим информацию о чате
+        if (import.meta.env.DEV) {
+          console.log('[Messenger] Chat data for creator check:', {
+            chatId: chat.id,
+            chatType: fullChat.type,
+            createdBy: createdBy,
+            myId: myId,
+            fullChat: fullChat
+          });
+        }
+        return false;
+      }
+      
+      console.log('fulllll', createdBy, myId);
+      return Number(createdBy) === Number(myId);
+    },
+    confirmDeleteChat() {
+      if (!this.selectedChat || !this.isChatCreator(this.selectedChat)) return;
+      this.showDeleteConfirm = true;
+    },
+    async deleteChat() {
+      if (!this.selectedChat || !this.isChatCreator(this.selectedChat)) return;
+      
+      const chatId = this.selectedChat.id;
+      this.deletingChat = true;
+      try {
+        await ChatController.deleteChat(chatId);
+        
+        // Отписываемся от WebSocket перед удалением
+        if (this.realtime) {
+          this.realtime.unsubscribeChat(chatId);
+        }
+        
+        // Удаляем чат из списка
+        this.chats = (this.chats || []).filter((c) => Number(c.id) !== Number(chatId));
+        
+        // Закрываем чат
+        this.selectedChat = null;
+        this.selectedChatId = null;
+        this.messages = [];
+        this.activePeerUser = null;
+        
+        this.showDeleteConfirm = false;
+        
+        this.$store.dispatch("showNotification", {
+          title: "Чат удалён",
+          subtitle: "Групповой чат успешно удалён",
+          isDanger: false,
+          duration: 3000,
+        });
+      } catch (error) {
+        console.error("[Messenger] Ошибка при удалении чата:", error);
+        this.$store.dispatch("showNotification", {
+          title: "Ошибка удаления чата",
+          subtitle: error?.response?.data?.message || error?.message || "Не удалось удалить чат",
+          isDanger: true,
+          duration: 5000,
+        });
+      } finally {
+        this.deletingChat = false;
       }
     },
   },
