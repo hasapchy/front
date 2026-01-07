@@ -263,7 +263,9 @@ export default {
             users: [],
             leaveTypes: [],
             calendarLeaves: null,
-            debounceTimer: null
+            debounceTimer: null,
+            lastCompanyId: null,
+            isCompanyChanging: false
         }
     },
     computed: {
@@ -295,6 +297,7 @@ export default {
             localStorage.removeItem('leaves_viewMode');
         }
         
+        this.lastCompanyId = this.$store.getters.currentCompanyId;
         this.loadFiltersData();
         
         if (this.viewMode === 'calendar') {
@@ -450,11 +453,27 @@ export default {
             }
         },
         async handleCompanyChanged(companyId) {
-            await this.loadFiltersData();
-            if (this.viewMode === 'calendar') {
-                await this.fetchCalendarItems();
-            } else {
-                await this.fetchItems(1);
+            if (this.isCompanyChanging) {
+                return;
+            }
+            
+            if (!companyId || companyId === this.lastCompanyId) {
+                return;
+            }
+            
+            this.isCompanyChanging = true;
+            
+            try {
+                this.lastCompanyId = companyId;
+                await this.loadFiltersData();
+                
+                if (this.viewMode === 'calendar') {
+                    await this.fetchCalendarItems();
+                } else {
+                    await this.fetchItems(1);
+                }
+            } finally {
+                this.isCompanyChanging = false;
             }
         }
     },
