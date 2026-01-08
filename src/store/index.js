@@ -1470,7 +1470,7 @@ const store = createStore({
           to: "/messenger",
           icon: "fas fa-comments mr-2",
           label: "messenger",
-          permission: "chats_view",
+          permission: "chats_view_all",
         },
         {
           id: "transactions",
