@@ -1578,7 +1578,7 @@ export default {
   // Currencies
   'currency.RUSSIAN_RUBLE': 'Российский рубль',
   
-<<<<<<< HEAD
+
   // Chats
   chats: 'Чаты',
   chats_write: 'Написание в чатах',
@@ -1594,10 +1594,10 @@ export default {
   transactions_view_receipt: 'Просмотр транзакций из оприходований',
   transactions_view_salary: 'Просмотр зарплатных транзакций',
   transactions_view_other: 'Просмотр остальных транзакций',
-=======
+
   // Date labels
   today: 'Сегодня',
   yesterday: 'Вчера',
   dayBeforeYesterday: 'Позавчера',
->>>>>>> dev
+
 }
