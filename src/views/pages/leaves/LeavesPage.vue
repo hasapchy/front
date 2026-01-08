@@ -211,13 +211,14 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import filtersMixin from '@/mixins/filtersMixin';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 import LeaveCalendarView from '@/views/components/leave/LeaveCalendarView.vue';
 import debounce from "lodash.debounce";
 import { translateLeaveType as translateLeaveTypeUtil } from '@/utils/translationUtils';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, filtersMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, filtersMixin, companyChangeMixin],
     components: {
         NotificationToast,
         PrimaryButton,
@@ -456,6 +457,15 @@ export default {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);
             if (this.$route.params.id) {
                 this.$router.replace({ name: 'Leaves' });
+            }
+        },
+        async handleCompanyChanged(companyId) {
+            await this.loadFiltersData();
+            
+            if (this.viewMode === 'calendar') {
+                await this.fetchCalendarItems();
+            } else {
+                await this.fetchItems(1);
             }
         }
     },

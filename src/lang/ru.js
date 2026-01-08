@@ -239,8 +239,13 @@ export default {
   settings_currencies_view: 'Просмотр других валют',
   settings_cash_balance_view: 'Просмотр баланса касс',
   settings_client_balance_view: 'Просмотр баланса клиентов',
+  settings_client_balance_view_own: 'Просмотр своего баланса',
   settings_view: 'Просмотр настроек',
   mutual_settlements_view: 'Просмотр взаиморасчетов',
+  mutual_settlements_view_individual: 'Просмотр взаиморасчетов с физ. лицами',
+  mutual_settlements_view_company: 'Просмотр взаиморасчетов с компаниями',
+  mutual_settlements_view_employee: 'Просмотр взаиморасчетов с сотрудниками',
+  mutual_settlements_view_investor: 'Просмотр взаиморасчетов с инвесторами',
   price: 'Цена',
   quantity: 'Количество',
   date: 'Дата',
@@ -888,6 +893,9 @@ export default {
   salarySaved: 'Зарплата сохранена',
   salaryDeleted: 'Зарплата удалена',
   noSalaries: 'Нет зарплат',
+  salaryPaymentType: 'Тип оплаты',
+  salaryPaymentTypeCash: 'Наличный',
+  salaryPaymentTypeNonCash: 'Безналичный',
   startDate: 'Дата начала',
   endDate: 'Дата окончания',
   amount: 'Сумма',
@@ -1570,8 +1578,26 @@ export default {
   // Currencies
   'currency.RUSSIAN_RUBLE': 'Российский рубль',
   
+<<<<<<< HEAD
+  // Chats
+  chats: 'Чаты',
+  chats_write: 'Написание в чатах',
+  chats_write_general: 'Написание в общем чате',
+  chats_group_create: 'Создание групповых чатов',
+  
+  // Employee Salaries
+  employee_salaries_accrue: 'Начисление зарплат',
+  
+  // Transactions View
+  transactions_view_sale: 'Просмотр транзакций из продаж',
+  transactions_view_order: 'Просмотр транзакций из заказов',
+  transactions_view_receipt: 'Просмотр транзакций из оприходований',
+  transactions_view_salary: 'Просмотр зарплатных транзакций',
+  transactions_view_other: 'Просмотр остальных транзакций',
+=======
   // Date labels
   today: 'Сегодня',
   yesterday: 'Вчера',
   dayBeforeYesterday: 'Позавчера',
+>>>>>>> dev
 }

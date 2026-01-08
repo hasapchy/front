@@ -77,6 +77,9 @@ export default class ProductController extends BaseController {
 
   static async getItem(id) {
     const data = await super.getItem("/products", id);
+    if (!data || !data.item) {
+      return null;
+    }
     return ProductDto.fromApiArray([data.item])[0] || null;
   }
 }

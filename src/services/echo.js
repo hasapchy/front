@@ -6,118 +6,74 @@ import { getStore } from "@/store/storeManager";
 
 window.Pusher = Pusher;
 
-// Создаем функцию для получения текущих заголовков
-const getAuthHeaders = () => {
-  const token = TokenUtils.getToken();
-  const store = getStore();
-  const companyId = store?.getters?.currentCompanyId || "1";
+// Production = npm run build, Development = npm run dev
+const IS_PROD = import.meta.env.PROD;
 
-  
-  return {
-    Accept: "application/json",
-    Authorization: token ? `Bearer ${token}` : "",
-    "X-Company-ID": companyId.toString(),
-  };
-};
+// Конфигурация WebSocket
+const WS_HOST = import.meta.env.VITE_REVERB_HOST || window.location.hostname;
+const WS_KEY = import.meta.env.VITE_REVERB_APP_KEY || "hasapchy-key";
+const AUTH_URL = `${import.meta.env.VITE_APP_BASE_URL || window.location.origin}/broadcasting/auth`;
 
-// Создаем экземпляр Echo с динамическими заголовками
-const createEchoInstance = () => {
-  const scheme = import.meta.env.VITE_REVERB_SCHEME || import.meta.env.VITE_PUSHER_SCHEME || 'https';
-  const host = import.meta.env.VITE_REVERB_HOST || import.meta.env.VITE_PUSHER_HOST || window.location.hostname;
-  const isProduction = scheme === 'https' || window.location.protocol === 'https:';
+console.log('[Echo] Config:', { IS_PROD, WS_HOST, WS_KEY, AUTH_URL });
+
+// Создаём Echo
+const echo = new Echo({
+  broadcaster: "reverb",
+  key: WS_KEY,
+  wsHost: WS_HOST,
+  wsPort: IS_PROD ? undefined : 6001,
+  wssPort: 443,
+  forceTLS: IS_PROD,
+  enabledTransports: IS_PROD ? ['wss'] : ['ws', 'wss'],
+  authEndpoint: AUTH_URL,
   
-  // Для production через nginx используем порт 443 (или не указываем)
-  // Для development используем прямой порт
-  const wsPort = isProduction ? 443 : (import.meta.env.VITE_REVERB_PORT || import.meta.env.VITE_PUSHER_PORT || 6001);
-  const wssPort = isProduction ? 443 : (import.meta.env.VITE_REVERB_PORT || import.meta.env.VITE_PUSHER_PORT || 6001);
-  
-  const echoInstance = new Echo({
-    broadcaster: "reverb",
-    key: import.meta.env.VITE_REVERB_APP_KEY || import.meta.env.VITE_PUSHER_APP_KEY || "hasapchy-key",
-    wsHost: host,
-    wsPort: isProduction ? undefined : wsPort, // Для production не указываем порт (используется 443)
-    wssPort: wssPort,
-    forceTLS: isProduction,
-    enabledTransports: isProduction ? ['wss'] : ['ws', 'wss'],
-    authEndpoint: `${import.meta.env.VITE_APP_BASE_URL || window.location.origin}/broadcasting/auth`,
-    auth: {
-      headers: getAuthHeaders(),
+  // Динамическая авторизация - токен берётся при каждом запросе
+  authorizer: (channel) => ({
+    authorize: (socketId, callback) => {
+      const token = TokenUtils.getToken();
+      const store = getStore();
+      const companyId = store?.getters?.currentCompanyId || "1";
+
+      console.log('[Echo] Auth:', channel.name);
+
+      fetch(AUTH_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+          'X-Company-ID': companyId.toString(),
+        },
+        body: JSON.stringify({ socket_id: socketId, channel_name: channel.name }),
+      })
+        .then(res => {
+          if (!res.ok) throw new Error(`Auth failed: ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          console.log('[Echo] Auth OK:', channel.name);
+          callback(null, data);
+        })
+        .catch(err => {
+          console.error('[Echo] Auth ERROR:', err.message);
+          callback(err, null);
+        });
     },
+  }),
+});
+
+// Логи подключения (работают и в production)
+const pusher = echo.connector?.pusher;
+if (pusher) {
+  pusher.connection.bind('connecting', () => console.log('[Echo] Connecting...'));
+  pusher.connection.bind('connected', () => console.log('[Echo] ✅ Connected!'));
+  pusher.connection.bind('disconnected', () => console.log('[Echo] Disconnected'));
+  pusher.connection.bind('unavailable', () => console.error('[Echo] ❌ Server unavailable'));
+  pusher.connection.bind('failed', () => console.error('[Echo] ❌ Connection failed'));
+  pusher.connection.bind('error', (err) => {
+    if (err?.message?.includes('message port closed')) return;
+    console.error('[Echo] Error:', err);
   });
-
-  // Добавляем обработчики для проверки подключения
-  const pusher = echoInstance.connector.pusher;
-  
-  // События подключения
-  pusher.connection.bind('connected', () => {
-    console.log('[WebSocket] ✅ Подключено к WebSocket серверу');
-    if (window.onEchoConnected) window.onEchoConnected();
-  });
-
-  pusher.connection.bind('disconnected', () => {
-    console.warn('[WebSocket] ❌ Отключено от WebSocket сервера');
-    if (window.onEchoDisconnected) window.onEchoDisconnected();
-  });
-
-  pusher.connection.bind('error', (error) => {
-    console.error('[WebSocket] ⚠️ Ошибка подключения:', error);
-    if (window.onEchoError) window.onEchoError(error);
-  });
-
-  pusher.connection.bind('state_change', (states) => {
-    console.log('[WebSocket] Состояние изменилось:', states.previous, '->', states.current);
-  });
-
-  // Методы для проверки состояния
-  echoInstance.isConnected = () => {
-    return pusher.connection.state === 'connected';
-  };
-
-  echoInstance.getConnectionState = () => {
-    return pusher.connection.state; // 'initialized', 'connecting', 'connected', 'unavailable', 'failed', 'disconnected'
-  };
-
-  echoInstance.waitForConnection = (timeout = 10000) => {
-    return new Promise((resolve, reject) => {
-      if (pusher.connection.state === 'connected') {
-        resolve(true);
-        return;
-      }
-
-      const timer = setTimeout(() => {
-        reject(new Error('Timeout waiting for WebSocket connection'));
-      }, timeout);
-
-      const onConnected = () => {
-        clearTimeout(timer);
-        pusher.connection.unbind('connected', onConnected);
-        pusher.connection.unbind('error', onError);
-        resolve(true);
-      };
-
-      const onError = (error) => {
-        clearTimeout(timer);
-        pusher.connection.unbind('connected', onConnected);
-        pusher.connection.unbind('error', onError);
-        reject(error);
-      };
-
-      pusher.connection.bind('connected', onConnected);
-      pusher.connection.bind('error', onError);
-    });
-  };
-
-  return echoInstance;
-};
-
-// Экспортируем функцию для создания нового экземпляра
-// или создаем один раз с обновляемыми заголовками
-const echo = createEchoInstance();
-
-// Экспортируем также функцию для обновления экземпляра
-export const refreshEchoInstance = () => {
-  echo.disconnect();
-  return createEchoInstance();
-};
+}
 
 export default echo;

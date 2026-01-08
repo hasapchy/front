@@ -102,7 +102,7 @@ export default {
                 '/project_statuses': 'project_statuses_view',
                 '/projects': 'projects_view',
                 '/task_statuses': 'task_statuses_view',
-                '/tasks': 'tasks_view_all',
+                '/tasks': 'tasks_view',
                 '/transaction_categories': 'transaction_categories_view',
                 '/transactions': 'transactions_view',
                 '/mutual-settlements': 'mutual_settlements_view',

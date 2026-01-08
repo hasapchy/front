@@ -68,7 +68,7 @@
                         v-model="form.currentPassword" 
                         :type="showCurrentPassword ? 'text' : 'password'" 
                         class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        :placeholder="$t('enterCurrentPassword')"
+                        :placeholder="$t('enterCurrentPassword')" autocomplete="on"
                     />
                     <PrimaryButton :onclick="toggleCurrentPasswordVisibility"
                         :icon="showCurrentPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
@@ -83,7 +83,7 @@
                         v-model="form.newPassword" 
                         :type="showNewPassword ? 'text' : 'password'" 
                         class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        :placeholder="$t('enterNewPassword')"
+                        :placeholder="$t('enterNewPassword')" autocomplete="on"
                     />
                     <PrimaryButton :onclick="toggleNewPasswordVisibility"
                         :icon="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
@@ -95,7 +95,7 @@
         </div>
         
         <div v-show="currentTab === 'balance'">
-            <UserClientBalanceTab :editingItem="currentClientAccount" />
+            <UserClientBalanceTab :editingItem="currentUser" :hideActions="true" />
         </div>
         
         <div v-show="currentTab === 'salary'">
@@ -180,7 +180,8 @@ export default {
             
             visibleTabs.push(this.tabs[0]);
             
-            if (this.hasClientAccount) {
+            if (this.$store.getters.hasPermission('settings_client_balance_view') || 
+                this.$store.getters.hasPermission('settings_client_balance_view_own')) {
                 visibleTabs.push(this.tabs[1]);
             }
             

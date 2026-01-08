@@ -177,7 +177,7 @@
             <div v-show="currentTab === 'salaries' && editingItem && canViewSalariesTab" class="mt-4">
                 <UserSalaryTab :editing-item="editingItem" />
             </div>
-            <div v-show="currentTab === 'balance' && editingItem && $store.getters.hasPermission('settings_client_balance_view')" class="mt-4">
+            <div v-if="currentTab === 'balance' && editingItem && canViewBalanceTab" class="mt-4">
                 <UserBalanceTab :editing-item="editingItem" />
             </div>
         </div>
@@ -274,10 +274,28 @@ export default {
             if (!this.canViewSalariesTab) {
                 visibleTabs = visibleTabs.filter(tab => tab.name !== 'salaries');
             }
+            if (!this.canViewRolesTab) {
+                visibleTabs = visibleTabs.filter(tab => tab.name !== 'roles');
+            }
+            if (!this.canViewBalanceTab) {
+                visibleTabs = visibleTabs.filter(tab => tab.name !== 'balance');
+            }
             return visibleTabs.map(tab => ({
                 ...tab,
                 label: this.$t(tab.label)
             }));
+        },
+        canViewBalanceTab() {
+            if (this.$store.getters.hasPermission('settings_client_balance_view')) {
+                return true;
+            }
+            
+            if (this.$store.getters.hasPermission('settings_client_balance_view_own')) {
+                const currentUser = this.$store.getters.user;
+                return currentUser && this.editingItem && currentUser.id === this.editingItem.id;
+            }
+            
+            return false;
         },
         canViewSalariesTab() {
             if (!this.$store.getters.hasPermission('employee_salaries_view')) {
@@ -294,6 +312,9 @@ export default {
             }
             
             return false;
+        },
+        canViewRolesTab() {
+            return this.$store.getters.hasPermission('roles_view');
         },
         selectedCompanies() {
             if (this.form.companies && this.form.companies.length > 0) {
@@ -574,9 +595,6 @@ export default {
         closeDeleteDialog() {
             this.deleteDialog = false;
         },
-    },
-    watch: {
-        // Метод для crudFormMixin - обработка изменения editingItem
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
                 this.form.name = newEditingItem.name || '';
@@ -603,7 +621,7 @@ export default {
                     this.form.company_roles = [];
                 }
                 
-                this.currentTab = 'info'; // Всегда открываем первую вкладку
+                this.currentTab = 'info';
 
                 if (newEditingItem.photo) {
                     this.selected_image = this.getUserPhotoSrc(newEditingItem);

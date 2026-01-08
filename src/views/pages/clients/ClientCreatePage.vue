@@ -627,14 +627,6 @@ export default {
     closeDeleteDialog() {
       this.deleteDialog = false;
     },
-  },
-  watch: {
-    defaultFirstName(newVal) {
-      if (!this.editingItem) {
-        this.firstName = newVal || "";
-      }
-    },
-    // Метод для crudFormMixin - обработка изменения editingItem
     async onEditingItemChanged(newEditingItem) {
       if (newEditingItem) {
         this.firstName = newEditingItem.firstName || "";
@@ -674,6 +666,13 @@ export default {
         this.currentTab = "info";
       } else {
         this.currentTab = "info";
+      }
+    }
+  },
+  watch: {
+    defaultFirstName(newVal) {
+      if (!this.editingItem) {
+        this.firstName = newVal || "";
       }
     },
     clientType: {

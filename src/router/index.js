@@ -88,7 +88,7 @@ const routes = [
         meta: {
           title: "tasks",
           requiresAuth: true,
-          permission: "tasks_view_all",
+          permission: "tasks_view",
           binded: [
             {
               name: "taskStatuses",
@@ -104,7 +104,7 @@ const routes = [
         meta: {
           title: "tasks",
           requiresAuth: true,
-          permission: "tasks_view_all",
+          permission: "tasks_view",
         },
       },
       {

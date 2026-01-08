@@ -173,7 +173,7 @@ export const PERMISSIONS_CONFIG = {
       scope_actions: ["view", "update", "delete"],
     },
     employee_salaries: {
-      has_user_id: false,
+      has_user_id: true,
       check_strategy: "user_id",
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
@@ -221,6 +221,7 @@ export const PERMISSIONS_CONFIG = {
     "settings_currencies_view",
     "settings_cash_balance_view",
     "settings_client_balance_view",
+    "settings_client_balance_view_own",
     "settings_client_balance_adjustment",
     "products_create_temp",
   ],
@@ -303,6 +304,7 @@ export const PERMISSIONS_CONFIG = {
     finance: ["settings_cash_balance_view", "settings_currencies_view"],
     clients: [
       "settings_client_balance_view",
+      "settings_client_balance_view_own",
       "settings_client_balance_adjustment",
     ],
   },

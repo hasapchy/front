@@ -255,7 +255,11 @@ export default {
         mainMenuItems: {
             handler() {
                 this.$nextTick(() => {
-                    this.updateDraggableItems();
+                    if (this.draggableMenuItems.length === 0 || 
+                        JSON.stringify(this.draggableMenuItems.map(i => i.id)) !== 
+                        JSON.stringify(this.mainMenuItems.map(i => i.id))) {
+                        this.updateDraggableItems();
+                    }
                 });
             },
             immediate: true
@@ -263,7 +267,11 @@ export default {
         availableMenuItems: {
             handler() {
                 this.$nextTick(() => {
-                    this.updateAvailableItems();
+                    if (this.draggableAvailableItems.length === 0 || 
+                        JSON.stringify(this.draggableAvailableItems.map(i => i.id)) !== 
+                        JSON.stringify(this.availableMenuItems.map(i => i.id))) {
+                        this.updateAvailableItems();
+                    }
                 });
             },
             immediate: true

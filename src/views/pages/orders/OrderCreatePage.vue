@@ -564,6 +564,28 @@ export default {
                 this.selectedClient = updatedClient;
             }
         },
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                if (newEditingItem.id) {
+                    this.productsTabVisited = true;
+                    this.transactionsTabVisited = true;
+                }
+
+                this.selectedClient = newEditingItem.client || null;
+                this.projectId = newEditingItem.projectId || '';
+                this.warehouseId = newEditingItem.warehouseId || this.allWarehouses?.[0]?.id || '';
+                this.cashId = newEditingItem.cashId || this.allCashRegisters?.[0]?.id || '';
+                this.statusId = newEditingItem.statusId || '';
+                this.categoryId = newEditingItem.categoryId || '';
+                this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date) : this.getCurrentLocalDateTime();
+                this.note = newEditingItem.note || '';
+                this.description = newEditingItem.description || '';
+                const rawProducts = newEditingItem.products || [];
+                this.products = rawProducts.map(p => this.mapProductFromEditingItem(p));
+                this.discount = newEditingItem.discount || 0;
+                this.discountType = newEditingItem.discount_type || 'fixed';
+            }
+        }
     },
     watch: {
         cashId: {
@@ -626,29 +648,6 @@ export default {
                 }
             },
             immediate: true
-        },
-        // Метод для crudFormMixin - обработка изменения editingItem
-        onEditingItemChanged(newEditingItem) {
-            if (newEditingItem) {
-                if (newEditingItem.id) {
-                    this.productsTabVisited = true;
-                    this.transactionsTabVisited = true;
-                }
-
-                this.selectedClient = newEditingItem.client || null;
-                this.projectId = newEditingItem.projectId || '';
-                this.warehouseId = newEditingItem.warehouseId || this.allWarehouses?.[0]?.id || '';
-                this.cashId = newEditingItem.cashId || this.allCashRegisters?.[0]?.id || '';
-                this.statusId = newEditingItem.statusId || '';
-                this.categoryId = newEditingItem.categoryId || '';
-                this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date) : this.getCurrentLocalDateTime();
-                this.note = newEditingItem.note || '';
-                this.description = newEditingItem.description || '';
-                const rawProducts = newEditingItem.products || [];
-                this.products = rawProducts.map(p => this.mapProductFromEditingItem(p));
-                this.discount = newEditingItem.discount || 0;
-                this.discountType = newEditingItem.discount_type || 'fixed';
-            }
         },
         '$store.state.warehouses'(newVal) {
             this.allWarehouses = newVal;

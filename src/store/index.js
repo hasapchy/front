@@ -253,7 +253,9 @@ function initializeStorageSync(_store) {
             _store.commit("SET_CURRENT_COMPANY", updatedCompany);
             await clearAllCacheOnCompanyChange();
             _store.commit("CLEAR_COMPANY_DATA");
+            _store.commit("SET_CURRENCIES", []);
             await _store.dispatch("loadCompanyData");
+            await _store.dispatch("loadCurrencies");
             lastEmittedCompanyId = updatedCompany.id;
             eventBus.emit("company-changed", updatedCompany.id);
           }
@@ -1227,7 +1229,7 @@ const store = createStore({
 
           try {
             await dispatch("loadUserCompanies");
-            await dispatch("loadCurrentCompany", { skipPermissionRefresh: true });
+            await dispatch("loadCurrentCompany", { skipPermissionRefresh: false });
           } catch (error) {
             console.error("Ошибка загрузки компаний:", error);
           }
@@ -1347,8 +1349,12 @@ const store = createStore({
         }
 
         commit("CLEAR_COMPANY_DATA");
+        commit("SET_CURRENCIES", []);
+        commit("SET_MENU_ITEMS", { main: [], available: [] });
         await dispatch("loadCompanyData");
+        await dispatch("loadCurrencies");
         await dispatch("refreshUserPermissions", { skipIfAlreadyLoaded: false });
+        await dispatch("initializeMenu");
         eventBus.emit("company-changed", companyId);
 
         return company;
@@ -1377,7 +1383,6 @@ const store = createStore({
         const permissions = response.data.user?.permissions || response.data.permissions || [];
         commit("SET_USER", response.data.user);
         commit("SET_PERMISSIONS", permissions);
-        await dispatch("initializeMenu");
         return response.data;
       } catch (error) {
         console.error("Ошибка обновления прав пользователя:", error);
@@ -1430,55 +1435,13 @@ const store = createStore({
       commit("SET_USERS", []);
     },
     initializeMenu({ commit, state }) {
-      const companyId = state.currentCompany?.id || 'default';
-      const storageKey = `menuItems_${companyId}`;
-      let saved = null;
-      let savedMenu = null;
-
-      try {
-        saved = localStorage.getItem(storageKey);
-      } catch (e) {
-        console.warn("Failed to read from localStorage:", e);
+      if (state.menuItems && state.menuItems.main && state.menuItems.main.length > 0) {
+        return;
       }
 
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (
-            parsed &&
-            Array.isArray(parsed.main) &&
-            Array.isArray(parsed.available)
-          ) {
-            const mainIds = new Set(
-              parsed.main.map((item) => item?.id).filter(Boolean)
-            );
-            const availableIds = new Set(
-              parsed.available.map((item) => item?.id).filter(Boolean)
-            );
-
-            const mainUnique = parsed.main.filter(
-              (item) => item && item.id && !availableIds.has(item.id)
-            );
-            const availableUnique = parsed.available.filter(
-              (item) => item && item.id && !mainIds.has(item.id)
-            );
-
-            const cleaned = {
-              main: mainUnique,
-              available: availableUnique,
-            };
-            savedMenu = cleaned;
-
-            try {
-              localStorage.setItem(storageKey, JSON.stringify(cleaned));
-            } catch (e) {
-              console.warn("Failed to save cleaned menu to localStorage:", e);
-            }
-          }
-        } catch (e) {
-          console.warn("Failed to load saved menu, using default:", e);
-        }
-      }
+      const savedMenu = state.menuItems && state.menuItems.main && state.menuItems.main.length > 0 
+        ? state.menuItems 
+        : null;
 
       const allMenuItems = [
         {
@@ -1500,7 +1463,7 @@ const store = createStore({
           to: "/tasks",
           icon: "fas fa-tasks mr-2",
           label: "tasks",
-          permission: "tasks_view_all", //tasks_view
+          permission: "tasks_view",
         },
         {
           id: "messenger",
@@ -1656,7 +1619,6 @@ const store = createStore({
       };
 
       commit("SET_MENU_ITEMS", merged);
-      localStorage.setItem(storageKey, JSON.stringify(merged));
     },
     updateMenuItems({ commit, state }, { type, items }) {
       if (!Array.isArray(items)) {
@@ -1712,14 +1674,8 @@ const store = createStore({
         available: availableUnique,
       };
       commit("SET_MENU_ITEMS", current);
-
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(current));
-      } catch (e) {
-        console.error("Failed to save menu items to localStorage:", e);
-      }
     },
-    updateBothMenuLists({ commit }, { mainItems, availableItems }) {
+    updateBothMenuLists({ commit, state }, { mainItems, availableItems }) {
       if (!Array.isArray(mainItems) || !Array.isArray(availableItems)) {
         console.error("updateBothMenuLists: both arguments must be arrays");
         return;
@@ -1778,13 +1734,6 @@ const store = createStore({
         available: availableFiltered,
       };
       commit("SET_MENU_ITEMS", current);
-
-      try {
-        const companyId = state.currentCompany?.id || 'default';
-        localStorage.setItem(`menuItems_${companyId}`, JSON.stringify(current));
-      } catch (e) {
-        console.error("Failed to save menu items to localStorage:", e);
-      }
     },
     setLeavesViewMode({ commit }, mode) {
       commit('SET_LEAVES_VIEW_MODE', mode);
