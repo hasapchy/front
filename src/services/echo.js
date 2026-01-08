@@ -31,7 +31,7 @@ const createEchoInstance = () => {
   const wsPort = isProduction ? 443 : (import.meta.env.VITE_REVERB_PORT || import.meta.env.VITE_PUSHER_PORT || 6001);
   const wssPort = isProduction ? 443 : (import.meta.env.VITE_REVERB_PORT || import.meta.env.VITE_PUSHER_PORT || 6001);
   
-  return new Echo({
+  const echoInstance = new Echo({
     broadcaster: "reverb",
     key: import.meta.env.VITE_REVERB_APP_KEY || import.meta.env.VITE_PUSHER_APP_KEY || "hasapchy-key",
     wsHost: host,
@@ -44,6 +44,33 @@ const createEchoInstance = () => {
       headers: getAuthHeaders(),
     },
   });
+
+  // Обработка ошибок подключения Echo
+  if (echoInstance.connector && echoInstance.connector.pusher) {
+    echoInstance.connector.pusher.connection.bind('error', (error) => {
+      // Игнорируем ошибки связанные с message port (часто вызваны расширениями браузера)
+      if (error && error.message && error.message.includes('message port closed')) {
+        return;
+      }
+      if (import.meta.env.DEV) {
+        console.warn('Echo connection error:', error);
+      }
+    });
+
+    echoInstance.connector.pusher.connection.bind('disconnected', () => {
+      if (import.meta.env.DEV) {
+        console.log('Echo disconnected');
+      }
+    });
+
+    echoInstance.connector.pusher.connection.bind('connected', () => {
+      if (import.meta.env.DEV) {
+        console.log('Echo connected');
+      }
+    });
+  }
+
+  return echoInstance;
 };
 
 // Экспортируем функцию для создания нового экземпляра
