@@ -508,7 +508,7 @@ export default {
   },
   computed: {
     hasChatsView() {
-      return this.$store.getters.hasPermission("chats_view");
+      return this.$store.getters.hasPermission("chats_view_all");
     },
     canWrite() {
       return this.$store.getters.hasPermission("chats_write");
