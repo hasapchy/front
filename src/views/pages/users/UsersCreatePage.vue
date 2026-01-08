@@ -329,11 +329,10 @@ export default {
         }
 
         this.$nextTick(async () => {
-            const promises = [this.fetchCompanies()];
-            if (this.canViewRolesTab) {
-                promises.push(this.fetchRoles());
-            }
-            await Promise.all(promises);
+            await Promise.all([
+                this.fetchCompanies(),
+                this.fetchRoles()
+            ]);
 
             if (!this.editingItem) {
                 this.clearForm();

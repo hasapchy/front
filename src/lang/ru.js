@@ -47,7 +47,7 @@ export default {
   newPassword: 'Новый пароль',
   editProfile: 'Редактировать профиль',
   profileInfo: 'Информация профиля',
-  
+
   // Компании
   myCompany: 'Моя компания',
   selectCompany: 'Выберите компанию',
@@ -91,7 +91,7 @@ export default {
   roundingForTransactions: 'Округление для транзакций',
   quantityRoundingSettings: 'Округление количества товара',
   forQuantity: 'для количества',
-  
+
   // Навигация
   home: 'Главная',
   clients: 'Контакты',
@@ -106,8 +106,9 @@ export default {
   rent: 'Аренда',
   projects: 'Проекты',
   users: 'Сотрудники',
+  orgStructure: 'Орг. структура',
   settings: 'Кастомные права',
-  
+
   // Канбан
   kanbanByStatuses: 'Канбан по статусам',
   groupBy: 'Группировать по',
@@ -116,16 +117,16 @@ export default {
   noOrders: 'Нет заказов',
   orderUpdated: 'Заказ обновлен',
   kanbanCardFields: 'Поля карточки',
-  
+
   // Дополнительные навигационные элементы
   finance: 'Финансы',
-    mutualSettlements: 'Взаиморасчеты',
-    impact: 'По клиенту',
-    balance: 'Баланс',
-    debt: 'Долг',
-    credit: 'Кредит',
-    totalBalance: 'Итого',
-    source: 'Источник',
+  mutualSettlements: 'Взаиморасчеты',
+  impact: 'По клиенту',
+  balance: 'Баланс',
+  debt: 'Долг',
+  credit: 'Кредит',
+  totalBalance: 'Итого',
+  source: 'Источник',
   cashRegisters: 'Кассы',
   productCategories: 'Категории товаров/услуг',
   orderStatuses: 'Статусы заказов',
@@ -161,30 +162,30 @@ export default {
   services: 'Услуги',
   systemSettings: 'Настройки системы',
   generalSettings: 'Настройки',
-  
+
   // Переключение языка
   languageChanged: 'Язык изменен',
   turkmen: 'Туркменский',
   russian: 'Русский',
   accountingSystem: 'Hasapp.online',
-  
+
   // Действия
   add: 'Добавить',
   selectIncomeForRentIncome: 'Приход — если платят нам за аренду (кат. 28). Расход — если платим за аренду (кат. 9).',
-  
+
   // Создание и редактирование
   createProject: 'Создать проект',
   editProject: 'Редактировать проект',
-  
+
   // Дополнительные действия
   selectCategory: 'Выберите категорию',
   selectCategories: 'Выберите категории',
   categoryName: 'Название категории',
   colorOptional: 'Цвет (опционально)',
-  
+
   // Статусы
   active: 'Активный',
-  
+
   // Формы
   name: 'Название',
   email: 'E-mail',
@@ -192,7 +193,7 @@ export default {
   noPhone: 'Нет телефона',
   address: 'Адрес',
   description: 'Описание',
-  
+
   // История курсов валют
   currencyHistory: 'История курсов валют',
   currency_history: 'История курсов валют',
@@ -269,7 +270,7 @@ export default {
   selected: 'Выбрано',
   clearSelection: 'Снять выбор',
   changeStatus: 'Изменить статус',
-  
+
   // Продукты и услуги
   selectType: 'Выберите тип',
   product: 'Товар',
@@ -282,16 +283,16 @@ export default {
   barcode: 'Штрих-код (EAN-13)',
   generateBarcode: 'Сгенерировать штрих-код',
   downloadBarcode: 'Скачать штрих-код',
-  
+
   // Сообщения
   confirmDelete: 'Подтвердите удаление',
-  
+
   // Пакетные действия
   confirmDeleteSelected: 'Подтвердите удаление выбранных',
   deleteSelected: 'Удалить выбранные',
   closeWithoutSaving: 'Закрыть без сохранения',
   stay: 'Остаться',
-  
+
   // Изменения и файлы
   unsavedChanges: 'Есть несохраненные изменения. Вы действительно хотите закрыть форму?',
   deleteFile: 'Удалить файл',
@@ -303,7 +304,7 @@ export default {
   supportedFormats: 'Поддерживаемые форматы: PNG, JPG, SVG',
   noPermissionSettings: 'У вас нет прав для изменения настроек',
   settingsSavedSuccessfully: 'Настройки успешно сохранены',
-  
+
   // Мониторинг производительности
   performanceMonitor: 'Мониторинг',
   databasePerformance: 'Производительность базы данных',
@@ -350,14 +351,14 @@ export default {
   cacheStatus: 'Статус',
   cacheSize: 'Размер кэша',
   cacheCleared: 'Кэш успешно очищен',
-  
+
   // Уведомления и ошибки
   errorGettingProductList: 'Ошибка получения списка товаров',
   productSuccessfullyAdded: 'Товар успешно добавлен',
   errorSavingProduct: 'Ошибка сохранения товара',
   productSuccessfullyDeleted: 'Товар успешно удален',
   errorDeletingProduct: 'Ошибка удаления товара',
-  
+
   // Таблицы
   noData: 'Нет данных',
   total: 'Всего',
@@ -399,30 +400,30 @@ export default {
   percent: 'Процентная',
   fixed: 'Фиксированная',
   rowsPerPage: 'Строк на странице',
-  
+
   // Фильтры
   filters: 'Фильтры',
   filter: 'Фильтр',
   clearFilter: 'Очистить фильтр',
   applyFilter: 'Применить фильтр',
-  
+
   // Поиск
   searchPlaceholder: 'Введите для поиска...',
   searchFieldsHint: 'Поиск по: ID, клиенту, примечанию',
-  
+
   // Валидация
   required: 'Это поле обязательно',
   invalidEmail: 'Неверный e-mail',
   invalidPhone: 'Неверный телефон',
   minLength: 'Минимум {min} символов',
   maxLength: 'Максимум {max} символов',
-  
+
   // Время
   today: 'Сегодня',
   yesterday: 'Вчера',
   thisWeek: 'На этой неделе',
   thisMonth: 'В этом месяце',
-  
+
   // Финансы
   balance: 'Баланс',
   income: 'Доход',
@@ -434,13 +435,13 @@ export default {
   editIncome: 'Редактировать приход',
   deleteIncome: 'Удалить приход',
   projectIncome: 'Приход',
-  
+
   // Склад
   stock: 'Склад',
   leftovers: 'Отходы материалов',
   unlimited: 'Бесконечно',
   selectedStock: 'Выбранные остатки',
-  
+
   // Заказы
   orderNumber: 'Номер заказа',
   orderDate: 'Дата заказа',
@@ -448,21 +449,21 @@ export default {
   orderStatus: 'Статус заказа',
   customer: 'Клиент',
   supplier: 'Поставщик',
-  
+
   // Продажи
   saleNumber: 'Номер продажи',
   saleDate: 'Дата продажи',
   totalAmount: 'Общая сумма',
   discount: 'Скидка',
   tax: 'Налог',
-  
+
   // Клиенты
   clientName: 'Имя клиента',
   clientCode: 'Код клиента',
   contactPerson: 'Контактное лицо',
   creditLimit: 'Кредитный лимит',
   paymentTerms: 'Условия оплаты',
-  
+
   // Продукты
   productName: 'Название продукта',
   productCode: 'Код продукта',
@@ -471,11 +472,11 @@ export default {
   cost: 'Стоимость',
   retailPrice: 'Розничная цена',
   wholesalePrice: 'Оптовая цена',
-  
+
   // Дополнительные
   currentLanguage: 'Текущий язык',
   languageDescription: 'Используйте кнопки выше для смены языка',
-  
+
   // Новые ключи
   transaction: 'Операция',
   sale: 'Продажа',
@@ -484,12 +485,12 @@ export default {
   user: 'Сотрудник',
   cashRegister: 'Касса',
   saveOrderFirst: 'Сначала сохраните заказ, чтобы добавить/просматривать операции',
-  
+
   // Дополнительные сообщения
   noTransactions: 'Транзакции отсутствуют',
   cannotEditTransfer: 'Нельзя редактировать транзакцию',
   transferTransaction: 'Транзакция является трансфером',
-  
+
   // Удаление
   deleteCategory: 'Удалить категорию',
   deleteOrderCategory: 'Удалить категорию заказа',
@@ -506,17 +507,17 @@ export default {
   deleteSale: 'Удалить продажу',
   deleteSaleConfirm: 'Подтвердите удаление. Данные будут отражены на стоке и балансе клиента!',
   deleteReceiptConfirm: 'Подтвердите удаление. Данные будут отражены на стоке и балансе клиента!',
-  
+
   // Отмена операций
   confirmCancelWriteoff: 'Подтвердите отмену списания. Данные будут отражены на стоке!',
   confirmCancelMovement: 'Подтвердите отмену перемещения. Данные будут отражены на стоке!',
-  
+
   // Заголовки и метки
   code: 'Код',
   comment: 'Комментарий',
   file: 'Файл',
   actions: 'Действия',
-  
+
   // Таблицы
   transferAmount: 'Сумма трансфера',
   originalAmount: 'Указанная сумма',
@@ -557,7 +558,7 @@ export default {
   productDescription: 'Описание товара',
   productQuantity: 'Количество товара',
   productPrice: 'Цена товара',
-  
+
   // Сообщения
   categorySuccessfullyAdded: 'Категория успешно добавлена',
   categorySuccessfullyDeleted: 'Категория успешно удалена',
@@ -583,13 +584,13 @@ export default {
   errorGettingTransactionCategories: 'Ошибка получения списка категорий транзакций',
   errorSavingTransactionCategory: 'Ошибка сохранения категории транзакции',
   errorDeletingTransactionCategory: 'Ошибка удаления категории транзакции',
-  
+
   // Валидация
   productNameRequired: 'Название товара обязательно',
   quantityMustBePositive: 'Количество должно быть больше 0',
   priceCannotBeNegative: 'Цена не может быть отрицательной',
   errorCreatingProduct: 'Ошибка создания товара',
-  
+
   // Баланс
   balanceHistory: 'История баланса',
   payments: 'Платежи',
@@ -606,18 +607,18 @@ export default {
   balanceAmount: 'Сумма баланса',
   errorLoadingBalanceHistory: 'Ошибка при загрузке истории баланса',
   noHistory: 'История отсутствует',
-  
+
   // Файлы
   files: 'Файлы',
   waitForFileUpload: 'Дождитесь завершения загрузки файлов',
   saveProjectFirst: 'Сначала сохраните проект, затем прикрепляйте файлы',
   fileUploadError: 'Ошибка загрузки файлов',
   fileDeleteError: 'Ошибка удаления файла',
-  
+
   // Выбор
   selectStatusCategory: 'Выберите категорию статуса',
   selectCashRegister: 'Выберите кассу',
-  
+
   // Дополнительные заголовки
   access: 'Доступ',
   creator: 'Создатель',
@@ -639,7 +640,7 @@ export default {
   warehouseSuccessfullyDeleted: 'Склад успешно удален',
   errorSavingWarehouse: 'Ошибка сохранения склада',
   errorDeletingWarehouse: 'Ошибка удаления склада',
-  
+
   // Проекты
   projectBudget: 'Бюджет проекта',
   errorGettingProjects: 'Ошибка получения списка проектов',
@@ -654,52 +655,52 @@ export default {
   allContractTypes: 'Все типы контрактов',
   errorSavingProject: 'Ошибка сохранения проекта',
   errorDeletingProject: 'Ошибка удаления проекта',
-  
+
   // Заказы
   orderCashRegister: 'Касса заказа',
   orderWarehouse: 'Склад заказа',
   orderNote: 'Примечание заказа',
   orderProject: 'Проект заказа',
-  
+
   // Транзакции
   transactionCashRegister: 'Касса транзакции',
   transactionNote: 'Примечание транзакции',
   transactionProject: 'Проект транзакции',
-  
+
   // Касса
   cashRegisterTitle: 'Касса',
-  
+
   // Оприходование
   receipt: 'Оприходование',
   receiptTitle: 'Оприходование',
   receiptWarehouse: 'Склад оприходования',
   receiptCashRegister: 'Касса оприходования',
   receiptNote: 'Примечание оприходования',
-  
+
   // Списание
   writeoff: 'Списание',
   writeoffWarehouse: 'Склад списания',
   writeoffNote: 'Примечание списания',
-  
+
   // Перемещение
   movementWarehouseSender: 'Склад отправитель',
   movementWarehouseReceiver: 'Склад получатель',
   movementNote: 'Примечание перемещения',
-  
+
   // Сотрудники
   userPermissions: 'Права доступа',
   lastLogin: 'Последний вход',
   password: 'Пароль',
-    newPassword: 'Новый пароль',
-    enterNewPassword: 'Введите новый пароль',
-    confirmPassword: 'Подтвердите пароль',
-    generate: 'Сгенерировать',
-    passwordsDoNotMatch: 'Пароли не совпадают',
-    currentPasswordRequired: 'Текущий пароль обязателен для смены пароля',
-    newPasswordRequired: 'Новый пароль обязателен при указании текущего пароля',
-    wrongCurrentPassword: 'Неверный текущий пароль',
-    profileUpdatedSuccessfully: 'Профиль успешно обновлен',
-    failedToUpdateProfile: 'Не удалось обновить профиль',
+  newPassword: 'Новый пароль',
+  enterNewPassword: 'Введите новый пароль',
+  confirmPassword: 'Подтвердите пароль',
+  generate: 'Сгенерировать',
+  passwordsDoNotMatch: 'Пароли не совпадают',
+  currentPasswordRequired: 'Текущий пароль обязателен для смены пароля',
+  newPasswordRequired: 'Новый пароль обязателен при указании текущего пароля',
+  wrongCurrentPassword: 'Неверный текущий пароль',
+  profileUpdatedSuccessfully: 'Профиль успешно обновлен',
+  failedToUpdateProfile: 'Не удалось обновить профиль',
   userStatus: 'Активен',
   hireDate: 'Дата приема на работу',
   isAdmin: 'Администратор',
@@ -720,14 +721,14 @@ export default {
   permissions: 'Права',
   selectAllPermissions: 'Выделить все права',
   all: 'Все',
-  
+
   // Права доступа
   view: 'Просмотр',
   create: 'Создание',
   update: 'Редактирование',
   delete: 'Удаление',
   all: 'Все',
-  
+
   // Группы прав
   warehouse_movements: 'Склад — Перемещения',
   warehouse_receipts: 'Склад — Оприходования',
@@ -752,21 +753,22 @@ export default {
   currencies: 'Валюты',
   currencies_access: 'Доступ к валютам',
   transaction_categories: 'Категории транзакций',
-  
+  departments: 'Департаменты',
+
   // Общие
   no: 'Нет',
   income: 'Приход',
   outcome: 'Расход',
   debt: 'Кредит',
   noRightsToChangeSettings: 'У вас нет прав для изменения настроек',
-  
+
   // Дополнительные переводы
   cashCurrency: 'Валюта кассы',
   projectCurrency: 'Валюта проекта',
   projectExchangeRate: 'Курс валюты проекта',
   exchangeRateHelp: 'Оставьте пустым для использования курса по умолчанию из валюты',
   manat: 'TMT',
-  
+
   // Дополнительные переводы для UI
   order: 'Заказ',
   client: 'Клиент',
@@ -776,7 +778,7 @@ export default {
   problemClient: 'Проблемный клиент',
   toClientBalance: 'В кредит',
   inDebt: 'В кредит',
-  
+
   // Новые ключи для интернационализации
   // Basement worker interface
   basement: 'Подвал',
@@ -794,18 +796,18 @@ export default {
   errorCreatingOrder: 'Ошибка создания заказа',
   productType: 'Тип продукта',
   allSubcategories: 'Все подкатегории',
-  
+
   // Склады
   assignUsers: 'Назначить сотрудников',
   errorGettingWarehouseList: 'Ошибка получения списка складов',
   errorSavingWarehouse: 'Ошибка сохранения склада',
   errorDeletingWarehouse: 'Ошибка удаления склада',
-  
+
   // Категории
   errorGettingCategoryList: 'Ошибка получения списка категорий',
   errorSavingCategory: 'Ошибка сохранения категории',
   errorDeletingCategory: 'Ошибка удаления категории',
-  
+
   // Клиенты
   fullNameCompany: 'ФИО/Компания',
   errorGettingClientList: 'Ошибка получения списка клиентов',
@@ -813,7 +815,7 @@ export default {
   errorSavingClient: 'Ошибка сохранения клиента',
   clientSuccessfullyDeleted: 'Клиент успешно удален',
   errorDeletingClient: 'Ошибка удаления клиента',
-  
+
   // Товары
   sku: 'SKU',
   errorGettingProductList: 'Ошибка получения списка товаров',
@@ -821,7 +823,7 @@ export default {
   errorSavingProduct: 'Ошибка сохранения товара',
   productSuccessfullyDeleted: 'Товар успешно удален',
   errorDeletingProduct: 'Ошибка удаления товара',
-  
+
   // Заказы
   errorGettingOrder: 'Ошибка получения заказа',
   errorGettingOrderList: 'Ошибка получения списка заказов',
@@ -830,7 +832,7 @@ export default {
   orderDeleted: 'Заказ удалён',
   errorDeletingOrder: 'Ошибка удаления заказа',
   errorChangingStatus: 'Ошибка смены статуса',
-  
+
   // Продажи
   buyer: 'Покупатель',
   saleAmount: 'Сумма продажи',
@@ -839,11 +841,11 @@ export default {
   errorSavingRecord: 'Ошибка сохранения записи',
   recordSuccessfullyDeleted: 'Запись успешно удалена',
   errorDeletingRecord: 'Ошибка удаления записи',
-  
+
   // Общие
   notSpecified: 'Не указан',
   users: 'Сотрудники',
-  
+
   // Транзакции
   addTransaction: 'Добавить транзакцию',
   addProjectTransaction: 'Добавить проектную транзакцию',
@@ -862,21 +864,21 @@ export default {
   clickToFilterTransactions: 'Нажмите, чтобы отфильтровать транзакции',
   transactionDeletedReadonly: 'Транзакция удалена и недоступна для изменения',
   transactionReadonlyDueToSource: 'Транзакция привязана к трансферу, заказу или продаже и недоступна для изменения',
-  
+
   // Трансферы
   errorGettingTransferList: 'Ошибка получения списка трансферов',
   transferSuccessfullyAdded: 'Трансфер успешно добавлен',
   errorSavingTransfer: 'Ошибка сохранения трансфера',
   transferSuccessfullyDeleted: 'Трансфер успешно удален',
   errorDeletingTransfer: 'Ошибка удаления трансфера',
-  
+
   // Проекты
   errorGettingProjectList: 'Ошибка получения списка проектов',
   projectSuccessfullyAdded: 'Проект успешно добавлен',
   errorSavingProject: 'Ошибка сохранения проекта',
   projectSuccessfullyDeleted: 'Проект успешно удален',
   errorDeletingProject: 'Ошибка удаления проекта',
-  
+
   // Сотрудники
   created: 'Создан',
   errorLoadingUsers: 'Ошибка загрузки сотрудников',
@@ -926,7 +928,7 @@ export default {
   selectCashRegister: 'Выберите кассу',
   cashRegisterRequired: 'Касса обязательна для выбора',
   salaryAccrualAlreadyExists: 'Начисление уже было ранее сделано в этом месяце. Вы уверены, что хотите продолжить?',
-  
+
   // Кассы
   addCashRegister: 'Добавить кассу',
   mainCashRegister: 'Главная касса',
@@ -935,7 +937,7 @@ export default {
   errorSavingCashRegister: 'Ошибка сохранения кассы',
   cashRegisterSuccessfullyDeleted: 'Касса успешно удалена',
   errorDeletingCashRegister: 'Ошибка удаления кассы',
-  
+
   // Компоненты таблиц
   reset: 'Сбросить',
   doubleClickToSort: 'Кликните дважды для сортировки',
@@ -944,7 +946,7 @@ export default {
   selectStatus: 'Выбрать статус',
   attention: 'Внимание',
   confirmCloseWithoutSaving: 'Вы уверены, что хотите закрыть без сохранения?',
-  
+
   // Поиск и клиенты
   enterClientNameOrNumber: 'Введите имя или номер клиента',
   enterUserNameOrPosition: 'Введите имя, фамилию или должность',
@@ -961,7 +963,7 @@ export default {
   mutualSettlement: 'Взаимный расчет',
   createClient: 'Клиент',
   errorCreatingClient: 'Ошибка создания клиента',
-  
+
   // Фразы для сотрудников
   createUser: 'Сотрудник',
   addClient: 'Добавить клиента',
@@ -972,7 +974,7 @@ export default {
   errorCreatingUser: 'Ошибка создания сотрудника',
   errorAddingUser: 'Ошибка добавления сотрудника',
   errorUpdatingUser: 'Ошибка обновления сотрудника',
-  
+
   // Фразы для категорий
   createCategory: 'Категория',
   editCategory: 'Редактировать категорию',
@@ -984,7 +986,7 @@ export default {
   errorAddingCategory: 'Ошибка добавления категории',
   errorUpdatingCategory: 'Ошибка обновления категории',
   productCategory: 'Категория товаров',
-  
+
   // Фразы для заказов
   createOrder: 'Создать заказ',
   editOrder: 'Редактировать заказ',
@@ -995,11 +997,11 @@ export default {
   errorCreatingOrder: 'Ошибка создания заказа',
   errorAddingOrder: 'Ошибка добавления заказа',
   errorUpdatingOrder: 'Ошибка обновления заказа',
-    orderNeedsPayment: 'Заказ требует доплаты',
-    remainingAmount: 'Осталось доплатить',
-    orderClosedAutomatically: 'Заказ автоматически закрыт',
-    transactionSaved: 'Транзакция сохранена',
-  
+  orderNeedsPayment: 'Заказ требует доплаты',
+  remainingAmount: 'Осталось доплатить',
+  orderClosedAutomatically: 'Заказ автоматически закрыт',
+  transactionSaved: 'Транзакция сохранена',
+
   // Фразы для категорий заказов
   addOrderCategory: 'Добавить категорию заказа',
   createOrderCategory: 'Категория заказа',
@@ -1043,7 +1045,6 @@ export default {
   'transactionCategory.PREMIUM': 'Премия',
   'transactionCategory.FINE': 'Штраф',
   'transactionCategory.RENT_INCOME': 'Оплата нам за аренду',
-  
   // Фразы для товаров
   createProduct: 'Товар',
   editProduct: 'Редактировать товар',
@@ -1053,7 +1054,7 @@ export default {
   errorCreatingProduct: 'Ошибка создания товара',
   errorAddingProduct: 'Ошибка добавления товара',
   errorUpdatingProduct: 'Ошибка обновления товара',
-  
+
   // Фразы для услуг
   editService: 'Редактировать услугу',
   serviceCreated: 'Услуга создана',
@@ -1062,7 +1063,7 @@ export default {
   errorCreatingService: 'Ошибка создания услуги',
   errorAddingService: 'Ошибка добавления услуги',
   errorUpdatingService: 'Ошибка обновления услуги',
-  
+
   // Фразы для компаний
   companyCreated: 'Компания создана',
   companyAdded: 'Компания добавлена',
@@ -1070,7 +1071,7 @@ export default {
   errorCreatingCompany: 'Ошибка создания компании',
   errorAddingCompany: 'Ошибка добавления компании',
   errorUpdatingCompany: 'Ошибка обновления компании',
-  
+
   // Фразы для проектов
   projectCreated: 'Проект создан',
   projectAdded: 'Проект добавлен',
@@ -1078,30 +1079,30 @@ export default {
   errorCreatingProject: 'Ошибка создания проекта',
   errorAddingProject: 'Ошибка добавления проекта',
   errorUpdatingProject: 'Ошибка обновления проекта',
-  
+
   // Фразы для статусов заказов
   createOrderStatus: 'Добавить статус заказа',
   editOrderStatus: 'Статус заказа',
-  
+
   // Фразы для категорий статусов заказов
   createOrderStatusCategory: 'Добавить категорию статуса заказа',
   editOrderStatusCategory: 'Категория статуса заказа',
-  
+
   // Фразы для касс
   createCashRegister: 'Касса',
   editCashRegister: 'Касса',
   cashRegister: 'Касса',
   cashRegisterMustHaveAtLeastOneUser: 'Касса должна иметь хотя бы одного пользователя',
-  
+
   // Фразы для складов
   createWarehouse: 'Склад',
   editWarehouse: 'Редактировать склад',
   warehouseMustHaveAtLeastOneUser: 'Склад должен иметь хотя бы одного пользователя',
-  
+
   // Фразы для продаж
   createSale: 'Продажа',
   editSale: 'Продажа',
-  
+
   // Фразы для клиентов
   editClient: 'Клиент',
   assignUsers: 'Назначить сотрудников',
@@ -1111,39 +1112,39 @@ export default {
   createdAt: 'Дата создания',
   direction: 'Направление',
   purchasePrice: 'Цена закупки',
-  
+
   // Фразы для транзакций
   createTransaction: 'Транзакция',
   editTransaction: 'Редактировать транзакцию',
-  
+
   // Фразы для переводов
   createTransfer: 'Трансфер',
   editTransfer: 'Трансфер',
-  
+
   // Фразы для поступлений на склад
   createReceipt: 'Запись поступления',
   editReceipt: 'Запись поступления',
-  
+
   // Фразы для списаний со склада
   createWriteoff: 'Списание',
   editWriteoff: 'Редактировать списание со склада',
-  
+
   // Фразы для движений по складу
   createMovement: 'Движение',
   editMovement: 'Редактировать движение по складу',
-  
+
   // Фразы для создания товаров и услуг
   createProductOrService: 'Создать товар или услугу',
   createTemporaryProduct: 'Создать временный товар',
-  
+
   // Фразы для временных товаров
   createTempProduct: 'Создать временный товар',
   editTempProduct: 'Редактировать временный товар',
-  
+
   // Фразы для вкладок складов
   movement: 'Перемещение',
   writeoff: 'Списание',
-  
+
   // Новые переводы для фильтров транзакций
   transactionType: 'Тип транзакции',
   allTransactionTypes: 'Все типы транзакций',
@@ -1164,7 +1165,7 @@ export default {
   showPaidOrders: 'Показать оплаченные заказы',
   hidePaidOrders: 'Скрыть оплаченные заказы',
   paidOrdersFilter: 'Фильтр оплаченных заказов',
-  
+
   // Файлы
   noFilesUploaded: 'Файлы не загружены',
   uploadingFiles: 'Загрузка файлов',
@@ -1172,7 +1173,7 @@ export default {
   fileSize: 'Размер',
   fileType: 'Тип файла',
   actions: 'Действия',
-  
+
   // Дополнительные ключи
   other: 'Другое',
   transfer: 'Перевод',
@@ -1184,7 +1185,7 @@ export default {
   receiptTransaction: 'Транзакция оприходования',
   cannotDeleteRestricted: 'Нельзя удалить ограниченные транзакции',
   restrictedTransactionsCannotBeDeleted: 'Трансферы, продажи и оприходования нельзя удалять',
-  
+
   // Мониторинг производительности
   performanceMonitor: 'Мониторинг',
   executionTime: 'Время выполнения',
@@ -1200,7 +1201,7 @@ export default {
   cacheStatus: 'Статус',
   cacheSize: 'Размер кэша',
   cacheCleared: 'Кэш очищен',
-  
+
   // Виртуализация и ленивая загрузка
   loadingMore: 'Загрузка дополнительных элементов...',
   errorLoadingMore: 'Ошибка загрузки дополнительных элементов',
@@ -1261,7 +1262,7 @@ export default {
   selectInvoiceFirst: 'Сначала выберите счет',
   saveInvoiceFirst: 'Сначала сохраните счет',
   changeStatus: 'Сменить статус',
-  
+
   // Статусы счетов
   status: 'Статус',
   new: 'Новый',
@@ -1272,11 +1273,11 @@ export default {
   partiallyPaid: 'Частично оплачено',
   cancelled: 'Отменен',
   allStatuses: 'Все статусы',
-  
+
   // Заказы в счетах
   selectedOrders: 'Выбранные заказы',
   noOrdersSelected: 'Заказы не выбраны',
-  
+
   // Missing translations
   enterEmail: 'Введите email',
   rememberMe: 'Запомнить меня',
@@ -1284,7 +1285,7 @@ export default {
   enterPassword: 'Введите пароль',
   cash: 'Касса',
   system: 'Система',
-  
+
   // Permission group translations
   orderCategories: 'Категории заказов',
   orderStatusCategories: 'Категории статусов заказов',
@@ -1318,7 +1319,7 @@ export default {
   showInProjectSelectDescription: 'Если данная настройка не включена, то при попадании на данный статус проекты не будут доступны для выбора в поле',
   color: 'Цвет',
   projectStatus: 'Статус проекта',
-  
+
   // Контракты
   addContract: 'Добавить контракт',
   editContract: 'Редактировать контракт',
@@ -1359,47 +1360,47 @@ export default {
   update: 'Обновить',
   notSpecified: 'Не указано',
   noProducts: 'Нет товаров',
-  
+
   // Payment types
   paymentType: 'Тип оплаты',
-  
+
   // Warehouse receipts
   receiptSuccessfullyAdded: 'Оприходование успешно добавлено',
   errorSavingReceipt: 'Ошибка сохранения оприходования',
   receiptSuccessfullyDeleted: 'Оприходование успешно удалено',
   errorDeletingReceipt: 'Ошибка удаления оприходования',
-  
+
   // Warehouse movements
   movementSuccessfullyAdded: 'Перемещение успешно добавлено',
   errorSavingMovement: 'Ошибка сохранения перемещения',
   movementSuccessfullyDeleted: 'Перемещение успешно удалено',
   errorDeletingMovement: 'Ошибка удаления перемещения',
-  
+
   // Warehouse writeoffs
   writeoffSuccessfullyAdded: 'Списание успешно добавлено',
   errorSavingWriteoff: 'Ошибка сохранения списания',
   writeoffSuccessfullyDeleted: 'Списание успешно удалено',
   errorDeletingWriteoff: 'Ошибка удаления списания',
-  
+
   // Image cropper
   cropImage: 'Обрезать изображение',
   apply: 'Применить',
   preview: 'Предпросмотр',
-  
+
   // Cache
   clearCache: 'Очистить кэш',
   confirmClearCache: 'Вы уверены, что хотите очистить весь кэш? Это может занять несколько секунд.',
   cacheCleared: 'Кэш очищен',
   cacheSuccessfullyCleared: 'Кэш успешно очищен. Страница будет перезагружена.',
   errorClearingCache: 'Ошибка при очистке кэша',
-  
+
   // Selection
   selectAll: 'Выбрать все',
   deselectAll: 'Отменить выбор',
-  
+
   // Company settings
   skipProjectOrderBalance: 'Пропускать баланс заказов проекта',
-  
+
   // Roles
   roleName: 'Название роли',
   roles: 'Роли',
@@ -1426,7 +1427,7 @@ export default {
   roleDeleted: 'Роль удалена',
   errorDeletingRole: 'Ошибка удаления роли',
   mutual_settlements: 'Взаиморасчеты',
-  
+
   // Отпуска
   leaves: 'Отпуска',
   leaveTypes: 'Типы отпусков',
@@ -1470,13 +1471,13 @@ export default {
   project: 'Проект',
   deadline: 'Крайний срок',
   enterDescription: 'Введите описание',
-  
+
   // Статусы задач
   pending: 'Ожидает',
   inProgress: 'В работе',
   completed: 'Завершена',
   postponed: 'Отложена',
-  
+
   // Tasks
   createTask: 'Создать задачу',
   editTask: 'Редактировать задачу',
@@ -1502,6 +1503,26 @@ export default {
   errorSavingTaskStatus: 'Ошибка при сохранении статуса задачи',
   errorDeletingTaskStatus: 'Ошибка при удалении статуса задачи',
   deleteTaskStatus: 'Удалить статус задачи',
+
+  // Departments
+  department: 'Отдел',
+  selectDepartment: 'Выберите отдел',
+  parentDepartment: 'Вышестоящий отдел',
+  head: 'Руководитель',
+  deputyHead: 'Заместитель',
+  addDepartment: 'Добавить отдел',
+  editDepartment: 'Редактировать отдел',
+  deleteDepartment: 'Удалить отдел',
+  departmentSaved: 'Отдел сохранен',
+  errorSavingDepartment: 'Ошибка сохранения отдела',
+  departmentDeleted: 'Отдел удален',
+  errorDeletingDepartment: 'Ошибка удаления отдела',
+  noSubDepartments: 'Нет отделов в подчинении',
+  yourDepartment: 'Ваш отдел',
+  assignHead: 'Назначить руководителем',
+  assignDeputy: 'Назначить заместителем',
+  accrueSalaries: 'Начислить зарплаты',
+  titleRequired: 'Название обязательно',
   
   // Units
   'unit.METER': 'Метр',
@@ -1557,6 +1578,7 @@ export default {
   // Currencies
   'currency.RUSSIAN_RUBLE': 'Российский рубль',
   
+<<<<<<< HEAD
   // Chats
   chats: 'Чаты',
   chats_write: 'Написание в чатах',
@@ -1572,4 +1594,10 @@ export default {
   transactions_view_receipt: 'Просмотр транзакций из оприходований',
   transactions_view_salary: 'Просмотр зарплатных транзакций',
   transactions_view_other: 'Просмотр остальных транзакций',
+=======
+  // Date labels
+  today: 'Сегодня',
+  yesterday: 'Вчера',
+  dayBeforeYesterday: 'Позавчера',
+>>>>>>> dev
 }

@@ -46,6 +46,7 @@
 <script>
 import LeaveController from '@/api/LeaveController';
 import LeaveTypeController from '@/api/LeaveTypeController';
+import UsersController from '@/api/UsersController';
 import LeaveDto from '@/dto/leave/LeaveDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
@@ -65,7 +66,9 @@ export default {
     data() {
         return {
             leaveTypeId: this.editingItem ? this.editingItem.leaveTypeId : '',
-            selectedUser: this.editingItem && this.editingItem.userId ? { id: this.editingItem.userId } : null,
+            selectedUser: this.editingItem && this.editingItem.userId 
+                ? (this.editingItem.user || { id: this.editingItem.userId }) 
+                : null,
             dateFrom: this.editingItem ? this.editingItem.dateFromForInput : '',
             dateTo: this.editingItem ? this.editingItem.dateToForInput : '',
             comment: this.editingItem ? (this.editingItem.comment || '') : '',
@@ -80,6 +83,10 @@ export default {
     mounted() {
         this.$nextTick(async () => {
             await this.fetchAllLeaveTypes();
+            // Если есть editingItem с userId, но нет полного объекта пользователя, загружаем его
+            if (this.editingItem && this.editingItem.userId && !this.editingItem.user) {
+                await this.loadUser(this.editingItem.userId);
+            }
             this.saveInitialState();
         });
     },
@@ -102,14 +109,63 @@ export default {
                 this.allLeaveTypes = [];
             }
         },
-        prepareSave() {
-            return {
-                leave_type_id: this.leaveTypeId,
-                user_id: this.userId,
-                date_from: this.dateFrom,
-                date_to: this.dateTo,
-                comment: this.comment || null
-            };
+        async loadUser(userId) {
+            if (!userId) return;
+            
+            try {
+                // Сначала пытаемся найти в store
+                const users = this.$store.getters.usersForCurrentCompany || [];
+                let user = users.find(u => u.id === userId);
+                
+                // Если не нашли в store, загружаем через API
+                if (!user) {
+                    user = await UsersController.getItem(userId);
+                }
+                
+                if (user) {
+                    this.selectedUser = user;
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки пользователя:', error);
+                // Если не удалось загрузить, используем только id
+                this.selectedUser = { id: userId };
+            }
+        },
+        async save() {
+            if (!this.leaveTypeId || !this.userId || !this.dateFrom || !this.dateTo) {
+                this.$emit('saved-error', this.$t('allRequiredFieldsMustBeFilled') || 'Все обязательные поля должны быть заполнены');
+                return;
+            }
+
+            if (new Date(this.dateTo) < new Date(this.dateFrom)) {
+                this.$emit('saved-error', this.$t('dateToMustBeAfterDateFrom') || 'Дата окончания должна быть после даты начала');
+                return;
+            }
+
+            this.saveLoading = true;
+            try {
+                const payload = {
+                    leave_type_id: this.leaveTypeId,
+                    user_id: this.userId,
+                    date_from: this.dateFrom,
+                    date_to: this.dateTo,
+                    comment: this.comment || null
+                };
+
+                let resp;
+                if (this.editingItemId != null) {
+                    resp = await LeaveController.updateItem(this.editingItemId, payload);
+                } else {
+                    resp = await LeaveController.storeItem(payload);
+                }
+                if (resp.message || resp.item) {
+                    this.$emit('saved');
+                    this.clearForm();
+                }
+            } catch (error) {
+                this.$emit('saved-error', this.getApiErrorMessage(error));
+            }
+            this.saveLoading = false;
         },
         async performSave(data) {
             if (this.editingItemId != null) {
@@ -141,12 +197,43 @@ export default {
                 this.resetFormChanges();
             }
         },
-        onEditingItemChanged(newEditingItem) {
-            this.leaveTypeId = newEditingItem.leaveTypeId || '';
-            this.selectedUser = newEditingItem.userId ? { id: newEditingItem.userId } : null;
-            this.dateFrom = newEditingItem.dateFromForInput || '';
-            this.dateTo = newEditingItem.dateToForInput || '';
-            this.comment = newEditingItem.comment || '';
+        showDeleteDialog() { this.deleteDialog = true; },
+        closeDeleteDialog() { this.deleteDialog = false; }
+    },
+    watch: {
+        editingItem: {
+            async handler(newEditingItem) {
+                if (newEditingItem) {
+                    this.leaveTypeId = newEditingItem.leaveTypeId || '';
+                    
+                    // Если есть полный объект пользователя, используем его
+                    if (newEditingItem.user && newEditingItem.userId) {
+                        this.selectedUser = newEditingItem.user;
+                    } else if (newEditingItem.userId) {
+                        // Если есть только userId, загружаем пользователя
+                        await this.loadUser(newEditingItem.userId);
+                    } else {
+                        this.selectedUser = null;
+                    }
+                    
+                    this.dateFrom = newEditingItem.dateFromForInput || '';
+                    this.dateTo = newEditingItem.dateToForInput || '';
+                    this.comment = newEditingItem.comment || '';
+                    this.editingItemId = newEditingItem.id || null;
+                } else {
+                    this.leaveTypeId = '';
+                    this.selectedUser = null;
+                    this.dateFrom = '';
+                    this.dateTo = '';
+                    this.comment = '';
+                    this.editingItemId = null;
+                }
+                this.$nextTick(() => {
+                    this.saveInitialState();
+                });
+            },
+            deep: true,
+            immediate: true
         }
     }
 }
