@@ -31,11 +31,11 @@ const createEchoInstance = () => {
   const wsPort = isProduction ? 443 : (import.meta.env.VITE_REVERB_PORT || import.meta.env.VITE_PUSHER_PORT || 6001);
   const wssPort = isProduction ? 443 : (import.meta.env.VITE_REVERB_PORT || import.meta.env.VITE_PUSHER_PORT || 6001);
   
-  const echoInstance = new Echo({
+  const echoConfig = {
     broadcaster: "reverb",
     key: import.meta.env.VITE_REVERB_APP_KEY || import.meta.env.VITE_PUSHER_APP_KEY || "hasapchy-key",
     wsHost: host,
-    wsPort: isProduction ? undefined : wsPort, // Для production не указываем порт (используется 443)
+    wsPort: isProduction ? undefined : wsPort,
     wssPort: wssPort,
     forceTLS: isProduction,
     enabledTransports: isProduction ? ['wss'] : ['ws', 'wss'],
@@ -43,30 +43,55 @@ const createEchoInstance = () => {
     auth: {
       headers: getAuthHeaders(),
     },
+  };
+
+  // Debug: показываем конфигурацию для отладки (временно)
+  console.log('[Echo] Config:', {
+    wsHost: echoConfig.wsHost,
+    wssPort: echoConfig.wssPort,
+    forceTLS: echoConfig.forceTLS,
+    enabledTransports: echoConfig.enabledTransports,
+    authEndpoint: echoConfig.authEndpoint,
+    key: echoConfig.key,
+    isProduction,
+    scheme,
   });
 
-  // Обработка ошибок подключения Echo
+  const echoInstance = new Echo(echoConfig);
+
+  // Обработка ошибок подключения Echo (показываем в любом режиме для отладки)
   if (echoInstance.connector && echoInstance.connector.pusher) {
     echoInstance.connector.pusher.connection.bind('error', (error) => {
       // Игнорируем ошибки связанные с message port (часто вызваны расширениями браузера)
       if (error && error.message && error.message.includes('message port closed')) {
         return;
       }
-      if (import.meta.env.DEV) {
-        console.warn('Echo connection error:', error);
-      }
+      console.error('[Echo] Connection error:', error);
     });
 
     echoInstance.connector.pusher.connection.bind('disconnected', () => {
-      if (import.meta.env.DEV) {
-        console.log('Echo disconnected');
-      }
+      console.log('[Echo] Disconnected');
     });
 
     echoInstance.connector.pusher.connection.bind('connected', () => {
-      if (import.meta.env.DEV) {
-        console.log('Echo connected');
-      }
+      console.log('[Echo] Connected successfully!');
+    });
+
+    echoInstance.connector.pusher.connection.bind('connecting', () => {
+      console.log('[Echo] Connecting...');
+    });
+
+    echoInstance.connector.pusher.connection.bind('unavailable', () => {
+      console.error('[Echo] Server unavailable');
+    });
+
+    echoInstance.connector.pusher.connection.bind('failed', () => {
+      console.error('[Echo] Connection failed');
+    });
+
+    // Отслеживаем состояние соединения
+    echoInstance.connector.pusher.connection.bind('state_change', (states) => {
+      console.log('[Echo] State changed:', states.previous, '->', states.current);
     });
   }
 
