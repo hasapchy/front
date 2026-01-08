@@ -16,9 +16,9 @@
                         :log="log">
                         <template #left>
                             <PrimaryButton 
-                                :onclick="() => { showModal(null) }"
-                                icon="fas fa-plus"
-                                :disabled="!$store.getters.hasPermission('leave_types_create_all')">
+                                v-if="canCreateLeaveType"
+                                :onclick="() => { showModal(null) }" 
+                                icon="fas fa-plus">
                             </PrimaryButton>
                             <transition name="fade">
                                 <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
@@ -116,9 +116,14 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'name', label: 'name' },
-                { name: 'color', label: 'color', size: 100 },
+                { name: 'color', label: 'color', size: 100, html: true },
                 { name: 'createdAt', label: 'creationDate' }
             ]
+        }
+    },
+    computed: {
+        canCreateLeaveType() {
+            return this.$store.getters.hasPermission('leave_types_create_all');
         }
     },
     mounted() {
@@ -138,7 +143,10 @@ export default {
                 case 'createdAt':
                     return i.formatCreatedAt();
                 case 'color':
-                    return i.color || '-';
+                    if (i.color) {
+                        return `<div style="width: 20px; height: 20px; background-color: ${i.color}; border-radius: 4px; display: inline-block; border: 1px solid #ddd;"></div>`;
+                    }
+                    return '-';
                 default:
                     return i[c];
             }

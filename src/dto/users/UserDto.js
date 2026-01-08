@@ -21,6 +21,11 @@ export class UserDto {
     this.roles = data.roles?.map((r) => typeof r === 'string' ? r : (r.name || r)) || [];
     this.companies = data.companies?.map((c) => ({ id: c.id, name: c.name })) || [];
     this.company_roles = data.company_roles || [];
+    this.departments = data.departments?.map((d) => ({
+      id: d.id,
+      title: d.title,
+      companyId: d.company_id
+    })) || [];
     this.lastSalary = data.last_salary || null;
   }
 

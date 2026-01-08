@@ -32,6 +32,20 @@ export default class ChatController extends BaseController {
     );
   }
 
+  static async markAsRead(chatId, lastMessageId = null) {
+    return super.handleRequest(
+      async () => {
+        const payload = {};
+        if (lastMessageId) {
+          payload.last_message_id = lastMessageId;
+        }
+        const { data } = await api.post(`/chats/${chatId}/read`, payload);
+        return data.data || data;
+      },
+      "Ошибка при отметке чата как прочитанного:"
+    );
+  }
+
   static async startDirectChat(userId) {
     return super.handleRequest(
       async () => {
@@ -72,6 +86,16 @@ export default class ChatController extends BaseController {
         return data.data || data.message || data;
       },
       "Ошибка при отправке сообщения:"
+    );
+  }
+
+  static async deleteChat(chatId) {
+    return super.handleRequest(
+      async () => {
+        const { data } = await api.delete(`/chats/${chatId}`);
+        return data.data || data;
+      },
+      "Ошибка при удалении чата:"
     );
   }
 }
