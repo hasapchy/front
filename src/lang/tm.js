@@ -74,6 +74,7 @@ export default {
   orders: 'Sargytlar',
   sales: 'Satuwlar',
   tasks: 'Wezipeler',
+  news: 'Täzelikler',
   messenger: 'Messenger',
   warehouses: 'Ammar',
   transactions: 'Tranzaksiyalar',
@@ -979,6 +980,7 @@ export default {
   debtsOnly: 'Diňe bergidarlyklar',
   allSources: 'Ähli çeşmeler',
   allStatuses: 'Ähli ýagdaýlar',
+  allAuthors: 'Ähli awtorlar',
   debt: 'Karz',
   notDebt: 'Karz däl',
   completed: 'Tamamlandy',
@@ -1247,6 +1249,17 @@ export default {
   errorSavingTaskStatus: 'Wezipäniň ýagdaýyny ýatda saklamakda säwlik',
   errorDeletingTaskStatus: 'Wezipäniň ýagdaýyny pozmakda säwlik',
   deleteTaskStatus: 'Wezipäniň ýagdaýyny poz',
+  
+  // News
+  addNews: 'Täzelik goş',
+  createNews: 'Täzelik döret',
+  editNews: 'Täzeligi redaktirle',
+  newsSuccessfullyAdded: 'Täzelik üstünlikli döredildi',
+  newsSuccessfullyUpdated: 'Täzelik üstünlikli täzelendi',
+  errorSavingNews: 'Täzeligi ýatda saklamakda säwlik',
+  contentRequired: 'Mazmun hökmany',
+  content: 'Mazmun',
+  author: 'Awtor',
   
   // Units
   'unit.METER': 'Metr',

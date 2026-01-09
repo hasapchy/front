@@ -99,6 +99,7 @@ export default {
   orders: 'Заказы',
   sales: 'Продажи',
   tasks: 'Задачи',
+  news: 'Новости',
   messenger: 'Мессенджер',
   warehouseReceipt: 'Оприходование',
   warehouses: 'Склады',
@@ -1143,6 +1144,7 @@ export default {
   debtFilter: 'Фильтр долгов',
   allSources: 'Все источники',
   allStatuses: 'Все статусы',
+  allAuthors: 'Все авторы',
   notDebt: 'Не кредит',
   completed: 'Завершено',
   cancelled: 'Отменено',
@@ -1485,6 +1487,17 @@ export default {
   errorSavingTaskStatus: 'Ошибка при сохранении статуса задачи',
   errorDeletingTaskStatus: 'Ошибка при удалении статуса задачи',
   deleteTaskStatus: 'Удалить статус задачи',
+
+  // News
+  addNews: 'Добавить новость',
+  createNews: 'Создать новость',
+  editNews: 'Редактировать новость',
+  newsSuccessfullyAdded: 'Новость успешно создана',
+  newsSuccessfullyUpdated: 'Новость успешно обновлена',
+  errorSavingNews: 'Ошибка сохранения новости',
+  contentRequired: 'Содержание обязательно',
+  content: 'Содержание',
+  author: 'Автор',
 
   // Departments
   department: 'Отдел',
