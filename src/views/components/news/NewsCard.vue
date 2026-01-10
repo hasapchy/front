@@ -126,8 +126,33 @@ export default {
             const content = this.news.content || '';
             if (!content) return '';
             
+            // Проверяем, содержит ли контент HTML сущности (экранированный HTML)
+            const hasHtmlEntities = /&lt;[a-z]/i.test(content) || /&gt;/.test(content);
+            
+            let processedContent = content;
+            
+            // Если контент содержит HTML сущности, разэкранируем их перед санитизацией
+            // Это нужно, когда HTML был экранирован при сохранении (например, &lt;p&gt; вместо <p>)
+            if (hasHtmlEntities) {
+                // Используем замену для разэкранирования HTML сущностей
+                // Важно: заменяем в правильном порядке, сначала двойное экранирование
+                processedContent = content
+                    .replace(/&amp;lt;/g, '<')  // Двойное экранирование: &amp;lt; -> <
+                    .replace(/&amp;gt;/g, '>')  // Двойное экранирование: &amp;gt; -> >
+                    .replace(/&amp;amp;/g, '&') // Двойное экранирование: &amp;amp; -> &
+                    .replace(/&lt;/g, '<')      // Обычное экранирование: &lt; -> <
+                    .replace(/&gt;/g, '>')      // Обычное экранирование: &gt; -> >
+                    .replace(/&amp;/g, '&')     // Обычное экранирование: &amp; -> &
+                    .replace(/&quot;/g, '"')    // Кавычки: &quot; -> "
+                    .replace(/&#39;/g, "'")     // Апостроф: &#39; -> '
+                    .replace(/&#x27;/g, "'")    // Апостроф (hex): &#x27; -> '
+                    .replace(/&#x2F;/g, '/')    // Слэш (hex): &#x2F; -> /
+                    .replace(/&#47;/g, '/');    // Слэш (dec): &#47; -> /
+            }
+            
             // Санитизируем HTML для защиты от XSS
-            let sanitizedContent = DOMPurify.sanitize(content, {
+            // DOMPurify автоматически обрабатывает HTML
+            let sanitizedContent = DOMPurify.sanitize(processedContent, {
                 ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span', 'div', 'mark'],
                 ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'style', 'target', 'rel'],
                 ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i

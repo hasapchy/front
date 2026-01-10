@@ -115,7 +115,6 @@
                 <div v-else class="flex flex-col items-center justify-center py-16 text-gray-500">
                     <i class="fas fa-newspaper text-6xl mb-4 text-gray-300"></i>
                     <p class="text-lg font-medium">{{ $t('noNews') || 'Новостей пока нет' }}</p>
-                    <p class="text-sm mt-2">{{ $t('createFirstNews') || 'Создайте первую новость' }}</p>
                 </div>
             </div>
         </div>
