@@ -241,18 +241,8 @@ export default {
             const leaveTypeName = this.getLeaveTypeName(leave.leaveTypeName);
             
             if (comment) {
-                // Всегда показываем комментарий, если он есть
-                // Если комментарий длинный, обрезаем его, но всегда добавляем тип в скобках
-                const maxCommentLength = 20; // Максимальная длина комментария перед обрезкой
-                
-                if (comment.length > maxCommentLength) {
-                    // Если комментарий длинный, обрезаем и добавляем тип в скобках
-                    const truncatedComment = comment.substring(0, maxCommentLength) + '...';
-                    return leaveTypeName ? `${truncatedComment} (${leaveTypeName})` : truncatedComment;
-                } else {
-                    // Если комментарий короткий, показываем его с типом в скобках
-                    return leaveTypeName ? `${comment} (${leaveTypeName})` : comment;
-                }
+                // Комментарий занимает всю доступную ширину линии, CSS сам обрежет через text-overflow
+                return leaveTypeName ? `${comment} (${leaveTypeName})` : comment;
             }
             
             // Если комментария нет, показываем тип отпуска
