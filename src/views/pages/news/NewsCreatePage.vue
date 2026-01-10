@@ -94,8 +94,12 @@ export default {
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
-            closeConfirmDialog: false,
-            editorOptions: {
+            closeConfirmDialog: false
+        }
+    },
+    computed: {
+        editorOptions() {
+            return {
                 theme: 'snow',
                 placeholder: this.$t('contentPlaceholder') || 'Введите текст новости...',
                 modules: {
@@ -109,7 +113,7 @@ export default {
                         ['clean']
                     ]
                 }
-            }
+            };
         }
     },
     mounted() {
@@ -136,6 +140,10 @@ export default {
             },
             deep: true,
             immediate: true
+        },
+        '$i18n.locale'() {
+            // При изменении языка обновляем placeholder редактора
+            // Это делается автоматически через computed property editorOptions
         }
     },
     methods: {
