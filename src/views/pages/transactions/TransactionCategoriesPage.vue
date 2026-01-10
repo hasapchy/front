@@ -6,9 +6,6 @@
                 :onItemClick="(i) => { showModal(i) }">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
-                        :show-create-button="true"
-                        :on-create-click="() => showModal(null)"
-                        :create-button-disabled="!$store.getters.hasPermission('transaction_categories_create')"
                         :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
                         :on-page-change="fetchItems"
@@ -18,6 +15,11 @@
                         :toggleVisible="toggleVisible"
                         :log="log">
                         <template #left>
+                            <PrimaryButton 
+                                :onclick="() => showModal(null)"
+                                icon="fas fa-plus"
+                                :disabled="!$store.getters.hasPermission('transaction_categories_create')">
+                            </PrimaryButton>
                             <transition name="fade">
                                 <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
                             </transition>

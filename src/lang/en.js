@@ -83,6 +83,9 @@ export default {
   warehouses: 'Warehouses',
   finance: 'Finance',
   transactions: 'Transactions',
+  addTransaction: 'Add Transaction',
+  addProjectTransaction: 'Add Project Transaction',
+  projectTransactionInfo: 'Project transaction does not affect cash register and client debt. It serves for additional tracking of project operations and only participates in project balance calculation.',
     mutualSettlements: 'Mutual Settlements',
     impact: 'Impact',
     balance: 'Balance',
@@ -126,6 +129,7 @@ export default {
   type: 'Type',
   category: 'Category',
   selectedCategories: 'Selected Categories',
+  selectCategories: 'Select categories',
   selectMainCategory: 'Select main category',
   selectSubCategory: 'Select subcategory',
   selectSubCategories: 'Select subcategories',
@@ -143,6 +147,7 @@ export default {
   errorSavingOrder: 'Error saving order',
   orderDeleted: 'Order deleted',
   errorDeletingOrder: 'Error deleting order',
+  errorGettingOrder: 'Error getting order',
   errorGettingOrderList: 'Error getting order list',
   saveOrderFirst: 'Save order first',
   toPay: 'To Pay',
@@ -236,6 +241,11 @@ export default {
   printInvoice: 'Print Invoice',
   selectPdfVariant: 'Select PDF variant',
   
+  // Invoice statuses
+  new: 'New',
+  cancelled: 'Cancelled',
+  allStatuses: 'All statuses',
+  
   // Performance monitoring
   performanceMonitor: 'Monitoring',
   
@@ -278,6 +288,10 @@ export default {
   addContract: 'Add Contract',
   editContract: 'Edit Contract',
   deleteContract: 'Delete Contract',
+  returned: 'Returned',
+  notReturned: 'Not Returned',
+  notPaid: 'Not Paid',
+  contractStatus: 'Contract Status',
   noContracts: 'No contracts',
   note: 'Note',
   enterNote: 'Enter note',
@@ -470,6 +484,8 @@ export default {
     editProjectStatus: 'Edit Project Status',
     deleteProjectStatus: 'Delete Project Status',
     statusColor: 'Status Color',
+    showInProjectSelect: 'Show in project select list',
+    showInProjectSelectDescription: 'If this setting is not enabled, projects with this status will not be available for selection in the field',
     projectStatusSuccessfullyAdded: 'Project status successfully added',
     projectStatusSuccessfullyDeleted: 'Project status successfully deleted',
     errorSavingProjectStatus: 'Error saving project status',
@@ -493,6 +509,9 @@ export default {
     salarySaved: 'Salary saved',
     salaryDeleted: 'Salary deleted',
     noSalaries: 'No salaries',
+    salaryPaymentType: 'Payment Type',
+    salaryPaymentTypeCash: 'Cash',
+    salaryPaymentTypeNonCash: 'Non-Cash',
     startDate: 'Start Date',
     endDate: 'End Date',
     amount: 'Amount',
@@ -500,11 +519,11 @@ export default {
     currency: 'Currency',
     selectCurrency: 'Select Currency',
     present: 'to present',
-    bonus: 'Bonus',
-    penalty: 'Penalty',
-    advance: 'Advance',
-    accrueSalary: 'Salary',
-    paySalary: 'Payment',
+    bonus: 'Add Bonus',
+    penalty: 'Issue Penalty',
+    advance: 'Issue Advance',
+    accrueSalary: 'Accrue Salary',
+    paySalary: 'Pay Salary',
     salaryDifferenceHelpTitle: 'What\'s the difference?',
     salaryDifferenceHelp: 'Salary accrual is money for work done by the employee (a debt record, employee owes us). Salary payment is the actual payment of money to the employee (not a debt, reduces employee debt).',
     employeeClientNotFound: 'Client for employee not found',
@@ -640,6 +659,13 @@ export default {
     'orderStatus.COMPLETED': 'Completed',
     'orderStatus.CANCELLED': 'Cancelled',
     
+    // Project Statuses
+    'projectStatus.NEW': 'New',
+    'projectStatus.IN_PROGRESS': 'In Progress',
+    'projectStatus.PENDING': 'Awaiting Payment',
+    'projectStatus.COMPLETED': 'Completed',
+    'projectStatus.CANCELLED': 'Cancelled',
+    
     // Leave Types
     'leaveType.TIME_OFF': 'Time Off',
     'leaveType.VACATION': 'Vacation',
@@ -649,4 +675,9 @@ export default {
     
     // Currencies
     'currency.RUSSIAN_RUBLE': 'Russian Ruble',
+    
+    // Date labels
+    today: 'Today',
+    yesterday: 'Yesterday',
+    dayBeforeYesterday: 'Day before yesterday',
 }

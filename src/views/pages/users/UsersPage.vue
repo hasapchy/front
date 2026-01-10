@@ -2,10 +2,9 @@
     <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.users" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="(i) => showModal(i)">
+                :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar :show-create-button="true" :on-create-click="() => showModal(null)"
-                        :create-button-disabled="!$store.getters.hasPermission('users_create')" :show-pagination="true"
+                    <TableControlsBar :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
                         :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
                         :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
@@ -58,7 +57,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <UsersCreatePage ref="userscreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
+        <UsersCreatePage :key="editingItem ? editingItem.id : 'new-user'" ref="userscreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
             :editingItem="editingItem" />
     </SideModalDialog>
@@ -66,6 +65,7 @@
         <SalaryAccrualModal 
             v-if="salaryAccrualModalOpen"
             :user-ids="selectedIds"
+            :users="getSelectedUsers()"
             :operation-type="salaryOperationType"
             @success="handleSalaryAccrualSuccess"
             @cancel="closeSalaryAccrualModal"
@@ -107,6 +107,9 @@ export default {
         return {
             controller: UsersController,
             cacheInvalidationType: 'users',
+            itemViewRouteName: 'UserView',
+            baseRouteName: 'users',
+            errorGettingItemText: this.$t('errorLoadingUsers'),
             savedSuccessText: this.$t('userSaved'),
             savedErrorText: this.$t('errorSavingUser'),
             deletedSuccessText: this.$t('userDeleted'),
@@ -137,7 +140,14 @@ export default {
     mounted() {
         this.fetchItems();
     },
-
+    watch: {
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
+        }
+    },
     methods: {
         formatDatabaseDate(date) {
             return formatDatabaseDate(date);
@@ -195,7 +205,7 @@ export default {
             });
         },
         openSalaryAccrualModal() {
-            if (this.selectedIds.length === 0) {
+            if (!this.selectedIds?.length) {
                 this.showNotification(
                     this.$t('error') || 'Ошибка',
                     this.$t('selectUsersFirst') || 'Выберите сотрудников для начисления зарплаты',
@@ -275,8 +285,12 @@ export default {
             
             return actions;
         },
+        getSelectedUsers() {
+            if (!this.data || !this.data.items) return [];
+            return this.data.items.filter(user => this.selectedIds.includes(user.id));
+        },
         openSalaryOperationModal(operationType) {
-            if (this.selectedIds.length === 0) {
+            if (!this.selectedIds?.length) {
                 this.showNotification(
                     this.$t('error') || 'Ошибка',
                     this.$t('selectUsersFirst') || 'Выберите сотрудников',
@@ -286,7 +300,13 @@ export default {
             }
             this.salaryOperationType = operationType;
             this.salaryAccrualModalOpen = true;
-        }
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'users' });
+            }
+        },
     }
 };
 </script>

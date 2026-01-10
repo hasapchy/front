@@ -53,10 +53,11 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 import { translateLeaveType } from '@/utils/translationUtils';
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, UserSearch },
     props: {
@@ -71,11 +72,7 @@ export default {
             dateFrom: this.editingItem ? this.editingItem.dateFromForInput : '',
             dateTo: this.editingItem ? this.editingItem.dateToForInput : '',
             comment: this.editingItem ? (this.editingItem.comment || '') : '',
-            editingItemId: this.editingItem ? this.editingItem.id : null,
             allLeaveTypes: [],
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false
         }
     },
     computed: {
@@ -170,20 +167,24 @@ export default {
             }
             this.saveLoading = false;
         },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (!this.editingItemId) return;
-            this.deleteLoading = true;
-            try {
-                const resp = await LeaveController.deleteItem(this.editingItemId);
-                if (resp.message) {
-                    this.$emit('deleted');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+        async performSave(data) {
+            if (this.editingItemId != null) {
+                return await LeaveController.updateItem(this.editingItemId, data);
+            } else {
+                return await LeaveController.storeItem(data);
             }
-            this.deleteLoading = false;
+        },
+        async performDelete() {
+            const resp = await LeaveController.deleteItem(this.editingItemId);
+            if (!resp.message) {
+                throw new Error('Failed to delete leave');
+            }
+            return resp;
+        },
+        onSaveSuccess(response) {
+            if (response && (response.message || response.item)) {
+                this.clearForm();
+            }
         },
         clearForm() {
             this.leaveTypeId = '';
@@ -191,9 +192,10 @@ export default {
             this.dateFrom = '';
             this.dateTo = '';
             this.comment = '';
-            this.editingItemId = null;
             this.fetchAllLeaveTypes();
-            this.resetFormChanges();
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
         },
         showDeleteDialog() { this.deleteDialog = true; },
         closeDeleteDialog() { this.deleteDialog = false; }

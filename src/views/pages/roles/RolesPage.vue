@@ -2,7 +2,7 @@
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.roles" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="(i) => showModal(i)">
+                :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar :show-create-button="true" :on-create-click="() => showModal(null)"
                         :create-button-disabled="!$store.getters.hasPermission('roles_create')" :show-pagination="true"
@@ -47,7 +47,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <RolesCreatePage ref="rolescreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
+        <RolesCreatePage :key="editingItem ? editingItem.id : 'new-role'" ref="rolescreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
             :editingItem="editingItem" />
     </SideModalDialog>
@@ -75,9 +75,10 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
+import companyChangeMixin from '@/mixins/companyChangeMixin';
 
 export default {
-    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
+    mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
     components: { 
         NotificationToast, 
         PrimaryButton, 
@@ -94,6 +95,9 @@ export default {
         return {
             controller: RolesController,
             cacheInvalidationType: 'roles',
+            itemViewRouteName: 'RoleView',
+            baseRouteName: 'roles',
+            errorGettingItemText: this.$t('errorLoadingRoles'),
             savedSuccessText: this.$t('roleSaved'),
             savedErrorText: this.$t('errorSavingRole'),
             deletedSuccessText: this.$t('roleDeleted'),
@@ -114,6 +118,14 @@ export default {
     mounted() {
         this.fetchItems();
     },
+    watch: {
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
+        }
+    },
     
     methods: {
         async fetchItems(page = 1, silent = false) {
@@ -129,6 +141,17 @@ export default {
         handlePerPageChange(newPerPage) {
             this.perPage = newPerPage;
             this.fetchItems(1, false);
+        },
+        async handleCompanyChanged(companyId) {
+            this.selectedIds = [];
+            if (this.modalDialog) {
+                this.closeModal(true);
+            }
+            this.editingItem = null;
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'roles' });
+            }
+            await this.fetchItems(1, false);
         },
         itemMapper(item, column) {
             switch (column) {
@@ -148,6 +171,12 @@ export default {
                     console.error('Ошибка обновления прав:', error);
                 }
             }, 500);
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'roles' });
+            }
         },
     },
 };

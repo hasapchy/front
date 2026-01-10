@@ -3,63 +3,43 @@
         <transition name="fade" mode="out-in">
             <div v-if="data && !loading && sortedBalanceCards.length > 0" key="table">
                 <div class="mb-2 flex items-center justify-end gap-2">
-                    <button
-                        @click="toggleRowsCount"
+                    <button @click="toggleRowsCount"
                         class="text-xs border rounded px-3 py-1.5 bg-white hover:bg-gray-50 transition-colors flex items-center gap-2"
-                        :title="rowsCount === 1 ? 'Переключить на 2 ряда' : 'Переключить на 1 ряд'"
-                    >
+                        :title="rowsCount === 1 ? 'Переключить на 2 ряда' : 'Переключить на 1 ряд'">
                         <i :class="rowsCount === 1 ? 'fas fa-th-large' : 'fas fa-th'" class="text-gray-600"></i>
                         <span class="text-gray-600">{{ rowsCount === 1 ? '1 ряд' : '2 ряда' }}</span>
                     </button>
                 </div>
                 <div :class="rowsCount === 1 ? 'overflow-x-auto' : ''">
-                    <draggable
-                        :list="sortedBalanceCards"
-                        group="balance-cards"
-                        :animation="200"
-                        ghost-class="ghost-balance-card"
-                        drag-class="dragging-balance-card"
-                        handle=".balance-drag-handle"
-                        @change="handleBalanceReorder"
+                    <draggable :list="sortedBalanceCards" group="balance-cards" :animation="200"
+                        ghost-class="ghost-balance-card" drag-class="dragging-balance-card"
+                        handle=".balance-drag-handle" @change="handleBalanceReorder"
                         :class="['pb-1', rowsCount === 2 ? 'flex flex-wrap gap-4' : 'flex space-x-4']"
-                        :style="rowsCount === 1 ? 'min-width: max-content;' : ''"
-                    >
-                        <div
-                            v-for="(card, index) in sortedBalanceCards"
-                            :key="card.id"
-                            class="balance-card-wrapper flex-shrink-0"
-                        >
-                            <div
-                                v-if="card.type === 'cash_register'"
-                                class="bg-white p-3 rounded-lg shadow-md relative"
-                                :style="getCardStyle(card)"
-                            >
+                        :style="rowsCount === 1 ? 'min-width: max-content;' : ''">
+                        <div v-for="(card, index) in sortedBalanceCards" :key="card.id"
+                            class="balance-card-wrapper flex-shrink-0">
+                            <div v-if="card.type === 'cash_register'" class="bg-white p-3 rounded-lg shadow-md relative"
+                                :style="getCardStyle(card)">
                                 <div class="cash-register-title mb-2 flex items-center justify-center gap-2">
-                                    <i class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 cursor-move"></i>
+                                    <i
+                                        class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 cursor-move"></i>
                                     <span class="cash-register-name text-sm font-semibold text-center">
                                         {{ translateName(card.name) }}
                                         <span class="cash-register-currency">({{ card.currencySymbol || '' }})</span>
                                     </span>
                                 </div>
-                                <span
-                                    v-if="card.visible !== false"
+                                <span v-if="card.visible"
                                     class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-blue-300"
-                                    @mousedown.prevent="startResize($event, index)"
-                                ></span>
+                                    @mousedown.prevent="startResize($event, index)"></span>
                                 <div v-if="canViewCashBalance" :class="getGridClass(card.balance)">
-                                    <div
-                                        v-for="balance in visibleBalanceItems(card.balance)"
-                                        :key="balance.title"
-                                        class="balance-item text-center"
-                                        :class="{
+                                    <div v-for="balance in card.balance" :key="balance.title"
+                                        class="balance-item text-center" :class="{
                                             'clickable-balance': isClickable(balance.type),
                                             'hover-income': balance.type === 'income',
                                             'hover-outcome': balance.type === 'outcome',
                                             [`balance-${balance.type}`]: true
-                                        }"
-                                        :title="isClickable(balance.type) ? $t('clickToFilterTransactions') : ''"
-                                        @click="handleBalanceClick(card, balance)"
-                                    >
+                                        }" :title="isClickable(balance.type) ? $t('clickToFilterTransactions') : ''"
+                                        @click="handleBalanceClick(card, balance)">
                                         <div class="balance-header flex items-center justify-center gap-1 mb-1">
                                             <span class="balance-title">{{ translateTitle(balance.title) }}</span>
                                             <i :class="getBalanceIconClass(balance.type)"></i>
@@ -70,26 +50,19 @@
                                     </div>
                                 </div>
                             </div>
-                            <div
-                                v-else-if="card.type === 'client_debts'"
-                                class="bg-white p-3 rounded-lg shadow-md relative"
-                                :style="getCardStyle(card)"
-                            >
+                            <div v-else-if="card.type === 'client_debts'"
+                                class="bg-white p-3 rounded-lg shadow-md relative" :style="getCardStyle(card)">
                                 <div class="text-center mb-3 flex items-center justify-center gap-2">
-                                    <i class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 cursor-move"></i>
+                                    <i
+                                        class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 cursor-move"></i>
                                     <span class="text-sm font-semibold">{{ clientDebtsTitle }}</span>
                                 </div>
-                                <span
-                                    v-if="card.visible !== false"
+                                <span v-if="card.visible"
                                     class="resize-handle absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-blue-300"
-                                    @mousedown.prevent="startResize($event, index)"
-                                ></span>
+                                    @mousedown.prevent="startResize($event, index)"></span>
                                 <div class="grid grid-cols-2 gap-2">
-                                    <div
-                                        v-for="debt in displayDebts"
-                                        :key="debt.id"
-                                        class="balance-item debt-item text-center"
-                                    >
+                                    <div v-for="debt in displayDebts" :key="debt.id"
+                                        class="balance-item debt-item text-center">
                                         <div class="balance-header flex items-center justify-center gap-1 mb-1">
                                             <span class="balance-title">{{ debt.title }}</span>
                                             <i :class="debt.iconClass"></i>
@@ -123,7 +96,6 @@ dayjs.extend(utc);
 const BALANCE_ICONS = {
     income: 'fas fa-arrow-up balance-icon-income',
     outcome: 'fas fa-arrow-down balance-icon-outcome',
-    debt: 'fas fa-exclamation-triangle balance-icon-debt',
     default: 'fas fa-calculator balance-icon-default',
     project_income: 'fas fa-chart-line balance-icon-project'
 };
@@ -131,7 +103,6 @@ const BALANCE_ICONS = {
 const TITLE_TRANSLATIONS = {
     'Приход': 'income',
     'Расход': 'outcome',
-    'Долг': 'debt',
     'Итого': 'итого',
     'Главная касса': 'mainCashRegister'
 };
@@ -158,7 +129,6 @@ export default {
                 positive: 0,
                 negative: 0
             },
-            balanceCardOrder: [],
             cardSizes: {},
             sortedBalanceCards: [],
             resizing: false,
@@ -185,9 +155,6 @@ export default {
         canViewClientBalance() {
             return this.$store.getters.hasPermission('settings_client_balance_view');
         },
-        displayCashRegisters() {
-            return this.data || [];
-        },
         displayDebts() {
             return [
                 {
@@ -208,7 +175,7 @@ export default {
         },
         allBalanceCards() {
             const cards = [];
-            
+
             if (this.canViewCashBalance && this.data) {
                 this.data.forEach(item => {
                     cards.push({
@@ -221,21 +188,19 @@ export default {
                     });
                 });
             }
-            
+
             if (this.canViewClientBalance && (this.clientDebts.positive !== 0 || this.clientDebts.negative !== 0)) {
                 cards.push({
                     id: 'client_debts',
                     type: 'client_debts'
                 });
             }
-            
+
             return cards;
         },
         clientDebtsTitle() {
             const clientTypeFilter = this.$store.getters.clientTypeFilter || [];
-            const hasFilter = Array.isArray(clientTypeFilter) && clientTypeFilter.length > 0;
-
-            if (!hasFilter) {
+            if (!clientTypeFilter.length) {
                 return this.$t('clientDebts');
             }
 
@@ -250,42 +215,39 @@ export default {
                 .map(type => typeLabels[type])
                 .filter(Boolean);
 
-            if (selectedTypes.length === 0) {
-                return this.$t('clientDebts');
-            }
-
-            return `${this.$t('clientDebts')}: ${selectedTypes.join(', ').toLowerCase()}`;
+            return selectedTypes.length 
+                ? `${this.$t('clientDebts')}: ${selectedTypes.join(', ').toLowerCase()}`
+                : this.$t('clientDebts');
         }
     },
     methods: {
         updateSortedBalanceCards() {
             const savedData = this.getSavedData();
             const allCards = this.allBalanceCards;
+
+            const getDefaultSize = (type) => type === 'client_debts' ? 300 : 250;
             
             const applySize = (card) => {
-                const defaultSize = card.type === 'client_debts' ? 300 : 250;
+                const defaultSize = getDefaultSize(card.type);
                 const size = this.cardSizes[card.id] || savedData?.cards?.find(c => c.id === card.id)?.size || defaultSize;
                 return {
                     ...card,
-                    size: size,
+                    size,
                     visible: card.visible !== false
                 };
             };
-            
-            if (!savedData || !savedData.order || savedData.order.length === 0) {
-                this.sortedBalanceCards = allCards.map(card => {
-                    const defaultSize = card.type === 'client_debts' ? 300 : 250;
-                    return {
-                        ...card,
-                        size: defaultSize,
-                        visible: card.visible !== false
-                    };
-                });
+
+            if (!savedData?.order?.length) {
+                this.sortedBalanceCards = allCards.map(card => ({
+                    ...card,
+                    size: getDefaultSize(card.type),
+                    visible: card.visible !== false
+                }));
                 return;
             }
-            
+
             const cardsMap = new Map(allCards.map(card => [card.id, card]));
-            
+
             const sorted = savedData.order
                 .map(id => {
                     const card = cardsMap.get(id);
@@ -293,12 +255,12 @@ export default {
                     return applySize(card);
                 })
                 .filter(card => card !== null);
-            
+
             const savedIds = new Set(savedData.order);
             const newCards = allCards
                 .filter(card => !savedIds.has(card.id))
                 .map(applySize);
-            
+
             this.sortedBalanceCards = [...sorted, ...newCards];
         },
         formatBalanceValue(balance) {
@@ -308,26 +270,20 @@ export default {
             return type === 'income' || type === 'outcome';
         },
         handleBalanceClick(cashRegister, balance) {
-            if (this.isClickable(balance.type)) {
-                this.$emit('balance-click', {
-                    cashRegisterId: cashRegister.cashRegisterId,
-                    transactionType: balance.type
-                });
-            }
-        },
-        visibleBalanceItems(balanceItems) {
-            return balanceItems.filter(item => item.type !== 'debt');
+            this.$emit('balance-click', {
+                cashRegisterId: cashRegister.cashRegisterId,
+                transactionType: balance.type
+            });
         },
         getGridClass(balanceItems) {
-            const count = this.visibleBalanceItems(balanceItems).length;
+            const count = balanceItems.length;
             return `balance-grid balance-grid-${Math.min(count, 4)}`;
         },
         getBalanceIconClass(type) {
             return BALANCE_ICONS[type] || BALANCE_ICONS.default;
         },
         translateTitle(title) {
-            const key = TITLE_TRANSLATIONS[title];
-            return key ? this.$t(key) : title;
+            return this.$t(TITLE_TRANSLATIONS[title] || title);
         },
         translateName(name) {
             return name === 'Главная касса' ? this.$t('mainCashRegister') : name;
@@ -348,20 +304,22 @@ export default {
                     start = base.startOf('isoWeek').format('DD.MM.YYYY');
                     end = base.endOf('isoWeek').format('DD.MM.YYYY');
                     break;
-                case 'last_week':
+                case 'last_week': {
                     const lastWeek = base.subtract(1, 'week');
                     start = lastWeek.startOf('isoWeek').format('DD.MM.YYYY');
                     end = lastWeek.endOf('isoWeek').format('DD.MM.YYYY');
                     break;
+                }
                 case 'this_month':
                     start = base.startOf('month').format('DD.MM.YYYY');
                     end = base.endOf('month').format('DD.MM.YYYY');
                     break;
-                case 'last_month':
+                case 'last_month': {
                     const lastMonth = base.subtract(1, 'month');
                     start = lastMonth.startOf('month').format('DD.MM.YYYY');
                     end = lastMonth.endOf('month').format('DD.MM.YYYY');
                     break;
+                }
                 case 'custom':
                     start = this.startDate ? dayjs(this.startDate).format('DD.MM.YYYY') : null;
                     end = this.endDate ? dayjs(this.endDate).format('DD.MM.YYYY') : null;
@@ -371,39 +329,35 @@ export default {
             return { start, end };
         },
         buildParams(start, end) {
-            const params = {
-                cash_register_ids: this.cashRegisterId !== null ? String(this.cashRegisterId) : undefined,
-                start_date: start,
-                end_date: end,
-                transaction_type: this.transactionTypeFilter || undefined,
-                source: this.sourceFilter || undefined
-            };
-
-            return Object.fromEntries(
-                Object.entries(params).filter(([_, value]) => value !== undefined)
-            );
+            const params = {};
+            if (this.cashRegisterId !== null) {
+                params.cash_register_ids = String(this.cashRegisterId);
+            }
+            if (start) params.start_date = start;
+            if (end) params.end_date = end;
+            if (this.transactionTypeFilter) params.transaction_type = this.transactionTypeFilter;
+            if (this.sourceFilter) params.source = this.sourceFilter;
+            return params;
         },
         calculateClientDebts(clients) {
             const clientTypeFilter = this.$store.getters.clientTypeFilter || [];
-            const hasFilter = Array.isArray(clientTypeFilter) && clientTypeFilter.length > 0;
+            const hasFilter = clientTypeFilter.length > 0;
 
             let positive = 0;
             let negative = 0;
 
-            clients
-                .filter(client => {
-                    if (!hasFilter) return true;
+            for (const client of clients) {
+                if (hasFilter) {
                     const type = client.clientType || client.client_type || 'individual';
-                    return clientTypeFilter.includes(type);
-                })
-                .forEach(client => {
-                    const balance = parseFloat(client.balance) || 0;
-                    if (balance > 0) {
-                        positive += balance;
-                    } else if (balance < 0) {
-                        negative += Math.abs(balance);
-                    }
-                });
+                    if (!clientTypeFilter.includes(type)) continue;
+                }
+                const balance = parseFloat(client.balance) || 0;
+                if (balance > 0) {
+                    positive += balance;
+                } else if (balance < 0) {
+                    negative += Math.abs(balance);
+                }
+            }
 
             return { positive, negative };
         },
@@ -423,7 +377,8 @@ export default {
             }
         },
         getLocalStorageKey() {
-            return 'ui_transactions_balance_cards_layout';
+            const companyId = this.$store.state.currentCompany?.id || 'default';
+            return `ui_transactions_balance_cards_layout_${companyId}`;
         },
         getSavedData() {
             try {
@@ -457,8 +412,6 @@ export default {
             }
         },
         handleBalanceReorder() {
-            const order = this.sortedBalanceCards.map(card => card.id);
-            this.balanceCardOrder = order;
             this.saveData();
         },
         toggleRowsCount() {
@@ -469,8 +422,8 @@ export default {
             const defaultSize = card.type === 'client_debts' ? 300 : 250;
             const size = card.size || defaultSize;
             return {
-                width: size + 'px',
-                minWidth: size + 'px'
+                width: `${size}px`,
+                minWidth: `${size}px`
             };
         },
         startResize(e, index) {
@@ -480,12 +433,8 @@ export default {
             this.resizingCard = index;
             this.startX = e.clientX;
             const cardElement = e.target.closest('.balance-card-wrapper');
-            if (cardElement) {
-                const whiteCard = cardElement.querySelector('.bg-white');
-                this.startWidth = whiteCard ? whiteCard.offsetWidth : 200;
-            } else {
-                this.startWidth = 200;
-            }
+            const whiteCard = cardElement?.querySelector('.bg-white');
+            this.startWidth = whiteCard?.offsetWidth || 200;
             document.addEventListener('mousemove', this.onMouseMove);
             document.addEventListener('mouseup', this.stopResize);
             document.body.style.cursor = 'col-resize';
@@ -499,11 +448,7 @@ export default {
             const card = cards[this.resizingCard];
             if (!card) return;
             const newWidth = Math.max(150, this.startWidth + dx);
-            if (this.$set) {
-                this.$set(this.cardSizes, card.id, newWidth);
-            } else {
-                this.cardSizes[card.id] = newWidth;
-            }
+            this.cardSizes[card.id] = newWidth;
         },
         stopResize() {
             if (!this.resizing) return;
@@ -561,20 +506,31 @@ export default {
                 this.updateSortedBalanceCards();
             },
             deep: true
+        },
+        '$store.state.currentCompany.id': {
+            handler() {
+                const savedData = this.getSavedData();
+                this.cardSizes = {};
+                if (savedData) {
+                    if (savedData.cards) {
+                        savedData.cards.forEach(card => {
+                            this.cardSizes[card.id] = card.size || 250;
+                        });
+                    }
+                    if (savedData.rowsCount !== undefined) {
+                        this.rowsCount = savedData.rowsCount;
+                    }
+                }
+                this.updateSortedBalanceCards();
+            }
         }
     },
     mounted() {
         const savedData = this.getSavedData();
         if (savedData) {
-            this.balanceCardOrder = savedData.order || [];
             if (savedData.cards) {
                 savedData.cards.forEach(card => {
-                    const defaultSize = 250;
-                    if (this.$set) {
-                        this.$set(this.cardSizes, card.id, card.size || defaultSize);
-                    } else {
-                        this.cardSizes[card.id] = card.size || defaultSize;
-                    }
+                    this.cardSizes[card.id] = card.size || 250;
                 });
             }
             if (savedData.rowsCount !== undefined) {

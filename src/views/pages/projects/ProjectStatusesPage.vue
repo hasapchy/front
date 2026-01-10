@@ -6,8 +6,6 @@
                 :onItemClick="(i) => { showModal(i) }">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
-                        :show-create-button="true"
-                        :on-create-click="() => { showModal(null) }"
                         :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
                         :on-page-change="fetchItems"
@@ -17,6 +15,10 @@
                         :toggleVisible="toggleVisible"
                         :log="log">
                         <template #left>
+                            <PrimaryButton 
+                                :onclick="() => { showModal(null) }"
+                                icon="fas fa-plus">
+                            </PrimaryButton>
                             <transition name="fade">
                                 <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
                             </transition>
@@ -82,6 +84,7 @@ import crudEventMixin from '@/mixins/crudEventMixin';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import { translateProjectStatus } from '@/utils/translationUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
@@ -129,6 +132,8 @@ export default {
         },
         itemMapper(i, c) {
             switch (c) {
+                case 'name':
+                    return translateProjectStatus(i.name, this.$t);
                 case 'color':
                     if (i.color) {
                         return `<div style="width: 20px; height: 20px; background-color: ${i.color}; border-radius: 4px; display: inline-block; border: 1px solid #ddd;"></div>`;

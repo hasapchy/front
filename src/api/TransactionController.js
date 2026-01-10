@@ -17,7 +17,8 @@ export default class TransactionController extends BaseController {
     per_page = 20,
     start_date = null,
     end_date = null,
-    is_debt = null
+    is_debt = null,
+    category_ids = null
   ) {
     const params = {
       cash_id,
@@ -31,6 +32,10 @@ export default class TransactionController extends BaseController {
       end_date,
       is_debt,
     };
+
+    if (category_ids && Array.isArray(category_ids) && category_ids.length > 0) {
+      params.category_ids = category_ids.join(',');
+    }
 
     const data = await super.getItems("/transactions", page, per_page, params);
     const items = TransactionDto.fromApiArray(data.items || []);

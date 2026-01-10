@@ -141,6 +141,7 @@ export default {
   
   // Дополнительные действия
   selectCategory: 'Kategoriýany saýlaň',
+  selectCategories: 'Kategoriýalary saýlaň',
   categoryName: 'Kategoriýa ady',
   colorOptional: 'Reňk (islege görä)',
   
@@ -702,6 +703,7 @@ export default {
   errorDeletingProduct: 'Önümi pozmakda ýalňyşlyk',
   
   // Заказы
+  errorGettingOrder: 'Sargyty almakda ýalňyşlyk',
   errorGettingOrderList: 'Sargyt sanawyny almakda ýalňyşlyk',
   orderSaved: 'Sargyt saklandy',
   errorSavingOrder: 'Sargyty saklamakda ýalňyşlyk',
@@ -723,6 +725,9 @@ export default {
   users: 'Işgärler',
   
   // Транзакции
+  addTransaction: 'Tranzaksiya goş',
+  addProjectTransaction: 'Proýekt tranzaksiýasyny goş',
+  projectTransactionInfo: 'Proýekt tranzaksiýasy kassa we müşderi bergidarlygyna täsir etmeýär. Ol proýekt amallaryny goşmaça yzarlamak üçin hyzmat edýär we diňe proýekt balansynyň hasabyna gatnaşýar.',
   allCashRegisters: 'Ähli kassalar',
   allTime: 'Ähli wagt',
   lastWeek: 'Öňki hepde',
@@ -765,6 +770,9 @@ export default {
   salarySaved: 'Mukafat saklandy',
   salaryDeleted: 'Mukafat pozuldy',
   noSalaries: 'Mukafat ýok',
+  salaryPaymentType: 'Töleg görnüşi',
+  salaryPaymentTypeCash: 'Nagt',
+  salaryPaymentTypeNonCash: 'Nagt däl',
   startDate: 'Başlanýan sene',
   endDate: 'Gutarýan sene',
   amount: 'Mukdary',
@@ -772,11 +780,11 @@ export default {
   currency: 'Walýuta',
   selectCurrency: 'Walýuta saýlaň',
   present: 'häzirki wagta çenli',
-  bonus: 'Premiýa',
-  penalty: 'Jäza',
-  advance: 'Awans',
-  accrueSalary: 'Mukafat',
-  paySalary: 'Töleg',
+  bonus: 'Premiýa tabşyr',
+  penalty: 'Jäza çykar',
+  advance: 'Awans ber',
+  accrueSalary: 'Mukafat hasapla',
+  paySalary: 'Mukafat töle',
   salaryDifferenceHelpTitle: 'Tapawudy näme?',
   salaryDifferenceHelp: 'Mukafat hasaplamak — bu işgäriň eden işi üçin pul (borç ýazgysy, işgär bize borçly). Mukafat tölemek — bu işgäre hakyky pul tölegi (borç däl, işgäriň borçyny azaldýar).',
   employeeClientNotFound: 'Işgär üçin müşderi tapylmady',
@@ -1019,6 +1027,8 @@ export default {
   editProjectStatus: 'Proýekt ýagdaýyny redaktir et',
   deleteProjectStatus: 'Proýekt ýagdaýyny poz',
   statusColor: 'Ýagdaý reňki',
+  showInProjectSelect: 'Saýlamak üçin sanawda görkez',
+  showInProjectSelectDescription: 'Bu sazlama açylmasa, bu ýagdaýa eýe bolan proýektler meýdanda saýlamak üçin elýeterli bolmaz',
   color: 'Reňk',
   
   // Виртуализация и ленивая загрузка
@@ -1036,6 +1046,10 @@ export default {
   addContract: 'Şertnama goş',
   editContract: 'Şertnamany redaktir et',
   deleteContract: 'Şertnamany poz',
+  returned: 'Yzyna gaýtaryldy',
+  notReturned: 'Yzyna gaýtarylmandy',
+  notPaid: 'Tölenmedi',
+  contractStatus: 'Şertnama ýagdaýy',
   noContracts: 'Şertnama ýok',
   note: 'Bellik',
   enterNote: 'Bellik giriziň',
@@ -1138,6 +1152,10 @@ export default {
   saveInvoiceFirst: 'Ilki hasaby saklaň',
   printInvoice: 'Hasaby çap et',
   selectPdfVariant: 'PDF görnüşini saýlaň',
+  
+  // Invoice statuses
+  new: 'Täze',
+  allStatuses: 'Ähli ýagdaýlar',
   
   // Settings permissions
   settings: 'Sazlamalar',
@@ -1298,6 +1316,13 @@ export default {
   'orderStatus.COMPLETED': 'Tamamlandy',
   'orderStatus.CANCELLED': 'Ýatyryldy',
   
+  // Project Statuses
+  'projectStatus.NEW': 'Täze',
+  'projectStatus.IN_PROGRESS': 'Işde',
+  'projectStatus.PENDING': 'Töleg garaşylýar',
+  'projectStatus.COMPLETED': 'Tamamlandy',
+  'projectStatus.CANCELLED': 'Ýatyryldy',
+  
   // Leave Types
   'leaveType.TIME_OFF': 'Gün çykaryş',
   'leaveType.VACATION': 'Dynç alyş',
@@ -1307,4 +1332,9 @@ export default {
   
   // Currencies
   'currency.RUSSIAN_RUBLE': 'Rus rubly',
+  
+  // Date labels
+  today: 'Şu gün',
+  yesterday: 'Düýn',
+  dayBeforeYesterday: 'Öňki gün',
 }

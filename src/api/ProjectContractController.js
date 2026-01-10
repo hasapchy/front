@@ -31,6 +31,23 @@ export default class ProjectContractController extends BaseController {
         );
     }
 
+    static async getAllItems(params = {}) {
+        return super.handleRequest(
+            async () => {
+                const response = await api.get('/contracts', { params });
+                const items = ProjectContractDto.fromApiArray(response.data.items || []);
+                return new PaginatedResponse(
+                    items,
+                    response.data.current_page,
+                    response.data.next_page,
+                    response.data.last_page,
+                    response.data.total
+                );
+            },
+            'Error fetching all contracts:'
+        );
+    }
+
     static async getItem(id) {
         return super.handleRequest(
             async () => {

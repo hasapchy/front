@@ -102,7 +102,7 @@ export default class UsersController extends BaseController {
     return super.handleRequest(
       async () => {
         const { data } = await api.get(`/users/${userId}/salaries`);
-        return data.salaries || [];
+        return data;
       },
       "Ошибка при получении зарплат:"
     );

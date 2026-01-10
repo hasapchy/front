@@ -198,7 +198,6 @@ async function loadProductsForSearch(getters, isProducts, limit = 10) {
 async function clearAllCacheOnCompanyChange() {
   try {
     await CacheInvalidator.invalidateAll();
-    localStorage.removeItem("menuItems");
   } catch (error) {
     console.error("Error clearing cache on company change:", error);
   }
@@ -271,7 +270,7 @@ function initializeStorageSync(_store) {
 }
 
 const store = createStore({
-  state: {
+    state: {
     user: null,
     permissions: [],
     permissionsLoaded: false,
@@ -1228,7 +1227,7 @@ const store = createStore({
 
           try {
             await dispatch("loadUserCompanies");
-            await dispatch("loadCurrentCompany", { skipPermissionRefresh: true });
+            await dispatch("loadCurrentCompany", { skipPermissionRefresh: false });
           } catch (error) {
             console.error("Ошибка загрузки компаний:", error);
           }
@@ -1431,7 +1430,8 @@ const store = createStore({
       commit("SET_USERS", []);
     },
     initializeMenu({ commit, state }) {
-      const storageKey = "menuItems";
+      const companyId = state.currentCompany?.id || 'default';
+      const storageKey = `menuItems_${companyId}`;
       let saved = null;
       let savedMenu = null;
 
@@ -1500,7 +1500,7 @@ const store = createStore({
           to: "/tasks",
           icon: "fas fa-tasks mr-2",
           label: "tasks",
-          permission: "tasks_view_all", //tasks_view
+          permission: "tasks_view",
         },
         {
           id: "news",
@@ -1695,7 +1695,8 @@ const store = createStore({
         }
       }
 
-      const storageKey = "menuItems";
+      const companyId = state.currentCompany?.id || 'default';
+      const storageKey = `menuItems_${companyId}`;
       const currentMain =
         type === "main" ? uniqueItems : state.menuItems.main || [];
       const currentAvailable =
@@ -1788,7 +1789,8 @@ const store = createStore({
       commit("SET_MENU_ITEMS", current);
 
       try {
-        localStorage.setItem("menuItems", JSON.stringify(current));
+        const companyId = state.currentCompany?.id || 'default';
+        localStorage.setItem(`menuItems_${companyId}`, JSON.stringify(current));
       } catch (e) {
         console.error("Failed to save menu items to localStorage:", e);
       }
@@ -1836,7 +1838,7 @@ const store = createStore({
     categories: (state) => state.categories,
     projects: (state) => state.projects,
     activeProjects: (state) =>
-      state.projects.filter((p) => p.statusId !== 4 && p.statusId !== 5),
+      state.projects.filter((p) => p.status?.isTrVisible ?? true),
     orderStatuses: (state) => state.orderStatuses,
     projectStatuses: (state) => state.projectStatuses,
     taskStatuses: (state) => state.taskStatuses,

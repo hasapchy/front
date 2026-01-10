@@ -119,6 +119,15 @@
                     </PrimaryButton>
                     <PrimaryButton 
                         v-if="selectedFileIds.length > 0"
+                        icon="fas fa-download" 
+                        :onclick="() => $emit('download-multiple-files', selectedFileIds)" 
+                        :is-info="true"
+                        :disabled="deleting || isUploading"
+                        class="text-xs py-1 px-2"
+                        :title="$t('downloadSelected')">
+                    </PrimaryButton>
+                    <PrimaryButton 
+                        v-if="selectedFileIds.length > 0"
                         icon="fas fa-trash" 
                         :onclick="() => $emit('delete-multiple-files', selectedFileIds)" 
                         :is-danger="true"
@@ -224,7 +233,7 @@ export default {
             default: ''
         }
     },
-    emits: ['file-change', 'delete-file', 'delete-multiple-files'],
+    emits: ['file-change', 'delete-file', 'delete-multiple-files', 'download-multiple-files'],
     data() {
         return {
             isDragOver: false,

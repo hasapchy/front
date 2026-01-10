@@ -48,7 +48,6 @@
                             <div>
                                 <label :class="{ 'required': required }">{{ label || $t('user') || 'Сотрудник' }}</label>
                                 <p><span class="text-xs">{{ $t('name') }}:</span> <span class="font-semibold text-sm">{{ userFullName }}</span></p>
-                                <p v-if="userPosition"><span class="text-xs">{{ $t('position') || 'Должность' }}:</span> <span class="font-semibold text-sm">{{ userPosition }}</span></p>
                             </div>
                         </div>
                         <button v-if="allowDeselect" v-on:click="deselectUser" class="text-red-500 text-2xl cursor-pointer" :disabled="disabled">×</button>

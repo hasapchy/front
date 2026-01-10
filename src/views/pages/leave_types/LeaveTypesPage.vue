@@ -3,7 +3,7 @@
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.leave_types" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="(i) => { showModal(i) }">
+                :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
                         :show-pagination="true"
@@ -56,7 +56,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <LeaveTypeCreatePage ref="leavetypecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <LeaveTypeCreatePage :key="editingItem ? editingItem.id : 'new-leave-type'" ref="leavetypecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -105,6 +105,9 @@ export default {
         return {
             controller: LeaveTypeController,
             cacheInvalidationType: 'leaveTypes',
+            itemViewRouteName: 'LeaveTypeView',
+            baseRouteName: 'leave_types',
+            errorGettingItemText: this.$t('errorGettingLeaveType'),
             savedSuccessText: this.$t('leaveTypeSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingLeaveType'),
             deletedSuccessText: this.$t('leaveTypeSuccessfullyDeleted'),
@@ -125,6 +128,14 @@ export default {
     },
     mounted() {
         this.fetchItems();
+    },
+    watch: {
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
+        }
     },
     methods: {
         itemMapper(i, c) {
@@ -157,6 +168,12 @@ export default {
             }
             if (!silent) {
                 this.loading = false;
+            }
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'leave_types' });
             }
         }
     },

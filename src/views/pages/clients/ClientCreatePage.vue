@@ -156,9 +156,10 @@ import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 
 export default {
-  mixins: [getApiErrorMessage, notificationMixin, formChangesMixin],
+  mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
   emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
   components: { PrimaryButton, AlertDialog, NotificationToast, TabBar, PhoneInputWithCountry, ClientBalanceTab, ClientPaymentsTab, ClientOperationsTab, UserSearch },
   props: {
@@ -252,11 +253,11 @@ export default {
     }
   },
   async mounted() {
-    if (this.$store.getters.users.length === 0) {
+    if (!this.$store.getters.users?.length) {
       await this.$store.dispatch('loadUsers');
     }
 
-    if (this.$store.getters.clients.length === 0) {
+    if (!this.$store.getters.clients?.length) {
       await this.$store.dispatch('loadClients');
     }
     
@@ -540,67 +541,60 @@ export default {
     removeEmail(index) {
       this.emails.splice(index, 1);
     },
-    async save() {
+    // Методы для crudFormMixin
+    prepareSave() {
       if ((this.clientType === 'employee' || this.clientType === 'investor') && !this.selectedEmployee) {
-        this.showNotification(this.$t('error') || 'Ошибка', this.$t('selectEmployee') || 'Необходимо выбрать сотрудника', true);
-        return;
+        throw new Error(this.$t('selectEmployee') || 'Необходимо выбрать сотрудника');
       }
 
-      this.saveLoading = true;
-      try {
-        const clientData = {
-          first_name: this.firstName,
-          last_name: this.lastName,
-          patronymic: this.patronymic,
-          contact_person: this.contactPerson,
-          position: this.position,
-          client_type: this.clientType,
-          employee_id: this.selectedEmployee?.id || null,
-          address: this.address,
-          note: this.note,
-          status: this.status,
-          is_conflict: this.isConflict,
-          is_supplier: this.isSupplier,
-          phones: this.phones,
-          emails: this.emails,
-          discount_type: this.discountType,
-          discount: this.discount,
-        };
+      return {
+        first_name: this.firstName,
+        last_name: this.lastName,
+        patronymic: this.patronymic,
+        contact_person: this.contactPerson,
+        position: this.position,
+        client_type: this.clientType,
+        employee_id: this.selectedEmployee?.id || null,
+        address: this.address,
+        note: this.note,
+        status: this.status,
+        is_conflict: this.isConflict,
+        is_supplier: this.isSupplier,
+        phones: this.phones,
+        emails: this.emails,
+        discount_type: this.discountType,
+        discount: this.discount,
+      };
+    },
+    async performSave(data) {
+      let resp;
+      if (this.editingItemId) {
+        resp = await ClientController.updateItem(this.editingItemId, data);
+      } else {
+        resp = await ClientController.storeItem(data);
+      }
 
-        let resp;
-        if (this.editingItem) {
-          resp = await ClientController.updateItem(this.editingItem.id, clientData);
-        } else {
-          resp = await ClientController.storeItem(clientData);
-        }
-
-        if (resp.message) {
-          this.$emit("saved", resp.item || clientData);
-          this.clearForm();
-        }
-      } catch (error) {
-        this.$emit("saved-error", error);
-      } finally {
-        this.saveLoading = false;
+      if (resp.message) {
+        return resp.item || data;
+      }
+      throw new Error('Failed to save');
+    },
+    onSaveError(error) {
+      if (error.message && (error.message.includes('selectEmployee') || error.message.includes('выбрать сотрудника'))) {
+        this.showNotification(this.$t('error') || 'Ошибка', error.message, true);
       }
     },
-    async deleteItem() {
-      this.closeDeleteDialog();
-      if (!this.editingItem) {
-        return;
+    // Метод save() теперь используется из crudFormMixin
+    // Валидация перенесена в prepareSave()
+    // Метод для crudFormMixin
+    async performDelete() {
+      const resp = await ClientController.deleteItem(this.editingItemId);
+      if (resp.message) {
+        return resp;
       }
-      this.deleteLoading = true;
-      try {
-        const resp = await ClientController.deleteItem(this.editingItem.id);
-        if (resp.message) {
-          this.$emit("deleted");
-          this.clearForm();
-        }
-      } catch (error) {
-        this.$emit("deleted-error", this.getApiErrorMessage(error));
-      }
-      this.deleteLoading = false;
+      throw new Error('Failed to delete');
     },
+    // Метод deleteItem() теперь используется из crudFormMixin
     clearForm() {
       this.firstName = "";
       this.lastName = "";
@@ -633,59 +627,53 @@ export default {
     closeDeleteDialog() {
       this.deleteDialog = false;
     },
+    async onEditingItemChanged(newEditingItem) {
+      if (newEditingItem) {
+        this.firstName = newEditingItem.firstName || "";
+        this.lastName = newEditingItem.lastName || "";
+        this.patronymic = newEditingItem.patronymic || "";
+        this.contactPerson = newEditingItem.contactPerson || "";
+        this.position = newEditingItem.position || "";
+        this.clientType = newEditingItem.clientType || "individual";
+        this.address = newEditingItem.address || "";
+        this.note = newEditingItem.note || "";
+        this.status = newEditingItem.status || false;
+        this.isConflict = newEditingItem.isConflict || false;
+        this.isSupplier = newEditingItem.isSupplier || false;
+        this.phones = newEditingItem.phones.map((phone) => phone.phone) || [];
+        this.editingPhones = newEditingItem.phones.map((phone) => this.formatPhoneForInput(phone.phone)) || [];
+        this.editingPhoneCountries = newEditingItem.phones.map((phone) => {
+          const cleaned = phone.phone.replace(/\D/g, "");
+          if (cleaned.startsWith("7")) {
+            return { dialCode: "7", id: "ru" };
+          }
+          return { dialCode: "993", id: "tm" };
+        }) || [];
+        this.newPhone = "";
+        this.newPhoneCountry = "tm";
+        this.currentPhoneCountry = null;
+        this.emails = newEditingItem.emails.map((email) => email.email) || [];
+        this.discountType = newEditingItem.discountType ?? "fixed";
+        this.discount = newEditingItem.discount ?? 0;
+        
+        this.employeeId = newEditingItem.employeeId || null;
+        if (this.employeeId) {
+          await this.loadSelectedEmployee();
+        } else {
+          this.selectedEmployee = null;
+        }
+        
+        this.currentTab = "info";
+      } else {
+        this.currentTab = "info";
+      }
+    }
   },
   watch: {
     defaultFirstName(newVal) {
       if (!this.editingItem) {
         this.firstName = newVal || "";
       }
-    },
-    editingItem: {
-      handler(newEditingItem) {
-        if (newEditingItem) {
-          this.firstName = newEditingItem.firstName || "";
-          this.lastName = newEditingItem.lastName || "";
-          this.patronymic = newEditingItem.patronymic || "";
-          this.contactPerson = newEditingItem.contactPerson || "";
-          this.position = newEditingItem.position || "";
-          this.clientType = newEditingItem.clientType || "individual";
-          this.address = newEditingItem.address || "";
-          this.note = newEditingItem.note || "";
-          this.status = newEditingItem.status || false;
-          this.isConflict = newEditingItem.isConflict || false;
-          this.isSupplier = newEditingItem.isSupplier || false;
-          this.phones = newEditingItem.phones.map((phone) => phone.phone) || [];
-          this.editingPhones = newEditingItem.phones.map((phone) => this.formatPhoneForInput(phone.phone)) || [];
-          this.editingPhoneCountries = newEditingItem.phones.map((phone) => {
-            const cleaned = phone.phone.replace(/\D/g, "");
-            if (cleaned.startsWith("7")) {
-              return { dialCode: "7", id: "ru" };
-            }
-            return { dialCode: "993", id: "tm" };
-          }) || [];
-          this.newPhone = "";
-          this.newPhoneCountry = "tm";
-          this.currentPhoneCountry = null;
-          this.emails = newEditingItem.emails.map((email) => email.email) || [];
-          this.discountType = newEditingItem.discountType ?? "fixed";
-          this.discount = newEditingItem.discount ?? 0;
-          this.$nextTick(async () => {
-            this.employeeId = newEditingItem.employeeId || null;
-            if (this.employeeId) {
-              await this.loadSelectedEmployee();
-            } else {
-              this.selectedEmployee = null;
-            }
-            this.saveInitialState();
-          });
-          this.currentTab = "info";
-        } else {
-          this.clearForm();
-          this.currentTab = "info";
-        }
-      },
-      deep: true,
-      immediate: true,
     },
     clientType: {
       handler(type) {

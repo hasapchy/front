@@ -81,7 +81,10 @@ export default class InvoiceDto {
     return this.products ? this.products.length : 0;
   }
 
-  getStatusLabel() {
+  getStatusLabel(t = null) {
+    if (t && typeof t === 'function') {
+      return t(this.status) || this.status;
+    }
     switch (this.status) {
       case 'new':
         return 'Новый';
@@ -117,6 +120,7 @@ export default class InvoiceDto {
       
       const orders = data.orders ? OrderDto.fromApiArray(data.orders.map(order => ({
         ...order,
+        total_price: order.total_price ?? ((order.price || 0) - (order.discount || 0)),
         currency_id: order.currency_id ?? order.cash?.currency?.id ?? null,
         currency_name: order.currency_name ?? order.cash?.currency?.name ?? null,
         currency_symbol: order.currency_symbol ?? order.cash?.currency?.symbol ?? null,

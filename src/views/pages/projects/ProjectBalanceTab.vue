@@ -2,15 +2,24 @@
     <div class="mt-4">
         <div class="flex justify-between items-center mb-2">
             <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
-            <PrimaryButton 
-                v-if="$store.getters.hasPermission('transactions_create')"
-                icon="fas fa-plus" 
-                :onclick="showAddTransactionModal" 
-                :is-small="true">
-                {{ $t('addTransaction') }}
-            </PrimaryButton>
+            <div class="flex gap-2">
+                <PrimaryButton 
+                    v-if="$store.getters.hasPermission('transactions_create')"
+                    icon="fas fa-plus" 
+                    :onclick="showAddTransactionModal" 
+                    :is-small="true">
+                    {{ $t('addTransaction') }}
+                </PrimaryButton>
+                <PrimaryButton 
+                    v-if="$store.getters.hasPermission('projects_update')"
+                    icon="fas fa-plus" 
+                    :onclick="showAddProjectTransactionModal" 
+                    :is-small="true">
+                    {{ $t('addProjectTransaction') }}
+                </PrimaryButton>
+            </div>
         </div>
-        <div v-if="$store.getters.hasPermission('settings_project_budget_view')" class="mb-4">
+        <div v-if="canViewProjectBudget" class="mb-4">
             <!-- Все показатели в один ряд -->
             <div class="flex items-center gap-6">
                 <!-- Приход -->
@@ -42,10 +51,10 @@
             </div>
         </div>
         <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="balanceHistory.length === 0" class="text-gray-500">
+        <div v-else-if="!balanceHistory?.length" class="text-gray-500">
             {{ $t('noHistory') }}
         </div>
-        <DraggableTable v-if="!balanceLoading && balanceHistory.length" table-key="project.balance"
+        <DraggableTable v-if="!balanceLoading && balanceHistory?.length" table-key="project.balance"
             :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
             @selectionChange="selectedIds = $event" :onItemClick="handleBalanceItemClick" />
 
@@ -54,7 +63,7 @@
             :showForm="transactionModalOpen" 
             :onclose="closeTransactionModal">
             <TransactionCreatePage 
-                v-if="transactionModalOpen && !transactionLoading"
+                v-if="transactionModalOpen && !transactionLoading && !isProjectTransaction"
                 :editingItem="editingTransactionItem"
                 :initialProjectId="editingItem?.id"
                 :form-config="projectFormConfig"
@@ -64,7 +73,15 @@
                 @deleted="handleTransactionDeleted"
                 @deleted-error="handleTransactionSavedError"
                 @close-request="closeTransactionModal" />
-            
+            <ProjectTransactionCreatePage
+                v-else-if="transactionModalOpen && !transactionLoading && isProjectTransaction"
+                :editingItem="editingTransactionItem"
+                :projectId="editingItem?.id"
+                @saved="handleTransactionSaved"
+                @saved-error="handleTransactionSavedError"
+                @deleted="handleTransactionDeleted"
+                @deleted-error="handleTransactionSavedError"
+                @close-request="closeTransactionModal" />
             <div v-else-if="transactionLoading" class="p-4 text-center">
                 {{ $t('loading') }}...
             </div>
@@ -97,7 +114,11 @@ import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 const TransactionCreatePage = defineAsyncComponent(() => 
     import("@/views/pages/transactions/TransactionCreatePage.vue")
 );
+const ProjectTransactionCreatePage = defineAsyncComponent(() => 
+    import("@/views/pages/projects/ProjectTransactionCreatePage.vue")
+);
 import TransactionController from "@/api/TransactionController";
+import ProjectTransactionController from "@/api/ProjectTransactionController";
 import ProjectController from "@/api/ProjectController";
 import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
 
@@ -110,6 +131,7 @@ export default {
         NotificationToast,
         SourceButtonCell,
         TransactionCreatePage,
+        ProjectTransactionCreatePage,
     },
     props: {
         editingItem: { required: true },
@@ -130,6 +152,7 @@ export default {
             transactionModalOpen: false,
             editingTransactionItem: null,
             transactionLoading: false,
+            isProjectTransaction: false,
             columnsConfig: [
                 { name: "dateUser", label: this.$t("dateUser"), size: 120 },
                 { 
@@ -138,10 +161,12 @@ export default {
                     size: 150, 
                     component: markRaw(SourceButtonCell),
                     props: (item) => {
-                        const isTransaction = item.sourceType && item.sourceType.includes('Transaction');
+                        const isProjectTransaction = item.source === 'project_transaction' || (item.sourceType && item.sourceType.includes('ProjectTransaction'));
+                        const isTransaction = item.sourceType && item.sourceType.includes('Transaction') && !isProjectTransaction;
                         const sourceId = isTransaction ? item.sourceId : (item.sourceSourceId || item.sourceId);
                         
                         return {
+                            source: item.source,
                             sourceType: item.sourceType,
                             sourceId: sourceId,
                             onUpdated: () => {
@@ -185,10 +210,21 @@ export default {
                     component: markRaw(TransactionCreatePage),
                     prop: 'editingItem',
                 },
+                project_transaction: {
+                    fetch: id => ProjectTransactionController.getItem(id),
+                    component: markRaw(TransactionCreatePage),
+                    prop: 'editingItem',
+                },
             },
         };
     },
     computed: {
+        canViewProjectBudget() {
+            return this.$store.getters.hasPermission('settings_project_budget_view');
+        },
+        hasProjectCurrency() {
+            return this.editingItem?.currencyId && this.editingItem?.currency;
+        },
         projectFormConfig() {
             return TRANSACTION_FORM_PRESETS.projectBalance;
         },
@@ -201,29 +237,25 @@ export default {
             return this.$formatNumber(budget, null, true);
         },
         budgetDisplay() {
-            if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
+            if (!this.hasProjectCurrency) {
                 return `${this.budgetFormatted} ${this.currencySymbol}`;
             }
-            
-            // Бюджет уже в валюте проекта, показываем его
             return `${this.budgetFormatted} ${this.editingItem?.currency?.symbol}`;
         },
         balanceDisplay() {
-            if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
+            if (!this.hasProjectCurrency) {
                 return `${this.balanceFormatted} ${this.currencySymbol}`;
             }
-            
-            // Баланс уже в валюте проекта (конвертация происходит на бэкенде)
             return `${this.balanceFormatted} ${this.editingItem?.currency?.symbol}`;
         },
         totalIncome() {
-            if (!this.balanceHistory || this.balanceHistory.length === 0) return 0;
+            if (!this.balanceHistory?.length) return 0;
             return this.balanceHistory
                 .filter(item => parseFloat(item.amount) > 0)
                 .reduce((sum, item) => sum + parseFloat(item.amount), 0);
         },
         totalExpense() {
-            if (!this.balanceHistory || this.balanceHistory.length === 0) return 0;
+            if (!this.balanceHistory?.length) return 0;
             return Math.abs(this.balanceHistory
                 .filter(item => parseFloat(item.amount) < 0)
                 .reduce((sum, item) => sum + parseFloat(item.amount), 0));
@@ -235,19 +267,15 @@ export default {
             return this.$formatNumber(this.totalExpense, null, true);
         },
         totalIncomeDisplay() {
-            if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
+            if (!this.hasProjectCurrency) {
                 return `${this.totalIncomeFormatted} ${this.currencySymbol}`;
             }
-            
-            // Приход уже в валюте проекта (конвертация происходит на бэкенде)
             return `${this.totalIncomeFormatted} ${this.editingItem?.currency?.symbol}`;
         },
         totalExpenseDisplay() {
-            if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
+            if (!this.hasProjectCurrency) {
                 return `${this.totalExpenseFormatted} ${this.currencySymbol}`;
             }
-            
-            // Расход уже в валюте проекта (конвертация происходит на бэкенде)
             return `${this.totalExpenseFormatted} ${this.editingItem?.currency?.symbol}`;
         },
     },
@@ -258,7 +286,7 @@ export default {
     methods: {
         formatBalance(balance) {
             const formattedBalance = this.$formatNumber(balance || 0, null, true);
-            if (!this.editingItem || !this.editingItem.currencyId || !this.editingItem.currency) {
+            if (!this.hasProjectCurrency) {
                 return `${formattedBalance} ${this.currencySymbol}`;
             }
             return `${formattedBalance} ${this.editingItem?.currency?.symbol}`;
@@ -342,32 +370,38 @@ export default {
             }
         },
         async handleBalanceItemClick(item) {
+            if (!item?.sourceId) return;
+            
             try {
                 this.transactionLoading = true;
-                const sourceId = item?.sourceSourceId || item?.sourceId;
-                if (!sourceId) {
-                    this.$notify?.({ type: 'error', text: 'Ошибка при загрузке транзакции' });
-                    return;
-                }
-                const data = await this.ENTITY_CONFIG.transaction.fetch(sourceId);
+                const sourceType = item?.source || item?.sourceType;
+                this.isProjectTransaction = sourceType === 'project_transaction';
+                
+                const entityConfig = this.ENTITY_CONFIG[sourceType] || this.ENTITY_CONFIG.transaction;
+                const data = await entityConfig.fetch(item.sourceId);
                 this.editingTransactionItem = data;
-                
-                
                 this.transactionModalOpen = true;
             } catch (error) {
                 console.error('Error loading transaction:', error);
-                this.$notify?.({ type: 'error', text: 'Ошибка при загрузке транзакции: ' + (error.message || error) });
+                this.$notify?.({ type: 'error', text: 'Ошибка при загрузке транзакции' });
             } finally {
                 this.transactionLoading = false;
             }
         },
         showAddTransactionModal() {
             this.editingTransactionItem = null;
+            this.isProjectTransaction = false;
+            this.transactionModalOpen = true;
+        },
+        showAddProjectTransactionModal() {
+            this.editingTransactionItem = null;
+            this.isProjectTransaction = true;
             this.transactionModalOpen = true;
         },
         closeTransactionModal() {
             this.transactionModalOpen = false;
             this.editingTransactionItem = null;
+            this.isProjectTransaction = false;
         },
         async handleTransactionSaved() {
             this.closeTransactionModal();

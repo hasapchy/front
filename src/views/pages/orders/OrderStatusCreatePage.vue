@@ -52,11 +52,12 @@ import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import OrderStatusCategoryCreatePage from '@/views/pages/orders/OrderStatusCategoryCreatePage.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
 import { translateOrderStatusCategory, translateOrderStatus } from '@/utils/translationUtils';
 
 
 export default {
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
     components: { PrimaryButton, AlertDialog, SideModalDialog, OrderStatusCategoryCreatePage },
     props: {
@@ -67,11 +68,7 @@ export default {
             name: this.editingItem ? this.editingItem.name : '',
             categoryId: this.editingItem ? this.editingItem.categoryId : '',
             isActive: this.editingItem ? (this.editingItem.isActive !== undefined ? this.editingItem.isActive : true) : true,
-            editingItemId: this.editingItem ? this.editingItem.id : null,
             allCategories: [],
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false,
             modalDialog: false
         }
     },
@@ -95,78 +92,48 @@ export default {
         async fetchAllCategories() {
             this.allCategories = await OrderStatusCategoryController.getListItems();
         },
-        async save() {
-            this.saveLoading = true;
-            try {
-                let resp;
-                if (this.editingItemId != null) {
-                    resp = await OrderStatusController.updateItem(this.editingItemId, {
-                        name: this.name,
-                        category_id: this.categoryId,
-                        is_active: this.isActive
-                    });
-                } else {
-                    resp = await OrderStatusController.storeItem({
-                        name: this.name,
-                        category_id: this.categoryId,
-                        is_active: this.isActive
-                    });
-                }
-                if (resp.message) {
-                    this.$emit('saved');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
-            }
-            this.saveLoading = false;
+        prepareSave() {
+            return {
+                name: this.name,
+                category_id: this.categoryId,
+                is_active: this.isActive
+            };
         },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (!this.editingItemId) return;
-            this.deleteLoading = true;
-            try {
-                const resp = await OrderStatusController.deleteItem(this.editingItemId);
-                if (resp.message) {
-                    this.$emit('deleted');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+        async performSave(data) {
+            if (this.editingItemId != null) {
+                return await OrderStatusController.updateItem(this.editingItemId, data);
+            } else {
+                return await OrderStatusController.storeItem(data);
             }
-            this.deleteLoading = false;
+        },
+        async performDelete() {
+            const resp = await OrderStatusController.deleteItem(this.editingItemId);
+            if (!resp.message) {
+                throw new Error('Failed to delete order status');
+            }
+            return resp;
+        },
+        onSaveSuccess(response) {
+            if (response && response.message) {
+                this.clearForm();
+            }
         },
         clearForm() {
             this.name = '';
             this.categoryId = '';
             this.isActive = true;
-            this.editingItemId = null;
             this.fetchAllCategories();
-            this.resetFormChanges();
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
         },
-        showDeleteDialog() { this.deleteDialog = true; },
-        closeDeleteDialog() { this.deleteDialog = false; },
+        onEditingItemChanged(newEditingItem) {
+            this.name = newEditingItem.name || '';
+            this.categoryId = newEditingItem.categoryId || '';
+            this.isActive = newEditingItem.isActive !== undefined ? newEditingItem.isActive : true;
+        },
         showModal() { this.modalDialog = true; },
         closeModal() { this.modalDialog = false; }
-    },
-    watch: {
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    this.name = newEditingItem.name || '';
-                    this.categoryId = newEditingItem.categoryId || '';
-                    this.isActive = newEditingItem.isActive !== undefined ? newEditingItem.isActive : true;
-                    this.editingItemId = newEditingItem.id || null;
-                } else {
-                    this.name = '';
-                    this.categoryId = '';
-                    this.isActive = true;
-                    this.editingItemId = null;
-                }
-            },
-            deep: true,
-            immediate: true
-        }
     }
 }
 </script>

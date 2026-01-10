@@ -31,8 +31,8 @@
         <div>
             <label>{{ $t('date') }}</label>
             <input type="datetime-local" v-model="date"
-                :disabled="editingItemId && !$store.getters.hasPermission('settings_edit_any_date')"
-                :min="!$store.getters.hasPermission('settings_edit_any_date') ? new Date().toISOString().substring(0, 16) : null" />
+                :disabled="editingItemId && !canEditDate()"
+                        :min="this.getMinDate()" />
         </div>
         <div class="mt-2">
             <label>{{ $t('note') }}</label>
@@ -43,7 +43,7 @@
             :warehouse-id="fromWarehouseId" required />
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
+        <PrimaryButton v-if="editingItemId != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-trash"
             :disabled="!$store.getters.hasPermission('warehouse_movements_delete')">
         </PrimaryButton>
@@ -51,10 +51,10 @@
             (editingItemId == null && !$store.getters.hasPermission('warehouse_movements_create'))">
         </PrimaryButton>
     </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
+    <AlertDialog :dialog="deleteDialog" :onConfirm="deleteItem" :onLeave="closeDeleteDialog"
                   :descr="$t('confirmCancelMovement')"
                   :confirm-text="$t('deleteMovement')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+    <AlertDialog :dialog="closeConfirmDialog" :onConfirm="confirmClose" :onLeave="cancelClose"
         :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
@@ -68,26 +68,24 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import ProductSearch from '@/views/components/app/search/ProductSearch.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
+import crudFormMixin from "@/mixins/crudFormMixin";
+import dateFormMixin from "@/mixins/dateFormMixin";
 
 
 export default {
     emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
-    mixins: [getApiErrorMessage, formChangesMixin],
+    mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin, dateFormMixin],
     components: { PrimaryButton, AlertDialog, ProductSearch },
     props: {
         editingItem: { type: WarehouseMovementDto, required: false, default: null }
     },
     data() {
         return {
-            date: this.editingItem ? this.editingItem.date : new Date().toISOString().substring(0, 16),
+            date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
             note: this.editingItem ? this.editingItem.note : '',
             warehouseFromId: this.editingItem ? this.editingItem.warehouseFromId || '' : '',
             warehouseToId: this.editingItem ? this.editingItem.warehouseToId || '' : '',
             products: this.editingItem ? this.editingItem.products : [],
-            editingItemId: this.editingItem ? this.editingItem.id : null,
-            saveLoading: false,
-            deleteDialog: false,
-            deleteLoading: false,
             allWarehouses: [],
         }
     },
@@ -96,7 +94,7 @@ export default {
             await this.fetchAllWarehouses();
             
             if (!this.editingItem) {
-                if (this.allWarehouses.length > 0) {
+                if (this.allWarehouses?.length) {
                     if (!this.fromWarehouseId) {
                         this.fromWarehouseId = this.allWarehouses[0].id;
                     }
@@ -109,105 +107,87 @@ export default {
             this.saveInitialState();
         });
     },
+    computed: {
+        fromWarehouseId: {
+            get() {
+                return this.warehouseFromId;
+            },
+            set(value) {
+                this.warehouseFromId = value;
+            }
+        },
+        toWarehouseId: {
+            get() {
+                return this.warehouseToId;
+            },
+            set(value) {
+                this.warehouseToId = value;
+            }
+        }
+    },
     methods: {
         getFormState() {
             return {
-                fromWarehouseId: this.fromWarehouseId,
-                toWarehouseId: this.toWarehouseId,
+                fromWarehouseId: this.warehouseFromId,
+                toWarehouseId: this.warehouseToId,
                 date: this.date,
                 note: this.note,
                 products: [...this.products]
             };
         },
         async fetchAllWarehouses() {
-            if (this.$store.getters.warehouses && this.$store.getters.warehouses.length > 0) {
+            if (this.$store.getters.warehouses?.length) {
                 this.allWarehouses = this.$store.getters.warehouses;
                 return;
             }
             await this.$store.dispatch('loadWarehouses');
             this.allWarehouses = this.$store.getters.warehouses;
         },
-        async save() {
-            this.saveLoading = true;
-            try {
-                var formData = {
-                    warehouse_from_id: this.warehouseFromId,
-                    warehouse_to_id: this.warehouseToId,
-                    date: this.date,
-                    note: this.note,
-                    products: this.products.map(product => ({
-                        product_id: product.productId,
-                        quantity: product.quantity
-                    }))
-                };
-                if (this.editingItemId != null) {
-                    var resp = await WarehouseMovementController.updateItem(
-                        this.editingItemId,
-                        formData);
-                } else {
-                    var resp = await WarehouseMovementController.storeItem(formData);
-                }
-                if (resp.message) {
-                    this.$emit('saved');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('saved-error', this.getApiErrorMessage(error));
-            }
-            this.saveLoading = false;
-
+        prepareSave() {
+            return {
+                warehouse_from_id: this.warehouseFromId,
+                warehouse_to_id: this.warehouseToId,
+                date: this.date,
+                note: this.note,
+                products: this.products.map(product => ({
+                    product_id: product.productId,
+                    quantity: product.quantity
+                }))
+            };
         },
-        async deleteItem() {
-            this.closeDeleteDialog();
-            if (this.editingItemId == null) {
-                return;
+        async performSave(data) {
+            if (this.editingItemId != null) {
+                return await WarehouseMovementController.updateItem(this.editingItemId, data);
+            } else {
+                return await WarehouseMovementController.storeItem(data);
             }
-            this.deleteLoading = true;
-            try {
-                var resp = await WarehouseMovementController.deleteItem(
-                    this.editingItemId);
-                if (resp.message) {
-                    this.$emit('deleted');
-                    this.clearForm();
-                }
-            } catch (error) {
-                this.$emit('deleted-error', this.getApiErrorMessage(error));
+        },
+        async performDelete() {
+            const resp = await WarehouseMovementController.deleteItem(this.editingItemId);
+            if (!resp.message) {
+                throw new Error('Failed to delete movement');
             }
-            this.deleteLoading = false;
+            return resp;
         },
         clearForm() {
-            this.date = new Date().toISOString().substring(0, 16);
+            this.date = this.getCurrentLocalDateTime();
             this.note = '';
             this.warehouseFromId = '';
             this.warehouseToId = '';
             this.products = [];
-            this.editingItemId = null;
-            this.resetFormChanges();
+            if (this.resetFormChanges) {
+                this.resetFormChanges();
+            }
         },
-        showDeleteDialog() {
-            this.deleteDialog = true;
-        },
-        closeDeleteDialog() {
-            this.deleteDialog = false;
+        onEditingItemChanged(newEditingItem) {
+            if (newEditingItem) {
+                this.date = newEditingItem.date || '';
+                this.note = newEditingItem.note || '';
+                this.warehouseFromId = newEditingItem.warehouseFromId || '';
+                this.warehouseToId = newEditingItem.warehouseToId || '';
+                this.products = newEditingItem.products || [];
+            }
         },
     },
-    watch: {
-        editingItem: {
-            handler(newEditingItem) {
-                if (newEditingItem) {
-                    this.date = newEditingItem.date || '';
-                    this.note = newEditingItem.note || '';
-                    this.warehouseFromId = newEditingItem.warehouseFromId || '';
-                    this.warehouseToId = newEditingItem.warehouseToId || '';
-                    this.editingItemId = newEditingItem.id || null;
-                    this.products = newEditingItem.products || [];
-                } else {
-                    this.clearForm();
-                }
-            },
-            deep: true,
-            immediate: true
-        }
-    }
 }
 </script>

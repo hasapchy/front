@@ -180,6 +180,7 @@ export default {
 
   // Дополнительные действия
   selectCategory: 'Выберите категорию',
+  selectCategories: 'Выберите категории',
   categoryName: 'Название категории',
   colorOptional: 'Цвет (опционально)',
 
@@ -721,7 +722,7 @@ export default {
   view: 'Просмотр',
   create: 'Создание',
   update: 'Редактирование',
-  delete: 'Удалить',
+  delete: 'Удаление',
   all: 'Все',
 
   // Группы прав
@@ -820,6 +821,7 @@ export default {
   errorDeletingProduct: 'Ошибка удаления товара',
 
   // Заказы
+  errorGettingOrder: 'Ошибка получения заказа',
   errorGettingOrderList: 'Ошибка получения списка заказов',
   orderSaved: 'Заказ сохранён',
   errorSavingOrder: 'Ошибка сохранения заказа',
@@ -842,6 +844,8 @@ export default {
 
   // Транзакции
   addTransaction: 'Добавить транзакцию',
+  addProjectTransaction: 'Добавить проектную транзакцию',
+  projectTransactionInfo: 'Проектная транзакция не влияет на кассу и долг клиента. Она служит для дополнительной фиксации операций по проекту и участвует только в расчете баланса проекта.',
   allCashRegisters: 'Все кассы',
   allTime: 'За все время',
   lastWeek: 'Прошлая неделя',
@@ -885,6 +889,9 @@ export default {
   salarySaved: 'Зарплата сохранена',
   salaryDeleted: 'Зарплата удалена',
   noSalaries: 'Нет зарплат',
+  salaryPaymentType: 'Тип оплаты',
+  salaryPaymentTypeCash: 'Наличный',
+  salaryPaymentTypeNonCash: 'Безналичный',
   startDate: 'Дата начала',
   endDate: 'Дата окончания',
   amount: 'Сумма',
@@ -892,14 +899,14 @@ export default {
   currency: 'Валюта',
   selectCurrency: 'Выберите валюту',
   present: 'по н.в.',
-  bonus: 'Премия',
-  penalty: 'Штраф',
-  advance: 'Аванс',
-  accrueSalary: 'Зарплата',
+  bonus: 'Начислить премию',
+  penalty: 'Выписать штраф',
+  advance: 'Выдать аванс',
+  accrueSalary: 'Начислить зарплату',
   accrueSalaries: 'Начислить зарплаты',
   accrueSalariesForCompany: 'Начислить зарплаты сотрудникам компании',
   accrueSalariesForSelected: 'Начислить зарплаты выбранным сотрудникам',
-  paySalary: 'Выплата',
+  paySalary: 'Выплатить зарплату',
   paySalariesForSelected: 'Выплатить зарплаты выбранным сотрудникам',
   accrueBonusesForSelected: 'Начислить премии выбранным сотрудникам',
   issuePenaltiesForSelected: 'Выписать штрафы выбранным сотрудникам',
@@ -1305,6 +1312,8 @@ export default {
   editProjectStatus: 'Редактировать статус проекта',
   deleteProjectStatus: 'Удалить статус проекта',
   statusColor: 'Цвет статуса',
+  showInProjectSelect: 'Показывать в списке для выбора',
+  showInProjectSelectDescription: 'Если данная настройка не включена, то при попадании на данный статус проекты не будут доступны для выбора в поле',
   color: 'Цвет',
   projectStatus: 'Статус проекта',
 
@@ -1317,6 +1326,10 @@ export default {
   note: 'Примечание',
   enterNote: 'Введите примечание',
   contractReturned: 'Контракт возвращен',
+  returned: 'Возвращен',
+  notReturned: 'Не возвращен',
+  notPaid: 'Не оплачено',
+  contractStatus: 'Статус контракта',
   noContracts: 'Нет контрактов',
   contractSaved: 'Контракт сохранен',
   contractDeleted: 'Контракт удален',
@@ -1556,6 +1569,13 @@ export default {
   'orderStatus.COMPLETED': 'Завершено',
   'orderStatus.CANCELLED': 'Отменено',
   
+  // Project Statuses
+  'projectStatus.NEW': 'Новый',
+  'projectStatus.IN_PROGRESS': 'В работе',
+  'projectStatus.PENDING': 'Ожидание оплаты',
+  'projectStatus.COMPLETED': 'Завершено',
+  'projectStatus.CANCELLED': 'Отменено',
+  
   // Leave Types
   'leaveType.TIME_OFF': 'Отгул',
   'leaveType.VACATION': 'Отпуск',
@@ -1565,4 +1585,9 @@ export default {
   
   // Currencies
   'currency.RUSSIAN_RUBLE': 'Российский рубль',
+  
+  // Date labels
+  today: 'Сегодня',
+  yesterday: 'Вчера',
+  dayBeforeYesterday: 'Позавчера',
 }

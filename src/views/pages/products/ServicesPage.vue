@@ -3,7 +3,7 @@
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.products" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="(i) => { showModal(i) }">
+                :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
                         :show-filters="true"
@@ -83,7 +83,7 @@
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="closeModal">
-        <ProductsCreatePage v-if="modalDialog" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+        <ProductsCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-service'" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" :editingItem="editingItem" :defaultType="'service'" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
@@ -129,6 +129,9 @@ export default {
             selectedCategoryId: '',
             controller: ProductController,
             cacheInvalidationType: 'services',
+            itemViewRouteName: 'ServiceView',
+            baseRouteName: 'Sevices',
+            errorGettingItemText: this.$t('errorGettingProduct'),
             savedSuccessText: this.$t('productSuccessfullyAdded'),
             savedErrorText: this.$t('errorSavingProduct'),
             deletedSuccessText: this.$t('productSuccessfullyDeleted'),
@@ -156,6 +159,14 @@ export default {
     mounted() {
         this.fetchCategories();
         this.fetchItems();
+    },
+    watch: {
+        '$route.params.id': {
+            immediate: true,
+            handler(value) {
+                this.handleRouteItem(value);
+            }
+        }
     },
 
     beforeUnmount() {
@@ -244,13 +255,20 @@ export default {
             }
         },
         resetFilters() {
-            this.selectedCategoryId = '';
-            this.fetchItems(1);
+            this.resetFiltersFromConfig({
+                selectedCategoryId: ''
+            });
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.selectedCategoryId !== '') count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.selectedCategoryId, defaultValue: '' }
+            ]);
+        },
+        closeModal(skipScrollRestore = false) {
+            modalMixin.methods.closeModal.call(this, skipScrollRestore);
+            if (this.$route.params.id) {
+                this.$router.replace({ name: 'Sevices' });
+            }
         }
     },
     computed: {

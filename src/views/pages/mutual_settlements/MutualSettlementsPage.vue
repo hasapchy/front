@@ -23,9 +23,15 @@
                                 </div>
                                 <div>
                                     <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') || 'Касса' }}</label>
-                                    <CheckboxFilter class="w-full" :model-value="cashRegisterFilter"
-                                        :options="cashRegisterOptions" placeholder="all"
-                                        @update:modelValue="handleCashRegisterChange($event)" />
+                                    <select 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        :value="cashRegisterFilter || ''"
+                                        @change="handleCashRegisterChange($event.target.value)">
+                                        <option value="">Все кассы</option>
+                                        <option v-for="option in cashRegisterOptions" :key="option.value" :value="option.value">
+                                            {{ option.label }}
+                                        </option>
+                                    </select>
                                 </div>
                             </FiltersContainer>
                         </template>
@@ -105,7 +111,7 @@ export default {
             clientBalances: [],
             clientBalancesLoading: false,
             editingItem: null,
-            previousCashRegisterFilter: [],
+            previousCashRegisterFilter: null,
             columnsConfig: [
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'clientName', label: 'customer', html: true },
@@ -121,7 +127,7 @@ export default {
     },
 
     mounted() {
-        this.previousCashRegisterFilter = [...this.cashRegisterFilter];
+        this.previousCashRegisterFilter = this.cashRegisterFilter;
         this.loadClientBalances();
     },
 
@@ -131,7 +137,7 @@ export default {
 
     watch: {
         searchQuery() {
-            if (this.allClientsRaw && this.allClientsRaw.length > 0) {
+            if (this.allClientsRaw?.length) {
                 this.applyFilters();
             }
         }
@@ -145,8 +151,8 @@ export default {
         async loadClientBalances() {
             this.clientBalancesLoading = true;
             try {
-                const cashRegisterIds = this.cashRegisterFilter.length > 0 ? this.cashRegisterFilter : null;
-                const clients = await ClientController.getListItems(true, cashRegisterIds);
+                const cashRegisterId = this.cashRegisterFilter || null;
+                const clients = await ClientController.getListItems(true, cashRegisterId);
                 this.allClientsRaw = clients;
                 this.allClients = clients;
 
@@ -159,11 +165,10 @@ export default {
         },
 
         async applyFilters() {
-            const currentCashRegisterFilter = JSON.stringify([...this.cashRegisterFilter].sort());
-            const previousCashRegisterFilter = JSON.stringify([...this.previousCashRegisterFilter].sort());
+            const currentCashRegisterFilter = this.cashRegisterFilter;
             
-            if (currentCashRegisterFilter !== previousCashRegisterFilter) {
-                this.previousCashRegisterFilter = [...this.cashRegisterFilter];
+            if (currentCashRegisterFilter !== this.previousCashRegisterFilter) {
+                this.previousCashRegisterFilter = currentCashRegisterFilter;
                 await this.loadClientBalances();
                 return;
             }
@@ -172,7 +177,7 @@ export default {
         },
 
         applyLocalFilters() {
-            if (!this.allClientsRaw || this.allClientsRaw.length === 0) {
+            if (!this.allClientsRaw?.length) {
                 this.clientBalances = [];
                 return;
             }
@@ -213,6 +218,7 @@ export default {
             this.clientBalances = filteredClients
                 .map(client => {
                     const balance = parseFloat(client.balance) || 0;
+                    const currencySymbol = client.currencySymbol || client.currency_symbol || 'TMT';
 
                     return {
                         id: client.id,
@@ -223,7 +229,7 @@ export default {
                         last_name: client.lastName || client.last_name,
                         contactPerson: client.contactPerson || client.contact_person,
                         contact_person: client.contactPerson || client.contact_person,
-                        currency_symbol: 'TMT',
+                        currency_symbol: currencySymbol,
                         debt_amount: balance > 0 ? balance : 0,
                         credit_amount: balance < 0 ? Math.abs(balance) : 0,
                         balance_value: balance,
@@ -290,23 +296,23 @@ export default {
             this.$store.dispatch('setClientTypeFilter', []);
             this.$store.dispatch('setCashRegisterFilter', []);
             this.$store.dispatch('setSearchQuery', '');
-            this.previousCashRegisterFilter = [];
+            this.previousCashRegisterFilter = null;
             this.loadClientBalances();
         },
         getActiveFiltersCount() {
-            let count = 0;
-            if (this.clientTypeFilter.length) count++;
-            if (this.cashRegisterFilter.length) count++;
-            if (this.searchQuery.trim()) count++;
-            return count;
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.clientTypeFilter, defaultValue: [], isArray: true },
+                { value: this.cashRegisterFilter, defaultValue: null },
+                { value: this.searchQuery?.trim(), defaultValue: '' }
+            ]);
         },
         handleClientTypeChange(value) {
             const selected = Array.isArray(value) ? value : [];
             this.$store.dispatch('setClientTypeFilter', selected);
         },
         handleCashRegisterChange(value) {
-            const selected = Array.isArray(value) ? value : [];
-            this.$store.dispatch('setCashRegisterFilter', selected);
+            const cashRegisterId = value && value !== '' ? parseInt(value) : null;
+            this.$store.dispatch('setCashRegisterFilter', cashRegisterId ? [cashRegisterId] : []);
         },
 
         async handleCompanyChanged(companyId) {
@@ -317,7 +323,7 @@ export default {
             this.allClients = [];
             this.allClientsRaw = [];
             this.clientBalances = [];
-            this.previousCashRegisterFilter = [];
+            this.previousCashRegisterFilter = null;
 
             await this.loadClientBalances();
 
@@ -348,7 +354,7 @@ export default {
         },
         cashRegisterFilter() {
             const filter = this.$store.getters.cashRegisterFilter;
-            return Array.isArray(filter) ? filter : [];
+            return Array.isArray(filter) && filter.length > 0 ? filter[0] : null;
         },
         cashRegisterOptions() {
             const cashRegisters = this.$store.getters.cashRegisters || [];
@@ -358,7 +364,7 @@ export default {
             }));
         },
         hasActiveFilters() {
-            return this.clientTypeFilter.length > 0 || this.cashRegisterFilter.length > 0;
+            return this.clientTypeFilter.length > 0 || this.cashRegisterFilter !== null;
         }
     },
 }

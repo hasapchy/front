@@ -75,7 +75,7 @@
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanCard from './KanbanCard.vue';
 import debounce from 'lodash.debounce';
-import { translateOrderStatus, translateTaskStatus } from '@/utils/translationUtils';
+import { translateOrderStatus, translateTaskStatus, translateProjectStatus } from '@/utils/translationUtils';
 
 export default {
     name: 'KanbanColumn',
@@ -152,6 +152,9 @@ export default {
     methods: {
         getStatusName(status) {
             if (!status || !status.name) return '';
+            if (this.isProjectMode) {
+                return translateProjectStatus(status.name, this.$t);
+            }
             if (status.category) {
                 return translateOrderStatus(status.name, this.$t);
             }
