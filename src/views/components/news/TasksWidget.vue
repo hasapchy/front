@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-4 hover:shadow transition-shadow duration-200">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow transition-shadow duration-200">
         <div class="flex items-center justify-between mb-3 border-b border-gray-100 pb-3">
             <div class="flex items-center gap-2">
                 <i class="fas fa-tasks text-gray-600 text-sm"></i>

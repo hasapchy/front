@@ -102,6 +102,7 @@ export default {
   birthdays: 'Дни рождения',
   noBirthdays: 'Нет предстоящих дней рождения',
   quickLinks: 'Быстрые ссылки',
+  statistics: 'Статистика',
   news: 'Новости',
   messenger: 'Мессенджер',
   warehouseReceipt: 'Оприходование',

@@ -82,6 +82,7 @@ export default {
   birthdays: 'Birthdays',
   noBirthdays: 'No upcoming birthdays',
   quickLinks: 'Quick Links',
+  statistics: 'Statistics',
   news: 'News',
   warehouses: 'Warehouses',
   finance: 'Finance',

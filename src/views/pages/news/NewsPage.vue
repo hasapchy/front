@@ -100,9 +100,9 @@
             </div>
 
             <!-- Двухколоночный layout -->
-            <div class="flex-1 overflow-y-auto flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-6 bg-gray-50">
+            <div class="flex-1 flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-6 bg-gray-50 overflow-hidden">
                 <!-- Левая колонка: Лента новостей -->
-                <div class="flex-1 min-w-0 order-1 lg:order-1">
+                <div class="flex-1 min-w-0 order-1 lg:order-1 overflow-y-auto">
                     <div v-if="data.items && data.items.length > 0" class="w-full space-y-0">
                         <NewsCard
                             v-for="newsItem in data.items"
@@ -121,7 +121,7 @@
                 </div>
 
                 <!-- Правая колонка: Виджеты -->
-                <aside class="w-full lg:w-80 xl:w-96 shrink-0 space-y-4 order-2 lg:order-2">
+                <aside class="w-full lg:w-80 xl:w-96 shrink-0 space-y-4 order-2 lg:order-2 lg:overflow-y-auto lg:max-h-full">
                     <!-- Виджет быстрых ссылок -->
                     <QuickLinksWidget />
                     
@@ -130,6 +130,9 @@
                     
                     <!-- Виджет дней рождения -->
                     <BirthdaysWidget />
+                    
+                    <!-- Виджет статистики -->
+                    <StatsWidget />
                 </aside>
             </div>
         </div>
@@ -196,6 +199,7 @@ import NewsCard from '@/views/components/news/NewsCard.vue';
 import TasksWidget from '@/views/components/news/TasksWidget.vue';
 import BirthdaysWidget from '@/views/components/news/BirthdaysWidget.vue';
 import QuickLinksWidget from '@/views/components/news/QuickLinksWidget.vue';
+import StatsWidget from '@/views/components/news/StatsWidget.vue';
 
 export default {
     mixins: [
@@ -219,7 +223,8 @@ export default {
         NewsCard,
         TasksWidget,
         BirthdaysWidget,
-        QuickLinksWidget
+        QuickLinksWidget,
+        StatsWidget
     },
     data() {
         return {
