@@ -77,6 +77,7 @@ export default {
   birthdays: 'Doglan günleri',
   noBirthdays: 'Geljekde doglan gün ýok',
   quickLinks: 'Çalt baglanyşyklar',
+  statistics: 'Statistika',
   news: 'Täzelikler',
   messenger: 'Messenger',
   warehouses: 'Ammar',
