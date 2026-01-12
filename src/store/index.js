@@ -1466,6 +1466,13 @@ const store = createStore({
           permission: "tasks_view",
         },
         {
+          id: "news",
+          to: "/news",
+          icon: "fas fa-newspaper mr-2",
+          label: "news",
+          permission: "news_view_all",
+        },
+        {
           id: "messenger",
           to: "/messenger",
           icon: "fas fa-comments mr-2",
@@ -1576,6 +1583,7 @@ const store = createStore({
         "orders",
         "sales",
         "tasks",
+        "news",
         "messenger",
         "transactions",
         "clients",
@@ -1609,6 +1617,7 @@ const store = createStore({
       const baseMainIds = new Set((baseMenu.main || []).map((i) => i.id));
       const baseAvailableIds = new Set((baseMenu.available || []).map((i) => i.id));
 
+      // Находим новые пункты, которых нет ни в main, ни в available
       const missingItems = allMenuItems.filter(
         (i) => i && i.id && !baseMainIds.has(i.id) && !baseAvailableIds.has(i.id)
       );
