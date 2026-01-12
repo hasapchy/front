@@ -7,7 +7,6 @@ import BlankLayout from "@/views/layouts/BlankLayout.vue";
 import BasementLayout from "@/views/layouts/BasementLayout.vue";
 
 import LoginPage from "@/views/pages/auth/LoginPage.vue";
-import HomePage from "@/views/pages/home/HomePage.vue";
 import WarehousesPage from "@/views/pages/warehouses/WarehousesPage.vue";
 import AdminWarehousesPage from "@/views/pages/admin/warehouses/AdminWarehousesPage.vue";
 import CategoriesPage from "@/views/pages/categories/CategoriesPage.vue";
@@ -46,8 +45,8 @@ const routes = [
       {
         path: "/",
         name: "Home",
-        component: HomePage,
-        meta: { title: "home", requiresAuth: true },
+        component: () => import("@/views/pages/news/NewsPage.vue"),
+        meta: { title: "news", requiresAuth: true },
       },
       {
         path: "/messenger",
@@ -114,7 +113,6 @@ const routes = [
         meta: {
           title: "news",
           requiresAuth: true,
-          permission: "news_view_all",
         },
       },
       {
