@@ -108,6 +108,16 @@ const routes = [
         },
       },
       {
+        path: "/news",
+        name: "News",
+        component: () => import("@/views/pages/news/NewsPage.vue"),
+        meta: {
+          title: "news",
+          requiresAuth: true,
+          permission: "news_view_all",
+        },
+      },
+      {
         path: "/task_statuses",
         name: "task_statuses",
         component: () => import("@/views/pages/tasks/TaskStatusesPage.vue"),

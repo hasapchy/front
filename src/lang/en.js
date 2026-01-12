@@ -79,6 +79,7 @@ export default {
   orders: 'Orders',
   sales: 'Sales',
   tasks: 'Tasks',
+  news: 'News',
   warehouses: 'Warehouses',
   finance: 'Finance',
   transactions: 'Transactions',
@@ -403,6 +404,7 @@ export default {
   // Filters
   resetFilters: 'Reset Filters',
   allProjects: 'All Projects',
+  allAuthors: 'All Authors',
   allTransactions: 'All Transactions',
   nonDebtTransactions: 'Non-Credit Transactions',
   debtsOnly: 'Debts Only',
@@ -571,6 +573,7 @@ export default {
     project: 'Project',
     deadline: 'Deadline',
     enterDescription: 'Enter description',
+    createdAt: 'Created Date',
 
     // Task statuses
     pending: 'Pending',
@@ -610,6 +613,24 @@ export default {
     errorSavingTaskStatus: 'Error saving task status',
     errorDeletingTaskStatus: 'Error deleting task status',
     deleteTaskStatus: 'Delete Task Status',
+    
+    // News
+    addNews: 'Add News',
+    createNews: 'Create News',
+    editNews: 'Edit News',
+    newsSuccessfullyAdded: 'News successfully created',
+    newsSuccessfullyUpdated: 'News successfully updated',
+    newsSuccessfullyDeleted: 'News successfully deleted',
+    errorSavingNews: 'Error saving news',
+    errorDeletingNews: 'Error deleting news',
+    errorGettingLeaveList: 'Error getting leave list',
+    confirmDeleteNews: 'Are you sure you want to delete this news?',
+    noNews: 'No news yet',
+    createFirstNews: 'Create the first news',
+    contentPlaceholder: 'Enter news text...',
+    contentRequired: 'Content is required',
+    content: 'Content',
+    author: 'Author',
     
     // Units
     'unit.METER': 'Meter',

@@ -210,15 +210,15 @@ import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
-import filtersMixin from '@/mixins/filtersMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
+import filtersMixin from '@/mixins/filtersMixin';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 import LeaveCalendarView from '@/views/components/leave/LeaveCalendarView.vue';
 import debounce from "lodash.debounce";
 import { translateLeaveType as translateLeaveTypeUtil } from '@/utils/translationUtils';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, filtersMixin, companyChangeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, filtersMixin],
     components: {
         NotificationToast,
         PrimaryButton,
@@ -452,6 +452,16 @@ export default {
                 this.shouldRestoreScrollOnClose = false;
                 this.closeModal(true);
             }
+        },
+        async handleCompanyChanged(companyId) {
+            // Обновляем данные при смене компании
+            if (this.viewMode === 'calendar') {
+                await this.fetchCalendarItems();
+            } else {
+                await this.fetchItems(1);
+            }
+            // Обновляем данные для фильтров
+            await this.loadFiltersData();
         },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);
