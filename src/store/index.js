@@ -1503,13 +1503,6 @@ const store = createStore({
           permission: "tasks_view",
         },
         {
-          id: "news",
-          to: "/news",
-          icon: "fas fa-newspaper mr-2",
-          label: "news",
-          permission: "news_view_all",
-        },
-        {
           id: "messenger",
           to: "/messenger",
           icon: "fas fa-comments mr-2",
@@ -1620,7 +1613,6 @@ const store = createStore({
         "orders",
         "sales",
         "tasks",
-        "news",
         "messenger",
         "transactions",
         "clients",

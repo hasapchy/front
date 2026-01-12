@@ -1,5 +1,5 @@
 <template>
-    <div class="news-card bg-white border-b border-gray-200 py-3 sm:py-4 px-3 sm:px-4 md:px-6">
+    <div class="news-card bg-white border-b border-gray-200 py-4 sm:py-5 px-4 sm:px-6 md:px-8 hover:bg-gray-50 transition-colors" :data-news-id="news.id">
         <!-- Заголовок с автором и датой (как в Bitrix) -->
         <div class="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
             <!-- Аватар автора -->

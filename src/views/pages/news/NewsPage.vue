@@ -2,7 +2,7 @@
     <transition name="fade" mode="out-in">
         <div v-if="data && !loading" :key="`feed-${$i18n.locale}`" class="h-full flex flex-col">
             <!-- Панель управления с фильтрами -->
-            <div class="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10 shadow-sm">
+            <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 sticky top-0 z-10 shadow-sm">
                 <div class="flex items-center justify-between gap-3 flex-wrap">
                     <!-- Левая часть: кнопка создания и фильтры -->
                     <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -99,23 +99,38 @@
                 </div>
             </div>
 
-            <!-- Лента новостей -->
-            <div class="flex-1 overflow-y-auto">
-                <div v-if="data.items && data.items.length > 0" class="w-full">
-                    <NewsCard
-                        v-for="newsItem in data.items"
-                        :key="newsItem.id"
-                        :news="newsItem"
-                        :search-query="searchQuery"
-                        @edit="showModal"
-                    />
+            <!-- Двухколоночный layout -->
+            <div class="flex-1 overflow-y-auto flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-6 bg-gray-50">
+                <!-- Левая колонка: Лента новостей -->
+                <div class="flex-1 min-w-0 order-1 lg:order-1">
+                    <div v-if="data.items && data.items.length > 0" class="w-full space-y-0">
+                        <NewsCard
+                            v-for="newsItem in data.items"
+                            :key="newsItem.id"
+                            :news="newsItem"
+                            :search-query="searchQuery"
+                            @edit="showModal"
+                        />
+                    </div>
+                    
+                    <!-- Пустое состояние -->
+                    <div v-else class="flex flex-col items-center justify-center py-20 text-gray-500 bg-white rounded-lg border border-gray-200">
+                        <i class="fas fa-newspaper text-6xl mb-4 text-gray-300"></i>
+                        <p class="text-lg font-medium">{{ $t('noNews') || 'Новостей пока нет' }}</p>
+                    </div>
                 </div>
-                
-                <!-- Пустое состояние -->
-                <div v-else class="flex flex-col items-center justify-center py-16 text-gray-500">
-                    <i class="fas fa-newspaper text-6xl mb-4 text-gray-300"></i>
-                    <p class="text-lg font-medium">{{ $t('noNews') || 'Новостей пока нет' }}</p>
-                </div>
+
+                <!-- Правая колонка: Виджеты -->
+                <aside class="w-full lg:w-80 xl:w-96 shrink-0 space-y-4 order-2 lg:order-2">
+                    <!-- Виджет быстрых ссылок -->
+                    <QuickLinksWidget />
+                    
+                    <!-- Виджет задач -->
+                    <TasksWidget v-if="$store.getters.hasPermission('tasks_view')" />
+                    
+                    <!-- Виджет дней рождения -->
+                    <BirthdaysWidget />
+                </aside>
             </div>
         </div>
 
@@ -178,7 +193,9 @@ import NotificationToast from '@/views/components/app/dialog/NotificationToast.v
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 import NewsCard from '@/views/components/news/NewsCard.vue';
-import { formatDatabaseDate } from '@/utils/dateUtils';
+import TasksWidget from '@/views/components/news/TasksWidget.vue';
+import BirthdaysWidget from '@/views/components/news/BirthdaysWidget.vue';
+import QuickLinksWidget from '@/views/components/news/QuickLinksWidget.vue';
 
 export default {
     mixins: [
@@ -199,7 +216,10 @@ export default {
         Pagination,
         SpinnerIcon,
         NewsCreatePage,
-        NewsCard
+        NewsCard,
+        TasksWidget,
+        BirthdaysWidget,
+        QuickLinksWidget
     },
     data() {
         return {
@@ -232,14 +252,6 @@ export default {
         await this.fetchItems();
     },
     methods: {
-        formatDatabaseDate(date) {
-            try {
-                return formatDatabaseDate(date);
-            } catch (error) {
-                console.error('Ошибка форматирования даты:', error, date);
-                return date || '-';
-            }
-        },
         async showModal(item = null) {
             this.savedScrollPosition = window.pageYOffset ?? document.documentElement.scrollTop;
             this.shouldRestoreScrollOnClose = true;
