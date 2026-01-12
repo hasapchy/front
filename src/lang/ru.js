@@ -1597,4 +1597,10 @@ export default {
   today: 'Сегодня',
   yesterday: 'Вчера',
   dayBeforeYesterday: 'Позавчера',
+  tomorrow: 'Завтра',
+  endOfWeek: 'В конце недели',
+  nextWeek: 'Через неделю',
+  endOfMonth: 'В конце месяца',
+  time: 'Время',
+  quickSelect: 'Быстрый выбор',
 }

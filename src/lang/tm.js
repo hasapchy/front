@@ -1324,4 +1324,10 @@ export default {
   today: 'Şu gün',
   yesterday: 'Düýn',
   dayBeforeYesterday: 'Öňki gün',
+  tomorrow: 'Ertir',
+  endOfWeek: 'Hepdäniň ahyrynda',
+  nextWeek: 'Indiki hepde',
+  endOfMonth: 'Aýyň ahyrynda',
+  time: 'Wagty',
+  quickSelect: 'Çalt saýla',
 }

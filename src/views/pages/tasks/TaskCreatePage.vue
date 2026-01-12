@@ -21,10 +21,27 @@
 
             <div>
                 <label>{{ $t('deadline') }}</label>
-                <input 
-                type="datetime-local" 
-                    v-model="deadline"
-                    :min="minDeadline" />
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        :value="formattedDeadline"
+                        @click="showDatePicker = !showDatePicker"
+                        @focus="showDatePicker = true"
+                        readonly
+                        class="cursor-pointer"
+                        :placeholder="$t('deadline')" />
+                    <i class="fas fa-calendar absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    
+                    <div 
+                        v-if="showDatePicker" 
+                        class="absolute z-50 mt-2"
+                        style="left: 0; top: 100%;">
+                        <DatePicker 
+                            v-model="deadline"
+                            :min-date="minDeadline"
+                            @update:modelValue="handleDateChange" />
+                    </div>
+                </div>
             </div>
 
             <!-- Приоритет -->
@@ -154,6 +171,7 @@ import TabBar from '@/views/components/app/forms/TabBar.vue';
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
 import TimelinePanel from '@/views/components/app/dialog/TimelinePanel.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
+import DatePicker from '@/views/components/app/forms/DatePicker.vue';
 import TaskDto from '@/dto/task/TaskDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -173,7 +191,8 @@ export default {
         TabBar,
         FileUploader,
         TimelinePanel,
-        UserSearch
+        UserSearch,
+        DatePicker
     },
     props: {
         editingItem: { type: Object, default: null }
@@ -183,7 +202,7 @@ export default {
             title: this.editingItem ? this.editingItem.title : '',
             description: this.editingItem ? this.editingItem.description : '',
             statusId: this.editingItem ? (this.editingItem.statusId || this.editingItem.status?.id) : null,
-            deadline: this.editingItem?.deadline ? this.getFormattedDate(this.editingItem.deadline) : this.getCurrentLocalDateTime(),
+            deadline: this.editingItem?.deadline ? this.getFormattedDate(this.editingItem.deadline) : null,
             minDeadline: dayjs().format('YYYY-MM-DDTHH:mm'),
             projectId: this.editingItem && this.editingItem.project 
                 ? this.editingItem.project.id 
@@ -213,6 +232,7 @@ export default {
             selectedFileIds: [],
             deletingFiles: false,
             pendingFiles: [], // Добавляем массив для файлов до создания задачи
+            showDatePicker: false,
         }
     },
     computed: {
@@ -234,6 +254,10 @@ export default {
         executorId() {
             return this.selectedExecutor?.id || null;
         },
+        formattedDeadline() {
+            if (!this.deadline) return '';
+            return dayjs(this.deadline).format('DD.MM.YYYY HH:mm');
+        },
     },
     mounted() {
         this.$nextTick(async () => {
@@ -243,6 +267,12 @@ export default {
             await this.fetchProjects();
             this.saveInitialState();
         });
+        
+        // Закрытие календаря при клике вне его
+        document.addEventListener('click', this.handleClickOutside);
+    },
+    beforeUnmount() {
+        document.removeEventListener('click', this.handleClickOutside);
     },
     methods: {
         translateTaskStatus,
@@ -250,7 +280,7 @@ export default {
             this.title = '';
             this.description = '';
             this.statusId = 1;
-            this.deadline = this.getCurrentLocalDateTime();
+            this.deadline = null;
             this.projectId = null;
             this.priority = 'low';
             this.complexity = 'normal';
@@ -265,7 +295,7 @@ export default {
                 this.title = newEditingItem.title || '';
                 this.description = newEditingItem.description || '';
                 this.statusId = newEditingItem.statusId || newEditingItem.status?.id || null;
-                this.deadline = newEditingItem.deadline ? this.getFormattedDate(newEditingItem.deadline) : this.getCurrentLocalDateTime();
+                this.deadline = newEditingItem.deadline ? this.getFormattedDate(newEditingItem.deadline) : null;
                 this.projectId = newEditingItem.project?.id || null;
                 this.selectedSupervisor = newEditingItem.supervisor?.id ? { id: newEditingItem.supervisor.id } : null;
                 this.selectedExecutor = newEditingItem.executor?.id ? { id: newEditingItem.executor.id } : null;
@@ -279,6 +309,22 @@ export default {
                 return;
             }
             this.currentTab = tabName;
+        },
+        handleDateChange(value) {
+            this.deadline = value;
+            this.showDatePicker = false;
+        },
+        handleClickOutside(event) {
+            const datePickerElement = this.$el?.querySelector('.date-picker-container');
+            const inputElement = this.$el?.querySelector('input[readonly]');
+            
+            if (this.showDatePicker && 
+                datePickerElement && 
+                inputElement &&
+                !datePickerElement.contains(event.target) &&
+                !inputElement.contains(event.target)) {
+                this.showDatePicker = false;
+            }
         },
         async fetchProjects() {
             try {

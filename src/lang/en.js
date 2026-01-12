@@ -666,4 +666,10 @@ export default {
     today: 'Today',
     yesterday: 'Yesterday',
     dayBeforeYesterday: 'Day before yesterday',
+    tomorrow: 'Tomorrow',
+    endOfWeek: 'End of week',
+    nextWeek: 'Next week',
+    endOfMonth: 'End of month',
+    time: 'Time',
+    quickSelect: 'Quick select',
 }
