@@ -587,7 +587,7 @@ export default {
     errorSavingTask: 'Error saving task',
     errorGettingTaskList: 'Error loading task list',
     titleRequired: 'Task title is required',
-    supervisor: 'Supervisor',
+    supervisor: 'Process Owner',
     executor: 'Executor',
     creator: 'Creator',
     select: 'Select',

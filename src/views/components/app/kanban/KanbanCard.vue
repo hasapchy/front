@@ -164,19 +164,21 @@
             </div>
         </div>
         
-        <!-- Приоритет (для задач) -->
-        <div v-if="isTaskMode && showField('priority') && order.priority" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <span class="text-sm">{{ getPriorityIcons() }}</span>
-                <!-- <span class="truncate">{{ getPriorityLabel() }}</span> -->
+        <div v-if="isTaskMode" class="flex gap-4 items-center space-x-1 text-xs text-gray-600">
+            <!-- Приоритет (для задач) -->
+            <div v-if="showField('priority') && order.priority" class="mb-2">
+                <div class="flex items-center space-x-1 text-xs text-gray-600">
+                    <span class="text-sm">{{ getPriorityIcons() }}</span>
+                    <!-- <span class="truncate">{{ getPriorityLabel() }}</span> -->
+                </div>
             </div>
-        </div>
 
-        <!-- Сложность (для задач) -->
-        <div v-if="isTaskMode && showField('complexity') && order.complexity" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <span class="text-sm">{{ getComplexityIcons() }}</span>
-                <!-- <span class="truncate">{{ getComplexityLabel() }}</span> -->
+            <!-- Сложность (для задач) -->
+            <div v-if="showField('complexity') && order.complexity" class="mb-2">
+                <div class="flex items-center space-x-1 text-xs text-gray-600">
+                    <span class="text-sm">{{ getComplexityIcons() }}</span>
+                    <!-- <span class="truncate">{{ getComplexityLabel() }}</span> -->
+                </div>
             </div>
         </div>
 

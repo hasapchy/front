@@ -1487,7 +1487,7 @@ export default {
   errorSavingTask: 'Ошибка при сохранении задачи',
   errorGettingTaskList: 'Ошибка при получении списка задач',
   titleRequired: 'Название задачи обязательно',
-  supervisor: 'Супервайзер',
+  supervisor: 'Постановщик',
   executor: 'Исполнитель',
   creator: 'Создатель',
   select: 'Выбрать',

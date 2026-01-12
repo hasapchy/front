@@ -9,11 +9,7 @@
                 <input type="text" v-model="title" required />
             </div>
             
-            <div>
-                <label>{{ $t('description') }}</label>
-                <textarea v-model="description" rows="4" :placeholder="$t('enterDescription')"></textarea>
-            </div>
-
+            
             <div class="hidden">
                 <label>{{ $t('status') }}</label>
                 <select v-model="statusId">
@@ -26,7 +22,7 @@
             <div>
                 <label>{{ $t('deadline') }}</label>
                 <input 
-                    type="datetime-local" 
+                type="datetime-local" 
                     v-model="deadline"
                     :min="minDeadline" />
             </div>
@@ -50,7 +46,7 @@
                     <option value="complex">🧠🧠🧠 </option>
                 </select>
             </div>
-
+            
             <div>
                 <label>{{ $t('project') }}</label>
                 <select v-model="projectId">
@@ -69,10 +65,15 @@
                 <UserSearch v-model:selectedUser="selectedExecutor" :required="true" :label="$t('executor')" />
             </div>
         </div>
+
+        <div>
+            <label>{{ $t('description') }}</label>
+            <textarea v-model="description" rows="4" :placeholder="$t('enterDescription')"></textarea>
+        </div>
         
         <div v-if="currentTab === 'files'">
             <FileUploader 
-                ref="fileUploader" 
+            ref="fileUploader" 
                 :files="getFormattedFiles()"
                 :uploading="uploading" 
                 :disabled="false"
@@ -189,7 +190,7 @@ export default {
                 : null,
             selectedSupervisor: this.editingItem && this.editingItem.supervisor 
                 ? { id: this.editingItem.supervisor.id } 
-                : null,
+                : this.$store.state.user,
             selectedExecutor: this.editingItem && this.editingItem.executor 
                 ? { id: this.editingItem.executor.id } 
                 : null,

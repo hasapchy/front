@@ -1249,7 +1249,7 @@ export default {
   errorSavingTask: 'Wezipäni ýatda saklamakda säwlik',
   errorGettingTaskList: 'Wezipeleriň sanawyny almagyň säwligi',
   titleRequired: 'Wezipäniň ady hökmany',
-  supervisor: 'Ýolbaşçy',
+  supervisor: 'Guramaçy',
   executor: 'Ýerine ýetiriji',
   creator: 'Dörediji',
   select: 'Saýla',
