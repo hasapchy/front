@@ -37,6 +37,7 @@ import ClientDto from "@/dto/client/ClientDto";
 import ProjectDto from "@/dto/project/ProjectDto";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
 import { isBasementWorkerOnly, getUserFromStorage } from "@/utils/userUtils";
+import globalChatRealtime from "@/services/globalChatRealtime";
 
 const CLEAR_MUTATIONS_MAPPING = STORE_CONFIG.clearMutationsMapping;
 const GLOBAL_REFERENCE_FIELDS = STORE_CONFIG.globalReferenceFields;
@@ -1233,6 +1234,13 @@ const store = createStore({
           } catch (error) {
             console.error("Ошибка загрузки компаний:", error);
           }
+
+          // Инициализируем глобальный WebSocket для чатов
+          try {
+            await globalChatRealtime.initialize(store);
+          } catch (error) {
+            console.error("[Store] Ошибка инициализации глобального chatRealtime:", error);
+          }
         }
 
         return { authenticated: true };
@@ -1357,6 +1365,11 @@ const store = createStore({
         await dispatch("initializeMenu");
         eventBus.emit("company-changed", companyId);
 
+        // Переинициализируем chatRealtime при смене компании
+        if (globalChatRealtime.initialized) {
+          await globalChatRealtime.reinitialize();
+        }
+
         return company;
       } catch (error) {
         console.error("Ошибка установки текущей компании:", error);
@@ -1425,6 +1438,9 @@ const store = createStore({
     },
     // Инвалидация при смене пользователя
     async onUserChange({ commit }) {
+      // Очищаем глобальный chatRealtime при выходе
+      globalChatRealtime.cleanup();
+      
       await CacheInvalidator.onUserChange();
       commit("CLEAR_COMPANY_DATA");
       GLOBAL_REFERENCE_FIELDS.forEach((field) => {
