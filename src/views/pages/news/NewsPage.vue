@@ -103,7 +103,7 @@
             <div class="flex-1 overflow-y-auto flex flex-col lg:flex-row gap-6 px-4 sm:px-6 py-6 bg-gray-50">
                 <!-- Левая колонка: Лента новостей -->
                 <div class="flex-1 min-w-0 order-1 lg:order-1">
-                    <div v-if="data.items && data.items.length > 0" class="w-full space-y-0">
+                    <div v-if="data.items && data.items.length > 0" class="w-full space-y-4">
                         <NewsCard
                             v-for="newsItem in data.items"
                             :key="newsItem.id"
@@ -122,6 +122,9 @@
 
                 <!-- Правая колонка: Виджеты -->
                 <aside class="w-full lg:w-80 xl:w-96 shrink-0 space-y-4 order-2 lg:order-2">
+                    <!-- Виджет онлайн пользователей -->
+                    <OnlineUsersWidget v-if="$store.getters.hasPermission('chats_view')" />
+                    
                     <!-- Виджет быстрых ссылок -->
                     <QuickLinksWidget />
                     
@@ -130,6 +133,9 @@
                     
                     <!-- Виджет дней рождения -->
                     <BirthdaysWidget />
+                    
+                    <!-- Виджет статистики -->
+                    <StatsWidget />
                 </aside>
             </div>
         </div>
@@ -196,6 +202,8 @@ import NewsCard from '@/views/components/news/NewsCard.vue';
 import TasksWidget from '@/views/components/news/TasksWidget.vue';
 import BirthdaysWidget from '@/views/components/news/BirthdaysWidget.vue';
 import QuickLinksWidget from '@/views/components/news/QuickLinksWidget.vue';
+import StatsWidget from '@/views/components/news/StatsWidget.vue';
+import OnlineUsersWidget from '@/views/components/news/OnlineUsersWidget.vue';
 
 export default {
     mixins: [
@@ -219,7 +227,9 @@ export default {
         NewsCard,
         TasksWidget,
         BirthdaysWidget,
-        QuickLinksWidget
+        QuickLinksWidget,
+        StatsWidget,
+        OnlineUsersWidget
     },
     data() {
         return {
