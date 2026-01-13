@@ -439,7 +439,8 @@
 import ChatController from "@/api/ChatController";
 import echo from "@/services/echo";
 import { applySentMessage, handleChatReadEvent, handleIncomingChatEvent } from "@/services/messengerFacade";
-import { createChatRealtime } from "@/services/chatRealtime";
+import globalChatRealtime from "@/services/globalChatRealtime";
+import { eventBus } from "@/eventBus";
 
 // ===== Helpers (pure functions) =====
 const buildStorageUrl = (path) => `${import.meta.env.VITE_APP_BASE_URL}/storage/${path}`;
@@ -488,7 +489,6 @@ export default {
       selectedFiles: [],
       sending: false,
 
-      realtime: null,
       onlineUserIds: [], // Массив для реактивности Vue
       peerReadByChatId: {},
       
@@ -502,8 +502,6 @@ export default {
       showDeleteConfirm: false,
       deletingChat: false,
       
-      // WebSocket connection check
-      connectionCheckInterval: null,
     };
   },
   computed: {
@@ -650,28 +648,23 @@ export default {
   },
   async mounted() {
     try {
-      this.initRealtime();
+      // Используем глобальный сервис вместо локального
       await this.ensureUsersLoaded();
       await this.loadChats();
-      this.syncRealtime();
-      this.subscribeToPresence();
+      
+      // НЕ синхронизируем чаты здесь - глобальный сервис уже подписан на все чаты при инициализации
+      // Синхронизация нужна только при создании нового чата
+      
+      // Получаем список онлайн пользователей из глобального сервиса
+      this.onlineUserIds = globalChatRealtime.getOnlineUserIds();
+      
+      // Подписываемся на события через eventBus
+      this.setupEventListeners();
       
       // Проверяем статус подключения через небольшую задержку
       setTimeout(() => {
         this.checkWebSocketStatus();
       }, 2000);
-      
-      // Периодическая проверка подключения (каждые 30 секунд)
-      this.connectionCheckInterval = setInterval(() => {
-        if (this.realtime) {
-          const status = this.realtime.checkAllSubscriptions();
-          if (!status.echoConnected) {
-            console.warn('[WebSocket] Потеряно подключение, попытка переподключения...');
-            // Можно попробовать переподключиться
-            this.initRealtime();
-          }
-        }
-      }, 30000);
     } catch (error) {
       console.error("[Messenger] Ошибка при инициализации:", error);
       this.$store.dispatch("showNotification", {
@@ -683,77 +676,56 @@ export default {
     }
   },
   beforeUnmount() {
-    if (this.connectionCheckInterval) {
-      clearInterval(this.connectionCheckInterval);
-    }
-    this.realtime?.cleanup?.();
-    this.realtime = null;
+    // Отписываемся от событий
+    this.removeEventListeners();
     this.onlineUserIds = [];
   },
   methods: {
-    initRealtime() {
-      if (this.realtime) return;
-      
-      // Проверяем подключение Echo перед созданием realtime
-      if (echo.isConnected && !echo.isConnected()) {
-        console.warn('[WebSocket] Ожидание подключения...');
-        echo.waitForConnection(5000)
-          .then(() => {
-            console.log('[WebSocket] ✅ Подключение установлено');
-            this.createRealtimeInstance();
-          })
-          .catch((error) => {
-            console.error('[WebSocket] ❌ Не удалось подключиться:', error);
-            this.$store.dispatch("showNotification", {
-              title: "Ошибка WebSocket",
-              subtitle: "Не удалось подключиться к серверу в реальном времени",
-              isDanger: true,
-              duration: 5000,
-            });
-          });
-      } else {
-        this.createRealtimeInstance();
+    setupEventListeners() {
+      // Подписываемся на события чатов через eventBus
+      eventBus.on("chat:message", this.handleIncomingMessage);
+      eventBus.on("chat:read", this.handleReadEvent);
+      eventBus.on("presence:here", this.handlePresenceHere);
+      eventBus.on("presence:joining", this.handlePresenceJoining);
+      eventBus.on("presence:leaving", this.handlePresenceLeaving);
+    },
+    removeEventListeners() {
+      // Отписываемся от событий
+      eventBus.off("chat:message", this.handleIncomingMessage);
+      eventBus.off("chat:read", this.handleReadEvent);
+      eventBus.off("presence:here", this.handlePresenceHere);
+      eventBus.off("presence:joining", this.handlePresenceJoining);
+      eventBus.off("presence:leaving", this.handlePresenceLeaving);
+    },
+    handleIncomingMessage(event) {
+      handleIncomingChatEvent(this, event);
+    },
+    handleReadEvent(event) {
+      handleChatReadEvent(this, event);
+    },
+    handlePresenceHere(users) {
+      const ids = (users || []).map((u) => Number(u.id)).filter((id) => !Number.isNaN(id));
+      this.onlineUserIds = [...ids];
+    },
+    handlePresenceJoining(user) {
+      const id = Number(user?.id);
+      if (Number.isNaN(id)) return;
+      if (!this.onlineUserIds.includes(id)) {
+        this.onlineUserIds = [...this.onlineUserIds, id];
       }
     },
-    createRealtimeInstance() {
-      this.realtime = createChatRealtime(echo, {
-        onMessage: (event) => handleIncomingChatEvent(this, event),
-        onRead: (event) => handleChatReadEvent(this, event),
-        onChatError: (error) => console.error("[WebSocket] Ошибка подписки на канал:", error),
-        onChannelSubscribed: (chatId, channelName) => {
-          console.log(`[WebSocket] ✅ Подписан на чат ${chatId}`);
-        },
-        onPresenceHere: (users) => {
-          console.log("[Presence] Пользователи онлайн:", users);
-          const ids = (users || []).map((u) => Number(u.id)).filter((id) => !Number.isNaN(id));
-          this.onlineUserIds = [...ids];
-          console.log("[Presence] Online IDs:", this.onlineUserIds);
-        },
-        onPresenceJoining: (user) => {
-          console.log("[Presence] Пользователь зашел:", user);
-          const id = Number(user?.id);
-          if (Number.isNaN(id)) return;
-          if (!this.onlineUserIds.includes(id)) {
-            this.onlineUserIds = [...this.onlineUserIds, id];
-          }
-        },
-        onPresenceLeaving: (user) => {
-          console.log("[Presence] Пользователь вышел:", user);
-          const id = Number(user?.id);
-          if (Number.isNaN(id)) return;
-          this.onlineUserIds = this.onlineUserIds.filter((uid) => uid !== id);
-        },
-        onPresenceError: (err) => console.error("[WebSocket] Ошибка presence-канала:", err),
-        log: (msg) => console.log(msg),
-      });
+    handlePresenceLeaving(user) {
+      const id = Number(user?.id);
+      if (Number.isNaN(id)) return;
+      this.onlineUserIds = this.onlineUserIds.filter((uid) => uid !== id);
     },
     checkWebSocketStatus() {
-      if (!this.realtime) {
-        console.log('[WebSocket] Realtime не инициализирован');
+      const status = globalChatRealtime.getStatus();
+      if (!status) {
+        console.log('[WebSocket] GlobalChatRealtime не инициализирован');
         return null;
       }
 
-      const status = this.realtime.checkAllSubscriptions();
       console.log('[WebSocket] Статус подключений:', status);
       
       // Проверяем, что все подключено
@@ -768,10 +740,10 @@ export default {
       return status;
     },
     syncRealtime() {
-      const companyId = this.$store.getters.currentCompanyId;
-      if (!companyId || !this.realtime) return;
+      // Синхронизируем чаты с глобальным сервисом
+      // Вызывается только при создании нового чата, так как глобальный сервис уже подписан на все чаты
       const chatsForSync = [...(this.chats || []), this.generalChat].filter((c) => c && c.id);
-      this.realtime.syncChats(companyId, chatsForSync);
+      globalChatRealtime.syncChats(chatsForSync);
     },
     async ensureUsersLoaded() {
       // Для мессенджера всегда загружаем пользователей, чтобы получить актуальный список
@@ -786,12 +758,6 @@ export default {
         // Отладка: проверим сколько пользователей загружено
         const allUsers = this.$store.state.users || [];
         const companyUsers = this.usersForCompany || [];
-        console.log("[Messenger] Загружено пользователей:", {
-          всего: allUsers.length,
-          дляКомпании: companyUsers.length,
-          текущаяКомпания: this.$store.state.currentCompany?.id,
-          активных: allUsers.filter(u => u?.isActive).length,
-        });
         
         // Дополнительная отладка: проверим структуру компаний у пользователей
         if (import.meta.env.DEV) {
@@ -825,7 +791,8 @@ export default {
         });
         this.peerReadByChatId = { ...this.peerReadByChatId, ...peerMap };
 
-        this.syncRealtime();
+        // НЕ синхронизируем здесь - глобальный сервис уже подписан на все чаты при инициализации
+        // Синхронизация нужна только при создании нового чата
       } finally {
         this.loadingChats = false;
       }
@@ -858,15 +825,8 @@ export default {
     },
     isUserOnline(u) {
       if (!u || !u.id) return false;
-      return this.onlineUserIds.includes(Number(u.id));
-    },
-    subscribeToPresence() {
-      const companyId = this.$store.getters.currentCompanyId;
-      if (!companyId) {
-        console.warn("[Presence] Нет companyId для подписки");
-        return;
-      }
-      this.realtime?.subscribePresence?.(companyId);
+      // Используем глобальный сервис для проверки онлайн статуса
+      return globalChatRealtime.isUserOnline(u.id) || this.onlineUserIds.includes(Number(u.id));
     },
   
     async selectChat(chat) {
@@ -912,6 +872,9 @@ export default {
         if (this.generalChat && Number(this.generalChat.id) === Number(fullChat.id)) {
           this.generalChat = { ...this.generalChat, unread_count: 0 };
         }
+        
+        // Уведомляем другие компоненты об обновлении счетчика
+        eventBus.emit("chat:unread-updated", { chatId: fullChat.id, unreadCount: 0 });
       }
       
       try {
@@ -1332,9 +1295,7 @@ export default {
         await ChatController.deleteChat(chatId);
         
         // Отписываемся от WebSocket перед удалением
-        if (this.realtime) {
-          this.realtime.unsubscribeChat(chatId);
-        }
+        globalChatRealtime.unsubscribeChat(chatId);
         
         // Удаляем чат из списка
         this.chats = (this.chats || []).filter((c) => Number(c.id) !== Number(chatId));
