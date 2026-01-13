@@ -123,7 +123,7 @@
                 <!-- Правая колонка: Виджеты -->
                 <aside class="w-full lg:w-80 xl:w-96 shrink-0 space-y-4 order-2 lg:order-2">
                     <!-- Виджет онлайн пользователей -->
-                    <OnlineUsersWidget v-if="$store.getters.hasPermission('chats_view')" />
+                    <OnlineUsersWidget />
                     
                     <!-- Виджет быстрых ссылок -->
                     <QuickLinksWidget />
