@@ -125,9 +125,6 @@
                     <!-- Виджет онлайн пользователей -->
                     <OnlineUsersWidget v-if="$store.getters.hasPermission('chats_view')" />
                     
-                    <!-- Виджет быстрых ссылок -->
-                    <QuickLinksWidget />
-                    
                     <!-- Виджет задач -->
                     <TasksWidget v-if="$store.getters.hasPermission('tasks_view')" />
                     
@@ -201,7 +198,6 @@ import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 import NewsCard from '@/views/components/news/NewsCard.vue';
 import TasksWidget from '@/views/components/news/TasksWidget.vue';
 import BirthdaysWidget from '@/views/components/news/BirthdaysWidget.vue';
-import QuickLinksWidget from '@/views/components/news/QuickLinksWidget.vue';
 import StatsWidget from '@/views/components/news/StatsWidget.vue';
 import OnlineUsersWidget from '@/views/components/news/OnlineUsersWidget.vue';
 
@@ -227,7 +223,6 @@ export default {
         NewsCard,
         TasksWidget,
         BirthdaysWidget,
-        QuickLinksWidget,
         StatsWidget,
         OnlineUsersWidget
     },
