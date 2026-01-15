@@ -462,7 +462,7 @@ export default {
             }
             // Обновляем данные для фильтров
             await this.loadFiltersData();
-        },
+=======
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);
             if (this.$route.params.id) {

@@ -83,19 +83,6 @@
                         </FiltersContainer>
                     </div>
 
-                    <!-- Правая часть: пагинация -->
-                    <div class="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
-                        <Pagination 
-                            v-if="data != null" 
-                            :currentPage="data.currentPage" 
-                            :lastPage="data.lastPage"
-                            :per-page="perPage" 
-                            :per-page-options="perPageOptions" 
-                            :show-per-page-selector="true"
-                            @changePage="fetchItems" 
-                            @perPageChange="handlePerPageChange" 
-                        />
-                    </div>
                 </div>
             </div>
 
@@ -133,9 +120,6 @@
                     
                     <!-- Виджет дней рождения -->
                     <BirthdaysWidget />
-                    
-                    <!-- Виджет статистики -->
-                    <StatsWidget />
                 </aside>
             </div>
         </div>
@@ -196,13 +180,11 @@ import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
-import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 import NewsCard from '@/views/components/news/NewsCard.vue';
 import TasksWidget from '@/views/components/news/TasksWidget.vue';
 import BirthdaysWidget from '@/views/components/news/BirthdaysWidget.vue';
 import QuickLinksWidget from '@/views/components/news/QuickLinksWidget.vue';
-import StatsWidget from '@/views/components/news/StatsWidget.vue';
 import OnlineUsersWidget from '@/views/components/news/OnlineUsersWidget.vue';
 
 export default {
@@ -221,14 +203,12 @@ export default {
         SideModalDialog,
         AlertDialog,
         NotificationToast,
-        Pagination,
         SpinnerIcon,
         NewsCreatePage,
         NewsCard,
         TasksWidget,
         BirthdaysWidget,
         QuickLinksWidget,
-        StatsWidget,
         OnlineUsersWidget
     },
     data() {
@@ -239,7 +219,6 @@ export default {
             savedErrorText: this.$t('errorSavingNews') || 'Ошибка сохранения новости',
             deletedSuccessText: this.$t('newsSuccessfullyDeleted') || 'Новость успешно удалена',
             deletedErrorText: this.$t('errorDeletingNews') || 'Ошибка удаления новости',
-            perPageOptions: [10, 20, 50, 100],
             dateFilter: 'all_time',
             startDate: '',
             endDate: '',
@@ -381,7 +360,8 @@ export default {
             try {
                 const { dateFrom, dateTo } = this.getDateRange();
                 const authorId = this.authorFilter ? this.authorFilter : null;
-                const new_data = await NewsController.getItems(page, this.searchQuery, this.perPage, dateFrom, dateTo, authorId);
+                // Загружаем все новости без пагинации
+                const new_data = await NewsController.getItems(1, this.searchQuery, 10000, dateFrom, dateTo, authorId);
                 this.data = new_data;
             } catch (error) {
                 console.error('Ошибка загрузки новостей:', error);
@@ -394,10 +374,6 @@ export default {
             if (!silent) {
                 this.loading = false;
             }
-        },
-        handlePerPageChange(newPerPage) {
-            this.perPage = newPerPage;
-            this.fetchItems(1, false);
         },
         getActiveFiltersCount() {
             let count = 0;
