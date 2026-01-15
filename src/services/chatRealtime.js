@@ -4,6 +4,8 @@
 /**
  * @typedef {Object} ChatRealtimeOptions
  * @property {(event:any)=>void} onMessage
+ * @property {(event:any)=>void} [onMessageUpdated]
+ * @property {(event:any)=>void} [onMessageDeleted]
  * @property {(event:any)=>void} [onRead]
  * @property {(error:any)=>void} [onChatError]
  * @property {(users:Array)=>void} [onPresenceHere]
@@ -59,6 +61,14 @@ export function createChatRealtime(echo, options) {
       .listen(".chat.message.sent", (event) => {
         options?.onMessage?.(event);
       })
+      .listen(".chat.message.updated", (event) => {
+        log(`[WebSocket] Сообщение обновлено:`, event);
+        options?.onMessageUpdated?.(event);
+      })
+      .listen(".chat.message.deleted", (event) => {
+        log(`[WebSocket] Сообщение удалено:`, event);
+        options?.onMessageDeleted?.(event);
+      })
       .listen(".chat.read.updated", (event) => {
         options?.onRead?.(event);
       })
@@ -102,6 +112,8 @@ export function createChatRealtime(echo, options) {
     log(`[WebSocket] Отписка от канала чата ${chatIdNum}`);
     try {
       entry.channel?.stopListening?.(".chat.message.sent");
+      entry.channel?.stopListening?.(".chat.message.updated");
+      entry.channel?.stopListening?.(".chat.message.deleted");
       entry.channel?.stopListening?.(".chat.read.updated");
     } catch (_) {
       // ignore

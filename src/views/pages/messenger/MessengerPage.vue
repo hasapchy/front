@@ -222,8 +222,9 @@
               <!-- Message -->
               <div
                 v-else
-                class="flex mb-2"
+                class="flex mb-2 group"
                 :class="isMyMessage(item.data) ? 'justify-end' : 'justify-start'"
+                @contextmenu.prevent="showMessageMenu($event, item.data)"
               >
                 <div 
                   class="flex flex-col"
@@ -236,23 +237,74 @@
                       class="w-full rounded-xl px-3 py-2 text-sm shadow-sm relative"
                       :class="isMyMessage(item.data) ? 'bg-[#d9f6c9] text-gray-900' : 'bg-white text-gray-900'"
                     >
+                      <!-- Reply preview -->
+                      <div v-if="item.data.parent" class="mb-2 pb-2 border-l-2 border-gray-400 pl-2 text-xs text-gray-600">
+                        <div class="font-medium text-gray-700">
+                          {{ getMessageUserName(item.data.parent) }}
+                        </div>
+                        <div class="truncate">
+                          {{ item.data.parent.body || (item.data.parent.files?.length ? `Файлов: ${item.data.parent.files.length}` : '') }}
+                        </div>
+                      </div>
+
+                      <!-- Forwarded from -->
+                      <div v-if="item.data.forwarded_from" class="mb-2 pb-2 border-l-2 border-blue-400 pl-2 text-xs text-gray-600">
+                        <div class="font-medium text-blue-700 flex items-center gap-1">
+                          <i class="fas fa-share text-xs"></i>
+                          Переслано от {{ getMessageUserName(item.data.forwarded_from) }}
+                        </div>
+                        <div class="truncate">
+                          {{ item.data.forwarded_from.body || (item.data.forwarded_from.files?.length ? `Файлов: ${item.data.forwarded_from.files.length}` : '') }}
+                        </div>
+                      </div>
+
                       <div class="whitespace-pre-wrap break-words leading-snug">{{ item.data.body || "" }}</div>
 
                       <div v-if="Array.isArray(item.data.files) && item.data.files.length" class="mt-2 space-y-1">
-                        <a
-                          v-for="f in item.data.files"
-                          :key="f.path"
-                          class="block text-xs underline text-sky-700"
-                          :href="fileUrl(f.path)"
-                          target="_blank"
-                        >
-                          {{ f.name }}
-                        </a>
+                        <div v-for="f in item.data.files" :key="f.path" class="flex items-center gap-2">
+                          <button
+                            v-if="isImageFile(f)"
+                            type="button"
+                            @click="openImageModal(f)"
+                            class="block max-w-xs rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                          >
+                            <img :src="fileUrl(f.path)" :alt="f.name" class="max-h-48 object-contain" />
+                          </button>
+                          <div
+                            v-else-if="isAudioFile(f)"
+                            class="flex items-center gap-2 p-2 bg-gray-100 rounded-lg"
+                          >
+                            <audio controls class="h-8 text-xs">
+                              <source :src="fileUrl(f.path)" :type="f.mime_type || 'audio/webm'">
+                              Your browser does not support the audio element.
+                            </audio>
+                          </div>
+                          <a
+                            v-else
+                            class="block text-xs underline text-sky-700"
+                            :href="fileUrl(f.path)"
+                            target="_blank"
+                          >
+                            <i class="fas fa-file mr-1"></i>{{ f.name }}
+                          </a>
+                        </div>
                       </div>
 
                       <div class="mt-1 flex items-center justify-end gap-1 text-[11px] text-gray-500">
+                        <span v-if="item.data.is_edited" class="text-gray-400 italic">(изменено)</span>
                         <span>{{ messageTime(item.data) }}</span>
                         <span v-if="isMyMessage(item.data)" class="text-sky-700">{{ messageTicks(item.data) }}</span>
+                      </div>
+
+                      <!-- Message actions menu button (only for own messages) -->
+                      <div v-if="isMyMessage(item.data)" class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 text-xs"
+                          @click.stop="showMessageMenu($event, item.data)"
+                        >
+                          <i class="fas fa-ellipsis-v"></i>
+                        </button>
                       </div>
                     </div>
                     
@@ -288,35 +340,112 @@
 
       <!-- Composer -->
       <div class="p-3 bg-white border-t border-gray-200">
+        <!-- Reply preview -->
+        <div v-if="replyingTo" class="mb-2 p-2 bg-gray-50 rounded-lg border border-gray-200 flex items-start justify-between gap-2">
+          <div class="flex-1 min-w-0">
+            <div class="text-xs font-medium text-gray-700 mb-1">
+              Ответ на сообщение от {{ getMessageUserName(replyingTo) }}
+            </div>
+            <div class="text-xs text-gray-600 truncate">
+              {{ replyingTo.body || (replyingTo.files?.length ? `Файлов: ${replyingTo.files.length}` : '') }}
+            </div>
+          </div>
+          <button
+            type="button"
+            class="text-gray-400 hover:text-gray-600 shrink-0"
+            @click="replyingTo = null"
+          >
+            <i class="fas fa-times text-sm"></i>
+          </button>
+        </div>
+
         <div class="flex items-end gap-2">
-          <input ref="fileInput" type="file" class="hidden" multiple @change="onFilesSelected" />
+          <input ref="fileInput" type="file" class="hidden" multiple accept="*/*" @change="onFilesSelected" />
+          <input ref="audioInput" type="file" class="hidden" accept="audio/*" @change="onAudioSelected" />
+
+          <div class="flex items-center gap-1">
+            <button
+              type="button"
+              class="w-9 h-9 rounded-lg text-gray-600 hover:bg-gray-100 flex items-center justify-center disabled:opacity-50"
+              :disabled="!selectedChat || !canWrite"
+              @click="$refs.fileInput?.click()"
+              title="Прикрепить файл"
+            >
+              <i class="fas fa-paperclip text-sm"></i>
+            </button>
+            <button
+              type="button"
+              class="w-9 h-9 rounded-lg text-gray-600 hover:bg-gray-100 flex items-center justify-center disabled:opacity-50"
+              :disabled="!selectedChat || !canWrite"
+              @click="toggleAudioRecording"
+              :title="isRecordingAudio ? 'Остановить запись' : 'Записать аудио'"
+              :class="isRecordingAudio ? 'bg-red-500 text-white hover:bg-red-600' : ''"
+            >
+              <i class="fas fa-microphone text-sm"></i>
+            </button>
+          </div>
 
           <div class="flex-1 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 focus-within:ring-2 focus-within:ring-sky-500/30 focus-within:border-sky-300">
             <textarea
+              ref="composerTextarea"
               v-model="draft"
               class="w-full bg-transparent resize-none outline-none text-sm text-gray-900 placeholder:text-gray-400 min-h-[40px] max-h-32"
-              placeholder="***************** Нажмите Enter для отправки *****************"
+              :placeholder="editingMessage ? 'Редактирование сообщения...' : '***************** Нажмите Enter для отправки *****************'"
               :disabled="!selectedChat || !canWrite"
               @keydown.enter.exact.prevent="handleEnterKey"
               @keydown.enter.shift.exact="handleShiftEnter"
+              @keydown.esc.exact="cancelEdit"
             ></textarea>
+            <div v-if="editingMessage" class="mt-2 flex items-center justify-between text-xs">
+              <span class="text-gray-600">Редактирование сообщения</span>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  class="text-gray-600 hover:text-gray-800"
+                  @click="cancelEdit"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  class="text-sky-600 hover:text-sky-800 font-medium"
+                  @click="saveEdit"
+                >
+                  Сохранить
+                </button>
+              </div>
+            </div>
             <div v-if="selectedFiles.length" class="mt-2 text-xs text-gray-600">
               <div class="font-medium text-gray-700">Файлы:</div>
               <ul class="list-disc ml-4">
                 <li v-for="f in selectedFiles" :key="f.name">{{ f.name }}</li>
               </ul>
             </div>
+            <div v-if="isRecordingAudio" class="mt-2 text-xs text-red-600 font-medium">
+              <i class="fas fa-circle animate-pulse"></i> Запись аудио... {{ audioRecordingTime }}с
+            </div>
           </div>
 
           <div class="flex items-center gap-1">
             <button
+              v-if="!editingMessage"
               class="w-9 h-9 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300"
-              :disabled="!selectedChat || !canWrite || sending || (!draft.trim() && selectedFiles.length === 0)"
+              :disabled="!selectedChat || !canWrite || sending || (!draft.trim() && selectedFiles.length === 0 && !audioBlob)"
               type="button"
               @click="send"
               title="Отправить"
             >
               <i class="fas fa-paper-plane text-sm"></i>
+            </button>
+            <button
+              v-else
+              class="w-9 h-9 rounded-full bg-green-500 text-white hover:bg-green-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300"
+              :disabled="!selectedChat || !canWrite || sending || !draft.trim()"
+              type="button"
+              @click="saveEdit"
+              title="Сохранить изменения"
+            >
+              <i class="fas fa-check text-sm"></i>
             </button>
           </div>
         </div>
@@ -464,6 +593,147 @@
       </div>
     </div>
 
+    <!-- Message Context Menu -->
+    <div
+      v-if="messageMenuVisible"
+      class="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50 min-w-[160px]"
+      :style="{ left: messageMenuX + 'px', top: messageMenuY + 'px' }"
+      @click.stop
+    >
+      <button
+        type="button"
+        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+        @click="replyToMessage(messageMenuTarget)"
+      >
+        <i class="fas fa-reply text-xs"></i>
+        Ответить
+      </button>
+      <button
+        type="button"
+        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+        @click="editMessage(messageMenuTarget)"
+      >
+        <i class="fas fa-edit text-xs"></i>
+        Редактировать
+      </button>
+      <button
+        type="button"
+        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+        @click="forwardMessage(messageMenuTarget)"
+      >
+        <i class="fas fa-share text-xs"></i>
+        Переслать
+      </button>
+      <div class="border-t border-gray-200 my-1"></div>
+      <button
+        type="button"
+        class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+        @click="deleteMessage(messageMenuTarget)"
+      >
+        <i class="fas fa-trash text-xs"></i>
+        Удалить
+      </button>
+    </div>
+
+    <!-- Forward Message Modal -->
+    <div
+      v-if="showForwardModal"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      @click.self="showForwardModal = false"
+    >
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900">Переслать сообщение</h3>
+        </div>
+        <div class="px-6 py-4 max-h-96 overflow-y-auto">
+          <div class="space-y-2">
+            <button
+              v-for="chat in allChatsList.filter(c => c.id !== selectedChatId)"
+              :key="`${chat.type}-${chat.id}`"
+              type="button"
+              class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3 rounded-lg"
+              @click="confirmForward(chat.id)"
+            >
+              <div class="relative shrink-0">
+                <img
+                  v-if="chat.type === 'user' && chat.photo"
+                  :src="userPhotoUrl(chat.photo)"
+                  class="w-10 h-10 rounded-full object-cover border border-gray-200"
+                  alt="user"
+                />
+                <div
+                  v-else-if="chat.type === 'user'"
+                  class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold bg-green-100 text-green-700"
+                >
+                  {{ getUserInitials(chat) }}
+                </div>
+                <div
+                  v-else-if="chat.type === 'general'"
+                  class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-700"
+                >
+                  <i class="fas fa-comments"></i>
+                </div>
+                <div
+                  v-else-if="chat.type === 'group'"
+                  class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-700"
+                >
+                  <i class="fas fa-users"></i>
+                </div>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="font-medium text-sm text-gray-900 truncate">
+                  {{ getItemTitle(chat) }}
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
+            @click="showForwardModal = false"
+          >
+            Отмена
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Click outside to close menu -->
+    <div
+      v-if="messageMenuVisible"
+      class="fixed inset-0 z-40"
+      @click="closeMessageMenu"
+    ></div>
+
+    <!-- Image Viewer Modal -->
+    <div
+      v-if="showImageModal"
+      class="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
+      @click.self="closeImageModal"
+    >
+      <div class="relative max-w-4xl max-h-screen p-4">
+        <!-- Close button -->
+        <button
+          type="button"
+          class="absolute top-2 right-2 w-10 h-10 rounded-full bg-black/50 text-white hover:bg-black/70 flex items-center justify-center z-10"
+          @click="closeImageModal"
+        >
+          <i class="fas fa-times text-lg"></i>
+        </button>
+
+        <!-- Image -->
+        <img
+          v-if="selectedImage"
+          :src="fileUrl(selectedImage.path)"
+          :alt="selectedImage.name"
+          class="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+          @click.stop
+        />
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -520,6 +790,13 @@ export default {
       draft: "",
       selectedFiles: [],
       sending: false,
+      replyingTo: null,
+      editingMessage: null,
+      audioBlob: null,
+      isRecordingAudio: false,
+      audioRecordingTime: 0,
+      audioRecordingInterval: null,
+      mediaRecorder: null,
 
       onlineUserIds: [], // Массив для реактивности Vue
       peerReadByChatId: {},
@@ -533,6 +810,20 @@ export default {
       // Delete chat confirmation
       showDeleteConfirm: false,
       deletingChat: false,
+
+      // Message menu
+      messageMenuVisible: false,
+      messageMenuX: 0,
+      messageMenuY: 0,
+      messageMenuTarget: null,
+
+      // Forward message modal
+      showForwardModal: false,
+      forwardingMessage: null,
+
+      // Image viewer modal
+      showImageModal: false,
+      selectedImage: null,
       
     };
   },
@@ -1053,6 +1344,75 @@ export default {
     onFilesSelected(e) {
       const files = Array.from(e.target.files || []);
       this.selectedFiles = files;
+      e.target.value = ''; // Reset input
+    },
+    onAudioSelected(e) {
+      const files = Array.from(e.target.files || []);
+      if (files.length > 0) {
+        this.selectedFiles = [...this.selectedFiles, ...files];
+      }
+      e.target.value = ''; // Reset input
+    },
+    async toggleAudioRecording() {
+      if (this.isRecordingAudio) {
+        this.stopAudioRecording();
+      } else {
+        await this.startAudioRecording();
+      }
+    },
+    async startAudioRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this.mediaRecorder = new MediaRecorder(stream);
+        const chunks = [];
+
+        this.mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        this.mediaRecorder.onstop = () => {
+          this.audioBlob = new Blob(chunks, { type: 'audio/webm' });
+          const audioFile = new File([this.audioBlob], `audio-${Date.now()}.webm`, { type: 'audio/webm' });
+          this.selectedFiles = [...this.selectedFiles, audioFile];
+          this.audioBlob = null;
+          
+          // Stop all tracks
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        this.mediaRecorder.start();
+        this.isRecordingAudio = true;
+        this.audioRecordingTime = 0;
+        this.audioRecordingInterval = setInterval(() => {
+          this.audioRecordingTime++;
+        }, 1000);
+      } catch (error) {
+        console.error('Error starting audio recording:', error);
+        this.$store.dispatch("showNotification", {
+          title: "Ошибка записи аудио",
+          subtitle: "Не удалось получить доступ к микрофону",
+          isDanger: true,
+          duration: 3000,
+        });
+      }
+    },
+    stopAudioRecording() {
+      if (this.mediaRecorder && this.isRecordingAudio) {
+        this.mediaRecorder.stop();
+        this.isRecordingAudio = false;
+        if (this.audioRecordingInterval) {
+          clearInterval(this.audioRecordingInterval);
+          this.audioRecordingInterval = null;
+        }
+      }
+    },
+    isImageFile(file) {
+      const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml'];
+      return imageTypes.includes(file.mime_type) || /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(file.name || '');
+    },
+    isAudioFile(file) {
+      const audioTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/webm'];
+      return audioTypes.includes(file.mime_type) || /\.(mp3|wav|ogg|m4a|webm)$/i.test(file.name || '');
     },
     async send() {
       if (!this.selectedChatId) return;
@@ -1060,17 +1420,18 @@ export default {
       if (!this.draft.trim() && this.selectedFiles.length === 0) return;
 
       this.sending = true;
-      console.log(this.selectedChatId, this.draft, this.selectedFiles);
       try {
         const msg = await ChatController.sendMessage(this.selectedChatId, {
           body: this.draft,
           files: this.selectedFiles,
+          parent_id: this.replyingTo?.id || null,
         });
 
         if (msg) {
-          // this.messages.push(msg);
           this.draft = "";
           this.selectedFiles = [];
+          this.replyingTo = null;
+          this.audioBlob = null;
           // моментально обновим метаданные чата для отправителя
           applySentMessage(this, msg);
         } else {
@@ -1079,6 +1440,101 @@ export default {
       } finally {
         this.sending = false;
       }
+    },
+    showMessageMenu(event, message) {
+      if (!this.isMyMessage(message)) return;
+      this.messageMenuTarget = message;
+      this.messageMenuX = event.clientX;
+      this.messageMenuY = event.clientY;
+      this.messageMenuVisible = true;
+    },
+    closeMessageMenu() {
+      this.messageMenuVisible = false;
+      this.messageMenuTarget = null;
+    },
+    replyToMessage(message) {
+      this.replyingTo = message;
+      this.closeMessageMenu();
+      this.$refs.composerTextarea?.focus();
+    },
+    editMessage(message) {
+      this.editingMessage = message;
+      this.draft = message.body || '';
+      this.closeMessageMenu();
+    },
+    cancelEdit() {
+      this.editingMessage = null;
+      this.draft = '';
+    },
+    async saveEdit() {
+      if (!this.editingMessage || !this.draft.trim()) return;
+      
+      try {
+        await ChatController.updateMessage(this.selectedChatId, this.editingMessage.id, this.draft);
+        // Reload messages to get updated version
+        await this.loadMessages(this.selectedChatId);
+        this.editingMessage = null;
+        this.draft = '';
+      } catch (error) {
+        this.$store.dispatch("showNotification", {
+          title: "Ошибка",
+          subtitle: error?.message || "Не удалось отредактировать сообщение",
+          isDanger: true,
+          duration: 3000,
+        });
+      }
+    },
+    async deleteMessage(message) {
+      if (!confirm('Вы уверены, что хотите удалить это сообщение?')) return;
+      
+      try {
+        await ChatController.deleteMessage(this.selectedChatId, message.id);
+        // Remove message from local array
+        this.messages = this.messages.filter(m => m.id !== message.id);
+        this.closeMessageMenu();
+      } catch (error) {
+        this.$store.dispatch("showNotification", {
+          title: "Ошибка",
+          subtitle: error?.message || "Не удалось удалить сообщение",
+          isDanger: true,
+          duration: 3000,
+        });
+      }
+    },
+    forwardMessage(message) {
+      this.forwardingMessage = message;
+      this.showForwardModal = true;
+      this.closeMessageMenu();
+    },
+    async confirmForward(targetChatId) {
+      if (!this.forwardingMessage) return;
+      
+      try {
+        await ChatController.forwardMessage(this.selectedChatId, this.forwardingMessage.id, targetChatId);
+        this.showForwardModal = false;
+        this.forwardingMessage = null;
+        this.$store.dispatch("showNotification", {
+          title: "Успешно",
+          subtitle: "Сообщение переслано",
+          isDanger: false,
+          duration: 2000,
+        });
+      } catch (error) {
+        this.$store.dispatch("showNotification", {
+          title: "Ошибка",
+          subtitle: error?.message || "Не удалось переслать сообщение",
+          isDanger: true,
+          duration: 3000,
+        });
+      }
+    },
+    openImageModal(file) {
+      this.selectedImage = file;
+      this.showImageModal = true;
+    },
+    closeImageModal() {
+      this.showImageModal = false;
+      this.selectedImage = null;
     },
 
     async openDirect(user) {
@@ -1182,6 +1638,17 @@ export default {
     },
     getMessageUser(message) {
       if (!message) return null;
+      // Check if message has user object directly
+      if (message.user && message.user.id) {
+        const userId = message.user.id;
+        const currentUser = this.$store.state.user;
+        if (currentUser && Number(currentUser.id) === Number(userId)) {
+          return currentUser;
+        }
+        const users = this.usersForCompany || [];
+        return users.find(u => u && Number(u.id) === Number(userId)) || message.user;
+      }
+      
       const userId = message.user_id || message.userId || message.user?.id;
       if (!userId) return null;
       
@@ -1298,7 +1765,11 @@ export default {
       return myId && Number(item.last_message.user_id) === Number(myId);
     },
     handleEnterKey() {
-      if (!this.draft.trim() && this.selectedFiles.length === 0) return;
+      if (this.editingMessage) {
+        this.saveEdit();
+        return;
+      }
+      if (!this.draft.trim() && this.selectedFiles.length === 0 && !this.audioBlob) return;
       this.send();
     },
     handleShiftEnter() {

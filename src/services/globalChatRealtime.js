@@ -61,6 +61,14 @@ class GlobalChatRealtime {
         // Отправляем событие через eventBus для компонентов
         eventBus.emit("chat:message", event);
       },
+      onMessageUpdated: (event) => {
+        console.log("[GlobalChatRealtime] Сообщение обновлено:", event);
+        eventBus.emit("chat:message:updated", event);
+      },
+      onMessageDeleted: (event) => {
+        console.log("[GlobalChatRealtime] Сообщение удалено:", event);
+        eventBus.emit("chat:message:deleted", event);
+      },
       onRead: (event) => {
         console.log("[GlobalChatRealtime] Обновление прочтения:", event);
         eventBus.emit("chat:read", event);
