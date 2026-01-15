@@ -225,27 +225,59 @@
                 class="flex mb-2"
                 :class="isMyMessage(item.data) ? 'justify-end' : 'justify-start'"
               >
-                <div
-                  class="max-w-[88%] md:max-w-[70%] rounded-2xl px-3 py-2 text-sm shadow-sm relative"
-                  :class="isMyMessage(item.data) ? 'bg-[#d9f6c9] text-gray-900' : 'bg-white text-gray-900'"
+                <div 
+                  class="flex flex-col"
+                  :class="isMyMessage(item.data) ? 'items-end' : 'items-start'"
                 >
-                  <div class="whitespace-pre-wrap break-words leading-snug">{{ item.data.body || "" }}</div>
 
-                  <div v-if="Array.isArray(item.data.files) && item.data.files.length" class="mt-2 space-y-1">
-                    <a
-                      v-for="f in item.data.files"
-                      :key="f.path"
-                      class="block text-xs underline text-sky-700"
-                      :href="fileUrl(f.path)"
-                      target="_blank"
+                  
+                  <div class="flex items-end gap-2" :class="isMyMessage(item.data) ? 'flex-row' : 'flex-row-reverse'">
+                    <div
+                      class="w-full rounded-xl px-3 py-2 text-sm shadow-sm relative"
+                      :class="isMyMessage(item.data) ? 'bg-[#d9f6c9] text-gray-900' : 'bg-white text-gray-900'"
                     >
-                      {{ f.name }}
-                    </a>
-                  </div>
+                      <div class="whitespace-pre-wrap break-words leading-snug">{{ item.data.body || "" }}</div>
 
-                  <div class="mt-1 flex items-center justify-end gap-1 text-[11px] text-gray-500">
-                    <span>{{ messageTime(item.data) }}</span>
-                    <span v-if="isMyMessage(item.data)" class="text-sky-700">{{ messageTicks(item.data) }}</span>
+                      <div v-if="Array.isArray(item.data.files) && item.data.files.length" class="mt-2 space-y-1">
+                        <a
+                          v-for="f in item.data.files"
+                          :key="f.path"
+                          class="block text-xs underline text-sky-700"
+                          :href="fileUrl(f.path)"
+                          target="_blank"
+                        >
+                          {{ f.name }}
+                        </a>
+                      </div>
+
+                      <div class="mt-1 flex items-center justify-end gap-1 text-[11px] text-gray-500">
+                        <span>{{ messageTime(item.data) }}</span>
+                        <span v-if="isMyMessage(item.data)" class="text-sky-700">{{ messageTicks(item.data) }}</span>
+                      </div>
+                    </div>
+                    
+                    <!-- Avatar for group/general chats - BELOW message (only for last message in sequence) -->
+                    <div
+                      v-if="shouldShowAvatar(item, index, messagesWithDates)"
+                      class="shrink-0 mb-0.5 cursor-default" :title="getMessageUserName(item.data)"
+                    >
+                      <div class="relative">
+                        <img
+                          v-if="getMessageUser(item.data)?.photo"
+                          :src="userPhotoUrl(getMessageUser(item.data).photo)"
+                          class="w-7 h-7 rounded-full object-cover border-2 border-white shadow-sm"
+                          :alt="getMessageUserName(item.data)"
+                        />
+                        <div
+                          v-else
+                          class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold border-2 border-white shadow-sm"
+                          :class="isMyMessage(item.data) ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'"
+                        >
+                          {{ getMessageUserInitials(item.data) }}
+                        </div>
+                      </div>
+                    </div>
+                    <div v-else class="w-full rounded-xl px-3 py-2"></div>
                   </div>
                 </div>
               </div>
@@ -1147,6 +1179,84 @@ export default {
       const name = (user.name || "").charAt(0).toUpperCase();
       const surname = (user.surname || "").charAt(0).toUpperCase();
       return (name + surname) || "?";
+    },
+    getMessageUser(message) {
+      if (!message) return null;
+      const userId = message.user_id || message.userId || message.user?.id;
+      if (!userId) return null;
+      
+      // Проверяем, это текущий пользователь?
+      const currentUser = this.$store.state.user;
+      if (currentUser && Number(currentUser.id) === Number(userId)) {
+        return currentUser;
+      }
+      
+      // Ищем пользователя в списке пользователей компании
+      const users = this.usersForCompany || [];
+      return users.find(u => u && Number(u.id) === Number(userId)) || null;
+    },
+    getMessageUserName(message) {
+      const user = this.getMessageUser(message);
+      if (!user) {
+        // Fallback: если пользователь не найден, показываем user_id
+        const userId = message.user_id || message.userId || message.user?.id;
+        return userId ? `Пользователь #${userId}` : "Неизвестный";
+      }
+      const name = user.name || "";
+      const surname = user.surname || "";
+      return `${name} ${surname}`.trim() || user.displayTitle || "Пользователь";
+    },
+    getMessageUserInitials(message) {
+      const user = this.getMessageUser(message);
+      if (!user) {
+        const userId = message.user_id || message.userId || message.user?.id;
+        return userId ? String(userId).charAt(0) : "?";
+      }
+      return this.getUserInitials(user);
+    },
+    shouldShowAvatar(item, index, messagesWithDates) {
+      // Показываем аватар только для групповых чатов
+      // if (!(this.selectedChat?.type === 'group' || this.selectedChat?.type === 'general')) {
+      //   return false;
+      // }
+      
+      // Если это разделитель даты, не показываем
+      if (item.type === 'date') {
+        return false;
+      }
+      
+      // Получаем текущего пользователя сообщения
+      const currentUserId = item.data?.user_id || item.data?.userId || item.data?.user?.id;
+      if (!currentUserId) return false;
+      
+      // Ищем следующее сообщение (не разделитель даты)
+      let nextIndex = index + 1;
+      while (nextIndex < messagesWithDates.length) {
+        const nextItem = messagesWithDates[nextIndex];
+        
+        // Если следующий элемент - разделитель даты, показываем аватар (это последнее сообщение перед датой)
+        if (nextItem.type === 'date') {
+          return true;
+        }
+        
+        // Получаем пользователя следующего сообщения
+        const nextUserId = nextItem.data?.user_id || nextItem.data?.userId || nextItem.data?.user?.id;
+        
+        // Если следующее сообщение от другого пользователя, показываем аватар (это последнее сообщение от текущего пользователя)
+        if (nextUserId && Number(nextUserId) !== Number(currentUserId)) {
+          return true;
+        }
+        
+        // Если следующее сообщение от того же пользователя, НЕ показываем аватар (это не последнее сообщение в группе)
+        if (nextUserId && Number(nextUserId) === Number(currentUserId)) {
+          return false;
+        }
+        
+        nextIndex++;
+      }
+      
+      // Если это последнее сообщение в списке, показываем аватар
+      return true;
     },
     selectItem(item) {
       if (item.type === 'user') {
