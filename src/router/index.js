@@ -500,7 +500,7 @@ const routes = [
         path: "/org-structure",
         name: "org-structure",
         component: () => import("@/views/pages/departments/DepartmentPage.vue"),
-        meta: { title: "orgStructure", requiresAuth: true, permission: "departments_view" },
+        meta: { title: "orgStructure", requiresAuth: true, permission: "departments_view_all" },
       },
       {
         path: "/roles",

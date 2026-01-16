@@ -36,7 +36,7 @@
                 <!-- Action Buttons: Visible on hover -->
                 <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
                     <button 
-                        v-if="$store.getters.hasPermission('departments_update')"
+                        v-if="$store.getters.hasPermission('departments_update_all')"
                         @click.stop="$emit('edit', node)" 
                         class="p-1.5 rounded-md text-gray-400 hover:text-[#337AB7] hover:bg-blue-50 transition-all duration-200" 
                         title="Редактировать"
@@ -44,7 +44,7 @@
                         <i class="fas fa-edit text-xs"></i>
                     </button>
                     <button 
-                        v-if="$store.getters.hasPermission('departments_delete')"
+                        v-if="$store.getters.hasPermission('departments_delete_all')"
                         @click.stop="$emit('delete', node)" 
                         class="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200" 
                         title="Удалить"
@@ -189,7 +189,7 @@ export default {
             }
         },
         handleCardClick() {
-            if (this.$store.getters.hasPermission('departments_update')) {
+            if (this.$store.getters.hasPermission('departments_update_all')) {
                 this.$emit('edit', this.node);
             }
         },
