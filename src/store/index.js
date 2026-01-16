@@ -1549,7 +1549,7 @@ const store = createStore({
           to: "/org-structure",
           icon: "fa-solid fa-sitemap mr-2",
           label: "orgStructure",
-          permission: "departments_view",
+          permission: "departments_view_all",
         },
         {
           id: "roles",
