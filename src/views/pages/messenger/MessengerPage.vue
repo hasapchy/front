@@ -296,8 +296,8 @@
                         <span v-if="isMyMessage(item.data)" class="text-sky-700">{{ messageTicks(item.data) }}</span>
                       </div>
 
-                      <!-- Message actions menu button (only for own messages) -->
-                      <div v-if="isMyMessage(item.data)" class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <!-- Message actions menu button -->
+                      <div class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           type="button"
                           class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 text-xs"
@@ -596,8 +596,11 @@
     <!-- Message Context Menu -->
     <div
       v-if="messageMenuVisible"
-      class="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50 min-w-[160px]"
-      :style="{ left: messageMenuX + 'px', top: messageMenuY + 'px' }"
+      class="absolute bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50 min-w-[160px]"
+      :style="{
+        left: (isMyMessage(messageMenuTarget) ? (messageMenuX - 160) : messageMenuX) + 'px',
+        top: messageMenuY + 'px'
+      }"
       @click.stop
     >
       <button
@@ -611,28 +614,32 @@
       <button
         type="button"
         class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-        @click="editMessage(messageMenuTarget)"
-      >
-        <i class="fas fa-edit text-xs"></i>
-        Редактировать
-      </button>
-      <button
-        type="button"
-        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
         @click="forwardMessage(messageMenuTarget)"
       >
         <i class="fas fa-share text-xs"></i>
         Переслать
       </button>
-      <div class="border-t border-gray-200 my-1"></div>
-      <button
-        type="button"
-        class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-        @click="deleteMessage(messageMenuTarget)"
-      >
-        <i class="fas fa-trash text-xs"></i>
-        Удалить
-      </button>
+
+      <!-- Edit and Delete options only for own messages -->
+      <template v-if="isMyMessage(messageMenuTarget)">
+        <div class="border-t border-gray-200 my-1"></div>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          @click="editMessage(messageMenuTarget)"
+        >
+          <i class="fas fa-edit text-xs"></i>
+          Редактировать
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+          @click="deleteMessage(messageMenuTarget)"
+        >
+          <i class="fas fa-trash text-xs"></i>
+          Удалить
+        </button>
+      </template>
     </div>
 
     <!-- Forward Message Modal -->
@@ -648,7 +655,7 @@
         <div class="px-6 py-4 max-h-96 overflow-y-auto">
           <div class="space-y-2">
             <button
-              v-for="chat in allChatsList.filter(c => c.id !== selectedChatId)"
+              v-for="chat in allChatsList.filter(c => c.id !== selectedChatId && c.type !== 'user')"
               :key="`${chat.type}-${chat.id}`"
               type="button"
               class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3 rounded-lg"
@@ -969,6 +976,17 @@ export default {
       return this.selectedChat && this.isChatCreator(this.selectedChat);
     },
   },
+  watch: {
+    '$store.getters.currentCompanyId': {
+      handler(newCompanyId, oldCompanyId) {
+        if (newCompanyId && newCompanyId !== oldCompanyId) {
+          console.log('[Messenger] Company changed, reloading data...');
+          this.handleCompanyChange();
+        }
+      },
+      immediate: false
+    }
+  },
   async mounted() {
     try {
       // Используем глобальный сервис вместо локального
@@ -1067,6 +1085,36 @@ export default {
       // Вызывается только при создании нового чата, так как глобальный сервис уже подписан на все чаты
       const chatsForSync = [...(this.chats || []), this.generalChat].filter((c) => c && c.id);
       globalChatRealtime.syncChats(chatsForSync);
+    },
+    async handleCompanyChange() {
+      try {
+        // Clear current data
+        this.chats = [];
+        this.generalChat = null;
+        this.messages = [];
+        this.selectedChat = null;
+        this.selectedChatId = null;
+        this.activePeerUser = null;
+
+        // Reload users for new company
+        await this.ensureUsersLoaded();
+
+        // Reload chats for new company
+        await this.loadChats();
+
+        // Reinitialize WebSocket connections for new company
+        await globalChatRealtime.reinitialize();
+
+        console.log('[Messenger] Company change handled successfully');
+      } catch (error) {
+        console.error('[Messenger] Error handling company change:', error);
+        this.$store.dispatch("showNotification", {
+          title: "Ошибка смены компании",
+          subtitle: "Не удалось загрузить данные для новой компании",
+          isDanger: true,
+          duration: 5000,
+        });
+      }
     },
     async ensureUsersLoaded() {
       // Для мессенджера всегда загружаем пользователей, чтобы получить актуальный список
@@ -1442,7 +1490,6 @@ export default {
       }
     },
     showMessageMenu(event, message) {
-      if (!this.isMyMessage(message)) return;
       this.messageMenuTarget = message;
       this.messageMenuX = event.clientX;
       this.messageMenuY = event.clientY;
