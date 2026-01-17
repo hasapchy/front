@@ -85,6 +85,7 @@ export default {
   online: 'Online',
   offline: 'Offline',
   noOnlineUsers: 'No users online',
+  andMore: 'And more',
   birthdays: 'Birthdays',
   noBirthdays: 'No upcoming birthdays',
   quickLinks: 'Quick Links',

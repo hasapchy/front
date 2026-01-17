@@ -50,17 +50,24 @@
             <!-- Card Body (Head Info) -->
             <div class="px-4 py-4 bg-white">
                 <div class="flex items-start">
-                    <div class="relative flex-shrink-0">
-                        <img 
-                            v-if="node.head && node.head.photo && typeof node.head.photoUrl === 'function'" 
-                            :src="node.head.photoUrl()" 
-                            class="w-14 h-14 rounded-full object-cover border-2 border-gray-100"
-                            @error="onImgError"
-                            :alt="node.head ? `${node.head.name || ''} ${node.head.surname || ''}`.trim() || 'Руководитель' : 'Руководитель'"
-                        >
-                        <div v-else class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-100">
-                            <i class="fas fa-user text-gray-400 text-lg" aria-hidden="true"></i>
+                    <div class="relative flex-shrink-0 w-14 h-14 rounded-full bg-gray-100 border-2 border-gray-100">
+                        <div class="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                            <img 
+                                v-if="node.head && getUserPhotoUrl(node.head)" 
+                                :src="getUserPhotoUrl(node.head)" 
+                                class="w-full h-full object-cover"
+                                :alt="node.head ? getUserFullName(node.head) : 'Руководитель'"
+                                @error="handleImageError"
+                            >
+                            <i v-else class="fas fa-user text-gray-400 text-lg" aria-hidden="true"></i>
                         </div>
+                        
+                        <!-- Online Status Indicator for Head -->
+                        <span 
+                            v-if="node.head && isUserOnline(node.head.id)" 
+                            class="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-white shadow-sm"
+                            title="Онлайн"
+                        ></span>
                         
                         <div class="absolute -bottom-0.5 -right-0.5 bg-[#337AB7] text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm" title="Руководитель">
                             <i class="fas fa-star text-[9px]"></i>
@@ -93,25 +100,33 @@
                 <!-- User Avatars -->
                 <div v-if="node.users && node.users.length > 0" class="flex items-center -space-x-2">
                     <template v-for="(user, index) in node.users.slice(0, 5)" :key="user.id">
-                        <img 
-                            v-if="user.photo && typeof user.photoUrl === 'function'" 
-                            :src="user.photoUrl()" 
-                            class="w-7 h-7 rounded-full object-cover border-2 border-white shadow-sm"
-                            :alt="`${user.name || ''} ${user.surname || ''}`.trim() || 'Сотрудник'"
-                            :title="`${user.name || ''} ${user.surname || ''}`.trim() || 'Сотрудник'"
-                        >
                         <div 
-                            v-else
-                            class="w-7 h-7 rounded-full bg-gray-200 border-2 border-white shadow-sm flex items-center justify-center"
-                            :title="`${user.name || ''} ${user.surname || ''}`.trim() || 'Сотрудник'"
+                            class="w-7 h-7 rounded-full bg-gray-200 border-2 border-white shadow-sm shrink-0 flex items-center justify-center relative cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10"
+                            @mouseenter="showUserTooltip($event, user)"
+                            @mouseleave="hideUserTooltip"
                         >
-                            <i class="fas fa-user text-gray-400 text-[10px]"></i>
+                            <div class="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                                <img 
+                                    v-if="getUserPhotoUrl(user)" 
+                                    :src="getUserPhotoUrl(user)" 
+                                    class="w-full h-full object-cover"
+                                    :alt="getUserFullName(user)"
+                                    @error="handleImageError"
+                                />
+                                <i v-else class="fas fa-user text-gray-400 text-[10px]"></i>
+                            </div>
+                            <!-- Online Status Indicator -->
+                            <span 
+                                v-if="isUserOnline(user.id)" 
+                                class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white shadow-sm"
+                            ></span>
                         </div>
                     </template>
                     <div 
                         v-if="node.users.length > 5"
-                        class="w-7 h-7 rounded-full bg-[#337AB7] border-2 border-white shadow-sm flex items-center justify-center text-[10px] font-semibold text-white"
-                        :title="`Еще ${node.users.length - 5} сотрудников`"
+                        class="w-7 h-7 rounded-full bg-[#337AB7] border-2 border-white shadow-sm flex items-center justify-center text-[10px] font-semibold text-white cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10"
+                        @mouseenter="showMoreUsersTooltip($event)"
+                        @mouseleave="hideUserTooltip"
                     >
                         +{{ node.users.length - 5 }}
                     </div>
@@ -136,10 +151,41 @@
                 </template>
             </div>
         </div>
+
+        <!-- Кастомный tooltip для имен пользователей (вне контейнера) -->
+        <Teleport to="body">
+            <Transition name="tooltip-fade">
+                <div 
+                    v-if="userTooltip.visible && userTooltip.user"
+                    class="user-tooltip"
+                    :style="userTooltip.style"
+                >
+                    <div class="flex items-center gap-2">
+                        <img 
+                            v-if="userTooltip.user.photoUrl" 
+                            :src="userTooltip.user.photoUrl" 
+                            class="w-8 h-8 rounded-full object-cover border-2 border-white/20"
+                            :alt="userTooltip.user.name"
+                            @error="handleImageError"
+                        />
+                        <div v-else class="w-8 h-8 rounded-full bg-gray-100/20 flex items-center justify-center border-2 border-white/20">
+                            <i class="fas fa-user text-white/80 text-xs"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-semibold text-white truncate">{{ userTooltip.user.name }}</div>
+                            <div v-if="userTooltip.user.position" class="text-xs text-white/80 truncate">{{ userTooltip.user.position }}</div>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
     </div>
 </template>
 
 <script>
+import echo from '@/services/echo';
+import { createChatRealtime } from '@/services/chatRealtime';
+
 const CARD_WIDTH = 288; // w-72
 const HORIZONTAL_GAP = 40; // space between cards
 
@@ -154,6 +200,17 @@ export default {
             type: Number,
             default: 0
         }
+    },
+    data() {
+        return {
+            onlineUserIds: [],
+            realtime: null,
+            userTooltip: {
+                visible: false,
+                user: null,
+                style: {}
+            }
+        };
     },
     computed: {
         isMyDepartment() {
@@ -178,6 +235,18 @@ export default {
             };
         }
     },
+    mounted() {
+        this.initPresence();
+    },
+    beforeUnmount() {
+        this.cleanup();
+    },
+    watch: {
+        '$store.getters.currentCompanyId'() {
+            this.cleanup();
+            this.initPresence();
+        }
+    },
     methods: {
         getSubtreeWidth(node) {
             if (!node) return CARD_WIDTH;
@@ -191,12 +260,6 @@ export default {
             const childrenWidth = childWidths.reduce((acc, width) => acc + width, 0) + gaps;
 
             return Math.max(CARD_WIDTH, childrenWidth);
-        },
-        onImgError(e) {
-            if (e.target && e.target.nextElementSibling) {
-                e.target.style.display = 'none';
-                e.target.nextElementSibling.style.display = 'flex';
-            }
         },
         handleCardClick() {
             if (this.$store.getters.hasPermission('departments_update_all')) {
@@ -220,6 +283,131 @@ export default {
             }
             
             return 'сотрудников';
+        },
+        isUserOnline(userId) {
+            if (!userId) return false;
+            return this.onlineUserIds.includes(Number(userId));
+        },
+        getUserPhotoUrl(user) {
+            if (!user) return null;
+            
+            // Используем метод photoUrl() из UserDto (он уже правильно обрабатывает все случаи)
+            if (user.photoUrl && typeof user.photoUrl === 'function') {
+                return user.photoUrl();
+            }
+            
+            // Fallback для объектов без UserDto
+            if (user.photo) {
+                if (user.photo.startsWith('http://') || user.photo.startsWith('https://')) {
+                    return user.photo;
+                } else {
+                    const baseUrl = import.meta.env.VITE_APP_BASE_URL || '';
+                    return `${baseUrl}/storage/${user.photo}`;
+                }
+            }
+            
+            return null;
+        },
+        getUserFullName(user) {
+            if (!user) return 'Сотрудник';
+            if (user.fullName && typeof user.fullName === 'function') {
+                return user.fullName();
+            }
+            return `${user.name || ''} ${user.surname || ''}`.trim() || 'Сотрудник';
+        },
+        handleImageError(event) {
+            if (event.target) {
+                event.target.style.display = 'none';
+            }
+        },
+        showUserTooltip(event, user) {
+            if (!user) return;
+            
+            const targetRect = event.currentTarget.getBoundingClientRect();
+            
+            // Используем fixed позиционирование относительно viewport
+            const left = targetRect.left + targetRect.width / 2;
+            const top = targetRect.bottom + 8;
+            
+            this.userTooltip = {
+                visible: true,
+                user: {
+                    name: this.getUserFullName(user),
+                    position: user.position || null,
+                    photoUrl: this.getUserPhotoUrl(user)
+                },
+                style: {
+                    left: `${left}px`,
+                    top: `${top}px`,
+                    transform: 'translateX(-50%)'
+                }
+            };
+        },
+        hideUserTooltip() {
+            this.userTooltip.visible = false;
+        },
+        showMoreUsersTooltip(event) {
+            const moreUsers = this.node.users.slice(5);
+            if (moreUsers.length === 0) return;
+            
+            // Показываем имена остальных пользователей
+            const names = moreUsers.map(u => this.getUserFullName(u)).join(', ');
+            const fakeUser = {
+                name: names,
+                photoUrl: null,
+                position: null
+            };
+            this.showUserTooltip(event, fakeUser);
+        },
+        async initPresence() {
+            const companyId = this.$store.getters.currentCompanyId;
+            if (!companyId || !echo) return;
+
+            // Добавляем текущего пользователя в список онлайн сразу
+            const currentUser = this.$store.state.user;
+            if (currentUser && currentUser.id) {
+                const currentUserId = Number(currentUser.id);
+                if (!Number.isNaN(currentUserId)) {
+                    this.onlineUserIds = [currentUserId];
+                }
+            }
+
+            this.realtime = createChatRealtime(echo, {
+                onPresenceHere: (users) => {
+                    const ids = (users || []).map((u) => Number(u.id)).filter((id) => !Number.isNaN(id));
+                    // Добавляем текущего пользователя, если его еще нет
+                    const currentUser = this.$store.state.user;
+                    if (currentUser && currentUser.id) {
+                        const currentUserId = Number(currentUser.id);
+                        if (!Number.isNaN(currentUserId) && !ids.includes(currentUserId)) {
+                            ids.push(currentUserId);
+                        }
+                    }
+                    this.onlineUserIds = [...ids];
+                },
+                onPresenceJoining: (user) => {
+                    const id = Number(user?.id);
+                    if (Number.isNaN(id)) return;
+                    if (!this.onlineUserIds.includes(id)) {
+                        this.onlineUserIds = [...this.onlineUserIds, id];
+                    }
+                },
+                onPresenceLeaving: (user) => {
+                    const id = Number(user?.id);
+                    if (Number.isNaN(id)) return;
+                    this.onlineUserIds = this.onlineUserIds.filter((uid) => uid !== id);
+                },
+                onPresenceError: (err) => console.error('[OrgNode] Ошибка presence:', err)
+            });
+
+            this.realtime.subscribePresence(companyId);
+        },
+        cleanup() {
+            if (this.realtime) {
+                this.realtime.cleanup();
+                this.realtime = null;
+            }
+            this.onlineUserIds = [];
         }
     }
 };
@@ -235,5 +423,59 @@ export default {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+.user-tooltip {
+    position: fixed;
+    background-color: #1f2937;
+    padding: 0.625rem 0.875rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    z-index: 9999;
+    pointer-events: none;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+    min-width: 180px;
+    max-width: 280px;
+    white-space: normal;
+    word-wrap: break-word;
+    backdrop-filter: blur(8px);
+}
+
+.user-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-bottom-color: #1f2937;
+}
+
+.tooltip-fade-enter-active {
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+.tooltip-fade-leave-active {
+    transition: opacity 0.15s ease-in, transform 0.15s ease-in;
+}
+
+.tooltip-fade-enter-from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
+}
+
+.tooltip-fade-enter-to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.tooltip-fade-leave-from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.tooltip-fade-leave-to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
 }
 </style>
