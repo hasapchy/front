@@ -56,7 +56,7 @@ const routes = [
         meta: {
           title: "messenger",
           requiresAuth: true,
-          permission: "chats_view",
+          permission: "chats_view_all",
         },
       },
       {
