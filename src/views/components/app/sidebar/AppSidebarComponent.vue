@@ -37,7 +37,7 @@
 
         <div class="pb-32 pt-4 lg:pt-0 flex flex-col h-full overflow-y-auto">
             <ul :key="permissionsKey" class="flex-1">
-                <SidebarLink to="/" icon="fas fa-building mr-2">
+                <SidebarLink to="/" icon="fas fa-newspaper mr-2">
                     {{ currentCompanyName }}
                 </SidebarLink>
 
