@@ -47,29 +47,34 @@
                 </div>
                 
                 <!-- Аватары онлайн пользователей -->
-                <div class="flex-1 flex items-center gap-1.5 overflow-hidden">
+                <div class="flex-1 flex items-center gap-1.5 overflow-visible">
                     <div 
                         v-for="(user, index) in visibleUsers" 
                         :key="user.id"
-                        class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 border-2 border-white shrink-0 flex items-center justify-center relative"
+                        class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white shrink-0 flex items-center justify-center relative cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10"
                         :style="{ marginLeft: index > 0 ? '-8px' : '0' }"
-                        :title="user.name"
+                        @mouseenter="showUserTooltip($event, user)"
+                        @mouseleave="hideUserTooltip"
                     >
-                        <img 
-                            v-if="user.photoUrl" 
-                            :src="user.photoUrl" 
-                            class="w-full h-full object-cover"
-                            :alt="user.name"
-                            @error="handleImageError"
-                        />
-                        <i v-else class="fas fa-user text-gray-400 text-xs"></i>
+                        <div class="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                            <img 
+                                v-if="user.photoUrl" 
+                                :src="user.photoUrl" 
+                                class="w-full h-full object-cover"
+                                :alt="user.name"
+                                @error="handleImageError"
+                            />
+                            <i v-else class="fas fa-user text-gray-400 text-xs"></i>
+                        </div>
                         <!-- Зеленый индикатор онлайн -->
-                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white"></span>
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white shadow-sm"></span>
                     </div>
                     <div 
                         v-if="moreUsersCount > 0"
-                        class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white shrink-0 flex items-center justify-center text-xs font-semibold text-gray-600"
+                        class="w-8 h-8 rounded-full bg-[#337AB7] border-2 border-white shrink-0 flex items-center justify-center text-[10px] font-bold text-white cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10 shadow-sm"
                         :style="{ marginLeft: visibleUsers.length > 0 ? '-8px' : '0' }"
+                        @mouseenter="showMoreUsersTooltip($event)"
+                        @mouseleave="hideUserTooltip"
                     >
                         +{{ moreUsersCount }}
                     </div>
@@ -97,6 +102,34 @@
             {{ $t('noOnlineUsers') || 'Нет пользователей онлайн' }}
         </div>
     </div>
+
+    <!-- Кастомный tooltip для имен пользователей (вне контейнера виджета) -->
+    <Teleport to="body">
+        <Transition name="tooltip-fade">
+            <div 
+                v-if="userTooltip.visible && userTooltip.user"
+                class="user-tooltip"
+                :style="userTooltip.style"
+            >
+                <div class="flex items-center gap-2">
+                    <img 
+                        v-if="userTooltip.user.photoUrl" 
+                        :src="userTooltip.user.photoUrl" 
+                        class="w-8 h-8 rounded-full object-cover border-2 border-white/20"
+                        :alt="userTooltip.user.name"
+                        @error="handleImageError"
+                    />
+                    <div v-else class="w-8 h-8 rounded-full bg-gray-100/20 flex items-center justify-center border-2 border-white/20">
+                        <i class="fas fa-user text-white/80 text-xs"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-semibold text-white truncate">{{ userTooltip.user.name }}</div>
+                        <div v-if="userTooltip.user.position" class="text-xs text-white/80 truncate">{{ userTooltip.user.position }}</div>
+                    </div>
+                </div>
+            </div>
+        </Transition>
+    </Teleport>
 </template>
 
 <script>
@@ -111,7 +144,12 @@ export default {
             onlineUsers: [],
             totalUsers: 0,
             loading: false,
-            realtime: null
+            realtime: null,
+            userTooltip: {
+                visible: false,
+                user: null,
+                style: {}
+            }
         }
     },
     computed: {
@@ -149,6 +187,38 @@ export default {
     methods: {
         handleImageError(event) {
             event.target.style.display = 'none';
+        },
+        showUserTooltip(event, user) {
+            const targetRect = event.currentTarget.getBoundingClientRect();
+            
+            // Используем fixed позиционирование относительно viewport
+            const left = targetRect.left + targetRect.width / 2;
+            const top = targetRect.bottom + 8;
+            
+            this.userTooltip = {
+                visible: true,
+                user: user,
+                style: {
+                    left: `${left}px`,
+                    top: `${top}px`,
+                    transform: 'translateX(-50%)'
+                }
+            };
+        },
+        hideUserTooltip() {
+            this.userTooltip.visible = false;
+        },
+        showMoreUsersTooltip(event) {
+            const moreUsers = this.onlineUsers.slice(7);
+            if (moreUsers.length === 0) return;
+            
+            // Показываем имена остальных пользователей
+            const names = moreUsers.map(u => u.name).join(', ');
+            const fakeUser = {
+                name: names,
+                photoUrl: null
+            };
+            this.showUserTooltip(event, fakeUser);
         },
         async initPresence() {
             const companyId = this.$store.getters.currentCompanyId;
@@ -229,6 +299,7 @@ export default {
                     return {
                         ...user,
                         name: user.fullName ? user.fullName() : `${user.name || ''} ${user.surname || ''}`.trim() || 'Пользователь',
+                        position: user.position || null,
                         photoUrl
                     };
                 });
@@ -246,5 +317,58 @@ export default {
 </script>
 
 <style scoped>
+.user-tooltip {
+    position: fixed;
+    background-color: #1f2937;
+    padding: 0.625rem 0.875rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    z-index: 9999;
+    pointer-events: none;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+    min-width: 180px;
+    max-width: 280px;
+    white-space: normal;
+    word-wrap: break-word;
+    backdrop-filter: blur(8px);
+}
+
+.user-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-bottom-color: #1f2937;
+}
+
+.tooltip-fade-enter-active {
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+.tooltip-fade-leave-active {
+    transition: opacity 0.15s ease-in, transform 0.15s ease-in;
+}
+
+.tooltip-fade-enter-from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
+}
+
+.tooltip-fade-enter-to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.tooltip-fade-leave-from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.tooltip-fade-leave-to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
+}
 </style>
 

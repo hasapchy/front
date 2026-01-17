@@ -80,6 +80,7 @@ export default {
   online: 'Onlaýn',
   offline: 'Ofllaýn',
   noOnlineUsers: 'Onlaýn ulanyjy ýok',
+  andMore: 'We başgalar',
   birthdays: 'Doglan günleri',
   noBirthdays: 'Geljekde doglan gün ýok',
   quickLinks: 'Çalt baglanyşyklar',

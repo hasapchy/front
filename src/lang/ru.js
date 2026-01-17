@@ -103,6 +103,7 @@ export default {
   online: 'Онлайн',
   offline: 'Оффлайн',
   noOnlineUsers: 'Нет пользователей онлайн',
+  andMore: 'И еще',
   birthdays: 'Дни рождения',
   noBirthdays: 'Нет предстоящих дней рождения',
   quickLinks: 'Быстрые ссылки',
