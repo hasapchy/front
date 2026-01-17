@@ -1,6 +1,5 @@
 import { createStore } from "vuex";
 import api from "@/api/axiosInstance";
-import basementApi from "@/api/basement/basementAxiosInstance";
 import CacheInvalidator, {
   companyScopedKey,
   isFreshByKey,
@@ -19,8 +18,6 @@ import { PermissionParser, PERMISSIONS_CONFIG, hasPermission as checkPermission,
 import { STORE_CONFIG } from "./config";
 import TokenUtils from "@/utils/tokenUtils";
 import AuthController from "@/api/AuthController";
-import { BasementAuthController } from "@/api/basement/BasementAuthController";
-import BasementProductController from "@/api/basement/BasementProductController";
 import ProductController from "@/api/ProductController";
 import UsersController from "@/api/UsersController";
 import WarehouseController from "@/api/WarehouseController";
@@ -137,57 +134,16 @@ async function loadCompanyDataIfNeeded(dispatch, state) {
 
 async function loadProductsForSearch(getters, isProducts, limit = 10) {
   try {
-    if (getters.isBasementMode) {
-      if (isProducts === true) {
-        const productsResult = await retryWithExponentialBackoff(
-          () => BasementProductController.getItems(1, true, {}, limit),
-          3
-        );
-        return {
-          items: productsResult.items || [],
-        };
-      } else if (isProducts === false) {
-        const servicesResult = await retryWithExponentialBackoff(
-          () => BasementProductController.getItems(1, false, {}, limit),
-          3
-        );
-        return {
-          items: servicesResult.items || [],
-        };
-      } else {
-        const [productsResult, servicesResult] = await Promise.allSettled([
-          retryWithExponentialBackoff(
-            () => BasementProductController.getItems(1, true, {}, limit),
-            3
-          ),
-          retryWithExponentialBackoff(
-            () => BasementProductController.getItems(1, false, {}, limit),
-            3
-          ),
-        ]);
-        return {
-          items: [
-            ...(productsResult.status === "fulfilled"
-              ? productsResult.value.items || []
-              : []),
-            ...(servicesResult.status === "fulfilled"
-              ? servicesResult.value.items || []
-              : []),
-          ],
-        };
-      }
-    } else {
-      return await retryWithExponentialBackoff(
-        () =>
-          ProductController.getItems(
-            1,
-            isProducts ? null : isProducts,
-            {},
-            limit
-          ),
-        3
-      );
-    }
+    return await retryWithExponentialBackoff(
+      () =>
+        ProductController.getItems(
+          1,
+          isProducts ? null : isProducts,
+          {},
+          limit
+        ),
+      3
+    );
   } catch (error) {
     console.error("Ошибка загрузки товаров для поиска:", error);
     return { items: [] };
@@ -675,9 +631,7 @@ const store = createStore({
         loadingFlag: "units",
         logName: "⚙️ Единицы",
         fetchFn: async () => {
-          const apiInstance = context.getters.isBasementMode
-            ? basementApi
-            : api;
+          const apiInstance = api;
           const response = await apiInstance.get("/app/units");
           return response.data;
         },
@@ -725,7 +679,7 @@ const store = createStore({
         loadingFlag: "currencies",
         logName: "💱 Валюты",
         fetchFn: async () => {
-          const apiInstance = getters.isBasementMode ? basementApi : api;
+          const apiInstance = api;
           const response = await apiInstance.get("/app/currency");
           return CurrencyDto.fromApiArray(response.data);
         },
@@ -1207,9 +1161,7 @@ const store = createStore({
 
         commit("SET_CURRENT_COMPANY", null);
 
-        const userData = isBasementWorker
-          ? await BasementAuthController.getBasementUser()
-          : await AuthController.getUser();
+        const userData = await AuthController.getUser();
 
         if (!userData) {
           throw new Error("Не удалось получить данные пользователя");
@@ -1369,7 +1321,7 @@ const store = createStore({
 
       commit("SET_LOADING_FLAG", { type: "userPermissions", loading: true });
       try {
-        const apiInstance = getters.isBasementMode ? basementApi : api;
+        const apiInstance = api;
         const response = await retryWithExponentialBackoff(
           () => apiInstance.get("/user/me"),
           3
@@ -1487,6 +1439,14 @@ const store = createStore({
           icon: "fas fa-cart-arrow-down mr-2",
           label: "orders",
           permission: "orders_view",
+        },
+        {
+          id: "basement-orders",
+          to: "/basement-orders",
+          icon: "fas fa-cart-arrow-down mr-2",
+          label: "ordersB",
+          permission: "orders_view",
+          basementOnly: true,
         },
         {
           id: "sales",
@@ -1611,6 +1571,7 @@ const store = createStore({
 
       const defaultMain = [
         "orders",
+        "basement-orders",
         "sales",
         "tasks",
         "messenger",
@@ -1934,8 +1895,26 @@ const store = createStore({
       if (!Array.isArray(state.permissions)) {
         return [];
       }
+      const isBasementWorker = getters.isBasementMode;
+      
       return state.menuItems.main.filter((item) => {
         if (!item) return false;
+        
+        // Скрываем обычные заказы для basement работников (не админов)
+        if (item.id === 'orders' && isBasementWorker && !state.user?.is_admin) {
+          return false;
+        }
+        
+        // Показываем basement заказы только basement работникам
+        if (item.basementOnly && !isBasementWorker) {
+          return false;
+        }
+        
+        // Для basement-only пунктов у basement работников пропускаем проверку прав
+        if (item.basementOnly && isBasementWorker) {
+          return true;
+        }
+        
         if (!item.permission) return true;
         return getters.hasPermission(item.permission);
       });
@@ -1950,8 +1929,26 @@ const store = createStore({
       if (!Array.isArray(state.permissions)) {
         return [];
       }
+      const isBasementWorker = getters.isBasementMode;
+      
       return state.menuItems.available.filter((item) => {
         if (!item) return false;
+        
+        // Скрываем обычные заказы для basement работников (не админов)
+        if (item.id === 'orders' && isBasementWorker && !state.user?.is_admin) {
+          return false;
+        }
+        
+        // Показываем basement заказы только basement работникам
+        if (item.basementOnly && !isBasementWorker) {
+          return false;
+        }
+        
+        // Для basement-only пунктов у basement работников пропускаем проверку прав
+        if (item.basementOnly && isBasementWorker) {
+          return true;
+        }
+        
         if (!item.permission) return true;
         return getters.hasPermission(item.permission);
       });

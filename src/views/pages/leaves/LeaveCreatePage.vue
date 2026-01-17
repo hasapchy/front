@@ -34,7 +34,7 @@
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" 
             :disabled="!leaveTypeId || !userId || !dateFrom || !dateTo || 
             (editingItemId != null && !$store.getters.hasPermission('leaves_update_all')) ||
-            (editingItemId == null && !$store.getters.hasPermission('leaves_create_all'))">
+            (editingItemId == null && !$store.getters.hasPermission('leaves_create'))">
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"

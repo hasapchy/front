@@ -77,6 +77,8 @@ export default {
   products: 'Products',
   categories: 'Product Categories',
   orders: 'Orders',
+  ordersB: 'Orders B',
+  basementOrders: 'Basement Orders',
   sales: 'Sales',
   tasks: 'Tasks',
   onlineNow: 'Online Now',

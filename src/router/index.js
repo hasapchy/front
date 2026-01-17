@@ -4,7 +4,6 @@ import TokenUtils from "@/utils/tokenUtils";
 
 import SidebarLayout from "@/views/layouts/SidebarLayout.vue";
 import BlankLayout from "@/views/layouts/BlankLayout.vue";
-import BasementLayout from "@/views/layouts/BasementLayout.vue";
 
 import LoginPage from "@/views/pages/auth/LoginPage.vue";
 import WarehousesPage from "@/views/pages/warehouses/WarehousesPage.vue";
@@ -721,6 +720,39 @@ const routes = [
           permission: "leave_types_view_all",
         },
       },
+      {
+        path: "/basement-orders",
+        name: "BasementOrders",
+        component: BasementOrdersPage,
+        meta: {
+          title: "basementOrders",
+          requiresAuth: true,
+          permission: "orders_view",
+          basementMode: true,
+        },
+      },
+      {
+        path: "/basement-orders/create",
+        name: "BasementOrderCreate",
+        component: BasementOrderCreatePage,
+        meta: {
+          title: "createOrder",
+          requiresAuth: true,
+          permission: "orders_create",
+          basementMode: true,
+        },
+      },
+      {
+        path: "/basement-orders/:id/edit",
+        name: "BasementOrderEdit",
+        component: BasementOrderCreatePage,
+        meta: {
+          title: "editOrder",
+          requiresAuth: true,
+          permission: "orders_update",
+          basementMode: true,
+        },
+      },
     ],
   },
   {
@@ -733,33 +765,6 @@ const routes = [
         path: "/auth/login",
         name: "Login",
         component: LoginPage,
-      },
-    ],
-  },
-
-  // Basement worker routes
-  {
-    path: "/basement",
-    component: BasementLayout,
-    meta: { requiresBasementAuth: true },
-    children: [
-      {
-        path: "orders",
-        name: "BasementOrders",
-        component: BasementOrdersPage,
-        meta: { title: "orders" },
-      },
-      {
-        path: "orders/create",
-        name: "BasementOrderCreate",
-        component: BasementOrderCreatePage,
-        meta: { title: "createOrder" },
-      },
-      {
-        path: "orders/:id/edit",
-        name: "BasementOrderEdit",
-        component: BasementOrderCreatePage,
-        meta: { title: "editOrder" },
       },
     ],
   },
@@ -792,75 +797,57 @@ router.beforeEach(async (to, from, next) => {
     userData = null;
   }
 
-  // Проверка для basement маршрутов
-  if (to.meta.requiresBasementAuth) {
-    if (!token) {
-      return next("/auth/login");
-    }
-
-    // Только basement_worker или admin могут попасть в basement
-    if (!isBasementWorker && !isAdmin) {
-      return next("/auth/login");
-    }
-
-    // Продолжаем к basement маршруту
-    return next();
-  }
-
   // Проверка для обычных маршрутов (основная система)
   if (to.meta.requiresAuth) {
     if (!token) {
       return next("/auth/login");
     }
-
-    // ВАЖНО: Если пользователь ТОЛЬКО basement_worker (не admin), блокируем доступ к основной системе
-    if (isBasementWorker && !isAdmin) {
-      return next("/basement/orders");
-    }
   }
 
   // Если пользователь пытается попасть на страницу логина, но уже авторизован
   if (to.name === "Login" && token) {
-    if (isBasementWorker && !isAdmin) {
-      return next("/basement/orders");
-    }
     return next("/");
   }
 
   if (to.meta.permission) {
-    if (
-      !store.state.permissionsLoaded ||
-      (store.state.permissionsLoaded && store.state.permissions?.length === 0)
-    ) {
-      await new Promise((resolve) => {
-        let attempts = 0;
-        const maxAttempts = 100;
-        const checkPermissions = () => {
-          const hasPermissions =
-            store.state.permissionsLoaded &&
-            store.state.permissions &&
-            store.state.permissions.length > 0;
-          if (hasPermissions) {
-            resolve();
-          } else if (attempts >= maxAttempts) {
-            resolve();
-          } else {
-            attempts++;
-            setTimeout(checkPermissions, 50);
-          }
-        };
-        checkPermissions();
-      });
-    }
-
-    if (to.meta.permission === "mutual_settlements_view") {
-      if (store.getters.hasPermission(to.meta.permission)) {
-        return next();
-      }
-      return next({ path: "/" });
+    // Для basement-маршрутов у basement работников пропускаем проверку прав
+    if (to.meta.basementMode && isBasementWorker) {
+      // Пропускаем проверку прав для basement работников на basement маршрутах
     } else {
-      if (!store.getters.hasPermission(to.meta.permission)) {
+      if (
+        !store.state.permissionsLoaded ||
+        (store.state.permissionsLoaded && store.state.permissions?.length === 0)
+      ) {
+        await new Promise((resolve) => {
+          let attempts = 0;
+          const maxAttempts = 100;
+          const checkPermissions = () => {
+            const hasPermissions =
+              store.state.permissionsLoaded &&
+              store.state.permissions &&
+              store.state.permissions.length > 0;
+            if (hasPermissions) {
+              resolve();
+            } else if (attempts >= maxAttempts) {
+              resolve();
+            } else {
+              attempts++;
+              setTimeout(checkPermissions, 50);
+            }
+          };
+          checkPermissions();
+        });
+      }
+
+      if (to.meta.permission === "mutual_settlements_view") {
+        if (store.getters.hasPermission(to.meta.permission)) {
+          return next();
+        }
         return next({ path: "/" });
+      } else {
+        if (!store.getters.hasPermission(to.meta.permission)) {
+          return next({ path: "/" });
+        }
       }
     }
   }

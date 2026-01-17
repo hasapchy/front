@@ -142,7 +142,7 @@
 </template>
 
 <script>
-import BasementProductController from '@/api/basement/BasementProductController';
+import ProductController from '@/api/ProductController';
 import debounce from 'lodash.debounce';
 import { roundQuantityValue } from '@/utils/numberUtils';
 
@@ -201,7 +201,7 @@ export default {
         },
         async fetchLastProducts() {
             try {
-                const prodPage = await BasementProductController.getItems(1, true);
+                const prodPage = await ProductController.getItems(1, true);
                 let products = prodPage.items || [];
                 
                 this.lastProducts = products
@@ -215,7 +215,7 @@ export default {
             if (this.stockSearch.length >= 3) {
                 this.stockSearchLoading = true;
                 try {
-                    const results = await BasementProductController.searchItems(this.stockSearch);
+                    const results = await ProductController.search(this.stockSearch);
                     this.stockResults = results;
                     this.stockSearchLoading = false;
                 } catch (error) {

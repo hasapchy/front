@@ -23,13 +23,12 @@
               :toggleVisible="toggleVisible"
               :log="log">
               <template #left>
-                <router-link to="/basement/orders/create">
-                  <PrimaryButton
-                    icon="fas fa-plus"
-                  >
-                    {{ $t('createOrder') }}
-                  </PrimaryButton>
-                </router-link>
+                <PrimaryButton
+                  :onclick="() => showModal(null)"
+                  icon="fas fa-plus"
+                >
+                  {{ $t('createOrder') }}
+                </PrimaryButton>
 
                 <FiltersContainer 
                   :has-active-filters="hasActiveFilters"
@@ -119,13 +118,27 @@
         </div>
       </div>
     </transition>
+
+    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
+      <BasementOrderCreatePage 
+        v-if="modalDialog" 
+        :key="editingItem ? editingItem.id : 'new-order'" 
+        ref="basementOrderCreatePageForm"
+        @saved="handleSaved" 
+        @saved-silent="handleSavedSilent" 
+        @saved-error="handleSavedError"
+        @deleted="handleDeleted" 
+        @deleted-error="handleDeletedError" 
+        @close-request="closeModal"
+        :editingItem="editingItem" 
+      />
+    </SideModalDialog>
   </div>
 </template>
 
 <script>
-import BasementOrderController from '@/api/basement/BasementOrderController'
-import BasementProjectController from '@/api/basement/BasementProjectController'
-import BasementClientController from '@/api/basement/BasementClientController'
+import OrderController from '@/api/OrderController'
+import ProjectController from '@/api/ProjectController'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
@@ -133,13 +146,17 @@ import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vu
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import Pagination from '@/views/components/app/buttons/Pagination.vue'
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue'
+import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue'
+import BasementOrderCreatePage from '@/views/pages/basement/BasementOrderCreatePage.vue'
 import filtersMixin from '@/mixins/filtersMixin'
+import modalMixin from '@/mixins/modalMixin'
+import notificationMixin from '@/mixins/notificationMixin'
 import { VueDraggableNext } from 'vue-draggable-next'
 import { formatOrderDate } from '@/utils/dateUtils'
 
 export default {
   name: 'BasementOrdersPage',
-  mixins: [filtersMixin],
+  mixins: [filtersMixin, modalMixin, notificationMixin],
   components: {
     PrimaryButton,
     DraggableTable,
@@ -148,7 +165,9 @@ export default {
     FiltersContainer,
     Pagination,
     draggable: VueDraggableNext,
-    SpinnerIcon
+    SpinnerIcon,
+    SideModalDialog,
+    BasementOrderCreatePage
   },
   data() {
     return {
@@ -161,7 +180,12 @@ export default {
       dateFilter: 'all_time',
       startDate: null,
       endDate: null,
-      projectFilter: ''
+      projectFilter: '',
+      controller: OrderController,
+      savedSuccessText: this.$t('orderSaved'),
+      savedErrorText: this.$t('errorSavingOrder'),
+      deletedSuccessText: this.$t('orderDeleted'),
+      deletedErrorText: this.$t('errorDeletingOrder')
     }
   },
   computed: {
@@ -201,32 +225,55 @@ export default {
       ]
     }
   },
+  watch: {
+    '$route.params.id': {
+      immediate: true,
+      handler(value) {
+        if (value) {
+          this.handleRouteItem(value);
+        } else {
+          if (this.modalDialog) {
+            this.closeModal();
+          }
+          this.editingItem = null;
+        }
+      }
+    }
+  },
   async mounted() {
     await this.fetchProjects()
     await this.fetchOrders(1)
+    
+    if (this.$route.params.id) {
+      this.$nextTick(() => {
+        this.handleRouteItem(this.$route.params.id);
+      });
+    }
   },
   methods: {
     async fetchProjects() {
       try {
-        const projects = await BasementProjectController.getItems(1, { active_only: true })
-        this.projects = Array.isArray(projects) ? projects : (projects.items || [])
+        const response = await ProjectController.getItems(1, null, 'all_time', null, null, '', '', true)
+        this.projects = Array.isArray(response.items) ? response.items : []
       } catch (error) {
+        console.error('Ошибка загрузки проектов:', error)
         this.projects = []
       }
     },
     async fetchOrders(page = 1) {
       this.loading = true
       try {
-        const response = await BasementOrderController.getItems(
+        const response = await OrderController.getItems(
           page,
-          this.perPage,
-          null,
+          null, // search
           this.dateFilter,
           this.startDate,
           this.endDate,
-          null,
-          this.projectFilter,
-          null
+          '', // statusFilter
+          this.projectFilter || '', // projectFilter
+          '', // clientFilter
+          this.perPage,
+          false // unpaidOnly
         )
         this.orders = response.items || []
         this.paginationData = {
@@ -235,6 +282,7 @@ export default {
           total: response.total || 0
         }
       } catch (error) {
+        console.error('Ошибка загрузки заказов:', error)
         this.orders = []
         this.paginationData = null
       } finally {
@@ -321,7 +369,66 @@ export default {
       return order.category?.name || order.category_name || this.$t('notSpecified')
     },
     editOrder(order) {
-      this.$router.push(`/basement/orders/${order.id}/edit`)
+      if (!order?.id) {
+        return;
+      }
+      this.showModal(order);
+    },
+    async handleRouteItem(id) {
+      if (!id) {
+        if (this.modalDialog) {
+          this.closeModal();
+        }
+        this.editingItem = null;
+        return;
+      }
+      const itemId = Number(id);
+      if (!itemId) {
+        this.$router.replace({ name: 'BasementOrders' });
+        return;
+      }
+      if (this.editingItem?.id === itemId && this.modalDialog) {
+        return;
+      }
+      try {
+        const item = await OrderController.getItem(itemId);
+        if (!item) {
+          this.showNotification(this.$t('errorGettingOrder'), this.$t('notFound'), true);
+          this.$router.replace({ name: 'BasementOrders' });
+          return;
+        }
+        this.showModal(item);
+      } catch (error) {
+        this.showNotification(this.$t('errorGettingOrder'), error.message, true);
+        this.$router.replace({ name: 'BasementOrders' });
+      }
+    },
+    handleSaved() {
+      this.showNotification(this.savedSuccessText, "", false);
+      this.closeModal();
+      this.fetchOrders(this.paginationData?.currentPage || 1);
+    },
+    handleSavedSilent() {
+      this.showNotification(this.savedSuccessText, "", false);
+      this.fetchOrders(this.paginationData?.currentPage || 1);
+    },
+    handleSavedError(error) {
+      this.showNotification(this.savedErrorText, error, true);
+    },
+    handleDeleted() {
+      this.showNotification(this.deletedSuccessText, "", false);
+      this.closeModal();
+      this.fetchOrders(this.paginationData?.currentPage || 1);
+    },
+    handleDeletedError(error) {
+      this.showNotification(this.deletedErrorText, error, true);
+    },
+    closeModal(skipScrollRestore = false) {
+      modalMixin.methods.closeModal.call(this, skipScrollRestore);
+      if (this.$route.params.id) {
+        this.$router.replace({ name: 'BasementOrders' });
+      }
+      this.editingItem = null;
     },
     formatOrderDate
   }
