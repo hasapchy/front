@@ -435,9 +435,11 @@ export default {
         },
         prepareSave() {
             if (this.initialProjectId && !this.fieldConfig('client').excludeFromRequest) {
-                const project = this.allProjects.find(p => p.id === this.projectId) || null;
-                if (project && project.client) {
-                    this.selectedClient = project.client;
+                if (!(this.isFieldVisible('client') && this.isFieldRequired('client'))) {
+                    const project = this.allProjects.find(p => p.id === this.projectId) || null;
+                    if (project && project.client) {
+                        this.selectedClient = project.client;
+                    }
                 }
             }
             if (this.isDebt && !this.selectedClient?.id) {
@@ -677,6 +679,10 @@ export default {
             async handler(newProjectId) {
                 if (!this.isFieldVisible('project')) return;
                 if (!newProjectId || !this.initialProjectId) return;
+                if (this.editingItemId) return;
+                if (this.isFieldVisible('client') && this.isFieldRequired('client')) {
+                    return;
+                }
                 // Ищем проект в store (activeProjects может не содержать завершённых — в таком случае подгрузим)
                 let project = (this.allProjects || []).find(p => p.id === newProjectId) || null;
                 if (!project) {

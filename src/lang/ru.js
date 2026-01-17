@@ -106,6 +106,7 @@ export default {
   rent: 'Аренда',
   projects: 'Проекты',
   users: 'Сотрудники',
+  employees: 'Сотрудники',
   orgStructure: 'Орг. структура',
   settings: 'Кастомные права',
 
@@ -371,6 +372,7 @@ export default {
   searchProductsAndServices: 'Поиск товаров и услуг',
   enterProductNameOrCode: 'Введите название товара или код',
   specifiedProductsAndServices: 'Указанные товары и услуги',
+  specifiedEmployees: 'Указанные сотрудники',
   amountWithoutDiscount: 'Сумма без скидки',
   toCash: 'В кассу',
   individual: 'Индивидуальный',

@@ -101,6 +101,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        clientTypeFilter: {
+            type: Array,
+            default: null,
+        },
         selectedClient: {
             type: [Object, Number],
             default: null,
@@ -231,6 +235,13 @@ export default {
                 this.lastClients = clients
                     .filter((client) => client.status === true)
                     .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
+                    .filter((client) => {
+                        if (this.clientTypeFilter && Array.isArray(this.clientTypeFilter) && this.clientTypeFilter.length > 0) {
+                            const clientType = client.clientType || client.client_type;
+                            return this.clientTypeFilter.includes(clientType);
+                        }
+                        return true;
+                    })
                     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                     .slice(0, 10);
             } else {
@@ -241,11 +252,17 @@ export default {
             if (this.clientSearch.length >= 3) {
                 this.clientSearchLoading = true;
                 try {
-                    const results = await ClientController.searchItems(this.clientSearch);
+                    const typeFilter = this.clientTypeFilter && Array.isArray(this.clientTypeFilter) && this.clientTypeFilter.length > 0
+                        ? this.clientTypeFilter
+                        : null;
+                    
+                    const results = await ClientController.searchItems(this.clientSearch, typeFilter);
 
-                    this.clientResults = this.onlySuppliers
+                    let filtered = this.onlySuppliers
                         ? results.filter((client) => client.isSupplier)
                         : results;
+
+                    this.clientResults = filtered;
 
                 } catch (error) {
                     console.error('Ошибка при поиске клиентов:', error);
@@ -299,6 +316,13 @@ export default {
                         this.lastClients = paginated.items
                             .filter((client) => client.status === true)
                             .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
+                            .filter((client) => {
+                                if (this.clientTypeFilter && Array.isArray(this.clientTypeFilter) && this.clientTypeFilter.length > 0) {
+                                    const clientType = client.clientType || client.client_type;
+                                    return this.clientTypeFilter.includes(clientType);
+                                }
+                                return true;
+                            })
                             .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
                             .slice(0, 10);
                     }

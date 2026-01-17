@@ -58,12 +58,14 @@ export default class ClientController extends BaseController {
     );
   }
 
-  static async searchItems(term) {
+  static async searchItems(term, typeFilter = null) {
     return super.handleRequest(
       async () => {
-        const response = await api.get("/clients/search", {
-          params: { search_request: term },
-        });
+        const params = { search_request: term };
+        if (typeFilter && Array.isArray(typeFilter) && typeFilter.length > 0) {
+          params.type_filter = typeFilter;
+        }
+        const response = await api.get("/clients/search", { params });
         const data = Array.isArray(response.data) ? response.data : [];
         return ClientSearchDto.fromApiArray(data);
       },
@@ -71,15 +73,12 @@ export default class ClientController extends BaseController {
     );
   }
 
-  static async getListItems(forMutualSettlements = false, cashRegisterId = null) {
+  static async getListItems(forMutualSettlements = false) {
     return super.handleRequest(
       async () => {
         const params = {};
         if (forMutualSettlements) {
           params.for_mutual_settlements = true;
-        }
-        if (cashRegisterId) {
-          params.cash_register_id = cashRegisterId;
         }
         const response = await api.get("/clients/all", { params });
         const responseData = response.data;

@@ -3,12 +3,21 @@
         <div class="flex justify-between items-center mb-2">
             <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
             <div class="flex gap-2">
-                <PrimaryButton 
+                <PrimaryButton
                     v-if="$store.getters.hasPermission('transactions_create')"
-                    icon="fas fa-plus" 
-                    :onclick="showAddTransactionModal" 
+                    icon="fas fa-plus"
+                    :onclick="() => showAddTransactionModal('income')"
                     :is-small="true">
-                    {{ $t('addTransaction') }}
+                    {{ $t('income') || 'Приход' }}
+                </PrimaryButton>
+
+                <PrimaryButton
+                    v-if="$store.getters.hasPermission('transactions_create')"
+                    icon="fas fa-minus"
+                    :isDanger="true"
+                    :onclick="() => showAddTransactionModal('outcome')"
+                    :is-small="true">
+                    {{ $t('outcome') || 'Расход' }}
                 </PrimaryButton>
                 <PrimaryButton 
                     v-if="$store.getters.hasPermission('projects_update')"
@@ -153,6 +162,7 @@ export default {
             editingTransactionItem: null,
             transactionLoading: false,
             isProjectTransaction: false,
+            selectedNewTransactionType: null,
             columnsConfig: [
                 { name: "dateUser", label: this.$t("dateUser"), size: 120 },
                 { 
@@ -226,7 +236,11 @@ export default {
             return this.editingItem?.currencyId && this.editingItem?.currency;
         },
         projectFormConfig() {
-            return TRANSACTION_FORM_PRESETS.projectBalance;
+            return this.selectedNewTransactionType === 'outcome'
+                ? TRANSACTION_FORM_PRESETS.projectBalanceOutcome
+                : this.selectedNewTransactionType === 'income'
+                    ? TRANSACTION_FORM_PRESETS.projectBalanceIncome
+                    : TRANSACTION_FORM_PRESETS.projectBalance;
         },
         balanceFormatted() {
             const balance = typeof this.balance === 'number' ? this.balance : 0;
@@ -376,6 +390,7 @@ export default {
                 this.transactionLoading = true;
                 const sourceType = item?.source || item?.sourceType;
                 this.isProjectTransaction = sourceType === 'project_transaction';
+                this.selectedNewTransactionType = null;
                 
                 const entityConfig = this.ENTITY_CONFIG[sourceType] || this.ENTITY_CONFIG.transaction;
                 const data = await entityConfig.fetch(item.sourceId);
@@ -388,20 +403,23 @@ export default {
                 this.transactionLoading = false;
             }
         },
-        showAddTransactionModal() {
+        showAddTransactionModal(type = null) {
             this.editingTransactionItem = null;
             this.isProjectTransaction = false;
+            this.selectedNewTransactionType = type;
             this.transactionModalOpen = true;
         },
         showAddProjectTransactionModal() {
             this.editingTransactionItem = null;
             this.isProjectTransaction = true;
+            this.selectedNewTransactionType = null;
             this.transactionModalOpen = true;
         },
         closeTransactionModal() {
             this.transactionModalOpen = false;
             this.editingTransactionItem = null;
             this.isProjectTransaction = false;
+            this.selectedNewTransactionType = null;
         },
         async handleTransactionSaved() {
             this.closeTransactionModal();

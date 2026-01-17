@@ -16,9 +16,17 @@
                         :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
                         <template #left>
                             <div class="flex items-center gap-2 flex-wrap">
-                                <PrimaryButton :onclick="() => { showModal(null) }"
+                                <PrimaryButton :onclick="openCreateIncomeModal"
                                     icon="fas fa-plus"
                                     :disabled="!$store.getters.hasPermission('transactions_create')">
+                                    {{ $t('income') || 'Приход' }}
+                                </PrimaryButton>
+
+                                <PrimaryButton :onclick="openCreateOutcomeModal"
+                                    icon="fas fa-minus"
+                                    :isDanger="true"
+                                    :disabled="!$store.getters.hasPermission('transactions_create')">
+                                    {{ $t('outcome') || 'Расход' }}
                                 </PrimaryButton>
                                 
                                 <transition name="fade">
@@ -301,6 +309,12 @@ export default {
     },
     methods: {
         translateTransactionCategory,
+        openCreateIncomeModal() {
+            this.showModal(null, TRANSACTION_FORM_PRESETS.fullIncome);
+        },
+        openCreateOutcomeModal() {
+            this.showModal(null, TRANSACTION_FORM_PRESETS.fullOutcome);
+        },
         updateBalace() {
             // Обновляем баланс кассы и кредитов (один компонент для обоих)
             if (this.$refs.balanceWrapper) {

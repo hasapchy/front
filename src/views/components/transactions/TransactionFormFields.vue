@@ -1,7 +1,8 @@
 <template>
     <div>
         <ClientSearch v-if="isFieldVisible('client')" v-model:selectedClient="localSelectedClient" :showLabel="true"
-            :required="isDebt" :disabled="!!initialProjectId" :allowDeselect="!initialProjectId" />
+            :required="isDebt || isFieldRequired('client')" :disabled="isClientFieldDisabled" :allowDeselect="!initialProjectId"
+            :clientTypeFilter="fieldConfig('client').clientTypeFilter" />
         <div v-if="canShowDateField">
             <label>{{ $t('date') }}</label>
             <input type="datetime-local" :value="date"
@@ -65,7 +66,7 @@
                 </option>
             </select>
         </div>
-        <div class="mt-2" v-if="isFieldVisible('project')">
+        <div class="mt-2" v-if="isFieldVisible('project') && !initialProjectId">
             <label class="block mb-1">{{ $t('project') }}</label>
             <select :value="projectId" @input="$emit('update:projectId', $event.target.value)">
                 <option value="">{{ $t('no') }}</option>
@@ -134,6 +135,9 @@ export default {
         },
         canShowDateField() {
             return this.$store.getters.hasPermission('settings_edit_any_date');
+        },
+        isClientFieldDisabled() {
+            return !!this.initialProjectId && !this.isFieldVisible('client');
         },
     },
     methods: {

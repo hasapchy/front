@@ -95,6 +95,7 @@ export default {
   projects: 'Projects',
   rent: 'Rent',
   users: 'Employees',
+  employees: 'Employees',
   messenger: 'Messenger',
   settings: 'Settings',
   generalSettings: 'Settings',
