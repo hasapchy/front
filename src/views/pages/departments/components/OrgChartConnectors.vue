@@ -40,18 +40,24 @@ export default {
             lines: [],
             svgWidth: 0,
             svgHeight: 0,
-            observer: null
+            observer: null,
+            scrollTimeout: null
         };
     },
     mounted() {
         this.$nextTick(() => {
             this.calculateLines();
             this.setupResizeObserver();
+            this.setupScrollListener();
         });
     },
     beforeUnmount() {
         if (this.observer) {
             this.observer.disconnect();
+        }
+        this.removeScrollListener();
+        if (this.scrollTimeout) {
+            cancelAnimationFrame(this.scrollTimeout);
         }
     },
     watch: {
@@ -77,41 +83,76 @@ export default {
             }
         },
         
+        setupScrollListener() {
+            const container = this.$el?.parentElement;
+            if (container) {
+                container.addEventListener('scroll', this.handleScroll, { passive: true });
+            }
+        },
+        
+        removeScrollListener() {
+            const container = this.$el?.parentElement;
+            if (container) {
+                container.removeEventListener('scroll', this.handleScroll);
+            }
+        },
+        
+        handleScroll() {
+            // Используем requestAnimationFrame для оптимизации
+            if (this.scrollTimeout) {
+                cancelAnimationFrame(this.scrollTimeout);
+            }
+            this.scrollTimeout = requestAnimationFrame(() => {
+                this.calculateLines();
+            });
+        },
+        
         calculateLines() {
             this.lines = [];
             const container = this.$el.parentElement;
             if (!container) return;
 
+            // Используем scrollWidth и scrollHeight для полного размера контента
+            this.svgWidth = container.scrollWidth || container.offsetWidth;
+            this.svgHeight = container.scrollHeight || container.offsetHeight;
+
+            // Получаем позицию контейнера относительно viewport
             const containerRect = container.getBoundingClientRect();
-            this.svgWidth = containerRect.width;
-            this.svgHeight = containerRect.height;
+            
+            // Получаем позицию скролла
+            const scrollLeft = container.scrollLeft || 0;
+            const scrollTop = container.scrollTop || 0;
 
             // Найдём карточку компании
             const companyCard = container.querySelector('.company-card');
             if (companyCard) {
                 const companyRect = companyCard.getBoundingClientRect();
+                // Координаты относительно контейнера с учетом скролла
                 const companyBottom = {
-                    x: companyRect.left + companyRect.width / 2 - containerRect.left,
-                    y: companyRect.bottom - containerRect.top
+                    x: (companyRect.left - containerRect.left + scrollLeft) + companyRect.width / 2,
+                    y: (companyRect.top - containerRect.top + scrollTop) + companyRect.height
                 };
 
                 // Найдём все департаменты первого уровня
                 const rootNodes = container.querySelectorAll('.org-node-container[data-level="0"]');
                 if (rootNodes.length > 0) {
                     const rootTops = Array.from(rootNodes).map(node => {
-                        const rect = node.querySelector('.node-card').getBoundingClientRect();
+                        const card = node.querySelector('.node-card');
+                        if (!card) return null;
+                        const rect = card.getBoundingClientRect();
                         return {
-                            x: rect.left + rect.width / 2 - containerRect.left,
-                            y: rect.top - containerRect.top,
+                            x: (rect.left - containerRect.left + scrollLeft) + rect.width / 2,
+                            y: (rect.top - containerRect.top + scrollTop),
                             element: node
                         };
-                    });
+                    }).filter(Boolean);
+
+                    if (rootTops.length === 0) return;
 
                     // Рисуем линии от компании к департаментам первого уровня
                     if (rootTops.length === 1) {
-                        // Одна прямая вертикальная линия - выравниваем X координаты для строгой вертикали
                         const target = rootTops[0];
-                        const x = companyBottom.x; // Используем X координату компании для строгой вертикали
+                        const x = companyBottom.x;
                         this.lines.push({
                             path: `M ${x} ${companyBottom.y} L ${x} ${target.y}`,
                             isStraight: true
@@ -143,20 +184,20 @@ export default {
 
                     // Рекурсивно рисуем линии для вложенных департаментов
                     rootTops.forEach(rootTop => {
-                        this.drawNodeConnections(rootTop.element, containerRect);
+                        this.drawNodeConnections(rootTop.element, containerRect, scrollLeft, scrollTop);
                     });
                 }
             }
         },
 
-        drawNodeConnections(nodeElement, containerRect) {
+        drawNodeConnections(nodeElement, containerRect, scrollLeft, scrollTop) {
             const nodeCard = nodeElement.querySelector('.node-card');
             if (!nodeCard) return;
 
             const nodeRect = nodeCard.getBoundingClientRect();
             const nodeBottom = {
-                x: nodeRect.left + nodeRect.width / 2 - containerRect.left,
-                y: nodeRect.bottom - containerRect.top
+                x: (nodeRect.left - containerRect.left + scrollLeft) + nodeRect.width / 2,
+                y: (nodeRect.top - containerRect.top + scrollTop) + nodeRect.height
             };
 
             // Найдём дочерние узлы этого узла (обновлённый селектор для mt-28)
@@ -178,8 +219,8 @@ export default {
                 if (!childCard) return null;
                 const rect = childCard.getBoundingClientRect();
                 return {
-                    x: rect.left + rect.width / 2 - containerRect.left,
-                    y: rect.top - containerRect.top,
+                    x: (rect.left - containerRect.left + scrollLeft) + rect.width / 2,
+                    y: (rect.top - containerRect.top + scrollTop),
                     element: child
                 };
             }).filter(Boolean);
@@ -222,7 +263,7 @@ export default {
             // Рекурсивно рисуем для детей
             childTops.forEach(childTop => {
                 if (childTop.element) {
-                    this.drawNodeConnections(childTop.element, containerRect);
+                    this.drawNodeConnections(childTop.element, containerRect, scrollLeft, scrollTop);
                 }
             });
         }

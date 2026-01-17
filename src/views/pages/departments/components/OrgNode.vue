@@ -33,23 +33,16 @@
                     </div>
                 </div>
                 
-                <!-- Action Buttons: Visible on hover -->
-                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
+                <!-- Add Button -->
+                <div class="flex items-center flex-shrink-0">
                     <button 
-                        v-if="$store.getters.hasPermission('departments_update_all')"
-                        @click.stop="$emit('edit', node)" 
-                        class="p-1.5 rounded-md text-gray-400 hover:text-[#337AB7] hover:bg-blue-50 transition-all duration-200" 
-                        title="Редактировать"
+                        v-if="$store.getters.hasPermission('departments_create')"
+                        @click.stop="$emit('add-child', node.id)"
+                        class="px-3 py-1.5 text-xs font-semibold text-[#5CB85C] hover:text-white hover:bg-[#5CB85C] rounded-md transition-all duration-200 flex items-center gap-1.5"
+                        title="Добавить подотдел"
                     >
-                        <i class="fas fa-edit text-xs"></i>
-                    </button>
-                    <button 
-                        v-if="$store.getters.hasPermission('departments_delete_all')"
-                        @click.stop="$emit('delete', node)" 
-                        class="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200" 
-                        title="Удалить"
-                    >
-                        <i class="fas fa-trash text-xs"></i>
+                        <i class="fas fa-plus text-[10px]"></i>
+                        <span>Добавить</span>
                     </button>
                 </div>
             </div>
@@ -91,21 +84,38 @@
             </div>
 
             <!-- Card Footer -->
-            <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between rounded-b-lg">
+            <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center gap-3 rounded-b-lg">
                 <div class="flex items-center text-[#337AB7] text-xs font-medium">
                     <i class="fas fa-users mr-2 text-[#337AB7]/60"></i>
                     <span>{{ node.users_count || 0 }} {{ getUsersCountText(node.users_count || 0) }}</span>
                 </div>
                 
-                <button 
-                    v-if="$store.getters.hasPermission('departments_create')"
-                    @click.stop="$emit('add-child', node.id)"
-                    class="px-3 py-1.5 text-xs font-semibold text-[#5CB85C] hover:text-white hover:bg-[#5CB85C] rounded-md transition-all duration-200 flex items-center gap-1.5"
-                    title="Добавить подотдел"
-                >
-                    <i class="fas fa-plus text-[10px]"></i>
-                    <span>Добавить</span>
-                </button>
+                <!-- User Avatars -->
+                <div v-if="node.users && node.users.length > 0" class="flex items-center -space-x-2">
+                    <template v-for="(user, index) in node.users.slice(0, 5)" :key="user.id">
+                        <img 
+                            v-if="user.photo && typeof user.photoUrl === 'function'" 
+                            :src="user.photoUrl()" 
+                            class="w-7 h-7 rounded-full object-cover border-2 border-white shadow-sm"
+                            :alt="`${user.name || ''} ${user.surname || ''}`.trim() || 'Сотрудник'"
+                            :title="`${user.name || ''} ${user.surname || ''}`.trim() || 'Сотрудник'"
+                        >
+                        <div 
+                            v-else
+                            class="w-7 h-7 rounded-full bg-gray-200 border-2 border-white shadow-sm flex items-center justify-center"
+                            :title="`${user.name || ''} ${user.surname || ''}`.trim() || 'Сотрудник'"
+                        >
+                            <i class="fas fa-user text-gray-400 text-[10px]"></i>
+                        </div>
+                    </template>
+                    <div 
+                        v-if="node.users.length > 5"
+                        class="w-7 h-7 rounded-full bg-[#337AB7] border-2 border-white shadow-sm flex items-center justify-center text-[10px] font-semibold text-white"
+                        :title="`Еще ${node.users.length - 5} сотрудников`"
+                    >
+                        +{{ node.users.length - 5 }}
+                    </div>
+                </div>
             </div>
         </div>
 

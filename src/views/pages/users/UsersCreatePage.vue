@@ -132,6 +132,27 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('departments') }}</label>
+                    <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
+                        <div v-if="departments && departments.length > 0">
+                            <div v-for="department in departments" :key="department.id" class="flex items-center space-x-2 mb-2">
+                                <input 
+                                    type="checkbox" 
+                                    :id="`department-${department.id}`" 
+                                    :value="department.id"
+                                    v-model="form.departments"
+                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                                />
+                                <label :for="`department-${department.id}`" class="text-sm text-gray-700 cursor-pointer">
+                                    {{ department.title }}
+                                </label>
+                            </div>
+                        </div>
+                        <div v-else class="text-gray-500 text-sm">{{ $t('noDepartmentsAvailable') }}</div>
+                    </div>
+                </div>
             </div>
             <div v-show="currentTab === 'roles'">
                 <div class="mb-4">
@@ -208,6 +229,7 @@ import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
 import UsersController from '@/api/UsersController';
 import CompaniesController from '@/api/CompaniesController';
 import RolesController from '@/api/RolesController';
+import DepartmentsController from '@/api/DepartmentController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import userPhotoMixin from '@/mixins/userPhotoMixin';
@@ -239,11 +261,13 @@ export default {
                 is_active: true,
                 is_admin: false,
                 companies: [],
+                departments: [],
                 roles: [],
                 company_roles: [],
             },
             editingItemId: null,
             companies: [],
+            departments: [],
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
@@ -331,7 +355,8 @@ export default {
         this.$nextTick(async () => {
             await Promise.all([
                 this.fetchCompanies(),
-                this.fetchRoles()
+                this.fetchRoles(),
+                this.fetchDepartments()
             ]);
 
             if (!this.editingItem) {
@@ -356,6 +381,7 @@ export default {
                 is_active: this.form.is_active,
                 is_admin: this.form.is_admin,
                 companies: [...this.form.companies],
+                departments: [...this.form.departments],
                 roles: [...this.form.roles],
                 selected_image: this.selected_image,
                 image: this.image
@@ -417,6 +443,15 @@ export default {
                 this.allRoles = [];
             }
         },
+        async fetchDepartments() {
+            try {
+                const result = await DepartmentsController.getAllItems();
+                this.departments = result || [];
+            } catch (error) {
+                console.error('Error fetching departments:', error);
+                this.departments = [];
+            }
+        },
         clearForm() {
             this.form.name = '';
             this.form.surname = '';
@@ -430,6 +465,7 @@ export default {
             this.form.is_active = true;
             this.form.is_admin = false;
             this.form.companies = [];
+            this.form.departments = [];
             this.form.roles = [];
             this.form.company_roles = [];
             this.selected_image = null;
@@ -574,6 +610,10 @@ export default {
                 data.password = this.form.password;
             }
 
+            if (this.form.departments?.length) {
+                data.departments = this.form.departments;
+            }
+
             if (this.form.company_roles?.length) {
                 data.company_roles = this.form.company_roles;
             } else if (this.form.roles?.length) {
@@ -610,6 +650,7 @@ export default {
                 this.form.is_active = newEditingItem.isActive !== undefined ? newEditingItem.isActive : true;
                 this.form.is_admin = newEditingItem.isAdmin !== undefined ? newEditingItem.isAdmin : false;
                 this.form.companies = newEditingItem.companies?.map(c => c.id) || [];
+                this.form.departments = newEditingItem.departments?.map(d => d.id) || [];
                 this.form.roles = newEditingItem.roles?.map(r => typeof r === 'string' ? r : r.name) || [];
                 
                 if (newEditingItem.company_roles && Array.isArray(newEditingItem.company_roles)) {

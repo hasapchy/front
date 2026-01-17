@@ -72,6 +72,8 @@ export default {
   clients: 'Müşderiler',
   products: 'Önümler',
   orders: 'Sargytlar',
+  ordersB: 'Sargytlar B',
+  basementOrders: 'Basement sargytlar',
   sales: 'Satuwlar',
   tasks: 'Wezipeler',
   onlineNow: 'Häzir onlaýn',
