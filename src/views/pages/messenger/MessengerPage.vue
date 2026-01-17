@@ -655,11 +655,11 @@
         <div class="px-6 py-4 max-h-96 overflow-y-auto">
           <div class="space-y-2">
             <button
-              v-for="chat in allChatsList.filter(c => c.id !== selectedChatId && c.type !== 'user')"
+              v-for="chat in allChatsList.filter(c => c.id !== selectedChatId)"
               :key="`${chat.type}-${chat.id}`"
               type="button"
               class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3 rounded-lg"
-              @click="confirmForward(chat.id)"
+              @click="confirmForward(chat)"
             >
               <div class="relative shrink-0">
                 <img
@@ -1553,20 +1553,48 @@ export default {
       this.showForwardModal = true;
       this.closeMessageMenu();
     },
-    async confirmForward(targetChatId) {
+    async confirmForward(target) {
       if (!this.forwardingMessage) return;
-      
+
       try {
-        await ChatController.forwardMessage(this.selectedChatId, this.forwardingMessage.id, targetChatId);
-        this.showForwardModal = false;
-        this.forwardingMessage = null;
-        this.$store.dispatch("showNotification", {
-          title: "Успешно",
-          subtitle: "Сообщение переслано",
-          isDanger: false,
-          duration: 2000,
-        });
+        let targetChatId = null;
+
+        // If target is a user (direct chat), we might need to create/get the chat first
+        if (target.type === 'user') {
+          // If we already have a chat_id for this user
+          if (target.chat_id) {
+            targetChatId = target.chat_id;
+          } else {
+            // Create/Get direct chat
+            const chat = await ChatController.startDirectChat(target.id);
+            if (chat && chat.id) {
+              targetChatId = chat.id;
+              // Update our local chats list if needed
+              const exists = this.chats.find(c => Number(c.id) === Number(chat.id));
+              if (!exists) {
+                this.chats.push(chat);
+              }
+            }
+          }
+        } else {
+          // Group or General chat
+          targetChatId = target.id;
+        }
+
+        if (targetChatId) {
+          await ChatController.forwardMessage(this.selectedChatId, this.forwardingMessage.id, targetChatId);
+          this.showForwardModal = false;
+          this.forwardingMessage = null;
+          
+          this.$store.dispatch('showNotification', {
+            title: 'Успешно',
+            subtitle: 'Сообщение переслано',
+            isDanger: false,
+            duration: 2000
+          });
+        }
       } catch (error) {
+        console.error("Forward error:", error);
         this.$store.dispatch("showNotification", {
           title: "Ошибка",
           subtitle: error?.message || "Не удалось переслать сообщение",
