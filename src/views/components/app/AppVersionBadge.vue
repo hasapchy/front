@@ -55,6 +55,7 @@
 </template>
 
 <script>
+import AppController from '@/api/AppController';
 import { APP_VERSIONS, CURRENT_APP_VERSION } from '@/constants/appVersion';
 
 export default {
@@ -68,18 +69,19 @@ export default {
     data() {
         return {
             showNotes: false,
-            selectedVersionIndex: 0
+            selectedVersionIndex: 0,
+            loadedVersions: null
         };
     },
     computed: {
         versions() {
-            return APP_VERSIONS;
+            return this.loadedVersions || APP_VERSIONS;
         },
         currentVersion() {
-            return CURRENT_APP_VERSION;
+            return (this.versions && this.versions[0]) || CURRENT_APP_VERSION;
         },
         selectedVersion() {
-            return APP_VERSIONS[this.selectedVersionIndex] || this.currentVersion;
+            return this.versions[this.selectedVersionIndex] || this.currentVersion;
         },
         versionLabel() {
             return `v${this.currentVersion.version}`;
@@ -96,6 +98,17 @@ export default {
         }
     },
     methods: {
+        async loadVersions() {
+            try {
+                const versions = await AppController.getVersions();
+                if (Array.isArray(versions) && versions.length > 0) {
+                    this.loadedVersions = versions;
+                    this.selectedVersionIndex = 0;
+                }
+            } catch (e) {
+                this.loadedVersions = null;
+            }
+        },
         handleDoubleClick() {
             this.showNotes = true;
             this.selectedVersionIndex = 0;
@@ -108,6 +121,9 @@ export default {
                 this.selectedVersionIndex = index;
             }
         }
+    },
+    mounted() {
+        this.loadVersions();
     }
 };
 </script>

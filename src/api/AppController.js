@@ -24,6 +24,16 @@ export default class AppController extends BaseController {
     );
   }
 
+  static async getVersions() {
+    return super.handleRequest(
+      async () => {
+        const response = await api.get("/app/versions");
+        return response.data;
+      },
+      "Error fetching app versions:"
+    );
+  }
+
   static async getCurrencyExchangeRate(currencyId) {
     return super.handleRequest(
       async () => {
