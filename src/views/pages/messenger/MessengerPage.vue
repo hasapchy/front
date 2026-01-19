@@ -211,57 +211,56 @@
               <div class="flex-1 h-px bg-gray-300"></div>
             </div>
 
-            <template v-for="(item, index) in messagesWithDates" :key="`${item.type}-${item.type === 'date' ? item.date?.getTime() : item.data?.id}-${index}`">
-              <!-- Date separator with sticky positioning -->
-              <div v-if="item.type === 'date'" class="sticky top-0 z-10 flex justify-center my-3 -mx-4 md:-mx-6 py-2 bg-transparent">
-                <div class="px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-xs text-gray-600 border border-white/80 shadow-sm">
-                  {{ item.data }}
+            <div v-for="group in messageGroups" :key="group.id" class="relative">
+              <!-- Sticky Date Header -->
+              <div class="sticky top-0 z-10 flex justify-center my-3 -mx-4 md:-mx-6 py-2 bg-transparent pointer-events-none">
+                <div class="px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-xs text-gray-600 border border-white/80 shadow-sm pointer-events-auto">
+                  {{ group.dateLabel }}
                 </div>
               </div>
 
-              <!-- Message -->
+              <!-- Messages -->
               <div
-                v-else
+                v-for="(message, index) in group.messages"
+                :key="message.id"
                 class="flex mb-2 group"
-                :class="isMyMessage(item.data) ? 'justify-end' : 'justify-start'"
-                @contextmenu.prevent="showMessageMenu($event, item.data)"
+                :class="isMyMessage(message) ? 'justify-end' : 'justify-start'"
+                @contextmenu.prevent="showMessageMenu($event, message)"
               >
                 <div 
                   class="flex flex-col"
-                  :class="isMyMessage(item.data) ? 'items-end' : 'items-start'"
+                  :class="isMyMessage(message) ? 'items-end' : 'items-start'"
                 >
-
-                  
-                  <div class="flex items-end gap-2" :class="isMyMessage(item.data) ? 'flex-row' : 'flex-row-reverse'">
+                  <div class="flex items-end gap-2" :class="isMyMessage(message) ? 'flex-row' : 'flex-row-reverse'">
                     <div
                       class="w-full rounded-xl px-3 py-2 text-sm shadow-sm relative"
-                      :class="isMyMessage(item.data) ? 'bg-[#d9f6c9] text-gray-900' : 'bg-white text-gray-900'"
+                      :class="isMyMessage(message) ? 'bg-[#d9f6c9] text-gray-900' : 'bg-white text-gray-900'"
                     >
                       <!-- Reply preview -->
-                      <div v-if="item.data.parent" class="mb-2 pb-2 border-l-2 border-gray-400 pl-2 text-xs text-gray-600">
+                      <div v-if="message.parent" class="mb-2 pb-2 border-l-2 border-gray-400 pl-2 text-xs text-gray-600">
                         <div class="font-medium text-gray-700">
-                          {{ getMessageUserName(item.data.parent) }}
+                          {{ getMessageUserName(message.parent) }}
                         </div>
                         <div class="truncate">
-                          {{ item.data.parent.body || (item.data.parent.files?.length ? `Файлов: ${item.data.parent.files.length}` : '') }}
+                          {{ message.parent.body || (message.parent.files?.length ? `Файлов: ${message.parent.files.length}` : '') }}
                         </div>
                       </div>
 
                       <!-- Forwarded from -->
-                      <div v-if="item.data.forwarded_from" class="mb-2 pb-2 border-l-2 border-blue-400 pl-2 text-xs text-gray-600">
+                      <div v-if="message.forwarded_from" class="mb-2 pb-2 border-l-2 border-blue-400 pl-2 text-xs text-gray-600">
                         <div class="font-medium text-blue-700 flex items-center gap-1">
                           <i class="fas fa-share text-xs"></i>
-                          Переслано от {{ getMessageUserName(item.data.forwarded_from) }}
+                          Переслано от {{ getMessageUserName(message.forwarded_from) }}
                         </div>
                         <div class="truncate">
-                          {{ item.data.forwarded_from.body || (item.data.forwarded_from.files?.length ? `Файлов: ${item.data.forwarded_from.files.length}` : '') }}
+                          {{ message.forwarded_from.body || (message.forwarded_from.files?.length ? `Файлов: ${message.forwarded_from.files.length}` : '') }}
                         </div>
                       </div>
 
-                      <div class="whitespace-pre-wrap break-words leading-snug">{{ item.data.body || "" }}</div>
+                      <div class="whitespace-pre-wrap break-words leading-snug">{{ message.body || "" }}</div>
 
-                      <div v-if="Array.isArray(item.data.files) && item.data.files.length" class="mt-2 space-y-1">
-                        <div v-for="f in item.data.files" :key="f.path" class="flex items-center gap-2">
+                      <div v-if="Array.isArray(message.files) && message.files.length" class="mt-2 space-y-1">
+                        <div v-for="f in message.files" :key="f.path" class="flex items-center gap-2">
                           <button
                             v-if="isImageFile(f)"
                             type="button"
@@ -291,9 +290,9 @@
                       </div>
 
                       <div class="mt-1 flex items-center justify-end gap-1 text-[11px] text-gray-500">
-                        <span v-if="item.data.is_edited" class="text-gray-400 italic">(изменено)</span>
-                        <span>{{ messageTime(item.data) }}</span>
-                        <span v-if="isMyMessage(item.data)" class="text-sky-700">{{ messageTicks(item.data) }}</span>
+                        <span v-if="message.is_edited" class="text-gray-400 italic">(изменено)</span>
+                        <span>{{ messageTime(message) }}</span>
+                        <span v-if="isMyMessage(message)" class="text-sky-700">{{ messageTicks(message) }}</span>
                       </div>
 
                       <!-- Message actions menu button -->
@@ -301,31 +300,31 @@
                         <button
                           type="button"
                           class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 text-xs"
-                          @click.stop="showMessageMenu($event, item.data)"
+                          @click.stop="showMessageMenu($event, message)"
                         >
                           <i class="fas fa-ellipsis-v"></i>
                         </button>
                       </div>
                     </div>
                     
-                    <!-- Avatar for group/general chats - BELOW message (only for last message in sequence) -->
+                    <!-- Avatar for group/general chats -->
                     <div
-                      v-if="shouldShowAvatar(item, index, messagesWithDates)"
-                      class="shrink-0 mb-0.5 cursor-default" :title="getMessageUserName(item.data)"
+                      v-if="shouldShowAvatarInGroup(message, index, group.messages)"
+                      class="shrink-0 mb-0.5 cursor-default" :title="getMessageUserName(message)"
                     >
                       <div class="relative">
                         <img
-                          v-if="getMessageUser(item.data)?.photo"
-                          :src="userPhotoUrl(getMessageUser(item.data).photo)"
+                          v-if="getMessageUser(message)?.photo"
+                          :src="userPhotoUrl(getMessageUser(message).photo)"
                           class="w-7 h-7 rounded-full object-cover border-2 border-white shadow-sm"
-                          :alt="getMessageUserName(item.data)"
+                          :alt="getMessageUserName(message)"
                         />
                         <div
                           v-else
                           class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold border-2 border-white shadow-sm"
-                          :class="isMyMessage(item.data) ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'"
+                          :class="isMyMessage(message) ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'"
                         >
-                          {{ getMessageUserInitials(item.data) }}
+                          {{ getMessageUserInitials(message) }}
                         </div>
                       </div>
                     </div>
@@ -333,7 +332,7 @@
                   </div>
                 </div>
               </div>
-            </template>
+            </div>
           </template>
         </div>
       </div>
@@ -756,6 +755,10 @@ const buildStorageUrl = (path) => `${import.meta.env.VITE_APP_BASE_URL}/storage/
 
 const parseDateSafe = (dateString) => {
   if (!dateString) return null;
+  // If format is like "2024-01-19 19:00:00" (SQL timestamp without timezone), treat it as UTC
+  if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/.test(dateString)) {
+    return new Date(dateString.replace(' ', 'T') + 'Z');
+  }
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return null;
   return date;
@@ -763,16 +766,10 @@ const parseDateSafe = (dateString) => {
 
 const extractHHmm = (raw) => {
   if (!raw) return "";
-  const s = String(raw);
-  // ISO вида 2025-12-27T09:17:28.000000Z -> берём HH:mm после 'T'
-  if (s.includes("T")) {
-    const timePart = (s.split("T")[1] || "").trim();
-    const hhmm = timePart.slice(0, 5);
-    if (/^\d{2}:\d{2}$/.test(hhmm)) return hhmm;
-  }
-  // Формат "YYYY-MM-DD HH:mm:ss" или похожий -> ищем первую HH:mm
-  const match = s.match(/(\d{2}:\d{2})/);
-  return match ? match[1] : s;
+  const date = parseDateSafe(raw);
+  if (!date) return "";
+  
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 };
 
 // formatDayLabel will be a method that uses i18n
@@ -914,37 +911,34 @@ export default {
         return bTime - aTime;
       });
     },
-    messagesWithDates() {
+    messageGroups() {
       if (!this.messages || this.messages.length === 0) return [];
       
-      const grouped = [];
-      let currentDate = null;
+      const groups = [];
+      let currentGroup = null;
       
       this.messages.forEach((message) => {
         const messageDate = this.parseDate(message.created_at || message.createdAt);
-        if (!messageDate) {
-          // Если дату не удалось распарсить, просто добавляем сообщение
-          grouped.push({ type: 'message', data: message });
-          return;
+        // Fallback or skip if invalid? We'll assume valid or use current date fallback
+        const dateObj = messageDate || new Date();
+        const day = new Date(dateObj);
+        day.setHours(0, 0, 0, 0);
+        const dayTime = day.getTime();
+        
+        if (!currentGroup || currentGroup.date.getTime() !== dayTime) {
+          currentGroup = {
+            id: `date-${dayTime}`,
+            date: day,
+            dateLabel: this.formatDayLabel(day),
+            messages: []
+          };
+          groups.push(currentGroup);
         }
         
-        const messageDay = new Date(messageDate);
-        messageDay.setHours(0, 0, 0, 0);
-        
-        // Если дата изменилась, добавляем разделитель
-        if (!currentDate || currentDate.getTime() !== messageDay.getTime()) {
-          currentDate = messageDay;
-          grouped.push({ 
-            type: 'date', 
-            data: this.formatDayLabel(messageDay),
-            date: messageDay
-          });
-        }
-        
-        grouped.push({ type: 'message', data: message });
+        currentGroup.messages.push(message);
       });
       
-      return grouped;
+      return groups;
     },
     presenceStatusText() {
       if (!this.selectedChat) return "Выберите сотрудника или общий чат слева";
@@ -1755,6 +1749,32 @@ export default {
         return userId ? String(userId).charAt(0) : "?";
       }
       return this.getUserInitials(user);
+    },
+    shouldShowAvatarInGroup(message, index, groupMessages) {
+      // If it's the last message in the group, we show avatar (unless it's the same user as next group? No, user logic is per-message)
+      // Actually we only group by date.
+      
+      // If index is last in this group: 
+      // Theoretically the next group starts with a new date header, so visual separation is strong.
+      // So we should simpler logic: always show avatar on the last message of a block of same-user messages.
+      
+      // Check next message in this group
+      if (index === groupMessages.length - 1) {
+          // Last in group.
+          return true;
+      }
+      
+      const nextMessage = groupMessages[index + 1];
+      const currentUserId = message.user_id || message.userId || message.user?.id;
+      const nextUserId = nextMessage.user_id || nextMessage.userId || nextMessage.user?.id;
+      
+      // If next message is from different user, show avatar
+      if (String(currentUserId) !== String(nextUserId)) {
+          return true;
+      }
+      
+      // Same user, next is not date (since we are in group), so hide avatar
+      return false;
     },
     shouldShowAvatar(item, index, messagesWithDates) {
       // Показываем аватар только для групповых чатов
