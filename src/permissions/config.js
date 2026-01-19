@@ -166,6 +166,12 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
+    company_holidays: {
+      has_user_id: false,
+      check_strategy: "default",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+    },
     currency_history: {
       has_user_id: false,
       check_strategy: "default",
@@ -275,7 +281,7 @@ export const PERMISSIONS_CONFIG = {
     },
     companies: {
       label: "companies",
-      resources: ["companies"],
+      resources: ["companies", "company_holidays"],
     },
     currency_history: {
       label: "currency_history",
