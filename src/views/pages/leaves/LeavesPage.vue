@@ -23,7 +23,7 @@
                             <PrimaryButton
                                 icon="fas fa-plus"
                                 :onclick="() => { showModal(null) }"
-                                :disabled="!$store.getters.hasPermission('leaves_create_all')">
+                                :disabled="!$store.getters.hasPermission('leaves_create')">
                             </PrimaryButton>
 
                             <transition name="fade">
@@ -115,7 +115,7 @@
                     <PrimaryButton
                         icon="fas fa-plus"
                         :onclick="() => { showModal(null) }"
-                        :disabled="!$store.getters.hasPermission('leaves_create_all')">
+                        :disabled="!$store.getters.hasPermission('leaves_create')">
                     </PrimaryButton>
                     
                     <FiltersContainer
