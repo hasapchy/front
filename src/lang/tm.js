@@ -83,6 +83,8 @@ export default {
   andMore: 'We başgalar',
   birthdays: 'Doglan günleri',
   noBirthdays: 'Geljekde doglan gün ýok',
+  upcomingHolidays: 'Geljekki baýramçylyklar',
+  noUpcomingHolidays: 'Geljekki baýramçylyk ýok',
   quickLinks: 'Çalt baglanyşyklar',
   statistics: 'Statistika',
   news: 'Täzelikler',

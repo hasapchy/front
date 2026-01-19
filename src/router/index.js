@@ -720,6 +720,7 @@ const routes = [
           permission: "leave_types_view_all",
         },
       },
+      // Праздники теперь управляются через вкладку в настройках компании (CompaniesCreatePage)
       {
         path: "/basement-orders",
         name: "BasementOrders",

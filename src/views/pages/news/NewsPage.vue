@@ -112,14 +112,14 @@
                     <!-- Виджет онлайн пользователей -->
                     <OnlineUsersWidget />
                     
-                    <!-- Виджет быстрых ссылок -->
-                    <QuickLinksWidget />
-                    
                     <!-- Виджет задач -->
                     <TasksWidget v-if="$store.getters.hasPermission('tasks_view')" />
                     
                     <!-- Виджет дней рождения -->
                     <BirthdaysWidget />
+                    
+                    <!-- Виджет праздников -->
+                    <HolidaysWidget />
                 </aside>
             </div>
         </div>
@@ -184,8 +184,8 @@ import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 import NewsCard from '@/views/components/news/NewsCard.vue';
 import TasksWidget from '@/views/components/news/TasksWidget.vue';
 import BirthdaysWidget from '@/views/components/news/BirthdaysWidget.vue';
-import QuickLinksWidget from '@/views/components/news/QuickLinksWidget.vue';
 import OnlineUsersWidget from '@/views/components/news/OnlineUsersWidget.vue';
+import HolidaysWidget from '@/views/components/home/HolidaysWidget.vue';
 
 export default {
     mixins: [
@@ -208,8 +208,8 @@ export default {
         NewsCard,
         TasksWidget,
         BirthdaysWidget,
-        QuickLinksWidget,
-        OnlineUsersWidget
+        OnlineUsersWidget,
+        HolidaysWidget
     },
     data() {
         return {

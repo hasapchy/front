@@ -42,6 +42,9 @@
                     </div>
                 </div>
             </div>
+            <div v-show="currentTab === 'holidays'" class="mt-4">
+                <HolidayManager v-model="form.holidays" />
+            </div>
             <div v-show="currentTab === 'settings' && editingItem" class="mt-4">
                 <!-- Настройка отображения удаленных транзакций -->
                 <div class="mb-6 p-4 bg-white border rounded">
@@ -205,7 +208,9 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
+import HolidayManager from '@/views/components/app/HolidayManager.vue';
 import CompaniesController from '@/api/CompaniesController';
+import CompanyHolidayController from '@/api/CompanyHolidayController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
@@ -214,7 +219,7 @@ import { eventBus } from '@/eventBus';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
-    components: { PrimaryButton, AlertDialog, NotificationToast, ImageCropperModal, TabBar },
+    components: { PrimaryButton, AlertDialog, NotificationToast, ImageCropperModal, TabBar, HolidayManager },
     props: {
         editingItem: {
             type: Object,
@@ -237,6 +242,7 @@ export default {
                 rounding_quantity_direction: 'standard',
                 rounding_quantity_custom_threshold: null,
                 skip_project_order_balance: true,
+                holidays: [],
             },
             currentLogo: '',
             selected_logo: null,
@@ -246,6 +252,7 @@ export default {
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'info' },
+                { name: 'holidays', label: 'holidays' },
                 { name: 'settings', label: 'settings' }
             ],
             roundingConfirmDialog: false,
@@ -302,6 +309,7 @@ export default {
             this.form.rounding_quantity_direction = 'standard';
             this.form.rounding_quantity_custom_threshold = null;
             this.form.skip_project_order_balance = true;
+            this.form.holidays = [];
             this.currentLogo = '';
             this.selected_logo = null;
             this.croppedFile = null;
@@ -348,10 +356,55 @@ export default {
             // Используем обрезанный файл, если он есть, иначе файл из input
             const fileToUpload = this.croppedFile || this.$refs.logoInput?.files[0];
 
+            let response;
             if (this.editingItemId) {
-                return await CompaniesController.updateItem(this.editingItemId, data, fileToUpload);
+                response = await CompaniesController.updateItem(this.editingItemId, data, fileToUpload);
             } else {
-                return await CompaniesController.storeItem(data, fileToUpload);
+                response = await CompaniesController.storeItem(data, fileToUpload);
+            }
+
+            // Сохранение праздников после создания/обновления компании
+            if (response?.item?.id) {
+                await this.saveHolidays(response.item.id);
+            }
+
+            return response;
+        },
+        async saveHolidays(companyId) {
+            try {
+                // Получаем существующие праздники компании
+                const existingHolidays = this.editingItemId 
+                    ? await CompanyHolidayController.getAll()
+                    : [];
+
+                // Удаляем старые праздники, которых нет в новом списке
+                for (const existingHoliday of existingHolidays) {
+                    const stillExists = this.form.holidays.some(h => h.id === existingHoliday.id);
+                    if (!stillExists) {
+                        await CompanyHolidayController.delete(existingHoliday.id);
+                    }
+                }
+
+                // Создаем или обновляем праздники
+                for (const holiday of this.form.holidays) {
+                    const holidayData = {
+                        name: holiday.name,
+                        date: holiday.date,
+                        is_recurring: holiday.isRecurring !== undefined ? holiday.isRecurring : true,
+                        color: holiday.color,
+                    };
+
+                    if (holiday.id) {
+                        // Обновляем существующий праздник
+                        await CompanyHolidayController.update(holiday.id, holidayData);
+                    } else {
+                        // Создаем новый праздник
+                        await CompanyHolidayController.create(holidayData);
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка сохранения праздников:', error);
+                throw error;
             }
         },
         async performDelete() {
@@ -452,7 +505,7 @@ export default {
             return '';
         },
 
-        loadCompanyData(company) {
+        async loadCompanyData(company) {
             this.form.name = company.name || '';
             this.form.show_deleted_transactions = company.show_deleted_transactions || false;
             this.form.rounding_decimals = company.rounding_decimals !== undefined ? company.rounding_decimals : 2;
@@ -468,6 +521,25 @@ export default {
             this.selected_logo = null;
             if (this.$refs.logoInput) {
                 this.$refs.logoInput.value = null;
+            }
+
+            // Загружаем праздники компании
+            if (company.id) {
+                try {
+                    const holidays = await CompanyHolidayController.getAll();
+                    this.form.holidays = holidays.map(h => ({
+                        id: h.id,
+                        name: h.name,
+                        date: h.date,
+                        isRecurring: h.is_recurring !== undefined ? h.is_recurring : true,
+                        color: h.color,
+                    }));
+                } catch (error) {
+                    console.error('Ошибка загрузки праздников:', error);
+                    this.form.holidays = [];
+                }
+            } else {
+                this.form.holidays = [];
             }
         },
         confirmRoundingEnable() {
