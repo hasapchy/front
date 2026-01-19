@@ -1,8 +1,6 @@
 <template>
-    <!-- Статистика балансов -->
     <MutualSettlementsBalanceWrapper :data="clientBalances" :loading="clientBalancesLoading" />
 
-    <!-- Таблица клиентов -->
     <transition name="fade" mode="out-in">
         <div v-if="clientBalances != null && !clientBalancesLoading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="mutual_settlements.clients" :columns-config="columnsConfig"
@@ -20,18 +18,6 @@
                                     <CheckboxFilter class="w-full" :model-value="clientTypeFilter"
                                         :options="clientTypeOptions" placeholder="all"
                                         @update:modelValue="handleClientTypeChange($event)" />
-                                </div>
-                                <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') || 'Касса' }}</label>
-                                    <select 
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        :value="cashRegisterFilter || ''"
-                                        @change="handleCashRegisterChange($event.target.value)">
-                                        <option value="">Все кассы</option>
-                                        <option v-for="option in cashRegisterOptions" :key="option.value" :value="option.value">
-                                            {{ option.label }}
-                                        </option>
-                                    </select>
                                 </div>
                             </FiltersContainer>
                         </template>
@@ -111,7 +97,6 @@ export default {
             clientBalances: [],
             clientBalancesLoading: false,
             editingItem: null,
-            previousCashRegisterFilter: null,
             columnsConfig: [
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'clientName', label: 'customer', html: true },
@@ -127,7 +112,6 @@ export default {
     },
 
     mounted() {
-        this.previousCashRegisterFilter = this.cashRegisterFilter;
         this.loadClientBalances();
     },
 
@@ -151,8 +135,7 @@ export default {
         async loadClientBalances() {
             this.clientBalancesLoading = true;
             try {
-                const cashRegisterId = this.cashRegisterFilter || null;
-                const clients = await ClientController.getListItems(true, cashRegisterId);
+                const clients = await ClientController.getListItems(true);
                 this.allClientsRaw = clients;
                 this.allClients = clients;
 
@@ -164,15 +147,7 @@ export default {
             }
         },
 
-        async applyFilters() {
-            const currentCashRegisterFilter = this.cashRegisterFilter;
-            
-            if (currentCashRegisterFilter !== this.previousCashRegisterFilter) {
-                this.previousCashRegisterFilter = currentCashRegisterFilter;
-                await this.loadClientBalances();
-                return;
-            }
-
+        applyFilters() {
             this.applyLocalFilters();
         },
 
@@ -254,7 +229,6 @@ export default {
             const search = this.searchQuery;
             switch (c) {
                 case 'clientName':
-                    // Поддерживаем оба формата: camelCase и snake_case
                     const firstName = i.firstName || i.first_name || '';
                     const lastName = i.lastName || i.last_name || '';
                     const contactPerson = i.contactPerson || i.contact_person || '';
@@ -294,15 +268,12 @@ export default {
 
         resetFilters() {
             this.$store.dispatch('setClientTypeFilter', []);
-            this.$store.dispatch('setCashRegisterFilter', []);
             this.$store.dispatch('setSearchQuery', '');
-            this.previousCashRegisterFilter = null;
             this.loadClientBalances();
         },
         getActiveFiltersCount() {
             return this.getActiveFiltersCountFromConfig([
                 { value: this.clientTypeFilter, defaultValue: [], isArray: true },
-                { value: this.cashRegisterFilter, defaultValue: null },
                 { value: this.searchQuery?.trim(), defaultValue: '' }
             ]);
         },
@@ -310,20 +281,14 @@ export default {
             const selected = Array.isArray(value) ? value : [];
             this.$store.dispatch('setClientTypeFilter', selected);
         },
-        handleCashRegisterChange(value) {
-            const cashRegisterId = value && value !== '' ? parseInt(value) : null;
-            this.$store.dispatch('setCashRegisterFilter', cashRegisterId ? [cashRegisterId] : []);
-        },
 
         async handleCompanyChanged(companyId) {
             this.$store.dispatch('setClientTypeFilter', []);
-            this.$store.dispatch('setCashRegisterFilter', []);
             this.$store.dispatch('setSearchQuery', '');
 
             this.allClients = [];
             this.allClientsRaw = [];
             this.clientBalances = [];
-            this.previousCashRegisterFilter = null;
 
             await this.loadClientBalances();
 
@@ -352,19 +317,8 @@ export default {
                 { value: 'investor', label: this.$t('investor') },
             ];
         },
-        cashRegisterFilter() {
-            const filter = this.$store.getters.cashRegisterFilter;
-            return Array.isArray(filter) && filter.length > 0 ? filter[0] : null;
-        },
-        cashRegisterOptions() {
-            const cashRegisters = this.$store.getters.cashRegisters || [];
-            return cashRegisters.map(cash => ({
-                value: cash.id,
-                label: `${cash.name} (${cash.currencySymbol || ''})`
-            }));
-        },
         hasActiveFilters() {
-            return this.clientTypeFilter.length > 0 || this.cashRegisterFilter !== null;
+            return this.clientTypeFilter.length > 0 || !!this.searchQuery?.trim();
         }
     },
 }

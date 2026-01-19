@@ -116,6 +116,7 @@ export default {
   rent: 'Аренда',
   projects: 'Проекты',
   users: 'Сотрудники',
+  employees: 'Сотрудники',
   orgStructure: 'Орг. структура',
   settings: 'Кастомные права',
 
@@ -381,6 +382,7 @@ export default {
   searchProductsAndServices: 'Поиск товаров и услуг',
   enterProductNameOrCode: 'Введите название товара или код',
   specifiedProductsAndServices: 'Указанные товары и услуги',
+  specifiedEmployees: 'Указанные сотрудники',
   amountWithoutDiscount: 'Сумма без скидки',
   toCash: 'В кассу',
   individual: 'Индивидуальный',
@@ -1027,7 +1029,7 @@ export default {
   transactionCategories: 'Категории транзакций',
   systemCategoryProtected: 'Эта категория является системной и не может быть изменена',
   createdBy: 'Создал',
-  
+
   // Transaction Category Names
   'transactionCategory.SALE': 'Продажа',
   'transactionCategory.CUSTOMER_PAYMENT': 'Оплата покупателя за услугу',
@@ -1555,7 +1557,7 @@ export default {
   assignDeputy: 'Назначить заместителем',
   accrueSalaries: 'Начислить зарплаты',
   titleRequired: 'Название обязательно',
-  
+
   // Units
   'unit.METER': 'Метр',
   'unit.SQUARE_METER': 'Квадратный метр',
@@ -1568,7 +1570,7 @@ export default {
   'unit.PALLET': 'Паллета',
   'unit.SET': 'Комплект',
   'unit.ROLL': 'Рулон',
-  
+
   // Task Statuses
   'taskStatus.NEW': 'Новый',
   'taskStatus.PENDING': 'Ожидает',
@@ -1578,53 +1580,61 @@ export default {
   accept: 'Принять',
   decline: 'Отклонить',
   complete: 'Завершить',
-  
+
   // Order Status Categories
   'orderStatusCategory.NEW': 'Новые',
   'orderStatusCategory.IN_PROGRESS': 'В работе',
   'orderStatusCategory.READY': 'Готово',
   'orderStatusCategory.COMPLETED': 'Завершено',
   'orderStatusCategory.CANCELLED': 'Отменено',
-  
+
   // Order Statuses
   'orderStatus.NEW': 'Новый',
   'orderStatus.IN_PROGRESS': 'В работе',
   'orderStatus.READY': 'Готово',
   'orderStatus.COMPLETED': 'Завершено',
   'orderStatus.CANCELLED': 'Отменено',
-  
+
   // Project Statuses
   'projectStatus.NEW': 'Новый',
   'projectStatus.IN_PROGRESS': 'В работе',
   'projectStatus.PENDING': 'Ожидание оплаты',
   'projectStatus.COMPLETED': 'Завершено',
   'projectStatus.CANCELLED': 'Отменено',
-  
+
   // Leave Types
   'leaveType.TIME_OFF': 'Отгул',
   'leaveType.VACATION': 'Отпуск',
   'leaveType.SICK_LEAVE': 'Больничный',
   'leaveType.ABSENCE': 'Прогул',
   'leaveType.UNPAID_LEAVE': 'Отпуск без содержания',
-  
+
   // Currencies
   'currency.RUSSIAN_RUBLE': 'Российский рубль',
-  
+
+
+
+
+
   // Chats
   chats: 'Чаты',
   chats_write: 'Написание в чатах',
   chats_write_general: 'Написание в общем чате',
   chats_group_create: 'Создание групповых чатов',
-  
+
   // Employee Salaries
   employee_salaries_accrue: 'Начисление зарплат',
-  
+
   // Transactions View
   transactions_view_sale: 'Просмотр транзакций из продаж',
   transactions_view_order: 'Просмотр транзакций из заказов',
   transactions_view_receipt: 'Просмотр транзакций из оприходований',
   transactions_view_salary: 'Просмотр зарплатных транзакций',
   transactions_view_other: 'Просмотр остальных транзакций',
+
+
+
+
   // Date labels
   today: 'Сегодня',
   yesterday: 'Вчера',

@@ -6,10 +6,6 @@
                 :onItemClick="(i) => { showModal(i) }">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                     <TableControlsBar
-                        :show-pagination="true"
-                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                        :on-page-change="fetchItems"
-                        :on-per-page-change="handlePerPageChange"
                         :resetColumns="resetColumns"
                         :columns="columns"
                         :toggleVisible="toggleVisible"
@@ -24,12 +20,12 @@
                                 <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
                             </transition>
                         </template>
+
                         <template #right>
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                                 :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
                                 @changePage="fetchItems" @perPageChange="handlePerPageChange" />
                         </template>
-
                         <template #gear="{ resetColumns, columns, toggleVisible, log }">
                             <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
                                 <ul>

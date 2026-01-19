@@ -1,5 +1,14 @@
 <template>
     <div class="mt-4">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-md font-semibold">{{ $t('contracts')}}</h3>
+            <PrimaryButton 
+                icon="fas fa-plus" 
+                :onclick="showAddContractModal" 
+                :is-small="true">
+                {{ $t('addContract')}}
+            </PrimaryButton>
+        </div>
         <div v-if="loading" class="text-gray-500">{{ $t('loading') }}</div>
         <div v-else-if="contracts.length === 0" class="text-gray-500">
             {{ $t('noContracts') }}

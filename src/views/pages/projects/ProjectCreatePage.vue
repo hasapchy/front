@@ -82,6 +82,9 @@
         <div v-if="currentTab === 'contracts' && editingItem && canViewProjectContracts">
             <ProjectContractsTab :editing-item="editingItem" />
         </div>
+        <div v-if="currentTab === 'employees' && editingItem">
+            <ProjectEmployeesTab :editing-item="editingItem" />
+        </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null && canDeleteProject"
@@ -117,6 +120,7 @@ import { translateCurrency } from '@/utils/translationUtils';
 
 import ProjectBalanceTab from '@/views/pages/projects/ProjectBalanceTab.vue';
 import ProjectContractsTab from '@/views/pages/projects/ProjectContractsTab.vue';
+import ProjectEmployeesTab from '@/views/pages/projects/ProjectEmployeesTab.vue';
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
@@ -126,7 +130,7 @@ import dateFormMixin from '@/mixins/dateFormMixin';
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, companyChangeMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, FileUploader, UserSearch, UserBalanceTab },
+    components: { PrimaryButton, AlertDialog, TabBar, ClientSearch, ProjectBalanceTab, ProjectContractsTab, ProjectEmployeesTab, FileUploader, UserSearch, UserBalanceTab },
     props: {
         editingItem: { type: ProjectDto, required: false, default: null }
     },
@@ -155,8 +159,8 @@ export default {
                 { name: 'info', label: 'info' },
                 { name: 'contracts', label: 'contracts', permission: 'contracts_view' },
                 { name: 'files', label: 'files', permission: 'settings_project_files_view' },
-                // { name: 'employees', label: 'employees' },
                 { name: 'balance', label: 'balance', permission: 'settings_project_balance_view' },
+                { name: 'employees', label: 'employees' },
             ],
 
             selectedUserIds: this.editingItem ? this.editingItem.getUserIds?.() || (this.editingItem.users ? this.editingItem.users.map(u => u.id) : []) : [],

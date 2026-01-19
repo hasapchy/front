@@ -1,3 +1,16 @@
+const full = {
+    client: { visible: true },
+    project: { visible: true },
+    debt: { visible: true },
+    type: { visible: true },
+    category: {
+        visible: true,
+        excludedIds: [7, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27],
+    },
+    source: { visible: true },
+    note: { required: false },
+};
+
 export const TRANSACTION_FORM_PRESETS = {
     balanceAdjustment: {
         client: { visible: false },
@@ -32,6 +45,20 @@ export const TRANSACTION_FORM_PRESETS = {
         project: { visible: false },
         debt: { visible: false, enforcedValue: false },
         source: { visible: true },
+    },
+    projectBalanceIncome: {
+        client: { visible: false, excludeFromRequest: true },
+        project: { visible: false },
+        debt: { visible: false, enforcedValue: false },
+        source: { visible: true },
+        type: { visible: false, enforcedValue: 'income', readonly: true },
+    },
+    projectBalanceOutcome: {
+        client: { visible: false, excludeFromRequest: true },
+        project: { visible: false },
+        debt: { visible: false, enforcedValue: false },
+        source: { visible: true },
+        type: { visible: false, enforcedValue: 'outcome', readonly: true },
     },
     clientPayment: {
         client: { visible: false },
@@ -73,17 +100,21 @@ export const TRANSACTION_FORM_PRESETS = {
         type: { visible: false, enforcedValue: 'outcome', readonly: true },
         category: { visible: false, enforcedValue: 23 },
     },
-    full: {
-        client: { visible: true },
-        project: { visible: true },
-        debt: { visible: true },
-        type: { visible: true },
-        category: {
-            visible: true,
-            excludedIds: [ 7, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27],
-        },
-        source: { visible: true },
-        note: { required: false },
+    projectEmployeeBonus: {
+        client: { visible: true, clientTypeFilter: ['employee'], required: true },
+        project: { visible: false },
+        debt: { visible: false, enforcedValue: true },
+        type: { visible: false, enforcedValue: 'outcome', readonly: true },
+        category: { visible: false, enforcedValue: 26 },
+    },
+    full,
+    fullIncome: {
+        ...full,
+        type: { ...full.type, visible: false, enforcedValue: 'income', readonly: true },
+    },
+    fullOutcome: {
+        ...full,
+        type: { ...full.type, visible: false, enforcedValue: 'outcome', readonly: true },
     },
 };
 

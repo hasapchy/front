@@ -58,7 +58,7 @@
 
         <div v-else>
             <div class="relative">
-                <div class="w-full p-2 border rounded flex flex-wrap items-center gap-1.5 cursor-text relative" style="min-height: 40px;" @click="focusInput">
+                <div class="w-full p-2 border border-gray-300 rounded flex flex-wrap items-center gap-1.5 cursor-text relative focus-within:border-gray-300" style="min-height: 40px; border: 1px solid #d1d5db;" @click="focusInput">
                     <div v-for="user in selectedUsersObjects" :key="user.id" class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs flex-shrink-0">
                         <div class="w-4 h-4 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
                             <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)" :alt="getUserFullName(user)" class="w-full h-full object-cover">
@@ -72,9 +72,9 @@
                         type="text" 
                         v-model="userSearch" 
                         :placeholder="selectedUsersObjects.length === 0 ? $t('enterUserNameOrPosition') : ''"
-                        class="outline-none border-none bg-transparent p-0 m-0"
+                        class="outline-none border-0 bg-transparent p-0 m-0 focus:ring-0 focus:border-0"
                         :class="selectedUsersObjects.length === 0 ? 'flex-1 min-w-[120px]' : ''"
-                        :style="selectedUsersObjects.length > 0 && !userSearch ? { width: '2px', minWidth: '2px', padding: 0, opacity: 0 } : selectedUsersObjects.length > 0 ? { minWidth: '120px', flex: '1 1 auto' } : {}"
+                        :style="selectedUsersObjects.length > 0 && !userSearch ? { width: '2px', minWidth: '2px', padding: 0, opacity: 0, border: 'none' } : selectedUsersObjects.length > 0 ? { minWidth: '120px', flex: '1 1 auto', border: 'none' } : { border: 'none' }"
                         @focus="handleFocus" 
                         @blur="handleBlur"
                         @input="handleInput"
