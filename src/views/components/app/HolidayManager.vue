@@ -4,6 +4,7 @@
             <PrimaryButton 
                 :onclick="addHoliday" 
                 icon="fas fa-plus"
+                :disabled="!$store.getters.hasPermission('company_holidays_create')"
             >
                 {{ $t('add_holiday') }}
             </PrimaryButton>
@@ -49,6 +50,7 @@
                         <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
                             <div class="flex items-center gap-2">
                                 <button 
+                                    v-if="$store.getters.hasPermission('company_holidays_update_all')"
                                     @click="editHoliday(index)" 
                                     class="text-[#337AB7] hover:text-[#3571A4] transition-colors"
                                     type="button"
@@ -57,6 +59,7 @@
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <button 
+                                    v-if="$store.getters.hasPermission('company_holidays_delete_all')"
                                     @click="deleteHoliday(index)" 
                                     class="text-[#EE4F47] hover:text-[#D53935] transition-colors"
                                     type="button"
@@ -110,6 +113,7 @@
                         </div>
                         <div class="flex items-center gap-3">
                             <button 
+                                v-if="$store.getters.hasPermission('company_holidays_update_all')"
                                 @click="editHoliday(index)" 
                                 class="flex items-center gap-2 text-[#337AB7] hover:text-[#3571A4] transition-colors"
                                 type="button"
@@ -118,6 +122,7 @@
                                 <span class="text-sm">{{ $t('edit') }}</span>
                             </button>
                             <button 
+                                v-if="$store.getters.hasPermission('company_holidays_delete_all')"
                                 @click="deleteHoliday(index)" 
                                 class="flex items-center gap-2 text-[#EE4F47] hover:text-[#D53935] transition-colors"
                                 type="button"
@@ -216,6 +221,9 @@
                     <PrimaryButton
                         :onclick="saveHoliday"
                         icon="fas fa-save"
+                        :disabled="editingIndex !== null 
+                            ? !$store.getters.hasPermission('company_holidays_update_all')
+                            : !$store.getters.hasPermission('company_holidays_create')"
                     >
                         {{ editingIndex !== null ? $t('save') : $t('add') }}
                     </PrimaryButton>

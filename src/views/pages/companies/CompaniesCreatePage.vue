@@ -229,6 +229,7 @@ export default {
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     data() {
         return {
+            lastSaveResponse: null, // Для передачи response в onSaveSuccess
             form: {
                 name: '',
                 logo: null,
@@ -262,8 +263,18 @@ export default {
     },
     computed: {
         translatedTabs() {
+            let visibleTabs = this.tabs;
+            
             // Скрываем вкладку настроек при создании новой компании
-            const visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name !== 'settings');
+            if (!this.editingItem) {
+                visibleTabs = visibleTabs.filter(tab => tab.name !== 'settings');
+            }
+            
+            // Скрываем вкладку праздников, если нет прав на просмотр
+            if (!this.$store.getters.hasPermission('company_holidays_view_all')) {
+                visibleTabs = visibleTabs.filter(tab => tab.name !== 'holidays');
+            }
+            
             return visibleTabs.map(tab => ({
                 ...tab,
                 label: this.$t(tab.label)
@@ -363,10 +374,8 @@ export default {
                 response = await CompaniesController.storeItem(data, fileToUpload);
             }
 
-            // Сохранение праздников после создания/обновления компании
-            if (response?.item?.id) {
-                await this.saveHolidays(response.item.id);
-            }
+            // Сохраняем response для использования в onSaveSuccess
+            this.lastSaveResponse = response;
 
             return response;
         },
@@ -404,7 +413,19 @@ export default {
                 }
             } catch (error) {
                 console.error('Ошибка сохранения праздников:', error);
-                throw error;
+                
+                // Показываем понятное сообщение пользователю
+                const errorMessage = error.response?.status === 403 
+                    ? this.$t('noPermissionToCreateHolidays') || 'У вас нет прав на управление праздниками'
+                    : this.$t('errorSavingHolidays') || 'Ошибка при сохранении праздников: ' + (error.response?.data?.message || error.message);
+                
+                this.showNotification(
+                    this.$t('warning') || 'Внимание',
+                    this.$t('companySavedButHolidaysError') || 'Компания сохранена, но возникла ошибка с праздниками: ' + errorMessage,
+                    true
+                );
+                
+                // НЕ пробрасываем ошибку - компания уже сохранена успешно
             }
         },
         async performDelete() {
@@ -414,7 +435,12 @@ export default {
             }
             return resp;
         },
-        onSaveSuccess(response) {
+        async onSaveSuccess(response) {
+            // Сохраняем праздники ПОСЛЕ успешного сохранения компании
+            if (this.lastSaveResponse?.item?.id) {
+                await this.saveHolidays(this.lastSaveResponse.item.id);
+            }
+            
             eventBus.emit('company-updated');
             this.clearForm();
         },
