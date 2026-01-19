@@ -372,6 +372,15 @@ export default {
         },
         async saveHolidays(companyId) {
             try {
+                // Сохраняем текущую компанию для восстановления
+                const previousCompanyId = this.$store.state.currentCompany?.id;
+                
+                // Переключаемся на компанию, для которой сохраняем праздники
+                // Это необходимо, чтобы X-Company-ID заголовок был правильным
+                if (previousCompanyId !== companyId) {
+                    await this.$store.dispatch('setCurrentCompany', companyId);
+                }
+
                 // Получаем существующие праздники компании
                 const existingHolidays = this.editingItemId 
                     ? await CompanyHolidayController.getAll()

@@ -29,6 +29,7 @@ import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
 import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
 import LeavesPage from "@/views/pages/leaves/LeavesPage.vue";
 import LeaveTypesPage from "@/views/pages/leave_types/LeaveTypesPage.vue";
+import CompanyHolidaysPage from "@/views/pages/company-holidays/CompanyHolidaysPage.vue";
 import MessengerPage from "@/views/pages/messenger/MessengerPage.vue";
 
 // Basement pages
@@ -692,6 +693,26 @@ const routes = [
           title: "leaves",
           requiresAuth: true,
           permission: "leaves_view_all",
+        },
+      },
+      {
+        path: "/company-holidays",
+        name: "CompanyHolidays",
+        component: CompanyHolidaysPage,
+        meta: {
+          title: "companyHolidays",
+          requiresAuth: true,
+          permission: "company_holidays_view",
+        },
+      },
+      {
+        path: "/company-holidays/:id",
+        name: "CompanyHolidayView",
+        component: CompanyHolidaysPage,
+        meta: {
+          title: "companyHolidays",
+          requiresAuth: true,
+          permission: "company_holidays_view",
         },
       },
       {
