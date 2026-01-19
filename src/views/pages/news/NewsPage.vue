@@ -117,6 +117,9 @@
                     
                     <!-- Виджет дней рождения -->
                     <BirthdaysWidget />
+                    
+                    <!-- Виджет праздников -->
+                    <HolidaysWidget />
                 </aside>
             </div>
         </div>
@@ -182,6 +185,7 @@ import NewsCard from '@/views/components/news/NewsCard.vue';
 import TasksWidget from '@/views/components/news/TasksWidget.vue';
 import BirthdaysWidget from '@/views/components/news/BirthdaysWidget.vue';
 import OnlineUsersWidget from '@/views/components/news/OnlineUsersWidget.vue';
+import HolidaysWidget from '@/views/components/home/HolidaysWidget.vue';
 
 export default {
     mixins: [
@@ -204,7 +208,8 @@ export default {
         NewsCard,
         TasksWidget,
         BirthdaysWidget,
-        OnlineUsersWidget
+        OnlineUsersWidget,
+        HolidaysWidget
     },
     data() {
         return {
