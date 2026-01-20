@@ -85,6 +85,7 @@ export default {
   noBirthdays: 'Geljekde doglan gün ýok',
   upcomingHolidays: 'Geljekki baýramçylyklar',
   noUpcomingHolidays: 'Geljekki baýramçylyk ýok',
+  noTasks: 'Wezipe ýok',
   quickLinks: 'Çalt baglanyşyklar',
   statistics: 'Statistika',
   news: 'Täzelikler',

@@ -219,6 +219,7 @@ export default {
             savedErrorText: this.$t('errorSavingNews') || 'Ошибка сохранения новости',
             deletedSuccessText: this.$t('newsSuccessfullyDeleted') || 'Новость успешно удалена',
             deletedErrorText: this.$t('errorDeletingNews') || 'Ошибка удаления новости',
+            searchQuery: '',
             dateFilter: 'all_time',
             startDate: '',
             endDate: '',

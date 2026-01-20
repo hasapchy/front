@@ -90,6 +90,7 @@ export default {
   noBirthdays: 'No upcoming birthdays',
   upcomingHolidays: 'Upcoming Holidays',
   noUpcomingHolidays: 'No upcoming holidays',
+  noTasks: 'No tasks',
   quickLinks: 'Quick Links',
   statistics: 'Statistics',
   news: 'News',

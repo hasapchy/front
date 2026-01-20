@@ -265,9 +265,11 @@ export default {
         translatedTabs() {
             let visibleTabs = this.tabs;
             
-            // Скрываем вкладку настроек при создании новой компании
+            // Скрываем вкладки настроек и праздников при создании новой компании
             if (!this.editingItem) {
-                visibleTabs = visibleTabs.filter(tab => tab.name !== 'settings');
+                visibleTabs = visibleTabs.filter(tab => 
+                    tab.name !== 'settings' && tab.name !== 'holidays'
+                );
             }
             
             // Скрываем вкладку праздников, если нет прав на просмотр
@@ -293,8 +295,8 @@ export default {
     },
     methods: {
         changeTab(tabName) {
-            // Предотвращаем переход на вкладку настроек при создании новой компании
-            if (tabName === 'settings' && !this.editingItem) {
+            // Предотвращаем переход на вкладки настроек и праздников при создании новой компании
+            if ((tabName === 'settings' || tabName === 'holidays') && !this.editingItem) {
                 this.currentTab = 'info';
                 return;
             }
@@ -364,7 +366,6 @@ export default {
             };
         },
         async performSave(data) {
-            // Используем обрезанный файл, если он есть, иначе файл из input
             const fileToUpload = this.croppedFile || this.$refs.logoInput?.files[0];
 
             let response;
@@ -374,67 +375,51 @@ export default {
                 response = await CompaniesController.storeItem(data, fileToUpload);
             }
 
-            // Сохраняем response для использования в onSaveSuccess
             this.lastSaveResponse = response;
-
             return response;
         },
         async saveHolidays(companyId) {
+            if (!this.form.holidays || this.form.holidays.length === 0) {
+                return;
+            }
+
             try {
-                // Сохраняем текущую компанию для восстановления
-                const previousCompanyId = this.$store.state.currentCompany?.id;
-                
-                // Переключаемся на компанию, для которой сохраняем праздники
-                // Это необходимо, чтобы X-Company-ID заголовок был правильным
-                if (previousCompanyId !== companyId) {
-                    await this.$store.dispatch('setCurrentCompany', companyId);
-                }
+                // Получаем существующие праздники для этой компании
+                const existingHolidays = await CompanyHolidayController.getAll({ 
+                    company_id: companyId 
+                });
+                const existingIds = new Set(existingHolidays.map(h => h.id));
 
-                // Получаем существующие праздники компании
-                const existingHolidays = this.editingItemId 
-                    ? await CompanyHolidayController.getAll()
-                    : [];
-
-                // Удаляем старые праздники, которых нет в новом списке
-                for (const existingHoliday of existingHolidays) {
-                    const stillExists = this.form.holidays.some(h => h.id === existingHoliday.id);
-                    if (!stillExists) {
-                        await CompanyHolidayController.delete(existingHoliday.id);
+                // Удаляем праздники, которых больше нет
+                for (const existing of existingHolidays) {
+                    if (!this.form.holidays.some(h => h.id === existing.id)) {
+                        await CompanyHolidayController.deleteItem(existing.id);
                     }
                 }
 
-                // Создаем или обновляем праздники
+                // Создаём или обновляем праздники
                 for (const holiday of this.form.holidays) {
-                    const holidayData = {
+                    const data = {
+                        company_id: companyId,
                         name: holiday.name,
                         date: holiday.date,
-                        is_recurring: holiday.isRecurring !== undefined ? holiday.isRecurring : true,
-                        color: holiday.color,
+                        is_recurring: holiday.isRecurring ?? true,
+                        color: holiday.color || '#FF5733',
                     };
 
-                    if (holiday.id) {
-                        // Обновляем существующий праздник
-                        await CompanyHolidayController.update(holiday.id, holidayData);
+                    if (holiday.id && existingIds.has(holiday.id)) {
+                        await CompanyHolidayController.updateItem(holiday.id, data);
                     } else {
-                        // Создаем новый праздник
-                        await CompanyHolidayController.create(holidayData);
+                        await CompanyHolidayController.storeItem(data);
                     }
                 }
             } catch (error) {
                 console.error('Ошибка сохранения праздников:', error);
-                
-                // Показываем понятное сообщение пользователю
-                const errorMessage = error.response?.status === 403 
-                    ? this.$t('noPermissionToCreateHolidays') || 'У вас нет прав на управление праздниками'
-                    : this.$t('errorSavingHolidays') || 'Ошибка при сохранении праздников: ' + (error.response?.data?.message || error.message);
-                
                 this.showNotification(
-                    this.$t('warning') || 'Внимание',
-                    this.$t('companySavedButHolidaysError') || 'Компания сохранена, но возникла ошибка с праздниками: ' + errorMessage,
+                    this.$t('warning'),
+                    'Компания сохранена, но возникла ошибка с праздниками',
                     true
                 );
-                
-                // НЕ пробрасываем ошибку - компания уже сохранена успешно
             }
         },
         async performDelete() {
@@ -445,12 +430,21 @@ export default {
             return resp;
         },
         async onSaveSuccess(response) {
-            // Сохраняем праздники ПОСЛЕ успешного сохранения компании
-            if (this.lastSaveResponse?.item?.id) {
-                await this.saveHolidays(this.lastSaveResponse.item.id);
+            // Сохраняем праздники ТОЛЬКО при редактировании существующей компании
+            const companyId = this.lastSaveResponse?.company?.id || this.editingItemId;
+            if (this.editingItemId && companyId) {
+                await this.saveHolidays(companyId);
             }
             
-            eventBus.emit('company-updated');
+            // Эмитим company-updated только если редактируем текущую компанию
+            const currentCompanyId = this.$store.state.currentCompany?.id;
+            const savedCompanyId = this.lastSaveResponse?.company?.id;
+            
+            if (this.editingItemId && Number(currentCompanyId) === Number(savedCompanyId)) {
+                eventBus.emit('company-updated');
+            }
+            
+            this.lastSaveResponse = null;
             this.clearForm();
         },
         onEditingItemChanged(newEditingItem) {
@@ -539,8 +533,32 @@ export default {
             }
             return '';
         },
+        formatDateForInput(date) {
+            // Конвертирует дату из формата "2026-03-13T19:00:00.000000Z" в "2026-03-13"
+            if (!date) return '';
+            
+            // Если дата уже в правильном формате
+            if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                return date;
+            }
+            
+            // Если дата в ISO формате или другом формате с временем
+            try {
+                const d = new Date(date);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            } catch (e) {
+                console.error('Ошибка форматирования даты:', date, e);
+                return date;
+            }
+        },
 
         async loadCompanyData(company) {
+            // Всегда начинаем с вкладки "Информация"
+            this.currentTab = 'info';
+            
             this.form.name = company.name || '';
             this.form.show_deleted_transactions = company.show_deleted_transactions || false;
             this.form.rounding_decimals = company.rounding_decimals !== undefined ? company.rounding_decimals : 2;
@@ -558,16 +576,18 @@ export default {
                 this.$refs.logoInput.value = null;
             }
 
-            // Загружаем праздники компании
+            // Загружаем праздники для любой компании (передаём company_id)
             if (company.id) {
                 try {
-                    const holidays = await CompanyHolidayController.getAll();
+                    const holidays = await CompanyHolidayController.getAll({ 
+                        company_id: company.id 
+                    });
                     this.form.holidays = holidays.map(h => ({
                         id: h.id,
                         name: h.name,
-                        date: h.date,
-                        isRecurring: h.is_recurring !== undefined ? h.is_recurring : true,
-                        color: h.color,
+                        date: this.formatDateForInput(h.date),
+                        isRecurring: h.is_recurring ?? true,
+                        color: h.color || '#FF5733',
                     }));
                 } catch (error) {
                     console.error('Ошибка загрузки праздников:', error);

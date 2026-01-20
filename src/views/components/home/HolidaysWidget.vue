@@ -61,7 +61,7 @@ export default {
                 const locale = this.$i18n.locale || 'ru';
                 dayjs.locale(locale);
                 
-                this.holidays = (holidays || [])
+                const mapped = (holidays || [])
                     .map(holiday => {
                         const holidayDate = dayjs(holiday.date);
                         const thisYear = holidayDate.year(now.year());
@@ -70,7 +70,10 @@ export default {
                         // Проверяем праздник в текущем или следующем году
                         let nextHoliday = thisYear;
                         if (thisYear.isBefore(now, 'day')) {
-                            nextHoliday = nextYear;
+                            // Для повторяющихся праздников показываем следующий год
+                            if (holiday.is_recurring) {
+                                nextHoliday = nextYear;
+                            }
                         }
                         
                         return {
@@ -79,11 +82,18 @@ export default {
                             dateFormatted: nextHoliday.format('D MMMM'),
                             daysUntil: nextHoliday.diff(now, 'day')
                         };
-                    })
-                    .filter(holiday => {
-                        // Показываем праздники в течение 60 дней
-                        return holiday.daysUntil >= 0 && holiday.daysUntil <= 60;
-                    })
+                    });
+                
+                const filtered = mapped.filter(holiday => {
+                    // Для повторяющихся праздников показываем все будущие
+                    if (holiday.is_recurring) {
+                        return holiday.daysUntil >= 0;
+                    }
+                    // Для не повторяющихся - только если еще не прошли
+                    return holiday.daysUntil >= 0;
+                });
+                
+                this.holidays = filtered
                     .sort((a, b) => a.nextHoliday.diff(b.nextHoliday))
                     .slice(0, 5); // Показываем только 5 ближайших
             } catch (error) {
@@ -99,6 +109,8 @@ export default {
 
 <style scoped>
 </style>
+
+
 
 
 

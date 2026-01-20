@@ -284,34 +284,39 @@ export default {
         editHoliday(index) {
             const holiday = this.holidays[index];
             this.form = {
+                id: holiday.id,
                 name: holiday.name,
                 date: holiday.date,
-                isRecurring: holiday.isRecurring !== undefined ? holiday.isRecurring : true,
-                color: holiday.color,
+                isRecurring: holiday.isRecurring ?? true,
+                color: holiday.color || '#FF5733',
             };
             this.editingIndex = index;
             this.showForm = true;
         },
         saveHoliday() {
             if (!this.form.name.trim() || !this.form.date) {
-                alert(this.$t('please_fill_required_fields'));
+                alert(this.$t('please_fill_required_fields') || 'Заполните все обязательные поля');
                 return;
             }
 
             const holidayData = {
                 name: this.form.name.trim(),
                 date: this.form.date,
-                isRecurring: this.form.isRecurring,
-                color: this.form.color,
+                isRecurring: this.form.isRecurring ?? true,
+                color: this.form.color || '#FF5733',
             };
 
             let updatedHolidays;
             if (this.editingIndex !== null) {
-                // Редактирование существующего праздника
+                // Редактирование - сохраняем ID
+                const existingHoliday = this.holidays[this.editingIndex];
+                if (existingHoliday?.id) {
+                    holidayData.id = existingHoliday.id;
+                }
                 updatedHolidays = [...this.holidays];
                 updatedHolidays[this.editingIndex] = holidayData;
             } else {
-                // Добавление нового праздника
+                // Добавление нового
                 updatedHolidays = [...this.holidays, holidayData];
             }
 
@@ -319,10 +324,8 @@ export default {
             this.cancelForm();
         },
         deleteHoliday(index) {
-            if (confirm(this.$t('confirm_delete'))) {
-                const updatedHolidays = this.holidays.filter((_, i) => i !== index);
-                this.$emit('update:modelValue', updatedHolidays);
-            }
+            const updatedHolidays = this.holidays.filter((_, i) => i !== index);
+            this.$emit('update:modelValue', updatedHolidays);
         },
         cancelForm() {
             this.showForm = false;
