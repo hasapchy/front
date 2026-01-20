@@ -75,7 +75,7 @@ export default {
                         const thisYear = birthday.year(now.year());
                         const nextYear = birthday.year(now.year() + 1);
                         
-                        // Проверяем день рождения в текущем или следующем месяце
+                        // Проверяем день рождения в текущем или следующем году
                         let nextBirthday = thisYear;
                         if (thisYear.isBefore(now, 'day')) {
                             nextBirthday = nextYear;
@@ -93,12 +93,8 @@ export default {
                             name: fullName || user.name || 'Без имени'
                         };
                     })
-                    .filter(user => {
-                        const daysUntil = user.nextBirthday.diff(now, 'day');
-                        return daysUntil >= 0 && daysUntil <= 60; // Показываем в течение 60 дней
-                    })
-                    .sort((a, b) => a.nextBirthday.diff(b.nextBirthday))
-                    .slice(0, 5); // Показываем только 5 ближайших
+                    // Показываем все дни рождения по порядку
+                    .sort((a, b) => a.nextBirthday.diff(b.nextBirthday));
             } catch (error) {
                 console.error('Ошибка загрузки дней рождения:', error);
                 this.birthdays = [];

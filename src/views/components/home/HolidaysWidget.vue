@@ -93,9 +93,9 @@ export default {
                     return holiday.daysUntil >= 0;
                 });
                 
+                // Показываем все праздники по порядку
                 this.holidays = filtered
-                    .sort((a, b) => a.nextHoliday.diff(b.nextHoliday))
-                    .slice(0, 5); // Показываем только 5 ближайших
+                    .sort((a, b) => a.nextHoliday.diff(b.nextHoliday));
             } catch (error) {
                 console.error('Ошибка загрузки праздников:', error);
                 this.holidays = [];
