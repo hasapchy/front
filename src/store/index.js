@@ -1875,11 +1875,7 @@ const store = createStore({
           return false;
         }
         
-        // Для basement-only пунктов у basement работников пропускаем проверку прав
-        if (item.basementOnly && isBasementWorker) {
-          return true;
-        }
-        
+        // Проверяем права доступа для всех пользователей (включая basement workers)
         if (!item.permission) return true;
         return getters.hasPermission(item.permission);
       });
@@ -1909,11 +1905,7 @@ const store = createStore({
           return false;
         }
         
-        // Для basement-only пунктов у basement работников пропускаем проверку прав
-        if (item.basementOnly && isBasementWorker) {
-          return true;
-        }
-        
+        // Проверяем права доступа для всех пользователей (включая basement workers)
         if (!item.permission) return true;
         return getters.hasPermission(item.permission);
       });

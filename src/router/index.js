@@ -29,6 +29,7 @@ import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
 import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
 import LeavesPage from "@/views/pages/leaves/LeavesPage.vue";
 import LeaveTypesPage from "@/views/pages/leave_types/LeaveTypesPage.vue";
+import CompanyHolidaysPage from "@/views/pages/company-holidays/CompanyHolidaysPage.vue";
 import MessengerPage from "@/views/pages/messenger/MessengerPage.vue";
 
 // Basement pages
@@ -695,6 +696,26 @@ const routes = [
         },
       },
       {
+        path: "/company-holidays",
+        name: "CompanyHolidays",
+        component: CompanyHolidaysPage,
+        meta: {
+          title: "companyHolidays",
+          requiresAuth: true,
+          permission: "company_holidays_view",
+        },
+      },
+      {
+        path: "/company-holidays/:id",
+        name: "CompanyHolidayView",
+        component: CompanyHolidaysPage,
+        meta: {
+          title: "companyHolidays",
+          requiresAuth: true,
+          permission: "company_holidays_view",
+        },
+      },
+      {
         path: "/leave_types",
         name: "leave_types",
         component: LeaveTypesPage,
@@ -720,6 +741,7 @@ const routes = [
           permission: "leave_types_view_all",
         },
       },
+      // Праздники теперь управляются через вкладку в настройках компании (CompaniesCreatePage)
       {
         path: "/basement-orders",
         name: "BasementOrders",
@@ -810,44 +832,40 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.meta.permission) {
-    // Для basement-маршрутов у basement работников пропускаем проверку прав
-    if (to.meta.basementMode && isBasementWorker) {
-      // Пропускаем проверку прав для basement работников на basement маршрутах
-    } else {
-      if (
-        !store.state.permissionsLoaded ||
-        (store.state.permissionsLoaded && store.state.permissions?.length === 0)
-      ) {
-        await new Promise((resolve) => {
-          let attempts = 0;
-          const maxAttempts = 100;
-          const checkPermissions = () => {
-            const hasPermissions =
-              store.state.permissionsLoaded &&
-              store.state.permissions &&
-              store.state.permissions.length > 0;
-            if (hasPermissions) {
-              resolve();
-            } else if (attempts >= maxAttempts) {
-              resolve();
-            } else {
-              attempts++;
-              setTimeout(checkPermissions, 50);
-            }
-          };
-          checkPermissions();
-        });
-      }
+    // Проверка прав доступа для всех пользователей (включая basement workers)
+    if (
+      !store.state.permissionsLoaded ||
+      (store.state.permissionsLoaded && store.state.permissions?.length === 0)
+    ) {
+      await new Promise((resolve) => {
+        let attempts = 0;
+        const maxAttempts = 100;
+        const checkPermissions = () => {
+          const hasPermissions =
+            store.state.permissionsLoaded &&
+            store.state.permissions &&
+            store.state.permissions.length > 0;
+          if (hasPermissions) {
+            resolve();
+          } else if (attempts >= maxAttempts) {
+            resolve();
+          } else {
+            attempts++;
+            setTimeout(checkPermissions, 50);
+          }
+        };
+        checkPermissions();
+      });
+    }
 
-      if (to.meta.permission === "mutual_settlements_view") {
-        if (store.getters.hasPermission(to.meta.permission)) {
-          return next();
-        }
+    if (to.meta.permission === "mutual_settlements_view") {
+      if (store.getters.hasPermission(to.meta.permission)) {
+        return next();
+      }
+      return next({ path: "/" });
+    } else {
+      if (!store.getters.hasPermission(to.meta.permission)) {
         return next({ path: "/" });
-      } else {
-        if (!store.getters.hasPermission(to.meta.permission)) {
-          return next({ path: "/" });
-        }
       }
     }
   }

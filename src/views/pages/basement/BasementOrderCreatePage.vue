@@ -47,27 +47,24 @@
               <BasementServicesRow v-model="form.products" :project-id="form.project_id" />
             </div>
 
-            <!-- Товары на складе и Остатки: 50/50 -->
-            <div class="grid grid-cols-2 gap-6">
-              <!-- Товары на складе -->
-              <div>
-                <BasementProductSearch
-                  v-model="form.products"
-                  :show-quantity="true"
-                  :only-products="true"
-                  :required="true"
-                  :project-id="form.project_id"
-                />
-              </div>
+            <!-- Товары на складе -->
+            <div>
+              <BasementProductSearch
+                v-model="form.products"
+                :show-quantity="true"
+                :only-products="true"
+                :required="true"
+                :project-id="form.project_id"
+              />
+            </div>
 
-              <!-- Остатки (товары с бесконечным остатком) -->
-              <div>
-                <BasementStockSearch
-                  v-model="form.stockItems"
-                  :show-quantity="true"
-                  :project-id="form.project_id"
-                />
-              </div>
+            <!-- Остатки (товары с бесконечным остатком) -->
+            <div>
+              <BasementStockSearch
+                v-model="form.stockItems"
+                :show-quantity="true"
+                :project-id="form.project_id"
+              />
             </div>
 
             <!-- Таблица товаров -->
@@ -515,7 +512,7 @@ export default {
           temp_products: tempProducts
         }
 
-        const data = await OrderController.store(orderData)
+        const data = await OrderController.storeItem(orderData)
         
         // Эмитим событие для родительского компонента (модалка)
         this.$emit('saved', data)
@@ -600,7 +597,7 @@ export default {
           throw new Error('ID заказа не найден')
         }
         
-        const data = await OrderController.update(orderId, orderData)
+        const data = await OrderController.updateItem(orderId, orderData)
         
         // Эмитим событие для родительского компонента (модалка)
         this.$emit('saved', data)
@@ -637,7 +634,7 @@ export default {
 
       this.deleteLoading = true
       try {
-        await OrderController.delete(orderId)
+        await OrderController.deleteItem(orderId)
         
         // Эмитим событие для родительского компонента (модалка)
         this.$emit('deleted')
@@ -683,12 +680,12 @@ export default {
     },
     fillFormWithOrderData(orderData) {
       // Заполняем форму данными заказа
-      this.form.client_id = orderData.client_id || ''
-      this.form.project_id = orderData.project_id || ''
-      this.originalProjectId = orderData.project_id || null
-      this.form.cash_id = orderData.cash_id || 1
-      this.form.warehouse_id = orderData.warehouse_id || 1
-      this.form.category_id = orderData.category_id || this.form.category_id
+      this.form.client_id = orderData.clientId || ''
+      this.form.project_id = orderData.projectId || ''
+      this.originalProjectId = orderData.projectId || null
+      this.form.cash_id = orderData.cashId || 1
+      this.form.warehouse_id = orderData.warehouseId || 1
+      this.form.category_id = orderData.categoryId || this.form.category_id
       this.form.note = orderData.note || ''
       
       // Устанавливаем выбранного клиента
@@ -701,30 +698,30 @@ export default {
       // Преобразуем товары для формы
       if (orderData.products && orderData.products.length > 0) {
         // Разделяем обычные товары и temp_products
-        const regularProducts = orderData.products.filter(p => p.product_type !== 'temp')
-        const tempProducts = orderData.products.filter(p => p.product_type === 'temp')
+        const regularProducts = orderData.products.filter(p => p.type !== 'temp' && p.productType !== 'temp')
+        const tempProducts = orderData.products.filter(p => p.type === 'temp' || p.productType === 'temp')
         
         this.form.products = regularProducts.map(product => ({
-          productId: product.product_id,
-          productName: product.product_name,
-          name: product.product_name,
+          productId: product.productId,
+          productName: product.productName,
+          name: product.productName,
           quantity: product.quantity,
           price: product.price,
-          unit: product.unit_short_name || product.unit_name,
-          unitId: product.unit_id,
+          unit: product.unitShortName || '',
+          unitId: product.unitId,
           width: product.width || null,
           height: product.height || null
         }))
         
         // Загружаем temp_products в stockItems
         this.form.stockItems = tempProducts.map(product => ({
-          name: product.product_name,
+          name: product.productName || product.name,
           description: product.description || '',
           quantity: product.quantity,
           price: product.price,
-          unit_id: product.unit_id,
-          unit_short_name: product.unit_short_name || product.unit_name || '',
-          unit_name: product.unit_name || '',
+          unit_id: product.unitId,
+          unit_short_name: product.unitShortName || '',
+          unit_name: product.unitShortName || '',
           width: product.width || 0,
           height: product.height || 0,
           isTempProduct: true,

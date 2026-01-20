@@ -327,8 +327,8 @@ export default {
         case 'products':
           return this.formatProducts(order.products)
         case 'dateUser':
-          const dateStr = this.formatOrderDate(order.created_at)
-          const userName = order.user?.name || order.userName || '-'
+          const dateStr = this.formatOrderDate(order.createdAt)
+          const userName = order.userName || '-'
           return `${dateStr} / ${userName}`
         default:
           return order[columnName] || '-'
@@ -340,17 +340,17 @@ export default {
       }
       
       return products.map(product => {
-        return `<div class="text-sm"><span class="font-medium">${product.product_name}</span> <span class="text-gray-500">(${product.quantity} ${product.unit_short_name})</span></div>`
+        return `<div class="text-sm"><span class="font-medium">${product.productName}</span> <span class="text-gray-500">(${product.quantity} ${product.unitShortName})</span></div>`
       }).join('')
     },
     getClientName(order) {
       if (!order.client) return ''
       
-      if (order.client.first_name && order.client.last_name) {
-        return `${order.client.first_name} ${order.client.last_name}`
+      if (order.client.firstName && order.client.lastName) {
+        return `${order.client.firstName} ${order.client.lastName}`
       }
-      if (order.client.first_name) {
-        return order.client.first_name
+      if (order.client.firstName) {
+        return order.client.firstName
       }
       if (order.client.name) {
         return order.client.name
@@ -359,14 +359,10 @@ export default {
       return ''
     },
     getProjectName(order) {
-      if (!order.project) return this.$t('notSpecified')
-      
-      return order.project.name || this.$t('notSpecified')
+      return order.projectName || this.$t('notSpecified')
     },
     getCategoryName(order) {
-      if (!order.category && !order.category_name) return this.$t('notSpecified')
-      
-      return order.category?.name || order.category_name || this.$t('notSpecified')
+      return order.categoryName || this.$t('notSpecified')
     },
     editOrder(order) {
       if (!order?.id) {
