@@ -248,11 +248,24 @@ export function createChatRealtime(echo, options) {
     return result;
   };
 
+  const subscribeToSingleChat = (companyId, chatId) => {
+    // Отписываемся от всех других чатов, кроме текущего
+    for (const [existingChatId] of chatChannels.entries()) {
+      if (Number(existingChatId) !== Number(chatId)) {
+        unsubscribeChat(existingChatId);
+      }
+    }
+    
+    // Подписываемся на новый чат
+    subscribeChat(companyId, chatId);
+  };
+
   return {
     syncChats,
     subscribePresence,
     unsubscribePresence,
     unsubscribeChat,
+    subscribeToSingleChat,
     cleanup,
     getSubscribedChatIds: () => Array.from(chatChannels.keys()),
     // Новые методы для проверки

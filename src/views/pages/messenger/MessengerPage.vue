@@ -189,7 +189,7 @@
       </div>
 
       <!-- Messages area -->
-      <div class="flex-1 min-h-0 messenger-bg overflow-y-auto" ref="messagesWrap">
+      <div class="flex-1 min-h-0 messenger-bg overflow-y-auto" ref="messagesWrap" @scroll="onMessagesScroll">
         <div v-if="!selectedChat" class="h-full flex items-center justify-center p-6">
           <div class="text-center text-gray-600">
             <div class="mx-auto w-14 h-14 rounded-full bg-white/70 border border-white/60 flex items-center justify-center">
@@ -201,6 +201,14 @@
         </div>
 
         <div v-else class="p-4 md:p-6 space-y-3">
+          <!-- Индикатор загрузки старых сообщений -->
+          <div v-if="loadingOlderMessages" class="flex justify-center py-2">
+            <div class="px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm text-xs text-gray-600 border border-white/80 shadow-sm flex items-center gap-2">
+              <i class="fas fa-spinner fa-spin"></i>
+              Загрузка сообщений...
+            </div>
+          </div>
+          
           <div v-if="loadingMessages" class="text-sm text-gray-600">Загрузка…</div>
 
           <template v-else>
@@ -214,7 +222,7 @@
             <div v-for="group in messageGroups" :key="group.id" class="relative">
               <!-- Sticky Date Header -->
               <div class="sticky top-0 z-10 flex justify-center my-3 -mx-4 md:-mx-6 py-2 bg-transparent pointer-events-none">
-                <div class="px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-xs text-gray-600 border border-white/80 shadow-sm pointer-events-auto">
+                <div class="px-3 py-1 rounded-full bg-[#c3e3a7] text-xs text-gray-700 shadow-sm pointer-events-auto font-medium">
                   {{ group.dateLabel }}
                 </div>
               </div>
@@ -223,18 +231,27 @@
               <div
                 v-for="(message, index) in group.messages"
                 :key="message.id"
-                class="flex mb-2 group"
+                class="flex mb-1 group"
                 :class="isMyMessage(message) ? 'justify-end' : 'justify-start'"
                 @contextmenu.prevent="showMessageMenu($event, message)"
               >
                 <div 
-                  class="flex flex-col"
+                  class="flex flex-col max-w-[75%]"
                   :class="isMyMessage(message) ? 'items-end' : 'items-start'"
                 >
-                  <div class="flex items-end gap-2" :class="isMyMessage(message) ? 'flex-row' : 'flex-row-reverse'">
+                  <!-- Sender name (only for incoming messages in group chats) -->
+                  <div 
+                    v-if="!isMyMessage(message) && shouldShowSenderName(message)"
+                    class="text-xs font-medium mb-1 ml-3"
+                    :style="{ color: getUserColor(message) }"
+                  >
+                    {{ getMessageUserName(message) }}
+                  </div>
+
+                  <div class="flex items-end gap-2">
                     <div
-                      class="w-full rounded-xl px-3 py-2 text-sm shadow-sm relative"
-                      :class="isMyMessage(message) ? 'bg-[#d9f6c9] text-gray-900' : 'bg-white text-gray-900'"
+                      class="rounded-2xl px-3 py-2 text-sm shadow-sm relative"
+                      :class="isMyMessage(message) ? 'bg-[#d9f6c9] text-gray-900 rounded-tr-sm' : 'bg-white text-gray-900 rounded-tl-sm'"
                     >
                       <!-- Reply preview -->
                       <div v-if="message.parent" class="mb-2 pb-2 border-l-2 border-gray-400 pl-2 text-xs text-gray-600">
@@ -246,18 +263,44 @@
                         </div>
                       </div>
 
-                      <!-- Forwarded from -->
-                      <div v-if="message.forwarded_from" class="mb-2 pb-2 border-l-2 border-blue-400 pl-2 text-xs text-gray-600">
-                        <div class="font-medium text-blue-700 flex items-center gap-1">
-                          <i class="fas fa-share text-xs"></i>
-                          Переслано от {{ getMessageUserName(message.forwarded_from) }}
+                      <!-- Forwarded from header (Telegram style) -->
+                      <div v-if="message.forwarded_from" class="mb-2 pb-1">
+                        <div class="text-xs font-medium text-green-600 flex items-center gap-1.5 mb-1">
+                          <span>Переслано от</span>
+                          <span class="font-semibold text-green-600">{{ getForwardedUserName(message.forwarded_from) }}</span>
                         </div>
-                        <div class="truncate">
-                          {{ message.forwarded_from.body || (message.forwarded_from.files?.length ? `Файлов: ${message.forwarded_from.files.length}` : '') }}
+                        <!-- Forwarded message content -->
+                        <div class="text-sm text-gray-900">
+                          <div v-if="message.forwarded_from.body" class="break-words">
+                            {{ message.forwarded_from.body }}
+                          </div>
+                          <div v-if="Array.isArray(message.forwarded_from.files) && message.forwarded_from.files.length" class="mt-1 space-y-1">
+                            <div v-for="f in message.forwarded_from.files" :key="f.path" class="flex items-center gap-2">
+                              <button
+                                v-if="isImageFile(f)"
+                                type="button"
+                                @click="openImageModal(f)"
+                                class="block max-w-xs rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                              >
+                                <img :src="fileUrl(f.path)" :alt="f.name" class="max-h-32 object-contain" />
+                              </button>
+                              <a
+                                v-else
+                                class="block text-xs underline text-gray-600 hover:text-gray-800"
+                                :href="fileUrl(f.path)"
+                                target="_blank"
+                              >
+                                <i class="fas fa-file mr-1"></i>{{ f.name }}
+                              </a>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      <div class="whitespace-pre-wrap break-words leading-snug">{{ message.body || "" }}</div>
+                      <!-- Additional comment text (only if different from forwarded message) -->
+                      <div v-if="message.body && (!message.forwarded_from || message.body !== message.forwarded_from.body)" class="whitespace-pre-wrap break-words leading-snug mt-2">
+                        {{ message.body }}
+                      </div>
 
                       <div v-if="Array.isArray(message.files) && message.files.length" class="mt-2 space-y-1">
                         <div v-for="f in message.files" :key="f.path" class="flex items-center gap-2">
@@ -289,10 +332,14 @@
                         </div>
                       </div>
 
-                      <div class="mt-1 flex items-center justify-end gap-1 text-[11px] text-gray-500">
-                        <span v-if="message.is_edited" class="text-gray-400 italic">(изменено)</span>
+                      <!-- Time and status -->
+                      <div class="mt-1 flex items-center justify-end gap-1 text-[11px] leading-none" :class="isMyMessage(message) ? 'text-gray-600' : 'text-gray-500'">
+                        <span v-if="message.is_edited" class="flex items-center gap-0.5 text-gray-500 mr-1">
+                          <i class="fas fa-pencil-alt text-[9px]"></i>
+                          <span class="italic">изменено</span>
+                        </span>
                         <span>{{ messageTime(message) }}</span>
-                        <span v-if="isMyMessage(message)" class="text-sky-700">{{ messageTicks(message) }}</span>
+                        <span v-if="isMyMessage(message)" class="ml-1 text-green-600">{{ messageTicks(message) }}</span>
                       </div>
 
                       <!-- Message actions menu button -->
@@ -306,29 +353,6 @@
                         </button>
                       </div>
                     </div>
-                    
-                    <!-- Avatar for group/general chats -->
-                    <div
-                      v-if="shouldShowAvatarInGroup(message, index, group.messages)"
-                      class="shrink-0 mb-0.5 cursor-default" :title="getMessageUserName(message)"
-                    >
-                      <div class="relative">
-                        <img
-                          v-if="getMessageUser(message)?.photo"
-                          :src="userPhotoUrl(getMessageUser(message).photo)"
-                          class="w-7 h-7 rounded-full object-cover border-2 border-white shadow-sm"
-                          :alt="getMessageUserName(message)"
-                        />
-                        <div
-                          v-else
-                          class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold border-2 border-white shadow-sm"
-                          :class="isMyMessage(message) ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'"
-                        >
-                          {{ getMessageUserInitials(message) }}
-                        </div>
-                      </div>
-                    </div>
-                    <div v-else class="w-full rounded-xl px-3 py-2"></div>
                   </div>
                 </div>
               </div>
@@ -657,8 +681,9 @@
               v-for="chat in allChatsList.filter(c => c.id !== selectedChatId)"
               :key="`${chat.type}-${chat.id}`"
               type="button"
-              class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3 rounded-lg"
-              @click="confirmForward(chat)"
+              class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3 rounded-lg border"
+              :class="forwardTarget && String(forwardTarget.type) === String(chat.type) && Number(forwardTarget.id) === Number(chat.id) ? 'border-sky-500 bg-sky-50' : 'border-transparent'"
+              @click="selectForwardTarget(chat)"
             >
               <div class="relative shrink-0">
                 <img
@@ -694,14 +719,37 @@
             </button>
           </div>
         </div>
-        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+        <div class="px-6 py-4 border-t border-gray-200">
+          <div v-if="forwardTarget" class="text-xs text-gray-600 mb-2">
+            Кому: <span class="font-medium text-gray-900">{{ getItemTitle(forwardTarget) }}</span>
+          </div>
+
+          <textarea
+            v-model="forwardText"
+            class="w-full bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 focus-within:ring-2 focus-within:ring-sky-500/30 focus-within:border-sky-300 outline-none text-sm text-gray-900 placeholder:text-gray-400 min-h-[44px] max-h-28 resize-none"
+            placeholder="Добавить сообщение (как в Telegram)..."
+            :disabled="forwardingSending"
+          ></textarea>
+
+          <div class="mt-3 flex items-center justify-end gap-3">
           <button
             type="button"
             class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
-            @click="showForwardModal = false"
+            :disabled="forwardingSending"
+            @click="closeForwardModal"
           >
             Отмена
           </button>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="forwardingSending || !forwardTarget"
+            @click="sendForward"
+          >
+            <span v-if="forwardingSending">Отправка…</span>
+            <span v-else>Отправить</span>
+          </button>
+          </div>
         </div>
       </div>
     </div>
@@ -755,9 +803,11 @@ const buildStorageUrl = (path) => `${import.meta.env.VITE_APP_BASE_URL}/storage/
 
 const parseDateSafe = (dateString) => {
   if (!dateString) return null;
-  // If format is like "2024-01-19 19:00:00" (SQL timestamp without timezone), treat it as UTC
+  // Laravel sends dates in Asia/Ashgabat timezone (UTC+5)
+  // Parse without 'Z' to treat as local time (server timezone)
   if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/.test(dateString)) {
-    return new Date(dateString.replace(' ', 'T') + 'Z');
+    // Replace space with 'T' for ISO format, but DON'T add 'Z' (which means UTC)
+    return new Date(dateString.replace(' ', 'T'));
   }
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return null;
@@ -766,6 +816,15 @@ const parseDateSafe = (dateString) => {
 
 const extractHHmm = (raw) => {
   if (!raw) return "";
+  
+  // Извлекаем время напрямую из строки без конвертации timezone
+  // Формат: "2024-01-20 17:23:45" -> "17:23"
+  const match = raw.match(/(\d{2}):(\d{2}):\d{2}/);
+  if (match) {
+    return `${match[1]}:${match[2]}`;
+  }
+  
+  // Fallback для других форматов
   const date = parseDateSafe(raw);
   if (!date) return "";
   
@@ -790,6 +849,8 @@ export default {
       activePeerUser: null,
       messages: [],
       loadingMessages: false,
+      loadingOlderMessages: false,
+      hasMoreMessages: true,
 
       draft: "",
       selectedFiles: [],
@@ -824,6 +885,9 @@ export default {
       // Forward message modal
       showForwardModal: false,
       forwardingMessage: null,
+      forwardTarget: null,
+      forwardText: "",
+      forwardingSending: false,
 
       // Image viewer modal
       showImageModal: false,
@@ -1016,23 +1080,92 @@ export default {
   },
   methods: {
     setupEventListeners() {
+      console.log("[MessengerPage] 🔗 Подписка на события eventBus...");
       // Подписываемся на события чатов через eventBus
       eventBus.on("chat:message", this.handleIncomingMessage);
+      eventBus.on("chat:message:updated", this.handleMessageUpdated);
+      eventBus.on("chat:message:deleted", this.handleMessageDeleted);
       eventBus.on("chat:read", this.handleReadEvent);
       eventBus.on("presence:here", this.handlePresenceHere);
       eventBus.on("presence:joining", this.handlePresenceJoining);
       eventBus.on("presence:leaving", this.handlePresenceLeaving);
+      console.log("[MessengerPage] ✅ Подписка на события завершена");
     },
     removeEventListeners() {
       // Отписываемся от событий
       eventBus.off("chat:message", this.handleIncomingMessage);
+      eventBus.off("chat:message:updated", this.handleMessageUpdated);
+      eventBus.off("chat:message:deleted", this.handleMessageDeleted);
       eventBus.off("chat:read", this.handleReadEvent);
       eventBus.off("presence:here", this.handlePresenceHere);
       eventBus.off("presence:joining", this.handlePresenceJoining);
       eventBus.off("presence:leaving", this.handlePresenceLeaving);
     },
     handleIncomingMessage(event) {
+      console.log("[MessengerPage] 📬 handleIncomingMessage вызван:", {
+        chat_id: event?.chat_id,
+        user: event?.user?.name,
+      });
       handleIncomingChatEvent(this, event);
+    },
+    handleMessageUpdated(event) {
+      console.log("[MessengerPage] ✏️ Сообщение обновлено:", event);
+      
+      const messageId = Number(event?.id);
+      if (!messageId) return;
+
+      // Обновляем сообщение в текущем списке
+      this.messages = (this.messages || []).map((m) => {
+        if (Number(m.id) !== messageId) return m;
+        return {
+          ...m,
+          body: event.body,
+          is_edited: event.is_edited,
+          edited_at: event.edited_at,
+          updated_at: event.updated_at,
+        };
+      });
+
+      // Обновляем last_message в списке чатов, если это последнее сообщение
+      const chatId = Number(event?.chat_id);
+      if (chatId) {
+        this.chats = (this.chats || []).map((c) => {
+          if (Number(c.id) !== chatId) return c;
+          if (c.last_message && Number(c.last_message.id) === messageId) {
+            return {
+              ...c,
+              last_message: {
+                ...c.last_message,
+                body: event.body,
+                is_edited: event.is_edited,
+              },
+            };
+          }
+          return c;
+        });
+
+        if (this.generalChat && Number(this.generalChat.id) === chatId) {
+          if (this.generalChat.last_message && Number(this.generalChat.last_message.id) === messageId) {
+            this.generalChat = {
+              ...this.generalChat,
+              last_message: {
+                ...this.generalChat.last_message,
+                body: event.body,
+                is_edited: event.is_edited,
+              },
+            };
+          }
+        }
+      }
+    },
+    handleMessageDeleted(event) {
+      console.log("[MessengerPage] 🗑️ Сообщение удалено:", event);
+      
+      const messageId = Number(event?.id);
+      if (!messageId) return;
+
+      // Удаляем сообщение из текущего списка
+      this.messages = (this.messages || []).filter((m) => Number(m.id) !== messageId);
     },
     handleReadEvent(event) {
       handleChatReadEvent(this, event);
@@ -1056,12 +1189,6 @@ export default {
     checkWebSocketStatus() {
       const status = globalChatRealtime.getStatus();
       return status || null;
-    },
-    syncRealtime() {
-      // Синхронизируем чаты с глобальным сервисом
-      // Вызывается только при создании нового чата, так как глобальный сервис уже подписан на все чаты
-      const chatsForSync = [...(this.chats || []), this.generalChat].filter((c) => c && c.id);
-      globalChatRealtime.syncChats(chatsForSync);
     },
     async handleCompanyChange() {
       try {
@@ -1179,6 +1306,7 @@ export default {
       this.selectedChat = fullChat;
       this.selectedChatId = fullChat.id;
       this.messages = [];
+      this.hasMoreMessages = true;
       
       // Очищаем activePeerUser для не-direct чатов
       if (fullChat.type !== 'direct') {
@@ -1293,9 +1421,14 @@ export default {
     },
     async loadMessages(chatId) {
       this.loadingMessages = true;
+      this.hasMoreMessages = true;
       try {
-        const items = await ChatController.getMessages(chatId);
+        // Загружаем только последние 50 сообщений
+        const items = await ChatController.getMessages(chatId, { limit: 50, tail: true });
         this.messages = Array.isArray(items) ? items : [];
+        
+        // Если получили меньше 50, значит больше сообщений нет
+        this.hasMoreMessages = items.length >= 50;
         
         // Ждем завершения загрузки и обновления DOM
         await this.$nextTick();
@@ -1307,11 +1440,63 @@ export default {
       } catch (e) {
         this.messages = [];
         this.loadingMessages = false;
+        this.hasMoreMessages = false;
         this.$store.dispatch("showNotification", {
           title: "Не удалось загрузить сообщения",
           subtitle: e?.message || "",
           isDanger: true,
           duration: 3000,
+        });
+      }
+    },
+
+    async loadOlderMessages() {
+      if (this.loadingOlderMessages || !this.hasMoreMessages || !this.selectedChatId || this.messages.length === 0) {
+        return;
+      }
+
+      this.loadingOlderMessages = true;
+      try {
+        const firstMessage = this.messages[0];
+        const beforeId = firstMessage?.id;
+        
+        if (!beforeId) {
+          this.loadingOlderMessages = false;
+          return;
+        }
+
+        const items = await ChatController.getMessages(this.selectedChatId, { 
+          before_id: beforeId, 
+          limit: 30 
+        });
+        
+        if (Array.isArray(items) && items.length > 0) {
+          // Добавляем в начало массива
+          this.messages = [...items, ...this.messages];
+          
+          // Если получили меньше 30, значит больше сообщений нет
+          this.hasMoreMessages = items.length >= 30;
+        } else {
+          this.hasMoreMessages = false;
+        }
+      } catch (e) {
+        console.error("[Messenger] Ошибка загрузки старых сообщений:", e);
+      } finally {
+        this.loadingOlderMessages = false;
+      }
+    },
+
+    onMessagesScroll(event) {
+      const el = event.target;
+      // Если пользователь скроллит вверх и находится близко к началу списка
+      if (el.scrollTop < 200 && this.hasMoreMessages && !this.loadingOlderMessages) {
+        const oldHeight = el.scrollHeight;
+        this.loadOlderMessages().then(() => {
+          // Сохраняем позицию скролла после загрузки
+          this.$nextTick(() => {
+            const newHeight = el.scrollHeight;
+            el.scrollTop = newHeight - oldHeight + el.scrollTop;
+          });
         });
       }
     },
@@ -1471,12 +1656,68 @@ export default {
       if (!this.editingMessage || !this.draft.trim()) return;
       
       try {
-        await ChatController.updateMessage(this.selectedChatId, this.editingMessage.id, this.draft);
-        // Reload messages to get updated version
-        await this.loadMessages(this.selectedChatId);
+        const updatedMessage = await ChatController.updateMessage(this.selectedChatId, this.editingMessage.id, this.draft);
+        
+        console.log("[MessengerPage] 📝 Ответ API после редактирования:", {
+          id: updatedMessage.id,
+          body: updatedMessage.body,
+          is_edited: updatedMessage.is_edited,
+          edited_at: updatedMessage.edited_at,
+        });
+        
+        // Обновляем сообщение локально с принудительной установкой is_edited
+        const messageId = Number(this.editingMessage.id);
+        this.messages = (this.messages || []).map((m) => {
+          if (Number(m.id) !== messageId) return m;
+          
+          console.log("[MessengerPage] 🔄 Обновляем сообщение:", {
+            old_is_edited: m.is_edited,
+            new_is_edited: updatedMessage.is_edited,
+          });
+          
+          return {
+            ...m,
+            body: updatedMessage.body,
+            is_edited: true, // Принудительно устанавливаем true
+            edited_at: updatedMessage.edited_at,
+            updated_at: updatedMessage.updated_at,
+          };
+        });
+
+        // Обновляем last_message в списке чатов
+        const chatId = Number(this.selectedChatId);
+        this.chats = (this.chats || []).map((c) => {
+          if (Number(c.id) !== chatId) return c;
+          if (c.last_message && Number(c.last_message.id) === Number(this.editingMessage.id)) {
+            return {
+              ...c,
+              last_message: {
+                ...c.last_message,
+                body: updatedMessage.body,
+                is_edited: updatedMessage.is_edited,
+              },
+            };
+          }
+          return c;
+        });
+
+        if (this.generalChat && Number(this.generalChat.id) === chatId) {
+          if (this.generalChat.last_message && Number(this.generalChat.last_message.id) === Number(this.editingMessage.id)) {
+            this.generalChat = {
+              ...this.generalChat,
+              last_message: {
+                ...this.generalChat.last_message,
+                body: updatedMessage.body,
+                is_edited: updatedMessage.is_edited,
+              },
+            };
+          }
+        }
+        
         this.editingMessage = null;
         this.draft = '';
       } catch (error) {
+        console.error("[MessengerPage] Ошибка редактирования:", error);
         this.$store.dispatch("showNotification", {
           title: "Ошибка",
           subtitle: error?.message || "Не удалось отредактировать сообщение",
@@ -1504,26 +1745,39 @@ export default {
     },
     forwardMessage(message) {
       this.forwardingMessage = message;
+      this.forwardTarget = null;
+      this.forwardText = "";
+      this.forwardingSending = false;
       this.showForwardModal = true;
       this.closeMessageMenu();
     },
-    async confirmForward(target) {
-      if (!this.forwardingMessage) return;
+    closeForwardModal() {
+      this.showForwardModal = false;
+      this.forwardingMessage = null;
+      this.forwardTarget = null;
+      this.forwardText = "";
+      this.forwardingSending = false;
+    },
+    selectForwardTarget(target) {
+      this.forwardTarget = target;
+    },
+    async sendForward() {
+      if (!this.forwardingMessage || !this.forwardTarget) return;
+      if (!this.selectedChatId) return;
 
+      this.forwardingSending = true;
       try {
         let targetChatId = null;
+        const target = this.forwardTarget;
 
         // If target is a user (direct chat), we might need to create/get the chat first
         if (target.type === 'user') {
-          // If we already have a chat_id for this user
           if (target.chat_id) {
             targetChatId = target.chat_id;
           } else {
-            // Create/Get direct chat
             const chat = await ChatController.startDirectChat(target.id);
             if (chat && chat.id) {
               targetChatId = chat.id;
-              // Update our local chats list if needed
               const exists = this.chats.find(c => Number(c.id) === Number(chat.id));
               if (!exists) {
                 this.chats.push(chat);
@@ -1531,22 +1785,29 @@ export default {
             }
           }
         } else {
-          // Group or General chat
           targetChatId = target.id;
         }
 
-        if (targetChatId) {
-          await ChatController.forwardMessage(this.selectedChatId, this.forwardingMessage.id, targetChatId);
-          this.showForwardModal = false;
-          this.forwardingMessage = null;
-          
-          this.$store.dispatch('showNotification', {
-            title: 'Успешно',
-            subtitle: 'Сообщение переслано',
-            isDanger: false,
-            duration: 2000
-          });
+        if (!targetChatId) {
+          throw new Error("Не удалось определить чат для пересылки");
         }
+
+        // Telegram-like: отправляем сначала ваш текст (если есть), потом пересланное
+        const extra = (this.forwardText || "").trim();
+        if (extra) {
+          await ChatController.sendMessage(targetChatId, { body: extra, files: [], parent_id: null });
+        }
+
+        await ChatController.forwardMessage(this.selectedChatId, this.forwardingMessage.id, targetChatId);
+
+        this.$store.dispatch('showNotification', {
+          title: 'Успешно',
+          subtitle: 'Сообщение переслано',
+          isDanger: false,
+          duration: 2000
+        });
+
+        this.closeForwardModal();
       } catch (error) {
         console.error("Forward error:", error);
         this.$store.dispatch("showNotification", {
@@ -1555,6 +1816,8 @@ export default {
           isDanger: true,
           duration: 3000,
         });
+      } finally {
+        this.forwardingSending = false;
       }
     },
     openImageModal(file) {
@@ -1577,7 +1840,6 @@ export default {
         const exists = (this.chats || []).some((c) => Number(c.id) === Number(chat.id));
         if (!exists) {
           this.chats = [...(this.chats || []), chat];
-          this.syncRealtime();
         }
         await this.selectChat(chat);
       } catch (e) {
@@ -1702,6 +1964,19 @@ export default {
       const surname = user.surname || "";
       return `${name} ${surname}`.trim() || user.displayTitle || "Пользователь";
     },
+    getForwardedUserName(forwardedMessage) {
+      // forwardedMessage - это объект из forwarded_from, который содержит user
+      if (!forwardedMessage) return "Неизвестный";
+      
+      const user = forwardedMessage.user;
+      if (!user) {
+        return "Неизвестный";
+      }
+      
+      const name = user.name || "";
+      const surname = user.surname || "";
+      return `${name} ${surname}`.trim() || "Пользователь";
+    },
     getMessageUserInitials(message) {
       const user = this.getMessageUser(message);
       if (!user) {
@@ -1735,6 +2010,32 @@ export default {
       
       // Same user, next is not date (since we are in group), so hide avatar
       return false;
+    },
+    shouldShowSenderName(message) {
+      // Show sender name only in group/general chats for incoming messages
+      const chat = this.selectedChat;
+      if (!chat) return false;
+      
+      // Only show in group/general chats (not in direct chats)
+      return chat.type === 'group' || chat.type === 'general';
+    },
+    getUserColor(message) {
+      // Generate consistent color for user based on their ID
+      const userId = message.user_id || message.userId || message.user?.id;
+      if (!userId) return '#000000';
+      
+      const colors = [
+        '#e17076', // red
+        '#7f8c8d', // gray
+        '#a695e7', // purple
+        '#7bc862', // green
+        '#6ec9cb', // cyan
+        '#65aadd', // blue
+        '#ee7aae', // pink
+      ];
+      
+      const index = Number(userId) % colors.length;
+      return colors[index];
     },
     shouldShowAvatar(item, index, messagesWithDates) {
       // Показываем аватар только для групповых чатов
@@ -1859,7 +2160,6 @@ export default {
           const exists = (this.chats || []).some((c) => Number(c.id) === Number(chat.id));
           if (!exists) {
             this.chats = [...(this.chats || []), chat];
-            this.syncRealtime();
           }
           
           // Закрываем модальное окно
@@ -1958,13 +2258,13 @@ export default {
 
 <style scoped>
 .messenger-bg {
-  background-color: #cfe2f6;
-  /* лёгкий "битрикс-паттерн" без ассетов */
+  background-color: #d9dbd5;
+  /* Telegram/WhatsApp style pattern */
   background-image:
-    radial-gradient(circle at 20px 20px, rgba(255, 255, 255, 0.35) 0 2px, transparent 3px),
-    radial-gradient(circle at 80px 60px, rgba(255, 255, 255, 0.25) 0 2px, transparent 3px),
-    radial-gradient(circle at 120px 30px, rgba(255, 255, 255, 0.25) 0 2px, transparent 3px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+    radial-gradient(circle at 20px 20px, rgba(255, 255, 255, 0.2) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 80px 60px, rgba(255, 255, 255, 0.15) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 120px 30px, rgba(255, 255, 255, 0.15) 0 1.5px, transparent 2px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.02));
   background-size: 140px 100px, 180px 120px, 200px 120px, 100% 100%;
   background-repeat: repeat, repeat, repeat, no-repeat;
 }

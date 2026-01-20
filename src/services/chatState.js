@@ -111,6 +111,13 @@ export function applyIncomingMessage({ messages, chats, generalChat, selectedCha
   const chatId = getMessageChatId(newMessage);
   const selectedIdNum = toNumberOrNull(selectedChatId);
   const isCurrentChat = chatId && selectedIdNum && Number(chatId) === Number(selectedIdNum);
+  
+  console.log("[ChatState] 🔄 applyIncomingMessage:", {
+    chatId,
+    selectedChatId: selectedIdNum,
+    isCurrentChat,
+    messageId: newMessage.id,
+  });
 
   const myIdNum = toNumberOrNull(myUserId);
   const isMyMessage = myIdNum && getMessageUserId(newMessage) && Number(getMessageUserId(newMessage)) === Number(myIdNum);
