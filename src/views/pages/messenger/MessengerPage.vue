@@ -974,7 +974,6 @@ export default {
     '$store.getters.currentCompanyId': {
       handler(newCompanyId, oldCompanyId) {
         if (newCompanyId && newCompanyId !== oldCompanyId) {
-          console.log('[Messenger] Company changed, reloading data...');
           this.handleCompanyChange();
         }
       },
@@ -1056,23 +1055,7 @@ export default {
     },
     checkWebSocketStatus() {
       const status = globalChatRealtime.getStatus();
-      if (!status) {
-        console.log('[WebSocket] GlobalChatRealtime не инициализирован');
-        return null;
-      }
-
-      console.log('[WebSocket] Статус подключений:', status);
-      
-      // Проверяем, что все подключено
-      const allGood = status.echoConnected && 
-                      status.presenceSubscribed && 
-                      Object.values(status.chatChannels).every(ch => ch.subscribed);
-      
-      if (!allGood) {
-        console.warn('[WebSocket] ⚠️ Не все каналы подписаны:', status);
-      }
-      
-      return status;
+      return status || null;
     },
     syncRealtime() {
       // Синхронизируем чаты с глобальным сервисом
@@ -1098,10 +1081,8 @@ export default {
 
         // Reinitialize WebSocket connections for new company
         await globalChatRealtime.reinitialize();
-
-        console.log('[Messenger] Company change handled successfully');
       } catch (error) {
-        console.error('[Messenger] Error handling company change:', error);
+        console.error('[Messenger] Ошибка смены компании:', error);
         this.$store.dispatch("showNotification", {
           title: "Ошибка смены компании",
           subtitle: "Не удалось загрузить данные для новой компании",
@@ -1120,18 +1101,6 @@ export default {
         // Загружаем пользователей
         await this.$store.dispatch("loadUsers");
         
-        // Отладка: проверим сколько пользователей загружено
-        const allUsers = this.$store.state.users || [];
-        const companyUsers = this.usersForCompany || [];
-        
-        // Дополнительная отладка: проверим структуру компаний у пользователей
-        if (import.meta.env.DEV) {
-          allUsers.forEach(u => {
-            if (!u.companies || u.companies.length === 0) {
-              console.warn(`[Messenger] Пользователь ${u.name} ${u.surname} не имеет компаний`);
-            }
-          });
-        }
       } catch (e) {
         console.error("[Messenger] Ошибка загрузки пользователей:", e);
       }
@@ -1205,15 +1174,6 @@ export default {
           fullChat = { ...foundChat, ...chat };
         }
         
-        // Отладка для групповых чатов
-        if (import.meta.env.DEV && (chat.type === 'group' || foundChat?.type === 'group')) {
-          console.log('[Messenger] Selecting group chat:', {
-            originalChat: chat,
-            foundChat: foundChat,
-            fullChat: fullChat,
-            isCreator: this.isChatCreator(fullChat)
-          });
-        }
       }
       
       this.selectedChat = fullChat;
@@ -1943,16 +1903,6 @@ export default {
       // Проверяем created_by
       const createdBy = fullChat.created_by;
       if (!createdBy) {
-        // Отладка: выводим информацию о чате
-        if (import.meta.env.DEV) {
-          console.log('[Messenger] Chat data for creator check:', {
-            chatId: chat.id,
-            chatType: fullChat.type,
-            createdBy: createdBy,
-            myId: myId,
-            fullChat: fullChat
-          });
-        }
         return false;
       }
       

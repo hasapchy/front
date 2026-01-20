@@ -25,7 +25,6 @@ class GlobalChatRealtime {
    */
   async initialize(store) {
     if (this.initialized) {
-      console.log("[GlobalChatRealtime] Уже инициализирован");
       return;
     }
 
@@ -34,13 +33,11 @@ class GlobalChatRealtime {
     // Проверяем авторизацию
     const user = store?.state?.user;
     if (!user) {
-      console.warn("[GlobalChatRealtime] Пользователь не авторизован");
       return;
     }
 
     // Проверяем подключение Echo
     if (echo.isConnected && !echo.isConnected()) {
-      console.log("[GlobalChatRealtime] Ожидание подключения Echo...");
       // Ждем подключения с таймаутом
       const maxAttempts = 10;
       let attempts = 0;
@@ -49,7 +46,7 @@ class GlobalChatRealtime {
         attempts++;
       }
       if (echo.isConnected && !echo.isConnected()) {
-        console.error("[GlobalChatRealtime] Не удалось подключиться к Echo за 5 секунд");
+        console.error("[GlobalChatRealtime] Не удалось подключиться к Echo");
         return;
       }
     }
@@ -57,20 +54,15 @@ class GlobalChatRealtime {
     // Создаем экземпляр chatRealtime
     this.realtime = createChatRealtime(echo, {
       onMessage: (event) => {
-        console.log("[GlobalChatRealtime] Получено сообщение:", event);
-        // Отправляем событие через eventBus для компонентов
         eventBus.emit("chat:message", event);
       },
       onMessageUpdated: (event) => {
-        console.log("[GlobalChatRealtime] Сообщение обновлено:", event);
         eventBus.emit("chat:message:updated", event);
       },
       onMessageDeleted: (event) => {
-        console.log("[GlobalChatRealtime] Сообщение удалено:", event);
         eventBus.emit("chat:message:deleted", event);
       },
       onRead: (event) => {
-        console.log("[GlobalChatRealtime] Обновление прочтения:", event);
         eventBus.emit("chat:read", event);
       },
       onChatError: (error) => {
@@ -78,17 +70,14 @@ class GlobalChatRealtime {
         eventBus.emit("chat:error", error);
       },
       onChannelSubscribed: (chatId, channelName) => {
-        console.log(`[GlobalChatRealtime] ✅ Подписан на чат ${chatId}`);
         eventBus.emit("chat:subscribed", { chatId, channelName });
       },
       onPresenceHere: (users) => {
-        console.log("[GlobalChatRealtime] Пользователи онлайн:", users);
         const ids = (users || []).map((u) => Number(u.id)).filter((id) => !Number.isNaN(id));
         this.onlineUserIds = [...ids];
         eventBus.emit("presence:here", users);
       },
       onPresenceJoining: (user) => {
-        console.log("[GlobalChatRealtime] Пользователь зашел:", user);
         const id = Number(user?.id);
         if (!Number.isNaN(id) && !this.onlineUserIds.includes(id)) {
           this.onlineUserIds = [...this.onlineUserIds, id];
@@ -96,7 +85,6 @@ class GlobalChatRealtime {
         eventBus.emit("presence:joining", user);
       },
       onPresenceLeaving: (user) => {
-        console.log("[GlobalChatRealtime] Пользователь вышел:", user);
         const id = Number(user?.id);
         if (!Number.isNaN(id)) {
           this.onlineUserIds = this.onlineUserIds.filter((uid) => uid !== id);
@@ -106,11 +94,6 @@ class GlobalChatRealtime {
       onPresenceError: (err) => {
         console.error("[GlobalChatRealtime] Ошибка presence:", err);
         eventBus.emit("presence:error", err);
-      },
-      log: (msg) => {
-        if (import.meta.env.DEV) {
-          console.log(msg);
-        }
       },
     });
 
@@ -123,8 +106,6 @@ class GlobalChatRealtime {
     this.connectionCheckInterval = setInterval(() => {
       this.checkConnection();
     }, 30000);
-
-    console.log("[GlobalChatRealtime] ✅ Инициализирован");
   }
 
   /**
@@ -135,7 +116,6 @@ class GlobalChatRealtime {
 
     const companyId = this.store.getters?.currentCompanyId;
     if (!companyId) {
-      console.warn("[GlobalChatRealtime] Нет companyId для подписки");
       return;
     }
 
@@ -157,8 +137,6 @@ class GlobalChatRealtime {
 
       // Подписываемся на presence
       this.realtime.subscribePresence(companyId);
-
-      console.log(`[GlobalChatRealtime] Подписан на ${allChats.length} чатов`);
     } catch (error) {
       console.error("[GlobalChatRealtime] Ошибка загрузки чатов:", error);
     }
@@ -172,7 +150,6 @@ class GlobalChatRealtime {
 
     const status = this.realtime.checkAllSubscriptions();
     if (!status.echoConnected) {
-      console.warn("[GlobalChatRealtime] ⚠️ Потеряно подключение, попытка переподключения...");
       // Переподключаемся
       this.reinitialize();
     }
@@ -254,8 +231,6 @@ class GlobalChatRealtime {
     this.onlineUserIds = [];
     this.initialized = false;
     this.store = null;
-
-    console.log("[GlobalChatRealtime] Очищен");
   }
 }
 

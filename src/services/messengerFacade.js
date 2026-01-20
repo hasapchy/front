@@ -15,8 +15,6 @@ const readDebounceMap = new Map(); // chatId -> { timer, lastMessageId }
  * @returns {any} result from applyIncomingMessage
  */
 export function handleIncomingChatEvent(vm, event) {
-  console.log("[WebSocket] Получено новое сообщение:", event);
-
   const myUserId = vm?.$store?.state?.user?.id;
   const next = applyIncomingMessage(
     {

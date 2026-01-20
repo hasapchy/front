@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 .DS_Store
 .env
+.env.production
 dist
 dist-ssr
 coverage

@@ -228,9 +228,12 @@ export function createChatRealtime(echo, options) {
   };
 
   const checkAllSubscriptions = () => {
+    const pusher = echo.connector?.pusher;
+    const connectionState = pusher?.connection?.state || 'unknown';
+
     const result = {
-      echoConnected: echo.isConnected ? echo.isConnected() : false,
-      echoState: echo.getConnectionState ? echo.getConnectionState() : 'unknown',
+      echoConnected: connectionState === 'connected',
+      echoState: connectionState,
       presenceSubscribed: presenceSubscribed,
       chatChannels: {},
     };
