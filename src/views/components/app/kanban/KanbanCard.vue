@@ -1,7 +1,7 @@
 <template>
     <div 
         class="kanban-card bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow"
-        :class="{ 'ring-2 ring-blue-400': isSelected }"
+        :class="{ 'ring-2 ring-blue-400': isSelected }, getCardBackgroundClass()"
         @dblclick="handleDoubleClick"
     >
         <!-- Заголовок с чекбоксом и номером/названием -->
@@ -119,7 +119,7 @@
         <!-- Описание (только для заказов) -->
         <div v-if="!isProjectMode && showField('description') && order.description" class="mb-2">
             <div class="text-xs text-gray-600 line-clamp-2">
-                {{ order.description }}
+                <div v-html="order.description"></div>
             </div>
         </div>
 
@@ -238,6 +238,17 @@
                 <i class="fas fa-check"></i>
             </button>
         </div>
+
+        <!-- Чек-лист (для задач) -->
+        <div v-if="isTaskMode && order.checklist && order.checklist.length > 0" class="mb-2">
+            <div class="flex items-center space-x-1 text-xs text-gray-600">
+                <i class="fas fa-tasks text-blue-400"></i>
+                <span>
+                    {{ getChecklistProgress(order.checklist) }}
+                </span>
+            </div>
+        </div>
+
     </div>
 </template>
 
@@ -287,6 +298,82 @@ export default {
         },
     },
     methods: {
+
+        // Отображает прогресс чек-листа
+        getChecklistProgress(checklist) {
+            if (!checklist || !Array.isArray(checklist) || checklist.length === 0) {
+                return '';
+            }
+            
+            // Если checklist - строка JSON, парсим её
+            let items = checklist;
+            if (typeof checklist === 'string') {
+                try {
+                    items = JSON.parse(checklist);
+                } catch (e) {
+                    return '';
+                }
+            }
+            
+            const completed = items.filter(item => item.completed).length;
+            const total = items.length;
+            
+            return `${completed}/${total}`;
+        },
+
+        // Проверяет, находится ли задача в статусе "Новый" или "В работе"
+        isTaskInActiveStatus() {
+            if (!this.isTaskMode) return false;
+            
+            const statusId = this.order?.statusId;
+            const statusName = this.order?.status?.name;
+            
+            // Проверяем по ID статуса (1 = NEW, 2 = IN_PROGRESS, 3 = PENDING)
+            if (statusId === 1 || statusId === 2 || statusId === 3) return true;
+            
+            // Проверяем по имени статуса
+            if (statusName === 'NEW' || statusName === 'PENDING' || statusName === 'IN_PROGRESS') {
+                return true;
+            }
+            
+            return false;
+        },
+        
+        // Вычисляет количество дней до deadline
+        getDaysUntilDeadline(deadline) {
+            if (!deadline) return null;
+            
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            const deadlineDate = new Date(deadline);
+            deadlineDate.setHours(0, 0, 0, 0);
+            
+            const diffTime = deadlineDate - now;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            return diffDays;
+        },
+        
+        // Определяет класс фона карточки в зависимости от срока выполнения
+        getCardBackgroundClass() {
+            if (!this.isTaskInActiveStatus() || !this.order?.deadline) {
+                return '';
+            }
+            
+            const daysLeft = this.getDaysUntilDeadline(this.order.deadline);
+            
+            // Если просрочена - красная подложка (светлая)
+            if (daysLeft < 0) {
+                return 'bg-red-500';
+            }
+            
+            // Если до срока осталось 3 дня или меньше - желтая подложка
+            if (daysLeft <= 3) {
+                return 'bg-yellow-500';
+            }
+            
+            return '';
+        },
 
         async updateTaskStatus(targetStatusName) {
             try {

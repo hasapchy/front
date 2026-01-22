@@ -633,6 +633,7 @@ export default {
     taskSuccessfullyDeleted: 'Task successfully deleted',
     errorSavingTask: 'Error saving task',
     errorGettingTaskList: 'Error loading task list',
+    errorGettingTask: 'Error loading task',
     titleRequired: 'Task title is required',
     supervisor: 'Process Owner',
     executor: 'Executor',
@@ -737,4 +738,14 @@ export default {
     endOfMonth: 'End of month',
     time: 'Time',
     quickSelect: 'Quick select',
+
+    // Checklist
+    checklist: 'Checklist',
+    addChecklistItem: 'Add Checklist Item',
+    checklistItems: 'Checklist Items',
+    checklistItem: 'Checklist Item',
+    checklistItemCompleted: 'Completed',
+    checklistItemNotCompleted: 'Not Completed',
+    checklistItemProgress: 'Progress',
+    checklistItemTotal: 'Total',
 }

@@ -1534,6 +1534,7 @@ export default {
   taskSuccessfullyDeleted: 'Задача успешно удалена',
   errorSavingTask: 'Ошибка при сохранении задачи',
   errorGettingTaskList: 'Ошибка при получении списка задач',
+  errorGettingTask: 'Ошибка при получении задачи',
   titleRequired: 'Название задачи обязательно',
   supervisor: 'Постановщик',
   executor: 'Исполнитель',
@@ -1678,4 +1679,14 @@ export default {
   endOfMonth: 'В конце месяца',
   time: 'Время',
   quickSelect: 'Быстрый выбор',
+
+  // Checklist
+  checklist: 'Чек-лист',
+  addChecklistItem: 'Добавить элемент чек-листа',
+  checklistItems: 'Элементы чек-листа',
+  checklistItem: 'Элемент чек-листа',
+  checklistItemCompleted: 'Выполнено',
+  checklistItemNotCompleted: 'Не выполнено',
+  checklistItemProgress: 'Прогресс',
+  checklistItemTotal: 'Всего',
 }

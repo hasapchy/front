@@ -81,12 +81,18 @@
             <div>
                 <UserSearch v-model:selectedUser="selectedExecutor" :required="true" :label="$t('executor')" />
             </div>
+
+            <div>
+                <label>{{ $t('description') }}</label>
+                <QuillEditor
+                    v-model:content="description"
+                    :options="editorOptions"
+                    contentType="html"
+                    :disabled="saveLoading"
+                    />
+            </div>
         </div>
 
-        <div>
-            <label>{{ $t('description') }}</label>
-            <textarea v-model="description" rows="4" :placeholder="$t('enterDescription')"></textarea>
-        </div>
         
         <div v-if="currentTab === 'files'">
             <FileUploader 
@@ -99,13 +105,14 @@
                 @delete-file="showDeleteFileDialog"
                 @delete-multiple-files="showDeleteMultipleFilesDialog" />
         </div>
-        
-        <!-- <div v-if="currentTab === 'comments' && editingItem && editingItemId" class="h-full">
-            <TimelinePanel 
-                type="task" 
-                :id="editingItemId"
-                :is-collapsed="false" />
-        </div> -->
+
+        <div v-if="currentTab === 'checklist'">
+            <TaskChecklist 
+                :items="checklistItems"
+                @update:items="checklistItems = $event"
+            />
+        </div>
+
     </div>
 
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -162,7 +169,8 @@
 
 <script>
 import TaskController from '@/api/TaskController';
-import UsersController from '@/api/UsersController';
+import { QuillEditor } from '@vueup/vue-quill';
+import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import ProjectController from '@/api/ProjectController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
@@ -180,6 +188,7 @@ import crudFormMixin from '@/mixins/crudFormMixin';
 import dayjs from 'dayjs';
 import dateFormMixin from '@/mixins/dateFormMixin';
 import { translateTaskStatus } from '@/utils/translationUtils';
+import TaskChecklist from '@/views/components/app/task/TaskChecklist.vue';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, dateFormMixin, crudFormMixin],
@@ -192,7 +201,9 @@ export default {
         FileUploader,
         TimelinePanel,
         UserSearch,
-        DatePicker
+        DatePicker,
+        QuillEditor,
+        TaskChecklist
     },
     props: {
         editingItem: { type: Object, default: null }
@@ -224,6 +235,7 @@ export default {
             tabs: [
                 { name: 'info', label: 'info' },
                 { name: 'files', label: 'files' },
+                { name: 'checklist', label: 'checklist' },
                 // { name: 'comments', label: 'comments' },
             ],
             uploading: false,
@@ -233,10 +245,29 @@ export default {
             deletingFiles: false,
             pendingFiles: [], // Добавляем массив для файлов до создания задачи
             showDatePicker: false,
+            content: this.editingItem ? this.editingItem.content : '',
+            checklistItems: this.editingItem?.checklist || [],
         }
     },
     computed: {
-        visibleTabs() {;
+        editorOptions() {
+            return {
+                theme: 'snow',
+                placeholder: this.$t('enterDescription') || 'Введите текст задачи...',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'align': [] }],
+                        ['link', 'image'],
+                        ['clean']
+                    ]
+                }
+            };
+        },
+        visibleTabs() {
             return this.tabs;
         },
         translatedTabs() {
@@ -302,6 +333,7 @@ export default {
                 this.priority = newEditingItem.priority || 'low';
                 this.complexity = newEditingItem.complexity || 'normal';
                 this.currentTab = 'info';
+                this.checklistItems = newEditingItem.checklist || [];
             }
         },
         changeTab(tabName) {
@@ -315,6 +347,11 @@ export default {
             this.showDatePicker = false;
         },
         handleClickOutside(event) {
+             // Проверяем, что $el существует и является DOM элементом
+             if (!this.$el || !(this.$el instanceof Element)) {
+                return;
+            }
+
             const datePickerElement = this.$el?.querySelector('.date-picker-container');
             const inputElement = this.$el?.querySelector('input[readonly]');
             
@@ -657,6 +694,7 @@ export default {
                 executor_id: this.executorId,
                 priority: this.priority || 'low',
                 complexity: this.complexity || 'normal',
+                checklist: this.checklistItems || [],
             };
         },
         async performSave(data) {

@@ -1266,6 +1266,7 @@ export default {
   taskSuccessfullyDeleted: 'Wezipe üstünlikli pozuldy',
   errorSavingTask: 'Wezipäni ýatda saklamakda säwlik',
   errorGettingTaskList: 'Wezipeleriň sanawyny almagyň säwligi',
+  errorGettingTask: 'Wezipe sanawyny almagyň säwligi',
   titleRequired: 'Wezipäniň ady hökmany',
   supervisor: 'Guramaçy',
   executor: 'Ýerine ýetiriji',
@@ -1366,4 +1367,14 @@ export default {
   endOfMonth: 'Aýyň ahyrynda',
   time: 'Wagty',
   quickSelect: 'Çalt saýla',
+
+  // Checklist
+  checklist: "Kontrol sanawy",
+  addChecklistItem: "Kontrol sanawy elementi goş",
+  checklistItems: "Kontrol sanawy elementleri",
+  checklistItem: "Kontrol sanawy elementi",
+  checklistItemCompleted: "Tamamlandy",
+  checklistItemNotCompleted: "Tamamlanmady",
+  checklistItemProgress: "Ýerine ýetiriliş",
+  checklistItemTotal: "Jemi"
 }
