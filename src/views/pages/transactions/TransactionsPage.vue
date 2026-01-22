@@ -282,7 +282,7 @@
                     :key="transaction.id"
                     :item="transaction"
                     :is-selected="selectedIds.includes(transaction.id)"
-                    :title="getTransactionTitle(transaction)"
+                    :title="`№${transaction.id}`"
                     :fields="transactionCardFields"
                     :footer-fields="getTransactionFooterFields(transaction)"
                     :note-field="transaction.note ? 'note' : null"
@@ -734,6 +734,9 @@ export default {
             this.$store.commit('SET_TRANSACTIONS_VIEW_MODE', mode);
         },
         getTransactionTitle(transaction) {
+            if (!transaction || !transaction.id) {
+                return '№—';
+            }
             return `№${transaction.id}`;
         },
         toggleSelectRow(id) {

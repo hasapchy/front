@@ -89,7 +89,7 @@
                     :key="user.id"
                     :item="user"
                     :is-selected="selectedIds.includes(user.id)"
-                    :title="getUserTitleField(user)"
+                    :title="`№${user.id}`"
                     :fields="userCardFields"
                     :footer-fields="getUserFooterFields(user)"
                     :field-visibility="userCardFieldVisibility"
@@ -213,6 +213,18 @@ export default {
     computed: {
         userCardFields() {
             return [
+                {
+                    name: 'name',
+                    label: this.$t('name') || 'Имя',
+                    icon: 'fas fa-user text-blue-600 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                    medium: true,
+                    formatter: (value, item) => {
+                        const fullName = `${item.name || ''} ${item.surname || ''}`.trim();
+                        return fullName || '—';
+                    }
+                },
                 {
                     name: 'email',
                     label: this.$t('email') || 'Email',
@@ -476,8 +488,10 @@ export default {
             }
         },
         getUserTitleField(user) {
-            const fullName = `${user.name || ''} ${user.surname || ''}`.trim();
-            return fullName || `ID: ${user.id}`;
+            if (!user || !user.id) {
+                return '№—';
+            }
+            return `№${user.id}`;
         },
         getUserFooterFields(user) {
             return this.userCardFooterFields.filter(field => {

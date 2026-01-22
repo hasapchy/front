@@ -15,11 +15,11 @@
                     class="cursor-pointer flex-shrink-0"
                 />
                 <slot name="title">
-                    <span v-if="titleField" class="text-sm font-bold text-gray-800 truncate">
-                        {{ getFieldValue(item, titleField) }}
-                    </span>
-                    <span v-else-if="title" class="text-sm font-bold text-gray-800 truncate">
+                    <span v-if="title" class="text-sm font-bold text-gray-800 truncate">
                         {{ title }}
+                    </span>
+                    <span v-else-if="titleField" class="text-sm font-bold text-gray-800 truncate">
+                        {{ getFieldValue(item, titleField) }}
                     </span>
                 </slot>
             </div>
