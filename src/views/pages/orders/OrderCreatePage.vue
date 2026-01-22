@@ -584,10 +584,24 @@ export default {
                 this.products = rawProducts.map(p => this.mapProductFromEditingItem(p));
                 this.discount = newEditingItem.discount || 0;
                 this.discountType = newEditingItem.discount_type || 'fixed';
+                this.currencyId = newEditingItem.currencyId || null;
+                this.editingItemId = newEditingItem.id || null;
+            } else {
+                // Сброс формы, если editingItem стал null
+                if (!this.editingItemId) {
+                    this.clearForm();
+                }
             }
         }
     },
     watch: {
+        editingItem: {
+            handler(newEditingItem) {
+                this.onEditingItemChanged(newEditingItem);
+            },
+            immediate: true,
+            deep: true
+        },
         cashId: {
             handler(newCashId) {
                 if (!newCashId || !this.allCashRegisters?.length) return;
