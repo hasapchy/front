@@ -347,6 +347,8 @@ const store = createStore({
       projects: 'kanban', // 'table' или 'kanban'
       orders: 'table', // 'table' или 'kanban'
       tasks: 'table', // 'table' или 'kanban'
+      users: 'table', // 'table' или 'cards'
+      transactions: 'table', // 'table' или 'cards'
     },
   },
 
@@ -537,6 +539,16 @@ const store = createStore({
     SET_ORDERS_VIEW_MODE(state, mode) {
       if (['table', 'kanban'].includes(mode)) {
         state.viewModes.orders = mode;
+      }
+    },
+    SET_USERS_VIEW_MODE(state, mode) {
+      if (['table', 'cards'].includes(mode)) {
+        state.viewModes.users = mode;
+      }
+    },
+    SET_TRANSACTIONS_VIEW_MODE(state, mode) {
+      if (['table', 'cards'].includes(mode)) {
+        state.viewModes.transactions = mode;
       }
     },
   },
@@ -1913,6 +1925,8 @@ const store = createStore({
     leavesViewMode: (state) => state.viewModes.leaves || 'table',
     projectsViewMode: (state) => state.viewModes.projects || 'kanban',
     ordersViewMode: (state) => state.viewModes.orders || 'table',
+    usersViewMode: (state) => state.viewModes.users || 'table',
+    transactionsViewMode: (state) => state.viewModes.transactions || 'table',
   },
   plugins: [
     // 1. Долгосрочный кэш справочников (localStorage)
