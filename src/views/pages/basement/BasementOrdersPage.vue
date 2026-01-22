@@ -112,10 +112,7 @@
       </div>
 
       <div v-else key="loader" class="flex justify-center items-center h-64">
-        <div class="text-center flex flex-col items-center gap-2">
-          <SpinnerIcon />
-          <p class="mt-2 text-gray-500">{{ $t('loading') }}</p>
-        </div>
+        <SpinnerIcon />
       </div>
     </transition>
 

@@ -298,7 +298,7 @@ export default {
             return TRANSACTION_FORM_PRESETS.orderPayment;
         },
         isBasementMode() {
-            return this.$route.meta.basementMode || this.$store.getters.isBasementMode;
+            return this.$route.meta.basementMode;
         },
         itemViewRouteName() {
             // Для basement режима не нужен маршрут, только модалка
