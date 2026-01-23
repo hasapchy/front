@@ -101,7 +101,8 @@ export default {
         return {
             holidays: [],
             modalDialog: false,
-            editingHoliday: null
+            editingHoliday: null,
+            editingHolidayIndex: null
         };
     },
     watch: {
@@ -115,10 +116,12 @@ export default {
     methods: {
         addHoliday() {
             this.editingHoliday = null;
+            this.editingHolidayIndex = null;
             this.modalDialog = true;
         },
         editHoliday(index) {
             const holiday = this.holidays[index];
+            this.editingHolidayIndex = index;
             this.editingHoliday = {
                 id: holiday.id,
                 name: holiday.name,
@@ -131,6 +134,7 @@ export default {
         closeModal() {
             this.modalDialog = false;
             this.editingHoliday = null;
+            this.editingHolidayIndex = null;
         },
         handleHolidaySaved(savedHoliday) {
             if (!savedHoliday) {
@@ -156,10 +160,14 @@ export default {
 
             let updatedHolidays;
             if (this.editingHoliday?.id) {
-                // Редактирование существующего - обновляем в массиве
+                // Редактирование существующего с id - обновляем по id
                 updatedHolidays = this.holidays.map(h => 
                     h.id === formattedHoliday.id ? formattedHoliday : h
                 );
+            } else if (this.editingHolidayIndex !== null) {
+                // Редактирование несохранённого (без id) - обновляем по индексу
+                updatedHolidays = [...this.holidays];
+                updatedHolidays[this.editingHolidayIndex] = formattedHoliday;
             } else {
                 // Добавление нового - добавляем в массив (без id, будет создан при сохранении компании)
                 updatedHolidays = [...this.holidays, formattedHoliday];
@@ -174,7 +182,12 @@ export default {
         handleHolidayDeleted() {
             // Удаляем из локального массива, НЕ вызываем API
             if (this.editingHoliday?.id) {
+                // Удаляем по id
                 const updatedHolidays = this.holidays.filter(h => h.id !== this.editingHoliday.id);
+                this.$emit('update:modelValue', updatedHolidays);
+            } else if (this.editingHolidayIndex !== null) {
+                // Удаляем по индексу (для несохранённых)
+                const updatedHolidays = this.holidays.filter((_, index) => index !== this.editingHolidayIndex);
                 this.$emit('update:modelValue', updatedHolidays);
             }
             this.closeModal();
@@ -203,10 +216,4 @@ export default {
     }
 };
 </script>
-
-<style scoped>
-.holiday-manager {
-    /* Используем стандартные Tailwind классы */
-}
-</style>
 
