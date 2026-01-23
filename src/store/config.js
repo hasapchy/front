@@ -101,6 +101,7 @@ export const STORE_CONFIG = {
     "menuItems",
     "kanbanCardFields",
     "viewModes",
+    "cardFields",
   ],
 
   loadingFlagsToReset: [

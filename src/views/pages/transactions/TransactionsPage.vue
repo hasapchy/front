@@ -272,6 +272,10 @@
                         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                             :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
                             @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                        <CardFieldsButton
+                            storage-key="transactions"
+                            :fields="transactionCardFieldsForSettings"
+                        />
                     </template>
                 </TableControlsBar>
             </div>
@@ -286,6 +290,7 @@
                     :fields="transactionCardFields"
                     :footer-fields="getTransactionFooterFields(transaction)"
                     :note-field="transaction.note ? 'note' : null"
+                    :field-visibility="$store.state.cardFields?.transactions || {}"
                     @dblclick="onItemClick"
                     @select-toggle="toggleSelectRow"
                 />
@@ -348,12 +353,13 @@ import { highlightMatches } from '@/utils/searchUtils';
 import TRANSACTION_FORM_PRESETS from '@/constants/transactionFormPresets';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import Card from '@/views/components/app/cards/Card.vue';
+import CardFieldsButton from '@/views/components/app/cards/CardFieldsButton.vue';
 import { dayjsDateTime } from '@/utils/dateUtils';
 import { formatNumber } from '@/utils/numberUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
-    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, ViewModeToggle, Card, draggable: VueDraggableNext },
+    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, ViewModeToggle, Card, CardFieldsButton, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -753,6 +759,18 @@ export default {
         },
     },
     computed: {
+        transactionCardFieldsForSettings() {
+            return [
+                ...this.transactionCardFields,
+                {
+                    name: 'note',
+                    label: this.$t('note') || 'Примечание',
+                    icon: 'fas fa-sticky-note text-gray-400 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                },
+            ];
+        },
         transactionCardFields() {
             return [
                 {
@@ -761,9 +779,7 @@ export default {
                     icon: 'fas fa-calendar text-blue-600 text-xs',
                     type: 'string',
                     showLabel: false,
-                    formatter: (value, item) => {
-                        return item.formatDate ? `${item.formatDate()} / ${item.userName || '—'}` : (value || '—');
-                    }
+                    formatter: (value, item) => item.formatDate ? `${item.formatDate()} / ${item.userName || '—'}` : (value || '—')
                 },
                 {
                     name: 'type',
@@ -797,9 +813,7 @@ export default {
                     icon: 'fas fa-cash-register text-blue-600 text-xs',
                     type: 'string',
                     showLabel: false,
-                    formatter: (value, item) => {
-                        return item.cashName ? `${item.cashName} (${item.cashCurrencySymbol || ''})` : '—';
-                    }
+                    formatter: (value, item) => item.cashName ? `${item.cashName} (${item.cashCurrencySymbol || ''})` : '—'
                 },
                 {
                     name: 'client',
@@ -825,9 +839,7 @@ export default {
                     icon: 'fas fa-folder text-purple-600 text-xs',
                     type: 'string',
                     showLabel: false,
-                    formatter: (value) => {
-                        return value || '—';
-                    }
+                    formatter: (value) => value || '—'
                 },
                 {
                     name: 'categoryName',
@@ -835,9 +847,7 @@ export default {
                     icon: 'fas fa-list text-gray-500 text-xs',
                     type: 'string',
                     showLabel: false,
-                    formatter: (value) => {
-                        return translateTransactionCategory(value, this.$t) || '—';
-                    }
+                    formatter: (value) => translateTransactionCategory(value, this.$t) || '—'
                 },
             ];
         },

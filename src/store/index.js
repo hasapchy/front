@@ -350,6 +350,8 @@ const store = createStore({
       users: 'table', // 'table' или 'cards'
       transactions: 'table', // 'table' или 'cards'
     },
+    // Настройки видимости полей карточек в карточном режиме
+    cardFields: {},
   },
 
   mutations: {
@@ -525,6 +527,19 @@ const store = createStore({
       if (mode === "orders" || mode === "projects" || mode === "tasks") {
         state.kanbanCardFields[mode] = { ...state.kanbanCardFields[mode], ...fields };
       }
+    },
+    SET_CARD_FIELDS(state, fields) {
+      state.cardFields = fields || {};
+    },
+    UPDATE_CARD_FIELDS(state, { storageKey, fields }) {
+      if (!storageKey) {
+        return;
+      }
+      if (!state.cardFields || typeof state.cardFields !== 'object') {
+        state.cardFields = {};
+      }
+      const prev = state.cardFields[storageKey] || {};
+      state.cardFields[storageKey] = { ...prev, ...fields };
     },
     SET_LEAVES_VIEW_MODE(state, mode) {
       if (['table', 'calendar'].includes(mode)) {

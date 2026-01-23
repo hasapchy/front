@@ -115,6 +115,7 @@ export default {
   noOrders: 'Sargyt ýok',
   orderUpdated: 'Sargyt täzelendi',
   kanbanCardFields: 'Kart meýdanlary',
+  cardFields: 'Kart meýdanlary',
   fieldName: 'Meýdan ady',
   fieldType: 'Meýdan görnüşi',
   fieldRequired: 'Meýdan hökmany',

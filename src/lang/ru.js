@@ -132,6 +132,7 @@ export default {
   noOrders: 'Нет заказов',
   orderUpdated: 'Заказ обновлен',
   kanbanCardFields: 'Поля карточки',
+  cardFields: 'Поля карточки',
 
   // Дополнительные навигационные элементы
   finance: 'Финансы',

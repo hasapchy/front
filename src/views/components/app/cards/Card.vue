@@ -48,14 +48,14 @@
             </div>
 
             <!-- Описание (если есть) -->
-            <div v-if="descriptionField && getFieldValue(item, descriptionField)" class="mb-2">
+            <div v-if="fieldVisibility['description'] !== false && descriptionField && getFieldValue(item, descriptionField)" class="mb-2">
                 <div class="text-xs text-gray-600 line-clamp-2">
                     {{ getFieldValue(item, descriptionField) }}
                 </div>
             </div>
 
             <!-- Примечание/Note (если есть) -->
-            <div v-if="noteField && getFieldValue(item, noteField)" class="mb-2">
+            <div v-if="fieldVisibility['note'] !== false && noteField && getFieldValue(item, noteField)" class="mb-2">
                 <div class="text-xs text-gray-600">
                     <div class="flex items-start space-x-1">
                         <i class="fas fa-sticky-note text-gray-400 text-xs mt-0.5"></i>
@@ -67,15 +67,17 @@
 
         <!-- Футер с дополнительной информацией (цена, статус и т.д.) - всегда внизу -->
         <div v-if="footerFields && footerFields.length > 0" class="mt-auto pt-3 border-t border-gray-100">
-            <div v-for="field in footerFields" :key="field.name" class="flex items-center justify-between" :class="field === footerFields[footerFields.length - 1] ? '' : 'mb-2'">
-                <div class="flex items-center space-x-1">
-                    <i v-if="field.icon" :class="getFooterIconClass(field)"></i>
-                    <span v-if="field.label" class="text-xs text-gray-500">{{ field.label }}:</span>
+            <template v-for="field in footerFields" :key="field.name">
+                <div v-if="shouldShowFooterField(field)" class="flex items-center justify-between" :class="field === footerFields[footerFields.length - 1] ? '' : 'mb-2'">
+                    <div class="flex items-center space-x-1">
+                        <i v-if="field.icon" :class="getFooterIconClass(field)"></i>
+                        <span v-if="field.label" class="text-xs text-gray-500">{{ field.label }}:</span>
+                    </div>
+                    <span class="text-sm font-bold" :class="getFieldColorClass(field)">
+                        {{ formatFieldValue(item, field) }}
+                    </span>
                 </div>
-                <span class="text-sm font-bold" :class="getFieldColorClass(field)">
-                    {{ formatFieldValue(item, field) }}
-                </span>
-            </div>
+            </template>
             <!-- Дополнительные элементы футера (например, статус оплаты) -->
             <div v-if="footerAdditional && footerAdditional.length > 0">
                 <div v-for="item in footerAdditional" :key="item.key" class="flex items-center space-x-1">
@@ -228,19 +230,54 @@ export default {
             return String(value);
         },
         shouldShowField(field) {
+            // Если поле обязательное для отображения - всегда показываем
+            if (field.required) {
+                return true;
+            }
+            
+            // Проверка видимости через fieldVisibility (только если поле не пустое)
+            if (this.fieldVisibility[field.name] === false) {
+                return false;
+            }
+
+            // Проверяем, есть ли значение у поля
+            const value = this.getFieldValue(this.item, field.name);
+            const hasValue = value !== null && value !== undefined && value !== '';
+            
+            // Если есть formatter - проверяем, что он возвращает не пустое значение
+            if (field.formatter && typeof field.formatter === 'function') {
+                const formattedValue = field.formatter(value, this.item);
+                // Если formatter возвращает пустую строку или '—', не показываем поле
+                if (!formattedValue || formattedValue === '—' || (typeof formattedValue === 'string' && formattedValue.trim() === '')) {
+                    return false;
+                }
+                return true;
+            }
+            
+            // Если нет значения и нет defaultValue - не показываем поле
+            if (!hasValue && !field.defaultValue) {
+                return false;
+            }
+            
+            return true;
+        },
+        shouldShowFooterField(field) {
+            if (!field || !field.name) {
+                return false;
+            }
+            
+            // Если поле обязательное для отображения - всегда показываем
+            if (field.required) {
+                return true;
+            }
+            
             // Проверка видимости через fieldVisibility
             if (this.fieldVisibility[field.name] === false) {
                 return false;
             }
             
-            // Если поле обязательное для отображения
-            if (field.required) {
-                return true;
-            }
-            
-            // Если есть значение или defaultValue
-            const value = this.getFieldValue(this.item, field.name);
-            return value !== null && value !== undefined && value !== '' || field.defaultValue;
+            // Для футерных полей всегда показываем, если не скрыто явно
+            return true;
         },
         handleDoubleClick() {
             this.$emit('dblclick', this.item);

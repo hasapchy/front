@@ -123,6 +123,7 @@ export default {
   noOrders: 'No orders',
   orderUpdated: 'Order updated',
   kanbanCardFields: 'Card Fields',
+  cardFields: 'Card Fields',
   
   // Actions
   add: 'Add',
