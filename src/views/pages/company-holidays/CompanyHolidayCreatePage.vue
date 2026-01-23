@@ -41,7 +41,6 @@
 </template>
 
 <script>
-import CompanyHolidayController from '@/api/CompanyHolidayController';
 import CompanyHolidayDto from '@/dto/companyHoliday/CompanyHolidayDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
@@ -78,52 +77,46 @@ export default {
                 color: this.color
             };
         },
-        async save() {
+        save() {
             if (!this.name || !this.date) {
                 this.$emit('saved-error', this.$t('allRequiredFieldsMustBeFilled') || 'Все обязательные поля должны быть заполнены');
                 return;
             }
 
+            // Устанавливаем loading состояние
             this.saveLoading = true;
+            
             try {
-                const payload = {
+                // НЕ вызываем API, только формируем данные для локального сохранения
+                const holidayData = {
+                    id: this.editingItemId || null, // Сохраняем id если редактируем
                     name: this.name,
                     date: this.date,
-                    is_recurring: this.isRecurring,
-                    color: this.color
+                    isRecurring: this.isRecurring,
+                    color: this.color || '#FF5733',
                 };
-
-                let resp;
-                if (this.editingItemId != null) {
-                    resp = await CompanyHolidayController.updateItem(this.editingItemId, payload);
-                } else {
-                    resp = await CompanyHolidayController.storeItem(payload);
-                }
-                if (resp.message || resp.item) {
-                    this.$emit('saved');
-                    this.clearForm();
-                }
+                
+                // Эмитим событие с данными
+                this.$emit('saved', holidayData);
+                this.onSaveSuccess(holidayData);
             } catch (error) {
                 this.$emit('saved-error', this.getApiErrorMessage(error));
+                this.onSaveError(error);
+            } finally {
+                this.saveLoading = false;
             }
-            this.saveLoading = false;
         },
         async performSave(data) {
-            if (this.editingItemId != null) {
-                return await CompanyHolidayController.updateItem(this.editingItemId, data);
-            } else {
-                return await CompanyHolidayController.storeItem(data);
-            }
+            // Не используется, так как сохранение происходит локально
+            return { message: 'OK' };
         },
         async performDelete() {
-            const resp = await CompanyHolidayController.deleteItem(this.editingItemId);
-            if (!resp.message) {
-                throw new Error('Failed to delete holiday');
-            }
-            return resp;
+            // Не используется, так как удаление происходит локально
+            return { message: 'OK' };
         },
         onSaveSuccess(response) {
-            if (response && (response.message || response.item)) {
+            // Всегда очищаем форму после успешного сохранения
+            if (this.clearForm) {
                 this.clearForm();
             }
         },

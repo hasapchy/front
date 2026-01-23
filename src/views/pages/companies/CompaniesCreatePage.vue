@@ -43,7 +43,7 @@
                 </div>
             </div>
             <div v-show="currentTab === 'holidays'" class="mt-4">
-                <HolidayManager v-model="form.holidays" />
+                <HolidayManager v-model="form.holidays" :company-id="editingItemId" />
             </div>
             <div v-show="currentTab === 'settings' && editingItem" class="mt-4">
                 <!-- Настройка отображения удаленных транзакций -->
@@ -379,10 +379,6 @@ export default {
             return response;
         },
         async saveHolidays(companyId) {
-            if (!this.form.holidays || this.form.holidays.length === 0) {
-                return;
-            }
-
             try {
                 // Получаем существующие праздники для этой компании
                 const existingHolidays = await CompanyHolidayController.getAll({ 
@@ -390,7 +386,15 @@ export default {
                 });
                 const existingIds = new Set(existingHolidays.map(h => h.id));
 
-                // Удаляем праздники, которых больше нет
+                if (!this.form.holidays || this.form.holidays.length === 0) {
+                    // Если праздников нет, удаляем все существующие
+                    for (const existing of existingHolidays) {
+                        await CompanyHolidayController.deleteItem(existing.id);
+                    }
+                    return;
+                }
+
+                // Удаляем праздники, которых больше нет в form.holidays
                 for (const existing of existingHolidays) {
                     if (!this.form.holidays.some(h => h.id === existing.id)) {
                         await CompanyHolidayController.deleteItem(existing.id);
@@ -408,8 +412,10 @@ export default {
                     };
 
                     if (holiday.id && existingIds.has(holiday.id)) {
+                        // Обновляем существующий
                         await CompanyHolidayController.updateItem(holiday.id, data);
                     } else {
+                        // Создаём новый (holiday.id === null или не существует в базе)
                         await CompanyHolidayController.storeItem(data);
                     }
                 }

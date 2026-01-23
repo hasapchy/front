@@ -79,6 +79,11 @@
                         <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
                             :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
                             @changePage="(page) => fetchItems(page)" @perPageChange="handlePerPageChange" />
+                        <CardFieldsButton
+                            storage-key="users"
+                            :fields="userCardFields"
+                            :footer-fields="userCardFooterFields"
+                        />
                     </template>
                 </TableControlsBar>
             </div>
@@ -92,7 +97,7 @@
                     :title="`№${user.id}`"
                     :fields="userCardFields"
                     :footer-fields="getUserFooterFields(user)"
-                    :field-visibility="userCardFieldVisibility"
+                    :field-visibility="$store.state.cardFields?.users || {}"
                     @dblclick="onItemClick"
                     @select-toggle="toggleSelectRow"
                 />
@@ -173,11 +178,12 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import Card from '@/views/components/app/cards/Card.vue';
+import CardFieldsButton from '@/views/components/app/cards/CardFieldsButton.vue';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 
 export default {
     mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, UsersCreatePage, SalaryAccrualModal, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, ViewModeToggle, Card, SpinnerIcon, draggable: VueDraggableNext },
+    components: { NotificationToast, PrimaryButton, SideModalDialog, UsersCreatePage, SalaryAccrualModal, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, ViewModeToggle, Card, CardFieldsButton, SpinnerIcon, draggable: VueDraggableNext },
     data() {
         return {
             controller: UsersController,
@@ -193,7 +199,6 @@ export default {
             salaryAccrualModalOpen: false,
             salaryOperationType: 'salaryAccrual',
             viewMode: this.$store.getters.usersViewMode || localStorage.getItem('users_viewMode') || 'table',
-            userCardFieldVisibility: {},
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'ID', size: 60 },
@@ -271,9 +276,7 @@ export default {
                     icon: 'fas fa-clock text-gray-500 text-xs',
                     type: 'datetime',
                     showLabel: false,
-                    formatter: (value) => {
-                        return value ? this.formatDatabaseDateTime(value) : '—';
-                    }
+                    formatter: (value) => value ? this.formatDatabaseDateTime(value) : '—'
                 }
             ];
         },
@@ -284,9 +287,7 @@ export default {
                     label: this.$t('active') || 'Активен',
                     icon: 'fas fa-circle text-xs',
                     type: 'boolean',
-                    formatter: (value) => {
-                        return value ? (this.$t('active') || 'Активен') : (this.$t('inactive') || 'Неактивен');
-                    },
+                    formatter: (value) => value ? (this.$t('active') || 'Активен') : (this.$t('inactive') || 'Неактивен'),
                     colorClass: (item) => {
                         return item.isActive ? 'text-green-600' : 'text-red-600';
                     },
@@ -299,9 +300,7 @@ export default {
                     label: this.$t('admin') || 'Админ',
                     icon: 'fas fa-shield-alt text-xs',
                     type: 'boolean',
-                    formatter: (value) => {
-                        return value ? (this.$t('admin') || 'Администратор') : '';
-                    },
+                    formatter: (value) => value ? (this.$t('admin') || 'Администратор') : '',
                     colorClass: (item) => {
                         return item.isAdmin ? 'text-blue-600' : '';
                     },

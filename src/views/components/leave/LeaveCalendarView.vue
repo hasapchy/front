@@ -12,7 +12,7 @@
         </div>
 
         <!-- Календарь со списком сотрудников -->
-        <div class="calendar-timeline-wrapper">
+        <div class="calendar-timeline-wrapper" ref="scrollableWrapper">
             <div class="calendar-timeline-container">
                 <!-- Заголовок с днями -->
                 <div class="timeline-header">
@@ -231,6 +231,7 @@ export default {
         }
     },
     mounted() {
+        this.scrollToToday();
     },
     methods: {
         getLeaveTypeName(typeName) {
@@ -411,9 +412,27 @@ export default {
         },
         handleDayClick(day) {
             this.$emit('day-click', day);
+        },
+        scrollToToday() {
+            // Устанавливаем позицию на сегодняшнюю дату при загрузке (без анимации)
+            this.$nextTick(() => {
+                const today = dayjs();
+                const todayIndex = this.calendarDays.findIndex(day => {
+                    return dayjs(day.date).isSame(today, 'day');
+                });
+                
+                if (todayIndex !== -1 && this.$refs.scrollableWrapper) {
+                    const dayWidth = 60; // ширина одной ячейки дня
+                    const scrollPosition = todayIndex * dayWidth;
+                    // Устанавливаем позицию так, чтобы сегодняшний день был примерно в центре видимой области
+                    const containerWidth = this.$refs.scrollableWrapper.clientWidth;
+                    const targetScroll = Math.max(0, scrollPosition - containerWidth / 2 + dayWidth / 2);
+                    
+                    // Мгновенная установка позиции без анимации
+                    this.$refs.scrollableWrapper.scrollLeft = targetScroll;
+                }
+            });
         }
-    },
-    watch: {
     }
 }
 </script>

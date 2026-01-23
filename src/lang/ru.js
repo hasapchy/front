@@ -132,6 +132,7 @@ export default {
   noOrders: 'Нет заказов',
   orderUpdated: 'Заказ обновлен',
   kanbanCardFields: 'Поля карточки',
+  cardFields: 'Поля карточки',
 
   // Дополнительные навигационные элементы
   finance: 'Финансы',
@@ -1486,8 +1487,11 @@ export default {
   holidays: 'Праздники',
   company_holidays: 'Праздники',
   add_holiday: 'Добавить праздник',
+  createHoliday: 'Создать праздник',
+  editHoliday: 'Редактировать праздник',
   edit_holiday: 'Редактировать праздник',
   holiday_name: 'Название праздника',
+  holidayName: 'Название праздника',
   holiday_created: 'Праздник создан',
   holiday_updated: 'Праздник обновлен',
   holiday_deleted: 'Праздник удален',
@@ -1498,6 +1502,7 @@ export default {
   manage_holidays_in_company_settings: 'Управление праздниками осуществляется в настройках компании',
   please_fill_required_fields: 'Пожалуйста, заполните обязательные поля',
   recurring_holiday: 'Повторяется каждый год',
+  recurringHoliday: 'Повторяется каждый год',
   recurring_holiday_hint: 'Если отмечено, праздник будет отображаться каждый год в эту же дату (например, Новый год, 8 марта)',
   recurring_yearly: 'Ежегодный праздник',
   noPermissionToCreateHolidays: 'У вас нет прав на создание праздников',

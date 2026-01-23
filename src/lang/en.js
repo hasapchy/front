@@ -123,6 +123,7 @@ export default {
   noOrders: 'No orders',
   orderUpdated: 'Order updated',
   kanbanCardFields: 'Card Fields',
+  cardFields: 'Card Fields',
   
   // Actions
   add: 'Add',
@@ -585,8 +586,11 @@ export default {
     holidays: 'Holidays',
     company_holidays: 'Holidays',
     add_holiday: 'Add Holiday',
+    createHoliday: 'Create Holiday',
+    editHoliday: 'Edit Holiday',
     edit_holiday: 'Edit Holiday',
     holiday_name: 'Holiday Name',
+    holidayName: 'Holiday Name',
     holiday_created: 'Holiday created',
     holiday_updated: 'Holiday updated',
     holiday_deleted: 'Holiday deleted',
@@ -597,6 +601,7 @@ export default {
     manage_holidays_in_company_settings: 'Holidays are managed in company settings',
     please_fill_required_fields: 'Please fill in the required fields',
     recurring_holiday: 'Recurring yearly',
+    recurringHoliday: 'Recurring yearly',
     recurring_holiday_hint: 'If checked, the holiday will be displayed every year on this date (e.g., New Year, March 8th)',
     recurring_yearly: 'Recurring yearly',
     noPermissionToCreateHolidays: 'You do not have permission to create holidays',
