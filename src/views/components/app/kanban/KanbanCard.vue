@@ -240,12 +240,41 @@
         </div>
 
         <!-- Чек-лист (для задач) -->
-        <div v-if="isTaskMode && order.checklist && order.checklist.length > 0" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
+        <!-- Временно убираем проверку showField для отладки -->
+        <div v-if="isTaskMode && hasChecklist" class="mb-2 mt-2 pt-2 border-t border-gray-100">
+            <!-- Отладка -->
+            <div v-if="isTaskMode && hasChecklist && !showField('checklist')" class="text-xs text-yellow-600 mb-1 italic">
+                ⚠️ Чеклист есть, но поле отключено в настройках
+            </div>
+            <div class="flex items-center space-x-1 text-xs text-gray-600 mb-1">
                 <i class="fas fa-tasks text-blue-400"></i>
-                <span>
+                <span class="font-semibold">
                     {{ getChecklistProgress(order.checklist) }}
                 </span>
+            </div>
+            <!-- Компактное отображение пунктов чеклиста -->
+            <div class="space-y-1 max-h-20 overflow-y-auto">
+                <div 
+                    v-for="(item, index) in getChecklistItems(order.checklist).slice(0, 3)" 
+                    :key="index"
+                    class="flex items-center space-x-1 text-xs"
+                >
+                    <input 
+                        type="checkbox" 
+                        :checked="item.completed" 
+                        disabled
+                        class="w-3 h-3 cursor-not-allowed opacity-60"
+                    />
+                    <span 
+                        class="truncate flex-1"
+                        :class="item.completed ? 'line-through text-gray-400' : 'text-gray-700'"
+                    >
+                        {{ item.text }}
+                    </span>
+                </div>
+                <div v-if="getChecklistItems(order.checklist).length > 3" class="text-xs text-gray-500 italic pl-4">
+                    +{{ getChecklistItems(order.checklist).length - 3 }} {{ $t('more') || 'еще' }}
+                </div>
             </div>
         </div>
 
@@ -284,6 +313,38 @@ export default {
             const mode = this.isProjectMode ? 'projects' : (this.isTaskMode ? 'tasks' : 'orders');
             return this.$store.state.kanbanCardFields[mode] || {};
         },
+        // Проверяет наличие чеклиста в задаче
+        hasChecklist() {
+            if (!this.isTaskMode) return false;
+            if (!this.order) return false;
+
+            console.log('hasChecklist', this.order);
+            // Проверяем наличие checklist в разных возможных форматах
+            const checklist = this.order.checklist;
+
+            
+            // Отладка для задачи с ID 2
+            if (this.order.id === 2) {
+                console.log('[KanbanCard] Task 2 debug:', {
+                    order: this.order,
+                    checklist: checklist,
+                    checklistType: typeof checklist,
+                    isArray: Array.isArray(checklist),
+                    length: Array.isArray(checklist) ? checklist.length : 'N/A'
+                });
+            }
+            
+            if (!checklist) return false;
+            
+            try {
+                const items = this.getChecklistItems(checklist);
+                const hasItems = Array.isArray(items) && items.length > 0;
+                return hasItems;
+            } catch (e) {
+                console.warn('Ошибка при проверке чеклиста:', e, this.order);
+                return false;
+            }
+        },
         isAdmin() {
             const user = this.$store.getters.user;
             return user?.is_admin === true;
@@ -299,10 +360,10 @@ export default {
     },
     methods: {
 
-        // Отображает прогресс чек-листа
-        getChecklistProgress(checklist) {
-            if (!checklist || !Array.isArray(checklist) || checklist.length === 0) {
-                return '';
+        // Получает массив пунктов чеклиста
+        getChecklistItems(checklist) {
+            if (!checklist) {
+                return [];
             }
             
             // Если checklist - строка JSON, парсим её
@@ -311,8 +372,23 @@ export default {
                 try {
                     items = JSON.parse(checklist);
                 } catch (e) {
-                    return '';
+                    return [];
                 }
+            }
+            
+            // Проверяем, что это массив
+            if (!Array.isArray(items)) {
+                return [];
+            }
+            
+            return items;
+        },
+
+        // Отображает прогресс чек-листа
+        getChecklistProgress(checklist) {
+            const items = this.getChecklistItems(checklist);
+            if (items.length === 0) {
+                return '';
             }
             
             const completed = items.filter(item => item.completed).length;

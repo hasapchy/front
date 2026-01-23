@@ -290,6 +290,15 @@ export default {
             return dayjs(this.deadline).format('DD.MM.YYYY HH:mm');
         },
     },
+    watch: {
+        // Отслеживаем изменения editingItem и обновляем форму
+        editingItem: {
+            immediate: true,
+            handler(newItem) {
+                this.onEditingItemChanged(newItem);
+            }
+        }
+    },
     mounted() {
         this.$nextTick(async () => {
             if (!this.$store.getters.taskStatuses?.length) {
@@ -319,6 +328,7 @@ export default {
             this.selectedExecutor = null;
             this.currentTab = 'info';
             this.pendingFiles = [];
+            this.checklistItems = [];
             this.resetFormChanges();
         },
         onEditingItemChanged(newEditingItem) {
@@ -332,8 +342,26 @@ export default {
                 this.selectedExecutor = newEditingItem.executor?.id ? { id: newEditingItem.executor.id } : null;
                 this.priority = newEditingItem.priority || 'low';
                 this.complexity = newEditingItem.complexity || 'normal';
-                this.currentTab = 'info';
-                this.checklistItems = newEditingItem.checklist || [];
+                // Обрабатываем чеклист: может быть массивом или строкой JSON
+                if (newEditingItem.checklist) {
+                    if (Array.isArray(newEditingItem.checklist)) {
+                        this.checklistItems = [...newEditingItem.checklist];
+                    } else if (typeof newEditingItem.checklist === 'string') {
+                        try {
+                            this.checklistItems = JSON.parse(newEditingItem.checklist);
+                        } catch (e) {
+                            console.error('Ошибка парсинга чеклиста:', e);
+                            this.checklistItems = [];
+                        }
+                    } else {
+                        this.checklistItems = [];
+                    }
+                } else {
+                    this.checklistItems = [];
+                }
+            } else {
+                // Очищаем форму при создании новой задачи
+                this.clearForm();
             }
         },
         changeTab(tabName) {
@@ -375,28 +403,23 @@ export default {
         getFormattedFiles() {
             // Если задача уже создана, используем файлы из editingItem
             if (this.editingItem && this.editingItem.files) {
-                const taskDto = new TaskDto(
-                    this.editingItem.id,
-                    this.editingItem.title,
-                    this.editingItem.description,
-                    this.editingItem.status_id || null,
-                    this.editingItem.status || null,
-                    this.editingItem.deadline,
-                    this.editingItem.creator?.id,
-                    this.editingItem.creator,
-                    this.editingItem.supervisor?.id,
-                    this.editingItem.supervisor,
-                    this.editingItem.executor?.id,
-                    this.editingItem.executor,
-                    this.editingItem.project?.id || null,
-                    this.editingItem.project || null,
-                    this.editingItem.company_id,
-                    this.editingItem.files || [],
-                    this.editingItem.comments || [],
-                    this.editingItem.created_at,
-                    this.editingItem.updated_at
-                );
-                return taskDto.getFormattedFiles();
+                // Если editingItem уже является TaskDto, используем его метод напрямую
+                if (typeof this.editingItem.getFormattedFiles === 'function') {
+                    return this.editingItem.getFormattedFiles();
+                }
+                
+                // Иначе обрабатываем файлы напрямую
+                return (this.editingItem.files || []).map((file) => ({
+                    name: file.name || file.path,
+                    url: file.path ? `/storage/${file.path}` : '#',
+                    icon: this.getFileIcon(file),
+                    path: file.path,
+                    size: file.size,
+                    mimeType: file.mime_type,
+                    uploadedAt: file.uploaded_at,
+                    formattedSize: this.formatFileSize(file.size),
+                    formattedUploadDate: file.uploaded_at ? new Date(file.uploaded_at).toLocaleString() : ''
+                }));
             }
             
             if (this.pendingFiles?.length) {
@@ -704,6 +727,7 @@ export default {
                 
                 try {
                     const updatedTask = await TaskController.getItem(this.editingItemId);
+
                     if (updatedTask) {
                         response.data = updatedTask;
                     }

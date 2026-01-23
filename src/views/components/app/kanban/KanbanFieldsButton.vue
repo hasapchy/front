@@ -79,6 +79,7 @@ export default {
                     deadline: { label: 'deadline' },
                     supervisor: { label: 'supervisor' },
                     executor: { label: 'executor' },
+                    checklist: { label: 'checklist' },
                 };
             } else {
                 return {
