@@ -1573,6 +1573,13 @@ const store = createStore({
           label: "leaves",
           permission: "leaves_view_all",
         },
+        {
+          id: "message-templates",
+          to: "/message-templates",
+          icon: "fa-solid fa-file-alt mr-2",
+          label: "messageTemplates",
+          permission: "templates_view",
+        },
       ];
 
       const defaultMain = [
@@ -1597,6 +1604,7 @@ const store = createStore({
         "services",
         "currency-history",
         "leaves",
+        "message-templates",
       ];
 
       const defaults = {

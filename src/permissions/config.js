@@ -222,6 +222,12 @@ export const PERMISSIONS_CONFIG = {
       actions: ["create", "update", "delete"],
       scope_actions: ["update", "delete"],
     },
+    templates: {
+      has_user_id: false,
+      check_strategy: "default",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+    },
   },
 
   custom_permissions: [
@@ -306,7 +312,7 @@ export const PERMISSIONS_CONFIG = {
     },
     news: {
       label: "news",
-      resources: ["news"],
+      resources: ["news", "templates"],
     },
   },
 
