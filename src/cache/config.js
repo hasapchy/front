@@ -22,6 +22,7 @@ export const CACHE_CONFIG = {
     "movements_",
     "stocks_",
     "departments_",
+    "messageTemplates_",
   ],
 
   plainKeys: [
@@ -64,6 +65,7 @@ export const CACHE_CONFIG = {
     movements: ["movements_"],
     stocks: ["stocks_"],
     departments: ["departments_"],
+    messageTemplates: ["messageTemplates_"],
   },
 
   dependencies: {

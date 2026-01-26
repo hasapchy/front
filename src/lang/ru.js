@@ -3,6 +3,7 @@ export default {
   save: 'Сохранить',
   cancel: 'Отмена',
   delete: 'Удалить',
+  edit: 'Редактировать',
   copy: 'Копировать',
   clear: 'Очистить',
   loading: 'Загрузка...',
@@ -99,6 +100,21 @@ export default {
   orders: 'Заказы',
   sales: 'Продажи',
   tasks: 'Задачи',
+  onlineNow: 'Онлайн сейчас',
+  online: 'Онлайн',
+  offline: 'Оффлайн',
+  noOnlineUsers: 'Нет пользователей онлайн',
+  andMore: 'И еще',
+  birthdays: 'Дни рождения',
+  noBirthdays: 'Нет предстоящих дней рождения',
+  upcomingHolidays: 'Ближайшие праздники',
+  noUpcomingHolidays: 'Нет предстоящих праздников',
+  noTasks: 'Нет задач',
+  quickLinks: 'Быстрые ссылки',
+  statistics: 'Статистика',
+  news: 'Новости',
+  templates: 'Шаблоны',
+  messageTemplates: 'Шаблоны сообщений',
   messenger: 'Мессенджер',
   warehouseReceipt: 'Оприходование',
   warehouses: 'Склады',
@@ -118,6 +134,7 @@ export default {
   noOrders: 'Нет заказов',
   orderUpdated: 'Заказ обновлен',
   kanbanCardFields: 'Поля карточки',
+  cardFields: 'Поля карточки',
 
   // Дополнительные навигационные элементы
   finance: 'Финансы',
@@ -740,6 +757,8 @@ export default {
   settings_edit: 'Настройки',
   users: 'Сотрудники',
   orders: 'Заказы',
+  ordersB: 'Заказы B',
+  basementOrders: 'Заказы basement',
   categories: 'Категории товаров',
   clients: 'Контакты',
   products: 'Товары',
@@ -1017,7 +1036,7 @@ export default {
   transactionCategories: 'Категории транзакций',
   systemCategoryProtected: 'Эта категория является системной и не может быть изменена',
   createdBy: 'Создал',
-  
+
   // Transaction Category Names
   'transactionCategory.SALE': 'Продажа',
   'transactionCategory.CUSTOMER_PAYMENT': 'Оплата покупателя за услугу',
@@ -1157,6 +1176,7 @@ export default {
   debtFilter: 'Фильтр долгов',
   allSources: 'Все источники',
   allStatuses: 'Все статусы',
+  allAuthors: 'Все авторы',
   notDebt: 'Не кредит',
   completed: 'Завершено',
   cancelled: 'Отменено',
@@ -1465,6 +1485,38 @@ export default {
   allRequiredFieldsMustBeFilled: 'Все обязательные поля должны быть заполнены',
   dateToMustBeAfterDateFrom: 'Дата окончания должна быть после даты начала',
 
+  // Праздники
+  holidays: 'Праздники',
+  company_holidays: 'Праздники',
+  add_holiday: 'Добавить праздник',
+  createHoliday: 'Создать праздник',
+  editHoliday: 'Редактировать праздник',
+  edit_holiday: 'Редактировать праздник',
+  holidayName: 'Название праздника',
+  holiday_created: 'Праздник создан',
+  holiday_updated: 'Праздник обновлен',
+  holiday_deleted: 'Праздник удален',
+  holidays_of_month: 'Праздники месяца',
+  no_holidays: 'Нет праздников',
+  no_holidays_added: 'Праздники не добавлены',
+  color_hint: 'Цвет для отображения праздника в календаре',
+  manage_holidays_in_company_settings: 'Управление праздниками осуществляется в настройках компании',
+  please_fill_required_fields: 'Пожалуйста, заполните обязательные поля',
+  recurring_holiday: 'Повторяется каждый год',
+  recurringHoliday: 'Повторяется каждый год',
+  recurring_holiday_hint: 'Если отмечено, праздник будет отображаться каждый год в эту же дату (например, Новый год, 8 марта)',
+  recurring_yearly: 'Ежегодный праздник',
+  noPermissionToCreateHolidays: 'У вас нет прав на создание праздников',
+  errorSavingHolidays: 'Ошибка при сохранении праздников',
+  companySavedButHolidaysError: 'Компания сохранена, но возникла ошибка с праздниками',
+  warning: 'Внимание',
+  year: 'Год',
+  all: 'Все',
+  reset: 'Сбросить',
+  showing: 'Показано',
+  of: 'из',
+  confirm_delete: 'Вы уверены, что хотите удалить этот праздник?',
+
   // Tasks
   // Общие поля (если их еще нет)
   title: 'Название',
@@ -1488,8 +1540,9 @@ export default {
   taskSuccessfullyDeleted: 'Задача успешно удалена',
   errorSavingTask: 'Ошибка при сохранении задачи',
   errorGettingTaskList: 'Ошибка при получении списка задач',
+  errorGettingTask: 'Ошибка при получении задачи',
   titleRequired: 'Название задачи обязательно',
-  supervisor: 'Супервайзер',
+  supervisor: 'Постановщик',
   executor: 'Исполнитель',
   creator: 'Создатель',
   select: 'Выбрать',
@@ -1506,6 +1559,24 @@ export default {
   errorDeletingTaskStatus: 'Ошибка при удалении статуса задачи',
   deleteTaskStatus: 'Удалить статус задачи',
 
+  // News
+  addNews: 'Добавить новость',
+  createNews: 'Создать новость',
+  editNews: 'Редактировать новость',
+  newsSuccessfullyAdded: 'Новость успешно создана',
+  newsSuccessfullyUpdated: 'Новость успешно обновлена',
+  newsSuccessfullyDeleted: 'Новость успешно удалена',
+  errorSavingNews: 'Ошибка сохранения новости',
+  errorDeletingNews: 'Ошибка удаления новости',
+  errorGettingLeaveList: 'Ошибка получения списка отпусков',
+  confirmDeleteNews: 'Вы уверены, что хотите удалить эту новость?',
+  noNews: 'Новостей пока нет',
+  createFirstNews: 'Создайте первую новость',
+  contentPlaceholder: 'Введите текст новости...',
+  contentRequired: 'Содержание обязательно',
+  content: 'Содержание',
+  author: 'Автор',
+
   // Departments
   department: 'Отдел',
   selectDepartment: 'Выберите отдел',
@@ -1520,12 +1591,13 @@ export default {
   departmentDeleted: 'Отдел удален',
   errorDeletingDepartment: 'Ошибка удаления отдела',
   noSubDepartments: 'Нет отделов в подчинении',
+  noDepartmentsAvailable: 'Нет доступных отделов',
   yourDepartment: 'Ваш отдел',
   assignHead: 'Назначить руководителем',
   assignDeputy: 'Назначить заместителем',
   accrueSalaries: 'Начислить зарплаты',
   titleRequired: 'Название обязательно',
-  
+
   // Units
   'unit.METER': 'Метр',
   'unit.SQUARE_METER': 'Квадратный метр',
@@ -1538,7 +1610,7 @@ export default {
   'unit.PALLET': 'Паллета',
   'unit.SET': 'Комплект',
   'unit.ROLL': 'Рулон',
-  
+
   // Task Statuses
   'taskStatus.NEW': 'Новый',
   'taskStatus.PENDING': 'Ожидает',
@@ -1548,38 +1620,38 @@ export default {
   accept: 'Принять',
   decline: 'Отклонить',
   complete: 'Завершить',
-  
+
   // Order Status Categories
   'orderStatusCategory.NEW': 'Новые',
   'orderStatusCategory.IN_PROGRESS': 'В работе',
   'orderStatusCategory.READY': 'Готово',
   'orderStatusCategory.COMPLETED': 'Завершено',
   'orderStatusCategory.CANCELLED': 'Отменено',
-  
+
   // Order Statuses
   'orderStatus.NEW': 'Новый',
   'orderStatus.IN_PROGRESS': 'В работе',
   'orderStatus.READY': 'Готово',
   'orderStatus.COMPLETED': 'Завершено',
   'orderStatus.CANCELLED': 'Отменено',
-  
+
   // Project Statuses
   'projectStatus.NEW': 'Новый',
   'projectStatus.IN_PROGRESS': 'В работе',
   'projectStatus.PENDING': 'Ожидание оплаты',
   'projectStatus.COMPLETED': 'Завершено',
   'projectStatus.CANCELLED': 'Отменено',
-  
+
   // Leave Types
   'leaveType.TIME_OFF': 'Отгул',
   'leaveType.VACATION': 'Отпуск',
   'leaveType.SICK_LEAVE': 'Больничный',
   'leaveType.ABSENCE': 'Прогул',
   'leaveType.UNPAID_LEAVE': 'Отпуск без содержания',
-  
+
   // Currencies
   'currency.RUSSIAN_RUBLE': 'Российский рубль',
-  
+
 
 
 
@@ -1589,10 +1661,10 @@ export default {
   chats_write: 'Написание в чатах',
   chats_write_general: 'Написание в общем чате',
   chats_group_create: 'Создание групповых чатов',
-  
+
   // Employee Salaries
   employee_salaries_accrue: 'Начисление зарплат',
-  
+
   // Transactions View
   transactions_view_sale: 'Просмотр транзакций из продаж',
   transactions_view_order: 'Просмотр транзакций из заказов',
@@ -1607,8 +1679,58 @@ export default {
   today: 'Сегодня',
   yesterday: 'Вчера',
   dayBeforeYesterday: 'Позавчера',
+  tomorrow: 'Завтра',
+  endOfWeek: 'В конце недели',
+  nextWeek: 'Через неделю',
+  endOfMonth: 'В конце месяца',
+  time: 'Время',
+  quickSelect: 'Быстрый выбор',
 
+  // Checklist
+  checklist: 'Чек-лист',
+  addChecklistItem: 'Добавить элемент чек-листа',
+  checklistItems: 'Элементы чек-листа',
+  checklistItem: 'Элемент чек-листа',
+  checklistItemCompleted: 'Выполнено',
+  checklistItemNotCompleted: 'Не выполнено',
+  checklistItemProgress: 'Прогресс',
+  checklistItemTotal: 'Всего',
 
-
-
+  // Work Schedule
+  workSchedule: 'Рабочий график',
+  1: 'Понедельник',
+  2: 'Вторник',
+  3: 'Среда',
+  4: 'Четверг',
+  5: 'Пятница',
+  6: 'Суббота',
+  7: 'Воскресенье',
+  applyToAllDays: 'Применить ко всем дням',
+  resetToDefault: 'Сбросить по умолчанию',
+  startTime: 'Начало работы',
+  endTime: 'Окончание работы',
+  working: 'Работает',
+  // Шаблоны сообщений
+  editTemplate: 'Редактировать шаблон',
+  createTemplate: 'Создать шаблон',
+  availableVariables: 'Доступные переменные:',
+  selectTypeToSeeVariables: 'Выберите тип, чтобы увидеть доступные переменные',
+  templateContentPlaceholder: 'Введите текст шаблона...',
+  typeRequired: 'Тип обязателен',
+  nameRequired: 'Название обязательно',
+  errorGettingTemplate: 'Ошибка получения шаблона',
+  templateSuccessfullyAdded: 'Шаблон успешно добавлен',
+  errorSavingTemplate: 'Ошибка сохранения шаблона',
+  templateSuccessfullyDeleted: 'Шаблон успешно удален',
+  errorDeletingTemplate: 'Ошибка удаления шаблона',
+  errorGettingTemplateList: 'Ошибка получения списка шаблонов',
+  templateActivated: 'Шаблон активирован',
+  templateDeactivated: 'Шаблон деактивирован',
+  noPermission: 'У вас нет прав на выполнение этого действия',
+  preview: 'Предпросмотр',
+  previewAuthor: 'Автор шаблона',
+  previewTitlePlaceholder: 'Название шаблона',
+  previewContentPlaceholder: 'Содержание шаблона будет отображаться здесь',
+  you: 'Вы',
+  unknownAuthor: 'Неизвестный автор',
 }

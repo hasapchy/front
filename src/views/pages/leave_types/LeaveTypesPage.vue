@@ -123,7 +123,7 @@ export default {
     },
     computed: {
         canCreateLeaveType() {
-            return this.$store.getters.hasPermission('leave_types_create_all');
+            return this.$store.getters.hasPermission('leave_types_create');
         }
     },
     mounted() {

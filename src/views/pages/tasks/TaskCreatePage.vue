@@ -9,11 +9,7 @@
                 <input type="text" v-model="title" required />
             </div>
             
-            <div>
-                <label>{{ $t('description') }}</label>
-                <textarea v-model="description" rows="4" :placeholder="$t('enterDescription')"></textarea>
-            </div>
-
+            
             <div class="hidden">
                 <label>{{ $t('status') }}</label>
                 <select v-model="statusId">
@@ -25,10 +21,27 @@
 
             <div>
                 <label>{{ $t('deadline') }}</label>
-                <input 
-                    type="datetime-local" 
-                    v-model="deadline"
-                    :min="minDeadline" />
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        :value="formattedDeadline"
+                        @click="showDatePicker = !showDatePicker"
+                        @focus="showDatePicker = true"
+                        readonly
+                        class="cursor-pointer"
+                        :placeholder="$t('deadline')" />
+                    <i class="fas fa-calendar absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    
+                    <div 
+                        v-if="showDatePicker" 
+                        class="absolute z-50 mt-2"
+                        style="left: 0; top: 100%;">
+                        <DatePicker 
+                            v-model="deadline"
+                            :min-date="minDeadline"
+                            @update:modelValue="handleDateChange" />
+                    </div>
+                </div>
             </div>
 
             <!-- Приоритет -->
@@ -50,7 +63,7 @@
                     <option value="complex">🧠🧠🧠 </option>
                 </select>
             </div>
-
+            
             <div>
                 <label>{{ $t('project') }}</label>
                 <select v-model="projectId">
@@ -68,11 +81,22 @@
             <div>
                 <UserSearch v-model:selectedUser="selectedExecutor" :required="true" :label="$t('executor')" />
             </div>
+
+            <div>
+                <label>{{ $t('description') }}</label>
+                <QuillEditor
+                    v-model:content="description"
+                    :options="editorOptions"
+                    contentType="html"
+                    :disabled="saveLoading"
+                    />
+            </div>
         </div>
+
         
         <div v-if="currentTab === 'files'">
             <FileUploader 
-                ref="fileUploader" 
+            ref="fileUploader" 
                 :files="getFormattedFiles()"
                 :uploading="uploading" 
                 :disabled="false"
@@ -81,13 +105,14 @@
                 @delete-file="showDeleteFileDialog"
                 @delete-multiple-files="showDeleteMultipleFilesDialog" />
         </div>
-        
-        <!-- <div v-if="currentTab === 'comments' && editingItem && editingItemId" class="h-full">
-            <TimelinePanel 
-                type="task" 
-                :id="editingItemId"
-                :is-collapsed="false" />
-        </div> -->
+
+        <div v-if="currentTab === 'checklist'">
+            <TaskChecklist 
+                :items="checklistItems"
+                @update:items="checklistItems = $event"
+            />
+        </div>
+
     </div>
 
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -144,7 +169,8 @@
 
 <script>
 import TaskController from '@/api/TaskController';
-import UsersController from '@/api/UsersController';
+import { QuillEditor } from '@vueup/vue-quill';
+import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import ProjectController from '@/api/ProjectController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
@@ -153,6 +179,7 @@ import TabBar from '@/views/components/app/forms/TabBar.vue';
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
 import TimelinePanel from '@/views/components/app/dialog/TimelinePanel.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
+import DatePicker from '@/views/components/app/forms/DatePicker.vue';
 import TaskDto from '@/dto/task/TaskDto';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -161,6 +188,7 @@ import crudFormMixin from '@/mixins/crudFormMixin';
 import dayjs from 'dayjs';
 import dateFormMixin from '@/mixins/dateFormMixin';
 import { translateTaskStatus } from '@/utils/translationUtils';
+import TaskChecklist from '@/views/components/app/task/TaskChecklist.vue';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, dateFormMixin, crudFormMixin],
@@ -172,7 +200,10 @@ export default {
         TabBar,
         FileUploader,
         TimelinePanel,
-        UserSearch
+        UserSearch,
+        DatePicker,
+        QuillEditor,
+        TaskChecklist
     },
     props: {
         editingItem: { type: Object, default: null }
@@ -182,14 +213,14 @@ export default {
             title: this.editingItem ? this.editingItem.title : '',
             description: this.editingItem ? this.editingItem.description : '',
             statusId: this.editingItem ? (this.editingItem.statusId || this.editingItem.status?.id) : null,
-            deadline: this.editingItem?.deadline ? this.getFormattedDate(this.editingItem.deadline) : this.getCurrentLocalDateTime(),
+            deadline: this.editingItem?.deadline ? this.getFormattedDate(this.editingItem.deadline) : null,
             minDeadline: dayjs().format('YYYY-MM-DDTHH:mm'),
             projectId: this.editingItem && this.editingItem.project 
                 ? this.editingItem.project.id 
                 : null,
             selectedSupervisor: this.editingItem && this.editingItem.supervisor 
                 ? { id: this.editingItem.supervisor.id } 
-                : null,
+                : this.$store.state.user,
             selectedExecutor: this.editingItem && this.editingItem.executor 
                 ? { id: this.editingItem.executor.id } 
                 : null,
@@ -204,6 +235,7 @@ export default {
             tabs: [
                 { name: 'info', label: 'info' },
                 { name: 'files', label: 'files' },
+                { name: 'checklist', label: 'checklist' },
                 // { name: 'comments', label: 'comments' },
             ],
             uploading: false,
@@ -212,10 +244,30 @@ export default {
             selectedFileIds: [],
             deletingFiles: false,
             pendingFiles: [], // Добавляем массив для файлов до создания задачи
+            showDatePicker: false,
+            content: this.editingItem ? this.editingItem.content : '',
+            checklistItems: this.editingItem?.checklist || [],
         }
     },
     computed: {
-        visibleTabs() {;
+        editorOptions() {
+            return {
+                theme: 'snow',
+                placeholder: this.$t('enterDescription') || 'Введите текст задачи...',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'align': [] }],
+                        ['link', 'image'],
+                        ['clean']
+                    ]
+                }
+            };
+        },
+        visibleTabs() {
             return this.tabs;
         },
         translatedTabs() {
@@ -233,6 +285,19 @@ export default {
         executorId() {
             return this.selectedExecutor?.id || null;
         },
+        formattedDeadline() {
+            if (!this.deadline) return '';
+            return dayjs(this.deadline).format('DD.MM.YYYY HH:mm');
+        },
+    },
+    watch: {
+        // Отслеживаем изменения editingItem и обновляем форму
+        editingItem: {
+            immediate: true,
+            handler(newItem) {
+                this.onEditingItemChanged(newItem);
+            }
+        }
     },
     mounted() {
         this.$nextTick(async () => {
@@ -240,16 +305,109 @@ export default {
                 await this.$store.dispatch('loadTaskStatuses');
             }
             await this.fetchProjects();
+
+            // Устанавливаем дефолтный дедлайн только при создании новой задачи
+            if (!this.editingItem && !this.deadline) {
+                this.deadline = this.getDefaultDeadline();
+            }
+
             this.saveInitialState();
         });
+        
+        // Закрытие календаря при клике вне его
+        document.addEventListener('click', this.handleClickOutside);
+    },
+    beforeUnmount() {
+        document.removeEventListener('click', this.handleClickOutside);
     },
     methods: {
         translateTaskStatus,
+
+                /**
+         * Получить дефолтный дедлайн (конец последнего рабочего дня недели)
+         */
+         getDefaultDeadline() {
+            const currentCompany = this.$store.getters.currentCompany;
+            if (!currentCompany || !currentCompany.work_schedule) {
+                // Если нет рабочего графика, возвращаем конец текущего дня (18:00)
+                return dayjs().endOf('day').format('YYYY-MM-DDTHH:mm');
+            }
+
+            const workSchedule = currentCompany.work_schedule;
+            const now = dayjs();
+            
+            // Маппинг дня недели dayjs (0-6) на ключ в work_schedule (1-7)
+            // dayjs: 0=воскресенье, 1=понедельник, 2=вторник, 3=среда, 4=четверг, 5=пятница, 6=суббота
+            // БД: 1=понедельник, 2=вторник, 3=среда, 4=четверг, 5=пятница, 6=суббота, 7=воскресенье
+            const dayMap = {
+                0: 7,  // воскресенье -> 7
+                1: 1,  // понедельник -> 1
+                2: 2,  // вторник -> 2
+                3: 3,  // среда -> 3
+                4: 4,  // четверг -> 4
+                5: 5,  // пятница -> 5
+                6: 6   // суббота -> 6
+            };
+
+            // Находим последний рабочий день недели
+            return this.getLastWorkDayOfWeek(now, workSchedule, dayMap);
+        },
+
+        /**
+         * Получить конец последнего рабочего дня недели
+         */
+        getLastWorkDayOfWeek(startDate, workSchedule, dayMap) {
+            // Ищем последний рабочий день недели (от воскресенья к понедельнику)
+            // Начинаем с воскресенья (7) и идем назад до понедельника (1)
+            for (let dayKey = 7; dayKey >= 1; dayKey--) {
+                const daySchedule = workSchedule[dayKey];
+                
+                if (daySchedule && daySchedule.enabled) {
+                    // Находим дату этого дня недели в текущей неделе
+                    const currentDayOfWeek = startDate.day(); // 0-6
+                    const targetDayOfWeek = this.getDayjsDayFromScheduleKey(dayKey); // 0-6
+                    
+                    // Вычисляем количество дней до нужного дня недели
+                    let daysToAdd = targetDayOfWeek - currentDayOfWeek;
+                    if (daysToAdd < 0) {
+                        daysToAdd += 7; // Если день уже прошел, берем его на следующей неделе
+                    }
+                    
+                    const targetDate = startDate.clone().add(daysToAdd, 'day');
+                    const [endHour, endMinute] = daySchedule.end.split(':').map(Number);
+                    
+                    return targetDate.hour(endHour).minute(endMinute).second(0).millisecond(0)
+                        .format('YYYY-MM-DDTHH:mm');
+                }
+            }
+
+            // Если не нашли рабочий день (не должно быть, но на всякий случай)
+            return startDate.clone().endOf('week').format('YYYY-MM-DDTHH:mm');
+        },
+
+        /**
+         * Преобразовать ключ из work_schedule (1-7) в день недели dayjs (0-6)
+         */
+        getDayjsDayFromScheduleKey(scheduleKey) {
+            // БД: 1=понедельник, 2=вторник, 3=среда, 4=четверг, 5=пятница, 6=суббота, 7=воскресенье
+            // dayjs: 0=воскресенье, 1=понедельник, 2=вторник, 3=среда, 4=четверг, 5=пятница, 6=суббота
+            const map = {
+                1: 1,  // понедельник
+                2: 2,  // вторник
+                3: 3,  // среда
+                4: 4,  // четверг
+                5: 5,  // пятница
+                6: 6,  // суббота
+                7: 0   // воскресенье
+            };
+            return map[scheduleKey] || 0;
+        },
+        
         clearForm() {
             this.title = '';
             this.description = '';
             this.statusId = 1;
-            this.deadline = this.getCurrentLocalDateTime();
+            this.deadline = this.getDefaultDeadline(); 
             this.projectId = null;
             this.priority = 'low';
             this.complexity = 'normal';
@@ -257,6 +415,7 @@ export default {
             this.selectedExecutor = null;
             this.currentTab = 'info';
             this.pendingFiles = [];
+            this.checklistItems = [];
             this.resetFormChanges();
         },
         onEditingItemChanged(newEditingItem) {
@@ -264,13 +423,32 @@ export default {
                 this.title = newEditingItem.title || '';
                 this.description = newEditingItem.description || '';
                 this.statusId = newEditingItem.statusId || newEditingItem.status?.id || null;
-                this.deadline = newEditingItem.deadline ? this.getFormattedDate(newEditingItem.deadline) : this.getCurrentLocalDateTime();
+                this.deadline = newEditingItem.deadline ? this.getFormattedDate(newEditingItem.deadline) : null;
                 this.projectId = newEditingItem.project?.id || null;
                 this.selectedSupervisor = newEditingItem.supervisor?.id ? { id: newEditingItem.supervisor.id } : null;
                 this.selectedExecutor = newEditingItem.executor?.id ? { id: newEditingItem.executor.id } : null;
                 this.priority = newEditingItem.priority || 'low';
                 this.complexity = newEditingItem.complexity || 'normal';
-                this.currentTab = 'info';
+                // Обрабатываем чеклист: может быть массивом или строкой JSON
+                if (newEditingItem.checklist) {
+                    if (Array.isArray(newEditingItem.checklist)) {
+                        this.checklistItems = [...newEditingItem.checklist];
+                    } else if (typeof newEditingItem.checklist === 'string') {
+                        try {
+                            this.checklistItems = JSON.parse(newEditingItem.checklist);
+                        } catch (e) {
+                            console.error('Ошибка парсинга чеклиста:', e);
+                            this.checklistItems = [];
+                        }
+                    } else {
+                        this.checklistItems = [];
+                    }
+                } else {
+                    this.checklistItems = [];
+                }
+            } else {
+                // Очищаем форму при создании новой задачи
+                this.clearForm();
             }
         },
         changeTab(tabName) {
@@ -278,6 +456,27 @@ export default {
                 return;
             }
             this.currentTab = tabName;
+        },
+        handleDateChange(value) {
+            this.deadline = value;
+            this.showDatePicker = false;
+        },
+        handleClickOutside(event) {
+             // Проверяем, что $el существует и является DOM элементом
+             if (!this.$el || !(this.$el instanceof Element)) {
+                return;
+            }
+
+            const datePickerElement = this.$el?.querySelector('.date-picker-container');
+            const inputElement = this.$el?.querySelector('input[readonly]');
+            
+            if (this.showDatePicker && 
+                datePickerElement && 
+                inputElement &&
+                !datePickerElement.contains(event.target) &&
+                !inputElement.contains(event.target)) {
+                this.showDatePicker = false;
+            }
         },
         async fetchProjects() {
             try {
@@ -291,28 +490,23 @@ export default {
         getFormattedFiles() {
             // Если задача уже создана, используем файлы из editingItem
             if (this.editingItem && this.editingItem.files) {
-                const taskDto = new TaskDto(
-                    this.editingItem.id,
-                    this.editingItem.title,
-                    this.editingItem.description,
-                    this.editingItem.status_id || null,
-                    this.editingItem.status || null,
-                    this.editingItem.deadline,
-                    this.editingItem.creator?.id,
-                    this.editingItem.creator,
-                    this.editingItem.supervisor?.id,
-                    this.editingItem.supervisor,
-                    this.editingItem.executor?.id,
-                    this.editingItem.executor,
-                    this.editingItem.project?.id || null,
-                    this.editingItem.project || null,
-                    this.editingItem.company_id,
-                    this.editingItem.files || [],
-                    this.editingItem.comments || [],
-                    this.editingItem.created_at,
-                    this.editingItem.updated_at
-                );
-                return taskDto.getFormattedFiles();
+                // Если editingItem уже является TaskDto, используем его метод напрямую
+                if (typeof this.editingItem.getFormattedFiles === 'function') {
+                    return this.editingItem.getFormattedFiles();
+                }
+                
+                // Иначе обрабатываем файлы напрямую
+                return (this.editingItem.files || []).map((file) => ({
+                    name: file.name || file.path,
+                    url: file.path ? `/storage/${file.path}` : '#',
+                    icon: this.getFileIcon(file),
+                    path: file.path,
+                    size: file.size,
+                    mimeType: file.mime_type,
+                    uploadedAt: file.uploaded_at,
+                    formattedSize: this.formatFileSize(file.size),
+                    formattedUploadDate: file.uploaded_at ? new Date(file.uploaded_at).toLocaleString() : ''
+                }));
             }
             
             if (this.pendingFiles?.length) {
@@ -610,6 +804,7 @@ export default {
                 executor_id: this.executorId,
                 priority: this.priority || 'low',
                 complexity: this.complexity || 'normal',
+                checklist: this.checklistItems || [],
             };
         },
         async performSave(data) {
@@ -619,6 +814,7 @@ export default {
                 
                 try {
                     const updatedTask = await TaskController.getItem(this.editingItemId);
+
                     if (updatedTask) {
                         response.data = updatedTask;
                     }

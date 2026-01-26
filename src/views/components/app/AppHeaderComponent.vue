@@ -23,6 +23,7 @@
                 <SoundToggle />
                 <CompanySwitcher @company-changed="onCompanyChanged" />
                 <LanguageSwitcher @language-changed="onLanguageChanged" />
+                <MessengerBadge />
                 <UserProfileDropdown v-if="$store.state.user" />
             </div>
         </div>
@@ -40,6 +41,7 @@ import CompanySwitcher from './CompanySwitcher.vue';
 import SoundToggle from './SoundToggle.vue';
 import UserProfileDropdown from './UserProfileDropdown.vue';
 import ClearCacheButton from './ClearCacheButton.vue';
+import MessengerBadge from './MessengerBadge.vue';
 import { eventBus } from '@/eventBus';
 
 export default {
@@ -49,7 +51,8 @@ export default {
         CompanySwitcher,
         SoundToggle,
         UserProfileDropdown,
-        ClearCacheButton
+        ClearCacheButton,
+        MessengerBadge
     },
     data() {
         const route = useRoute();

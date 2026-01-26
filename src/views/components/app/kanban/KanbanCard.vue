@@ -1,7 +1,7 @@
 <template>
     <div 
         class="kanban-card bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow"
-        :class="{ 'ring-2 ring-blue-400': isSelected }"
+        :class="{ 'ring-2 ring-blue-400': isSelected }, getCardBackgroundClass()"
         @dblclick="handleDoubleClick"
     >
         <!-- Заголовок с чекбоксом и номером/названием -->
@@ -119,7 +119,7 @@
         <!-- Описание (только для заказов) -->
         <div v-if="!isProjectMode && showField('description') && order.description" class="mb-2">
             <div class="text-xs text-gray-600 line-clamp-2">
-                {{ order.description }}
+                <div v-html="order.description"></div>
             </div>
         </div>
 
@@ -164,19 +164,21 @@
             </div>
         </div>
         
-        <!-- Приоритет (для задач) -->
-        <div v-if="isTaskMode && showField('priority') && order.priority" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <span class="text-sm">{{ getPriorityIcons() }}</span>
-                <!-- <span class="truncate">{{ getPriorityLabel() }}</span> -->
+        <div v-if="isTaskMode" class="flex gap-4 items-center space-x-1 text-xs text-gray-600">
+            <!-- Приоритет (для задач) -->
+            <div v-if="showField('priority') && order.priority" class="mb-2">
+                <div class="flex items-center space-x-1 text-xs text-gray-600">
+                    <span class="text-sm">{{ getPriorityIcons() }}</span>
+                    <!-- <span class="truncate">{{ getPriorityLabel() }}</span> -->
+                </div>
             </div>
-        </div>
 
-        <!-- Сложность (для задач) -->
-        <div v-if="isTaskMode && showField('complexity') && order.complexity" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <span class="text-sm">{{ getComplexityIcons() }}</span>
-                <!-- <span class="truncate">{{ getComplexityLabel() }}</span> -->
+            <!-- Сложность (для задач) -->
+            <div v-if="showField('complexity') && order.complexity" class="mb-2">
+                <div class="flex items-center space-x-1 text-xs text-gray-600">
+                    <span class="text-sm">{{ getComplexityIcons() }}</span>
+                    <!-- <span class="truncate">{{ getComplexityLabel() }}</span> -->
+                </div>
             </div>
         </div>
 
@@ -236,6 +238,46 @@
                 <i class="fas fa-check"></i>
             </button>
         </div>
+
+        <!-- Чек-лист (для задач) -->
+        <!-- Временно убираем проверку showField для отладки -->
+        <div v-if="isTaskMode && hasChecklist" class="mb-2 mt-2 pt-2 border-t border-gray-100">
+            <!-- Отладка -->
+            <div v-if="isTaskMode && hasChecklist && !showField('checklist')" class="text-xs text-yellow-600 mb-1 italic">
+                ⚠️ Чеклист есть, но поле отключено в настройках
+            </div>
+            <div class="flex items-center space-x-1 text-xs text-gray-600 mb-1">
+                <i class="fas fa-tasks text-blue-400"></i>
+                <span class="font-semibold">
+                    {{ getChecklistProgress(order.checklist) }}
+                </span>
+            </div>
+            <!-- Компактное отображение пунктов чеклиста -->
+            <div class="space-y-1 max-h-20 overflow-y-auto">
+                <div 
+                    v-for="(item, index) in getChecklistItems(order.checklist).slice(0, 3)" 
+                    :key="index"
+                    class="flex items-center space-x-1 text-xs"
+                >
+                    <input 
+                        type="checkbox" 
+                        :checked="item.completed" 
+                        disabled
+                        class="w-3 h-3 cursor-not-allowed opacity-60"
+                    />
+                    <span 
+                        class="truncate flex-1"
+                        :class="item.completed ? 'line-through text-gray-400' : 'text-gray-700'"
+                    >
+                        {{ item.text }}
+                    </span>
+                </div>
+                <div v-if="getChecklistItems(order.checklist).length > 3" class="text-xs text-gray-500 italic pl-4">
+                    +{{ getChecklistItems(order.checklist).length - 3 }} {{ $t('more') || 'еще' }}
+                </div>
+            </div>
+        </div>
+
     </div>
 </template>
 
@@ -271,6 +313,38 @@ export default {
             const mode = this.isProjectMode ? 'projects' : (this.isTaskMode ? 'tasks' : 'orders');
             return this.$store.state.kanbanCardFields[mode] || {};
         },
+        // Проверяет наличие чеклиста в задаче
+        hasChecklist() {
+            if (!this.isTaskMode) return false;
+            if (!this.order) return false;
+
+            console.log('hasChecklist', this.order);
+            // Проверяем наличие checklist в разных возможных форматах
+            const checklist = this.order.checklist;
+
+            
+            // Отладка для задачи с ID 2
+            if (this.order.id === 2) {
+                console.log('[KanbanCard] Task 2 debug:', {
+                    order: this.order,
+                    checklist: checklist,
+                    checklistType: typeof checklist,
+                    isArray: Array.isArray(checklist),
+                    length: Array.isArray(checklist) ? checklist.length : 'N/A'
+                });
+            }
+            
+            if (!checklist) return false;
+            
+            try {
+                const items = this.getChecklistItems(checklist);
+                const hasItems = Array.isArray(items) && items.length > 0;
+                return hasItems;
+            } catch (e) {
+                console.warn('Ошибка при проверке чеклиста:', e, this.order);
+                return false;
+            }
+        },
         isAdmin() {
             const user = this.$store.getters.user;
             return user?.is_admin === true;
@@ -285,6 +359,97 @@ export default {
         },
     },
     methods: {
+
+        // Получает массив пунктов чеклиста
+        getChecklistItems(checklist) {
+            if (!checklist) {
+                return [];
+            }
+            
+            // Если checklist - строка JSON, парсим её
+            let items = checklist;
+            if (typeof checklist === 'string') {
+                try {
+                    items = JSON.parse(checklist);
+                } catch (e) {
+                    return [];
+                }
+            }
+            
+            // Проверяем, что это массив
+            if (!Array.isArray(items)) {
+                return [];
+            }
+            
+            return items;
+        },
+
+        // Отображает прогресс чек-листа
+        getChecklistProgress(checklist) {
+            const items = this.getChecklistItems(checklist);
+            if (items.length === 0) {
+                return '';
+            }
+            
+            const completed = items.filter(item => item.completed).length;
+            const total = items.length;
+            
+            return `${completed}/${total}`;
+        },
+
+        // Проверяет, находится ли задача в статусе "Новый" или "В работе"
+        isTaskInActiveStatus() {
+            if (!this.isTaskMode) return false;
+            
+            const statusId = this.order?.statusId;
+            const statusName = this.order?.status?.name;
+            
+            // Проверяем по ID статуса (1 = NEW, 2 = IN_PROGRESS, 3 = PENDING)
+            if (statusId === 1 || statusId === 2 || statusId === 3) return true;
+            
+            // Проверяем по имени статуса
+            if (statusName === 'NEW' || statusName === 'PENDING' || statusName === 'IN_PROGRESS') {
+                return true;
+            }
+            
+            return false;
+        },
+        
+        // Вычисляет количество дней до deadline
+        getDaysUntilDeadline(deadline) {
+            if (!deadline) return null;
+            
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            const deadlineDate = new Date(deadline);
+            deadlineDate.setHours(0, 0, 0, 0);
+            
+            const diffTime = deadlineDate - now;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            return diffDays;
+        },
+        
+        // Определяет класс фона карточки в зависимости от срока выполнения
+        getCardBackgroundClass() {
+            if (!this.isTaskInActiveStatus() || !this.order?.deadline) {
+                return '';
+            }
+            
+            const daysLeft = this.getDaysUntilDeadline(this.order.deadline);
+            
+            // Если просрочена - красная подложка (светлая)
+            if (daysLeft < 0) {
+                return 'bg-red-500';
+            }
+            
+            // Если до срока осталось 3 дня или меньше - желтая подложка
+            if (daysLeft <= 3) {
+                return 'bg-yellow-500';
+            }
+            
+            return '';
+        },
 
         async updateTaskStatus(targetStatusName) {
             try {

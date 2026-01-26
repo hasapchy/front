@@ -1,37 +1,14 @@
 <template>
-  <div>
-    <!-- Заголовок -->
-    <div class="md:flex md:items-center md:justify-between">
-      <div class="flex-1 min-w-0">
-        <h2 class="text-2xl font-bold leading-7 text-gray-900">
-          {{ isEditing ? $t('editOrder') : $t('createOrder') }}
-          <span v-if="isEditing && orderId" class="text-lg font-normal text-gray-600 ml-2">
-            #{{ orderId }}
-          </span>
-        </h2>
-      </div>
-      <div class="mt-4 flex md:mt-0 md:ml-4">
-        <PrimaryButton
-          v-if="isEditing"
-          :is-light="true"
-          icon="fas fa-arrow-left"
-          :onclick="closeModal"
-        >
-          {{ $t('backToOrders') }}
-        </PrimaryButton>
-        <router-link v-else to="/basement/orders">
-          <PrimaryButton
-            :is-light="true"
-            icon="fas fa-arrow-left"
-          >
-            {{ $t('backToOrders') }}
-          </PrimaryButton>
-        </router-link>
-      </div>
-    </div>
-
+  <div class="flex flex-col overflow-auto h-full p-4">
+    <h2 class="text-lg font-bold mb-4">
+      {{ isEditing ? $t('editOrder') : $t('createOrder') }}
+      <span v-if="isEditing && (orderId || editingItem?.id)" class="text-base font-normal text-gray-600 ml-2">
+        #{{ orderId || editingItem?.id }}
+      </span>
+    </h2>
+    
     <!-- Форма создания заказа -->
-    <div class="mt-8">
+    <div>
       <form @submit.prevent="createOrder" class="space-y-6">
         <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
           <div class="grid grid-cols-1 gap-6">
@@ -70,27 +47,24 @@
               <BasementServicesRow v-model="form.products" :project-id="form.project_id" />
             </div>
 
-            <!-- Товары на складе и Остатки: 50/50 -->
-            <div class="grid grid-cols-2 gap-6">
-              <!-- Товары на складе -->
-              <div>
-                <BasementProductSearch
-                  v-model="form.products"
-                  :show-quantity="true"
-                  :only-products="true"
-                  :required="true"
-                  :project-id="form.project_id"
-                />
-              </div>
+            <!-- Товары на складе -->
+            <div>
+              <BasementProductSearch
+                v-model="form.products"
+                :show-quantity="true"
+                :only-products="true"
+                :required="true"
+                :project-id="form.project_id"
+              />
+            </div>
 
-              <!-- Остатки (товары с бесконечным остатком) -->
-              <div>
-                <BasementStockSearch
-                  v-model="form.stockItems"
-                  :show-quantity="true"
-                  :project-id="form.project_id"
-                />
-              </div>
+            <!-- Остатки (товары с бесконечным остатком) -->
+            <div>
+              <BasementStockSearch
+                v-model="form.stockItems"
+                :show-quantity="true"
+                :project-id="form.project_id"
+              />
             </div>
 
             <!-- Таблица товаров -->
@@ -132,53 +106,26 @@
           </div>
         </div>
 
-        <!-- Кнопки -->
-        <div class="flex flex-col items-end space-y-2">
-          <!-- Подсказка, почему кнопка неактивна -->
-          <div v-if="!canSave && !loading" class="text-sm text-gray-500 text-right">
-            <div v-if="!form.client_id">• Укажите клиента</div>
-            <div v-if="!form.warehouse_id">• Выберите склад</div>
-            <div v-if="!hasValidProducts">• Добавьте товары с количеством больше 0</div>
-          </div>
-          
-          <div class="flex space-x-3">
-            <PrimaryButton
-              v-if="isEditing"
-              :is-light="true"
-              icon="fas fa-times"
-              :onclick="closeModal"
-            >
-              {{ $t('cancel') }}
-            </PrimaryButton>
-            <router-link v-else to="/basement/orders">
-              <PrimaryButton
-                :is-light="true"
-                icon="fas fa-times"
-              >
-                {{ $t('cancel') }}
-              </PrimaryButton>
-            </router-link>
-            <PrimaryButton
-              :is-loading="loading"
-              :disabled="!canSave"
-              icon="fas fa-save"
-              :onclick="isEditing ? updateOrder : createOrder"
-            >
-              {{ isEditing ? $t('updateOrder') : $t('createOrder') }}
-            </PrimaryButton>
-            <PrimaryButton
-              v-if="isEditing && orderId"
-              :is-loading="deleteLoading"
-              :is-danger="true"
-              icon="fas fa-trash"
-              :onclick="showDeleteDialog"
-            >
-              {{ $t('delete') }}
-            </PrimaryButton>
-          </div>
-        </div>
-
       </form>
+    </div>
+
+    <!-- Футер с кнопками -->
+    <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
+      <div class="flex items-center space-x-2">
+        <PrimaryButton v-if="isEditing && (orderId || editingItem?.id)" icon="fas fa-check" :onclick="updateOrder"
+          :is-loading="loading">
+        </PrimaryButton>
+        <PrimaryButton icon="fas fa-save" :onclick="isEditing ? updateOrder : createOrder" :is-loading="loading"
+          :disabled="!canSave">
+        </PrimaryButton>
+        <PrimaryButton v-if="isEditing && (orderId || editingItem?.id)" :onclick="showDeleteDialog" :is-danger="true"
+          :is-loading="deleteLoading" icon="fas fa-trash">
+        </PrimaryButton>
+      </div>
+
+      <div class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
+        <div>{{ $t('total') }}: <span class="font-bold">{{ formatTotalAmount() }}</span></div>
+      </div>
     </div>
 
     <!-- Диалог подтверждения удаления -->
@@ -239,15 +186,18 @@
 </template>
 
 <script>
-import basementApi from '@/api/basement/basementAxiosInstance'
-import BasementOrderController from '@/api/basement/BasementOrderController'
+import api from '@/api/axiosInstance'
+import OrderController from '@/api/OrderController'
+import ProjectController from '@/api/ProjectController'
+import ClientController from '@/api/ClientController'
+import CashRegisterController from '@/api/CashRegisterController'
+import WarehouseController from '@/api/WarehouseController'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'
 import BasementClientSearch from '@/views/components/basement/BasementClientSearch.vue'
 import BasementProductSearch from '@/views/components/basement/BasementProductSearch.vue'
 import BasementStockSearch from '@/views/components/basement/BasementStockSearch.vue'
 import BasementServicesRow from '@/views/components/basement/BasementServicesRow.vue'
-import BasementProjectController from '@/api/basement/BasementProjectController'
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue'
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin'
 import crudEventMixin from '@/mixins/crudEventMixin'
@@ -256,6 +206,7 @@ import { formatNumber } from '@/utils/numberUtils'
 export default {
   name: 'BasementOrderCreatePage',
   mixins: [getApiErrorMessage, crudEventMixin],
+  emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
   components: {
     PrimaryButton,
     DraggableTable,
@@ -439,7 +390,8 @@ export default {
   methods: {
     async loadCashRegisters() {
       try {
-        const { data } = await basementApi.get('/cash_registers/all');
+        const response = await CashRegisterController.getAll();
+        const data = Array.isArray(response) ? response : (response.items || []);
         
         if (data && data.length > 0) {
           // Автоматически выбираем первую кассу
@@ -452,7 +404,8 @@ export default {
     },
     async loadWarehouses() {
       try {
-        const { data } = await basementApi.get('/warehouses');
+        const response = await WarehouseController.getAll();
+        const data = Array.isArray(response) ? response : (response.items || []);
         
         if (data && data.length > 0) {
           // Автоматически выбираем первый склад
@@ -466,9 +419,8 @@ export default {
     async loadProjects() {
       try {
         // Загружаем только активные проекты (исключаем "Завершен" и "Отменен")
-        const projects = await BasementProjectController.getItems(1, { active_only: true });
-        // Для активных проектов возвращается массив, а не пагинированный ответ
-        this.allProjects = Array.isArray(projects) ? projects : (projects.items || []);
+        const response = await ProjectController.getItems(1, null, 'all_time', null, null, '', '', true);
+        this.allProjects = Array.isArray(response.items) ? response.items : [];
       } catch (error) {
         this.allProjects = [];
       }
@@ -480,7 +432,7 @@ export default {
     async createClient() {
       this.clientLoading = true
       try {
-        const { data } = await basementApi.post('/clients', this.clientForm)
+        const data = await ClientController.store(this.clientForm)
         
         this.selectedClient = data
         this.form.client_id = data.id || null
@@ -560,23 +512,14 @@ export default {
           temp_products: tempProducts
         }
 
-        const { data } = await basementApi.post('/orders', orderData)
+        const data = await OrderController.storeItem(orderData)
         
-        // Уведомление об успехе
-        this.$store.dispatch('showNotification', { 
-          title: this.savedSuccessText, 
-          subtitle: '', 
-          isDanger: false 
-        })
-        this.$router.push('/basement/orders')
+        // Эмитим событие для родительского компонента (модалка)
+        this.$emit('saved', data)
       } catch (error) {
-        // Уведомление об ошибке
+        // Эмитим событие об ошибке
         const errorMessage = this.getApiErrorMessage(error)
-        this.$store.dispatch('showNotification', { 
-          title: this.savedErrorText, 
-          subtitle: errorMessage, 
-          isDanger: true 
-        })
+        this.$emit('saved-error', errorMessage)
       } finally {
         this.loading = false
       }
@@ -656,45 +599,25 @@ export default {
           throw new Error('ID заказа не найден')
         }
         
-        const { data } = await basementApi.put(`/orders/${orderId}`, orderData)
+        const data = await OrderController.updateItem(orderId, orderData)
         
-        // Уведомление об успехе
-        this.$store.dispatch('showNotification', { 
-          title: 'Заказ успешно обновлен', 
-          subtitle: '', 
-          isDanger: false 
-        })
-        
-        // Если редактируем через роут, переходим обратно к заказам
-        if (this.orderId) {
-          this.$router.push('/basement/orders')
-        } else {
-          // Эмитим событие для родительского компонента (модалка)
-          this.$emit('saved', data)
-        }
+        // Эмитим событие для родительского компонента (модалка)
+        this.$emit('saved', data)
       } catch (error) {
-        // Уведомление об ошибке
-        const errorMessage = this.getApiErrorMessage(error)
-        this.$store.dispatch('showNotification', { 
-          title: 'Ошибка обновления заказа', 
-          subtitle: errorMessage, 
-          isDanger: true 
-        })
-        
         // Эмитим событие об ошибке
-        this.$emit('saved-error', error)
+        const errorMessage = this.getApiErrorMessage(error)
+        this.$emit('saved-error', errorMessage)
       } finally {
         this.loading = false
       }
     },
     closeModal() {
-      if (this.editingItem) {
-        // Если редактируем через prop (модалка), эмитим событие
-        this.$emit('close-request')
-      } else if (this.orderId) {
-        // Если редактируем через роут, переходим обратно к заказам
-        this.$router.push('/basement/orders')
-      }
+      // Всегда эмитим событие для закрытия модалки
+      this.$emit('close-request')
+    },
+    handleCloseRequest() {
+      // Метод для совместимости с modalMixin
+      this.closeModal()
     },
     showDeleteDialog() {
       this.deleteDialog = true
@@ -705,28 +628,21 @@ export default {
     async deleteOrder() {
       this.closeDeleteDialog()
       
-      if (!this.orderId) {
+      const orderId = this.editingItem?.id || (this.orderId ? parseInt(this.orderId) : null)
+      
+      if (!orderId) {
         return
       }
 
       this.deleteLoading = true
       try {
-        await BasementOrderController.deleteItem(parseInt(this.orderId))
+        await OrderController.deleteItem(orderId)
         
-        this.$store.dispatch('showNotification', {
-          title: this.deletedSuccessText,
-          subtitle: '',
-          isDanger: false
-        })
-        
-        this.$router.push('/basement/orders')
+        // Эмитим событие для родительского компонента (модалка)
+        this.$emit('deleted')
       } catch (error) {
         const errorMessage = this.getApiErrorMessage(error)
-        this.$store.dispatch('showNotification', {
-          title: this.deletedErrorText,
-          subtitle: errorMessage,
-          isDanger: true
-        })
+        this.$emit('deleted-error', errorMessage)
       } finally {
         this.deleteLoading = false
       }
@@ -738,15 +654,15 @@ export default {
       } else if (this.orderId) {
         // Загружаем данные заказа по ID из роута
         try {
-          const orderData = await BasementOrderController.getItem(parseInt(this.orderId))
+          const orderData = await OrderController.getItem(parseInt(this.orderId))
           this.fillFormWithOrderData(orderData)
         } catch (error) {
-          this.$store.dispatch('showNotification', {
-            title: 'Ошибка',
-            subtitle: 'Не удалось загрузить заказ для редактирования',
-            isDanger: true
-          })
-          this.$router.push('/basement/orders')
+          // Если загрузка через роут не удалась, просто закрываем
+          if (this.orderId) {
+            this.$router.push('/basement-orders')
+          } else {
+            this.$emit('close-request')
+          }
         }
       } else {
         // Создание нового заказа - сбрасываем форму
@@ -766,12 +682,12 @@ export default {
     },
     fillFormWithOrderData(orderData) {
       // Заполняем форму данными заказа
-      this.form.client_id = orderData.client_id || ''
-      this.form.project_id = orderData.project_id || ''
-      this.originalProjectId = orderData.project_id || null
-      this.form.cash_id = orderData.cash_id || 1
-      this.form.warehouse_id = orderData.warehouse_id || 1
-      this.form.category_id = orderData.category_id || this.form.category_id
+      this.form.client_id = orderData.clientId || ''
+      this.form.project_id = orderData.projectId || ''
+      this.originalProjectId = orderData.projectId || null
+      this.form.cash_id = orderData.cashId || 1
+      this.form.warehouse_id = orderData.warehouseId || 1
+      this.form.category_id = orderData.categoryId || this.form.category_id
       this.form.note = orderData.note || ''
       
       // Устанавливаем выбранного клиента
@@ -781,6 +697,7 @@ export default {
       
       // Преобразуем товары для формы
       if (orderData.products && orderData.products.length > 0) {
+
         const regularProducts = orderData.products.filter(p => p.product_type !== 'temp')
         const tempProducts = orderData.products.filter(p => p.product_type === 'temp')
         
@@ -805,9 +722,9 @@ export default {
           description: product.description || '',
           quantity: product.quantity,
           price: product.price,
-          unit_id: product.unit_id,
-          unit_short_name: product.unit_short_name || product.unit_name || '',
-          unit_name: product.unit_name || '',
+          unit_id: product.unitId,
+          unit_short_name: product.unitShortName || '',
+          unit_name: product.unitShortName || '',
           width: product.width || 0,
           height: product.height || 0,
           isTempProduct: true,

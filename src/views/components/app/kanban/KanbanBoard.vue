@@ -204,6 +204,7 @@ export default {
         },
         orders: {
             handler() {
+              
                 this.updateSortedColumns();
             },
             deep: true
@@ -216,6 +217,7 @@ export default {
         }
     },
     mounted() {
+        console.log('orders***', this.orders.checklist);
         this.loadColumnOrder();
         this.updateSortedColumns();
     }

@@ -22,7 +22,7 @@
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" 
             :disabled="!name || name.trim() === '' || 
             (editingItemId != null && !$store.getters.hasPermission('leave_types_update_all')) ||
-            (editingItemId == null && !$store.getters.hasPermission('leave_types_create_all'))">
+            (editingItemId == null && !$store.getters.hasPermission('leave_types_create'))">
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"

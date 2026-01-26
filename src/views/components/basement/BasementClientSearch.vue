@@ -48,7 +48,7 @@
 </template>
 
 <script>
-import BasementClientController from '@/api/basement/BasementClientController';
+import ClientController from '@/api/ClientController';
 import debounce from 'lodash.debounce';
 
 export default {
@@ -132,7 +132,7 @@ export default {
                 if (typeof this.selectedClient.fullName === 'function' && (this.selectedClient.phones && Array.isArray(this.selectedClient.phones) || this.selectedClient.primaryPhone)) {
                     return;
                 }
-                const updatedClient = await BasementClientController.getItem(this.selectedClient.id);
+                const updatedClient = await ClientController.getItem(this.selectedClient.id);
                 this.$emit('update:selectedClient', updatedClient);
             } catch (error) {
                 console.error('Ошибка при обновлении данных клиента:', error);
@@ -143,7 +143,7 @@ export default {
     methods: {
         async fetchLastClients() {
             try {
-                const paginated = await BasementClientController.getItems(1, null, false, 20);
+                const paginated = await ClientController.getItems(1, null, 20);
                 this.lastClients = paginated.items
                     .filter((client) => client.status === true)
                     .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
@@ -158,7 +158,7 @@ export default {
             if (this.clientSearch.length >= 3) {
                 this.clientSearchLoading = true;
                 try {
-                    const results = await BasementClientController.search(this.clientSearch);
+                    const results = await ClientController.search(this.clientSearch);
                     this.clientResults = this.onlySuppliers
                         ? results.filter((client) => client.isSupplier)
                         : results;

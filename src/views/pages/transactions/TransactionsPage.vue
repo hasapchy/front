@@ -4,7 +4,8 @@
         :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter"
         :source-filter="sourceFilter" @balance-click="handleBalanceClick" />
     <transition name="fade" mode="out-in">
-        <div v-if="data != null && !loading" key="table">
+        <!-- Табличный режим -->
+        <div v-if="data != null && !loading && viewMode !== 'cards'" key="table">
             <DraggableTable ref="draggableTable" table-key="admin.transactions" :columns-config="columnsConfig"
                 :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="onItemClick">
@@ -32,6 +33,8 @@
                                 <transition name="fade">
                                     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
                                 </transition>
+                                
+                                <ViewModeToggle :view-mode="viewMode" :show-cards="true" @change="changeViewMode" />
                                 
                                 <FiltersContainer
                                     :has-active-filters="hasActiveFilters"
@@ -151,6 +154,149 @@
                 </template>
             </DraggableTable>
         </div>
+
+        <!-- Карточный режим -->
+        <div v-else-if="data != null && !loading && viewMode === 'cards'" key="cards" class="cards-view-container">
+            <div class="mb-4">
+                <TableControlsBar
+                    :show-pagination="true"
+                    :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+                    :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange">
+                    <template #left>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <PrimaryButton :onclick="openCreateIncomeModal"
+                                icon="fas fa-plus"
+                                :disabled="!$store.getters.hasPermission('transactions_create')">
+                                {{ $t('income') || 'Приход' }}
+                            </PrimaryButton>
+
+                            <PrimaryButton :onclick="openCreateOutcomeModal"
+                                icon="fas fa-minus"
+                                :isDanger="true"
+                                :disabled="!$store.getters.hasPermission('transactions_create')">
+                                {{ $t('outcome') || 'Расход' }}
+                            </PrimaryButton>
+                            
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                            </transition>
+                            
+                            <ViewModeToggle :view-mode="viewMode" :show-cards="true" @change="changeViewMode" />
+                            
+                            <FiltersContainer
+                                :has-active-filters="hasActiveFilters"
+                                :active-filters-count="getActiveFiltersCount()"
+                                @reset="resetFilters"
+                                @apply="applyFilters">
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') || 'Касса' }}</label>
+                                        <select v-model="cashRegisterId" class="w-full">
+                                            <option value="">{{ $t('allCashRegisters') }}</option>
+                                            <template v-if="allCashRegisters.length">
+                                                <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
+                                                    {{ parent.name }} ({{ parent.currencySymbol || '' }})
+                                                </option>
+                                            </template>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('transactionType') || 'Тип транзакции' }}</label>
+                                        <select v-model="transactionTypeFilter" class="w-full">
+                                            <option value="">{{ $t('allTransactionTypes') }}</option>
+                                            <option value="income">{{ $t('income') }}</option>
+                                            <option value="outcome">{{ $t('outcome') }}</option>
+                                            <option value="transfer">{{ $t('transfer') }}</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('source') || 'Источник' }}</label>
+                                        <select v-model="sourceFilter" class="w-full">
+                                            <option value="">{{ $t('allSources') }}</option>
+                                            <option v-for="option in sourceOptions" :key="option.value" :value="option.value">
+                                                {{ option.label }}
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('project') || 'Проект' }}</label>
+                                        <select v-model="projectId" class="w-full">
+                                            <option value="">{{ $t('allProjects') }}</option>
+                                            <template v-if="allProjects.length">
+                                                <option v-for="project in allProjects" :key="project.id" :value="project.id">
+                                                    {{ project.name }}
+                                                </option>
+                                            </template>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('debtFilter') || 'Фильтр по долгам' }}</label>
+                                        <select v-model="debtFilter" class="w-full">
+                                            <option value="all">{{ $t('allTransactions') }}</option>
+                                            <option value="false">{{ $t('nonDebtTransactions') }}</option>
+                                            <option value="true">{{ $t('debtsOnly') }}</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
+                                        <select v-model="dateFilter" class="w-full">
+                                            <option value="all_time">{{ $t('allTime') }}</option>
+                                            <option value="today">{{ $t('today') }}</option>
+                                            <option value="yesterday">{{ $t('yesterday') }}</option>
+                                            <option value="this_week">{{ $t('thisWeek') }}</option>
+                                            <option value="this_month">{{ $t('thisMonth') }}</option>
+                                            <option value="last_week">{{ $t('lastWeek') }}</option>
+                                            <option value="last_month">{{ $t('lastMonth') }}</option>
+                                            <option value="custom">{{ $t('selectDates') }}</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div v-if="dateFilter === 'custom'" class="space-y-2">
+                                        <div>
+                                            <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
+                                            <input type="date" v-model="startDate" class="w-full" />
+                                        </div>
+                                        <div>
+                                            <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
+                                            <input type="date" v-model="endDate" class="w-full" />
+                                        </div>
+                                    </div>
+                            </FiltersContainer>
+                        </div>
+                    </template>
+                    <template #right>
+                        <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
+                            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+                            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                        <CardFieldsButton
+                            storage-key="transactions"
+                            :fields="transactionCardFieldsForSettings"
+                        />
+                    </template>
+                </TableControlsBar>
+            </div>
+
+            <div class="cards-grid">
+                <Card
+                    v-for="transaction in data.items"
+                    :key="transaction.id"
+                    :item="transaction"
+                    :is-selected="selectedIds.includes(transaction.id)"
+                    :title="`№${transaction.id}`"
+                    :fields="transactionCardFields"
+                    :footer-fields="getTransactionFooterFields(transaction)"
+                    :note-field="transaction.note ? 'note' : null"
+                    :field-visibility="$store.state.cardFields?.transactions || {}"
+                    @dblclick="onItemClick"
+                    @select-toggle="toggleSelectRow"
+                />
+            </div>
+        </div>
+
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <SpinnerIcon />
         </div>
@@ -205,10 +351,15 @@ import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import filtersMixin from '@/mixins/filtersMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import TRANSACTION_FORM_PRESETS from '@/constants/transactionFormPresets';
+import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
+import Card from '@/views/components/app/cards/Card.vue';
+import CardFieldsButton from '@/views/components/app/cards/CardFieldsButton.vue';
+import { dayjsDateTime } from '@/utils/dateUtils';
+import { formatNumber } from '@/utils/numberUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
-    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
+    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, ViewModeToggle, Card, CardFieldsButton, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -289,13 +440,22 @@ export default {
                 { value: 'other', label: this.$t('other') },
             ],
             categoryFilter: [],
-            allTransactionCategories: []
+            allTransactionCategories: [],
+            viewMode: this.$store.getters.transactionsViewMode || localStorage.getItem('transactions_viewMode') || 'table'
         }
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
 
         eventBus.on('global-search', this.handleSearch);
+        
+        // Восстанавливаем сохраненный режим просмотра из Vuex или localStorage
+        const savedViewMode = this.$store.getters.transactionsViewMode || localStorage.getItem('transactions_viewMode');
+        if (savedViewMode && (savedViewMode === 'table' || savedViewMode === 'cards')) {
+            this.viewMode = savedViewMode;
+        } else {
+            this.viewMode = 'table';
+        }
     },
 
     mounted() {
@@ -574,8 +734,149 @@ export default {
             const selected = Array.isArray(value) ? value : [];
             this.categoryFilter = selected;
         },
+        changeViewMode(mode) {
+            this.viewMode = mode;
+            localStorage.setItem('transactions_viewMode', mode);
+            this.$store.commit('SET_TRANSACTIONS_VIEW_MODE', mode);
+        },
+        getTransactionTitle(transaction) {
+            if (!transaction || !transaction.id) {
+                return '№—';
+            }
+            return `№${transaction.id}`;
+        },
+        toggleSelectRow(id) {
+            const index = this.selectedIds.indexOf(id);
+            if (index > -1) {
+                this.selectedIds.splice(index, 1);
+            } else {
+                this.selectedIds.push(id);
+            }
+        },
+        formatDatabaseDateTime(value) {
+            if (!value) return '—';
+            return dayjsDateTime(value);
+        },
     },
     computed: {
+        transactionCardFieldsForSettings() {
+            return [
+                ...this.transactionCardFields,
+                {
+                    name: 'note',
+                    label: this.$t('note') || 'Примечание',
+                    icon: 'fas fa-sticky-note text-gray-400 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                },
+            ];
+        },
+        transactionCardFields() {
+            return [
+                {
+                    name: 'dateUser',
+                    label: this.$t('dateUser') || 'Дата / Пользователь',
+                    icon: 'fas fa-calendar text-blue-600 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                    formatter: (value, item) => item.formatDate ? `${item.formatDate()} / ${item.userName || '—'}` : (value || '—')
+                },
+                {
+                    name: 'type',
+                    label: this.$t('type') || 'Тип',
+                    icon: 'fas fa-exchange-alt text-purple-600 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                    formatter: (value, item) => {
+                        if (item.type == 1) return this.$t('income') || 'Приход';
+                        if (item.type == 2) return this.$t('outcome') || 'Расход';
+                        if (item.isTransfer == 1) return this.$t('transfer') || 'Перевод';
+                        return '—';
+                    }
+                },
+                {
+                    name: 'source',
+                    label: this.$t('source') || 'Источник',
+                    icon: 'fas fa-tag text-purple-600 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                    formatter: (value, item) => {
+                        if (item.sourceType === 'sale') return this.$t('sale') || 'Продажа';
+                        if (item.sourceType === 'order') return this.$t('order') || 'Заказ';
+                        if (item.sourceType === 'other') return this.$t('other') || 'Другое';
+                        return '—';
+                    }
+                },
+                {
+                    name: 'cashName',
+                    label: this.$t('cashRegister') || 'Касса',
+                    icon: 'fas fa-cash-register text-blue-600 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                    formatter: (value, item) => item.cashName ? `${item.cashName} (${item.cashCurrencySymbol || ''})` : '—'
+                },
+                {
+                    name: 'client',
+                    label: this.$t('customer') || 'Клиент',
+                    icon: 'fas fa-user text-blue-600 text-xs',
+                    type: 'object',
+                    showLabel: false,
+                    medium: true,
+                    formatter: (value, item) => {
+                        if (!item.client) return '—';
+                        if (typeof item.client.fullName === 'function') {
+                            return item.client.fullName();
+                        }
+                        const firstName = item.client.firstName || '';
+                        const lastName = item.client.lastName || '';
+                        const name = `${firstName} ${lastName}`.trim();
+                        return name || this.$t('notSpecified') || '—';
+                    }
+                },
+                {
+                    name: 'projectName',
+                    label: this.$t('project') || 'Проект',
+                    icon: 'fas fa-folder text-purple-600 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                    formatter: (value) => value || '—'
+                },
+                {
+                    name: 'categoryName',
+                    label: this.$t('category') || 'Категория',
+                    icon: 'fas fa-list text-gray-500 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                    formatter: (value) => translateTransactionCategory(value, this.$t) || '—'
+                },
+            ];
+        },
+        getTransactionFooterFields() {
+            return (transaction) => {
+                const isPositive = transaction.type == 1;
+                const amount = parseFloat(transaction.cashAmount || 0) * (isPositive ? 1 : -1);
+                const symbol = transaction.cashCurrencySymbol || '';
+                
+                return [
+                    {
+                        name: 'cashAmount',
+                        label: this.$t('total') || 'Итого',
+                        icon: 'fas fa-money-bill-wave text-xs',
+                        type: 'price',
+                        formatter: () => {
+                            const formatted = formatNumber(amount, 2, true);
+                            return symbol ? `${formatted} ${symbol}` : formatted;
+                        },
+                        colorClass: () => {
+                            return isPositive ? 'text-green-700' : 'text-red-700';
+                        },
+                        iconColor: () => {
+                            return isPositive ? 'text-green-600' : 'text-red-600';
+                        }
+                    }
+                ];
+            };
+        },
         searchQuery() {
             return this.$store.state.searchQuery;
         },
@@ -612,3 +913,28 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+.cards-view-container {
+    padding: 1rem 0;
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    align-items: stretch; /* Растягиваем карточки на всю высоту для одинакового размера */
+}
+
+.cards-grid > * {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 640px) {
+    .cards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

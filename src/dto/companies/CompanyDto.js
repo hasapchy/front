@@ -30,6 +30,7 @@ export class CompanyDto {
   constructor(data) {
     this.id = data.id;
     this.name = data.name;
+    this.work_schedule = data.work_schedule || this.getDefaultWorkSchedule();
     this.logo = data.logo;
     this.show_deleted_transactions = data.show_deleted_transactions || false;
     this.rounding_decimals = normalizeNumber(data.rounding_decimals);
@@ -70,5 +71,20 @@ export class CompanyDto {
 
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, (data) => new CompanyDto(data));
+  }
+
+  /**
+   * Получить дефолтный рабочий график
+   */
+  getDefaultWorkSchedule() {
+    return {
+      1: { enabled: true, start: '09:00', end: '18:00' },
+      2: { enabled: true, start: '09:00', end: '18:00' },
+      3: { enabled: true, start: '09:00', end: '18:00' },
+      4: { enabled: true, start: '09:00', end: '18:00' },
+      5: { enabled: true, start: '09:00', end: '18:00' },
+      6: { enabled: false, start: '10:00', end: '14:00' },
+      7: { enabled: false, start: '00:00', end: '00:00' }
+    };
   }
 }

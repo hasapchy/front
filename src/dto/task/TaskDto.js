@@ -22,6 +22,7 @@ export default class TaskDto {
     complexity = 'normal',   
     files = [],
     comments = [],
+    checklist = [],
     createdAt = "",
     updatedAt = "",
   ) {
@@ -46,6 +47,7 @@ export default class TaskDto {
     this.comments = comments;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+    this.checklist = checklist;
   }
 
   getPriorityIcons() {
@@ -158,6 +160,20 @@ export default class TaskDto {
 
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
+      let checklist = [];
+      if (data.checklist) {
+        if (typeof data.checklist === 'string') {
+          try {
+            checklist = JSON.parse(data.checklist);
+          } catch (e) {
+            console.error('Error parsing checklist:', e);
+            checklist = [];
+          }
+        } else if (Array.isArray(data.checklist)) {
+          checklist = data.checklist;
+        }
+      }
+
       return new TaskDto(
         data.id,
         data.title,
@@ -178,6 +194,7 @@ export default class TaskDto {
         data.complexity || 'normal',
         data.files || [],
         data.comments || [],
+        checklist,
         data.created_at,
         data.updated_at
       );

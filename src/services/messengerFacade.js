@@ -15,8 +15,13 @@ const readDebounceMap = new Map(); // chatId -> { timer, lastMessageId }
  * @returns {any} result from applyIncomingMessage
  */
 export function handleIncomingChatEvent(vm, event) {
-  console.log("[WebSocket] Получено новое сообщение:", event);
-
+  console.log("[MessengerFacade] 📥 Обработка входящего сообщения:", {
+    chat_id: event?.chat_id,
+    selectedChatId: vm.selectedChatId,
+    user: event?.user?.name,
+    body: event?.body?.substring(0, 50),
+  });
+  
   const myUserId = vm?.$store?.state?.user?.id;
   const next = applyIncomingMessage(
     {
@@ -28,6 +33,12 @@ export function handleIncomingChatEvent(vm, event) {
     },
     event
   );
+
+  console.log("[MessengerFacade] ✅ Результат обработки:", {
+    appendedToMessages: next.appendedToMessages,
+    shouldScroll: next.shouldScroll,
+    messagesCount: next.messages?.length,
+  });
 
   vm.messages = next.messages;
   vm.chats = next.chats;

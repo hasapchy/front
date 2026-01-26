@@ -1,6 +1,5 @@
 import { createStore } from "vuex";
 import api from "@/api/axiosInstance";
-import basementApi from "@/api/basement/basementAxiosInstance";
 import CacheInvalidator, {
   companyScopedKey,
   isFreshByKey,
@@ -19,8 +18,6 @@ import { PermissionParser, PERMISSIONS_CONFIG, hasPermission as checkPermission,
 import { STORE_CONFIG } from "./config";
 import TokenUtils from "@/utils/tokenUtils";
 import AuthController from "@/api/AuthController";
-import { BasementAuthController } from "@/api/basement/BasementAuthController";
-import BasementProductController from "@/api/basement/BasementProductController";
 import ProductController from "@/api/ProductController";
 import UsersController from "@/api/UsersController";
 import WarehouseController from "@/api/WarehouseController";
@@ -37,6 +34,7 @@ import ClientDto from "@/dto/client/ClientDto";
 import ProjectDto from "@/dto/project/ProjectDto";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
 import { isBasementWorkerOnly, getUserFromStorage } from "@/utils/userUtils";
+import globalChatRealtime from "@/services/globalChatRealtime";
 
 const CLEAR_MUTATIONS_MAPPING = STORE_CONFIG.clearMutationsMapping;
 const GLOBAL_REFERENCE_FIELDS = STORE_CONFIG.globalReferenceFields;
@@ -137,57 +135,16 @@ async function loadCompanyDataIfNeeded(dispatch, state) {
 
 async function loadProductsForSearch(getters, isProducts, limit = 10) {
   try {
-    if (getters.isBasementMode) {
-      if (isProducts === true) {
-        const productsResult = await retryWithExponentialBackoff(
-          () => BasementProductController.getItems(1, true, {}, limit),
-          3
-        );
-        return {
-          items: productsResult.items || [],
-        };
-      } else if (isProducts === false) {
-        const servicesResult = await retryWithExponentialBackoff(
-          () => BasementProductController.getItems(1, false, {}, limit),
-          3
-        );
-        return {
-          items: servicesResult.items || [],
-        };
-      } else {
-        const [productsResult, servicesResult] = await Promise.allSettled([
-          retryWithExponentialBackoff(
-            () => BasementProductController.getItems(1, true, {}, limit),
-            3
-          ),
-          retryWithExponentialBackoff(
-            () => BasementProductController.getItems(1, false, {}, limit),
-            3
-          ),
-        ]);
-        return {
-          items: [
-            ...(productsResult.status === "fulfilled"
-              ? productsResult.value.items || []
-              : []),
-            ...(servicesResult.status === "fulfilled"
-              ? servicesResult.value.items || []
-              : []),
-          ],
-        };
-      }
-    } else {
-      return await retryWithExponentialBackoff(
-        () =>
-          ProductController.getItems(
-            1,
-            isProducts ? null : isProducts,
-            {},
-            limit
-          ),
-        3
-      );
-    }
+    return await retryWithExponentialBackoff(
+      () =>
+        ProductController.getItems(
+          1,
+          isProducts ? null : isProducts,
+          {},
+          limit
+        ),
+      3
+    );
   } catch (error) {
     console.error("Ошибка загрузки товаров для поиска:", error);
     return { items: [] };
@@ -382,6 +339,7 @@ const store = createStore({
         executor: true,
         priority: true,
         complexity: true,
+        checklist: true,
       },
     },
     // Режимы просмотра для разных страниц
@@ -390,7 +348,11 @@ const store = createStore({
       projects: 'kanban', // 'table' или 'kanban'
       orders: 'table', // 'table' или 'kanban'
       tasks: 'table', // 'table' или 'kanban'
+      users: 'table', // 'table' или 'cards'
+      transactions: 'table', // 'table' или 'cards'
     },
+    // Настройки видимости полей карточек в карточном режиме
+    cardFields: {},
   },
 
   mutations: {
@@ -514,9 +476,18 @@ const store = createStore({
       };
     },
     SET_CURRENT_COMPANY(state, company) {
-      if (state.currentCompany?.id === company?.id) {
+      // if (state.currentCompany?.id === company?.id) {
+      //   return;
+      // }
+
+      if (company && state.currentCompany?.id === company?.id) {
+        // Если ID тот же, обновляем данные (для обновления work_schedule и других полей)
+        state.currentCompany = company;
+        logCompanyRoundingSettings(company);
         return;
       }
+
+      
       state.currentCompany = company;
       logCompanyRoundingSettings(company);
     },
@@ -567,6 +538,19 @@ const store = createStore({
         state.kanbanCardFields[mode] = { ...state.kanbanCardFields[mode], ...fields };
       }
     },
+    SET_CARD_FIELDS(state, fields) {
+      state.cardFields = fields || {};
+    },
+    UPDATE_CARD_FIELDS(state, { storageKey, fields }) {
+      if (!storageKey) {
+        return;
+      }
+      if (!state.cardFields || typeof state.cardFields !== 'object') {
+        state.cardFields = {};
+      }
+      const prev = state.cardFields[storageKey] || {};
+      state.cardFields[storageKey] = { ...prev, ...fields };
+    },
     SET_LEAVES_VIEW_MODE(state, mode) {
       if (['table', 'calendar'].includes(mode)) {
         state.viewModes.leaves = mode;
@@ -580,6 +564,16 @@ const store = createStore({
     SET_ORDERS_VIEW_MODE(state, mode) {
       if (['table', 'kanban'].includes(mode)) {
         state.viewModes.orders = mode;
+      }
+    },
+    SET_USERS_VIEW_MODE(state, mode) {
+      if (['table', 'cards'].includes(mode)) {
+        state.viewModes.users = mode;
+      }
+    },
+    SET_TRANSACTIONS_VIEW_MODE(state, mode) {
+      if (['table', 'cards'].includes(mode)) {
+        state.viewModes.transactions = mode;
       }
     },
   },
@@ -677,9 +671,7 @@ const store = createStore({
         loadingFlag: "units",
         logName: "⚙️ Единицы",
         fetchFn: async () => {
-          const apiInstance = context.getters.isBasementMode
-            ? basementApi
-            : api;
+          const apiInstance = api;
           const response = await apiInstance.get("/app/units");
           return response.data;
         },
@@ -727,7 +719,7 @@ const store = createStore({
         loadingFlag: "currencies",
         logName: "💱 Валюты",
         fetchFn: async () => {
-          const apiInstance = getters.isBasementMode ? basementApi : api;
+          const apiInstance = api;
           const response = await apiInstance.get("/app/currency");
           return CurrencyDto.fromApiArray(response.data);
         },
@@ -1209,9 +1201,7 @@ const store = createStore({
 
         commit("SET_CURRENT_COMPANY", null);
 
-        const userData = isBasementWorker
-          ? await BasementAuthController.getBasementUser()
-          : await AuthController.getUser();
+        const userData = await AuthController.getUser();
 
         if (!userData) {
           throw new Error("Не удалось получить данные пользователя");
@@ -1232,6 +1222,13 @@ const store = createStore({
             await dispatch("loadCurrentCompany", { skipPermissionRefresh: false });
           } catch (error) {
             console.error("Ошибка загрузки компаний:", error);
+          }
+
+          // Инициализируем глобальный WebSocket для чатов
+          try {
+            await globalChatRealtime.initialize(store);
+          } catch (error) {
+            console.error("[Store] Ошибка инициализации глобального chatRealtime:", error);
           }
         }
 
@@ -1357,6 +1354,11 @@ const store = createStore({
         await dispatch("initializeMenu");
         eventBus.emit("company-changed", companyId);
 
+        // Переинициализируем chatRealtime при смене компании
+        if (globalChatRealtime.initialized) {
+          await globalChatRealtime.reinitialize();
+        }
+
         return company;
       } catch (error) {
         console.error("Ошибка установки текущей компании:", error);
@@ -1375,7 +1377,7 @@ const store = createStore({
 
       commit("SET_LOADING_FLAG", { type: "userPermissions", loading: true });
       try {
-        const apiInstance = getters.isBasementMode ? basementApi : api;
+        const apiInstance = api;
         const response = await retryWithExponentialBackoff(
           () => apiInstance.get("/user/me"),
           3
@@ -1425,6 +1427,9 @@ const store = createStore({
     },
     // Инвалидация при смене пользователя
     async onUserChange({ commit }) {
+      // Очищаем глобальный chatRealtime при выходе
+      globalChatRealtime.cleanup();
+      
       await CacheInvalidator.onUserChange();
       commit("CLEAR_COMPANY_DATA");
       GLOBAL_REFERENCE_FIELDS.forEach((field) => {
@@ -1450,6 +1455,14 @@ const store = createStore({
           icon: "fas fa-cart-arrow-down mr-2",
           label: "orders",
           permission: "orders_view",
+        },
+        {
+          id: "basement-orders",
+          to: "/basement-orders",
+          icon: "fas fa-cart-arrow-down mr-2",
+          label: "ordersB",
+          permission: "orders_view",
+          basementOnly: true,
         },
         {
           id: "sales",
@@ -1512,7 +1525,7 @@ const store = createStore({
           to: "/org-structure",
           icon: "fa-solid fa-sitemap mr-2",
           label: "orgStructure",
-          permission: "departments_view",
+          permission: "departments_view_all",
         },
         {
           id: "roles",
@@ -1570,10 +1583,18 @@ const store = createStore({
           label: "leaves",
           permission: "leaves_view_all",
         },
+        {
+          id: "message-templates",
+          to: "/message-templates",
+          icon: "fa-solid fa-file-alt mr-2",
+          label: "messageTemplates",
+          permission: "templates_view",
+        },
       ];
 
       const defaultMain = [
         "orders",
+        "basement-orders",
         "sales",
         "tasks",
         "messenger",
@@ -1593,6 +1614,7 @@ const store = createStore({
         "services",
         "currency-history",
         "leaves",
+        "message-templates",
       ];
 
       const defaults = {
@@ -1609,6 +1631,7 @@ const store = createStore({
       const baseMainIds = new Set((baseMenu.main || []).map((i) => i.id));
       const baseAvailableIds = new Set((baseMenu.available || []).map((i) => i.id));
 
+      // Находим новые пункты, которых нет ни в main, ни в available
       const missingItems = allMenuItems.filter(
         (i) => i && i.id && !baseMainIds.has(i.id) && !baseAvailableIds.has(i.id)
       );
@@ -1882,8 +1905,22 @@ const store = createStore({
       if (!Array.isArray(state.permissions)) {
         return [];
       }
+      const isBasementWorker = getters.isBasementMode;
+      
       return state.menuItems.main.filter((item) => {
         if (!item) return false;
+        
+        // Скрываем обычные заказы для basement работников (не админов)
+        if (item.id === 'orders' && isBasementWorker && !state.user?.is_admin) {
+          return false;
+        }
+        
+        // Показываем basement заказы только basement работникам
+        if (item.basementOnly && !isBasementWorker) {
+          return false;
+        }
+        
+        // Проверяем права доступа для всех пользователей (включая basement workers)
         if (!item.permission) return true;
         return getters.hasPermission(item.permission);
       });
@@ -1898,8 +1935,22 @@ const store = createStore({
       if (!Array.isArray(state.permissions)) {
         return [];
       }
+      const isBasementWorker = getters.isBasementMode;
+      
       return state.menuItems.available.filter((item) => {
         if (!item) return false;
+        
+        // Скрываем обычные заказы для basement работников (не админов)
+        if (item.id === 'orders' && isBasementWorker && !state.user?.is_admin) {
+          return false;
+        }
+        
+        // Показываем basement заказы только basement работникам
+        if (item.basementOnly && !isBasementWorker) {
+          return false;
+        }
+        
+        // Проверяем права доступа для всех пользователей (включая basement workers)
         if (!item.permission) return true;
         return getters.hasPermission(item.permission);
       });
@@ -1907,6 +1958,8 @@ const store = createStore({
     leavesViewMode: (state) => state.viewModes.leaves || 'table',
     projectsViewMode: (state) => state.viewModes.projects || 'kanban',
     ordersViewMode: (state) => state.viewModes.orders || 'table',
+    usersViewMode: (state) => state.viewModes.users || 'table',
+    transactionsViewMode: (state) => state.viewModes.transactions || 'table',
   },
   plugins: [
     // 1. Долгосрочный кэш справочников (localStorage)
