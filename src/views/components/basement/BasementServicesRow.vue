@@ -124,9 +124,8 @@ export default {
                     }
                     productDto.type = service.type || 0;
                     
-                    const unitShortName = productDto.unitShortName || '';
-                    const unitName = productDto.unitName || '';
-                    const isSquareMeter = unitShortName === 'м²' || unitName === 'Квадратный метр';
+                    const unitId = productDto.unitId || productDto.unit_id;
+                    const isSquareMeter = unitId === 2;
                     
                     if (isSquareMeter) {
                         productDto.width = 0;
@@ -138,7 +137,24 @@ export default {
                         productDto.height = 0;
                     }
                 }
-                this.products = [...this.products, productDto];
+                
+                const existingIndex = this.products.findIndex(p => 
+                    p.productId === productDto.productId &&
+                    p.price === productDto.price &&
+                    (p.width || 0) === (productDto.width || 0) &&
+                    (p.height || 0) === (productDto.height || 0)
+                );
+                
+                if (existingIndex !== -1) {
+                    const existing = this.products[existingIndex];
+                    const newQuantity = (Number(existing.quantity) || 0) + (Number(productDto.quantity) || 0);
+                    this.products[existingIndex] = {
+                        ...existing,
+                        quantity: newQuantity
+                    };
+                } else {
+                    this.products = [...this.products, productDto];
+                }
             } catch (error) {
             }
         },

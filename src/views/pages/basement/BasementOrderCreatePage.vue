@@ -614,6 +614,7 @@ export default {
       try {
         // Все товары и услуги сохраняются в order_products
         const validProducts = this.form.products.map(p => ({
+          id: p.id || null,
           product_id: p.productId,
           quantity: Math.max(p.quantity || 0, 0),
           price: p.price || 0,
@@ -623,8 +624,9 @@ export default {
         
         // Остатки (товары с бесконечным остатком) сохраняются как temp_products (фильтруем товары с количеством 0)
         const tempProducts = this.form.stockItems
-          .filter(item => item.quantity && item.quantity > 0) // Убираем товары с нулевым количеством
+          .filter(item => item.quantity && item.quantity > 0)
           .map(item => ({
+            id: item.id || null,
             name: item.name,
             description: item.description || '',
             quantity: item.quantity,
@@ -642,7 +644,7 @@ export default {
           cash_id: this.form.cash_id,
           warehouse_id: this.form.warehouse_id,
           currency_id: 1,
-          category_id: this.form.category_id, // Категория заказа
+          category_id: this.form.category_id,
           note: this.form.note || '',
           products: validProducts,
           temp_products: tempProducts
@@ -777,28 +779,28 @@ export default {
         this.selectedClient = orderData.client
       }
       
-      // Проект уже установлен через v-model="form.project_id"
-      
       // Преобразуем товары для формы
       if (orderData.products && orderData.products.length > 0) {
-        // Разделяем обычные товары и temp_products
         const regularProducts = orderData.products.filter(p => p.product_type !== 'temp')
         const tempProducts = orderData.products.filter(p => p.product_type === 'temp')
         
         this.form.products = regularProducts.map(product => ({
+          id: product.id || null,
           productId: product.product_id,
           productName: product.product_name,
           name: product.product_name,
           quantity: product.quantity,
           price: product.price,
           unit: product.unit_short_name || product.unit_name,
+          unitShortName: product.unit_short_name || product.unit_name,
+          unitName: product.unit_name,
           unitId: product.unit_id,
           width: product.width || null,
           height: product.height || null
         }))
         
-        // Загружаем temp_products в stockItems
         this.form.stockItems = tempProducts.map(product => ({
+          id: product.id || null,
           name: product.product_name,
           description: product.description || '',
           quantity: product.quantity,
@@ -811,6 +813,9 @@ export default {
           isTempProduct: true,
           type: product.type || 1
         }))
+      } else {
+        this.form.products = []
+        this.form.stockItems = []
       }
     },
     // Форматирование количества - всегда 2 знака после запятой

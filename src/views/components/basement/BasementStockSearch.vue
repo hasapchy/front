@@ -232,10 +232,8 @@ export default {
                 this.stockSearch = '';
                 this.stockResults = [];
 
-                // DTO использует camelCase, проверяем оба варианта
-                const unitShortName = (product.unitShortName || product.unit_short_name || product.unitName || product.unit_name || '').trim();
-                const unitName = (product.unitName || product.unit_name || '').trim();
-                const isSquareMeter = unitShortName === 'м²' || unitShortName === 'м2' || unitName === 'Квадратный метр' || unitName.toLowerCase() === 'квадратный метр';
+                const unitId = product.unitId || product.unit_id;
+                const isSquareMeter = unitId === 2;
 
                 // Создаем временный товар с бесконечным остатком
                 let price;
@@ -287,9 +285,8 @@ export default {
         
         isSquareMeter(item) {
             if (!item) return false;
-            const unitShortName = (item.unit_short_name || item.unitShortName || '').trim();
-            const unitName = (item.unit_name || item.unitName || '').trim();
-            return unitShortName === 'м²' || unitShortName === 'м2' || unitName === 'Квадратный метр' || unitName.toLowerCase() === 'квадратный метр';
+            const unitId = item.unit_id || item.unitId;
+            return unitId === 2;
         },
         calculateQuantity(item) {
             // Расчет количества только для м²

@@ -383,9 +383,8 @@ export default {
                     productDto.type = product.type || 1;
                     productDto.stockQuantity = product.stockQuantity || 0;
 
-                    const unitShortName = productDto.unitShortName || '';
-                    const unitName = productDto.unitName || '';
-                    const isSquareMeter = unitShortName === 'м²' || unitName === 'Квадратный метр';
+                    const unitId = productDto.unitId || productDto.unit_id;
+                    const isSquareMeter = unitId === 2;
 
                     if (isSquareMeter) {
                         this.productDimensions[product.id] = { width: 0, length: 0 };
@@ -398,8 +397,25 @@ export default {
                         productDto.height = 0;
                     }
                 }
-                this.products = [...this.products, productDto];
-                this.updateTotals();
+                
+                const existingIndex = this.products.findIndex(p => 
+                    p.productId === productDto.productId &&
+                    p.price === productDto.price &&
+                    (p.width || 0) === (productDto.width || 0) &&
+                    (p.height || 0) === (productDto.height || 0)
+                );
+                
+                if (existingIndex !== -1) {
+                    const existing = this.products[existingIndex];
+                    const newQuantity = (Number(existing.quantity) || 0) + (Number(productDto.quantity) || 0);
+                    this.products[existingIndex] = {
+                        ...existing,
+                        quantity: newQuantity
+                    };
+                } else {
+                    this.products = [...this.products, productDto];
+                }
+                
                 this.$refs.productInput.blur();
             } catch (error) {
             }
@@ -417,9 +433,8 @@ export default {
                     productDto.type = service.type || 0;
                     productDto.stockQuantity = service.stockQuantity || 0;
 
-                    const unitShortName = productDto.unitShortName || '';
-                    const unitName = productDto.unitName || '';
-                    const isSquareMeter = unitShortName === 'м²' || unitName === 'Квадратный метр';
+                    const unitId = productDto.unitId || productDto.unit_id;
+                    const isSquareMeter = unitId === 2;
 
                     if (isSquareMeter) {
                         this.productDimensions[service.id] = { width: 0, length: 0 };
@@ -432,8 +447,24 @@ export default {
                         productDto.height = 0;
                     }
                 }
-                this.products = [...this.products, productDto];
-                this.updateTotals();
+                
+                const existingIndex = this.products.findIndex(p => 
+                    p.productId === productDto.productId &&
+                    p.price === productDto.price &&
+                    (p.width || 0) === (productDto.width || 0) &&
+                    (p.height || 0) === (productDto.height || 0)
+                );
+                
+                if (existingIndex !== -1) {
+                    const existing = this.products[existingIndex];
+                    const newQuantity = (Number(existing.quantity) || 0) + (Number(productDto.quantity) || 0);
+                    this.products[existingIndex] = {
+                        ...existing,
+                        quantity: newQuantity
+                    };
+                } else {
+                    this.products = [...this.products, productDto];
+                }
             } catch (error) {
             }
         },
@@ -449,7 +480,6 @@ export default {
             }
 
             this.products = this.products.filter((_, i) => i !== index);
-            this.updateTotals();
         },
         handleProductBlur() {
             requestAnimationFrame(() => {
@@ -541,8 +571,6 @@ export default {
             // Применяем правила округления компании для количества товара
             const rawQuantity = width * length;
             product.quantity = roundQuantityValue(rawQuantity);
-
-            this.updateTotals();
         },
 
         validateInput(product, field) {
@@ -571,9 +599,9 @@ export default {
         },
 
         isSquareMeter(product) {
-            const unitShortName = product.unitShortName || '';
-            const unitName = product.unitName || '';
-            return unitShortName === 'м²' || unitName === 'Квадратный метр';
+            if (!product) return false;
+            const unitId = product.unitId || product.unit_id;
+            return unitId === 2;
         },
 
         getStockDisplayValue(product) {
@@ -598,7 +626,7 @@ export default {
             } else if (stockQuantity <= 5) {
                 return 'text-yellow-600 font-medium';
             } else {
-                return 'text-gray-600'; // Нормальный остаток
+                return 'text-gray-600';
             }
         },
 
@@ -613,7 +641,8 @@ export default {
                 // Инициализируем размеры для товаров при загрузке
                 if (newProducts && newProducts.length > 0) {
                     newProducts.forEach(product => {
-                        if (product.productId && !this.productDimensions[product.productId]) {
+                        if (product.productId) {
+                            // Всегда обновляем размеры из данных продукта
                             this.productDimensions[product.productId] = {
                                 width: product.width || 0,
                                 length: product.height || 0

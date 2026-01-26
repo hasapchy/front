@@ -56,7 +56,6 @@
 
 <script>
 import AppController from '@/api/AppController';
-import { APP_VERSIONS, CURRENT_APP_VERSION } from '@/constants/appVersion';
 
 export default {
     name: 'AppVersionBadge',
@@ -70,20 +69,23 @@ export default {
         return {
             showNotes: false,
             selectedVersionIndex: 0,
-            loadedVersions: null
+            loadedVersions: []
         };
     },
     computed: {
         versions() {
-            return this.loadedVersions || APP_VERSIONS;
+            return this.loadedVersions;
         },
         currentVersion() {
-            return (this.versions && this.versions[0]) || CURRENT_APP_VERSION;
+            return (this.versions && this.versions[0]) || { version: '', notes: [] };
         },
         selectedVersion() {
             return this.versions[this.selectedVersionIndex] || this.currentVersion;
         },
         versionLabel() {
+            if (!this.currentVersion.version) {
+                return 'v—';
+            }
             return `v${this.currentVersion.version}`;
         },
         releaseNotes() {
@@ -106,7 +108,7 @@ export default {
                     this.selectedVersionIndex = 0;
                 }
             } catch (e) {
-                this.loadedVersions = null;
+                this.loadedVersions = [];
             }
         },
         handleDoubleClick() {

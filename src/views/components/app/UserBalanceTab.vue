@@ -1,8 +1,7 @@
 <template>
     <div class="mt-4">
-        <div class="flex justify-between items-center mb-2">
-            <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
-            <div v-if="!hideActions" class="flex gap-2">
+        <div v-if="!hideActions" class="flex justify-end items-center mb-2">
+            <div class="flex gap-2">
                 <PrimaryButton 
                     icon="fas fa-money-bill-wave" 
                     :onclick="handleSalaryAccrual"
