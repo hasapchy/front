@@ -1461,7 +1461,7 @@ const store = createStore({
           to: "/basement-orders",
           icon: "fas fa-cart-arrow-down mr-2",
           label: "ordersB",
-          permission: "orders_view",
+          permission: "orders_basement_view",
           basementOnly: true,
         },
         {
