@@ -116,6 +116,26 @@ const routes = [
         },
       },
       {
+        path: "/message-templates",
+        name: "message_templates",
+        component: () => import("@/views/pages/message-templates/MessageTemplatesPage.vue"),
+        meta: {
+          title: "messageTemplates",
+          requiresAuth: true,
+          permission: "templates_view",
+        },
+      },
+      {
+        path: "/message-templates/:id",
+        name: "MessageTemplateView",
+        component: () => import("@/views/pages/message-templates/MessageTemplatesPage.vue"),
+        meta: {
+          title: "messageTemplates",
+          requiresAuth: true,
+          permission: "templates_view",
+        },
+      },
+      {
         path: "/task_statuses",
         name: "task_statuses",
         component: () => import("@/views/pages/tasks/TaskStatusesPage.vue"),
