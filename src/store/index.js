@@ -476,9 +476,18 @@ const store = createStore({
       };
     },
     SET_CURRENT_COMPANY(state, company) {
-      if (state.currentCompany?.id === company?.id) {
+      // if (state.currentCompany?.id === company?.id) {
+      //   return;
+      // }
+
+      if (company && state.currentCompany?.id === company?.id) {
+        // Если ID тот же, обновляем данные (для обновления work_schedule и других полей)
+        state.currentCompany = company;
+        logCompanyRoundingSettings(company);
         return;
       }
+
+      
       state.currentCompany = company;
       logCompanyRoundingSettings(company);
     },

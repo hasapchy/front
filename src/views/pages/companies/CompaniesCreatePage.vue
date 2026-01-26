@@ -45,6 +45,9 @@
             <div v-show="currentTab === 'holidays'" class="mt-4">
                 <HolidayManager v-model="form.holidays" :company-id="editingItemId" />
             </div>
+            <div v-show="currentTab === 'workSchedule'" class="mt-4">
+                <WorkScheduleEditor v-model="form.work_schedule" />
+            </div>
             <div v-show="currentTab === 'settings' && editingItem" class="mt-4">
                 <!-- Настройка отображения удаленных транзакций -->
                 <div class="mb-6 p-4 bg-white border rounded">
@@ -216,10 +219,12 @@ import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { eventBus } from '@/eventBus';
+import WorkScheduleEditor from '@/views/components/app/WorkScheduleEditor.vue';
+import { CompanyDto } from '@/dto/companies/CompanyDto';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
-    components: { PrimaryButton, AlertDialog, NotificationToast, ImageCropperModal, TabBar, HolidayManager },
+    components: { PrimaryButton, AlertDialog, NotificationToast, ImageCropperModal, TabBar, HolidayManager, WorkScheduleEditor },
     props: {
         editingItem: {
             type: Object,
@@ -244,6 +249,7 @@ export default {
                 rounding_quantity_custom_threshold: null,
                 skip_project_order_balance: true,
                 holidays: [],
+                work_schedule: null,
             },
             currentLogo: '',
             selected_logo: null,
@@ -254,6 +260,7 @@ export default {
             tabs: [
                 { name: 'info', label: 'info' },
                 { name: 'holidays', label: 'holidays' },
+                { name: 'workSchedule', label: 'workSchedule' },
                 { name: 'settings', label: 'settings' }
             ],
             roundingConfirmDialog: false,
@@ -323,6 +330,7 @@ export default {
             this.form.rounding_quantity_custom_threshold = null;
             this.form.skip_project_order_balance = true;
             this.form.holidays = [];
+            this.form.work_schedule = null;
             this.currentLogo = '';
             this.selected_logo = null;
             this.croppedFile = null;
@@ -351,7 +359,7 @@ export default {
                 rounding_quantity_custom_threshold = (value === '' || value === null || value === undefined) ? null : value;
             }
 
-            return {
+            const data = {
                 name: this.form.name,
                 show_deleted_transactions: this.form.show_deleted_transactions,
                 rounding_decimals: this.form.rounding_decimals,
@@ -364,6 +372,11 @@ export default {
                 rounding_quantity_custom_threshold: rounding_quantity_custom_threshold,
                 skip_project_order_balance: Boolean(this.form.skip_project_order_balance),
             };
+            // Добавляем work_schedule только если он не null и не undefined
+            if (this.form.work_schedule !== null && this.form.work_schedule !== undefined) {
+                data.work_schedule = this.form.work_schedule;
+            }
+            return data;
         },
         async performSave(data) {
             const fileToUpload = this.croppedFile || this.$refs.logoInput?.files[0];
@@ -442,6 +455,17 @@ export default {
                 await this.saveHolidays(companyId);
             }
             
+            // Обновляем editingItem новыми данными после сохранения
+            if (this.lastSaveResponse?.company) {
+                // Преобразуем данные в CompanyDto для консистентности
+                const updatedCompany = new CompanyDto(this.lastSaveResponse.company);
+                this.$emit('update:editingItem', updatedCompany);
+                // Также обновляем локально для немедленного отображения
+                this.editingItem = updatedCompany;
+                // Перезагружаем данные формы с обновленными данными
+                this.loadCompanyData(updatedCompany);
+            }
+
             // Эмитим company-updated только если редактируем текущую компанию
             const currentCompanyId = this.$store.state.currentCompany?.id;
             const savedCompanyId = this.lastSaveResponse?.company?.id;
@@ -564,7 +588,7 @@ export default {
         async loadCompanyData(company) {
             // Всегда начинаем с вкладки "Информация"
             this.currentTab = 'info';
-            
+            this.form.work_schedule = company.work_schedule || null;
             this.form.name = company.name || '';
             this.form.show_deleted_transactions = company.show_deleted_transactions || false;
             this.form.rounding_decimals = company.rounding_decimals !== undefined ? company.rounding_decimals : 2;

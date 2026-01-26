@@ -753,4 +753,20 @@ export default {
     checklistItemNotCompleted: 'Not Completed',
     checklistItemProgress: 'Progress',
     checklistItemTotal: 'Total',
+
+    // Work Schedule
+    workSchedule: 'Work Schedule',
+    1: 'Monday',
+    2: 'Tuesday',
+    3: 'Wednesday',
+    4: 'Thursday',
+    5: 'Friday',
+    6: 'Saturday',
+    7: 'Sunday',
+    applyToAllDays: 'Apply to All Days',
+    resetToDefault: 'Reset to Default',
+    startTime: 'Start Time',
+    endTime: 'End Time',
+    working: 'Working',
+    
 }

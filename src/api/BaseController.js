@@ -138,7 +138,10 @@ export default class BaseController {
         });
       } else if (booleanFields.includes(key)) {
         formData.append(key, value ? "1" : "0");
-      } else {
+      } else if (typeof value === 'object' && value !== null) {
+        // Если значение - объект (например, work_schedule), преобразуем в JSON строку
+        formData.append(key, JSON.stringify(value));
+      }else {
         formData.append(key, value);
       }
     });

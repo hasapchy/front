@@ -1408,4 +1408,20 @@ export default {
   year: 'Ýyl',
   all: 'Ählisi',
   reset: 'Arassala',
+
+
+  // Work Schedule
+  workSchedule: 'Iş grafigi',
+  1: 'Duşenbe',
+  2: 'Sişenbe',
+  3: 'Çarşenbe',
+  4: 'Penşenbe',
+  5: 'Anna',
+  6: 'Şenbe',
+  7: 'Ýekşenbe',
+  applyToAllDays: 'Ähli günlere ulanyň',
+  resetToDefault: 'Bellenen baha goý',
+  startTime: 'Işe başlamak wagty',
+  endTime: 'Işi gutarmak wagty',
+  working: 'Işleýär',
 }

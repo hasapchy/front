@@ -305,6 +305,12 @@ export default {
                 await this.$store.dispatch('loadTaskStatuses');
             }
             await this.fetchProjects();
+
+            // Устанавливаем дефолтный дедлайн только при создании новой задачи
+            if (!this.editingItem && !this.deadline) {
+                this.deadline = this.getDefaultDeadline();
+            }
+
             this.saveInitialState();
         });
         
@@ -316,11 +322,92 @@ export default {
     },
     methods: {
         translateTaskStatus,
+
+                /**
+         * Получить дефолтный дедлайн (конец последнего рабочего дня недели)
+         */
+         getDefaultDeadline() {
+            const currentCompany = this.$store.getters.currentCompany;
+            if (!currentCompany || !currentCompany.work_schedule) {
+                // Если нет рабочего графика, возвращаем конец текущего дня (18:00)
+                return dayjs().endOf('day').format('YYYY-MM-DDTHH:mm');
+            }
+
+            const workSchedule = currentCompany.work_schedule;
+            const now = dayjs();
+            
+            // Маппинг дня недели dayjs (0-6) на ключ в work_schedule (1-7)
+            // dayjs: 0=воскресенье, 1=понедельник, 2=вторник, 3=среда, 4=четверг, 5=пятница, 6=суббота
+            // БД: 1=понедельник, 2=вторник, 3=среда, 4=четверг, 5=пятница, 6=суббота, 7=воскресенье
+            const dayMap = {
+                0: 7,  // воскресенье -> 7
+                1: 1,  // понедельник -> 1
+                2: 2,  // вторник -> 2
+                3: 3,  // среда -> 3
+                4: 4,  // четверг -> 4
+                5: 5,  // пятница -> 5
+                6: 6   // суббота -> 6
+            };
+
+            // Находим последний рабочий день недели
+            return this.getLastWorkDayOfWeek(now, workSchedule, dayMap);
+        },
+
+        /**
+         * Получить конец последнего рабочего дня недели
+         */
+        getLastWorkDayOfWeek(startDate, workSchedule, dayMap) {
+            // Ищем последний рабочий день недели (от воскресенья к понедельнику)
+            // Начинаем с воскресенья (7) и идем назад до понедельника (1)
+            for (let dayKey = 7; dayKey >= 1; dayKey--) {
+                const daySchedule = workSchedule[dayKey];
+                
+                if (daySchedule && daySchedule.enabled) {
+                    // Находим дату этого дня недели в текущей неделе
+                    const currentDayOfWeek = startDate.day(); // 0-6
+                    const targetDayOfWeek = this.getDayjsDayFromScheduleKey(dayKey); // 0-6
+                    
+                    // Вычисляем количество дней до нужного дня недели
+                    let daysToAdd = targetDayOfWeek - currentDayOfWeek;
+                    if (daysToAdd < 0) {
+                        daysToAdd += 7; // Если день уже прошел, берем его на следующей неделе
+                    }
+                    
+                    const targetDate = startDate.clone().add(daysToAdd, 'day');
+                    const [endHour, endMinute] = daySchedule.end.split(':').map(Number);
+                    
+                    return targetDate.hour(endHour).minute(endMinute).second(0).millisecond(0)
+                        .format('YYYY-MM-DDTHH:mm');
+                }
+            }
+
+            // Если не нашли рабочий день (не должно быть, но на всякий случай)
+            return startDate.clone().endOf('week').format('YYYY-MM-DDTHH:mm');
+        },
+
+        /**
+         * Преобразовать ключ из work_schedule (1-7) в день недели dayjs (0-6)
+         */
+        getDayjsDayFromScheduleKey(scheduleKey) {
+            // БД: 1=понедельник, 2=вторник, 3=среда, 4=четверг, 5=пятница, 6=суббота, 7=воскресенье
+            // dayjs: 0=воскресенье, 1=понедельник, 2=вторник, 3=среда, 4=четверг, 5=пятница, 6=суббота
+            const map = {
+                1: 1,  // понедельник
+                2: 2,  // вторник
+                3: 3,  // среда
+                4: 4,  // четверг
+                5: 5,  // пятница
+                6: 6,  // суббота
+                7: 0   // воскресенье
+            };
+            return map[scheduleKey] || 0;
+        },
+        
         clearForm() {
             this.title = '';
             this.description = '';
             this.statusId = 1;
-            this.deadline = null;
+            this.deadline = this.getDefaultDeadline(); 
             this.projectId = null;
             this.priority = 'low';
             this.complexity = 'normal';
