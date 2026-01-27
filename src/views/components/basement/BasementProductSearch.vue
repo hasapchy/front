@@ -581,18 +581,12 @@ export default {
         },
 
         isSquareMeter(product) {
-<<<<<<< HEAD
-            if (!product) return false;
-            const unitId = product.unitId || product.unit_id;
-            return unitId === 2;
-=======
             const unitShortName = product.unitShortName || '';
             return this.isSquareMeterShortName(unitShortName);
         },
         isSquareMeterShortName(unitShortNameRaw) {
             const s = String(unitShortNameRaw || '').trim().toLowerCase();
             return s === 'м²' || s === 'м2' || s === 'm²' || s === 'm2';
->>>>>>> 891380e403fd360942c8c3bf8971fe25536d0398
         },
 
         getStockDisplayValue(product) {
