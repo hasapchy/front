@@ -1,4 +1,4 @@
-export function isBasementWorkerOnly(user) {
+export function isSimpleWorkerOnly(user) {
   if (!user || !user.roles) return false;
   return user.roles.includes('basement_worker') && !user.roles.includes('admin');
 }

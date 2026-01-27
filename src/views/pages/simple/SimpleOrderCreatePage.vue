@@ -14,13 +14,13 @@
           <div class="grid grid-cols-1 gap-6">
             <!-- Клиент и Проект в одной строке -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Клиент -->
-              <div>
-                <BasementClientSearch
-                  :selected-client="selectedClient"
-                  @update:selected-client="onClientSelected"
-                />
-              </div>
+            <!-- Клиент -->
+            <div>
+              <ClientSearch
+                :selected-client="selectedClient"
+                @update:selected-client="onClientSelected"
+              />
+            </div>
 
               <!-- Проект -->
               <div>
@@ -44,12 +44,12 @@
 
             <!-- Услуги на всю ширину -->
             <div>
-              <BasementServicesRow v-model="form.products" :project-id="form.project_id" />
+              <SimpleServicesRow v-model="form.products" :project-id="form.project_id" />
             </div>
 
             <!-- Товары на складе -->
             <div>
-              <BasementProductSearch
+              <SimpleProductSearch
                 v-model="form.products"
                 :show-quantity="true"
                 :only-products="true"
@@ -60,7 +60,7 @@
 
             <!-- Остатки (товары с бесконечным остатком) -->
             <div>
-              <BasementStockSearch
+              <SimpleStockSearch
                 v-model="form.stockItems"
                 :show-quantity="true"
                 :project-id="form.project_id"
@@ -73,7 +73,7 @@
                 {{ $t('orderItems') || 'Товары в заказе' }}
               </label>
               <DraggableTable 
-                table-key="basementOrderItems"
+                table-key="simpleOrderItems"
                 :columns-config="productTableColumns"
                 :table-data="allOrderItems"
                 :item-mapper="productItemMapper"
@@ -194,26 +194,26 @@ import CashRegisterController from '@/api/CashRegisterController'
 import WarehouseController from '@/api/WarehouseController'
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue'
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue'
-import BasementClientSearch from '@/views/components/basement/BasementClientSearch.vue'
-import BasementProductSearch from '@/views/components/basement/BasementProductSearch.vue'
-import BasementStockSearch from '@/views/components/basement/BasementStockSearch.vue'
-import BasementServicesRow from '@/views/components/basement/BasementServicesRow.vue'
+import ClientSearch from '@/views/components/app/search/ClientSearch.vue'
+import SimpleProductSearch from '@/views/components/simple/SimpleProductSearch.vue'
+import SimpleStockSearch from '@/views/components/simple/SimpleStockSearch.vue'
+import SimpleServicesRow from '@/views/components/simple/SimpleServicesRow.vue'
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue'
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin'
 import crudEventMixin from '@/mixins/crudEventMixin'
 import { formatNumber } from '@/utils/numberUtils'
 
 export default {
-  name: 'BasementOrderCreatePage',
+  name: 'SimpleOrderCreatePage',
   mixins: [getApiErrorMessage, crudEventMixin],
   emits: ['saved', 'saved-silent', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
   components: {
     PrimaryButton,
     DraggableTable,
-    BasementClientSearch,
-    BasementProductSearch,
-    BasementStockSearch,
-    BasementServicesRow,
+    ClientSearch,
+    SimpleProductSearch,
+    SimpleStockSearch,
+    SimpleServicesRow,
     AlertDialog
   },
   props: {
@@ -418,9 +418,8 @@ export default {
     },
     async loadProjects() {
       try {
-        // Загружаем только активные проекты (исключаем "Завершен" и "Отменен")
-        const response = await ProjectController.getItems(1, null, 'all_time', null, null, '', '', true);
-        this.allProjects = Array.isArray(response.items) ? response.items : [];
+        const allProjects = await ProjectController.getListItems();
+        this.allProjects = Array.isArray(allProjects) ? allProjects : [];
       } catch (error) {
         this.allProjects = [];
       }
@@ -657,7 +656,7 @@ export default {
         } catch (error) {
           // Если загрузка через роут не удалась, просто закрываем
           if (this.orderId) {
-            this.$router.push('/basement-orders')
+            this.$router.push('/simple-orders')
           } else {
             this.$emit('close-request')
           }

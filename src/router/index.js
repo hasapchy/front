@@ -32,9 +32,9 @@ import LeaveTypesPage from "@/views/pages/leave_types/LeaveTypesPage.vue";
 import CompanyHolidaysPage from "@/views/pages/company-holidays/CompanyHolidaysPage.vue";
 import MessengerPage from "@/views/pages/messenger/MessengerPage.vue";
 
-// Basement pages
-import BasementOrdersPage from "@/views/pages/basement/BasementOrdersPage.vue";
-import BasementOrderCreatePage from "@/views/pages/basement/BasementOrderCreatePage.vue";
+// Simple orders pages
+import SimpleOrdersPage from "@/views/pages/simple/SimpleOrdersPage.vue";
+import SimpleOrderCreatePage from "@/views/pages/simple/SimpleOrderCreatePage.vue";
 import MutualSettlementsPage from "@/views/pages/mutual_settlements/MutualSettlementsPage.vue";
 const routes = [
   {
@@ -763,36 +763,36 @@ const routes = [
       },
       // Праздники теперь управляются через вкладку в настройках компании (CompaniesCreatePage)
       {
-        path: "/basement-orders",
-        name: "BasementOrders",
-        component: BasementOrdersPage,
+        path: "/simple-orders",
+        name: "SimpleOrders",
+        component: SimpleOrdersPage,
         meta: {
-          title: "basementOrders",
+          title: "simpleOrders",
           requiresAuth: true,
-          permission: "orders_view",
-          basementMode: true,
+          permission: "orders_simple_view",
+          simpleMode: true,
         },
       },
       {
-        path: "/basement-orders/create",
-        name: "BasementOrderCreate",
-        component: BasementOrderCreatePage,
+        path: "/simple-orders/create",
+        name: "SimpleOrderCreate",
+        component: SimpleOrderCreatePage,
         meta: {
           title: "createOrder",
           requiresAuth: true,
-          permission: "orders_create",
-          basementMode: true,
+          permission: "orders_simple_create",
+          simpleMode: true,
         },
       },
       {
-        path: "/basement-orders/:id/edit",
-        name: "BasementOrderEdit",
-        component: BasementOrderCreatePage,
+        path: "/simple-orders/:id/edit",
+        name: "SimpleOrderEdit",
+        component: SimpleOrderCreatePage,
         meta: {
           title: "editOrder",
           requiresAuth: true,
-          permission: "orders_update",
-          basementMode: true,
+          permission: "orders_simple_update",
+          simpleMode: true,
         },
       },
     ],
@@ -822,14 +822,14 @@ router.beforeEach(async (to, from, next) => {
   const user = localStorage.getItem("user");
 
   let userData = null;
-  let isBasementWorker = false;
+  let isSimpleWorker = false;
   let isAdmin = false;
 
   // Парсим данные пользователя
   try {
     if (user) {
       userData = JSON.parse(user);
-      isBasementWorker =
+      isSimpleWorker =
         userData.roles && userData.roles.includes("basement_worker");
       isAdmin =
         userData.isAdmin === true ||
@@ -852,7 +852,7 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.meta.permission) {
-    // Проверка прав доступа для всех пользователей (включая basement workers)
+    // Проверка прав доступа для всех пользователей (включая simple workers)
     if (
       !store.state.permissionsLoaded ||
       (store.state.permissionsLoaded && store.state.permissions?.length === 0)

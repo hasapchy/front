@@ -110,7 +110,7 @@
 15. **RolesCreatePage.vue** ⏳
     - Сложный компонент с правами доступа
 
-16. **BasementOrderCreatePage.vue** ⏳
+16. **SimpleOrderCreatePage.vue** ⏳
 
 17. **TransferCreatePage.vue** ⏳
 

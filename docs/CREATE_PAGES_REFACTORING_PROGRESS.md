@@ -104,7 +104,7 @@
 ### ⏭️ Пропущены (не стандартные CreatePage)
 
 1. OrderTempProductCreatePage.vue - компонент-всплывающее окно, не использует API напрямую
-2. BasementOrderCreatePage.vue - сложная структура, требует отдельного анализа
+2. SimpleOrderCreatePage.vue - сложная структура, требует отдельного анализа
 3. UserSalaryTab.vue, ProjectBalanceTab.vue и другие Tab компоненты - не являются CreatePage
 
 ## Метрики

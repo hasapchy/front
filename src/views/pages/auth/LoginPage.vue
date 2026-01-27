@@ -204,7 +204,7 @@ import useVuelidate from '@vuelidate/core';
 import { required, email, minLength } from '@vuelidate/validators';
 import ValidationErrorMessage from '@/views/components/app/forms/ValidationErrorMessage.vue';
 import AuthController from '@/api/AuthController';
-import { isBasementWorkerOnly } from '@/utils/userUtils';
+import { isSimpleWorkerOnly } from '@/utils/userUtils';
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 
@@ -250,10 +250,10 @@ export default {
             try {
                 const loginData = await AuthController.login(this.email, this.password, this.remember);
 
-                if (isBasementWorkerOnly(loginData.user)) {
+                if (isSimpleWorkerOnly(loginData.user)) {
                     this.$store.dispatch('setUser', loginData.user);
                     this.$store.dispatch('setPermissions', loginData.user?.permissions || []);
-                    this.$router.push('/basement-orders');
+                    this.$router.push('/simple-orders');
                 } else {
                     const userData = await AuthController.getUser();
                     this.$store.dispatch('setUser', userData.user);

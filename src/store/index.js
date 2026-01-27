@@ -33,7 +33,7 @@ import CurrencyDto from "@/dto/app/CurrencyDto";
 import ClientDto from "@/dto/client/ClientDto";
 import ProjectDto from "@/dto/project/ProjectDto";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
-import { isBasementWorkerOnly, getUserFromStorage } from "@/utils/userUtils";
+import { isSimpleWorkerOnly, getUserFromStorage } from "@/utils/userUtils";
 import i18n from "@/i18n";
 import globalChatRealtime from "@/services/globalChatRealtime";
 
@@ -1106,7 +1106,7 @@ const store = createStore({
     },
     // Загрузка всех данных компании
     async loadCompanyData({ dispatch, commit, state, rootGetters }) {
-      if (rootGetters.isBasementMode) {
+      if (rootGetters.isSimpleMode) {
         return;
       }
 
@@ -1202,7 +1202,7 @@ const store = createStore({
 
       try {
         const userFromStorage = getUserFromStorage();
-        const isBasementWorker = isBasementWorkerOnly(userFromStorage);
+        const isSimpleWorker = isSimpleWorkerOnly(userFromStorage);
 
         commit("SET_CURRENT_COMPANY", null);
 
@@ -1216,7 +1216,7 @@ const store = createStore({
         await dispatch("setPermissions", userData.user?.permissions || userData.permissions || []);
         await dispatch("initializeMenu");
 
-        if (!isBasementWorker) {
+        if (!isSimpleWorker) {
           await Promise.all([
             dispatch("loadCurrencies"),
             dispatch("loadUnits"),
@@ -1462,12 +1462,11 @@ const store = createStore({
           permission: "orders_view",
         },
         {
-          id: "basement-orders",
-          to: "/basement-orders",
+          id: "simple-orders",
+          to: "/simple-orders",
           icon: "fas fa-cart-arrow-down mr-2",
-          label: "orders_basement",
-          permission: "orders_view",
-          basementOnly: true,
+          label: "orders_simple",
+          permission: "orders_simple_view",
         },
         {
           id: "sales",
@@ -1599,7 +1598,7 @@ const store = createStore({
 
       const defaultMain = [
         "orders",
-        "basement-orders",
+        "simple-orders",
         "sales",
         "tasks",
         "messenger",
@@ -1787,8 +1786,8 @@ const store = createStore({
     notificationIsDanger: (state) => state.notificationIsDanger,
     notificationDuration: (state) => state.notificationDuration,
     notificationTimeoutId: (state) => state.notificationTimeoutId,
-    isBasementMode: (state) => {
-      // Проверяем, находимся ли мы в basement режиме по роли пользователя
+    isSimpleMode: (state) => {
+      // Проверяем, находимся ли мы в simple режиме по роли пользователя
       return (
         state.user &&
         state.user.roles &&
@@ -1910,22 +1909,11 @@ const store = createStore({
       if (!Array.isArray(state.permissions)) {
         return [];
       }
-      const isBasementWorker = getters.isBasementMode;
       
       return state.menuItems.main.filter((item) => {
         if (!item) return false;
         
-        // Скрываем обычные заказы для basement работников (не админов)
-        if (item.id === 'orders' && isBasementWorker && !state.user?.is_admin) {
-          return false;
-        }
-        
-        // Показываем basement заказы только basement работникам
-        if (item.basementOnly && !isBasementWorker) {
-          return false;
-        }
-        
-        // Проверяем права доступа для всех пользователей (включая basement workers)
+        // Проверяем права доступа для всех пользователей
         if (!item.permission) return true;
         return getters.hasPermission(item.permission);
       });
@@ -1940,22 +1928,11 @@ const store = createStore({
       if (!Array.isArray(state.permissions)) {
         return [];
       }
-      const isBasementWorker = getters.isBasementMode;
       
       return state.menuItems.available.filter((item) => {
         if (!item) return false;
         
-        // Скрываем обычные заказы для basement работников (не админов)
-        if (item.id === 'orders' && isBasementWorker && !state.user?.is_admin) {
-          return false;
-        }
-        
-        // Показываем basement заказы только basement работникам
-        if (item.basementOnly && !isBasementWorker) {
-          return false;
-        }
-        
-        // Проверяем права доступа для всех пользователей (включая basement workers)
+        // Проверяем права доступа для всех пользователей
         if (!item.permission) return true;
         return getters.hasPermission(item.permission);
       });

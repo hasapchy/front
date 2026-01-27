@@ -229,7 +229,7 @@
 
               <!-- Messages -->
               <div
-                v-for="(message, index) in group.messages"
+                v-for="message in group.messages"
                 :key="message.id"
                 class="flex mb-1 group"
                 :class="isMyMessage(message) ? 'justify-end' : 'justify-start'"
@@ -1066,7 +1066,7 @@ export default {
     } catch (error) {
       console.error("[Messenger] Ошибка при инициализации:", error);
       this.$store.dispatch("showNotification", {
-        title: "Ошибка загрузки мессенджера",
+        title: "Ошибка загрузки чата",
         subtitle: error?.message || "Попробуйте обновить страницу",
         isDanger: true,
         duration: 5000,

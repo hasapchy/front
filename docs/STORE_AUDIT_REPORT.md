@@ -21,7 +21,7 @@
 ## Общая статистика
 - **Состояние**: ~80+ полей в `state`, >50 мутаций, >70 экшенов, >40 геттеров.
 - **Кэш-уровни**: localStorage (справочники), IndexedDB (крупные выборки), in-memory (runtime).
-- **Ключевые зависимости**: `CacheInvalidator`, `retryWithExponentialBackoff`, контроллеры API (обычный и basement режим), DTO-конвертеры.
+- **Ключевые зависимости**: `CacheInvalidator`, `retryWithExponentialBackoff`, контроллеры API (обычный и simple режим), DTO-конвертеры.
 - **Персистенция**: 3 экземпляра `createPersistedState` с разными `paths`, `filter` и `parser`.
 - **Синхронизация вкладок**: listener `storage` + `eventBus` события (`company-updated`, `cache:invalidate`).
 

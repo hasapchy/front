@@ -75,7 +75,7 @@ export default {
   products: 'Önümler',
   sales: 'Satuwlar',
   orders: 'Sargytlar',
-  orders_basement: 'Basement sargytlar',
+  orders_simple: 'Ýönekeý sargytlar',
   sales: 'Satuwlar',
   tasks: 'Wezipeler',
   onlineNow: 'Häzir onlaýn',
@@ -93,7 +93,7 @@ export default {
   news: 'Täzelikler',
   templates: 'Şablonlar',
   messageTemplates: 'Habar şablonlary',
-  messenger: 'Messenger',
+  messenger: 'Chat',
   warehouses: 'Ammar',
   transactions: 'Tranzaksiyalar',
     mutualSettlements: 'Aragatnaşyk hasaplaşygy',
@@ -698,8 +698,8 @@ export default {
   inDebt: 'Karz',
   
   // Новые ключи для интернационализации
-  // Basement worker interface
-  basement: 'Yer asty',
+  // Simple worker interface
+  simple: 'Yer asty',
   worker: 'Işçi',
   enterProjectName: 'Proýekt adyny giriziň',
   noClient: 'Müşderi ýok',
@@ -1116,6 +1116,18 @@ export default {
   rememberMe: 'Meni ýatda sakla',
   login: 'Giriş',
   enterPassword: 'Açarsöz giriziň',
+  loginUseAccount: 'Akkaundyňyzy ulanyp giriň',
+  togglePasswordVisibility: 'Açarsözi görkez/gizle',
+  noAccountSignUp: 'Akkaunt ýokmy? Hasaba alyň',
+  createAccount: 'Akkaunt döret',
+  useEmailForRegistration: 'Hasaba almak üçin email ulanyň',
+  signUp: 'Hasaba al',
+  alreadyHaveAccountSignIn: 'Eýýäm akkaunt bar? Giriň',
+  welcomeBack: 'Hoş geldiňiz!',
+  signInToContinue: 'Dowam etmek üçin giriň',
+  helloFriend: 'Salam, dostum!',
+  enterDetailsToStart: 'Başlamak üçin maglumatlary giriziň',
+  loggingIn: 'Giriş edilýär...',
   
   // Transaction Categories
   createTransactionCategory: 'Amal kategoriýasy',

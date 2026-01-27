@@ -26,7 +26,7 @@ import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProduc
 import ServiceCard from './ServiceCard.vue';
 
 export default {
-    name: 'BasementServicesRow',
+    name: 'SimpleServicesRow',
     components: { ServiceCard },
     emits: ['update:modelValue'],
     props: {
@@ -79,12 +79,12 @@ export default {
             return [...sorted, ...newServices];
         },
         userId() {
-            // Получаем ID пользователя из store или localStorage (для basement workers)
+            // Получаем ID пользователя из store или localStorage (для simple workers)
             if (this.$store.state.user?.id) {
                 return this.$store.state.user.id;
             }
             
-            // Для basement workers проверяем localStorage
+            // Для simple workers проверяем localStorage
             try {
                 const userStr = localStorage.getItem('user');
                 if (userStr) {
@@ -143,7 +143,7 @@ export default {
             }
         },
         getLocalStorageKey() {
-            return `basement_services_order_${this.userId}`;
+            return `simple_services_order_${this.userId}`;
         },
         getSavedOrder() {
             try {

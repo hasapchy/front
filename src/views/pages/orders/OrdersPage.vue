@@ -178,7 +178,7 @@ import KanbanBoard from "@/views/components/app/kanban/KanbanBoard.vue";
 import { VueDraggableNext } from 'vue-draggable-next';
 import OrderController from "@/api/OrderController";
 import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
-import BasementOrderCreatePage from "@/views/pages/basement/BasementOrderCreatePage.vue";
+import SimpleOrderCreatePage from "@/views/pages/simple/SimpleOrderCreatePage.vue";
 import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import TransactionController from "@/api/TransactionController";
@@ -218,7 +218,7 @@ const TimelinePanel = defineAsyncComponent(() =>
 
 export default {
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin, printInvoiceMixin, storeDataLoaderMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, BasementOrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, draggable: VueDraggableNext },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, SimpleOrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, draggable: VueDraggableNext },
     data() {
         return {
             viewMode: 'kanban',
@@ -297,15 +297,15 @@ export default {
         orderTransactionFormConfig() {
             return TRANSACTION_FORM_PRESETS.orderPayment;
         },
-        isBasementMode() {
-            return this.$route.meta.basementMode;
+        isSimpleMode() {
+            return this.$route.meta.simpleMode;
         },
         itemViewRouteName() {
-            // Для basement режима не нужен маршрут, только модалка
-            return this.isBasementMode ? null : 'OrderView';
+            // Для simple режима не нужен маршрут, только модалка
+            return this.isSimpleMode ? null : 'OrderView';
         },
         baseRouteName() {
-            return this.isBasementMode ? 'BasementOrders' : 'Orders';
+            return this.isSimpleMode ? 'SimpleOrders' : 'Orders';
         }
     },
     watch: {
@@ -336,8 +336,8 @@ export default {
     methods: {
         translateOrderStatus,
         onItemClick(item) {
-            if (this.isBasementMode) {
-                // Для basement режима - только модалка, без перехода на отдельную страницу
+            if (this.isSimpleMode) {
+                // Для simple режима - только модалка, без перехода на отдельную страницу
                 if (!item?.id) {
                     return;
                 }

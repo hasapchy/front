@@ -115,7 +115,7 @@ export default {
   news: 'Новости',
   templates: 'Шаблоны',
   messageTemplates: 'Шаблоны сообщений',
-  messenger: 'Мессенджер',
+  messenger: 'Чат',
   warehouseReceipt: 'Оприходование',
   warehouses: 'Склады',
   transactions: 'Операции',
@@ -774,7 +774,7 @@ export default {
   users: 'Сотрудники',
   orders: 'Заказы',
   categories: 'Категории товаров',
-  orders_basement: 'Заказы basement',
+  orders_simple: 'Простые заказы',
   categories: 'Категории товаров',
   clients: 'Контакты',
   products: 'Товары',
@@ -817,8 +817,8 @@ export default {
   inDebt: 'В кредит',
 
   // Новые ключи для интернационализации
-  // Basement worker interface
-  basement: 'Подвал',
+  // Simple worker interface
+  simple: 'Подвал',
   worker: 'Работник',
   enterProjectName: 'Введите название проекта',
   noClient: 'Без клиента',
@@ -1335,6 +1335,18 @@ export default {
   rememberMe: 'Запомнить меня',
   login: 'Войти',
   enterPassword: 'Введите пароль',
+  loginUseAccount: 'Войдите, используя свой аккаунт',
+  togglePasswordVisibility: 'Показать/скрыть пароль',
+  noAccountSignUp: 'Нет аккаунта? Зарегистрируйтесь',
+  createAccount: 'Создать аккаунт',
+  useEmailForRegistration: 'Используйте email для регистрации',
+  signUp: 'Зарегистрироваться',
+  alreadyHaveAccountSignIn: 'Уже есть аккаунт? Войдите',
+  welcomeBack: 'С возвращением!',
+  signInToContinue: 'Войдите, чтобы продолжить',
+  helloFriend: 'Привет, друг!',
+  enterDetailsToStart: 'Введите данные, чтобы начать',
+  loggingIn: 'Вход...',
   cash: 'Касса',
   system: 'Система',
 
