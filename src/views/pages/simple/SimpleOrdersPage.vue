@@ -116,7 +116,7 @@
       </div>
     </transition>
 
-    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
+    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :widthRatio="0.85">
       <SimpleOrderCreatePage 
         v-if="modalDialog" 
         :key="editingItem ? editingItem.id : 'new-order'" 

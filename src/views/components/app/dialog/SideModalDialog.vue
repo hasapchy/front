@@ -59,10 +59,26 @@ export default {
         showTimelineButton: {
             type: Boolean,
             default: false
+        },
+        fullWidth: {
+            type: Boolean,
+            default: false
+        },
+        widthRatio: {
+            type: Number,
+            default: null
         }
     },
     computed: {
         modalWidth() {
+            if (this.fullWidth) {
+                return '100vw';
+            }
+            if (this.widthRatio) {
+                const timelineWidth = this.timelineCollapsed ? 0 : 420;
+                const buttonWidth = this.showTimelineButton ? 48 : 0;
+                return `calc((100vw - ${timelineWidth + buttonWidth}px) * ${this.widthRatio})`;
+            }
             const timelineWidth = this.timelineCollapsed ? 0 : 420;
             const buttonWidth = this.showTimelineButton ? 48 : 0;
             const baseWidth = '1.7';

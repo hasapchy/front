@@ -92,6 +92,8 @@
                             @update:endDate="endDate = $event" @update:statusFilter="statusFilter = $event"
                             @update:projectFilter="projectFilter = $event" @update:clientFilter="clientFilter = $event"
                             @reset="resetFilters" @apply="applyFilters" />
+
+                        <ViewModeToggle :view-mode="viewMode" @change="changeViewMode" />
                     </template>
                 </TableControlsBar>
 

@@ -93,8 +93,8 @@ export default {
                             name: fullName || user.name || 'Без имени'
                         };
                     })
-                    // Показываем все дни рождения по порядку
-                    .sort((a, b) => a.nextBirthday.diff(b.nextBirthday));
+                    .sort((a, b) => a.nextBirthday.diff(b.nextBirthday))
+                    .slice(0, 5);
             } catch (error) {
                 console.error('Ошибка загрузки дней рождения:', error);
                 this.birthdays = [];
