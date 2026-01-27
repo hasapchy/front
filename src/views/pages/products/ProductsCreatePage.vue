@@ -1,141 +1,139 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editProduct') : $t('createProduct') }}</h2>
+    <div>
+        <div class="flex flex-col overflow-auto h-full p-4">
+            <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editProduct') : $t('createProduct') }}</h2>
 
-        <div class="mt-2 flex items-start">
-            <div class="flex-1">
-                <div class="mt-2" v-if="!defaultType">
-                    <label class="block mb-1 required">{{ $t('type') }}</label>
-                    <select v-model="type">
-                        <option value="">{{ $t('selectType') }}</option>
-                        <option value="product">{{ $t('product') }}</option>
-                        <option value="service">{{ $t('service') }}</option>
-                    </select>
+            <div class="mt-2 flex items-start">
+                <div class="flex-1">
+                    <div class="mt-2" v-if="!defaultType">
+                        <label class="block mb-1 required">{{ $t('type') }}</label>
+                        <select v-model="type">
+                            <option value="">{{ $t('selectType') }}</option>
+                            <option value="product">{{ $t('product') }}</option>
+                            <option value="service">{{ $t('service') }}</option>
+                        </select>
+                    </div>
+                    <div class="mt-2">
+                        <label class="required">{{ $t('name') }}</label>
+                        <input type="text" v-model="name" class="">
+                    </div>
+                    <div class="mt-2">
+                        <label>{{ $t('description') }}</label>
+                        <input type="text" v-model="description">
+                    </div>
                 </div>
-                <div class="mt-2">
-                    <label class="required">{{ $t('name') }}</label>
-                    <input type="text" v-model="name" class="">
-                </div>
-                <div class="mt-2">
-                    <label>{{ $t('description') }}</label>
-                    <input type="text" v-model="description">
-                </div>
-            </div>
-            <div class="ml-3 w-40 flex flex-col">
-                <label class="block mb-1">{{ $t('image') }}</label>
-                <input type="file" @change="onFileChange" ref="imageInput" class="hidden" accept="image/*">
+                <div class="ml-3 w-40 flex flex-col">
+                    <label class="block mb-1">{{ $t('image') }}</label>
+                    <input type="file" @change="onFileChange" ref="imageInput" class="hidden" accept="image/*">
 
-                <div v-if="selected_image"
-                    class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
-                    <img :src="selected_image" alt="Selected Image"
-                        class="max-w-full max-h-full object-contain rounded">
-                    <button @click="() => { this.selected_image = null; this.image = null }"
-                        class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-                <div v-else-if="editingItem?.image"
-                    class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
-                    <img :src="getProductImageSrc(editingItem)" alt="Selected Image"
-                        class="max-w-full max-h-full object-contain rounded">
-                    <button @click="() => { this.editingItem.image = '' }"
-                        class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-                <div v-else @click="$refs.imageInput.click()"
-                    class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                    <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
-                        <img src="/logo.png" alt="Placeholder" class="w-16 h-16 object-contain opacity-50">
-                        <span class="text-xs text-gray-500 mt-2 text-center">{{ $t('clickToUploadImage') }}</span>
+                    <div v-if="selected_image"
+                        class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
+                        <img :src="selected_image" alt="Selected Image"
+                            class="max-w-full max-h-full object-contain rounded">
+                        <button @click="() => { this.selected_image = null; this.image = null }"
+                            class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div v-else-if="editingItem?.image"
+                        class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
+                        <img :src="getProductImageSrc(editingItem)" alt="Selected Image"
+                            class="max-w-full max-h-full object-contain rounded">
+                        <button @click="() => { this.editingItem.image = '' }"
+                            class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div v-else @click="$refs.imageInput.click()"
+                        class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                        <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
+                            <img src="/logo.png" alt="Placeholder" class="w-16 h-16 object-contain opacity-50">
+                            <span class="text-xs text-gray-500 mt-2 text-center">{{ $t('clickToUploadImage') }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="mt-2">
-            <label class="block mb-1 required">{{ $t('category') }}</label>
-            <div class="flex items-center space-x-2">
-                <div class="flex-1">
-                    <CheckboxFilter
-                        v-if="categoryOptions.length"
-                        v-model="selectedCategoryIds"
-                        :options="categoryOptions"
-                        :placeholder="'selectCategories'"
-                        @update:modelValue="onCategoriesChange"
-                    />
-                </div>
-                <PrimaryButton icon="fas fa-plus" :is-info="true" :onclick="showModal"
-                    :disabled="!$store.getters.hasPermission('categories_create')" />
-            </div>
-        </div>
-        <div class=" mt-2">
-            <label class="block mb-1">{{ $t('unit') }}</label>
-            <select v-model="unit_id" v-if="units.length">
-                <option value="">{{ $t('noUnit') }}</option>
-                <option v-for="parent in units" :key="parent.id" :value="parent.id">{{ parent.name }} ({{
-                    parent.short_name }})
-                </option>
-            </select>
-            <select v-model="unit_id" v-else>
-                <option value="">{{ $t('noUnit') }}</option>
-            </select>
-        </div>
-        <div class="mt-2">
-            <label class="required">{{ $t('sku') }}</label>
-            <input type="text" v-model="sku" placeholder="AB00001">
-        </div>
-        <div class="mt-2 flex space-x-2">
-            <div class="w-1/3">
-                <label>{{ $t('purchasePrice') }}</label>
-                <div class="flex items-center rounded-l">
-                    <input type="number" v-model="purchase_price">
+            <div class="mt-2">
+                <label class="block mb-1 required">{{ $t('category') }}</label>
+                <div class="flex items-center space-x-2">
+                    <div class="flex-1">
+                        <CheckboxFilter v-if="categoryOptions.length" v-model="selectedCategoryIds"
+                            :options="categoryOptions" :placeholder="'selectCategories'"
+                            @update:modelValue="onCategoriesChange" />
+                    </div>
+                    <PrimaryButton icon="fas fa-plus" :is-info="true" :onclick="showModal"
+                        :disabled="!$store.getters.hasPermission('categories_create')" />
                 </div>
             </div>
-            <div class="w-1/3">
-                <label>{{ $t('wholesalePrice') }}</label>
-                <div class="flex items-center rounded-l">
-                    <input type="number" v-model="wholesale_price">
+            <div class=" mt-2">
+                <label class="block mb-1">{{ $t('unit') }}</label>
+                <select v-model="unit_id" v-if="units.length">
+                    <option value="">{{ $t('noUnit') }}</option>
+                    <option v-for="parent in units" :key="parent.id" :value="parent.id">{{ parent.name }} ({{
+                        parent.short_name }})
+                    </option>
+                </select>
+                <select v-model="unit_id" v-else>
+                    <option value="">{{ $t('noUnit') }}</option>
+                </select>
+            </div>
+            <div class="mt-2">
+                <label class="required">{{ $t('sku') }}</label>
+                <input type="text" v-model="sku" placeholder="AB00001">
+            </div>
+            <div class="mt-2 flex space-x-2">
+                <div class="w-1/3">
+                    <label>{{ $t('purchasePrice') }}</label>
+                    <div class="flex items-center rounded-l">
+                        <input type="number" v-model="purchase_price">
+                    </div>
+                </div>
+                <div class="w-1/3">
+                    <label>{{ $t('wholesalePrice') }}</label>
+                    <div class="flex items-center rounded-l">
+                        <input type="number" v-model="wholesale_price">
+                    </div>
+                </div>
+                <div class="w-1/3">
+                    <label>{{ $t('retailPrice') }}</label>
+                    <div class="flex items-center rounded-l">
+                        <input type="number" v-model="retail_price">
+                    </div>
                 </div>
             </div>
-            <div class="w-1/3">
-                <label>{{ $t('retailPrice') }}</label>
-                <div class="flex items-center rounded-l">
-                    <input type="number" v-model="retail_price">
-                </div>
-            </div>
-        </div>
-        <div class="mt-2">
-            <label>{{ $t('barcode') }}</label>
-            <div class="flex items-center space-x-2">
-                <input type="text" v-model="barcode">
-                <PrimaryButton v-if="!barcode" icon="fas fa-barcode" :is-info="true" :onclick="generateBarcode"
-                    :is-full="false">
-                </PrimaryButton>
-                <template v-if="barcode">
-                    <svg id="barcode-svg" class="w-32 h-12" />
-                    <canvas id="barcode-canvas" style="display:none;"></canvas>
-                    <PrimaryButton @click="downloadBarcodePng" icon="fas fa-download" :is-info="true">
+            <div class="mt-2">
+                <label>{{ $t('barcode') }}</label>
+                <div class="flex items-center space-x-2">
+                    <input type="text" v-model="barcode">
+                    <PrimaryButton v-if="!barcode" icon="fas fa-barcode" :is-info="true" :onclick="generateBarcode"
+                        :is-full="false">
                     </PrimaryButton>
-                </template>
+                    <template v-if="barcode">
+                        <svg id="barcode-svg" class="w-32 h-12" />
+                        <canvas id="barcode-canvas" style="display:none;"></canvas>
+                        <PrimaryButton @click="downloadBarcodePng" icon="fas fa-download" :is-info="true">
+                        </PrimaryButton>
+                    </template>
+                </div>
             </div>
         </div>
+        <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+            <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
+                :is-loading="deleteLoading" icon="fas fa-trash"
+                :disabled="!$store.getters.hasPermission('products_delete')">
+            </PrimaryButton>
+            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('products_update')) ||
+                (editingItemId == null && !$store.getters.hasPermission('products_create'))">
+            </PrimaryButton>
+        </div>
+        <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
+            :descr="$t('deleteCategory')" :confirm-text="$t('deleteCategory')" :leave-text="$t('cancel')" />
+        <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+            :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+        <SideModalDialog :showForm="modalDialog" :onclose="closeModal" :level="1">
+            <AdminCategoryCreatePage @saved="handleSaved" @saved-error="handleSavedError" />
+        </SideModalDialog>
     </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('products_delete')">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('products_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('products_create'))">
-        </PrimaryButton>
-    </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('deleteCategory')"
-        :confirm-text="$t('deleteCategory')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-    <SideModalDialog :showForm="modalDialog" :onclose="closeModal" :level="1">
-        <AdminCategoryCreatePage @saved="handleSaved" @saved-error="handleSavedError" />
-    </SideModalDialog>
 </template>
 
 
@@ -170,8 +168,8 @@ export default {
             image: '',
             selected_image: null,
             category_id: '',
-            selectedCategoryIds: [], // Массив ID выбранных категорий для CheckboxFilter
-            selectedCategories: [], // Массив выбранных категорий с метаданными
+            selectedCategoryIds: [],
+            selectedCategories: [],
             unit_id: '',
             barcode: '',
             retail_price: 0,
@@ -209,15 +207,14 @@ export default {
         },
 
         isFormValid() {
-            const isValid = this.name && this.name.trim() !== '' && 
-                           this.sku && this.sku.trim() !== '' &&
-                           this.selectedCategoryIds?.length > 0;
+            const isValid = this.name && this.name.trim() !== '' &&
+                this.sku && this.sku.trim() !== '' &&
+                this.selectedCategoryIds?.length > 0;
             return isValid;
         },
     },
     methods: {
         async fetchUnits() {
-            // Используем данные из store
             if (this.$store.getters.units?.length) {
                 this.units = this.$store.getters.units;
             } else {
@@ -250,17 +247,14 @@ export default {
         onFileChange(event) {
             const file = event.target.files[0];
             if (file) {
-                // Проверяем, что файл является изображением
                 if (!file.type.startsWith('image/')) {
                     alert(this.$t('onlyImagesAllowed'));
-                    // Очищаем input
                     event.target.value = '';
                     return;
                 }
                 this.selected_image = URL.createObjectURL(file);
             }
         },
-        // Методы для crudFormMixin
         prepareSave() {
             const typeToUse = this.defaultType || this.type;
             return {
@@ -291,8 +285,6 @@ export default {
             }
             throw new Error('Failed to save');
         },
-        // Метод save() теперь используется из crudFormMixin
-        // Метод для crudFormMixin
         async performDelete() {
             const itemId = this.editingItem && this.editingItem.productId ? this.editingItem.productId : this.editingItemId;
             const resp = await ProductController.deleteItem(itemId);
@@ -301,7 +293,6 @@ export default {
             }
             throw new Error('Failed to delete');
         },
-        // Метод deleteItem() теперь используется из crudFormMixin
         generateBarcode() {
             const prefix = Math.floor(Math.random() * 10) + 20;
             const ean = String(prefix) + String(Math.floor(Math.random() * 9999999999)).padStart(10, '0');
@@ -364,7 +355,6 @@ export default {
             this.fetchAllCategories();
             this.resetFormChanges();
         },
-        // Переопределяем метод closeForm из mixin, чтобы очищать форму при закрытии
         closeForm() {
             this.clearForm();
             this.$emit('close-request');
@@ -442,7 +432,7 @@ export default {
                     this.selectedCategoryIds = [this.category_id.toString()];
                     this.selectedCategories = [{
                         id: parseInt(this.category_id),
-                        name: category?.name || 'Категория',
+                        name: category?.name,
                         is_primary: true
                     }];
                 } else {

@@ -1,91 +1,90 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editInvoice') : $t('createInvoice') }}</h2>
+    <div>
+        <div class="flex flex-col overflow-auto h-full p-4">
+            <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editInvoice') : $t('createInvoice') }}</h2>
 
-        <div class="mb-4">
-            <h3 class="text-md font-semibold mb-3">{{ $t('basicInformation') }}</h3>
-            <div class="space-y-4">
-                <div>
-                    <ClientSearch v-model:selectedClient="selectedClient" :required="true" />
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('invoiceDate') }}</label>
-                    <input type="datetime-local" v-model="formData.invoice_date" class="w-full p-2 border rounded h-10"
-                        :disabled="editingItemId && !canEditDate()"
-                        :min="this.getMinDate()" />
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('status') }}</label>
-                    <select v-model="formData.status" class="w-full p-2 border rounded h-10">
-                        <option value="new">{{ $t('new') }}</option>
-                        <option value="in_progress">{{ $t('inProgress') }}</option>
-                        <option value="paid">{{ $t('paid') }}</option>
-                        <option value="cancelled">{{ $t('cancelled') }}</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('note') }}</label>
-                    <textarea v-model="formData.note" rows="3" class="w-full p-2 border rounded"></textarea>
+            <div class="mb-4">
+                <h3 class="text-md font-semibold mb-3">{{ $t('basicInformation') }}</h3>
+                <div class="space-y-4">
+                    <div>
+                        <ClientSearch :selectedClient="selectedClient" @update:selectedClient="selectedClient = $event" :required="true" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('invoiceDate') }}</label>
+                        <input type="datetime-local" v-model="formData.invoice_date" class="w-full p-2 border rounded h-10"
+                            :disabled="editingItemId && !canEditDate()"
+                            :min="this.getMinDate()" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('status') }}</label>
+                        <select v-model="formData.status" class="w-full p-2 border rounded h-10">
+                            <option value="new">{{ $t('new') }}</option>
+                            <option value="in_progress">{{ $t('inProgress') }}</option>
+                            <option value="paid">{{ $t('paid') }}</option>
+                            <option value="cancelled">{{ $t('cancelled') }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('note') }}</label>
+                        <textarea v-model="formData.note" rows="3" class="w-full p-2 border rounded"></textarea>
+                    </div>
                 </div>
             </div>
+
+            <div class="mb-4">
+                <OrderSearch ref="orderSearch" v-model="selectedOrders" @change="loadOrdersData"
+                    :currency-symbol="defaultCurrencySymbol" @update:subtotal="formData.subtotal = $event"
+                    :readonly="!!editingItemId" />
+            </div>
         </div>
+        <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
+            <div class="flex items-center space-x-2">
+                <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
+                </PrimaryButton>
+                <div v-if="editingItemId" class="flex items-center space-x-2">
+                    <div class="relative">
+                        <PrimaryButton :onclick="togglePdfDropdown" :icon="'fas fa-file-pdf'" class="px-3 py-2">
+                            <i :class="showPdfDropdown ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" class="ml-2"></i>
+                        </PrimaryButton>
 
-        <div class="mb-4">
-            <OrderSearch ref="orderSearch" v-model="selectedOrders" @change="loadOrdersData"
-                :currency-symbol="defaultCurrencySymbol" @update:subtotal="formData.subtotal = $event"
-                :readonly="!!editingItemId" />
-        </div>
-
-
-
-    </div>
-    <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
-        <div class="flex items-center space-x-2">
-            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
-            </PrimaryButton>
-            <div v-if="editingItemId" class="flex items-center space-x-2">
-                <div class="relative">
-                    <PrimaryButton :onclick="togglePdfDropdown" :icon="'fas fa-file-pdf'" class="px-3 py-2">
-                        <i :class="showPdfDropdown ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" class="ml-2"></i>
-                    </PrimaryButton>
-
-                    <div v-if="showPdfDropdown"
-                        class="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                        <div class="py-1">
-                            <label
-                                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
-                                <input type="checkbox" v-model="pdfVariant" value="short"
-                                    class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                {{ $t('shortPdf') }}
-                            </label>
-                            <label
-                                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
-                                <input type="checkbox" v-model="pdfVariant" value="detailed"
-                                    class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                {{ $t('detailedPdf') }}
-                            </label>
-                            <div class="border-t border-gray-100">
-                                <button @click="generatePdf"
-                                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
-                                    <i class="fas fa-download mr-2"></i>
-                                    {{ $t('downloadSelected') }}
-                                </button>
-                                <button @click="printPdf"
-                                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
-                                    <i class="fas fa-print mr-2"></i>
-                                    {{ $t('print') }}
-                                </button>
+                        <div v-if="showPdfDropdown"
+                            class="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                            <div class="py-1">
+                                <label
+                                    class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                                    <input type="checkbox" v-model="pdfVariant" value="short"
+                                        class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                    {{ $t('shortPdf') }}
+                                </label>
+                                <label
+                                    class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                                    <input type="checkbox" v-model="pdfVariant" value="detailed"
+                                        class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                    {{ $t('detailedPdf') }}
+                                </label>
+                                <div class="border-t border-gray-100">
+                                    <button @click="generatePdf"
+                                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                                        <i class="fas fa-download mr-2"></i>
+                                        {{ $t('downloadSelected') }}
+                                    </button>
+                                    <button @click="printPdf"
+                                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                                        <i class="fas fa-print mr-2"></i>
+                                        {{ $t('print') }}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
         </div>
 
+        <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
+            :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     </div>
-
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 <script>
@@ -127,7 +126,7 @@ export default {
         return {
             selectedOrders: [],
             selectedClient: null,
-            currencySymbol: 'Нет валюты',
+            currencySymbol: '',
             formData: {
                 client_id: null,
                 invoice_date: (() => {
@@ -152,7 +151,7 @@ export default {
         defaultCurrencySymbol() {
             const currencies = this.$store.state.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
-            return defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
+            return defaultCurrency ? defaultCurrency.symbol : this.$t('noCurrency');
         },
     },
     mounted() {
@@ -198,7 +197,7 @@ export default {
 
                 this.loadOrdersData();
             } catch (error) {
-                this.showNotification(this.$t('error'), 'Ошибка загрузки заказов: ' + error.message, true);
+                this.showNotification(this.$t('errorLoadingOrders'), error.message, true);
             }
         },
 
@@ -226,12 +225,12 @@ export default {
             const validationErrors = [];
 
             if (!this.selectedClient) {
-                validationErrors.push('Поле "Клиент" обязательно для заполнения');
+                validationErrors.push(this.$t('validationClientRequired'));
             }
 
             const orderSearch = this.$refs.orderSearch;
             if (!orderSearch?.allProductsFromOrders?.length) {
-                validationErrors.push('Необходимо выбрать заказы с товарами');
+                validationErrors.push(this.$t('validationOrdersWithProductsRequired'));
             }
 
             if (validationErrors?.length) {
@@ -250,12 +249,12 @@ export default {
                 return {
                     product_id: product.productId || null,
                     product_name: product.productName || product.name,
-                    product_description: product.productDescription || '',
+                    product_description: product.productDescription,
                     quantity: quantity,
                     price: price,
                     total_price: totalPrice,
                     unit_id: product.unitId || null,
-                    unit_name: product.unitName || product.unitShortName || ''
+                    unit_name: product.unitName || product.unitShortName
                 };
             });
 
@@ -339,14 +338,14 @@ export default {
                                 productId: product.productId,
                                 productName: product.productName,
                                 name: product.productName,
-                                productDescription: product.productDescription || '',
+                                productDescription: product.productDescription,
                                 quantity: quantity,
                                 price: price,
                                 totalPrice: totalPrice,
                                 total_price: totalPrice,
                                 unitId: product.unitId,
-                                unitName: product.unitName || '',
-                                unitShortName: product.unitShortName || '',
+                                unitName: product.unitName,
+                                unitShortName: product.unitShortName,
                                 orderId: orderId
                             };
                         });
@@ -377,7 +376,7 @@ export default {
             }
 
             if (!this.pdfVariant?.length) {
-                this.showNotification(this.$t('error'), 'Выберите вариант PDF', true);
+                this.showNotification(this.$t('error'), this.$t('selectPdfVariant'), true);
                 return;
             }
 
@@ -399,7 +398,7 @@ export default {
             }
 
             if (!this.pdfVariant?.length) {
-                this.showNotification(this.$t('error'), 'Выберите вариант PDF', true);
+                this.showNotification(this.$t('error'), this.$t('selectPdfVariant'), true);
                 return;
             }
 
@@ -424,7 +423,6 @@ export default {
                 phone: '+993 12 45-26-17'
             };
 
-            // Устанавливаем шрифты
             if (pdfFonts && pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
                 pdfMake.vfs = pdfFonts.pdfMake.vfs;
             } else if (pdfFonts && pdfFonts.vfs) {
@@ -433,11 +431,9 @@ export default {
                 pdfMake.vfs = {};
             }
 
-            // Создаем генератор PDF
             const generator = new InvoicePdfGenerator(invoice, companyData || defaultCompanyData, variant);
             const documentDefinition = generator.generateDocument();
 
-            // Создаем PDF и открываем для печати
             const pdfDoc = pdfMake.createPdf(documentDefinition);
             pdfDoc.getBlob((blob) => {
                 const url = URL.createObjectURL(blob);
@@ -451,7 +447,6 @@ export default {
                 iframe.src = url;
                 document.body.appendChild(iframe);
 
-                // Используем замыкание для хранения состояния
                 const printState = {
                     printStarted: false,
                     cleanupTimeout: null,
@@ -470,35 +465,27 @@ export default {
                     }
                 };
 
-                // Ждем загрузки и печатаем
                 iframe.onload = () => {
-                    // Небольшая задержка для полной загрузки PDF (нужна для корректной печати)
                     setTimeout(() => {
                         const printWindow = iframe.contentWindow;
 
-                        // Обработчик для завершения печати
                         const handleAfterPrint = () => {
-                            // Небольшая задержка, чтобы диалог успел закрыться
                             setTimeout(() => {
                                 cleanup();
                                 this.showNotification(this.$t('pdfGenerated'), '', false);
                             }, 500);
 
-                            // Удаляем обработчики
                             printWindow.removeEventListener('afterprint', handleAfterPrint);
                             window.removeEventListener('afterprint', handleAfterPrint);
                         };
 
-                        // Добавляем обработчики на оба окна
                         printWindow.addEventListener('afterprint', handleAfterPrint);
                         window.addEventListener('afterprint', handleAfterPrint);
 
-                        // Запускаем печать
                         printWindow.print();
                     }, 300);
                 };
 
-                // Обработка ошибки загрузки
                 iframe.onerror = () => {
                     cleanup();
                     this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
@@ -506,7 +493,6 @@ export default {
             });
         },
 
-        // Методы formatDatabaseDateTimeForInput, formatDateTimeForInput и getCurrentLocalDateTime теперь используются из dateFormMixin
     },
     watch: {
         preselectedOrderIds: {

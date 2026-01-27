@@ -125,7 +125,7 @@ export default {
         await this.selectCompany(this.companies[0].id);
       }
     } catch (error) {
-      console.error('Ошибка загрузки компаний:', error);
+      console.error('Error loading companies:', error);
     } finally {
       this.isLoading = false;
     }
@@ -172,10 +172,10 @@ export default {
       try {
         await this.$store.dispatch('setCurrentCompany', companyId);
       } catch (error) {
-        console.error('Ошибка при смене компании:', error);
+        console.error('Error changing company:', error);
         this.$store.dispatch('showNotification', {
           title: this.$t('errorChangingCompany'),
-          subtitle: error.message || 'Не удалось переключить компанию',
+          subtitle: error.message || this.$t('errorChangingCompanySubtitle'),
           isDanger: true
         });
       }

@@ -34,6 +34,7 @@ import ClientDto from "@/dto/client/ClientDto";
 import ProjectDto from "@/dto/project/ProjectDto";
 import ProductSearchDto from "@/dto/product/ProductSearchDto";
 import { isBasementWorkerOnly, getUserFromStorage } from "@/utils/userUtils";
+import i18n from "@/i18n";
 import globalChatRealtime from "@/services/globalChatRealtime";
 
 const CLEAR_MUTATIONS_MAPPING = STORE_CONFIG.clearMutationsMapping;
@@ -92,11 +93,15 @@ const normalizeCashRegisterFilter = (value) => {
 };
 
 
-function handleLoadError(dispatch, title, error) {
-  console.error(`❌ Ошибка загрузки ${title} после всех попыток:`, error);
+const t = (key, params) =>
+  i18n?.global?.t ? i18n.global.t(key, params) : String(key);
+
+function handleLoadError(dispatch, entityKey, error) {
+  const entity = t(entityKey);
+  console.error(`Load error: ${entity}`, error);
   dispatch("showNotification", {
-    title: `Ошибка загрузки ${title}`,
-    subtitle: error.message,
+    title: t("error"),
+    subtitle: error?.message || t("errorLoadingEntity", { entity }),
     isDanger: true,
   });
 }
@@ -146,7 +151,7 @@ async function loadProductsForSearch(getters, isProducts, limit = 10) {
       3
     );
   } catch (error) {
-    console.error("Ошибка загрузки товаров для поиска:", error);
+    console.error("Error loading products for search:", error);
     return { items: [] };
   }
 }
@@ -217,13 +222,13 @@ function initializeStorageSync(_store) {
             eventBus.emit("company-changed", updatedCompany.id);
           }
         } catch (err) {
-          console.error("Ошибка синхронизации текущей компании:", err);
+        console.error("Current company sync error:", err);
         } finally {
           _store.commit("SET_IS_SYNCING_COMPANY_FROM_OTHER_TAB", false);
         }
       }, 50);
     } catch (error) {
-      console.error("Ошибка синхронизации между вкладками:", error);
+      console.error("Cross-tab sync error:", error);
     }
   });
 }
@@ -588,8 +593,8 @@ const store = createStore({
           if (!state.loadingFlags[type]) {
             resolve();
           } else if (attempts >= maxAttempts) {
-            console.warn(`Таймаут ожидания загрузки: ${type}`);
-            reject(new Error("Таймаут загрузки"));
+            console.warn(`Load timeout: ${type}`);
+            reject(new Error(t("loadTimeout")));
           } else {
             attempts++;
             setTimeout(checkLoaded, 100);
@@ -669,7 +674,7 @@ const store = createStore({
         ttl: CACHE_TTL.units,
         mutation: "SET_UNITS",
         loadingFlag: "units",
-        logName: "⚙️ Единицы",
+        logName: `⚙️ ${t("unit")}`,
         fetchFn: async () => {
           const apiInstance = api;
           const response = await apiInstance.get("/app/units");
@@ -717,7 +722,7 @@ const store = createStore({
         ttl,
         mutation: "SET_CURRENCIES",
         loadingFlag: "currencies",
-        logName: "💱 Валюты",
+        logName: `💱 ${t("currency")}`,
         fetchFn: async () => {
           const apiInstance = api;
           const response = await apiInstance.get("/app/currency");
@@ -731,7 +736,7 @@ const store = createStore({
         ttl: CACHE_TTL.users,
         mutation: "SET_USERS",
         loadingFlag: "users",
-        logName: "👥 Сотрудники",
+        logName: `👥 ${t("users")}`,
         fetchFn: async () => {
           return await UsersController.getListItems();
         },
@@ -747,11 +752,11 @@ const store = createStore({
         clearMutations: ["SET_WAREHOUSES"],
         loggedFlagKey: "warehouses",
         logEmoji: "📦",
-        logName: "Склады",
+        logName: t("warehouses"),
         fetchData: async () => {
           return await WarehouseController.getListItems();
         },
-        errorName: "складов",
+        errorName: "warehouses",
         onError: handleLoadError,
       });
     },
@@ -765,11 +770,11 @@ const store = createStore({
         clearMutations: ["SET_CASH_REGISTERS"],
         loggedFlagKey: "cashRegisters",
         logEmoji: "💰",
-        logName: "Кассы",
+        logName: t("cashRegister"),
         fetchData: async () => {
           return await CashRegisterController.getListItems();
         },
-        errorName: "касс",
+        errorName: "cashRegister",
         onError: handleLoadError,
       });
     },
@@ -854,7 +859,7 @@ const store = createStore({
       } catch (error) {
         commit("SET_CLIENTS", []);
         commit("SET_CLIENTS_DATA", []);
-        handleLoadError(dispatch, "клиентов", error);
+        handleLoadError(dispatch, "clients", error);
       } finally {
         commit("SET_LOADING_FLAG", { type: "clients", loading: false });
       }
@@ -869,11 +874,11 @@ const store = createStore({
         clearMutations: ["SET_CATEGORIES"],
         loggedFlagKey: "categories",
         logEmoji: "✅",
-        logName: "Категории",
+        logName: t("category"),
         fetchData: async () => {
           return await CategoryController.getListItems();
         },
-        errorName: "категорий",
+        errorName: "category",
         onError: handleLoadError,
       });
     },
@@ -948,7 +953,7 @@ const store = createStore({
       } catch (error) {
         commit("SET_PROJECTS", []);
         commit("SET_PROJECTS_DATA", []);
-        handleLoadError(dispatch, "проектов", error);
+        handleLoadError(dispatch, "projects", error);
       } finally {
         commit("SET_LOADING_FLAG", { type: "projects", loading: false });
       }
@@ -998,12 +1003,12 @@ const store = createStore({
         );
         if (!isLastProducts) {
           console.log(
-            `✅ Загружено ${products.length} товаров для поиска (кэш на 30 дней)`
+            `✅ Loaded ${products.length} items for search (cache: 30 days)`
           );
         }
       } catch (error) {
         console.error(
-          `Ошибка загрузки товаров для поиска (limit: ${limit}):`,
+          `Error loading items for search (limit: ${limit}):`,
           error
         );
         commit(setProductsMutation, []);
@@ -1029,7 +1034,7 @@ const store = createStore({
         ttl: CACHE_TTL.orderStatuses,
         mutation: "SET_ORDER_STATUSES",
         loadingFlag: "orderStatuses",
-        logName: "📊 Статусы заказов",
+        logName: "📊 Order statuses",
         fetchFn: async () => {
           return await OrderStatusController.getListItems();
         },
@@ -1051,7 +1056,7 @@ const store = createStore({
         ttl: CACHE_TTL.projectStatuses,
         mutation: "SET_PROJECT_STATUSES",
         loadingFlag: "projectStatuses",
-        logName: "🎯 Статусы проектов",
+        logName: "🎯 Project statuses",
         fetchFn: async () => {
           return await ProjectStatusController.getListItems();
         },
@@ -1063,7 +1068,7 @@ const store = createStore({
         ttl: CACHE_TTL.taskStatuses,
         mutation: "SET_TASK_STATUSES",
         loadingFlag: "taskStatuses",
-        logName: "🎯 Статусы задач",
+        logName: "🎯 Task statuses",
         fetchFn: async () => {
           const TaskStatusController = (
             await import("@/api/TaskStatusController")
@@ -1078,7 +1083,7 @@ const store = createStore({
         ttl: CACHE_TTL.transactionCategories,
         mutation: "SET_TRANSACTION_CATEGORIES",
         loadingFlag: "transactionCategories",
-        logName: "💳 Категории транзакций",
+        logName: "💳 Transaction categories",
         fetchFn: async () => {
           return await TransactionCategoryController.getListItems();
         },
@@ -1090,7 +1095,7 @@ const store = createStore({
         ttl: CACHE_TTL.productStatuses,
         mutation: "SET_PRODUCT_STATUSES",
         loadingFlag: "productStatuses",
-        logName: "🏷️ Статусы товаров",
+        logName: "🏷️ Product statuses",
         fetchFn: async () => {
           return await retryWithExponentialBackoff(
             () => AppController.getProductStatuses(),
@@ -1152,8 +1157,8 @@ const store = createStore({
           );
           if (criticalFailed.length > 0) {
             dispatch("showNotification", {
-              title: "Предупреждение",
-              subtitle: "Некоторые критичные данные не загрузились",
+              title: t("warning"),
+              subtitle: t("someCriticalDataNotLoaded"),
               isDanger: false,
               duration: 3000,
             });
@@ -1162,10 +1167,10 @@ const store = createStore({
 
         commit("SET_LAST_COMPANY_ID", companyId);
       } catch (error) {
-        console.error("❌ Ошибка загрузки данных компании:", error);
+        console.error("Company data load error:", error);
         dispatch("showNotification", {
-          title: "Ошибка загрузки",
-          subtitle: error.message || "Не удалось загрузить данные компании",
+          title: t("error"),
+          subtitle: error.message || t("errorLoadingCompanyData"),
           isDanger: true,
         });
         throw error;
@@ -1204,7 +1209,7 @@ const store = createStore({
         const userData = await AuthController.getUser();
 
         if (!userData) {
-          throw new Error("Не удалось получить данные пользователя");
+          throw new Error(t("failedToFetchUserData"));
         }
 
         await dispatch("setUser", userData.user);
@@ -1221,7 +1226,7 @@ const store = createStore({
             await dispatch("loadUserCompanies");
             await dispatch("loadCurrentCompany", { skipPermissionRefresh: false });
           } catch (error) {
-            console.error("Ошибка загрузки компаний:", error);
+            console.error("Error loading companies:", error);
           }
 
           // Инициализируем глобальный WebSocket для чатов
@@ -1234,7 +1239,7 @@ const store = createStore({
 
         return { authenticated: true };
       } catch (error) {
-        console.error("Ошибка получения пользователя:", error);
+        console.error("Error fetching user:", error);
         await dispatch("setUser", null);
         await dispatch("setPermissions", []);
         TokenUtils.clearAuthData();
@@ -1256,7 +1261,7 @@ const store = createStore({
         commit("SET_USER_COMPANIES", companies);
         return companies;
       } catch (error) {
-        console.error("Ошибка загрузки компаний пользователя:", error);
+        console.error("Error loading user companies:", error);
         return [];
       } finally {
         commit("SET_LOADING_FLAG", { type: "userCompanies", loading: false });
@@ -1314,7 +1319,7 @@ const store = createStore({
         return company;
       } catch (error) {
         console.error(
-          "[loadCurrentCompany] Ошибка загрузки текущей компании:",
+          "[loadCurrentCompany] Error loading current company:",
           error
         );
         return null;
@@ -1361,7 +1366,7 @@ const store = createStore({
 
         return company;
       } catch (error) {
-        console.error("Ошибка установки текущей компании:", error);
+        console.error("Error setting current company:", error);
         commit("SET_LOADING_FLAG", { type: "companyData", loading: false });
         throw error;
       }
@@ -1387,7 +1392,7 @@ const store = createStore({
         commit("SET_PERMISSIONS", permissions);
         return response.data;
       } catch (error) {
-        console.error("Ошибка обновления прав пользователя:", error);
+        console.error("Error updating user permissions:", error);
         throw error;
       } finally {
         commit("SET_LOADING_FLAG", { type: "userPermissions", loading: false });
@@ -1820,7 +1825,7 @@ const store = createStore({
       state.currencies.find((currency) => currency.id === id),
     getCurrencySymbol: (state) => (id) => {
       const currency = state.currencies.find((currency) => currency.id === id);
-      return currency ? currency.symbol : "Нет валюты";
+      return currency ? currency.symbol : t("noCurrency");
     },
     currentCompany: (state) => state.currentCompany,
     userCompanies: (state) => state.userCompanies,
@@ -2259,7 +2264,7 @@ eventBus.on("company-updated", async () => {
     eventBus.emit("company-changed", currentCompanyId);
   } catch (error) {
     console.error(
-      "[Company Updated] Ошибка при загрузке обновленной компании:",
+      "[Company Updated] Error loading updated company:",
       error
     );
     const updatedCompany = store.state.userCompanies.find(

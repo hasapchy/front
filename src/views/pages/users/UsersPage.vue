@@ -1,7 +1,6 @@
 <template>
     <transition name="fade" mode="out-in">
-        <!-- Табличный режим -->
-        <div v-if="data != null && !loading && viewMode === 'table'" key="table">
+        <div v-if="data != null && !loading" key="table">
             <DraggableTable table-key="admin.users" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="onItemClick">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
@@ -19,8 +18,6 @@
                             <transition name="fade">
                                 <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
                             </transition>
-                            
-                            <ViewModeToggle :view-mode="viewMode" :show-cards="true" @change="changeViewMode" />
                         </template>
                         <template #right>
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
@@ -55,55 +52,6 @@
                 </template>
             </DraggableTable>
         </div>
-
-        <!-- Карточный режим -->
-        <div v-else-if="data != null && !loading && viewMode === 'cards'" key="cards" class="cards-view-container">
-            <div class="mb-4">
-                <TableControlsBar :show-pagination="true"
-                    :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                    :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange">
-                    <template #left>
-                        <PrimaryButton 
-                            :onclick="() => showModal(null)" 
-                            icon="fas fa-plus"
-                            :disabled="!$store.getters.hasPermission('users_create')">
-                        </PrimaryButton>
-                        
-                        <transition name="fade">
-                            <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
-                        </transition>
-                        
-                        <ViewModeToggle :view-mode="viewMode" :show-cards="true" @change="changeViewMode" />
-                    </template>
-                    <template #right>
-                        <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-                            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-                            @changePage="(page) => fetchItems(page)" @perPageChange="handlePerPageChange" />
-                        <CardFieldsButton
-                            storage-key="users"
-                            :fields="userCardFields"
-                            :footer-fields="userCardFooterFields"
-                        />
-                    </template>
-                </TableControlsBar>
-            </div>
-
-            <div class="cards-grid">
-                <Card
-                    v-for="user in data.items"
-                    :key="user.id"
-                    :item="user"
-                    :is-selected="selectedIds.includes(user.id)"
-                    :title="`№${user.id}`"
-                    :fields="userCardFields"
-                    :footer-fields="getUserFooterFields(user)"
-                    :field-visibility="$store.state.cardFields?.users || {}"
-                    @dblclick="onItemClick"
-                    @select-toggle="toggleSelectRow"
-                />
-            </div>
-        </div>
-
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <SpinnerIcon />
         </div>
@@ -386,8 +334,8 @@ export default {
         openSalaryAccrualModal() {
             if (!this.selectedIds?.length) {
                 this.showNotification(
-                    this.$t('error') || 'Ошибка',
-                    this.$t('selectUsersFirst') || 'Выберите сотрудников для начисления зарплаты',
+                    this.$t('error'),
+                    this.$t('selectUsersFirst'),
                     true
                 );
                 return;
@@ -405,63 +353,63 @@ export default {
         },
         getBatchActions() {
             const actions = [];
-            
+
             if (this.$store.getters.hasPermission('employee_salaries_accrue')) {
                 actions.push({
-                    label: this.$t('accrueSalary') || 'Начислить зарплату',
+                    label: this.$t('accrueSalary'),
                     icon: "fas fa-money-bill-wave",
                     type: "success",
                     action: () => this.openSalaryOperationModal('salaryAccrual'),
                     disabled: false,
                 });
                 actions.push({
-                    label: this.$t('paySalary') || 'Выплатить зарплату',
+                    label: this.$t('paySalary'),
                     icon: "fas fa-hand-holding-usd",
                     type: "success",
                     action: () => this.openSalaryOperationModal('salaryPayment'),
                     disabled: false,
                 });
                 actions.push({
-                    label: this.$t('bonus') || 'Начислить премию',
+                    label: this.$t('bonus'),
                     icon: "fas fa-gift",
                     type: "success",
                     action: () => this.openSalaryOperationModal('bonus'),
                     disabled: false,
                 });
                 actions.push({
-                    label: this.$t('penalty') || 'Выписать штраф',
+                    label: this.$t('penalty'),
                     icon: "fas fa-exclamation-triangle",
                     type: "danger",
                     action: () => this.openSalaryOperationModal('penalty'),
                     disabled: false,
                 });
                 actions.push({
-                    label: this.$t('advance') || 'Выдать аванс',
+                    label: this.$t('advance'),
                     icon: "fas fa-money-check-alt",
                     type: "success",
                     action: () => this.openSalaryOperationModal('advance'),
                     disabled: false,
                 });
             }
-            
-            const deletePermissions = Array.isArray(this.deletePermission) 
-                ? this.deletePermission 
+
+            const deletePermissions = Array.isArray(this.deletePermission)
+                ? this.deletePermission
                 : (this.deletePermission ? [this.deletePermission] : ['users_delete']);
-            
-            const hasDeletePermission = deletePermissions.some(perm => 
+
+            const hasDeletePermission = deletePermissions.some(perm =>
                 this.$store.getters.hasPermission(perm)
             );
-            
+
             if (hasDeletePermission) {
                 actions.push({
-                    label: this.$t('delete') || 'Удалить',
+                    label: this.$t('delete'),
                     icon: "fas fa-trash",
                     type: "danger",
                     action: this.deleteItems,
                     disabled: this.loadingBatch,
                 });
             }
-            
+
             return actions;
         },
         getSelectedUsers() {
@@ -471,8 +419,8 @@ export default {
         openSalaryOperationModal(operationType) {
             if (!this.selectedIds?.length) {
                 this.showNotification(
-                    this.$t('error') || 'Ошибка',
-                    this.$t('selectUsersFirst') || 'Выберите сотрудников',
+                    this.$t('error'),
+                    this.$t('selectUsersFirst'),
                     true
                 );
                 return;

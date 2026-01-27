@@ -3,6 +3,7 @@ import { formatCurrency } from "@/utils/numberUtils";
 import { createProductsHtmlList, createFromApiArray } from "@/utils/dtoUtils";
 import ClientDto from "@/dto/client/ClientDto";
 import WarehouseReceiptProductDto from "./WarehouseReceiptProductDto";
+import i18n from "@/i18n";
 
 export default class WarehouseReceiptDto {
   constructor(
@@ -44,15 +45,17 @@ export default class WarehouseReceiptDto {
   }
 
   cashNameDisplay() {
-    return this.cashName || "Не указана";
+    return this.cashName || i18n.global.t("notSpecified");
   }
   
   paymentTypeDisplay() {
-    return this.type === 'cash' ? 'В кассу' : 'В кредит';
+    return this.type === "cash"
+      ? i18n.global.t("toCash")
+      : i18n.global.t("inDebt");
   }
 
   priceInfo() {
-    const symbol = this.currencySymbol || "m";
+    const symbol = this.currencySymbol || "";
     const total = this.totalPrice ?? this.amount ?? this.price ?? 0;
     return formatCurrency(total, symbol);
   }
@@ -73,7 +76,7 @@ export default class WarehouseReceiptDto {
     return createFromApiArray(dataArray, data => {
       const client = data.supplier ? ClientDto.fromApiArray([data.supplier])[0] || null : null;
       const products = data.products ? WarehouseReceiptProductDto.fromApiArray(data.products) : null;
-      const currencySymbol = data.cash_register?.currency?.symbol || 'm';
+      const currencySymbol = data.cash_register?.currency?.symbol || '';
       
       return new WarehouseReceiptDto(
         data.id,

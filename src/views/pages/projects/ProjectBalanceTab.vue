@@ -8,7 +8,7 @@
                     icon="fas fa-plus"
                     :onclick="() => showAddTransactionModal('income')"
                     :is-small="true">
-                    {{ $t('income') || 'Приход' }}
+                    {{ $t('income') }}
                 </PrimaryButton>
 
                 <PrimaryButton
@@ -17,14 +17,14 @@
                     :isDanger="true"
                     :onclick="() => showAddTransactionModal('outcome')"
                     :is-small="true">
-                    {{ $t('outcome') || 'Расход' }}
+                    {{ $t('outcome') }}
                 </PrimaryButton>
                 <PrimaryButton 
                     v-if="$store.getters.hasPermission('projects_update')"
                     icon="fas fa-plus" 
-                    :onclick="showAddProjectTransactionModal" 
+                    :onclick="() => showAddTransactionModal(null)" 
                     :is-small="true">
-                    {{ $t('addProjectTransaction') }}
+                    {{ $t('addTransaction') || $t('add') }}
                 </PrimaryButton>
             </div>
         </div>
@@ -72,20 +72,11 @@
             :showForm="transactionModalOpen" 
             :onclose="closeTransactionModal">
             <TransactionCreatePage 
-                v-if="transactionModalOpen && !transactionLoading && !isProjectTransaction"
+                v-if="transactionModalOpen && !transactionLoading"
                 :editingItem="editingTransactionItem"
                 :initialProjectId="editingItem?.id"
                 :form-config="projectFormConfig"
                 :header-text="'Транзакция — проект'"
-                @saved="handleTransactionSaved"
-                @saved-error="handleTransactionSavedError"
-                @deleted="handleTransactionDeleted"
-                @deleted-error="handleTransactionSavedError"
-                @close-request="closeTransactionModal" />
-            <ProjectTransactionCreatePage
-                v-else-if="transactionModalOpen && !transactionLoading && isProjectTransaction"
-                :editingItem="editingTransactionItem"
-                :projectId="editingItem?.id"
                 @saved="handleTransactionSaved"
                 @saved-error="handleTransactionSavedError"
                 @deleted="handleTransactionDeleted"
@@ -123,11 +114,7 @@ import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 const TransactionCreatePage = defineAsyncComponent(() => 
     import("@/views/pages/transactions/TransactionCreatePage.vue")
 );
-const ProjectTransactionCreatePage = defineAsyncComponent(() => 
-    import("@/views/pages/projects/ProjectTransactionCreatePage.vue")
-);
 import TransactionController from "@/api/TransactionController";
-import ProjectTransactionController from "@/api/ProjectTransactionController";
 import ProjectController from "@/api/ProjectController";
 import { TRANSACTION_FORM_PRESETS } from '@/constants/transactionFormPresets';
 
@@ -140,7 +127,6 @@ export default {
         NotificationToast,
         SourceButtonCell,
         TransactionCreatePage,
-        ProjectTransactionCreatePage,
     },
     props: {
         editingItem: { required: true },
@@ -161,7 +147,6 @@ export default {
             transactionModalOpen: false,
             editingTransactionItem: null,
             transactionLoading: false,
-            isProjectTransaction: false,
             selectedNewTransactionType: null,
             columnsConfig: [
                 { name: "dateUser", label: this.$t("dateUser"), size: 120 },
@@ -171,9 +156,7 @@ export default {
                     size: 150, 
                     component: markRaw(SourceButtonCell),
                     props: (item) => {
-                        const isProjectTransaction = item.source === 'project_transaction' || (item.sourceType && item.sourceType.includes('ProjectTransaction'));
-                        const isTransaction = item.sourceType && item.sourceType.includes('Transaction') && !isProjectTransaction;
-                        const sourceId = isTransaction ? item.sourceId : (item.sourceSourceId || item.sourceId);
+                        const sourceId = item.sourceSourceId || item.sourceId;
                         
                         return {
                             source: item.source,
@@ -214,18 +197,6 @@ export default {
                     })
                 },
             ],
-            ENTITY_CONFIG: {
-                transaction: {
-                    fetch: id => TransactionController.getItem(id),
-                    component: markRaw(TransactionCreatePage),
-                    prop: 'editingItem',
-                },
-                project_transaction: {
-                    fetch: id => ProjectTransactionController.getItem(id),
-                    component: markRaw(TransactionCreatePage),
-                    prop: 'editingItem',
-                },
-            },
         };
     },
     computed: {
@@ -388,13 +359,9 @@ export default {
             
             try {
                 this.transactionLoading = true;
-                const sourceType = item?.source || item?.sourceType;
-                this.isProjectTransaction = sourceType === 'project_transaction';
                 this.selectedNewTransactionType = null;
                 
-                const entityConfig = this.ENTITY_CONFIG[sourceType] || this.ENTITY_CONFIG.transaction;
-                const data = await entityConfig.fetch(item.sourceId);
-                this.editingTransactionItem = data;
+                this.editingTransactionItem = await TransactionController.getItem(item.sourceId);
                 this.transactionModalOpen = true;
             } catch (error) {
                 console.error('Error loading transaction:', error);
@@ -405,20 +372,12 @@ export default {
         },
         showAddTransactionModal(type = null) {
             this.editingTransactionItem = null;
-            this.isProjectTransaction = false;
             this.selectedNewTransactionType = type;
-            this.transactionModalOpen = true;
-        },
-        showAddProjectTransactionModal() {
-            this.editingTransactionItem = null;
-            this.isProjectTransaction = true;
-            this.selectedNewTransactionType = null;
             this.transactionModalOpen = true;
         },
         closeTransactionModal() {
             this.transactionModalOpen = false;
             this.editingTransactionItem = null;
-            this.isProjectTransaction = false;
             this.selectedNewTransactionType = null;
         },
         async handleTransactionSaved() {

@@ -4,8 +4,7 @@
         :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter"
         :source-filter="sourceFilter" @balance-click="handleBalanceClick" />
     <transition name="fade" mode="out-in">
-        <!-- Табличный режим -->
-        <div v-if="data != null && !loading && viewMode !== 'cards'" key="table">
+        <div v-if="data != null && !loading" key="table">
             <DraggableTable ref="draggableTable" table-key="admin.transactions" :columns-config="columnsConfig"
                 :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="onItemClick">
@@ -34,19 +33,19 @@
                                     <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
                                 </transition>
                                 
-                                <ViewModeToggle :view-mode="viewMode" :show-cards="true" @change="changeViewMode" />
-                                
                                 <FiltersContainer
                                     :has-active-filters="hasActiveFilters"
                                     :active-filters-count="getActiveFiltersCount()"
                                     @reset="resetFilters"
                                     @apply="applyFilters">
                                         <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') || 'Касса' }}</label>
+                                            <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister')
+                                                }}</label>
                                             <select v-model="cashRegisterId" class="w-full">
                                                 <option value="">{{ $t('allCashRegisters') }}</option>
                                                 <template v-if="allCashRegisters.length">
-                                                    <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
+                                                    <option v-for="parent in allCashRegisters" :key="parent.id"
+                                                        :value="parent.id">
                                                         {{ parent.name }} ({{ parent.currencySymbol || '' }})
                                                     </option>
                                                 </template>
@@ -54,7 +53,8 @@
                                         </div>
 
                                         <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('transactionType') || 'Тип транзакции' }}</label>
+                                            <label class="block mb-2 text-xs font-semibold">{{ $t('transactionType')
+                                                }}</label>
                                             <select v-model="transactionTypeFilter" class="w-full">
                                                 <option value="">{{ $t('allTransactionTypes') }}</option>
                                                 <option value="income">{{ $t('income') }}</option>
@@ -64,21 +64,23 @@
                                         </div>
 
                                         <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('source') || 'Источник' }}</label>
+                                            <label class="block mb-2 text-xs font-semibold">{{ $t('source') }}</label>
                                             <select v-model="sourceFilter" class="w-full">
                                                 <option value="">{{ $t('allSources') }}</option>
-                                                <option v-for="option in sourceOptions" :key="option.value" :value="option.value">
+                                                <option v-for="option in sourceOptions" :key="option.value"
+                                                    :value="option.value">
                                                     {{ option.label }}
                                                 </option>
                                             </select>
                                         </div>
 
                                         <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('project') || 'Проект' }}</label>
+                                            <label class="block mb-2 text-xs font-semibold">{{ $t('project') }}</label>
                                             <select v-model="projectId" class="w-full">
                                                 <option value="">{{ $t('allProjects') }}</option>
                                                 <template v-if="allProjects.length">
-                                                    <option v-for="project in allProjects" :key="project.id" :value="project.id">
+                                                    <option v-for="project in allProjects" :key="project.id"
+                                                        :value="project.id">
                                                         {{ project.name }}
                                                     </option>
                                                 </template>
@@ -86,7 +88,8 @@
                                         </div>
 
                                         <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('debtFilter') || 'Фильтр по долгам' }}</label>
+                                            <label class="block mb-2 text-xs font-semibold">{{ $t('debtFilter')
+                                                }}</label>
                                             <select v-model="debtFilter" class="w-full">
                                                 <option value="all">{{ $t('allTransactions') }}</option>
                                                 <option value="false">{{ $t('nonDebtTransactions') }}</option>
@@ -95,7 +98,8 @@
                                         </div>
 
                                         <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
+                                            <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter')
+                                                }}</label>
                                             <select v-model="dateFilter" class="w-full">
                                                 <option value="all_time">{{ $t('allTime') }}</option>
                                                 <option value="today">{{ $t('today') }}</option>
@@ -107,20 +111,22 @@
                                                 <option value="custom">{{ $t('selectDates') }}</option>
                                             </select>
                                         </div>
-                                        
+
                                         <div v-if="dateFilter === 'custom'" class="space-y-2">
                                             <div>
-                                                <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
+                                                <label class="block mb-2 text-xs font-semibold">{{ $t('startDate')
+                                                    }}</label>
                                                 <input type="date" v-model="startDate" class="w-full" />
                                             </div>
                                             <div>
-                                                <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
+                                                <label class="block mb-2 text-xs font-semibold">{{ $t('endDate')
+                                                    }}</label>
                                                 <input type="date" v-model="endDate" class="w-full" />
                                             </div>
                                         </div>
-                                </FiltersContainer>
-                            </div>
-                        </template>
+                                    </FiltersContainer>
+                                </div>
+                            </template>
 
                         <template #right>
                             <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
@@ -154,165 +160,24 @@
                 </template>
             </DraggableTable>
         </div>
-
-        <!-- Карточный режим -->
-        <div v-else-if="data != null && !loading && viewMode === 'cards'" key="cards" class="cards-view-container">
-            <div class="mb-4">
-                <TableControlsBar
-                    :show-pagination="true"
-                    :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                    :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange">
-                    <template #left>
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <PrimaryButton :onclick="openCreateIncomeModal"
-                                icon="fas fa-plus"
-                                :disabled="!$store.getters.hasPermission('transactions_create')">
-                                {{ $t('income') || 'Приход' }}
-                            </PrimaryButton>
-
-                            <PrimaryButton :onclick="openCreateOutcomeModal"
-                                icon="fas fa-minus"
-                                :isDanger="true"
-                                :disabled="!$store.getters.hasPermission('transactions_create')">
-                                {{ $t('outcome') || 'Расход' }}
-                            </PrimaryButton>
-                            
-                            <transition name="fade">
-                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
-                            </transition>
-                            
-                            <ViewModeToggle :view-mode="viewMode" :show-cards="true" @change="changeViewMode" />
-                            
-                            <FiltersContainer
-                                :has-active-filters="hasActiveFilters"
-                                :active-filters-count="getActiveFiltersCount()"
-                                @reset="resetFilters"
-                                @apply="applyFilters">
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister') || 'Касса' }}</label>
-                                        <select v-model="cashRegisterId" class="w-full">
-                                            <option value="">{{ $t('allCashRegisters') }}</option>
-                                            <template v-if="allCashRegisters.length">
-                                                <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
-                                                    {{ parent.name }} ({{ parent.currencySymbol || '' }})
-                                                </option>
-                                            </template>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('transactionType') || 'Тип транзакции' }}</label>
-                                        <select v-model="transactionTypeFilter" class="w-full">
-                                            <option value="">{{ $t('allTransactionTypes') }}</option>
-                                            <option value="income">{{ $t('income') }}</option>
-                                            <option value="outcome">{{ $t('outcome') }}</option>
-                                            <option value="transfer">{{ $t('transfer') }}</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('source') || 'Источник' }}</label>
-                                        <select v-model="sourceFilter" class="w-full">
-                                            <option value="">{{ $t('allSources') }}</option>
-                                            <option v-for="option in sourceOptions" :key="option.value" :value="option.value">
-                                                {{ option.label }}
-                                            </option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('project') || 'Проект' }}</label>
-                                        <select v-model="projectId" class="w-full">
-                                            <option value="">{{ $t('allProjects') }}</option>
-                                            <template v-if="allProjects.length">
-                                                <option v-for="project in allProjects" :key="project.id" :value="project.id">
-                                                    {{ project.name }}
-                                                </option>
-                                            </template>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('debtFilter') || 'Фильтр по долгам' }}</label>
-                                        <select v-model="debtFilter" class="w-full">
-                                            <option value="all">{{ $t('allTransactions') }}</option>
-                                            <option value="false">{{ $t('nonDebtTransactions') }}</option>
-                                            <option value="true">{{ $t('debtsOnly') }}</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
-                                        <select v-model="dateFilter" class="w-full">
-                                            <option value="all_time">{{ $t('allTime') }}</option>
-                                            <option value="today">{{ $t('today') }}</option>
-                                            <option value="yesterday">{{ $t('yesterday') }}</option>
-                                            <option value="this_week">{{ $t('thisWeek') }}</option>
-                                            <option value="this_month">{{ $t('thisMonth') }}</option>
-                                            <option value="last_week">{{ $t('lastWeek') }}</option>
-                                            <option value="last_month">{{ $t('lastMonth') }}</option>
-                                            <option value="custom">{{ $t('selectDates') }}</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div v-if="dateFilter === 'custom'" class="space-y-2">
-                                        <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
-                                            <input type="date" v-model="startDate" class="w-full" />
-                                        </div>
-                                        <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
-                                            <input type="date" v-model="endDate" class="w-full" />
-                                        </div>
-                                    </div>
-                            </FiltersContainer>
-                        </div>
-                    </template>
-                    <template #right>
-                        <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-                            :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-                            @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-                        <CardFieldsButton
-                            storage-key="transactions"
-                            :fields="transactionCardFieldsForSettings"
-                        />
-                    </template>
-                </TableControlsBar>
-            </div>
-
-            <div class="cards-grid">
-                <Card
-                    v-for="transaction in data.items"
-                    :key="transaction.id"
-                    :item="transaction"
-                    :is-selected="selectedIds.includes(transaction.id)"
-                    :title="`№${transaction.id}`"
-                    :fields="transactionCardFields"
-                    :footer-fields="getTransactionFooterFields(transaction)"
-                    :note-field="transaction.note ? 'note' : null"
-                    :field-visibility="$store.state.cardFields?.transactions || {}"
-                    @dblclick="onItemClick"
-                    @select-toggle="toggleSelectRow"
-                />
-            </div>
-        </div>
-
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <SpinnerIcon />
         </div>
     </transition>
 
-    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <TransactionCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-transaction'" ref="transactioncreatepageForm" @saved="handleSaved"
-            @saved-error="handleSavedError" @deleted="handleDeleted" @deleted-error="handleDeletedError"
-            @close-request="closeModal" @copy-transaction="handleCopyTransaction" :editingItem="editingItem"
-            :default-cash-id="cashRegisterId || null" :form-config="activeFormConfig" />
-    </SideModalDialog>
-    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" @close="closeNotification" />
-    <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
-        :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
-        @leave="deleteDialog = false" />
+        <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
+            <TransactionCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-transaction'"
+                ref="transactioncreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
+                @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
+                @copy-transaction="handleCopyTransaction" :editingItem="editingItem"
+                :default-cash-id="cashRegisterId || null" :form-config="activeFormConfig" />
+        </SideModalDialog>
+        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
+            :is-danger="notificationIsDanger" @close="closeNotification" />
+        <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
+            :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
+            @leave="deleteDialog = false" />
+    </div>
 </template>
 
 <script>

@@ -39,15 +39,15 @@ export default class InvoiceProductDto {
   }
 
   getUnitName() {
-    return this.unit?.short_name || this.unit?.name || 'шт.';
+    return this.unit?.short_name || this.unit?.name || '';
   }
 
-  getPriceFormatted() {
-    return formatCurrency(this.price, 'руб.', null, true);
+  getPriceFormatted(currencySymbol = '') {
+    return formatCurrency(this.price, currencySymbol, null, true);
   }
 
-  getTotalPriceFormatted() {
-    return formatCurrency(this.totalPrice, 'руб.', null, true);
+  getTotalPriceFormatted(currencySymbol = '') {
+    return formatCurrency(this.totalPrice, currencySymbol, null, true);
   }
 
   static fromApiArray(dataArray) {

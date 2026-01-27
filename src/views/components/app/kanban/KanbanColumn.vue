@@ -125,7 +125,7 @@ export default {
     computed: {
         statusColor() {
             const hex = this.status.category?.color || this.status.color;
-            return hex || '#3571A4'; // Дефолтный цвет, если не задан
+            return hex || '#3571A4';
         },
         lightBackgroundColor() {
             // Осветляем цвет статуса для фона колонки
@@ -142,11 +142,10 @@ export default {
             return this.orders.every(order => this.selectedIds.includes(order.id));
         },
         emptyText() {
-            // Для задач показываем "Нет задач", для проектов/заказов оставляем существующий текст
             if (this.isProjectMode) {
                 return this.$t('noOrders');
             }
-            return this.$te('noTasks') ? this.$t('noTasks') : 'Нет задач';
+            return this.$t('noTasks');
         }
     },
     methods: {

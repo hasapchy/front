@@ -9,15 +9,14 @@ const messages = {
   en
 }
 
-// Получаем язык из localStorage или используем русский по умолчанию
 const locale = localStorage.getItem('locale') || 'ru'
 
 export default createI18n({
   locale,
   fallbackLocale: 'ru',
   messages,
-  legacy: false, // Для Vue 3
-  globalInjection: true, // Автоматически внедрять $t в компоненты
-  silentTranslationWarn: true, // Отключать предупреждения о недостающих переводах
-  silentFallbackWarn: true // Отключать предупреждения о fallback
+  legacy: false,
+  globalInjection: true,
+  silentTranslationWarn: true,
+  silentFallbackWarn: true
 })

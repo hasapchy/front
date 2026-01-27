@@ -1,84 +1,55 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">
-            {{ getModalTitle() }}
-        </h2>
-        
-        <div class="space-y-4 flex-1">
-            <div>
-                <label class="required">{{ $t('date') || 'Дата начисления' }}</label>
-                <input 
-                    type="datetime-local" 
-                    v-model="form.date" 
-                    :max="maxDate"
-                    required
-                />
-            </div>
+    <div>
+        <div class="flex flex-col overflow-auto h-full p-4">
+            <h2 class="text-lg font-bold mb-4">
+                {{ getModalTitle() }}
+            </h2>
 
-            <div>
-                <label class="required">{{ $t('cashRegister') || 'Касса' }}</label>
-                <select v-model="form.cash_id" required :disabled="!form.company_id || loading">
-                    <option :value="null" disabled>{{ $t('selectCashRegister') || 'Выберите кассу' }}</option>
-                    <option v-for="cash in cashRegisters" :key="cash.id" :value="cash.id">
-                        {{ cash.name }} {{ cash.currencySymbol ? `(${cash.currencySymbol})` : '' }}
-                    </option>
-                </select>
-            </div>
+            <div class="space-y-4 flex-1">
+                <div>
+                    <label class="required">{{ $t('date') }}</label>
+                    <input type="datetime-local" v-model="form.date" :max="maxDate" required />
+                </div>
 
-            <div v-if="operationType === 'salaryAccrual' || operationType === 'salaryPayment'">
-                <label class="required">{{ $t('salaryPaymentType') || 'Тип оплаты' }}</label>
-                <select v-model.number="form.payment_type" required>
-                    <option :value="0">{{ $t('salaryPaymentTypeNonCash') || 'Безналичный' }}</option>
-                    <option :value="1">{{ $t('salaryPaymentTypeCash') || 'Наличный' }}</option>
-                </select>
-            </div>
+                <div>
+                    <label class="required">{{ $t('cashRegister') }}</label>
+                    <select v-model="form.cash_id" required :disabled="!form.company_id || loading">
+                        <option :value="null" disabled>{{ $t('selectCashRegister') }}</option>
+                        <option v-for="cash in cashRegisters" :key="cash.id" :value="cash.id">
+                            {{ cash.name }} {{ cash.currencySymbol ? `(${cash.currencySymbol})` : '' }}
+                        </option>
+                    </select>
+                </div>
 
-            <div v-if="operationType && operationType !== 'salaryAccrual' && operationType !== 'salaryPayment'">
-                <label class="required">{{ $t('amount') || 'Сумма' }}</label>
-                <input 
-                    type="number" 
-                    v-model="form.amount" 
-                    step="0.01"
-                    min="0"
-                    required
-                    :disabled="loading"
-                />
-            </div>
+                <div v-if="operationType === 'salaryAccrual' || operationType === 'salaryPayment'">
+                    <label class="required">{{ $t('salaryPaymentType') }}</label>
+                    <select v-model.number="form.payment_type" required>
+                        <option :value="0">{{ $t('salaryPaymentTypeNonCash') }}</option>
+                        <option :value="1">{{ $t('salaryPaymentTypeCash') }}</option>
+                    </select>
+                </div>
 
-            <div>
-                <label>{{ $t('note') || 'Примечание' }}</label>
-                <textarea 
-                    v-model="form.note" 
-                    :placeholder="$t('salaryAccrualNotePlaceholder') || 'Зарплата за ...'"
-                    rows="3"
-                    class="w-full"
-                    maxlength="255"
-                ></textarea>
+                <div v-if="operationType && operationType !== 'salaryAccrual' && operationType !== 'salaryPayment'">
+                    <label class="required">{{ $t('amount') }}</label>
+                    <input type="number" v-model="form.amount" step="0.01" min="0" required :disabled="loading" />
+                </div>
+
+                <div>
+                    <label>{{ $t('note') }}</label>
+                    <textarea v-model="form.note" :placeholder="$t('salaryAccrualNotePlaceholder')"
+                        rows="3" class="w-full" maxlength="255"></textarea>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <AlertDialog 
-            :dialog="confirmDialog" 
-            @confirm="confirmOperation" 
-            @leave="confirmDialog = false"
-            :descr="confirmMessage"
-            :confirm-text="getConfirmButtonText()"
-            :leave-text="$t('cancel') || 'Отмена'" />
-        <PrimaryButton 
-            :onclick="handleCancel"
-            :is-danger="true"
-            icon="fas fa-times"
-        >
-        </PrimaryButton>
-        <PrimaryButton 
-            :onclick="handleOperation"
-            :is-loading="loading"
-            :is-success="true"
-            :disabled="!isFormValid"
-            icon="fas fa-save"
-        >
-        </PrimaryButton>
+        <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+            <AlertDialog :dialog="confirmDialog" @confirm="confirmOperation" @leave="confirmDialog = false"
+                :descr="confirmMessage" :confirm-text="getConfirmButtonText()" :leave-text="$t('cancel')" />
+            <PrimaryButton :onclick="handleCancel" :is-danger="true" icon="fas fa-times">
+            </PrimaryButton>
+            <PrimaryButton :onclick="handleOperation" :is-loading="loading" :is-success="true" :disabled="!isFormValid"
+                icon="fas fa-save">
+            </PrimaryButton>
+        </div>
     </div>
 </template>
 
@@ -163,41 +134,45 @@ export default {
     async mounted() {
         if (!this.userIds || this.userIds.length === 0) {
             this.showNotification(
-                this.$t('error') || 'Ошибка',
-                this.$t('selectUsersFirst') || 'Выберите сотрудников для начисления зарплаты',
+                this.$t('error'),
+                this.$t('selectUsersFirst'),
                 true
             );
             this.$emit('cancel');
             return;
         }
-        
+
         const companyId = this.companyId || this.$store.getters.currentCompanyId;
-        
+
         if (!companyId) {
             this.showNotification(
-                this.$t('error') || 'Ошибка',
-                'Не выбрана компания. Пожалуйста, выберите компанию в настройках.',
+                this.$t('error'),
+                this.$t('companyNotSelected'),
                 true
             );
             return;
         }
-        
+
         this.form.company_id = companyId;
         await this.loadCashRegisters();
-        
+
         if (this.operationType === 'salaryPayment') {
             await this.loadUserSalaries();
         }
-        
+
         if (this.operationType === 'salaryAccrual') {
-            const month = new Date().toLocaleString('ru-RU', { month: 'long' });
+            const locale = this.$i18n?.locale || undefined;
+            const month = new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date());
             const year = new Date().getFullYear();
-            this.form.note = `Зарплата за ${month} ${year}`;
+            this.form.note = this.$t('salaryAccrualDefaultNote', { month, year });
         } else {
             this.form.note = this.getDefaultNote();
         }
     },
     methods: {
+        getLocale() {
+            return this.$i18n?.locale || undefined;
+        },
         async loadCashRegisters() {
             try {
                 await this.$store.dispatch('loadCashRegisters');
@@ -205,8 +180,8 @@ export default {
             } catch (error) {
                 console.error('Error loading cash registers:', error);
                 this.showNotification(
-                    this.$t('error') || 'Ошибка',
-                    'Не удалось загрузить список касс',
+                    this.$t('error'),
+                    this.$t('errorLoadingCashRegisters'),
                     true
                 );
             }
@@ -221,18 +196,18 @@ export default {
             this.checking = true;
             try {
                 const checkResult = await CompaniesController.checkExistingSalaries(this.form.company_id, this.form.date, this.userIds);
-                
+
                 if (checkResult?.has_existing && checkResult.affected_users?.length > 0) {
-                    const month = checkResult.month || new Date(this.form.date).toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+                    const month = checkResult.month || new Intl.DateTimeFormat(this.getLocale(), { month: 'long', year: 'numeric' }).format(new Date(this.form.date));
                     const userNames = checkResult.affected_users
                         .map(u => u.user_name || `ID: ${u.user_id}`)
                         .filter(name => name);
-                    
+
                     if (userNames.length > 0) {
                         const userList = userNames.map(name => `<li>${name}</li>`).join('');
-                        this.confirmMessage = `Внимание! Начисление уже было ранее сделано в этом месяце (${month}) для следующих сотрудников:<ul style="margin: 10px 0; padding-left: 20px; list-style-type: disc; display: block;">${userList}</ul><br>Вы уверены, что хотите начислить им еще раз?`;
+                        this.confirmMessage = `${this.$t('salaryAccrualAlreadyExistsInMonth', { month })}<ul style="margin: 10px 0; padding-left: 20px; list-style-type: disc; display: block;">${userList}</ul><br>${this.$t('salaryAccrualConfirmRepeat')}`;
                     } else {
-                        this.confirmMessage = `Внимание! Начисление уже было ранее сделано в этом месяце (${month}) для ${checkResult.affected_users.length} сотрудников.<br><br>Вы уверены, что хотите начислить им еще раз?`;
+                        this.confirmMessage = `${this.$t('salaryAccrualAlreadyExistsInMonthForCount', { month, count: checkResult.affected_users.length })}<br><br>${this.$t('salaryAccrualConfirmRepeat')}`;
                     }
                     this.pendingAccrue = {
                         company_id: this.form.company_id,
@@ -246,7 +221,7 @@ export default {
                     this.checking = false;
                     return;
                 }
-                
+
                 await this.performAccrue({
                     company_id: this.form.company_id,
                     date: this.form.date,
@@ -258,8 +233,8 @@ export default {
             } catch (error) {
                 console.error('Error checking existing accruals:', error);
                 this.showNotification(
-                    this.$t('error') || 'Ошибка',
-                    this.getApiErrorMessage(error) || 'Ошибка при проверке существующих начислений',
+                    this.$t('error'),
+                    this.getApiErrorMessage(error) || this.$t('errorCheckingExistingAccruals'),
                     true
                 );
             } finally {
@@ -282,16 +257,16 @@ export default {
                 const skippedCount = result.summary?.skipped || 0;
                 const errorCount = result.summary?.errors || 0;
 
-                let message = `Начислено: ${successCount}`;
+                let message = `${this.$t('accrued')}: ${successCount}`;
                 if (skippedCount > 0) {
-                    message += `, Пропущено: ${skippedCount}`;
+                    message += `, ${this.$t('skipped')}: ${skippedCount}`;
                 }
                 if (errorCount > 0) {
-                    message += `, Ошибок: ${errorCount}`;
+                    message += `, ${this.$t('errors')}: ${errorCount}`;
                 }
 
                 this.showNotification(
-                    this.$t('success') || 'Успешно',
+                    this.$t('success'),
                     message,
                     false
                 );
@@ -301,7 +276,7 @@ export default {
             } catch (error) {
                 const errorMessage = this.getApiErrorMessage(error);
                 this.showNotification(
-                    this.$t('error') || 'Ошибка',
+                    this.$t('error'),
                     errorMessage,
                     true
                 );
@@ -313,7 +288,7 @@ export default {
             this.$emit('cancel');
         },
         getConfirmButtonText() {
-            return this.$t('save') || 'Сохранить';
+            return this.$t('save');
         },
         async handleOperation() {
             if (!this.isFormValid) {
@@ -333,9 +308,9 @@ export default {
                 await this.$store.dispatch('loadClients');
                 const clients = this.$store.getters.clients || [];
                 const cashRegister = this.cashRegisters.find(c => c.id === this.form.cash_id);
-                
+
                 if (!cashRegister) {
-                    throw new Error('Касса не найдена');
+                    throw new Error(this.$t('cashRegisterNotFound'));
                 }
 
                 const results = {
@@ -355,7 +330,7 @@ export default {
                             if (!client) {
                                 return {
                                     success: false,
-                                    error: `Клиент для сотрудника ID ${userId} не найден`
+                                    error: this.$t('employeeClientNotFoundForId', { id: userId })
                                 };
                             }
 
@@ -367,7 +342,7 @@ export default {
                             const errorMsg = this.getApiErrorMessage(error);
                             return {
                                 success: false,
-                                error: `Сотрудник ID ${userId}: ${errorMsg}`
+                                error: this.$t('employeeErrorForId', { id: userId, error: errorMsg })
                             };
                         }
                     }));
@@ -375,13 +350,13 @@ export default {
 
                 const batchSize = 5;
                 const transactionResults = [];
-                
+
                 for (let i = 0; i < this.userIds.length; i += batchSize) {
                     const batch = this.userIds.slice(i, i + batchSize);
                     const batchResults = await processBatch(batch);
                     transactionResults.push(...batchResults);
                 }
-                
+
                 transactionResults.forEach(result => {
                     if (result.success) {
                         results.success++;
@@ -391,24 +366,24 @@ export default {
                     }
                 });
 
-                let message = `Выполнено: ${results.success}`;
+                let message = `${this.$t('completed')}: ${results.success}`;
                 if (results.errors > 0) {
-                    message += `, Ошибок: ${results.errors}`;
+                    message += `, ${this.$t('errors')}: ${results.errors}`;
                     if (results.errorMessages.length > 0) {
                         const errorDetails = results.errorMessages.slice(0, 5).join('; ');
-                        const moreErrors = results.errorMessages.length > 5 ? ` и еще ${results.errorMessages.length - 5}...` : '';
+                        const moreErrors = results.errorMessages.length > 5 ? ` ${this.$t('andMoreErrors', { count: results.errorMessages.length - 5 })}` : '';
                         message += `\n\n${errorDetails}${moreErrors}`;
                     }
                 }
 
                 this.showNotification(
-                    results.errors > 0 ? (this.$t('error') || 'Ошибка') : (this.$t('success') || 'Успешно'),
+                    results.errors > 0 ? this.$t('error') : this.$t('success'),
                     message,
                     results.errors > 0
                 );
 
                 if (results.errors > 0 && results.errorMessages.length > 0) {
-                    console.error('Ошибки при выполнении операции:', results.errorMessages);
+                    console.error('Errors during operation:', results.errorMessages);
                 }
 
                 this.$emit('success', results);
@@ -416,7 +391,7 @@ export default {
             } catch (error) {
                 const errorMessage = this.getApiErrorMessage(error);
                 this.showNotification(
-                    this.$t('error') || 'Ошибка',
+                    this.$t('error'),
                     errorMessage,
                     true
                 );
@@ -447,7 +422,7 @@ export default {
             };
 
             let amount = parseFloat(this.form.amount);
-            
+
             if (this.operationType === 'salaryPayment' && userId) {
                 const user = this.users.find(u => u.id === userId);
                 const salary = user?.salaries?.find(s => Number(s.payment_type) === Number(this.form.payment_type) && !s.end_date);
@@ -471,22 +446,24 @@ export default {
         },
         getDefaultNote() {
             const notes = {
-                'salaryPayment': 'Выплата зарплаты',
-                'bonus': 'Премия',
-                'penalty': 'Штраф',
-                'advance': 'Аванс'
+                'salaryPayment': this.$t('paySalary'),
+                'bonus': this.$t('bonus'),
+                'penalty': this.$t('penalty'),
+                'advance': this.$t('advance')
             };
             return notes[this.operationType] || '';
         },
         getModalTitle() {
+            const count = this.userIds?.length || 0;
             const titles = {
-                'salaryAccrual': this.$t('accrueSalariesForSelected') || `Начислить зарплаты выбранным сотрудникам (${this.userIds?.length || 0})`,
-                'salaryPayment': this.$t('paySalariesForSelected') || `Выплатить зарплаты выбранным сотрудникам (${this.userIds?.length || 0})`,
-                'bonus': this.$t('accrueBonusesForSelected') || `Начислить премии выбранным сотрудникам (${this.userIds?.length || 0})`,
-                'penalty': this.$t('issuePenaltiesForSelected') || `Выписать штрафы выбранным сотрудникам (${this.userIds?.length || 0})`,
-                'advance': this.$t('issueAdvancesForSelected') || `Выдать авансы выбранным сотрудникам (${this.userIds?.length || 0})`
+                salaryAccrual: this.$t('accrueSalariesForSelected'),
+                salaryPayment: this.$t('paySalariesForSelected'),
+                bonus: this.$t('accrueBonusesForSelected'),
+                penalty: this.$t('issuePenaltiesForSelected'),
+                advance: this.$t('issueAdvancesForSelected'),
             };
-            return titles[this.operationType] || titles['salaryAccrual'];
+            const title = titles[this.operationType] || titles.salaryAccrual;
+            return `${title} (${count})`;
         },
         async confirmOperation() {
             this.confirmDialog = false;
@@ -497,4 +474,3 @@ export default {
     }
 };
 </script>
-

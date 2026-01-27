@@ -195,7 +195,6 @@ export default {
             this.fetchItems(1, false);
         },
         async handleCompanyChanged(companyId) {
-            // ✅ Очищаем фильтры при смене компании
             this.selectedCategoryId = '';
             this.selectedIds = [];
             

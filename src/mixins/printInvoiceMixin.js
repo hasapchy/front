@@ -6,7 +6,7 @@ export default {
     methods: {
         async printInvoiceFromOrders(selectedOrders, variants) {
             if (!variants?.length || !selectedOrders?.length) {
-                this.showNotification(this.$t('error'), this.$t('selectPdfVariant') || 'Выберите вариант PDF', true);
+                this.showNotification(this.$t('error'), this.$t('selectPdfVariant'), true);
                 return;
             }
 
@@ -16,7 +16,7 @@ export default {
                 const client = selectedOrders[0]?.client;
                 
                 if (!client) {
-                    this.showNotification(this.$t('error'), 'Клиент не найден в заказе', true);
+                    this.showNotification(this.$t('error'), this.$t('clientNotFoundInOrder'), true);
                     return;
                 }
 
@@ -37,7 +37,7 @@ export default {
                             unitId: product.unitId,
                             unitName: product.unitName || product.unitShortName || '',
                             getUnitName() {
-                                return this.unitName || 'шт.';
+                                return this.unitName || '';
                             }
                         });
                     });
@@ -106,10 +106,10 @@ export default {
                     });
                 });
 
-                this.showNotification(this.$t('pdfGenerated') || 'PDF сгенерирован', '', false);
+                this.showNotification(this.$t('pdfGenerated'), '', false);
             } catch (error) {
                 console.error('Ошибка в printInvoiceFromOrders:', error);
-                this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf') || 'Ошибка генерации PDF', true);
+                this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
             }
         }
     }

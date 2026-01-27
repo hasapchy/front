@@ -1,7 +1,7 @@
 <template>
     <div class="relative">
-        <label v-if="showLabel" :class="['block', 'mb-1', { 'required': required }]">{{ label || $t('user') || 'Сотрудник' }}</label>
-        
+        <label v-if="showLabel" :class="['block', 'mb-1', { 'required': required }]">{{ label || $t('user') }}</label>
+
         <div v-if="!multiple">
             <div v-if="selectedUser == null" class="relative">
                 <input type="text" v-model="userSearch" :placeholder="$t('enterUserNameOrPosition')"
@@ -14,21 +14,26 @@
                             <li v-for="user in lastUsers" :key="user.id" @mousedown.prevent="selectUser(user)"
                                 class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
                                 <div class="flex items-center gap-2">
-                                    <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                        <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)" :alt="getUserFullName(user)" class="w-full h-full object-cover">
+                                    <div
+                                        class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                        <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)"
+                                            :alt="getUserFullName(user)" class="w-full h-full object-cover">
                                         <i v-else class="fas fa-user text-gray-500"></i>
                                     </div>
                                     <div>{{ getUserFullName(user) }}</div>
                                 </div>
                             </li>
                         </template>
-                        <li v-else-if="userSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}</li>
+                        <li v-else-if="userSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}
+                        </li>
                         <li v-else-if="userResults.length === 0" class="p-2 text-gray-500">{{ $t('notFound') }}</li>
                         <li v-for="user in userResults" :key="user.id" @mousedown.prevent="() => selectUser(user)"
                             class="cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100">
                             <div class="flex items-center gap-2">
-                                <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                    <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)" :alt="getUserFullName(user)" class="w-full h-full object-cover">
+                                <div
+                                    class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                    <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)"
+                                        :alt="getUserFullName(user)" class="w-full h-full object-cover">
                                     <i v-else class="fas fa-user text-gray-500"></i>
                                 </div>
                                 <div>{{ getUserFullName(user) }}</div>
@@ -41,16 +46,20 @@
                 <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                <img v-if="selectedUserPhoto" :src="selectedUserPhoto" :alt="userFullName" class="w-full h-full object-cover">
+                            <div
+                                class="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                <img v-if="selectedUserPhoto" :src="selectedUserPhoto" :alt="userFullName"
+                                    class="w-full h-full object-cover">
                                 <i v-else class="fas fa-user text-gray-500"></i>
                             </div>
                             <div>
-                                <label :class="{ 'required': required }">{{ label || $t('user') || 'Сотрудник' }}</label>
-                                <p><span class="text-xs">{{ $t('name') }}:</span> <span class="font-semibold text-sm">{{ userFullName }}</span></p>
+                                <label :class="{ 'required': required }">{{ label || $t('user') }}</label>
+                                <p><span class="text-xs">{{ $t('name') }}:</span> <span class="font-semibold text-sm">{{
+                                        userFullName }}</span></p>
                             </div>
                         </div>
-                        <button v-if="allowDeselect" v-on:click="deselectUser" class="text-red-500 text-2xl cursor-pointer" :disabled="disabled">×</button>
+                        <button v-if="allowDeselect" v-on:click="deselectUser"
+                            class="text-red-500 text-2xl cursor-pointer" :disabled="disabled">×</button>
                     </div>
                 </div>
             </div>
@@ -58,28 +67,27 @@
 
         <div v-else>
             <div class="relative">
-                <div class="w-full p-2 border border-gray-300 rounded flex flex-wrap items-center gap-1.5 cursor-text relative focus-within:border-gray-300" style="min-height: 40px; border: 1px solid #d1d5db;" @click="focusInput">
-                    <div v-for="user in selectedUsersObjects" :key="user.id" class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs flex-shrink-0">
-                        <div class="w-4 h-4 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-                            <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)" :alt="getUserFullName(user)" class="w-full h-full object-cover">
+                <div class="w-full p-2 border border-gray-300 rounded flex flex-wrap items-center gap-1.5 cursor-text relative focus-within:border-gray-300"
+                    style="min-height: 40px; border: 1px solid #d1d5db;" @click="focusInput">
+                    <div v-for="user in selectedUsersObjects" :key="user.id"
+                        class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs flex-shrink-0">
+                        <div
+                            class="w-4 h-4 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
+                            <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)" :alt="getUserFullName(user)"
+                                class="w-full h-full object-cover">
                             <i v-else class="fas fa-user text-gray-500 text-[10px]"></i>
                         </div>
                         <span class="text-xs whitespace-nowrap">{{ getUserFullName(user) }}</span>
-                        <button v-if="allowDeselect" @mousedown.prevent="removeUser(user)" class="text-red-500 hover:text-red-700 ml-0.5 text-sm leading-none flex-shrink-0" :disabled="disabled">×</button>
+                        <button v-if="allowDeselect" @mousedown.prevent="removeUser(user)"
+                            class="text-red-500 hover:text-red-700 ml-0.5 text-sm leading-none flex-shrink-0"
+                            :disabled="disabled">×</button>
                     </div>
-                    <input 
-                        ref="searchInput"
-                        type="text" 
-                        v-model="userSearch" 
+                    <input ref="searchInput" type="text" v-model="userSearch"
                         :placeholder="selectedUsersObjects.length === 0 ? $t('enterUserNameOrPosition') : ''"
                         class="outline-none border-0 bg-transparent p-0 m-0 focus:ring-0 focus:border-0"
                         :class="selectedUsersObjects.length === 0 ? 'flex-1 min-w-[120px]' : ''"
                         :style="selectedUsersObjects.length > 0 && !userSearch ? { width: '2px', minWidth: '2px', padding: 0, opacity: 0, border: 'none' } : selectedUsersObjects.length > 0 ? { minWidth: '120px', flex: '1 1 auto', border: 'none' } : { border: 'none' }"
-                        @focus="handleFocus" 
-                        @blur="handleBlur"
-                        @input="handleInput"
-                        :disabled="disabled" 
-                    />
+                        @focus="handleFocus" @blur="handleBlur" @input="handleInput" :disabled="disabled" />
                 </div>
                 <transition name="appear">
                     <ul v-show="showDropdown"
@@ -89,21 +97,26 @@
                             <li v-for="user in lastUsers" :key="user.id" @mousedown.prevent="toggleUser(user)"
                                 :class="['cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100', { 'bg-blue-50': isUserSelected(user) }]">
                                 <div class="flex items-center gap-2">
-                                    <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                        <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)" :alt="getUserFullName(user)" class="w-full h-full object-cover">
+                                    <div
+                                        class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                        <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)"
+                                            :alt="getUserFullName(user)" class="w-full h-full object-cover">
                                         <i v-else class="fas fa-user text-gray-500"></i>
                                     </div>
                                     <div>{{ getUserFullName(user) }}</div>
                                 </div>
                             </li>
                         </template>
-                        <li v-else-if="userSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}</li>
+                        <li v-else-if="userSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}
+                        </li>
                         <li v-else-if="userResults.length === 0" class="p-2 text-gray-500">{{ $t('notFound') }}</li>
                         <li v-for="user in userResults" :key="user.id" @mousedown.prevent="toggleUser(user)"
                             :class="['cursor-pointer p-2 border-b-gray-300 hover:bg-gray-100', { 'bg-blue-50': isUserSelected(user) }]">
                             <div class="flex items-center gap-2">
-                                <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                    <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)" :alt="getUserFullName(user)" class="w-full h-full object-cover">
+                                <div
+                                    class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                    <img v-if="getUserPhoto(user)" :src="getUserPhoto(user)"
+                                        :alt="getUserFullName(user)" class="w-full h-full object-cover">
                                     <i v-else class="fas fa-user text-gray-500"></i>
                                 </div>
                                 <div>{{ getUserFullName(user) }}</div>
@@ -221,7 +234,6 @@ export default {
                 const updatedUser = await UsersController.getItem(this.selectedUser.id);
                 this.$emit('update:selectedUser', updatedUser);
             } catch (error) {
-                console.error('Ошибка при обновлении данных пользователя:', error);
             }
         }
     },
@@ -230,7 +242,7 @@ export default {
         async fetchLastUsers() {
             try {
                 let allUsers = this.$store.getters.usersForCurrentCompany;
-                
+
                 if (!allUsers || allUsers.length === 0) {
                     await this.$store.dispatch('loadUsers');
                     allUsers = this.$store.getters.usersForCurrentCompany;
@@ -238,20 +250,19 @@ export default {
 
                 this.updateLastUsersFromStore(allUsers);
             } catch (error) {
-                console.error('Ошибка при загрузке последних пользователей:', error);
                 this.lastUsers = [];
             }
         },
         updateLastUsersFromStore(allUsers = null) {
             const users = allUsers || this.$store.getters.usersForCurrentCompany;
-            
+
             if (users && users.length > 0) {
                 let filteredUsers = users.filter((user) => user.isActive !== false);
-                
+
                 if (this.multiple && this.filterUsers) {
                     filteredUsers = filteredUsers.filter(this.filterUsers);
                 }
-                
+
                 this.lastUsers = filteredUsers
                     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
                     .slice(0, 10);
@@ -267,22 +278,21 @@ export default {
 
             try {
                 if (!this.$store) {
-                    console.error('Store не доступен');
                     return;
                 }
 
                 let allUsers = this.$store.getters?.usersForCurrentCompany || [];
-                
+
                 if (!allUsers || allUsers.length === 0) {
                     if (this.$store.dispatch) {
                         await this.$store.dispatch('loadUsers');
                         allUsers = this.$store.getters?.usersForCurrentCompany || [];
                     }
                 }
-                
+
                 const userIds = this.selectedUsers.map(id => Number(id));
                 this.selectedUsersCache = allUsers.filter(u => userIds.includes(Number(u.id)));
-                
+
                 const missingIds = userIds.filter(id => !this.selectedUsersCache.find(u => Number(u.id) === id));
                 if (missingIds.length > 0) {
                     for (const id of missingIds) {
@@ -292,12 +302,10 @@ export default {
                                 this.selectedUsersCache.push(user);
                             }
                         } catch (error) {
-                            console.error(`Ошибка при загрузке пользователя ${id}:`, error);
                         }
                     }
                 }
             } catch (error) {
-                console.error('Ошибка при загрузке выбранных пользователей:', error);
             }
         },
         searchUsers: debounce(async function () {
@@ -305,14 +313,13 @@ export default {
                 this.userSearchLoading = true;
                 try {
                     let results = await UsersController.searchItems(this.userSearch);
-                    
+
                     if (this.multiple && this.filterUsers) {
                         results = results.filter(this.filterUsers);
                     }
-                    
+
                     this.userResults = results;
                 } catch (error) {
-                    console.error('Ошибка при поиске пользователей:', error);
                     this.userResults = [];
                 } finally {
                     this.userSearchLoading = false;
@@ -329,31 +336,31 @@ export default {
         },
         toggleUser(user) {
             if (this.disabled) return;
-            
+
             const userId = Number(user.id);
             const currentIds = Array.isArray(this.selectedUsers) ? this.selectedUsers.map(id => Number(id)) : [];
             const isSelected = currentIds.includes(userId);
-            
+
             let newIds;
             if (isSelected) {
                 newIds = currentIds.filter(id => id !== userId);
             } else {
                 newIds = [...currentIds, userId];
             }
-            
+
             this.$emit('update:selectedUsers', newIds);
-            
+
             if (!isSelected && !this.selectedUsersCache.find(u => Number(u.id) === userId)) {
                 this.selectedUsersCache.push(user);
             }
         },
         removeUser(user) {
             if (this.disabled) return;
-            
+
             const userId = Number(user.id);
             const currentIds = Array.isArray(this.selectedUsers) ? this.selectedUsers.map(id => Number(id)) : [];
             const newIds = currentIds.filter(id => id !== userId);
-            
+
             this.$emit('update:selectedUsers', newIds);
             this.selectedUsersCache = this.selectedUsersCache.filter(u => Number(u.id) !== userId);
         },

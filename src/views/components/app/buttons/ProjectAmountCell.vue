@@ -19,7 +19,7 @@ export default {
         },
         projectCurrency: {
             type: String,
-            default: 'Нет валюты'
+            default: ''
         },
         formatNumberFn: {
             type: Function,
@@ -37,7 +37,7 @@ export default {
             return this.item.cashCurrencySymbol || '';
         },
         currency() {
-            return this.projectCurrency || 'Нет валюты';
+            return this.projectCurrency || this.$t('noCurrency');
         },
         formatFn() {
             return this.formatNumberFn || ((val) => formatNumber(val, null, true));
