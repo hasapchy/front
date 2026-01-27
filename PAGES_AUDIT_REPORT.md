@@ -89,7 +89,7 @@
 - ✅ `TasksPage.vue` - **ИСПРАВЛЕНО** - использует `resetFiltersFromConfig()` и `getActiveFiltersCountFromConfig()`
 - ✅ `SalesPage.vue` - **ИСПРАВЛЕНО** - использует `resetFiltersFromConfig()` и `getActiveFiltersCountFromConfig()`
 - ✅ `CurrencyHistoryPage.vue` - **ИСПРАВЛЕНО** - использует `resetFiltersFromConfig()` и `getActiveFiltersCountFromConfig()`
-- ✅ `BasementOrdersPage.vue` - **ИСПРАВЛЕНО** - использует `resetFiltersFromConfig()` и `getActiveFiltersCountFromConfig()`
+- ✅ `SimpleOrdersPage.vue` - **ИСПРАВЛЕНО** - использует `resetFiltersFromConfig()` и `getActiveFiltersCountFromConfig()`
 - ✅ `WarehousesStockPage.vue` - **ИСПРАВЛЕНО** - использует `resetFiltersFromConfig()` и `getActiveFiltersCountFromConfig()`
 - ✅ `ClientBalanceTab.vue` - **ИСПРАВЛЕНО** - добавлен `filtersMixin`, использует `resetFiltersFromConfig()` (без подсчета, как указано в отчете)
 
@@ -286,7 +286,7 @@ async fetchCurrencies() {
 - ✅ `ClientBalanceTab.vue` - заменено `this.$store.getters.cashRegisters.length === 0` на `!this.$store.getters.cashRegisters?.length` в `mounted()`
 - ✅ `OrdersPage.vue` - заменено `this.selectedIds.length === 0` на `!this.selectedIds?.length` в `createInvoiceFromOrders()`, `showPrintInvoiceDialog()`, `handleBatchStatusChange()`
 - ✅ `UsersPage.vue` - заменено `this.selectedIds.length === 0` на `!this.selectedIds?.length` в `openSalaryAccrualModal()`
-- ✅ `BasementOrdersPage.vue` - заменено `products.length === 0` на `!products?.length` в `formatProducts()`
+- ✅ `SimpleOrdersPage.vue` - заменено `products.length === 0` на `!products?.length` в `formatProducts()`
 - ✅ `SaleCreatePage.vue` - заменено множественные проверки `.length` на optional chaining `?.length` и `?.[0]?.id` в методах `clearForm()`, `onEditingItemChanged()`, и watch handlers
 - ✅ `ProjectBalanceTab.vue` - заменено `balanceHistory.length === 0` на `!balanceHistory?.length` в template, добавлено computed свойство `hasProjectCurrency` для устранения дублирования проверки валюты проекта (5 мест)
 - ✅ `RolesCreatePage.vue` - заменено множественные проверки `.length > 0` и `.length === 0` на optional chaining `?.length` в template и computed свойствах (8 мест)

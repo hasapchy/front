@@ -78,7 +78,7 @@ export default {
   products: 'Products',
   categories: 'Product Categories',
   orders: 'Orders',
-  orders_basement: 'Basement Orders',
+  orders_simple: 'Simple Orders',
   sales: 'Sales',
   tasks: 'Tasks',
   onlineNow: 'Online Now',
@@ -112,7 +112,7 @@ export default {
   rent: 'Rent',
   users: 'Employees',
   employees: 'Employees',
-  messenger: 'Messenger',
+  messenger: 'Chat',
   settings: 'Settings',
   generalSettings: 'Settings',
   
@@ -357,10 +357,10 @@ export default {
   selectCurrency: 'Select currency',
   update: 'Update',
   
-  // Basement worker interface
+  // Simple worker interface
   toClientBalance: 'On credit',
   inDebt: 'On credit',
-  basement: 'Basement',
+  simple: 'Simple',
   worker: 'Worker',
   enterProjectName: 'Enter project name',
   noClient: 'No client',
@@ -381,6 +381,18 @@ export default {
   enterEmail: 'Enter email',
   rememberMe: 'Remember me',
   login: 'Login',
+  loginUseAccount: 'Login using your account',
+  togglePasswordVisibility: 'Show/hide password',
+  noAccountSignUp: 'No account? Sign up',
+  createAccount: 'Create Account',
+  useEmailForRegistration: 'Use email for registration',
+  signUp: 'Sign Up',
+  alreadyHaveAccountSignIn: 'Already have an account? Sign in',
+  welcomeBack: 'Welcome Back!',
+  signInToContinue: 'Sign in to continue',
+  helloFriend: 'Hello, Friend!',
+  enterDetailsToStart: 'Enter your details to start',
+  loggingIn: 'Logging in...',
   
   // Transaction Categories
   createTransactionCategory: 'Transaction Category',

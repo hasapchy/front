@@ -1,7 +1,8 @@
 <template>
-    <div class="mt-4">
-        <div v-if="!hideActions" class="flex justify-end items-center mb-2">
-            <div class="flex gap-2">
+    <div v-if="canViewBalance" class="mt-4">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
+            <div v-if="!hideActions" class="flex gap-2">
                 <PrimaryButton 
                     icon="fas fa-money-bill-wave" 
                     :onclick="handleSalaryAccrual"
@@ -194,6 +195,10 @@ export default {
         };
     },
     computed: {
+        canViewBalance() {
+            return this.$store.getters.hasPermission('settings_client_balance_view') ||
+                this.$store.getters.hasPermission('settings_client_balance_view_own');
+        },
         balanceStatusText() {
             const employeeName = this.editingItem?.name || this.$t('employee');
             if (this.totalBalance > 0) {
@@ -275,6 +280,9 @@ export default {
         }
     },
     async mounted() {
+        if (!this.canViewBalance) {
+            return;
+        }
         await this.fetchDefaultCurrency();
         if (this.editingItem && this.editingItem.id) {
             await Promise.all([
@@ -287,6 +295,15 @@ export default {
         'editingItem.id': {
             async handler(newId) {
                 if (newId) {
+                    if (!this.canViewBalance) {
+                        this.balanceHistory = [];
+                        this.totalBalance = 0;
+                        this.employeeClient = null;
+                        this.selectedEntity = null;
+                        this.entityModalOpen = false;
+                        this.entityLoading = false;
+                        return;
+                    }
                     await Promise.all([
                         this.fetchBalanceHistory(),
                         this.findEmployeeClient()

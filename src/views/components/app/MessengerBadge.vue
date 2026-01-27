@@ -3,7 +3,7 @@
         v-if="hasPermission"
         to="/messenger"
         class="relative flex items-center justify-center w-9 h-9 rounded-lg bg-gray-100 text-gray-700 hover:text-gray-900 hover:bg-gray-200 transition-colors"
-        title="Мессенджер"
+        title="Чат"
     >
         <i class="fas fa-bell text-lg"></i>
         <span

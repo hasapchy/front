@@ -143,8 +143,8 @@ export default {
     methods: {
         async fetchLastClients() {
             try {
-                const paginated = await ClientController.getItems(1, null, 20);
-                this.lastClients = paginated.items
+                const allClients = await ClientController.getListItems();
+                this.lastClients = allClients
                     .filter((client) => client.status === true)
                     .filter((client) => (this.onlySuppliers ? client.isSupplier : true))
                     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))

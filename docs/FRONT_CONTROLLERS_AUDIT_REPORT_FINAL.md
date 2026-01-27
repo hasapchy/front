@@ -74,12 +74,12 @@
 30. WarehouseStockController
 31. WarehouseWriteoffController
 
-### Basement контроллеры (5):
-32. BasementAuthController
-33. BasementCategoryController
-34. BasementClientController
-35. BasementProductController
-36. BasementProjectController
+### Simple контроллеры (5):
+32. SimpleAuthController
+33. SimpleCategoryController
+34. SimpleClientController
+35. SimpleProductController
+36. SimpleProjectController
 
 ### Специальные контроллеры (2):
 37. PerformanceController (заглушка для отключенного модуля)
@@ -198,12 +198,12 @@
 30. WarehouseStockController
 31. WarehouseWriteoffController
 
-**Basement контроллеры (5):**
-32. BasementAuthController
-33. BasementCategoryController
-34. BasementClientController
-35. BasementProductController
-36. BasementProjectController
+**Simple контроллеры (5):**
+32. SimpleAuthController
+33. SimpleCategoryController
+34. SimpleClientController
+35. SimpleProductController
+36. SimpleProjectController
 
 **Специальные контроллеры (2):**
 37. PerformanceController (заглушка для отключенного модуля)
@@ -215,7 +215,7 @@
 
 - ✅ Все 38 контроллеров используют **классы со статическими методами**
 - ✅ 31 контроллер использует `BaseController`
-- ⚠️ 7 контроллеров не используют BaseController (basement контроллеры и PerformanceController - намеренно)
+- ⚠️ 7 контроллеров не используют BaseController (simple контроллеры и PerformanceController - намеренно)
 
 ### 2. Использование BaseController
 
@@ -230,7 +230,7 @@
 
 - ✅ Все основные контроллеры используют DTO
 - ⚠️ PerformanceController - заглушка (не требует DTO)
-- ⚠️ Basement контроллеры - не входят в основной рефакторинг
+- ⚠️ Simple контроллеры - не входят в основной рефакторинг
 
 ### 4. Обработка ошибок
 
@@ -456,7 +456,7 @@
 
 ### НИЗКИЙ ПРИОРИТЕТ:
 
-6. ⚠️ Basement контроллеры - не входят в основной рефакторинг (отдельная подсистема)
+6. ⚠️ Simple контроллеры - не входят в основной рефакторинг (отдельная подсистема)
 7. ⚠️ PerformanceController - намеренная заглушка для отключенного модуля
 8. ⚠️ Имена методов - ProductController.searchItems(), TransactionController.getTotalPaidByOrderId() (используются в нескольких местах)
 

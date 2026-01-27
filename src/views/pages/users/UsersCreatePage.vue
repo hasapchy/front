@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <div class="flex flex-col overflow-auto h-full p-4">
+    <div class="h-full flex flex-col">
+        <div class="flex-1 overflow-auto p-4">
             <h2 class="text-lg font-bold mb-4">{{ editingItem ? (editingItem.name || $t('editUser')) : $t('createUser')
             }}
             </h2>
@@ -203,8 +203,7 @@
                 <UserBalanceTab :editing-item="editingItem" />
             </div>
         </div>
-    </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+        <div class="flex-shrink-0 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('users_delete')">
         </PrimaryButton>
@@ -220,6 +219,7 @@
 
     <ImageCropperModal :show="showCropperModal" :imageSrc="tempImageSrc" @close="closeCropperModal"
         @cropped="handleCroppedImage" />
+    </div>
 </template>
 
 <script>

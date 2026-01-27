@@ -3,7 +3,7 @@
 ## Кратко о структуре
 - Vuex store с большим набором ссылочных справочников, company-scoped данных и пользовательских настроек.
 - Кэширование разбито на три слоя: localStorage (общие справочники), IndexedDB (крупные выборки), оперативное состояние в store. TTL управляется через `CACHE_TTL` и `STORE_CONFIG`.
-- Используются контроллеры API (в т.ч. basement-режим) и утилиты `CacheInvalidator`, `retryWithExponentialBackoff`, `CompanyDto`, `ClientDto`, `ProjectDto`, `ProductSearchDto`.
+- Используются контроллеры API (в т.ч. simple-режим) и утилиты `CacheInvalidator`, `retryWithExponentialBackoff`, `CompanyDto`, `ClientDto`, `ProjectDto`, `ProductSearchDto`.
 - Синхронизация вкладок: `initializeStorageSync` слушает изменения userSettings/persisted state и триггерит смену компании без запросов к серверу.
 - Персистенция настроек/кэшей через несколько инстансов `createPersistedState` с фильтрами, редьюсерами и assertStorage.
 
@@ -17,7 +17,7 @@
 - `loadCompanyData` параллелит загрузку критичных и остальных справочников через `Promise.allSettled`, чтобы частичные падения не ломали цепочку.
 - Каждая загрузка использует флаги `loadingFlags` + `waitForLoading` для дедупликации запросов.
 - `loadClients` и `loadProjects` поддерживают восстановление из кэша и регенерацию DTO при пустом runtime состоянии.
-- `loadProductsForSearch` различает последние 10 и полную выборку, умеет работать в basement-режиме и отдаёт DTO.
+- `loadProductsForSearch` различает последние 10 и полную выборку, умеет работать в simple-режиме и отдаёт DTO.
 - `initializeApp`/`loadCurrentCompany`/`setCurrentCompany` последовательно подтягивают пользователя, права, меню и компанию, при смене компании очищают кэш и перезагружают данные.
 
 ## Синхронизация и меню

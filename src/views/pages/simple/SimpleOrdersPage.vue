@@ -3,7 +3,7 @@
     <transition name="fade" mode="out-in">
       <div v-if="!loading" :key="`table-${$i18n.locale}`">
         <DraggableTable 
-          table-key="basementOrders"
+          table-key="simpleOrders"
           :columns-config="columns"
           :table-data="orders"
           :item-mapper="itemMapper"
@@ -70,7 +70,7 @@
                     </select>
                   </div>
 
-                  <!-- Фильтр по клиенту в basement не используется -->
+                  <!-- Фильтр по клиенту в simple не используется -->
                 </FiltersContainer>
               </template>
 
@@ -117,10 +117,10 @@
     </transition>
 
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-      <BasementOrderCreatePage 
+      <SimpleOrderCreatePage 
         v-if="modalDialog" 
         :key="editingItem ? editingItem.id : 'new-order'" 
-        ref="basementOrderCreatePageForm"
+        ref="simpleOrderCreatePageForm"
         @saved="handleSaved" 
         @saved-silent="handleSavedSilent" 
         @saved-error="handleSavedError"
@@ -144,7 +144,7 @@ import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import Pagination from '@/views/components/app/buttons/Pagination.vue'
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue'
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue'
-import BasementOrderCreatePage from '@/views/pages/basement/BasementOrderCreatePage.vue'
+import SimpleOrderCreatePage from '@/views/pages/simple/SimpleOrderCreatePage.vue'
 import filtersMixin from '@/mixins/filtersMixin'
 import modalMixin from '@/mixins/modalMixin'
 import notificationMixin from '@/mixins/notificationMixin'
@@ -152,7 +152,7 @@ import { VueDraggableNext } from 'vue-draggable-next'
 import { formatOrderDate } from '@/utils/dateUtils'
 
 export default {
-  name: 'BasementOrdersPage',
+  name: 'SimpleOrdersPage',
   mixins: [filtersMixin, modalMixin, notificationMixin],
   components: {
     PrimaryButton,
@@ -164,7 +164,7 @@ export default {
     draggable: VueDraggableNext,
     SpinnerIcon,
     SideModalDialog,
-    BasementOrderCreatePage
+    SimpleOrderCreatePage
   },
   data() {
     return {
@@ -250,8 +250,8 @@ export default {
   methods: {
     async fetchProjects() {
       try {
-        const response = await ProjectController.getItems(1, null, 'all_time', null, null, '', '', true)
-        this.projects = Array.isArray(response.items) ? response.items : []
+        const allProjects = await ProjectController.getListItems()
+        this.projects = Array.isArray(allProjects) ? allProjects : []
       } catch (error) {
         console.error('Ошибка загрузки проектов:', error)
         this.projects = []
@@ -377,7 +377,7 @@ export default {
       }
       const itemId = Number(id);
       if (!itemId) {
-        this.$router.replace({ name: 'BasementOrders' });
+        this.$router.replace({ name: 'SimpleOrders' });
         return;
       }
       if (this.editingItem?.id === itemId && this.modalDialog) {
@@ -387,13 +387,13 @@ export default {
         const item = await OrderController.getItem(itemId);
         if (!item) {
           this.showNotification(this.$t('errorGettingOrder'), this.$t('notFound'), true);
-          this.$router.replace({ name: 'BasementOrders' });
+          this.$router.replace({ name: 'SimpleOrders' });
           return;
         }
         this.showModal(item);
       } catch (error) {
         this.showNotification(this.$t('errorGettingOrder'), error.message, true);
-        this.$router.replace({ name: 'BasementOrders' });
+        this.$router.replace({ name: 'SimpleOrders' });
       }
     },
     handleSaved() {
@@ -419,7 +419,7 @@ export default {
     closeModal(skipScrollRestore = false) {
       modalMixin.methods.closeModal.call(this, skipScrollRestore);
       if (this.$route.params.id) {
-        this.$router.replace({ name: 'BasementOrders' });
+        this.$router.replace({ name: 'SimpleOrders' });
       }
       this.editingItem = null;
     },
