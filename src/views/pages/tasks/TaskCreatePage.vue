@@ -1,5 +1,6 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
+    <div class="flex flex-col h-full">
+        <div class="flex flex-col overflow-auto h-full p-4 pb-24">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editTask') : $t('createTask') }}</h2>
         <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
         
@@ -88,9 +89,9 @@
                 :id="editingItemId"
                 :is-collapsed="false" />
         </div> -->
-    </div>
-
-        <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+        </div>
+        
+        <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
             <PrimaryButton v-if="editingItem != null && $store.getters.hasPermission('tasks_delete_all')"
                 :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading" icon="fas fa-trash">
             </PrimaryButton>
@@ -113,6 +114,7 @@
 
         <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
             :is-danger="notificationIsDanger" @close="closeNotification" />
+    </div>
 </template>
 
 <script>

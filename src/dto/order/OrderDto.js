@@ -26,9 +26,9 @@ export default class OrderDto {
     price,
     discount,
     totalPrice,
-    // Временно отключена логика оплаты для производительности
-    // paidAmount = 0,
-    // paymentStatus = null,
+    paidAmount = 0,
+    paymentStatus = null,
+    paymentStatusText = null,
     currencyId,
     currencyName,
     currencySymbol,
@@ -58,9 +58,9 @@ export default class OrderDto {
     this.price = price;
     this.discount = discount;
     this.totalPrice = totalPrice;
-    // Временно отключена логика оплаты для производительности
-    // this.paidAmount = paidAmount;
-    // this.paymentStatus = paymentStatus;
+    this.paidAmount = paidAmount;
+    this.paymentStatus = paymentStatus;
+    this.paymentStatusText = paymentStatusText;
     this.currencyId = currencyId;
     this.currencyName = currencyName;
     this.currencySymbol = currencySymbol;
@@ -99,84 +99,87 @@ export default class OrderDto {
     return dtoDateFormatters.formatUpdatedAt(this.updatedAt);
   }
 
-  // Временно отключена логика оплаты для производительности
-  // getPaymentStatusText() {
-  //   if (this.paymentStatus) {
-  //     switch (this.paymentStatus) {
-  //       case 'unpaid':
-  //         return 'Не оплачено';
-  //       case 'partially_paid':
-  //         return 'Частично оплачено';
-  //       case 'paid':
-  //         return 'Оплачено';
-  //       default:
-  //         return 'Не оплачено';
-  //     }
-  //   }
-  //   
-  //   const paidAmount = parseFloat(this.paidAmount || 0);
-  //   const totalPrice = parseFloat(this.totalPrice || 0);
-  //   
-  //   if (paidAmount <= 0) {
-  //     return 'Не оплачено';
-  //   } else if (paidAmount < totalPrice) {
-  //     return 'Частично оплачено';
-  //   } else {
-  //     return 'Оплачено';
-  //   }
-  // }
+  getPaymentStatusText() {
+    if (this.paymentStatusText) {
+      return this.paymentStatusText;
+    }
+    
+    if (this.paymentStatus) {
+      switch (this.paymentStatus) {
+        case 'unpaid':
+          return 'Не оплачено';
+        case 'partially_paid':
+          return 'Частично оплачено';
+        case 'paid':
+          return 'Оплачено';
+        default:
+          return 'Не оплачено';
+      }
+    }
+    
+    const paidAmount = parseFloat(this.paidAmount || 0);
+    const totalPrice = parseFloat(this.totalPrice || 0);
+    
+    if (paidAmount <= 0) {
+      return 'Не оплачено';
+    } else if (paidAmount < totalPrice) {
+      return 'Частично оплачено';
+    } else {
+      return 'Оплачено';
+    }
+  }
 
-  // getPaymentStatusClass() {
-  //   if (this.paymentStatus) {
-  //     switch (this.paymentStatus) {
-  //       case 'unpaid':
-  //         return 'text-red-600';
-  //       case 'partially_paid':
-  //         return 'text-yellow-600';
-  //       case 'paid':
-  //         return 'text-green-600';
-  //       default:
-  //         return 'text-gray-600';
-  //     }
-  //   }
-  //   
-  //   const paidAmount = parseFloat(this.paidAmount || 0);
-  //   const totalPrice = parseFloat(this.totalPrice || 0);
-  //   
-  //   if (paidAmount <= 0) {
-  //     return 'text-red-600';
-  //   } else if (paidAmount < totalPrice) {
-  //     return 'text-yellow-600';
-  //   } else {
-  //     return 'text-green-600';
-  //   }
-  // }
+  getPaymentStatusClass() {
+    if (this.paymentStatus) {
+      switch (this.paymentStatus) {
+        case 'unpaid':
+          return 'text-red-600';
+        case 'partially_paid':
+          return 'text-yellow-600';
+        case 'paid':
+          return 'text-green-600';
+        default:
+          return 'text-gray-600';
+      }
+    }
+    
+    const paidAmount = parseFloat(this.paidAmount || 0);
+    const totalPrice = parseFloat(this.totalPrice || 0);
+    
+    if (paidAmount <= 0) {
+      return 'text-red-600';
+    } else if (paidAmount < totalPrice) {
+      return 'text-yellow-600';
+    } else {
+      return 'text-green-600';
+    }
+  }
 
-  // getPaymentStatusIcon() {
-  //   if (this.paymentStatus) {
-  //     switch (this.paymentStatus) {
-  //       case 'unpaid':
-  //         return 'fas fa-times-circle';
-  //       case 'partially_paid':
-  //         return 'fas fa-exclamation-circle';
-  //       case 'paid':
-  //         return 'fas fa-check-circle';
-  //       default:
-  //         return 'fas fa-question-circle';
-  //     }
-  //   }
-  //   
-  //   const paidAmount = parseFloat(this.paidAmount || 0);
-  //   const totalPrice = parseFloat(this.totalPrice || 0);
-  //   
-  //   if (paidAmount <= 0) {
-  //     return 'fas fa-times-circle';
-  //   } else if (paidAmount < totalPrice) {
-  //     return 'fas fa-exclamation-circle';
-  //   } else {
-  //     return 'fas fa-check-circle';
-  //   }
-  // }
+  getPaymentStatusIcon() {
+    if (this.paymentStatus) {
+      switch (this.paymentStatus) {
+        case 'unpaid':
+          return 'fas fa-times-circle';
+        case 'partially_paid':
+          return 'fas fa-exclamation-circle';
+        case 'paid':
+          return 'fas fa-check-circle';
+        default:
+          return 'fas fa-question-circle';
+      }
+    }
+    
+    const paidAmount = parseFloat(this.paidAmount || 0);
+    const totalPrice = parseFloat(this.totalPrice || 0);
+    
+    if (paidAmount <= 0) {
+      return 'fas fa-times-circle';
+    } else if (paidAmount < totalPrice) {
+      return 'fas fa-exclamation-circle';
+    } else {
+      return 'fas fa-check-circle';
+    }
+  }
 
   static fromApiArray(dataArray) {
     return createFromApiArray(dataArray, data => {
@@ -211,6 +214,9 @@ export default class OrderDto {
         data.price,
         data.discount ?? 0,
         data.total_price,
+        data.paid_amount ?? 0,
+        data.payment_status ?? null,
+        data.payment_status_text ?? null,
         cashCurrency?.id ?? data.currency_id ?? null,
         cashCurrency?.name ?? data.currency_name ?? null,
         cashCurrency?.symbol ?? data.currency_symbol ?? null,

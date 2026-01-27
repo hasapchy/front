@@ -181,6 +181,15 @@
                     {{ formatTotalPrice() }}
                 </span>
             </div>
+            <div v-if="showField('paymentStatus') && !isTaskMode" class="flex items-center justify-between">
+                <div class="flex items-center space-x-1">
+                    <i :class="[getPaymentStatusIcon(), getPaymentStatusClass()]"></i>
+                    <span class="text-xs text-gray-500">{{ $t('paymentStatus') }}:</span>
+                </div>
+                <span class="text-xs font-semibold" :class="getPaymentStatusClass()">
+                    {{ getPaymentStatusText() }}
+                </span>
+            </div>
         </div>
         <div v-if="isSupervisor && order?.statusId === 3 && isTaskMode" class="flex gap-2 mt-2">
             <button @click.stop="updateTaskStatus('COMPLETED')"
@@ -526,9 +535,14 @@ export default {
             }
         },
         getPaymentStatusText() {
+            if (this.order?.paymentStatusText) {
+                return this.order.paymentStatusText;
+            }
+            
             if (typeof this.order?.getPaymentStatusText === 'function') {
                 return this.order.getPaymentStatusText();
             }
+            
             const paidAmount = parseFloat(this.order?.paidAmount || 0);
             const totalPrice = parseFloat(this.order?.totalPrice || 0);
             const paymentStatus = this.order?.paymentStatus;

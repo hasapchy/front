@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <div class="flex flex-col overflow-auto h-full p-4">
+    <div class="flex flex-col h-full">
+        <div class="flex flex-col overflow-auto h-full p-4 pb-24">
             <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editInvoice') : $t('createInvoice') }}</h2>
 
             <div class="mb-4">
@@ -34,10 +34,11 @@
             <div class="mb-4">
                 <OrderSearch ref="orderSearch" v-model="selectedOrders" @change="loadOrdersData"
                     :currency-symbol="defaultCurrencySymbol" @update:subtotal="formData.subtotal = $event"
-                    :readonly="!!editingItemId" />
+                    :readonly="!!editingItemId" @order-click="handleOrderClick" />
             </div>
         </div>
-        <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
+        
+        <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
             <div class="flex items-center space-x-2">
                 <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
                 </PrimaryButton>
@@ -84,6 +85,26 @@
 
         <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
             :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+
+        <SideModalDialog v-if="orderModalOpen" :showForm="orderModalOpen" :onclose="closeOrderModal">
+            <template v-if="orderLoading">
+                <div class="p-8 flex justify-center items-center min-h-[200px]">
+                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                </div>
+            </template>
+            <OrderCreatePage 
+                v-else-if="selectedOrder"
+                :key="selectedOrder.id"
+                :editingItem="selectedOrder"
+                @saved="handleOrderSaved"
+                @saved-error="handleOrderSavedError"
+                @deleted="handleOrderDeleted"
+                @deleted-error="handleOrderDeletedError"
+                @close-request="closeOrderModal" />
+        </SideModalDialog>
     </div>
 </template>
 
@@ -92,6 +113,7 @@ import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import ClientSearch from "@/views/components/app/search/ClientSearch.vue";
 import OrderSearch from "@/views/components/app/search/OrderSearch.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
+import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import InvoiceController from "@/api/InvoiceController";
 import OrderController from "@/api/OrderController";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
@@ -102,6 +124,7 @@ import dateFormMixin from "@/mixins/dateFormMixin";
 import { generateInvoicePdf, InvoicePdfGenerator } from "@/utils/pdfUtils";
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
+import { defineAsyncComponent } from "vue";
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin, dateFormMixin],
@@ -110,7 +133,11 @@ export default {
         PrimaryButton,
         ClientSearch,
         OrderSearch,
-        AlertDialog
+        AlertDialog,
+        SideModalDialog,
+        OrderCreatePage: defineAsyncComponent(() => 
+            import("@/views/pages/orders/OrderCreatePage.vue")
+        )
     },
     props: {
         editingItem: {
@@ -144,7 +171,10 @@ export default {
                 subtotal: 0
             },
             pdfVariant: ['short'],
-            showPdfDropdown: false
+            showPdfDropdown: false,
+            orderModalOpen: false,
+            selectedOrder: null,
+            orderLoading: false
         };
     },
     computed: {
@@ -411,6 +441,52 @@ export default {
             } catch (error) {
                 this.showNotification(this.$t('error'), this.$t('errorGeneratingPdf'), true);
             }
+        },
+
+        async handleOrderClick(order) {
+            try {
+                this.orderLoading = true;
+                const fullOrder = await OrderController.getItem(order.id);
+                this.selectedOrder = fullOrder;
+                this.orderModalOpen = true;
+            } catch (error) {
+                this.showNotification(this.$t('error'), this.getApiErrorMessage(error), true);
+            } finally {
+                this.orderLoading = false;
+            }
+        },
+
+        closeOrderModal() {
+            this.orderModalOpen = false;
+            this.selectedOrder = null;
+        },
+
+        async handleOrderSaved() {
+            this.closeOrderModal();
+            if (this.$refs.orderSearch) {
+                await this.loadOrdersData();
+            }
+        },
+
+        handleOrderSavedError(error) {
+            const errorMessage = this.getApiErrorMessage(error);
+            this.showNotification(this.$t('error'), errorMessage, true);
+        },
+
+        async handleOrderDeleted() {
+            this.closeOrderModal();
+            if (this.$refs.orderSearch) {
+                const orderId = this.selectedOrder?.id;
+                if (orderId) {
+                    this.selectedOrders = this.selectedOrders.filter(o => o.id !== orderId);
+                    await this.loadOrdersData();
+                }
+            }
+        },
+
+        handleOrderDeletedError(error) {
+            const errorMessage = this.getApiErrorMessage(error);
+            this.showNotification(this.$t('error'), errorMessage, true);
         },
 
         generateInvoicePdfForPrint(invoice, companyData = null, variant = 'short') {

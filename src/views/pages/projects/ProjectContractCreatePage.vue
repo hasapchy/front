@@ -17,6 +17,13 @@
                 <label class="required">{{ $t('contractNumber') }}</label>
                 <input type="text" v-model="number" :placeholder="$t('enterContractNumber')" required>
             </div>
+            <div>
+                <label class="required">{{ $t('contractType') }}</label>
+                <select v-model="type" :disabled="isPaidLocked" required>
+                    <option :value="0">{{ $t('cashless') }}</option>
+                    <option :value="1">{{ $t('cash') }}</option>
+                </select>
+            </div>
             <div class="flex items-center space-x-2">
                 <div class="w-full">
                     <label class="required">{{ $t('amount') }}</label>
@@ -33,10 +40,10 @@
                 </div>
             </div>
             <div>
-                <label>{{ $t('cashRegister') }}</label>
-                <select v-model="cashId" :disabled="isPaidLocked">
+                <label class="required">{{ $t('cashRegister') }}</label>
+                <select v-model="cashId" :disabled="isPaidLocked" required>
                     <option value="">{{ $t('selectCashRegister') }}</option>
-                    <option v-for="cashRegister in cashRegisters" :key="cashRegister.id" :value="cashRegister.id">
+                    <option v-for="cashRegister in filteredCashRegisters" :key="cashRegister.id" :value="cashRegister.id">
                         {{ cashRegister.name }} ({{ cashRegister.currencySymbol || '' }})
                     </option>
                 </select>
@@ -109,11 +116,21 @@ export default {
     computed: {
         isPaidLocked() {
             return !!this.editingItem?.isPaid || this.isPaidLockedLocal;
+        },
+        filteredCashRegisters() {
+            if (this.type === undefined || this.type === null) {
+                return this.cashRegisters;
+            }
+            const contractTypeIsCash = this.type === 1;
+            return this.cashRegisters.filter(cashRegister => {
+                return cashRegister.isCash === contractTypeIsCash;
+            });
         }
     },
     data() {
         return {
             number: this.editingItem ? this.editingItem.number : '',
+            type: this.editingItem ? (this.editingItem.type !== undefined ? this.editingItem.type : 0) : 0,
             amount: this.editingItem ? this.editingItem.amount : '',
             currencyId: this.editingItem ? this.editingItem.currencyId : '',
             cashId: this.editingItem ? (this.editingItem.cashId || '') : '',
@@ -139,6 +156,30 @@ export default {
             this.saveInitialState();
         });
     },
+    watch: {
+        type(newType) {
+            if (this.cashId && !this.isPaidLocked) {
+                const selectedCashRegister = this.cashRegisters.find(cr => cr.id == this.cashId);
+                if (selectedCashRegister) {
+                    const contractTypeIsCash = newType === 1;
+                    if (selectedCashRegister.isCash !== contractTypeIsCash) {
+                        this.cashId = '';
+                    }
+                } else {
+                    this.cashId = '';
+                }
+            }
+        },
+        cashId(newCashId) {
+            if (newCashId) {
+                const cash = this.cashRegisters.find(c => c.id == newCashId);
+                const cashCurrencyId = cash?.currencyId ?? cash?.currency_id;
+                if (cashCurrencyId) {
+                    this.currencyId = cashCurrencyId;
+                }
+            }
+        }
+    },
     methods: {
         translateCurrency,
         handlePaidClick() {
@@ -160,6 +201,7 @@ export default {
         },
         clearForm() {
             this.number = '';
+            this.type = 0;
             this.amount = '';
             this.currencyId = '';
             this.cashId = '';
@@ -178,9 +220,22 @@ export default {
                     formattedDate = this.getDateOnly(newEditingItem.date);
                 }
                 this.number = newEditingItem.number || '';
+                this.type = newEditingItem.type !== undefined ? newEditingItem.type : 0;
                 this.amount = newEditingItem.amount || '';
                 this.currencyId = newEditingItem.currencyId || '';
-                this.cashId = newEditingItem.cashId || '';
+                
+                const contractTypeIsCash = (newEditingItem.type !== undefined ? newEditingItem.type : 0) === 1;
+                if (newEditingItem.cashId && this.cashRegisters.length > 0) {
+                    const selectedCashRegister = this.cashRegisters.find(cr => cr.id == newEditingItem.cashId);
+                    if (selectedCashRegister && selectedCashRegister.isCash !== contractTypeIsCash) {
+                        this.cashId = '';
+                    } else {
+                        this.cashId = newEditingItem.cashId || '';
+                    }
+                } else {
+                    this.cashId = newEditingItem.cashId || '';
+                }
+                
                 this.date = formattedDate;
                 this.returned = newEditingItem.returned || false;
                 this.isPaid = newEditingItem.isPaid || false;
@@ -192,6 +247,7 @@ export default {
         getFormState() {
             return {
                 number: this.number,
+                type: this.type,
                 amount: this.amount,
                 currencyId: this.currencyId,
                 cashId: this.cashId,
@@ -229,9 +285,10 @@ export default {
             const formData = {
                 projectId: (this.editingItemId && this.editingItem) ? this.editingItem.projectId : (this.projectId || this.selectedProjectId),
                 number: this.number,
+                type: this.type,
                 amount: this.amount,
                 currencyId: this.currencyId,
-                cashId: this.cashId || null,
+                cashId: this.cashId,
                 date: this.date,
                 returned: this.returned,
                 isPaid: this.isPaid,

@@ -69,7 +69,9 @@
                             <div class="w-7 h-7 flex items-center justify-center mr-2">
                                 <i class="fas fa-shopping-cart text-[#3571A4]"></i>
                             </div>
-                            #{{ order.id }}
+                            <span @click="handleOrderClick(order)" class="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
+                                #{{ order.id }}
+                            </span>
                         </div>
                     </td>
                     <td class="py-2 px-4 border-x border-gray-300">
@@ -163,7 +165,7 @@ import debounce from 'lodash.debounce';
 import { translateOrderStatus } from '@/utils/translationUtils';
 
 export default {
-    emits: ['update:modelValue', 'update:subtotal', 'change'],
+    emits: ['update:modelValue', 'update:subtotal', 'change', 'order-click'],
     props: {
         modelValue: {
             type: Array,
@@ -349,6 +351,10 @@ export default {
         getUnitShortName(unitId) {
             if (!unitId) return '';
             return this.$store.getters.getUnitShortName(unitId);
+        },
+
+        handleOrderClick(order) {
+            this.$emit('order-click', order);
         },
 
         setProductsFromInvoice(products) {

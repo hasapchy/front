@@ -1,12 +1,12 @@
 <template>
     <div class="mt-4">
-        <div v-if="loading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="data && data.items && data.items.length === 0" class="text-gray-500">
-            {{ $t('noContracts') }}
-        </div>
-        <DraggableTable v-if="!loading && data && data.items && data.items.length" table-key="project.contracts.all"
-            :columns-config="columnsConfig" :table-data="data.items" :item-mapper="itemMapper"
-            @selectionChange="selectedIds = $event" :onItemClick="handleContractClick">
+        <ContractsBalanceWrapper v-if="cashRegisterFilter" :data="data?.items || []" :loading="loading" />
+        
+        <transition name="fade" mode="out-in">
+            <div v-if="data != null && !loading" key="table">
+                <DraggableTable table-key="project.contracts.all"
+                    :columns-config="columnsConfig" :table-data="data.items || []" :item-mapper="itemMapper"
+                    @selectionChange="selectedIds = $event" :onItemClick="handleContractClick">
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                 <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
                     :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
@@ -55,6 +55,14 @@
                                     </option>
                                 </select>
                             </div>
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('contractType') }}</label>
+                                <select v-model="typeFilter" class="w-full">
+                                    <option value="">{{ $t('allTypes') }}</option>
+                                    <option :value="0">{{ $t('cashless') }}</option>
+                                    <option :value="1">{{ $t('cash') }}</option>
+                                </select>
+                            </div>
                         </FiltersContainer>
                     </template>
                     <template #right="{ resetColumns, columns, toggleVisible, log }">
@@ -87,6 +95,11 @@
                 </TableControlsBar>
             </template>
         </DraggableTable>
+            </div>
+            <div v-else key="loader" class="flex justify-center items-center h-64">
+                <SpinnerIcon />
+            </div>
+        </transition>
 
         <SideModalDialog :showForm="contractModalOpen" :onclose="closeContractModal">
             <ProjectContractCreatePage v-if="!contractLoading" :editingItem="editingContractItem"
@@ -115,6 +128,8 @@ import ProjectContractCreatePage from "./ProjectContractCreatePage.vue";
 import ProjectContractController from "@/api/ProjectContractController";
 import BooleanSelectCell from "@/views/components/app/buttons/BooleanSelectCell.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
+import ContractsBalanceWrapper from "@/views/components/projects/ContractsBalanceWrapper.vue";
+import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
 import notificationMixin from "@/mixins/notificationMixin";
 import filtersMixin from "@/mixins/filtersMixin";
 import { VueDraggableNext } from 'vue-draggable-next';
@@ -132,6 +147,8 @@ export default {
         FiltersContainer,
         ProjectContractCreatePage,
         AlertDialog,
+        ContractsBalanceWrapper,
+        SpinnerIcon,
         draggable: VueDraggableNext,
     },
     data() {
@@ -148,6 +165,7 @@ export default {
             paymentStatusFilter: '',
             contractStatusFilter: '',
             cashRegisterFilter: '',
+            typeFilter: '',
             projects: [],
             cashRegisters: [],
             paidConfirmDialog: false,
@@ -165,6 +183,7 @@ export default {
                 { name: "id", label: "ID", size: 80 },
                 { name: "projectName", label: this.$t("project"), size: 200 },
                 { name: "number", label: this.$t("contractNumber"), size: 150 },
+                { name: "type", label: this.$t("contractType"), size: 120 },
                 { name: "amount", label: this.$t("amount"), size: 120, html: true },
                 { name: "cashRegisterName", label: this.$t("cashRegister"), size: 150 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 100 },
@@ -197,7 +216,7 @@ export default {
     },
     computed: {
         hasActiveFilters() {
-            return !!this.projectFilter || this.paymentStatusFilter !== '' || this.contractStatusFilter !== '' || this.cashRegisterFilter !== '';
+            return !!this.projectFilter || this.paymentStatusFilter !== '' || this.contractStatusFilter !== '' || this.cashRegisterFilter !== '' || this.typeFilter !== '';
         },
     },
     methods: {
@@ -282,7 +301,21 @@ export default {
                     params.cash_id = this.cashRegisterFilter;
                 }
 
+                if (this.typeFilter !== '') {
+                    params.type = this.typeFilter;
+                }
+
+                console.log('ProjectContractsPage::fetchContracts - Request params:', params);
+                console.log('ProjectContractsPage::fetchContracts - cashRegisterFilter:', this.cashRegisterFilter);
+                console.log('ProjectContractsPage::fetchContracts - typeFilter:', this.typeFilter);
+
                 const response = await ProjectContractController.getAllItems(params);
+                
+                console.log('ProjectContractsPage::fetchContracts - Response:', {
+                    total: response.total,
+                    itemsCount: response.items?.length || 0,
+                    items: response.items?.map(item => ({ id: item.id, cashId: item.cashId, cashRegisterName: item.cashRegisterName }))
+                });
                 const items = (response.items || []).map(contract => ({
                     ...contract,
                     projectName: contract.projectName || contract.project?.name,
@@ -336,7 +369,8 @@ export default {
                 projectFilter: '',
                 paymentStatusFilter: '',
                 contractStatusFilter: '',
-                cashRegisterFilter: ''
+                cashRegisterFilter: '',
+                typeFilter: ''
             }, () => {
                 this.fetchContracts(1);
             });
@@ -350,7 +384,15 @@ export default {
             if (this.paymentStatusFilter !== '') count++;
             if (this.contractStatusFilter !== '') count++;
             if (this.cashRegisterFilter !== '') count++;
+            if (this.typeFilter !== '') count++;
             return count;
+        },
+        formatTotals(totalsByCurrency) {
+            const result = Object.entries(totalsByCurrency || {})
+                .map(([currencySymbol, amount]) => `${this.$formatNumber(amount || 0, null, true)} ${currencySymbol}`.trim())
+                .join(' / ');
+
+            return result || '0';
         },
         itemMapper(item, column) {
             switch (column) {
@@ -358,6 +400,8 @@ export default {
                     return item.projectName || '-';
                 case "number":
                     return item.number;
+                case "type":
+                    return item.type === 1 ? this.$t('cash') : this.$t('cashless');
                 case "amount":
                     return item.formatAmount();
                 case "cashRegisterName":

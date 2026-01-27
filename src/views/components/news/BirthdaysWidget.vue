@@ -94,7 +94,7 @@ export default {
                         };
                     })
                     .sort((a, b) => a.nextBirthday.diff(b.nextBirthday))
-                    .slice(0, 5);
+                    .slice(0, 3);
             } catch (error) {
                 console.error('Ошибка загрузки дней рождения:', error);
                 this.birthdays = [];

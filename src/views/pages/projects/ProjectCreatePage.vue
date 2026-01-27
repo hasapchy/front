@@ -1,5 +1,6 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
+    <div class="flex flex-col h-full">
+        <div class="flex flex-col overflow-auto h-full p-4 pb-24">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editProject') : $t('createProject') }}</h2>
         <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
         <div v-show="currentTab === 'info'">
@@ -85,8 +86,9 @@
         <div v-if="currentTab === 'employees' && editingItem">
             <ProjectEmployeesTab :editing-item="editingItem" />
         </div>
-    </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+        </div>
+        
+        <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
         <PrimaryButton v-if="editingItem != null && canDeleteProject"
             :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading" icon="fas fa-trash">
         </PrimaryButton>
@@ -102,6 +104,7 @@
             `${$t('confirmDeleteSelected')} (${selectedFileIds.length})?` :
             `${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`" :confirm-text="$t('deleteFile')" :leave-text="$t('cancel')"
         :confirm-loading="deletingFiles" />
+    </div>
 </template>
 
 <script>

@@ -95,6 +95,9 @@
 
                         <ViewModeToggle :view-mode="viewMode" @change="changeViewMode" />
                     </template>
+                    <template #right>
+                        <KanbanFieldsButton mode="orders" />
+                    </template>
                 </TableControlsBar>
 
                 <div v-if="selectedIds.length && viewMode === 'kanban'" class="mb-4">
@@ -242,6 +245,7 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: "id", label: "№", size: 20 },
                 { name: "statusName", label: 'status', component: markRaw(StatusSelectCell), props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
+                { name: "paymentStatusText", label: 'paymentStatus', size: 120 },
                 { name: "cashName", label: 'cashRegister' },
                 { name: "warehouseName", label: 'warehouse' },
                 { name: "dateUser", label: 'dateUser' },
@@ -365,6 +369,11 @@ export default {
                 case "statusName":
                     const statusName = i.status?.name || i.statusName || '';
                     return statusName ? translateOrderStatus(statusName, this.$t) : '-';
+                case "paymentStatusText":
+                    const paymentStatusText = i.paymentStatusText || (typeof i.getPaymentStatusText === 'function' ? i.getPaymentStatusText() : null);
+                    if (!paymentStatusText) return '-';
+                    const paymentStatusClass = typeof i.getPaymentStatusClass === 'function' ? i.getPaymentStatusClass() : '';
+                    return `<span class="${paymentStatusClass}">${paymentStatusText}</span>`;
                 case "cashName":
                     return i.cash?.name || i.cashName || "-";
                 case "warehouseName":

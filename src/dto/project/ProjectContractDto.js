@@ -7,6 +7,7 @@ class ProjectContractDto {
         id,
         projectId,
         number,
+        type,
         amount,
         currencyId,
         currencyName,
@@ -25,6 +26,7 @@ class ProjectContractDto {
         this.id = id;
         this.projectId = projectId;
         this.number = number;
+        this.type = type;
         this.amount = amount;
         this.currencyId = currencyId;
         this.currencyName = currencyName;
@@ -62,6 +64,7 @@ class ProjectContractDto {
         return {
             project_id: this.projectId,
             number: this.number,
+            type: this.type,
             amount: this.amount,
             currency_id: this.currencyId,
             cash_id: this.cashId,
@@ -79,6 +82,7 @@ class ProjectContractDto {
                 data.id,
                 data.project_id || data.projectId,
                 data.number,
+                data.type !== undefined ? data.type : 0,
                 data.amount,
                 data.currency_id || data.currencyId,
                 data.currency_name || data.currencyName,

@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <div class="flex flex-col overflow-auto h-full p-4">
+    <div class="flex flex-col h-full">
+        <div class="flex flex-col overflow-auto h-full p-4 pb-24">
             <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editProduct') : $t('createProduct') }}</h2>
 
             <div class="mt-2 flex items-start">
@@ -117,7 +117,8 @@
                 </div>
             </div>
         </div>
-        <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+        
+        <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
             <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
                 :is-loading="deleteLoading" icon="fas fa-trash"
                 :disabled="!$store.getters.hasPermission('products_delete')">
@@ -126,6 +127,7 @@
                 (editingItemId == null && !$store.getters.hasPermission('products_create'))">
             </PrimaryButton>
         </div>
+        
         <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
             :descr="$t('deleteCategory')" :confirm-text="$t('deleteCategory')" :leave-text="$t('cancel')" />
         <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"

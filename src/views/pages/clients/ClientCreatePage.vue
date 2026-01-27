@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="flex flex-col overflow-auto h-full p-4">
+  <div class="flex flex-col h-full">
+    <div class="flex flex-col overflow-auto h-full p-4 pb-24">
       <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editClient') : $t('createClient') }}</h2>
       <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
         changeTab(t);
@@ -119,9 +119,9 @@
           <ClientOperationsTab :editing-item="editingItem" />
         </div>
       </div>
-
     </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    
+    <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
       <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
         :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('clients_delete')">
       </PrimaryButton>
@@ -129,6 +129,7 @@
         (editingItemId == null && !$store.getters.hasPermission('clients_create'))">
       </PrimaryButton>
     </div>
+    
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
       :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"

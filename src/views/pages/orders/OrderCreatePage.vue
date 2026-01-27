@@ -1,8 +1,9 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editOrder') : $t('createOrder') }}</h2>
-        <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
-        <div>
+    <div class="flex flex-col h-full">
+        <div class="flex flex-col overflow-auto h-full p-4 pb-24">
+            <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editOrder') : $t('createOrder') }}</h2>
+            <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
+            <div>
             <div v-show="currentTab === 'info'">
                 <ClientSearch v-model:selectedClient="selectedClient" :allowDeselect="true" />
                 <div>
@@ -75,8 +76,9 @@
                 </template>
             </div>
         </div>
-    </div>
-    <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
+        </div>
+        
+        <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
         <div class="flex items-center space-x-2">
             <PrimaryButton v-if="editingItemId" icon="fas fa-check" :onclick="saveWithoutClose"
                 :is-loading="saveLoading">
@@ -110,6 +112,7 @@
     <SideModalDialog :showForm="productCategoryModalDialog" :onclose="closeProductCategoryModal" :level="1">
         <CategoriesCreatePage v-if="productCategoryModalDialog" @saved="handleProductCategorySaved" />
     </SideModalDialog>
+    </div>
 </template>
 
 <script>
