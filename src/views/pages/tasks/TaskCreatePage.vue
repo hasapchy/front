@@ -222,7 +222,6 @@ export default {
         },
     },
     watch: {
-        // Отслеживаем изменения editingItem и обновляем форму
         editingItem: {
             immediate: true,
             handler(newItem) {
@@ -237,7 +236,6 @@ export default {
             }
             await this.fetchProjects();
 
-            // Устанавливаем дефолтный дедлайн только при создании новой задачи
             if (!this.editingItem && !this.deadline) {
                 this.deadline = this.getDefaultDeadline();
             }
@@ -245,7 +243,6 @@ export default {
             this.saveInitialState();
         });
         
-        // Закрытие календаря при клике вне его
         document.addEventListener('click', this.handleClickOutside);
     },
     beforeUnmount() {
@@ -356,11 +353,10 @@ export default {
                 this.statusId = newEditingItem.statusId || newEditingItem.status?.id || null;
                 this.deadline = newEditingItem.deadline ? this.getFormattedDate(newEditingItem.deadline) : null;
                 this.projectId = newEditingItem.project?.id || null;
-                this.selectedSupervisor = newEditingItem.supervisor?.id ? { id: newEditingItem.supervisor.id } : null;
-                this.selectedExecutor = newEditingItem.executor?.id ? { id: newEditingItem.executor.id } : null;
+                this.selectedSupervisor = newEditingItem.supervisor || null;
+                this.selectedExecutor = newEditingItem.executor || null;
                 this.priority = newEditingItem.priority || 'low';
                 this.complexity = newEditingItem.complexity || 'normal';
-                // Обрабатываем чеклист: может быть массивом или строкой JSON
                 if (newEditingItem.checklist) {
                     if (Array.isArray(newEditingItem.checklist)) {
                         this.checklistItems = [...newEditingItem.checklist];
@@ -378,7 +374,6 @@ export default {
                     this.checklistItems = [];
                 }
             } else {
-                // Очищаем форму при создании новой задачи
                 this.clearForm();
             }
         },

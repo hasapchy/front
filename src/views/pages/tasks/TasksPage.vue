@@ -328,7 +328,6 @@ export default {
                 if (!status && task.statusId) {
                     status = this.taskStatuses.find(s => s.id === task.statusId);
                 }
-                console.log('task', task);
                 return {
                     id: task.id,
                     title: task.title,

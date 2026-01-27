@@ -32,12 +32,6 @@ class TaskController extends BaseController {
         if (!data || !data.data) {
             return null;
         }
-        console.log('data', data);
-        console.log('data.data', data.data);
-        console.log('TaskDto.fromApiArray([data.data])', TaskDto.fromApiArray([data.data]));
-        console.log('TaskDto.fromApiArray([data.data])[0]', TaskDto.fromApiArray([data.data])[0]);
-        console.log('TaskDto.fromApiArray([data.data])[0] || null', TaskDto.fromApiArray([data.data])[0] || null);
-        // Backend возвращает { data: TaskResource }, а не { item: ... }
         return TaskDto.fromApiArray([data.data])[0] || null;
     }
 
