@@ -215,13 +215,9 @@ export default {
                 this.stockSearch = '';
                 this.stockResults = [];
 
-<<<<<<< HEAD
-                const unitId = product.unitId || product.unit_id;
-                const isSquareMeter = unitId === 2;
-=======
                 const unitShortName = (product.unitShortName || product.unit_short_name || product.unitName || product.unit_name || '').trim();
                 const isSquareMeter = this.isSquareMeterShortName(unitShortName);
->>>>>>> 891380e403fd360942c8c3bf8971fe25536d0398
+
 
                 let price;
                 const wholesalePrice = product.wholesalePrice || product.wholesale_price;
@@ -271,17 +267,12 @@ export default {
 
         isSquareMeter(item) {
             if (!item) return false;
-<<<<<<< HEAD
-            const unitId = item.unit_id || item.unitId;
-            return unitId === 2;
-=======
             const unitShortName = (item.unit_short_name || item.unitShortName || '').trim();
             return this.isSquareMeterShortName(unitShortName);
         },
         isSquareMeterShortName(unitShortNameRaw) {
             const s = String(unitShortNameRaw || '').trim().toLowerCase();
             return s === 'м²' || s === 'м2' || s === 'm²' || s === 'm2';
->>>>>>> 891380e403fd360942c8c3bf8971fe25536d0398
         },
         calculateQuantity(item) {
             if (!this.isSquareMeter(item)) {
