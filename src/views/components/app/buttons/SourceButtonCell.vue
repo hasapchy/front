@@ -1,16 +1,16 @@
 <template>
-    <div v-if="sourceType && sourceId && !isSalary" 
-        class="w-full h-full cursor-pointer text-[#2a6496] hover:underline rounded flex items-center"
-        @dblclick.stop="openSourceModal">
-        <i :class="iconClass" class="mr-2"></i>
-        <span v-html="displayText"></span>
-    </div>
-    <div v-else class="w-full h-full flex items-center">
-        <i :class="iconClass" class="mr-2"></i>
-        <span :class="sourceInfo.color">{{ displayText }}</span>
-    </div>
+    <div>
+        <div v-if="sourceType && sourceId && !isSalary" 
+            class="w-full h-full cursor-pointer text-[#2a6496] hover:underline rounded flex items-center"
+            @dblclick.stop="openSourceModal">
+            <i :class="iconClass" class="mr-2"></i>
+            <span v-html="displayText"></span>
+        </div>
+        <div v-else class="w-full h-full flex items-center">
+            <i :class="iconClass" class="mr-2"></i>
+            <span :class="sourceInfo.color">{{ displayText }}</span>
+        </div>
 
-    <!-- Модальные окна с динамической загрузкой - избегаем циклических зависимостей -->
         <component 
             v-if="modalOpen && modalComponent" 
             :is="modalComponent" 
@@ -26,6 +26,7 @@
                 @deleted="handleDeleted" 
                 @close-request="() => modalOpen = false" />
         </component>
+    </div>
 </template>
 
 <script>
@@ -62,9 +63,6 @@ export default {
             return this.sourceType && this.sourceType.includes('EmployeeSalary');
         },
         normalizedSource() {
-            if (this.source === 'project_transaction' || (this.sourceType && this.sourceType.includes('ProjectTransaction'))) {
-                return 'project';
-            }
             if (this.source) {
                 return this.source.toLowerCase();
             }
@@ -79,7 +77,6 @@ export default {
         },
         sourceMap() {
             return {
-                'project': { icon: 'fa-project-diagram', color: 'text-[#9C27B0]', text: 'Проект' },
                 'sale': { icon: 'fa-shopping-cart', color: 'text-[#5CB85C]', text: 'Продажа' },
                 'order': { icon: 'fa-clipboard-list', color: 'text-[#337AB7]', text: 'Заказ' },
                 'receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
@@ -92,9 +89,6 @@ export default {
             return this.sourceMap[this.normalizedSource] || this.sourceMap['transaction'];
         },
         iconClass() {
-            if (this.source === 'project_transaction' || (this.sourceType && this.sourceType.includes('ProjectTransaction'))) {
-                return 'fas fa-project-diagram text-[#9C27B0]';
-            }
             if (this.sourceType && this.sourceId) {
                 if (this.sourceType.includes('Sale')) {
                     return 'fas fa-shopping-cart text-[#5CB85C]';
@@ -113,13 +107,6 @@ export default {
             return `fas ${this.sourceInfo.icon} ${this.sourceInfo.color}`;
         },
         displayText() {
-            if (this.source === 'project_transaction' || (this.sourceType && this.sourceType.includes('ProjectTransaction'))) {
-                const text = `Проект #${this.sourceId || ''}`;
-                if (this.searchQuery && this.searchQuery.trim()) {
-                    return highlightMatches(text, this.searchQuery);
-                }
-                return text;
-            }
             if (this.sourceType && this.sourceId) {
                 let text = '';
                 
@@ -161,13 +148,7 @@ export default {
                 this.modalComponent = markRaw(SideModalDialog);
                 
                 // Загружаем данные и компонент содержимого динамически - избегаем циклических зависимостей
-                if (this.source === 'project_transaction' || (this.sourceType && this.sourceType.includes('ProjectTransaction'))) {
-                    const ProjectTransactionController = (await import('@/api/ProjectTransactionController')).default;
-                    const ProjectTransactionCreatePage = (await import('@/views/pages/projects/ProjectTransactionCreatePage.vue')).default;
-                    const transactionData = await ProjectTransactionController.getItem(this.sourceId);
-                    this.editingItem = transactionData;
-                    this.modalContentComponent = markRaw(ProjectTransactionCreatePage);
-                } else if (this.sourceType && this.sourceType.includes('Sale')) {
+                if (this.sourceType && this.sourceType.includes('Sale')) {
                     const SaleController = (await import('@/api/SaleController')).default;
                     const SaleCreatePage = (await import('@/views/pages/sales/SaleCreatePage.vue')).default;
                     this.editingItem = await SaleController.getItem(this.sourceId);

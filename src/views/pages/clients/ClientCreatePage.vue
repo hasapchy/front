@@ -1,143 +1,141 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full p-4">
-    <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editClient') : $t('createClient') }}</h2>
-    <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
-      changeTab(t);
-    }" />
-    <div>
-      <div v-if="currentTab === 'info'" class="mb-4">
-        <div>
-          <label class="required">{{ $t('clientType') }}</label>
-          <select v-model="clientType">
-            <option value="individual">{{ $t('individual') }}</option>
-            <option value="company">{{ $t('company') }}</option>
-            <option value="employee">{{ $t('employee') }}</option>
-            <option value="investor">{{ $t('investor') }}</option>
-          </select>
-        </div>
-        <div v-if="clientType === 'employee' || clientType === 'investor'">
-          <UserSearch
-            v-model:selectedUser="selectedEmployee"
-            :required="true"
-            :showLabel="true"
-            :label="$t('selectEmployee')"
-            :filterUsers="filterAvailableEmployees"
-          />
-        </div>
-        <div v-if="clientType !== 'employee' && clientType !== 'investor'">
-          <label class="required">{{ $t('firstName') }}</label>
-          <input type="text" v-model="firstName" required />
-        </div>
-        <div v-if="clientType === 'individual'">
-          <label>{{ $t('lastName') }}</label>
-          <input type="text" v-model="lastName" />
-        </div>
-        <div v-if="clientType === 'individual'">
-          <label>{{ $t('patronymic') }}</label>
-          <input type="text" v-model="patronymic" />
-        </div>
-        <div v-if="clientType === 'company'">
-          <label>{{ $t('contactPerson') }}</label>
-          <input type="text" v-model="contactPerson" />
-        </div>
-        <div v-if="clientType === 'company'">
-          <label>{{ $t('position') }}</label>
-          <input type="text" v-model="position" />
-        </div>
-        <div>
-          <label>{{ $t('address') }}</label>
-          <input type="text" v-model="address" />
-        </div>
-        <div>
-          <label>{{ $t('note') }}</label>
-          <input type="text" v-model="note" />
-        </div>
-        <label>{{ $t('characteristics') }}</label>
-        <div class="flex flex-wrap gap-2">
-          <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-            <input type="checkbox" v-model="status" />
-            <span>{{ $t('active') }}</span>
-          </label>
-          <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-            <input type="checkbox" v-model="isSupplier" />
-            <span>{{ $t('supplier') }}</span>
-          </label>
-          <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
-            <input type="checkbox" v-model="isConflict" />
-            <span>{{ $t('problemClient') }}</span>
-          </label>
-        </div>
-        <div>
-          <label class="required">{{ $t('phoneNumber') }}</label>
-          <div class="flex items-center space-x-2">
-            <PhoneInputWithCountry v-model="newPhone" :default-country="newPhoneCountry"
-              @country-change="handleCountryChange" @keyup.enter="addPhone" @blur="handlePhoneBlur" class="flex-1"
-              :required="true" ref="phoneInputRef" />
-            <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" />
-          </div>
-          <div v-for="(phone, index) in phones" :key="`phone-${index}-${phone}`"
-            class="flex items-stretch space-x-2 mt-2">
-            <PhoneInputWithCountry v-model="editingPhones[index]" :default-country="getPhoneCountryId(phone)"
-              @country-change="(country) => handlePhoneCountryChange(index, country)"
-              @blur="() => handleEditPhoneBlur(index)" @keyup.enter="() => savePhoneEdit(index)" class="flex-1" />
-            <PrimaryButton icon="fas fa-check" :is-info="true" :onclick="() => savePhoneEdit(index)" />
-            <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" />
-          </div>
-        </div>
-        <div>
-          <label>{{ $t('email') }}</label>
-          <div class="flex items-center space-x-2">
-            <input type="text" v-model="newEmail" @keyup.enter="addEmail" />
-            <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addEmail" />
-          </div>
-          <div v-for="(email, index) in emails" :key="email" class="flex items-center space-x-2 mt-2">
-            <input type="text" :value="email" readonly />
-            <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removeEmail(index)" />
-          </div>
-        </div>
-        <div class="flex gap-4 w-full">
-          <div class="flex flex-col w-full">
-            <label>{{ $t('discountType') }}</label>
-            <select v-model="discountType" class="w-full">
-              <option value="">{{ $t('selectDiscountType') }}</option>
-              <option value="percent">{{ $t('percent') }}</option>
-              <option value="fixed">{{ $t('fixed') }}</option>
+  <div>
+    <div class="flex flex-col overflow-auto h-full p-4">
+      <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editClient') : $t('createClient') }}</h2>
+      <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
+        changeTab(t);
+      }" />
+      <div>
+        <div v-if="currentTab === 'info'" class="mb-4">
+          <div>
+            <label class="required">{{ $t('clientType') }}</label>
+            <select v-model="clientType">
+              <option value="individual">{{ $t('individual') }}</option>
+              <option value="company">{{ $t('company') }}</option>
+              <option value="employee">{{ $t('employee') }}</option>
+              <option value="investor">{{ $t('investor') }}</option>
             </select>
           </div>
-          <div class="flex flex-col w-full">
-            <label>{{ $t('discount') }}</label>
-            <input type="number" v-model="discount" class="w-full" />
+          <div v-if="clientType === 'employee' || clientType === 'investor'">
+            <UserSearch :selectedUser="selectedEmployee" @update:selectedUser="selectedEmployee = $event"
+              :required="true" :showLabel="true" :label="$t('selectEmployee')"
+              :filterUsers="filterAvailableEmployees" />
+          </div>
+          <div v-if="clientType !== 'employee' && clientType !== 'investor'">
+            <label class="required">{{ $t('firstName') }}</label>
+            <input type="text" v-model="firstName" required />
+          </div>
+          <div v-if="clientType === 'individual'">
+            <label>{{ $t('lastName') }}</label>
+            <input type="text" v-model="lastName" />
+          </div>
+          <div v-if="clientType === 'individual'">
+            <label>{{ $t('patronymic') }}</label>
+            <input type="text" v-model="patronymic" />
+          </div>
+          <div v-if="clientType === 'company'">
+            <label>{{ $t('contactPerson') }}</label>
+            <input type="text" v-model="contactPerson" />
+          </div>
+          <div v-if="clientType === 'company'">
+            <label>{{ $t('position') }}</label>
+            <input type="text" v-model="position" />
+          </div>
+          <div>
+            <label>{{ $t('address') }}</label>
+            <input type="text" v-model="address" />
+          </div>
+          <div>
+            <label>{{ $t('note') }}</label>
+            <input type="text" v-model="note" />
+          </div>
+          <label>{{ $t('characteristics') }}</label>
+          <div class="flex flex-wrap gap-2">
+            <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+              <input type="checkbox" v-model="status" />
+              <span>{{ $t('active') }}</span>
+            </label>
+            <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+              <input type="checkbox" v-model="isSupplier" />
+              <span>{{ $t('supplier') }}</span>
+            </label>
+            <label class="flex items-center space-x-2 px-2 py-1 bg-gray-100 rounded">
+              <input type="checkbox" v-model="isConflict" />
+              <span>{{ $t('problemClient') }}</span>
+            </label>
+          </div>
+          <div>
+            <label class="required">{{ $t('phoneNumber') }}</label>
+            <div class="flex items-center space-x-2">
+              <PhoneInputWithCountry v-model="newPhone" :default-country="newPhoneCountry"
+                @country-change="handleCountryChange" @keyup.enter="addPhone" @blur="handlePhoneBlur" class="flex-1"
+                :required="true" ref="phoneInputRef" />
+              <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" />
+            </div>
+            <div v-for="(phone, index) in phones" :key="`phone-${index}-${phone}`"
+              class="flex items-stretch space-x-2 mt-2">
+              <PhoneInputWithCountry v-model="editingPhones[index]" :default-country="getPhoneCountryId(phone)"
+                @country-change="(country) => handlePhoneCountryChange(index, country)"
+                @blur="() => handleEditPhoneBlur(index)" @keyup.enter="() => savePhoneEdit(index)" class="flex-1" />
+              <PrimaryButton icon="fas fa-check" :is-info="true" :onclick="() => savePhoneEdit(index)" />
+              <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removePhone(index)" />
+            </div>
+          </div>
+          <div>
+            <label>{{ $t('email') }}</label>
+            <div class="flex items-center space-x-2">
+              <input type="text" v-model="newEmail" @keyup.enter="addEmail" />
+              <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addEmail" />
+            </div>
+            <div v-for="(email, index) in emails" :key="email" class="flex items-center space-x-2 mt-2">
+              <input type="text" :value="email" readonly />
+              <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removeEmail(index)" />
+            </div>
+          </div>
+          <div class="flex gap-4 w-full">
+            <div class="flex flex-col w-full">
+              <label>{{ $t('discountType') }}</label>
+              <select v-model="discountType" class="w-full">
+                <option value="">{{ $t('selectDiscountType') }}</option>
+                <option value="percent">{{ $t('percent') }}</option>
+                <option value="fixed">{{ $t('fixed') }}</option>
+              </select>
+            </div>
+            <div class="flex flex-col w-full">
+              <label>{{ $t('discount') }}</label>
+              <input type="number" v-model="discount" class="w-full" />
+            </div>
           </div>
         </div>
+        <div
+          v-show="currentTab === 'balance' && editingItem && $store.getters.hasPermission('settings_client_balance_view')"
+          class="mt-4">
+          <ClientBalanceTab :editing-item="editingItem" />
+        </div>
+        <div v-show="currentTab === 'payments' && editingItem" class="mt-4">
+          <ClientPaymentsTab :editing-item="editingItem" @payments-updated="handlePaymentsUpdated" />
+        </div>
+        <div v-show="currentTab === 'operations' && editingItem" class="mt-4">
+          <ClientOperationsTab :editing-item="editingItem" />
+        </div>
       </div>
-      <div
-        v-show="currentTab === 'balance' && editingItem && $store.getters.hasPermission('settings_client_balance_view')"
-        class="mt-4">
-        <ClientBalanceTab :editing-item="editingItem" />
-      </div>
-      <div v-show="currentTab === 'payments' && editingItem" class="mt-4">
-        <ClientPaymentsTab :editing-item="editingItem" @payments-updated="handlePaymentsUpdated" />
-      </div>
-      <div v-show="currentTab === 'operations' && editingItem" class="mt-4">
-        <ClientOperationsTab :editing-item="editingItem" />
-      </div>
-    </div>
 
+    </div>
+    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+      <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
+        :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('clients_delete')">
+      </PrimaryButton>
+      <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('clients_update')) ||
+        (editingItemId == null && !$store.getters.hasPermission('clients_create'))">
+      </PrimaryButton>
+    </div>
+    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
+      :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
+      :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
+      :is-danger="notificationIsDanger" @close="closeNotification" />
   </div>
-  <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-    <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading"
-      icon="fas fa-trash" :disabled="!$store.getters.hasPermission('clients_delete')">
-    </PrimaryButton>
-    <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('clients_update')) ||
-      (editingItemId == null && !$store.getters.hasPermission('clients_create'))">
-    </PrimaryButton>
-  </div>
-  <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
-    :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-  <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-    :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-  <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-    :is-danger="notificationIsDanger" @close="closeNotification" />
 </template>
 
 <script>
@@ -260,11 +258,11 @@ export default {
     if (!this.$store.getters.clients?.length) {
       await this.$store.dispatch('loadClients');
     }
-    
+
     if (this.employeeId) {
       await this.loadSelectedEmployee();
     }
-    
+
     this.saveInitialState();
   },
   methods: {
@@ -291,7 +289,6 @@ export default {
             this.selectedEmployee = loadedUser;
           }
         } catch (error) {
-          console.error('Ошибка при загрузке сотрудника:', error);
         }
       }
     },
@@ -382,7 +379,7 @@ export default {
         const expectedLength = 11;
 
         if (cleanedPhone.length < expectedLength) {
-          this.showNotification("Ошибка", `Номер должен содержать ${expectedLength} цифр (код страны + номер)`, true);
+          this.showNotification(this.$t('error'), this.$t('phoneNumberLengthWithCountry', { length: expectedLength }), true);
           return;
         }
 
@@ -405,12 +402,12 @@ export default {
         }
 
         if (phoneToSave.length !== expectedLength) {
-          this.showNotification("Ошибка", `Номер должен содержать ${expectedLength} цифр`, true);
+          this.showNotification(this.$t('error'), this.$t('phoneNumberLength', { length: expectedLength }), true);
           return;
         }
 
         if (this.phones.includes(phoneToSave)) {
-          this.showNotification("Ошибка", "Этот номер телефона уже добавлен!", true);
+          this.showNotification(this.$t('error'), this.$t('phoneNumberDuplicate'), true);
           return;
         }
         this.phones.push(phoneToSave);
@@ -463,7 +460,7 @@ export default {
 
       const editedPhone = this.editingPhones[index];
       if (!editedPhone || !editedPhone.trim()) {
-        this.showNotification("Ошибка", "Номер телефона не может быть пустым", true);
+        this.showNotification(this.$t('error'), this.$t('phoneNumberRequired'), true);
         return;
       }
 
@@ -499,7 +496,7 @@ export default {
       }
 
       if (phoneWithoutCode.length < expectedLocalLength) {
-        this.showNotification("Ошибка", `Номер должен содержать ${expectedLocalLength} цифр (без кода страны)`, true);
+        this.showNotification(this.$t('error'), this.$t('phoneNumberLengthWithoutCountry', { length: expectedLocalLength }), true);
         this.editingPhones[index] = this.formatPhoneForInput(this.phones[index]);
         return;
       }
@@ -512,13 +509,13 @@ export default {
       const expectedFullLength = 11;
 
       if (phoneToSave.length !== expectedFullLength) {
-        this.showNotification("Ошибка", `Номер должен содержать ${expectedFullLength} цифр (код страны + номер)`, true);
+        this.showNotification(this.$t('error'), this.$t('phoneNumberLengthWithCountry', { length: expectedFullLength }), true);
         this.editingPhones[index] = this.formatPhoneForInput(this.phones[index]);
         return;
       }
 
       if (this.phones.includes(phoneToSave) && this.phones[index] !== phoneToSave) {
-        this.showNotification("Ошибка", "Этот номер телефона уже добавлен!", true);
+        this.showNotification(this.$t('error'), this.$t('phoneNumberDuplicate'), true);
         this.editingPhones[index] = this.formatPhoneForInput(this.phones[index]);
         return;
       }
@@ -541,7 +538,6 @@ export default {
     removeEmail(index) {
       this.emails.splice(index, 1);
     },
-    // Методы для crudFormMixin
     prepareSave() {
       if ((this.clientType === 'employee' || this.clientType === 'investor') && !this.selectedEmployee) {
         throw new Error(this.$t('selectEmployee') || 'Необходимо выбрать сотрудника');
@@ -577,24 +573,22 @@ export default {
       if (resp.message) {
         return resp.item || data;
       }
-      throw new Error('Failed to save');
+      throw new Error(this.$t('errorSavingClient') || 'Ошибка сохранения клиента');
     },
     onSaveError(error) {
       if (error.message && (error.message.includes('selectEmployee') || error.message.includes('выбрать сотрудника'))) {
-        this.showNotification(this.$t('error') || 'Ошибка', error.message, true);
+        this.showNotification(this.$t('error'), error.message, true);
       }
     },
-    // Метод save() теперь используется из crudFormMixin
-    // Валидация перенесена в prepareSave()
-    // Метод для crudFormMixin
+
     async performDelete() {
       const resp = await ClientController.deleteItem(this.editingItemId);
       if (resp.message) {
         return resp;
       }
-      throw new Error('Failed to delete');
+      throw new Error(this.$t('errorDeletingClient') || 'Ошибка удаления клиента');
     },
-    // Метод deleteItem() теперь используется из crudFormMixin
+    
     clearForm() {
       this.firstName = "";
       this.lastName = "";
@@ -655,14 +649,14 @@ export default {
         this.emails = newEditingItem.emails.map((email) => email.email) || [];
         this.discountType = newEditingItem.discountType ?? "fixed";
         this.discount = newEditingItem.discount ?? 0;
-        
+
         this.employeeId = newEditingItem.employeeId || null;
         if (this.employeeId) {
           await this.loadSelectedEmployee();
         } else {
           this.selectedEmployee = null;
         }
-        
+
         this.currentTab = "info";
       } else {
         this.currentTab = "info";

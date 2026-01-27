@@ -1,5 +1,6 @@
 <template>
-    <transition name="fade" mode="out-in">
+    <div>
+        <transition name="fade" mode="out-in">
         <!-- Табличный вид -->
         <div v-if="data != null && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.leaves" :columns-config="columnsConfig" :table-data="data.items"
@@ -33,29 +34,29 @@
                             <FiltersContainer :has-active-filters="hasActiveFilters"
                                 :active-filters-count="getActiveFiltersCount()" @reset="resetFilters">
                                 <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('user') || 'Сотрудник' }}</label>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('user') }}</label>
                                     <select v-model="userFilter" @change="debouncedFetchItems" class="w-full">
-                                        <option value="">{{ $t('allUsers') || 'Все сотрудники' }}</option>
+                                        <option value="">{{ $t('allUsers') }}</option>
                                         <option v-for="user in users" :key="user.id" :value="user.id">
                                             {{ user.name }} {{ user.surname || '' }}
                                         </option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('leaveType') || 'Тип отпуска' }}</label>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('leaveType') }}</label>
                                     <select v-model="leaveTypeFilter" @change="debouncedFetchItems" class="w-full">
-                                        <option value="">{{ $t('allLeaveTypes') || 'Все типы' }}</option>
+                                        <option value="">{{ $t('allLeaveTypes') }}</option>
                                         <option v-for="leaveType in leaveTypes" :key="leaveType.id" :value="leaveType.id">
                                             {{ translateLeaveType(leaveType.name, $t) }}
                                         </option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') || 'Дата начала' }}</label>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
                                     <input type="datetime-local" v-model="dateFromFilter" @change="debouncedFetchItems" class="w-full" />
                                 </div>
                                 <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') || 'Дата окончания' }}</label>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
                                     <input type="datetime-local" v-model="dateToFilter" @change="debouncedFetchItems" class="w-full" />
                                 </div>
                             </FiltersContainer>
@@ -123,29 +124,29 @@
                         :active-filters-count="getActiveFiltersCount()"
                         @reset="resetFilters">
                         <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('user') || 'Сотрудник' }}</label>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('user') }}</label>
                             <select v-model="userFilter" @change="debouncedFetchItems" class="w-full">
-                                <option value="">{{ $t('allUsers') || 'Все сотрудники' }}</option>
+                                <option value="">{{ $t('allUsers') }}</option>
                                 <option v-for="user in users" :key="user.id" :value="user.id">
                                     {{ user.name }} {{ user.surname || '' }}
                                 </option>
                             </select>
                         </div>
                         <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('leaveType') || 'Тип отпуска' }}</label>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('leaveType') }}</label>
                             <select v-model="leaveTypeFilter" @change="debouncedFetchItems" class="w-full">
-                                <option value="">{{ $t('allLeaveTypes') || 'Все типы' }}</option>
+                                <option value="">{{ $t('allLeaveTypes') }}</option>
                                 <option v-for="leaveType in leaveTypes" :key="leaveType.id" :value="leaveType.id">
                                     {{ translateLeaveType(leaveType.name, $t) }}
                                 </option>
                             </select>
                         </div>
                         <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') || 'Дата начала' }}</label>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
                             <input type="datetime-local" v-model="dateFromFilter" @change="debouncedFetchItems" class="w-full" />
                         </div>
                         <div>
-                            <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') || 'Дата окончания' }}</label>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
                             <input type="datetime-local" v-model="dateToFilter" @change="debouncedFetchItems" class="w-full" />
                         </div>
                     </FiltersContainer>
@@ -188,6 +189,7 @@
         :is-danger="notificationIsDanger" @close="closeNotification" />
     <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
         :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+    </div>
 </template>
 
 <script>

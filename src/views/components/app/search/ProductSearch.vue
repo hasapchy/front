@@ -24,15 +24,15 @@
                                     <div>
                                         {{ product.stockQuantity }}
                                         {{ product.unitShortName ||
-                                            product.unitName || '' }}
+                                            product.unitName }}
                                         {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol
                                         }}
                                     </div>
                                 </template>
                                 <template v-else>
                                     <div>∞{{ product.unitShortName ||
-                                        product.unitName || '' }} | {{ product.retailPriceFormatted() }}{{
-                                        defaultCurrencySymbol }}</div>
+                                        product.unitName }} | {{ product.retailPriceFormatted() }}{{
+                                            defaultCurrencySymbol }}</div>
                                 </template>
                             </div>
 
@@ -56,12 +56,12 @@
                         <div class="text-[#337AB7] text-sm">
                             <template v-if="product.typeName && product.typeName() === 'product'">
                                 {{ product.stockQuantity }}
-                                {{ product.unitShortName || product.unitName || '' }}
+                                {{ product.unitShortName || product.unitName }}
                                 {{ $t('price') }} {{ product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
                             </template>
                             <template v-else>
-                                ∞{{ product.unitShortName || product.unitName || '' }} | {{
-                                product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
+                                ∞{{ product.unitShortName || product.unitName }} | {{
+                                    product.retailPriceFormatted() }}{{ defaultCurrencySymbol }}
                             </template>
                         </div>
                     </div>
@@ -72,8 +72,9 @@
                             @mousedown.prevent="openCreateProductModal">
                             {{ $t('createProductOrService') }}{{ productSearch ? ` "${productSearch}"` : '' }}
                         </PrimaryButton>
-                        <PrimaryButton v-if="allowTempProduct && !isReceipt && canCreateTempProduct" :is-light="true" icon="fas fa-bolt"
-                            @mousedown.prevent="createTempProductQuick" :disabled="!productSearch.trim() || disabled">
+                        <PrimaryButton v-if="allowTempProduct && !isReceipt && canCreateTempProduct" :is-light="true"
+                            icon="fas fa-bolt" @mousedown.prevent="createTempProductQuick"
+                            :disabled="!productSearch.trim() || disabled">
                             {{ $t('createTempProduct') }}
                         </PrimaryButton>
                     </div>
@@ -181,17 +182,16 @@
                 </tr>
             </tfoot>
         </table>
+        <SideModalDialog :showForm="modalCreateProduct" :onclose="() => modalCreateProduct = false" :level="1">
+            <ProductsCreatePage :defaultType="defaultProductType" :defaultName="defaultProductName" :editingItem="null"
+                @saved="onProductCreated" @saved-error="onProductCreatedError" />
+        </SideModalDialog>
     </div>
-    <SideModalDialog :showForm="modalCreateProduct" :onclose="() => modalCreateProduct = false" :level="1">
-        <ProductsCreatePage :defaultType="defaultProductType" :defaultName="defaultProductName" :editingItem="null"
-            @saved="onProductCreated" @saved-error="onProductCreatedError" />
-    </SideModalDialog>
 </template>
 
 <script>
 import ProductController from '@/api/ProductController';
 import debounce from 'lodash.debounce';
-import ProductSearchDto from '@/dto/product/ProductSearchDto';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import WarehouseReceiptProductDto from '@/dto/warehouse/WarehouseReceiptProductDto';
 import SaleProductDto from '@/dto/sale/SaleProductDto';
@@ -336,7 +336,7 @@ export default {
         defaultCurrencySymbol() {
             const currencies = this.$store.state.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
-            return defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
+            return defaultCurrency ? defaultCurrency.symbol : this.$t('noCurrency');
         },
         discountLocal: {
             get() {
@@ -419,7 +419,6 @@ export default {
                 this.warehouseProducts = results.items || [];
                 this.warehouseProductsLoaded = true;
             } catch (error) {
-                console.error('Ошибка загрузки товаров для склада:', error);
                 this.warehouseProducts = [];
                 this.warehouseProductsLoaded = true;
             }
@@ -451,7 +450,6 @@ export default {
                     this.productResults = products;
                     this.productSearchLoading = false;
                 } catch (error) {
-                    console.error('Ошибка поиска товаров:', error);
                     this.productResults = [];
                     this.productSearchLoading = false;
                 }
@@ -587,7 +585,7 @@ export default {
                 unitId: null,
                 productId: this.generateTempId ? this.generateTempId() : (Date.now() + Math.floor(Math.random() * 1000)),
                 isTempProduct: true,
-                icons() { return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>'; }
+                icons() { return '<i class="fas fa-bolt text-[#EAB308]"></i>'; }
             };
             this.products = [...this.products, tempItem];
             this.productSearch = '';
@@ -607,16 +605,16 @@ export default {
             }
         },
         onProductCreatedError(error) {
-            this.showNotification('Ошибка создания товара', error, true);
+            this.showNotification(this.$t('errorCreatingProduct'), error, true);
         },
         getDefaultIcon(product) {
             if (product.isTempProduct) {
-                return '<i class="fas fa-bolt text-[#EAB308]" title="временный товар"></i>';
+                return '<i class="fas fa-bolt text-[#EAB308]"></i>';
             }
             const isProduct = product.type == 1;
             return isProduct
-                ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
-                : '<i class="fas fa-concierge-bell text-[#3571A4]" title="Услуга"></i>';
+                ? '<i class="fas fa-box text-[#3571A4]"></i>'
+                : '<i class="fas fa-concierge-bell text-[#3571A4]"></i>';
         },
     },
     watch: {

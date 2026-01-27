@@ -8,35 +8,35 @@
                     :onclick="handleSalaryAccrual"
                     :is-success="true"
                     :disabled="buttonsDisabled">
-                    {{ $t('accrueSalary') || 'Начислить зарплату' }}
+                    {{ $t('accrueSalary') }}
                 </PrimaryButton>
                 <PrimaryButton 
                     icon="fas fa-hand-holding-usd" 
                     :onclick="handleSalaryPayment"
                     :is-success="true"
                     :disabled="buttonsDisabled">
-                    {{ $t('paySalary') || 'Выплатить зарплату' }}
+                    {{ $t('paySalary') }}
                 </PrimaryButton>
                 <PrimaryButton 
                     icon="fas fa-gift" 
                     :onclick="handleBonus"
                     :is-success="true"
                     :disabled="buttonsDisabled">
-                    {{ $t('bonus') || 'Начислить премию' }}
+                    {{ $t('bonus') }}
                 </PrimaryButton>
                 <PrimaryButton 
                     icon="fas fa-exclamation-triangle" 
                     :onclick="handlePenalty"
                     :is-danger="true"
                     :disabled="buttonsDisabled">
-                    {{ $t('penalty') || 'Выписать штраф' }}
+                    {{ $t('penalty') }}
                 </PrimaryButton>
                 <PrimaryButton 
                     icon="fas fa-money-check-alt" 
                     :onclick="handleAdvance"
                     :is-success="true"
                     :disabled="buttonsDisabled">
-                    {{ $t('advance') || 'Выдать аванс' }}
+                    {{ $t('advance') }}
                 </PrimaryButton>
             </div>
         </div>
@@ -46,11 +46,11 @@
              class="mb-4 relative group">
             <div class="flex items-center gap-2 cursor-help">
                 <i class="fas fa-question-circle text-gray-400 hover:text-blue-600 transition-colors"></i>
-                <span class="text-xs text-gray-600">{{ $t('salaryDifferenceHelpTitle') || 'В чем разница?' }}</span>
+                <span class="text-xs text-gray-600">{{ $t('salaryDifferenceHelpTitle') }}</span>
             </div>
             <div class="absolute left-0 top-6 z-10 w-80 p-3 bg-blue-50 border border-blue-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                 <p class="text-xs text-blue-800">
-                    {{ $t('salaryDifferenceHelp') || 'Начисление зарплаты — это деньги за проделанную работу сотрудником (запись о долге, сотрудник нам должен). Выплата зарплаты — это фактическая выплата денег сотруднику (не в долг, уменьшает долг сотрудника).' }}
+                    {{ $t('salaryDifferenceHelp') }}
                 </p>
             </div>
         </div>
@@ -62,10 +62,10 @@
                 <i class="fas fa-exclamation-triangle text-yellow-600"></i>
                 <div class="flex-1">
                     <p class="text-sm text-yellow-800 font-semibold">
-                        {{ $t('employeeClientNotFound') || 'Клиент для сотрудника не найден' }}
+                        {{ $t('employeeClientNotFound') }}
                     </p>
                     <p class="text-xs text-yellow-700 mt-1">
-                        {{ $t('employeeClientNotFoundDescription') || 'Для работы с балансом сотрудника необходимо создать связанного клиента с employee_id, соответствующим ID этого сотрудника.' }}
+                        {{ $t('employeeClientNotFoundDescription') }}
                     </p>
                 </div>
             </div>
@@ -196,13 +196,13 @@ export default {
     },
     computed: {
         balanceStatusText() {
-            const employeeName = this.editingItem?.name || 'Сотрудник';
+            const employeeName = this.editingItem?.name || this.$t('employee');
             if (this.totalBalance > 0) {
-                return `${employeeName} нам должен`;
+                return this.$t('employeeOwesUs', { name: employeeName });
             } else if (this.totalBalance < 0) {
-                return `Мы ${employeeName} должны`;
+                return this.$t('weOweEmployee', { name: employeeName });
             } else {
-                return 'Взаиморасчеты';
+                return this.$t('mutualSettlements');
             }
         },
         transactionFormConfig() {
@@ -224,11 +224,11 @@ export default {
         },
         columnsConfig() {
             return [
-                { name: "id", label: "№", size: 60 },
+                { name: "id", label: this.$t("number"), size: 60 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 120 },
                 {
                     name: "sourceType", 
-                    label: "Источник", 
+                    label: this.$t("source"), 
                     size: 120, 
                     component: markRaw(SourceButtonCell),
                     props: (item) => {
@@ -253,7 +253,7 @@ export default {
                 { name: "categoryName", label: this.$t("category"), size: 150 },
                 {
                     name: "debt",
-                    label: "Долг",
+                    label: this.$t("debt"),
                     size: 80,
                     component: markRaw(DebtCell),
                     props: (item) => ({
@@ -311,16 +311,15 @@ export default {
         itemMapper(i, c) {
             switch (c) {
                 case "id":
-                    return i.sourceId || '-';
+                    return i.sourceId;
                 case "dateUser":
-                    return i.dateUser || (i.formatDate ? i.formatDate() : '');
+                    return i.dateUser;
                 case "note":
-                    return i.note || '-';
+                    return i.note;
                 case "categoryName":
-                    const categoryName = i.categoryName || i.category_name || '';
-                    return categoryName ? this.$t(`transactionCategory.${categoryName}`, categoryName) : '-';
+                    const categoryName = i.categoryName || i.category_name;
+                    return categoryName ? this.$t(`transactionCategory.${categoryName}`, categoryName) : '';
                 case "clientImpact":
-                    // Возвращаем числовое значение для сортировки (отображение через компонент ClientImpactCell)
                     return parseFloat(i.amount || 0);
                 default:
                     return i[c];
@@ -337,7 +336,7 @@ export default {
                 this.selectedEntity = { type: 'transaction', data };
             } catch (error) {
                 console.error('Error loading transaction:', error);
-                this.showNotification(this.$t('error') || 'Ошибка', 'Ошибка при загрузке транзакции', true);
+                this.showNotification(this.$t('error'), this.$t('errorLoadingTransaction'), true);
             } finally {
                 this.entityLoading = false;
             }
@@ -372,7 +371,7 @@ export default {
                     errorMessage = errorMessage.join(', ');
                 }
             }
-            this.showNotification(this.$t('error') || 'Ошибка', errorMessage, true);
+            this.showNotification(this.$t('error'), errorMessage, true);
         },
         async fetchDefaultCurrency() {
             try {
@@ -421,15 +420,15 @@ export default {
         },
         getTransactionModalHeader() {
             if (this.transactionModalType === 'bonus') {
-                return this.$t('bonus') || 'Премия';
+                return this.$t('bonus');
             } else if (this.transactionModalType === 'penalty') {
-                return this.$t('penalty') || 'Штраф';
+                return this.$t('penalty');
             } else if (this.transactionModalType === 'salaryAccrual') {
-                return this.$t('accrueSalary') || 'Начисление зарплаты';
+                return this.$t('accrueSalary');
             } else if (this.transactionModalType === 'salaryPayment') {
-                return this.$t('paySalary') || 'Выплата зарплаты';
+                return this.$t('paySalary');
             } else if (this.transactionModalType === 'advance') {
-                return this.$t('advance') || 'Аванс';
+                return this.$t('advance');
             }
             return '';
         },
@@ -442,8 +441,8 @@ export default {
                 this.transactionModalOpen = true;
             } else {
                 this.showNotification(
-                    this.$t('error') || 'Ошибка',
-                    this.$t('employeeClientNotFound') || 'Клиент для сотрудника не найден',
+                    this.$t('error'),
+                    this.$t('employeeClientNotFound'),
                     true
                 );
             }
@@ -488,8 +487,8 @@ export default {
         async handleTransactionSaved() {
             this.closeTransactionModal();
             this.showNotification(
-                this.$t('success') || 'Успешно',
-                this.$t('transactionSaved') || 'Транзакция сохранена',
+                this.$t('success'),
+                this.$t('transactionSaved'),
                 false
             );
             await Promise.all([
@@ -499,8 +498,8 @@ export default {
         },
         handleTransactionError(error) {
             this.showNotification(
-                this.$t('error') || 'Ошибка',
-                typeof error === 'string' ? error : (error.message || this.$t('errorSavingTransaction') || 'Ошибка сохранения транзакции'),
+                this.$t('error'),
+                typeof error === 'string' ? error : (error.message || this.$t('errorSavingTransaction')),
                 true
             );
         }

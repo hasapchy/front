@@ -18,7 +18,7 @@
 
     <!-- Метка (верхний левый угол, без фона) -->
     <div class="text-blue-500 text-[11px] font-bold col-start-1 row-start-1 self-start">
-      ∞{{ service.unit_short_name || service.unit_name || '' }}
+      ∞{{ service.unit_short_name || service.unit_name }}
     </div>
 
     <!-- Иконка (верхний правый угол, без фона) -->

@@ -1,136 +1,119 @@
 <template>
-    <transition name="fade" mode="out-in">
-        <!-- Табличный вид -->
-        <div v-if="data?.items && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
-            <DraggableTable table-key="admin.projects" :columns-config="columnsConfig" :table-data="data.items"
-                :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                :onItemClick="onItemClick">
-                <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar
-                        :show-filters="true"
-                        :has-active-filters="hasActiveFilters"
-                        :active-filters-count="getActiveFiltersCount()"
-                        :on-filters-reset="resetFilters"
-                        :show-pagination="true"
-                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                        :on-page-change="fetchItems"
-                        :on-per-page-change="handlePerPageChange"
-                        :resetColumns="resetColumns"
-                        :columns="columns"
-                        :toggleVisible="toggleVisible"
-                        :log="log">
-                        <template #left>
-                            <PrimaryButton 
-                                :onclick="() => { showModal(null) }" 
-                                icon="fas fa-plus"
-                                :disabled="!$store.getters.hasPermission('projects_create')">
-                            </PrimaryButton>
-                            
-                            <transition name="fade">
-                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
-                                    :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
-                            </transition>
-                            
-                            <ProjectFilters v-model:statusFilter="statusFilter" v-model:clientFilter="clientFilter"
-                                :statuses="statuses" :clients="clients"
-                                :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"
-                                @reset="resetFilters" @apply="applyFilters" />
+    <div>
+        <transition name="fade" mode="out-in">
+            <!-- Табличный вид -->
+            <div v-if="data?.items && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
+                <DraggableTable table-key="admin.projects" :columns-config="columnsConfig" :table-data="data.items"
+                    :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="onItemClick">
+                    <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+                        <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
+                            :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
+                            :show-pagination="true"
+                            :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+                            :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
+                            :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
+                            <template #left>
+                                <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
+                                    :disabled="!$store.getters.hasPermission('projects_create')">
+                                </PrimaryButton>
 
-                            <ViewModeToggle :view-mode="viewMode" @change="changeViewMode" />
-                        </template>
+                                <transition name="fade">
+                                    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
+                                        :batch-actions="getBatchActions()" :statuses="statuses"
+                                        :handle-change-status="handleChangeStatus" :show-status-select="true" />
+                                </transition>
 
-                        <template #right="{ resetColumns, columns, toggleVisible, log }">
-                            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
-                                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
-                                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
-                            <TableFilterButton v-if="viewMode === 'table' && columns?.length" :onReset="resetColumns">
-                                <ul>
-                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
-                                        @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name"
-                                            @click="toggleVisible(index)"
-                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
-                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                                                <div>
-                                                    <i class="text-sm mr-2 text-[#337AB7]"
-                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
+                                <ProjectFilters :statusFilter="statusFilter" :clientFilter="clientFilter"
+                                    :statuses="statuses" :clients="clients" :has-active-filters="hasActiveFilters"
+                                    :active-filters-count="getActiveFiltersCount()"
+                                    @update:statusFilter="statusFilter = $event"
+                                    @update:clientFilter="clientFilter = $event" @reset="resetFilters"
+                                    @apply="applyFilters" />
+
+                                <ViewModeToggle :view-mode="viewMode" @change="changeViewMode" />
+                            </template>
+
+                            <template #right="{ resetColumns, columns, toggleVisible, log }">
+                                <Pagination v-if="data != null" :currentPage="data.currentPage"
+                                    :lastPage="data.lastPage" :per-page="perPage" :per-page-options="perPageOptions"
+                                    :show-per-page-selector="true" @changePage="fetchItems"
+                                    @perPageChange="handlePerPageChange" />
+                                <TableFilterButton v-if="viewMode === 'table' && columns?.length"
+                                    :onReset="resetColumns">
+                                    <ul>
+                                        <draggable v-if="columns.length" class="dragArea list-group w-full"
+                                            :list="columns" @change="log">
+                                            <li v-for="(element, index) in columns" :key="element.name"
+                                                @click="toggleVisible(index)"
+                                                class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                                <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                    <div>
+                                                        <i class="text-sm mr-2 text-[#337AB7]"
+                                                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                        {{ $te(element.label) ? $t(element.label) : element.label }}
+                                                    </div>
+                                                    <div><i
+                                                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                    </div>
                                                 </div>
-                                                <div><i
-                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    </draggable>
-                                </ul>
-                            </TableFilterButton>
-                        </template>
-                        <template #gear>
-                        </template>
-                    </TableControlsBar>
-                </template>
-            </DraggableTable>
-        </div>
+                                            </li>
+                                        </draggable>
+                                    </ul>
+                                </TableFilterButton>
+                            </template>
+                            <template #gear>
+                            </template>
+                        </TableControlsBar>
+                    </template>
+                </DraggableTable>
+            </div>
 
-        <!-- Канбан вид -->
-        <div v-else-if="data && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
-            <TableControlsBar
-                :show-filters="true"
-                :has-active-filters="hasActiveFilters"
-                :active-filters-count="getActiveFiltersCount()"
-                :on-filters-reset="resetFilters"
-                :show-pagination="false">
-                <template #left>
-                    <PrimaryButton 
-                        :onclick="() => { showModal(null) }" 
-                        icon="fas fa-plus"
-                        :disabled="!$store.getters.hasPermission('projects_create')">
-                    </PrimaryButton>
-                    
-                    <ProjectFilters v-model:statusFilter="statusFilter" v-model:clientFilter="clientFilter"
-                        :statuses="statuses" :clients="clients"
-                        :has-active-filters="hasActiveFilters" :active-filters-count="getActiveFiltersCount()"
-                        @reset="resetFilters" @apply="applyFilters" />
+            <!-- Канбан вид -->
+            <div v-else-if="data && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
+                <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
+                    :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
+                    :show-pagination="false">
+                    <template #left>
+                        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
+                            :disabled="!$store.getters.hasPermission('projects_create')">
+                        </PrimaryButton>
 
-                    <ViewModeToggle :view-mode="viewMode" @change="changeViewMode" />
-                </template>
-                <template #right>
-                    <KanbanFieldsButton mode="projects" />
-                </template>
-            </TableControlsBar>
-            
-            <KanbanBoard
-                :orders="allKanbanItems"
-                :statuses="statuses"
-                :projects="[]"
-                :selected-ids="selectedIds"
-                :loading="loading"
-                :currency-symbol="''"
-                :is-project-mode="true"
-                :batch-status-id="batchStatusId"
-                @order-moved="handleProjectMoved"
-                @card-dblclick="onItemClick"
-                @card-select-toggle="toggleSelectRow"
-                @column-select-toggle="handleColumnSelectToggle"
-                @batch-status-change="handleBatchStatusChangeFromToolbar"
-                @batch-delete="() => deleteItems(selectedIds)"
-                @clear-selection="() => selectedIds = []"
-            />
-        </div>
+                        <ProjectFilters :statusFilter="statusFilter" :clientFilter="clientFilter" :statuses="statuses"
+                            :clients="clients" :has-active-filters="hasActiveFilters"
+                            :active-filters-count="getActiveFiltersCount()" @update:statusFilter="statusFilter = $event"
+                            @update:clientFilter="clientFilter = $event" @reset="resetFilters" @apply="applyFilters" />
 
-        <!-- Загрузка -->
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
-        </div>
-    </transition>
-    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <ProjectCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-project'" ref="projectcreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
-    </SideModalDialog>
-    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" @close="closeNotification" />
-            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
-                  :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+                        <ViewModeToggle :view-mode="viewMode" @change="changeViewMode" />
+                    </template>
+                    <template #right>
+                        <KanbanFieldsButton mode="projects" />
+                    </template>
+                </TableControlsBar>
+
+                <KanbanBoard :orders="allKanbanItems" :statuses="statuses" :projects="[]" :selected-ids="selectedIds"
+                    :loading="loading" :currency-symbol="''" :is-project-mode="true" :batch-status-id="batchStatusId"
+                    @order-moved="handleProjectMoved" @card-dblclick="onItemClick" @card-select-toggle="toggleSelectRow"
+                    @column-select-toggle="handleColumnSelectToggle"
+                    @batch-status-change="handleBatchStatusChangeFromToolbar"
+                    @batch-delete="() => deleteItems(selectedIds)" @clear-selection="() => selectedIds = []" />
+            </div>
+
+            <div v-else key="loader" class="flex justify-center items-center h-64">
+                <SpinnerIcon />
+            </div>
+        </transition>
+        <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
+            <ProjectCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-project'"
+                ref="projectcreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
+                @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
+                :editingItem="editingItem" />
+        </SideModalDialog>
+        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
+            :is-danger="notificationIsDanger" @close="closeNotification" />
+        <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
+            :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
+            @leave="deleteDialog = false" />
+    </div>
 </template>
 
 <script>
@@ -200,7 +183,7 @@ export default {
     async mounted() {
         await this.fetchProjectStatuses();
         this.clients = this.$store.getters.clients || [];
-        
+
         const savedViewMode = localStorage.getItem('projects_viewMode');
         if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
             this.viewMode = savedViewMode;
@@ -211,14 +194,14 @@ export default {
                 console.warn('Failed to save view mode to localStorage:', error);
             }
         }
-        
+
         if (this.viewMode === 'kanban') {
             this.allKanbanItems = [];
         } else {
             const savedPerPage = localStorage.getItem('perPage');
             this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
         }
-        
+
         this.fetchItems();
         eventBus.on('cache:invalidate', this.handleCacheInvalidate);
     },
@@ -250,13 +233,13 @@ export default {
             this.batchStatusId = '';
             this.pendingStatusUpdates.clear();
             this.allKanbanItems = [];
-            
+
             await this.fetchItems(1, false);
-            
+
             // Уведомляем пользователя о смене компании (из базового миксина)
             this.$store.dispatch('showNotification', {
-              title: 'Компания изменена',
-              isDanger: false
+                title: 'Компания изменена',
+                isDanger: false
             });
         },
         async fetchProjectStatuses() {
@@ -286,9 +269,9 @@ export default {
                 const filters = {};
                 if (this.statusFilter) filters.status_id = this.statusFilter;
                 if (this.clientFilter) filters.client_id = this.clientFilter;
-                
+
                 const new_data = await ProjectController.getItems(page, filters, per_page);
-                
+
                 if (this.viewMode === 'kanban') {
                     this.allKanbanItems = [...new_data.items];
                     this.data = { ...new_data, items: this.allKanbanItems, currentPage: 1, nextPage: null, lastPage: 1 };
@@ -310,7 +293,7 @@ export default {
                 await this.$store.dispatch('loadProjects');
                 await this.fetchItems(this.data.currentPage, true);
                 this.showNotification(this.$t('statusUpdated'), "", false);
-                this.selectedIds = []; // Очищаем выбранные элементы
+                this.selectedIds = [];
             } catch (error) {
                 this.showNotification(this.$t('errorUpdatingStatus'), this.getApiErrorMessage(error), true);
             }
@@ -339,7 +322,6 @@ export default {
             }
         },
 
-        // Обработчик перемещения проекта в канбане
         getCurrentItems() {
             return this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
         },
@@ -354,11 +336,9 @@ export default {
                             project.statusName = translateProjectStatus(status.name, this.$t);
                         }
                     }
-                    
-                    // Сохраняем в очередь для debounce
+
                     this.pendingStatusUpdates.set(updateData.orderId, updateData.statusId);
-                    
-                    // Вызываем debounced функцию
+
                     this.debouncedStatusUpdate();
                 }
             } catch (error) {
@@ -368,11 +348,9 @@ export default {
             }
         },
 
-        // Debounced функция для отправки обновлений статусов
-        debouncedStatusUpdate: debounce(function() {
+        debouncedStatusUpdate: debounce(function () {
             if (this.pendingStatusUpdates.size === 0) return;
-            
-            // Группируем обновления по статусам
+
             const updatesByStatus = new Map();
             this.pendingStatusUpdates.forEach((statusId, projectId) => {
                 if (!updatesByStatus.has(statusId)) {
@@ -380,16 +358,15 @@ export default {
                 }
                 updatesByStatus.get(statusId).push(projectId);
             });
-            
+
             // Очищаем очередь
             this.pendingStatusUpdates.clear();
-            
-            // Отправляем батч-запросы для каждого статуса
+
             const promises = [];
             updatesByStatus.forEach((projectIds, statusId) => {
-                const promise = ProjectController.batchUpdateStatus({ 
-                    ids: projectIds, 
-                    status_id: statusId 
+                const promise = ProjectController.batchUpdateStatus({
+                    ids: projectIds,
+                    status_id: statusId
                 }).catch(error => {
                     const errors = this.getApiErrorMessage(error);
                     this.showNotification(this.$t('error'), errors.join("\n"), true);
@@ -397,8 +374,7 @@ export default {
                 });
                 promises.push(promise);
             });
-            
-            // Показываем уведомление после всех обновлений и перезагружаем проекты в store
+
             Promise.all(promises).then(async () => {
                 await this.$store.dispatch('invalidateCache', { type: 'projects' });
                 await this.$store.dispatch('loadProjects');
@@ -427,11 +403,10 @@ export default {
             }
         },
 
-        // Массовое изменение статуса в канбане
         handleBatchStatusChange(statusId = null) {
             const targetStatusId = statusId || this.batchStatusId;
             if (!targetStatusId || !this.selectedIds.length) return;
-            
+
             this.handleChangeStatus(this.selectedIds, targetStatusId);
             this.batchStatusId = '';
             this.selectedIds = [];
@@ -455,14 +430,14 @@ export default {
                 } catch (error) {
                     console.warn('Failed to save view mode to localStorage:', error);
                 }
-                
+
                 if (newMode === 'kanban') {
                     this.allKanbanItems = [];
                 } else {
                     const savedPerPage = localStorage.getItem('perPage');
                     this.perPage = savedPerPage ? parseInt(savedPerPage) : 10;
                 }
-                
+
                 this.$nextTick(() => {
                     this.fetchItems(1, false);
                 });
@@ -506,9 +481,7 @@ export default {
 </script>
 
 <style scoped>
-/* Контейнер для канбана - изолируем канбан */
 .kanban-view-container {
     width: 100%;
-    /* Не добавляем overflow здесь - канбан сам управляет своим скроллом */
 }
 </style>

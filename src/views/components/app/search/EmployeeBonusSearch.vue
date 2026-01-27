@@ -2,18 +2,18 @@
     <div class="relative">
         <div class="grid grid-cols-2 gap-4 mb-4">
             <div>
-                <label class="block mb-1 required">{{ $t('cashRegister') || 'Касса' }}</label>
+                <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
                 <select :value="cashId" @input="$emit('update:cashId', $event.target.value)" :disabled="disabled" required>
-                    <option value="">{{ $t('selectCashRegister') || 'Выберите кассу' }}</option>
+                    <option value="">{{ $t('selectCashRegister') }}</option>
                     <option v-for="cash in allCashRegisters" :key="cash.id" :value="cash.id">
                         {{ cash.name }} ({{ cash.currencySymbol || '' }})
                     </option>
                 </select>
             </div>
             <div>
-                <label class="block mb-1 required">{{ $t('currency') || 'Валюта' }}</label>
+                <label class="block mb-1 required">{{ $t('currency') }}</label>
                 <select :value="currencyId" @input="$emit('update:currencyId', $event.target.value)" :disabled="disabled" required>
-                    <option value="">{{ $t('no') || 'Нет' }}</option>
+                    <option value="">{{ $t('no') }}</option>
                     <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
                         {{ currency.symbol }} - {{ currency.name }}
                     </option>
@@ -21,15 +21,16 @@
             </div>
         </div>
 
-        <label class="block mb-1" :class="{ 'required': required }">{{ $t('employees') || 'Сотрудники' }}</label>
+        <label class="block mb-1" :class="{ 'required': required }">{{ $t('employees') }}</label>
         <UserSearch
-            v-model:selectedUsers="selectedUserIds"
+            :selectedUsers="selectedUserIds"
+            @update:selectedUsers="selectedUserIds = $event"
             :multiple="true"
             :disabled="disabled"
             :showLabel="false"
         />
 
-        <label v-if="employees.length > 0" class="block mt-4 mb-1">{{ $t('specifiedEmployees') || 'Указанные сотрудники' }}</label>
+        <label v-if="employees.length > 0" class="block mt-4 mb-1">{{ $t('specifiedEmployees') }}</label>
         <table v-if="employees.length > 0" class="min-w-full bg-white shadow-md rounded mb-6 w-100">
             <thead class="bg-gray-100 rounded-t-sm">
                 <tr>
@@ -39,7 +40,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="(employee, index) in employees" :key="employee.id" class="border-b border-gray-300">
+                <tr v-for="employee in employees" :key="employee.id" class="border-b border-gray-300">
                     <td class="py-2 px-4 border-x border-gray-300">
                         <div class="flex items-center">
                             <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0 mr-2">

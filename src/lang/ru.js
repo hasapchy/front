@@ -212,6 +212,7 @@ export default {
   inactive: 'Неактивный',
   currentRate: 'Текущий курс',
   currency: 'Валюта',
+  noCurrency: 'Нет валюты',
   enterExchangeRate: 'Введите курс обмена',
   exchangeRateHelp: 'Курс показывает, сколько единиц целевой валюты получится за 1 единицу исходной валюты',
   receiverAmount: 'Сумма получателя',
@@ -372,6 +373,12 @@ export default {
   searchProductsAndServices: 'Поиск товаров и услуг',
   enterProductNameOrCode: 'Введите название товара или код',
   specifiedProductsAndServices: 'Указанные товары и услуги',
+  productsInStock: 'Товары на складе',
+  allProductsAndServices: 'Все товары и услуги',
+  zeroQuantityProductsExcluded: 'Товары с количеством 0 будут исключены из заказа',
+  exceededStockWarning: 'Количество некоторых товаров превышает доступный остаток',
+  stockLeft: 'Остаток',
+  addProductsToOrder: 'Добавьте товары в заказ',
   specifiedEmployees: 'Указанные сотрудники',
   amountWithoutDiscount: 'Сумма без скидки',
   toCash: 'В кассу',
@@ -419,6 +426,11 @@ export default {
   invalidPhone: 'Неверный телефон',
   minLength: 'Минимум {min} символов',
   maxLength: 'Максимум {max} символов',
+  phoneNumberRequired: 'Номер телефона не может быть пустым',
+  phoneNumberDuplicate: 'Этот номер телефона уже добавлен!',
+  phoneNumberLength: 'Номер должен содержать {length} цифр',
+  phoneNumberLengthWithCountry: 'Номер должен содержать {length} цифр (код страны + номер)',
+  phoneNumberLengthWithoutCountry: 'Номер должен содержать {length} цифр (без кода страны)',
 
   // Время
   today: 'Сегодня',
@@ -440,9 +452,13 @@ export default {
 
   // Склад
   stock: 'Склад',
+  stocks: 'Остатки',
   leftovers: 'Отходы материалов',
   unlimited: 'Бесконечно',
   selectedStock: 'Выбранные остатки',
+  quantityAndDimensions: 'Количество / Размеры',
+  width: 'Ширина',
+  length: 'Длина',
 
   // Заказы
   orderNumber: 'Номер заказа',
@@ -850,8 +866,7 @@ export default {
 
   // Транзакции
   addTransaction: 'Добавить транзакцию',
-  addProjectTransaction: 'Добавить проектную транзакцию',
-  projectTransactionInfo: 'Проектная транзакция не влияет на кассу и долг клиента. Она служит для дополнительной фиксации операций по проекту и участвует только в расчете баланса проекта.',
+  confirmMarkAsPaidIrreversible: 'Подтвердите действие: отметить контракт как оплаченный? После подтверждения отменить это действие будет невозможно.',
   allCashRegisters: 'Все кассы',
   allTime: 'За все время',
   lastWeek: 'Прошлая неделя',
@@ -934,6 +949,8 @@ export default {
   // Кассы
   addCashRegister: 'Добавить кассу',
   mainCashRegister: 'Главная касса',
+  cashRegisterTypeCash: 'Наличная касса',
+  cashRegisterTypeNonCash: 'Безналичная касса',
   errorGettingCashRegisterList: 'Ошибка получения списка касс',
   cashRegisterSuccessfullyAdded: 'Касса успешно добавлена',
   errorSavingCashRegister: 'Ошибка сохранения кассы',
@@ -1273,6 +1290,19 @@ export default {
   paymentStatus: 'Статус оплаты',
   unpaid: 'Не оплачено',
   partiallyPaid: 'Частично оплачено',
+  priorityLow: 'Низкий',
+  priorityNormal: 'Нормальный',
+  priorityHigh: 'Высокий',
+  complexitySimple: 'Простая',
+  complexityNormal: 'Нормальная',
+  complexityComplex: 'Сложная',
+  errorChangingCompanySubtitle: 'Не удалось переключить компанию',
+  warning: 'Предупреждение',
+  loadTimeout: 'Таймаут загрузки',
+  errorLoadingEntity: 'Ошибка загрузки: {entity}',
+  someCriticalDataNotLoaded: 'Некоторые критичные данные не загрузились',
+  errorLoadingCompanyData: 'Не удалось загрузить данные компании',
+  failedToFetchUserData: 'Не удалось получить данные пользователя',
   cancelled: 'Отменен',
   allStatuses: 'Все статусы',
 

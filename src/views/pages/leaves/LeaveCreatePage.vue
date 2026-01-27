@@ -1,46 +1,48 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editLeave') : $t('createLeave') }}</h2>
-        <div>
-            <label class="required">{{ $t('leaveType') || 'Тип отпуска' }}</label>
-            <select v-model="leaveTypeId" required>
-                <option value="">{{ $t('selectLeaveType') || 'Выберите тип отпуска' }}</option>
-                                        <option v-for="leaveType in allLeaveTypes" :key="leaveType.id" :value="leaveType.id">
-                                            {{ translateLeaveType(leaveType.name, $t) }}
-                                        </option>
-            </select>
+    <div>
+        <div class="flex flex-col overflow-auto h-full p-4">
+            <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editLeave') : $t('createLeave') }}</h2>
+            <div>
+                <label class="required">{{ $t('leaveType') }}</label>
+                <select v-model="leaveTypeId" required>
+                    <option value="">{{ $t('selectLeaveType') }}</option>
+                                            <option v-for="leaveType in allLeaveTypes" :key="leaveType.id" :value="leaveType.id">
+                                                {{ translateLeaveType(leaveType.name, $t) }}
+                                            </option>
+                </select>
+            </div>
+            <div class="mt-4">
+                <UserSearch :selectedUser="selectedUser" @update:selectedUser="selectedUser = $event" :required="true" />
+            </div>
+            <div class="mt-4">
+                <label class="required">{{ $t('dateFrom') }}</label>
+                <input type="datetime-local" v-model="dateFrom" required />
+            </div>
+            <div class="mt-4">
+                <label class="required">{{ $t('dateTo') }}</label>
+                <input type="datetime-local" v-model="dateTo" required :min="dateFrom" />
+            </div>
+            <div class="mt-4">
+                <label>{{ $t('comment') }}</label>
+                <textarea v-model="comment" class="w-full border rounded p-2" rows="3"></textarea>
+            </div>
         </div>
-        <div class="mt-4">
-            <UserSearch v-model:selectedUser="selectedUser" :required="true" />
+        <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+            <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
+                :is-loading="deleteLoading" icon="fas fa-trash"
+                :disabled="!$store.getters.hasPermission('leaves_delete_all')">
+            </PrimaryButton>
+            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" 
+                :disabled="!leaveTypeId || !userId || !dateFrom || !dateTo || 
+                (editingItemId != null && !$store.getters.hasPermission('leaves_update_all')) ||
+                (editingItemId == null && !$store.getters.hasPermission('leaves_create_all'))">
+            </PrimaryButton>
         </div>
-        <div class="mt-4">
-            <label class="required">{{ $t('dateFrom') || 'Дата начала' }}</label>
-            <input type="datetime-local" v-model="dateFrom" required />
-        </div>
-        <div class="mt-4">
-            <label class="required">{{ $t('dateTo') || 'Дата окончания' }}</label>
-            <input type="datetime-local" v-model="dateTo" required :min="dateFrom" />
-        </div>
-        <div class="mt-4">
-            <label>{{ $t('comment') || 'Комментарий' }}</label>
-            <textarea v-model="comment" class="w-full border rounded p-2" rows="3"></textarea>
-        </div>
+        <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
+            :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
+        <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+            :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-            :is-loading="deleteLoading" icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('leaves_delete_all')">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" 
-            :disabled="!leaveTypeId || !userId || !dateFrom || !dateTo || 
-            (editingItemId != null && !$store.getters.hasPermission('leaves_update_all')) ||
-            (editingItemId == null && !$store.getters.hasPermission('leaves_create_all'))">
-        </PrimaryButton>
-    </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 <script>
@@ -133,12 +135,12 @@ export default {
         },
         async save() {
             if (!this.leaveTypeId || !this.userId || !this.dateFrom || !this.dateTo) {
-                this.$emit('saved-error', this.$t('allRequiredFieldsMustBeFilled') || 'Все обязательные поля должны быть заполнены');
+                this.$emit('saved-error', this.$t('allRequiredFieldsMustBeFilled'));
                 return;
             }
 
             if (new Date(this.dateTo) < new Date(this.dateFrom)) {
-                this.$emit('saved-error', this.$t('dateToMustBeAfterDateFrom') || 'Дата окончания должна быть после даты начала');
+                this.$emit('saved-error', this.$t('dateToMustBeAfterDateFrom'));
                 return;
             }
 

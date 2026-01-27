@@ -1,25 +1,25 @@
 <template>
     <div class="mt-4">
         <div class="flex justify-between items-center mb-4">
-            <h3 class="text-md font-semibold">{{ $t('salaries') || 'Зарплаты' }}</h3>
+            <h3 class="text-md font-semibold">{{ $t('salaries') }}</h3>
             <div class="flex gap-2" v-if="canCreateSalary && canViewSalary">
                 <PrimaryButton 
                     icon="fas fa-plus" 
                     :onclick="openCreateModal"
                     :is-success="true"
                     :disabled="!editingItem || !editingItem.id">
-                    {{ $t('addSalary') || 'Добавить зарплату' }}
+                    {{ $t('addSalary') }}
                 </PrimaryButton>
             </div>
         </div>
 
         <div v-if="!canViewSalary" class="text-gray-500">
-            {{ $t('noPermission') || 'Нет прав на просмотр зарплат' }}
+            {{ $t('noPermission') }}
         </div>
         <template v-else>
             <div v-if="salariesLoading" class="text-gray-500">{{ $t('loading') }}</div>
             <div v-else-if="!salaries || salaries.length === 0" class="text-gray-500">
-                {{ $t('noSalaries') || 'Нет зарплат' }}
+                {{ $t('noSalaries') }}
             </div>
             <DraggableTable 
                 v-if="!salariesLoading && salaries && salaries.length > 0"
@@ -180,14 +180,14 @@ export default {
                 case 'paymentType':
                     const paymentType = item.payment_type !== undefined ? Boolean(item.payment_type) : false;
                     const paymentTypeLabel = paymentType 
-                        ? (this.$t('salaryPaymentTypeCash') || 'Наличный')
-                        : (this.$t('salaryPaymentTypeNonCash') || 'Безналичный');
+                        ? this.$t('salaryPaymentTypeCash')
+                        : this.$t('salaryPaymentTypeNonCash');
                     return `<span>${paymentTypeLabel}</span>`;
                 case 'startDate':
                     return item.start_date ? this.formatDatabaseDate(item.start_date) : '-';
                 case 'endDate':
                     if (!item.end_date) {
-                        return `<span class="text-gray-500">${this.$t('present') || 'по н.в.'}</span>`;
+                        return `<span class="text-gray-500">${this.$t('present')}</span>`;
                     }
                     return this.formatDatabaseDate(item.end_date);
                 case 'note':

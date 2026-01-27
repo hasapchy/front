@@ -1,8 +1,9 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
+    <div>
+        <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editReceipt') : $t('createReceipt') }}</h2>
 
-        <ClientSearch v-model:selectedClient="selectedClient" :onlySuppliers="true" :disabled="!!editingItemId"
+        <ClientSearch :selectedClient="selectedClient" @update:selectedClient="selectedClient = $event" :onlySuppliers="true" :disabled="!!editingItemId"
             required />
 
         <div>
@@ -59,7 +60,7 @@
 
         <ProductSearch ref="productSearch" v-model="products" :disabled="!!editingItemId" :show-quantity="true" :show-price="true"
             :is-receipt="true" :show-amount="editingItemId == null" :only-products="true" :warehouse-id="warehouseId" required />
-    </div>
+        </div>
     
     <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
         <div class="flex items-center space-x-2">
@@ -73,7 +74,7 @@
         </div>
         
         <div v-if="products && products.length > 0" class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
-            <div>{{ $t('total') || 'Итого' }}: <span class="font-bold">{{ totalAmount.toFixed(2) }} {{ defaultCurrencySymbol }}</span></div>
+            <div>{{ $t('total') }}: <span class="font-bold">{{ totalAmount.toFixed(2) }} {{ defaultCurrencySymbol }}</span></div>
         </div>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
@@ -82,6 +83,7 @@
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
         :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 
+    </div>
 </template>
 
 
