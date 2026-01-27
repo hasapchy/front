@@ -1,17 +1,10 @@
 <template>
-    <div 
-        class="kanban-card bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow"
-        :class="{ 'ring-2 ring-blue-400': isSelected }"
-        @dblclick="handleDoubleClick"
-    >
+    <div class="kanban-card bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow"
+        :class="cardClasses" @dblclick="handleDoubleClick">
         <div class="flex items-start justify-between mb-3">
             <div class="flex items-center space-x-2 min-w-0 flex-1">
-                <input 
-                    type="checkbox" 
-                    :checked="isSelected" 
-                    @click.stop="handleSelectToggle"
-                    class="cursor-pointer flex-shrink-0"
-                />
+                <input type="checkbox" :checked="isSelected" @click.stop="handleSelectToggle"
+                    class="cursor-pointer flex-shrink-0" />
                 <span class="text-sm font-bold text-gray-800 truncate">
                     {{ isProjectMode ? `№${order.id}` : isTaskMode ? `${order.title}` : `№${order.id}` }}
                 </span>
@@ -31,14 +24,15 @@
             </div>
         </div>
 
-        <div v-if="!isProjectMode && showField('warehouse') && (order.warehouseName || order.warehouse?.name)" class="mb-2">
+        <div v-if="!isProjectMode && showField('warehouse') && (order.warehouseName || order.warehouse?.name)"
+            class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-warehouse text-gray-400 text-xs"></i>
                 <span class="truncate">{{ order.warehouseName || order.warehouse?.name || '-' }}</span>
             </div>
         </div>
 
-        <div v-if="!isProjectMode && showField('client') && !isTaskMode " class="mb-2">
+        <div v-if="!isProjectMode && showField('client') && !isTaskMode" class="mb-2">
             <div class="flex items-center space-x-1 text-sm">
                 <i :class="getClientIconClass()"></i>
                 <span class="font-medium text-gray-800 truncate">
@@ -84,7 +78,8 @@
         <div v-if="isProjectMode && showField('user')" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-user text-gray-400"></i>
-                <span class="truncate">{{ order.user?.name || order.userName || order.user_name || (order.creator && order.creator.name) }}</span>
+                <span class="truncate">{{ order.user?.name || order.userName || order.user_name || (order.creator &&
+                    order.creator.name) }}</span>
             </div>
         </div>
 
@@ -105,7 +100,7 @@
 
         <div v-if="!isProjectMode && showField('description') && order.description" class="mb-2">
             <div class="text-xs text-gray-600 line-clamp-2">
-                {{ order.description }}
+                <div v-html="order.description"></div>
             </div>
         </div>
 
@@ -123,7 +118,7 @@
             </div>
         </div>
 
-        <div v-if="isTaskMode && showField('creator') && order.creator && !isTaskMode " class="mb-2">
+        <div v-if="isTaskMode && showField('creator') && order.creator && !isTaskMode" class="mb-2">
             <div class="flex items-center space-x-1 text-xs text-gray-600">
                 <i class="fas fa-user-plus text-blue-400"></i>
                 <span class="truncate">{{ order.creator.name || order.creator }}</span>
@@ -143,21 +138,28 @@
                 <span class="truncate">{{ order.executor.name || order.executor }}</span>
             </div>
         </div>
-        
-        <div v-if="isTaskMode && showField('priority') && order.priority" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <span class="text-sm">{{ getPriorityIcons() }}</span>
+
+        <div v-if="isTaskMode" class="flex gap-4 items-center space-x-1 text-xs text-gray-600">
+            <!-- Приоритет (для задач) -->
+            <div v-if="showField('priority') && order.priority" class="mb-2">
+                <div class="flex items-center space-x-1 text-xs text-gray-600">
+                    <span class="text-sm">{{ getPriorityIcons() }}</span>
+                    <!-- <span class="truncate">{{ getPriorityLabel() }}</span> -->
+                </div>
+            </div>
+
+            <!-- Сложность (для задач) -->
+            <div v-if="showField('complexity') && order.complexity" class="mb-2">
+                <div class="flex items-center space-x-1 text-xs text-gray-600">
+                    <span class="text-sm">{{ getComplexityIcons() }}</span>
+                    <!-- <span class="truncate">{{ getComplexityLabel() }}</span> -->
+                </div>
             </div>
         </div>
 
-        <div v-if="isTaskMode && showField('complexity') && order.complexity" class="mb-2">
-            <div class="flex items-center space-x-1 text-xs text-gray-600">
-                <span class="text-sm">{{ getComplexityIcons() }}</span>
-            </div>
-        </div>
 
-
-        <div v-if="isProjectMode && $store.getters.hasPermission('settings_project_budget_view') && order.budget && showField('budget')" class="mt-3 pt-3 border-t border-gray-100">
+        <div v-if="isProjectMode && $store.getters.hasPermission('settings_project_budget_view') && order.budget && showField('budget')"
+            class="mt-3 pt-3 border-t border-gray-100">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-1">
                     <i class="fas fa-money-bill-wave text-gray-700 text-xs"></i>
@@ -181,27 +183,53 @@
             </div>
         </div>
         <div v-if="isSupervisor && order?.statusId === 3 && isTaskMode" class="flex gap-2 mt-2">
-            <button
-                @click.stop="updateTaskStatus('COMPLETED')"
-                class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-green-500 hover:bg-green-600"
-            >
-            <i class="fas fa-check"></i>
+            <button @click.stop="updateTaskStatus('COMPLETED')"
+                class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-green-500 hover:bg-green-600">
+                <i class="fas fa-check"></i>
             </button>
-            <button
-                @click.stop="updateTaskStatus('IN_PROGRESS')"
-                class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-red-500 hover:bg-red-600"
-            >
-            <i class="fas fa-times"></i>
+            <button @click.stop="updateTaskStatus('IN_PROGRESS')"
+                class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-red-500 hover:bg-red-600">
+                <i class="fas fa-times"></i>
             </button>
         </div>
         <div v-if="isExecutor && order?.statusId === 2 && isTaskMode" class="flex gap-2 mt-2">
-            <button
-                @click.stop="updateTaskStatus('PENDING')"
-                class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-green-500 hover:bg-green-600"
-                >
+            <button @click.stop="updateTaskStatus('PENDING')"
+                class="px-3 py-1 text-xs font-semibold  text-white rounded transition bg-green-500 hover:bg-green-600">
                 <i class="fas fa-check"></i>
             </button>
         </div>
+
+        <!-- Чек-лист (для задач) -->
+        <!-- Временно убираем проверку showField для отладки -->
+        <div v-if="isTaskMode && hasChecklist" class="mb-2 mt-2 pt-2 border-t border-gray-100">
+            <!-- Отладка -->
+            <div v-if="isTaskMode && hasChecklist && !showField('checklist')"
+                class="text-xs text-yellow-600 mb-1 italic">
+                ⚠️ Чеклист есть, но поле отключено в настройках
+            </div>
+            <div class="flex items-center space-x-1 text-xs text-gray-600 mb-1">
+                <i class="fas fa-tasks text-blue-400"></i>
+                <span class="font-semibold">
+                    {{ getChecklistProgress(order.checklist) }}
+                </span>
+            </div>
+            <!-- Компактное отображение пунктов чеклиста -->
+            <div class="space-y-1 max-h-20 overflow-y-auto">
+                <div v-for="(item, index) in getChecklistItems(order.checklist).slice(0, 3)" :key="index"
+                    class="flex items-center space-x-1 text-xs">
+                    <input type="checkbox" :checked="item.completed" disabled
+                        class="w-3 h-3 cursor-not-allowed opacity-60" />
+                    <span class="truncate flex-1"
+                        :class="item.completed ? 'line-through text-gray-400' : 'text-gray-700'">
+                        {{ item.text }}
+                    </span>
+                </div>
+                <div v-if="getChecklistItems(order.checklist).length > 3" class="text-xs text-gray-500 italic pl-4">
+                    +{{ getChecklistItems(order.checklist).length - 3 }} {{ $t('more') || 'еще' }}
+                </div>
+            </div>
+        </div>
+
     </div>
 </template>
 
@@ -229,12 +257,50 @@ export default {
             type: Boolean,
             default: false
         },
-    },  
+    },
     emits: ['dblclick', 'select-toggle', 'status-updated'],
     computed: {
+        cardClasses() {
+            return [
+                { 'ring-2 ring-blue-400': this.isSelected },
+                this.getCardBackgroundClass()
+            ];
+        },
         kanbanFields() {
             const mode = this.isProjectMode ? 'projects' : (this.isTaskMode ? 'tasks' : 'orders');
             return this.$store.state.kanbanCardFields[mode] || {};
+        },
+        // Проверяет наличие чеклиста в задаче
+        hasChecklist() {
+            if (!this.isTaskMode) return false;
+            if (!this.order) return false;
+
+            console.log('hasChecklist', this.order);
+            // Проверяем наличие checklist в разных возможных форматах
+            const checklist = this.order.checklist;
+
+
+            // Отладка для задачи с ID 2
+            if (this.order.id === 2) {
+                console.log('[KanbanCard] Task 2 debug:', {
+                    order: this.order,
+                    checklist: checklist,
+                    checklistType: typeof checklist,
+                    isArray: Array.isArray(checklist),
+                    length: Array.isArray(checklist) ? checklist.length : 'N/A'
+                });
+            }
+
+            if (!checklist) return false;
+
+            try {
+                const items = this.getChecklistItems(checklist);
+                const hasItems = Array.isArray(items) && items.length > 0;
+                return hasItems;
+            } catch (e) {
+                console.warn('Ошибка при проверке чеклиста:', e, this.order);
+                return false;
+            }
         },
         isAdmin() {
             const user = this.$store.getters.user;
@@ -251,24 +317,115 @@ export default {
     },
     methods: {
 
-        async updateTaskStatus(targetStatusName) {
-            try {
-            const statuses = this.$store.getters.taskStatuses || [];
-            const target = statuses.find(s => s.name === targetStatusName);
-            if (!target) {
-                console.warn('Status not found:', targetStatusName);
-                return;
+        // Получает массив пунктов чеклиста
+        getChecklistItems(checklist) {
+            if (!checklist) {
+                return [];
             }
 
-            await TaskController.updateItem(this.order.id, { status_id: target.id });
-            this.$emit('status-updated');
+            // Если checklist - строка JSON, парсим её
+            let items = checklist;
+            if (typeof checklist === 'string') {
+                try {
+                    items = JSON.parse(checklist);
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            // Проверяем, что это массив
+            if (!Array.isArray(items)) {
+                return [];
+            }
+
+            return items;
+        },
+
+        // Отображает прогресс чек-листа
+        getChecklistProgress(checklist) {
+            const items = this.getChecklistItems(checklist);
+            if (items.length === 0) {
+                return '';
+            }
+
+            const completed = items.filter(item => item.completed).length;
+            const total = items.length;
+
+            return `${completed}/${total}`;
+        },
+
+        // Проверяет, находится ли задача в статусе "Новый" или "В работе"
+        isTaskInActiveStatus() {
+            if (!this.isTaskMode) return false;
+
+            const statusId = this.order?.statusId;
+            const statusName = this.order?.status?.name;
+
+            // Проверяем по ID статуса (1 = NEW, 2 = IN_PROGRESS, 3 = PENDING)
+            if (statusId === 1 || statusId === 2 || statusId === 3) return true;
+
+            // Проверяем по имени статуса
+            if (statusName === 'NEW' || statusName === 'PENDING' || statusName === 'IN_PROGRESS') {
+                return true;
+            }
+
+            return false;
+        },
+
+        // Вычисляет количество дней до deadline
+        getDaysUntilDeadline(deadline) {
+            if (!deadline) return null;
+
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            const deadlineDate = new Date(deadline);
+            deadlineDate.setHours(0, 0, 0, 0);
+
+            const diffTime = deadlineDate - now;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            return diffDays;
+        },
+
+        // Определяет класс фона карточки в зависимости от срока выполнения
+        getCardBackgroundClass() {
+            if (!this.isTaskInActiveStatus() || !this.order?.deadline) {
+                return '';
+            }
+
+            const daysLeft = this.getDaysUntilDeadline(this.order.deadline);
+
+            // Если просрочена - красная подложка (светлая)
+            if (daysLeft < 0) {
+                return 'bg-red-500';
+            }
+
+            // Если до срока осталось 3 дня или меньше - желтая подложка
+            if (daysLeft <= 3) {
+                return 'bg-yellow-500';
+            }
+
+            return '';
+        },
+
+        async updateTaskStatus(targetStatusName) {
+            try {
+                const statuses = this.$store.getters.taskStatuses || [];
+                const target = statuses.find(s => s.name === targetStatusName);
+                if (!target) {
+                    console.warn('Status not found:', targetStatusName);
+                    return;
+                }
+
+                await TaskController.updateItem(this.order.id, { status_id: target.id });
+                this.$emit('status-updated');
             } catch (e) {
-            console.error('Cannot update task status', e);
-            this.$store.dispatch('showNotification', {
-                title: this.$t('error'),
-                message: this.$t('errorUpdatingStatus'),
-                isDanger: true,
-            });
+                console.error('Cannot update task status', e);
+                this.$store.dispatch('showNotification', {
+                    title: this.$t('error'),
+                    message: this.$t('errorUpdatingStatus'),
+                    isDanger: true,
+                });
             }
         },
         showField(fieldName) {
@@ -375,7 +532,7 @@ export default {
             const paidAmount = parseFloat(this.order?.paidAmount || 0);
             const totalPrice = parseFloat(this.order?.totalPrice || 0);
             const paymentStatus = this.order?.paymentStatus;
-            
+
             if (paymentStatus) {
                 switch (paymentStatus) {
                     case 'unpaid':
@@ -386,7 +543,7 @@ export default {
                         return this.$t('paid');
                 }
             }
-            
+
             if (paidAmount <= 0) {
                 return this.$t('unpaid');
             } else if (paidAmount < totalPrice) {
@@ -401,7 +558,7 @@ export default {
             }
             const paidAmount = parseFloat(this.order?.paidAmount || 0);
             const totalPrice = parseFloat(this.order?.totalPrice || 0);
-            
+
             if (paidAmount <= 0) {
                 return 'text-red-600';
             } else if (paidAmount < totalPrice) {
@@ -416,7 +573,7 @@ export default {
             }
             const paidAmount = parseFloat(this.order?.paidAmount || 0);
             const totalPrice = parseFloat(this.order?.totalPrice || 0);
-            
+
             if (paidAmount <= 0) {
                 return 'fas fa-times-circle';
             } else if (paidAmount < totalPrice) {
@@ -497,4 +654,3 @@ export default {
     overflow: hidden;
 }
 </style>
-

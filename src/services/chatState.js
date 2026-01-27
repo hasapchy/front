@@ -69,6 +69,10 @@ export function buildIncomingMessage(event) {
     files: event.files,
     created_at: event.created_at,
     user: event.user,
+    parent_id: event.parent_id,
+    parent: event.parent,
+    forwarded_from: event.forwarded_from,
+    is_edited: event.is_edited,
   };
 }
 
@@ -86,11 +90,34 @@ export function buildIncomingMessage(event) {
  * }}
  */
 export function applyIncomingMessage({ messages, chats, generalChat, selectedChatId, myUserId }, event) {
-  const newMessage = buildIncomingMessage(event);
+  let newMessage = buildIncomingMessage(event);
+
+  // Resolve parent message if parent_id exists but parent object doesn't
+  if (newMessage.parent_id && !newMessage.parent) {
+    const parentMessage = (messages || []).find(m => Number(m.id) === Number(newMessage.parent_id));
+    if (parentMessage) {
+      newMessage.parent = parentMessage;
+    }
+  }
+
+  // Resolve forwarded_from message if it exists
+  if (newMessage.forwarded_from && typeof newMessage.forwarded_from === 'number') {
+    const forwardedMessage = (messages || []).find(m => Number(m.id) === Number(newMessage.forwarded_from));
+    if (forwardedMessage) {
+      newMessage.forwarded_from = forwardedMessage;
+    }
+  }
 
   const chatId = getMessageChatId(newMessage);
   const selectedIdNum = toNumberOrNull(selectedChatId);
   const isCurrentChat = chatId && selectedIdNum && Number(chatId) === Number(selectedIdNum);
+  
+  console.log("[ChatState] 🔄 applyIncomingMessage:", {
+    chatId,
+    selectedChatId: selectedIdNum,
+    isCurrentChat,
+    messageId: newMessage.id,
+  });
 
   const myIdNum = toNumberOrNull(myUserId);
   const isMyMessage = myIdNum && getMessageUserId(newMessage) && Number(getMessageUserId(newMessage)) === Number(myIdNum);

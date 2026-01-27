@@ -93,15 +93,16 @@
                             @update:projectFilter="projectFilter = $event" @update:clientFilter="clientFilter = $event"
                             @reset="resetFilters" @apply="applyFilters" />
 
-                        <ViewModeToggle :view-mode="viewMode" @change="changeViewMode" />
-                    </template>
-                    <template #right>
-                        <OrderPaymentFilter v-model="paidOrdersFilter" :orders="data ? data.items : []" :statusId="4"
-                            :currencySymbol="currencySymbol" :unpaidOrdersTotal="unpaidOrdersTotal"
-                            @change="handlePaidOrdersFilterChange" />
-                        <KanbanFieldsButton mode="orders" />
-                    </template>
-                </TableControlsBar>
+    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed"
+        :showTimelineButton="!!editingItem" @toggle-timeline="toggleTimeline">
+        <OrderCreatePage v-if="modalDialog && !isBasementMode" :key="editingItem ? editingItem.id : 'new-order'" ref="ordercreatepageForm"
+            @saved="handleSaved" @saved-silent="handleSavedSilent" @saved-error="handleSavedError"
+            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
+            :editingItem="editingItem" />
+        <BasementOrderCreatePage v-if="modalDialog && isBasementMode" :key="editingItem ? editingItem.id : 'new-order'" ref="basementOrderCreatePageForm"
+            @saved="handleSaved" @saved-silent="handleSavedSilent" @saved-error="handleSavedError"
+            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
+            :editingItem="editingItem" />
 
                 <div v-if="selectedIds.length && viewMode === 'kanban'" class="mb-4">
                     <BatchButton :selected-ids="selectedIds" :batch-actions="getBatchActions()"
@@ -186,6 +187,7 @@ import KanbanBoard from "@/views/components/app/kanban/KanbanBoard.vue";
 import { VueDraggableNext } from 'vue-draggable-next';
 import OrderController from "@/api/OrderController";
 import OrderCreatePage from "@/views/pages/orders/OrderCreatePage.vue";
+import BasementOrderCreatePage from "@/views/pages/basement/BasementOrderCreatePage.vue";
 import InvoiceCreatePage from "@/views/pages/invoices/InvoiceCreatePage.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import TransactionController from "@/api/TransactionController";
@@ -225,7 +227,7 @@ const TimelinePanel = defineAsyncComponent(() =>
 
 export default {
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin, printInvoiceMixin, storeDataLoaderMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, draggable: VueDraggableNext },
+    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, BasementOrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, draggable: VueDraggableNext },
     data() {
         return {
             viewMode: 'kanban',
@@ -238,8 +240,6 @@ export default {
             invoiceModalDialog: false,
             controller: OrderController,
             cacheInvalidationType: 'orders',
-            itemViewRouteName: 'OrderView',
-            baseRouteName: 'Orders',
             errorGettingItemText: this.$t('errorGettingOrder'),
             savedSuccessText: this.$t('orderSaved'),
             savedErrorText: this.$t('errorSavingOrder'),
@@ -305,6 +305,16 @@ export default {
         },
         orderTransactionFormConfig() {
             return TRANSACTION_FORM_PRESETS.orderPayment;
+        },
+        isBasementMode() {
+            return this.$route.meta.basementMode;
+        },
+        itemViewRouteName() {
+            // Для basement режима не нужен маршрут, только модалка
+            return this.isBasementMode ? null : 'OrderView';
+        },
+        baseRouteName() {
+            return this.isBasementMode ? 'BasementOrders' : 'Orders';
         }
     },
     watch: {
@@ -334,6 +344,18 @@ export default {
     },
     methods: {
         translateOrderStatus,
+        onItemClick(item) {
+            if (this.isBasementMode) {
+                // Для basement режима - только модалка, без перехода на отдельную страницу
+                if (!item?.id) {
+                    return;
+                }
+                this.showModal(item);
+                return;
+            }
+            // Для обычного режима - стандартная логика из modalMixin
+            return modalMixin.methods.onItemClick.call(this, item);
+        },
         itemMapper(i, c) {
             const search = this.searchQuery;
 

@@ -1,41 +1,43 @@
 <template>
-    <div>
-        <!-- ✅ Один компонент вместо двух - один API запрос вместо двух! -->
-        <TransactionsBalanceWrapper ref="balanceWrapper" :cash-register-id="cashRegisterId || null"
-            :start-date="startDate" :end-date="endDate" :date-filter="dateFilter"
-            :transaction-type-filter="transactionTypeFilter" :source-filter="sourceFilter"
-            @balance-click="handleBalanceClick" />
-        <transition name="fade" mode="out-in">
-            <div v-if="data != null && !loading" key="table">
-                <DraggableTable ref="draggableTable" table-key="admin.transactions" :columns-config="columnsConfig"
-                    :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
-                    :onItemClick="onItemClick">
-                    <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                        <TableControlsBar :show-pagination="true"
-                            :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                            :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
-                            :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
-                            <template #left>
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <PrimaryButton :onclick="openCreateIncomeModal" icon="fas fa-plus"
-                                        :disabled="!$store.getters.hasPermission('transactions_create')">
-                                        {{ $t('income') }}
-                                    </PrimaryButton>
+    <!-- ✅ Один компонент вместо двух - один API запрос вместо двух! -->
+    <TransactionsBalanceWrapper ref="balanceWrapper" :cash-register-id="cashRegisterId || null" :start-date="startDate"
+        :end-date="endDate" :date-filter="dateFilter" :transaction-type-filter="transactionTypeFilter"
+        :source-filter="sourceFilter" @balance-click="handleBalanceClick" />
+    <transition name="fade" mode="out-in">
+        <div v-if="data != null && !loading" key="table">
+            <DraggableTable ref="draggableTable" table-key="admin.transactions" :columns-config="columnsConfig"
+                :table-data="data.items" :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
+                :onItemClick="onItemClick">
+                <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+                    <TableControlsBar
+                        :show-pagination="true"
+                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+                        :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
+                        <template #left>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <PrimaryButton :onclick="openCreateIncomeModal"
+                                    icon="fas fa-plus"
+                                    :disabled="!$store.getters.hasPermission('transactions_create')">
+                                    {{ $t('income') || 'Приход' }}
+                                </PrimaryButton>
 
-                                    <PrimaryButton :onclick="openCreateOutcomeModal" icon="fas fa-minus"
-                                        :isDanger="true"
-                                        :disabled="!$store.getters.hasPermission('transactions_create')">
-                                        {{ $t('outcome') }}
-                                    </PrimaryButton>
-
-                                    <transition name="fade">
-                                        <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
-                                            :batch-actions="getBatchActions()" />
-                                    </transition>
-
-                                    <FiltersContainer :has-active-filters="hasActiveFilters"
-                                        :active-filters-count="getActiveFiltersCount()" @reset="resetFilters"
-                                        @apply="applyFilters">
+                                <PrimaryButton :onclick="openCreateOutcomeModal"
+                                    icon="fas fa-minus"
+                                    :isDanger="true"
+                                    :disabled="!$store.getters.hasPermission('transactions_create')">
+                                    {{ $t('outcome') || 'Расход' }}
+                                </PrimaryButton>
+                                
+                                <transition name="fade">
+                                    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                                </transition>
+                                
+                                <FiltersContainer
+                                    :has-active-filters="hasActiveFilters"
+                                    :active-filters-count="getActiveFiltersCount()"
+                                    @reset="resetFilters"
+                                    @apply="applyFilters">
                                         <div>
                                             <label class="block mb-2 text-xs font-semibold">{{ $t('cashRegister')
                                                 }}</label>
@@ -126,43 +128,42 @@
                                 </div>
                             </template>
 
-                            <template #right>
-                                <Pagination v-if="data != null" :currentPage="data.currentPage"
-                                    :lastPage="data.lastPage" :per-page="perPage" :per-page-options="perPageOptions"
-                                    :show-per-page-selector="true" @changePage="fetchItems"
-                                    @perPageChange="handlePerPageChange" />
-                            </template>
-                            <template #gear="{ resetColumns, columns, toggleVisible, log }">
-                                <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
-                                    <ul>
-                                        <draggable v-if="columns.length" class="dragArea list-group w-full"
-                                            :list="columns" @change="log">
-                                            <li v-for="(element, index) in columns" :key="element.name"
-                                                @click="toggleVisible(index)"
-                                                class="flex items-center hover:bg-gray-100 p-2 rounded">
-                                                <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                                                    <div>
-                                                        <i class="text-sm mr-2 text-[#337AB7]"
-                                                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                                        {{ $te(element.label) ? $t(element.label) : element.label }}
-                                                    </div>
-                                                    <div><i
-                                                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
-                                                    </div>
+                        <template #right>
+                            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
+                                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+                                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+                        </template>
+                        <template #gear="{ resetColumns, columns, toggleVisible, log }">
+                            <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
+                                <ul>
+                                    <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
+                                        @change="log">
+                                        <li v-for="(element, index) in columns" :key="element.name"
+                                            @click="toggleVisible(index)"
+                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                <div>
+                                                    <i class="text-sm mr-2 text-[#337AB7]"
+                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
                                                 </div>
-                                            </li>
-                                        </draggable>
-                                    </ul>
-                                </TableFilterButton>
-                            </template>
-                        </TableControlsBar>
-                    </template>
-                </DraggableTable>
-            </div>
-            <div v-else key="loader" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
-            </div>
-        </transition>
+                                                <div><i
+                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </draggable>
+                                </ul>
+                            </TableFilterButton>
+                        </template>
+                    </TableControlsBar>
+                </template>
+            </DraggableTable>
+        </div>
+        <div v-else key="loader" class="flex justify-center items-center h-64">
+            <SpinnerIcon />
+        </div>
+    </transition>
 
         <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
             <TransactionCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-transaction'"
@@ -215,10 +216,15 @@ import { translateTransactionCategory } from '@/utils/transactionCategoryUtils';
 import filtersMixin from '@/mixins/filtersMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import TRANSACTION_FORM_PRESETS from '@/constants/transactionFormPresets';
+import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
+import Card from '@/views/components/app/cards/Card.vue';
+import CardFieldsButton from '@/views/components/app/cards/CardFieldsButton.vue';
+import { dayjsDateTime } from '@/utils/dateUtils';
+import { formatNumber } from '@/utils/numberUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
-    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
+    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, ViewModeToggle, Card, CardFieldsButton, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -299,13 +305,22 @@ export default {
                 { value: 'other', label: this.$t('other') },
             ],
             categoryFilter: [],
-            allTransactionCategories: []
+            allTransactionCategories: [],
+            viewMode: this.$store.getters.transactionsViewMode || localStorage.getItem('transactions_viewMode') || 'table'
         }
     },
     created() {
         this.$store.commit('SET_SETTINGS_OPEN', false);
 
         eventBus.on('global-search', this.handleSearch);
+        
+        // Восстанавливаем сохраненный режим просмотра из Vuex или localStorage
+        const savedViewMode = this.$store.getters.transactionsViewMode || localStorage.getItem('transactions_viewMode');
+        if (savedViewMode && (savedViewMode === 'table' || savedViewMode === 'cards')) {
+            this.viewMode = savedViewMode;
+        } else {
+            this.viewMode = 'table';
+        }
     },
 
     mounted() {
@@ -584,8 +599,149 @@ export default {
             const selected = Array.isArray(value) ? value : [];
             this.categoryFilter = selected;
         },
+        changeViewMode(mode) {
+            this.viewMode = mode;
+            localStorage.setItem('transactions_viewMode', mode);
+            this.$store.commit('SET_TRANSACTIONS_VIEW_MODE', mode);
+        },
+        getTransactionTitle(transaction) {
+            if (!transaction || !transaction.id) {
+                return '№—';
+            }
+            return `№${transaction.id}`;
+        },
+        toggleSelectRow(id) {
+            const index = this.selectedIds.indexOf(id);
+            if (index > -1) {
+                this.selectedIds.splice(index, 1);
+            } else {
+                this.selectedIds.push(id);
+            }
+        },
+        formatDatabaseDateTime(value) {
+            if (!value) return '—';
+            return dayjsDateTime(value);
+        },
     },
     computed: {
+        transactionCardFieldsForSettings() {
+            return [
+                ...this.transactionCardFields,
+                {
+                    name: 'note',
+                    label: this.$t('note') || 'Примечание',
+                    icon: 'fas fa-sticky-note text-gray-400 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                },
+            ];
+        },
+        transactionCardFields() {
+            return [
+                {
+                    name: 'dateUser',
+                    label: this.$t('dateUser') || 'Дата / Пользователь',
+                    icon: 'fas fa-calendar text-blue-600 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                    formatter: (value, item) => item.formatDate ? `${item.formatDate()} / ${item.userName || '—'}` : (value || '—')
+                },
+                {
+                    name: 'type',
+                    label: this.$t('type') || 'Тип',
+                    icon: 'fas fa-exchange-alt text-purple-600 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                    formatter: (value, item) => {
+                        if (item.type == 1) return this.$t('income') || 'Приход';
+                        if (item.type == 2) return this.$t('outcome') || 'Расход';
+                        if (item.isTransfer == 1) return this.$t('transfer') || 'Перевод';
+                        return '—';
+                    }
+                },
+                {
+                    name: 'source',
+                    label: this.$t('source') || 'Источник',
+                    icon: 'fas fa-tag text-purple-600 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                    formatter: (value, item) => {
+                        if (item.sourceType === 'sale') return this.$t('sale') || 'Продажа';
+                        if (item.sourceType === 'order') return this.$t('order') || 'Заказ';
+                        if (item.sourceType === 'other') return this.$t('other') || 'Другое';
+                        return '—';
+                    }
+                },
+                {
+                    name: 'cashName',
+                    label: this.$t('cashRegister') || 'Касса',
+                    icon: 'fas fa-cash-register text-blue-600 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                    formatter: (value, item) => item.cashName ? `${item.cashName} (${item.cashCurrencySymbol || ''})` : '—'
+                },
+                {
+                    name: 'client',
+                    label: this.$t('customer') || 'Клиент',
+                    icon: 'fas fa-user text-blue-600 text-xs',
+                    type: 'object',
+                    showLabel: false,
+                    medium: true,
+                    formatter: (value, item) => {
+                        if (!item.client) return '—';
+                        if (typeof item.client.fullName === 'function') {
+                            return item.client.fullName();
+                        }
+                        const firstName = item.client.firstName || '';
+                        const lastName = item.client.lastName || '';
+                        const name = `${firstName} ${lastName}`.trim();
+                        return name || this.$t('notSpecified') || '—';
+                    }
+                },
+                {
+                    name: 'projectName',
+                    label: this.$t('project') || 'Проект',
+                    icon: 'fas fa-folder text-purple-600 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                    formatter: (value) => value || '—'
+                },
+                {
+                    name: 'categoryName',
+                    label: this.$t('category') || 'Категория',
+                    icon: 'fas fa-list text-gray-500 text-xs',
+                    type: 'string',
+                    showLabel: false,
+                    formatter: (value) => translateTransactionCategory(value, this.$t) || '—'
+                },
+            ];
+        },
+        getTransactionFooterFields() {
+            return (transaction) => {
+                const isPositive = transaction.type == 1;
+                const amount = parseFloat(transaction.cashAmount || 0) * (isPositive ? 1 : -1);
+                const symbol = transaction.cashCurrencySymbol || '';
+                
+                return [
+                    {
+                        name: 'cashAmount',
+                        label: this.$t('total') || 'Итого',
+                        icon: 'fas fa-money-bill-wave text-xs',
+                        type: 'price',
+                        formatter: () => {
+                            const formatted = formatNumber(amount, 2, true);
+                            return symbol ? `${formatted} ${symbol}` : formatted;
+                        },
+                        colorClass: () => {
+                            return isPositive ? 'text-green-700' : 'text-red-700';
+                        },
+                        iconColor: () => {
+                            return isPositive ? 'text-green-600' : 'text-red-600';
+                        }
+                    }
+                ];
+            };
+        },
         searchQuery() {
             return this.$store.state.searchQuery;
         },
@@ -622,3 +778,28 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+.cards-view-container {
+    padding: 1rem 0;
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    align-items: stretch; /* Растягиваем карточки на всю высоту для одинакового размера */
+}
+
+.cards-grid > * {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 640px) {
+    .cards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

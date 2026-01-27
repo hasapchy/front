@@ -1,5 +1,5 @@
 <template>
-    <div class="leave-calendar-container">
+    <div class="leave-calendar-container" ref="calendarContainer">
         <!-- Навигация по месяцам -->
         <div class="calendar-header mb-4 flex items-center justify-between">
             <button @click="previousMonth" class="p-2 hover:bg-gray-100 rounded transition-colors">
@@ -12,7 +12,7 @@
         </div>
 
         <!-- Календарь со списком сотрудников -->
-        <div class="calendar-timeline-wrapper">
+        <div class="calendar-timeline-wrapper" ref="scrollableWrapper">
             <div class="calendar-timeline-container">
                 <!-- Заголовок с днями -->
                 <div class="timeline-header">
@@ -67,15 +67,27 @@
                                 class="leave-bar-continuous"
                                 :style="getContinuousLeaveBarStyle(leave, user.id)"
                                 @click.stop="handleLeaveClick(leave)"
-                                :title="`${getLeaveTypeName(leave.leaveTypeName)} - ${leave.formatDateFrom()} - ${leave.formatDateTo()}`"
+                                @mouseenter="showTooltip($event, leave)"
+                                @mouseleave="hideTooltip"
                             >
-                                <span class="leave-bar-text">{{ getLeaveTypeName(leave.leaveTypeName) }}</span>
+                                <span class="leave-bar-text">{{ getLeaveBarText(leave) }}</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Кастомный tooltip для комментариев -->
+        <Transition name="tooltip-fade">
+            <div 
+                v-if="tooltip.visible && tooltip.text"
+                class="leave-tooltip"
+                :style="tooltip.style"
+            >
+                {{ tooltip.text }}
+            </div>
+        </Transition>
 
         <!-- Легенда -->
         <div class="leave-legend mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -122,7 +134,12 @@ export default {
     emits: ['leave-click', 'day-click'],
     data() {
         return {
-            currentDate: dayjs()
+            currentDate: dayjs(),
+            tooltip: {
+                visible: false,
+                text: '',
+                style: {}
+            }
         }
     },
     computed: {
@@ -180,13 +197,83 @@ export default {
             
             // Сортируем по имени
             return Array.from(userMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+        },
+        // Кэшируем стили отпусков для оптимизации производительности
+        leaveBarStylesCache() {
+            const cache = new Map();
+            const firstVisibleDay = this.calendarDays.length > 0 ? dayjs(this.calendarDays[0].date).startOf('day') : null;
+            const lastVisibleDay = this.calendarDays.length > 0 ? dayjs(this.calendarDays[this.calendarDays.length - 1].date).startOf('day') : null;
+            
+            if (!firstVisibleDay || !lastVisibleDay) {
+                return cache;
+            }
+            
+            // Группируем отпуска по пользователям для оптимизации
+            const leavesByUser = new Map();
+            this.leaves.forEach(leave => {
+                if (leave.userId) {
+                    if (!leavesByUser.has(leave.userId)) {
+                        leavesByUser.set(leave.userId, []);
+                    }
+                    leavesByUser.get(leave.userId).push(leave);
+                }
+            });
+            
+            // Вычисляем стили для всех отпусков
+            leavesByUser.forEach((userLeaves, userId) => {
+                userLeaves.forEach((leave, leaveIndex) => {
+                    const style = this.computeLeaveBarStyle(leave, userId, userLeaves, leaveIndex, firstVisibleDay, lastVisibleDay);
+                    cache.set(`${leave.id}-${userId}`, style);
+                });
+            });
+            
+            return cache;
         }
     },
     mounted() {
+        this.scrollToToday();
     },
     methods: {
         getLeaveTypeName(typeName) {
             return typeName ? translateLeaveType(typeName, this.$t) : '';
+        },
+        getLeaveBarText(leave) {
+            const comment = leave.comment && leave.comment.trim() ? leave.comment.trim() : null;
+            const leaveTypeName = this.getLeaveTypeName(leave.leaveTypeName);
+            
+            if (comment) {
+                // Комментарий занимает всю доступную ширину линии, CSS сам обрежет через text-overflow
+                return leaveTypeName ? `${comment} (${leaveTypeName})` : comment;
+            }
+            
+            // Если комментария нет, показываем тип отпуска
+            return leaveTypeName || '';
+        },
+        showTooltip(event, leave) {
+            const comment = leave.comment && leave.comment.trim() ? leave.comment.trim() : null;
+            
+            // Показываем tooltip только если есть комментарий
+            if (comment) {
+                const targetRect = event.currentTarget.getBoundingClientRect();
+                const containerRect = this.$refs.calendarContainer?.getBoundingClientRect() || { left: 0, top: 0 };
+                
+                // Позиционируем относительно контейнера календаря снизу полоски
+                const left = targetRect.left - containerRect.left + targetRect.width / 2;
+                const top = targetRect.top - containerRect.top + targetRect.height + 10;
+                
+                this.tooltip = {
+                    visible: true,
+                    text: comment,
+                    style: {
+                        left: `${left}px`,
+                        top: `${top}px`,
+                        transform: 'translateX(-50%)'
+                    }
+                };
+            }
+        },
+        hideTooltip() {
+            this.tooltip.visible = false;
         },
         getLeavesForUserAndDay(userId, date) {
             const checkDay = dayjs(date).startOf('day');
@@ -205,14 +292,12 @@ export default {
         getLeavesForUser(userId) {
             return this.leaves.filter(leave => leave.userId === userId);
         },
-        getContinuousLeaveBarStyle(leave, userId) {
+        // Оптимизированный метод для вычисления стиля отпуска
+        computeLeaveBarStyle(leave, userId, userLeaves, leaveIndex, firstVisibleDay, lastVisibleDay) {
             const leaveStart = dayjs(leave.dateFrom).startOf('day');
             const leaveEnd = dayjs(leave.dateTo).startOf('day');
             
             // Проверяем, что отпуск попадает в видимый период
-            const firstVisibleDay = dayjs(this.calendarDays[0].date).startOf('day');
-            const lastVisibleDay = dayjs(this.calendarDays[this.calendarDays.length - 1].date).startOf('day');
-            
             if (leaveEnd.isBefore(firstVisibleDay, 'day') || leaveStart.isAfter(lastVisibleDay, 'day')) {
                 return { display: 'none' };
             }
@@ -225,7 +310,7 @@ export default {
             const visibleStart = leaveStart.isBefore(firstVisibleDay, 'day') ? firstVisibleDay : leaveStart;
             const visibleEnd = leaveEnd.isAfter(lastVisibleDay, 'day') ? lastVisibleDay : leaveEnd;
             
-            // Находим индексы для видимого диапазона
+            // Оптимизированный поиск индексов (бинарный поиск не нужен для небольшого количества дней)
             for (let i = 0; i < this.calendarDays.length; i++) {
                 const dayDate = dayjs(this.calendarDays[i].date).startOf('day');
                 
@@ -236,6 +321,7 @@ export default {
                 if (dayDate.isSame(visibleEnd, 'day') || (dayDate.isBefore(visibleEnd, 'day') && 
                     (i === this.calendarDays.length - 1 || dayjs(this.calendarDays[i + 1].date).startOf('day').isAfter(visibleEnd, 'day')))) {
                     actualEndIndex = i;
+                    break; // Нашли конец, можно прервать цикл
                 }
             }
             
@@ -266,12 +352,8 @@ export default {
             const isStartVisible = dayjs(this.calendarDays[actualStartIndex].date).startOf('day').isSame(leaveStart, 'day');
             const isEndVisible = dayjs(this.calendarDays[actualEndIndex].date).startOf('day').isSame(leaveEnd, 'day');
             
-            // Вычисляем вертикальное смещение для перекрывающихся отпусков
-            const userLeaves = this.getLeavesForUser(userId);
+            // Вычисляем вертикальное смещение для перекрывающихся отпусков (оптимизировано)
             let verticalOffset = 0;
-            const leaveIndex = userLeaves.findIndex(l => l.id === leave.id);
-            
-            // Если есть перекрывающиеся отпуска, смещаем вертикально
             if (leaveIndex > 0) {
                 for (let i = 0; i < leaveIndex; i++) {
                     const otherLeave = userLeaves[i];
@@ -297,6 +379,11 @@ export default {
                              isStartVisible ? '0.25rem 0 0 0.25rem' : 
                              isEndVisible ? '0 0.25rem 0.25rem 0' : '0'
             };
+        },
+        // Используем кэш для получения стилей
+        getContinuousLeaveBarStyle(leave, userId) {
+            const cacheKey = `${leave.id}-${userId}`;
+            return this.leaveBarStylesCache.get(cacheKey) || { display: 'none' };
         },
         getLeaveBarStyle(leave, dayDate) {
             const leaveStart = dayjs(leave.dateFrom).startOf('day');
@@ -325,15 +412,34 @@ export default {
         },
         handleDayClick(day) {
             this.$emit('day-click', day);
+        },
+        scrollToToday() {
+            // Устанавливаем позицию на сегодняшнюю дату при загрузке (без анимации)
+            this.$nextTick(() => {
+                const today = dayjs();
+                const todayIndex = this.calendarDays.findIndex(day => {
+                    return dayjs(day.date).isSame(today, 'day');
+                });
+                
+                if (todayIndex !== -1 && this.$refs.scrollableWrapper) {
+                    const dayWidth = 60; // ширина одной ячейки дня
+                    const scrollPosition = todayIndex * dayWidth;
+                    // Устанавливаем позицию так, чтобы сегодняшний день был примерно в центре видимой области
+                    const containerWidth = this.$refs.scrollableWrapper.clientWidth;
+                    const targetScroll = Math.max(0, scrollPosition - containerWidth / 2 + dayWidth / 2);
+                    
+                    // Мгновенная установка позиции без анимации
+                    this.$refs.scrollableWrapper.scrollLeft = targetScroll;
+                }
+            });
         }
-    },
-    watch: {
     }
 }
 </script>
 
 <style scoped>
 .leave-calendar-container {
+    position: relative;
     width: 100%;
     padding: 1rem;
 }
@@ -553,6 +659,60 @@ export default {
     border: 1px solid #e5e7eb;
 }
 
+.leave-tooltip {
+    position: absolute;
+    background-color: #1f2937;
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    max-width: 300px;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.4;
+}
+
+.leave-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-bottom-color: #1f2937;
+}
+
+.tooltip-fade-enter-active {
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+.tooltip-fade-leave-active {
+    transition: opacity 0.15s ease-in, transform 0.15s ease-in;
+}
+
+.tooltip-fade-enter-from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(5px);
+}
+
+.tooltip-fade-enter-to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.tooltip-fade-leave-from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.tooltip-fade-leave-to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(5px);
+}
+
 /* Адаптивность */
 @media (max-width: 768px) {
     .user-header-cell,
@@ -573,4 +733,5 @@ export default {
     }
 }
 </style>
+
 

@@ -12,6 +12,11 @@
 
 
             <div class="flex-1 p-4 overflow-auto text-sm">
+                <!-- Календарь праздников -->
+                <div class="mb-6">
+                    <HolidayCalendar />
+                </div>
+
                 <div v-if="loading" class="text-gray-400">Загрузка...</div>
                 <div v-else-if="timeline.length === 0" class="text-gray-400">Нет данных</div>
                 <div v-else class="relative">
@@ -134,10 +139,14 @@ import { formatNumber as formatNumberUtil, formatCurrency as formatCurrencyUtil 
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import { translateOrderStatus, translateTaskStatus } from '@/utils/translationUtils';
+import HolidayCalendar from '@/views/components/app/HolidayCalendar.vue';
 
 dayjs.locale('ru');
 
 export default {
+    components: {
+        HolidayCalendar,
+    },
     props: {
         type: { type: String, required: true },
         id: { type: [String, Number], required: true },

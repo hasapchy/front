@@ -42,6 +42,12 @@
                     </div>
                 </div>
             </div>
+            <div v-show="currentTab === 'holidays'" class="mt-4">
+                <HolidayManager v-model="form.holidays" :company-id="editingItemId" />
+            </div>
+            <div v-show="currentTab === 'workSchedule'" class="mt-4">
+                <WorkScheduleEditor v-model="form.work_schedule" />
+            </div>
             <div v-show="currentTab === 'settings' && editingItem" class="mt-4">
                 <!-- Настройка отображения удаленных транзакций -->
                 <div class="mb-6 p-4 bg-white border rounded">
@@ -205,16 +211,20 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
+import HolidayManager from '@/views/components/app/HolidayManager.vue';
 import CompaniesController from '@/api/CompaniesController';
+import CompanyHolidayController from '@/api/CompanyHolidayController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import { eventBus } from '@/eventBus';
+import WorkScheduleEditor from '@/views/components/app/WorkScheduleEditor.vue';
+import { CompanyDto } from '@/dto/companies/CompanyDto';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
-    components: { PrimaryButton, AlertDialog, NotificationToast, ImageCropperModal, TabBar },
+    components: { PrimaryButton, AlertDialog, NotificationToast, ImageCropperModal, TabBar, HolidayManager, WorkScheduleEditor },
     props: {
         editingItem: {
             type: Object,
@@ -224,6 +234,7 @@ export default {
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
     data() {
         return {
+            lastSaveResponse: null, // Для передачи response в onSaveSuccess
             form: {
                 name: '',
                 logo: null,
@@ -237,6 +248,8 @@ export default {
                 rounding_quantity_direction: 'standard',
                 rounding_quantity_custom_threshold: null,
                 skip_project_order_balance: true,
+                holidays: [],
+                work_schedule: null,
             },
             currentLogo: '',
             selected_logo: null,
@@ -246,6 +259,8 @@ export default {
             currentTab: 'info',
             tabs: [
                 { name: 'info', label: 'info' },
+                { name: 'holidays', label: 'holidays' },
+                { name: 'workSchedule', label: 'workSchedule' },
                 { name: 'settings', label: 'settings' }
             ],
             roundingConfirmDialog: false,
@@ -255,8 +270,20 @@ export default {
     },
     computed: {
         translatedTabs() {
-            // Скрываем вкладку настроек при создании новой компании
-            const visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab => tab.name !== 'settings');
+            let visibleTabs = this.tabs;
+            
+            // Скрываем вкладки настроек и праздников при создании новой компании
+            if (!this.editingItem) {
+                visibleTabs = visibleTabs.filter(tab => 
+                    tab.name !== 'settings' && tab.name !== 'holidays'
+                );
+            }
+            
+            // Скрываем вкладку праздников, если нет прав на просмотр
+            if (!this.$store.getters.hasPermission('company_holidays_view_all')) {
+                visibleTabs = visibleTabs.filter(tab => tab.name !== 'holidays');
+            }
+            
             return visibleTabs.map(tab => ({
                 ...tab,
                 label: this.$t(tab.label)
@@ -275,8 +302,8 @@ export default {
     },
     methods: {
         changeTab(tabName) {
-            // Предотвращаем переход на вкладку настроек при создании новой компании
-            if (tabName === 'settings' && !this.editingItem) {
+            // Предотвращаем переход на вкладки настроек и праздников при создании новой компании
+            if ((tabName === 'settings' || tabName === 'holidays') && !this.editingItem) {
                 this.currentTab = 'info';
                 return;
             }
@@ -302,6 +329,8 @@ export default {
             this.form.rounding_quantity_direction = 'standard';
             this.form.rounding_quantity_custom_threshold = null;
             this.form.skip_project_order_balance = true;
+            this.form.holidays = [];
+            this.form.work_schedule = null;
             this.currentLogo = '';
             this.selected_logo = null;
             this.croppedFile = null;
@@ -330,7 +359,7 @@ export default {
                 rounding_quantity_custom_threshold = (value === '' || value === null || value === undefined) ? null : value;
             }
 
-            return {
+            const data = {
                 name: this.form.name,
                 show_deleted_transactions: this.form.show_deleted_transactions,
                 rounding_decimals: this.form.rounding_decimals,
@@ -343,15 +372,73 @@ export default {
                 rounding_quantity_custom_threshold: rounding_quantity_custom_threshold,
                 skip_project_order_balance: Boolean(this.form.skip_project_order_balance),
             };
+            // Добавляем work_schedule только если он не null и не undefined
+            if (this.form.work_schedule !== null && this.form.work_schedule !== undefined) {
+                data.work_schedule = this.form.work_schedule;
+            }
+            return data;
         },
         async performSave(data) {
-            // Используем обрезанный файл, если он есть, иначе файл из input
             const fileToUpload = this.croppedFile || this.$refs.logoInput?.files[0];
 
+            let response;
             if (this.editingItemId) {
-                return await CompaniesController.updateItem(this.editingItemId, data, fileToUpload);
+                response = await CompaniesController.updateItem(this.editingItemId, data, fileToUpload);
             } else {
-                return await CompaniesController.storeItem(data, fileToUpload);
+                response = await CompaniesController.storeItem(data, fileToUpload);
+            }
+
+            this.lastSaveResponse = response;
+            return response;
+        },
+        async saveHolidays(companyId) {
+            try {
+                // Получаем существующие праздники для этой компании
+                const existingHolidays = await CompanyHolidayController.getAll({ 
+                    company_id: companyId 
+                });
+                const existingIds = new Set(existingHolidays.map(h => h.id));
+
+                if (!this.form.holidays || this.form.holidays.length === 0) {
+                    // Если праздников нет, удаляем все существующие
+                    for (const existing of existingHolidays) {
+                        await CompanyHolidayController.deleteItem(existing.id);
+                    }
+                    return;
+                }
+
+                // Удаляем праздники, которых больше нет в form.holidays
+                for (const existing of existingHolidays) {
+                    if (!this.form.holidays.some(h => h.id === existing.id)) {
+                        await CompanyHolidayController.deleteItem(existing.id);
+                    }
+                }
+
+                // Создаём или обновляем праздники
+                for (const holiday of this.form.holidays) {
+                    const data = {
+                        company_id: companyId,
+                        name: holiday.name,
+                        date: holiday.date,
+                        is_recurring: holiday.isRecurring ?? true,
+                        color: holiday.color || '#FF5733',
+                    };
+
+                    if (holiday.id && existingIds.has(holiday.id)) {
+                        // Обновляем существующий
+                        await CompanyHolidayController.updateItem(holiday.id, data);
+                    } else {
+                        // Создаём новый (holiday.id === null или не существует в базе)
+                        await CompanyHolidayController.storeItem(data);
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка сохранения праздников:', error);
+                this.showNotification(
+                    this.$t('warning'),
+                    'Компания сохранена, но возникла ошибка с праздниками',
+                    true
+                );
             }
         },
         async performDelete() {
@@ -361,8 +448,33 @@ export default {
             }
             return resp;
         },
-        onSaveSuccess(response) {
-            eventBus.emit('company-updated');
+        async onSaveSuccess(response) {
+            // Сохраняем праздники ТОЛЬКО при редактировании существующей компании
+            const companyId = this.lastSaveResponse?.company?.id || this.editingItemId;
+            if (this.editingItemId && companyId) {
+                await this.saveHolidays(companyId);
+            }
+            
+            // Обновляем editingItem новыми данными после сохранения
+            if (this.lastSaveResponse?.company) {
+                // Преобразуем данные в CompanyDto для консистентности
+                const updatedCompany = new CompanyDto(this.lastSaveResponse.company);
+                this.$emit('update:editingItem', updatedCompany);
+                // Также обновляем локально для немедленного отображения
+                this.editingItem = updatedCompany;
+                // Перезагружаем данные формы с обновленными данными
+                this.loadCompanyData(updatedCompany);
+            }
+
+            // Эмитим company-updated только если редактируем текущую компанию
+            const currentCompanyId = this.$store.state.currentCompany?.id;
+            const savedCompanyId = this.lastSaveResponse?.company?.id;
+            
+            if (this.editingItemId && Number(currentCompanyId) === Number(savedCompanyId)) {
+                eventBus.emit('company-updated');
+            }
+            
+            this.lastSaveResponse = null;
             this.clearForm();
         },
         onEditingItemChanged(newEditingItem) {
@@ -451,8 +563,32 @@ export default {
             }
             return '';
         },
+        formatDateForInput(date) {
+            // Конвертирует дату из формата "2026-03-13T19:00:00.000000Z" в "2026-03-13"
+            if (!date) return '';
+            
+            // Если дата уже в правильном формате
+            if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                return date;
+            }
+            
+            // Если дата в ISO формате или другом формате с временем
+            try {
+                const d = new Date(date);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            } catch (e) {
+                console.error('Ошибка форматирования даты:', date, e);
+                return date;
+            }
+        },
 
-        loadCompanyData(company) {
+        async loadCompanyData(company) {
+            // Всегда начинаем с вкладки "Информация"
+            this.currentTab = 'info';
+            this.form.work_schedule = company.work_schedule || null;
             this.form.name = company.name || '';
             this.form.show_deleted_transactions = company.show_deleted_transactions || false;
             this.form.rounding_decimals = company.rounding_decimals !== undefined ? company.rounding_decimals : 2;
@@ -468,6 +604,27 @@ export default {
             this.selected_logo = null;
             if (this.$refs.logoInput) {
                 this.$refs.logoInput.value = null;
+            }
+
+            // Загружаем праздники для любой компании (передаём company_id)
+            if (company.id) {
+                try {
+                    const holidays = await CompanyHolidayController.getAll({ 
+                        company_id: company.id 
+                    });
+                    this.form.holidays = holidays.map(h => ({
+                        id: h.id,
+                        name: h.name,
+                        date: this.formatDateForInput(h.date),
+                        isRecurring: h.is_recurring ?? true,
+                        color: h.color || '#FF5733',
+                    }));
+                } catch (error) {
+                    console.error('Ошибка загрузки праздников:', error);
+                    this.form.holidays = [];
+                }
+            } else {
+                this.form.holidays = [];
             }
         },
         confirmRoundingEnable() {

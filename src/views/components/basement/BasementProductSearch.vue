@@ -176,7 +176,7 @@
 </template>
 
 <script>
-import BasementProductController from '@/api/basement/BasementProductController';
+import ProductController from '@/api/ProductController';
 import debounce from 'lodash.debounce';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import ServiceCard from './ServiceCard.vue';
@@ -280,7 +280,7 @@ export default {
             if (searchTerm && searchTerm.length >= 3) {
                 this.productSearchLoading = true;
                 try {
-                    const results = await BasementProductController.searchItems(searchTerm);
+                    const results = await ProductController.search(searchTerm);
                     let products = results;
 
                     if (this.onlyProducts) {
@@ -305,7 +305,7 @@ export default {
                 const perPage = 1000;
 
                 while (hasMorePages) {
-                    const prodPage = await BasementProductController.getItems(currentPage, true, {}, perPage);
+                    const prodPage = await ProductController.getItems(currentPage, true, {}, perPage);
                     const products = prodPage.items || [];
 
                     if (this.onlyProducts) {
@@ -340,7 +340,7 @@ export default {
         async loadServices() {
             this.servicesLoading = true;
             try {
-                const servicesData = await BasementProductController.getItems(1, false, {}, 20);
+                const servicesData = await ProductController.getItems(1, false, {}, 20);
                 this.services = servicesData.items || [];
             } catch (error) {
                 this.services = [];

@@ -21,7 +21,7 @@
 </template>
 
 <script>
-import BasementProductController from '@/api/basement/BasementProductController';
+import ProductController from '@/api/ProductController';
 import WarehouseWriteoffProductDto from '@/dto/warehouse/WarehouseWriteoffProductDto';
 import ServiceCard from './ServiceCard.vue';
 
@@ -104,7 +104,7 @@ export default {
         async loadServices() {
             this.servicesLoading = true;
             try {
-                const servicesData = await BasementProductController.getItems(1, false, {}, 20);
+                const servicesData = await ProductController.getItems(1, false, {}, 20);
                 this.services = servicesData.items || [];
             } catch (error) {
                 this.services = [];

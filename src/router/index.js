@@ -4,10 +4,8 @@ import TokenUtils from "@/utils/tokenUtils";
 
 import SidebarLayout from "@/views/layouts/SidebarLayout.vue";
 import BlankLayout from "@/views/layouts/BlankLayout.vue";
-import BasementLayout from "@/views/layouts/BasementLayout.vue";
 
 import LoginPage from "@/views/pages/auth/LoginPage.vue";
-import HomePage from "@/views/pages/home/HomePage.vue";
 import WarehousesPage from "@/views/pages/warehouses/WarehousesPage.vue";
 import AdminWarehousesPage from "@/views/pages/admin/warehouses/AdminWarehousesPage.vue";
 import CategoriesPage from "@/views/pages/categories/CategoriesPage.vue";
@@ -31,6 +29,7 @@ import CompaniesPage from "@/views/pages/companies/CompaniesPage.vue";
 import CurrencyHistoryPage from "@/views/pages/currencies/CurrencyHistoryPage.vue";
 import LeavesPage from "@/views/pages/leaves/LeavesPage.vue";
 import LeaveTypesPage from "@/views/pages/leave_types/LeaveTypesPage.vue";
+import CompanyHolidaysPage from "@/views/pages/company-holidays/CompanyHolidaysPage.vue";
 import MessengerPage from "@/views/pages/messenger/MessengerPage.vue";
 
 // Basement pages
@@ -46,8 +45,8 @@ const routes = [
       {
         path: "/",
         name: "Home",
-        component: HomePage,
-        meta: { title: "home", requiresAuth: true },
+        component: () => import("@/views/pages/news/NewsPage.vue"),
+        meta: { title: "news", requiresAuth: true },
       },
       {
         path: "/messenger",
@@ -105,6 +104,35 @@ const routes = [
           title: "tasks",
           requiresAuth: true,
           permission: "tasks_view",
+        },
+      },
+      {
+        path: "/news",
+        name: "News",
+        component: () => import("@/views/pages/news/NewsPage.vue"),
+        meta: {
+          title: "news",
+          requiresAuth: true,
+        },
+      },
+      {
+        path: "/message-templates",
+        name: "message_templates",
+        component: () => import("@/views/pages/message-templates/MessageTemplatesPage.vue"),
+        meta: {
+          title: "messageTemplates",
+          requiresAuth: true,
+          permission: "templates_view",
+        },
+      },
+      {
+        path: "/message-templates/:id",
+        name: "MessageTemplateView",
+        component: () => import("@/views/pages/message-templates/MessageTemplatesPage.vue"),
+        meta: {
+          title: "messageTemplates",
+          requiresAuth: true,
+          permission: "templates_view",
         },
       },
       {
@@ -492,7 +520,7 @@ const routes = [
         path: "/org-structure",
         name: "org-structure",
         component: () => import("@/views/pages/departments/DepartmentPage.vue"),
-        meta: { title: "orgStructure", requiresAuth: true, permission: "departments_view" },
+        meta: { title: "orgStructure", requiresAuth: true, permission: "departments_view_all" },
       },
       {
         path: "/roles",
@@ -688,6 +716,26 @@ const routes = [
         },
       },
       {
+        path: "/company-holidays",
+        name: "CompanyHolidays",
+        component: CompanyHolidaysPage,
+        meta: {
+          title: "companyHolidays",
+          requiresAuth: true,
+          permission: "company_holidays_view",
+        },
+      },
+      {
+        path: "/company-holidays/:id",
+        name: "CompanyHolidayView",
+        component: CompanyHolidaysPage,
+        meta: {
+          title: "companyHolidays",
+          requiresAuth: true,
+          permission: "company_holidays_view",
+        },
+      },
+      {
         path: "/leave_types",
         name: "leave_types",
         component: LeaveTypesPage,
@@ -713,6 +761,40 @@ const routes = [
           permission: "leave_types_view_all",
         },
       },
+      // Праздники теперь управляются через вкладку в настройках компании (CompaniesCreatePage)
+      {
+        path: "/basement-orders",
+        name: "BasementOrders",
+        component: BasementOrdersPage,
+        meta: {
+          title: "basementOrders",
+          requiresAuth: true,
+          permission: "orders_view",
+          basementMode: true,
+        },
+      },
+      {
+        path: "/basement-orders/create",
+        name: "BasementOrderCreate",
+        component: BasementOrderCreatePage,
+        meta: {
+          title: "createOrder",
+          requiresAuth: true,
+          permission: "orders_create",
+          basementMode: true,
+        },
+      },
+      {
+        path: "/basement-orders/:id/edit",
+        name: "BasementOrderEdit",
+        component: BasementOrderCreatePage,
+        meta: {
+          title: "editOrder",
+          requiresAuth: true,
+          permission: "orders_update",
+          basementMode: true,
+        },
+      },
     ],
   },
   {
@@ -725,33 +807,6 @@ const routes = [
         path: "/auth/login",
         name: "Login",
         component: LoginPage,
-      },
-    ],
-  },
-
-  // Basement worker routes
-  {
-    path: "/basement",
-    component: BasementLayout,
-    meta: { requiresBasementAuth: true },
-    children: [
-      {
-        path: "orders",
-        name: "BasementOrders",
-        component: BasementOrdersPage,
-        meta: { title: "orders" },
-      },
-      {
-        path: "orders/create",
-        name: "BasementOrderCreate",
-        component: BasementOrderCreatePage,
-        meta: { title: "createOrder" },
-      },
-      {
-        path: "orders/:id/edit",
-        name: "BasementOrderEdit",
-        component: BasementOrderCreatePage,
-        meta: { title: "editOrder" },
       },
     ],
   },
@@ -784,42 +839,20 @@ router.beforeEach(async (to, from, next) => {
     userData = null;
   }
 
-  // Проверка для basement маршрутов
-  if (to.meta.requiresBasementAuth) {
-    if (!token) {
-      return next("/auth/login");
-    }
-
-    // Только basement_worker или admin могут попасть в basement
-    if (!isBasementWorker && !isAdmin) {
-      return next("/auth/login");
-    }
-
-    // Продолжаем к basement маршруту
-    return next();
-  }
-
   // Проверка для обычных маршрутов (основная система)
   if (to.meta.requiresAuth) {
     if (!token) {
       return next("/auth/login");
     }
-
-    // ВАЖНО: Если пользователь ТОЛЬКО basement_worker (не admin), блокируем доступ к основной системе
-    if (isBasementWorker && !isAdmin) {
-      return next("/basement/orders");
-    }
   }
 
   // Если пользователь пытается попасть на страницу логина, но уже авторизован
   if (to.name === "Login" && token) {
-    if (isBasementWorker && !isAdmin) {
-      return next("/basement/orders");
-    }
     return next("/");
   }
 
   if (to.meta.permission) {
+    // Проверка прав доступа для всех пользователей (включая basement workers)
     if (
       !store.state.permissionsLoaded ||
       (store.state.permissionsLoaded && store.state.permissions?.length === 0)

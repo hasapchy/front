@@ -328,6 +328,7 @@ export default {
                 if (!status && task.statusId) {
                     status = this.taskStatuses.find(s => s.id === task.statusId);
                 }
+                console.log('task', task);
                 return {
                     id: task.id,
                     title: task.title,
@@ -342,6 +343,7 @@ export default {
                     created_at: task.createdAt,
                     priority: task.priority,
                     complexity: task.complexity,
+                    checklist: task.checklist,
                 };
             });
         }
@@ -383,7 +385,19 @@ export default {
             this.shouldRestoreScrollOnClose = true;
             this.modalDialog = true;
             this.showTimeline = true;
-            this.editingItem = item;
+            
+            // Если редактируем существующую задачу, загружаем полные данные с сервера
+            if (item && item.id) {
+                try {
+                    const fullTask = await TaskController.getItem(item.id);
+                    this.editingItem = fullTask;
+                } catch (error) {
+                    console.error('Ошибка при загрузке задачи:', error);
+                    this.editingItem = item; // Fallback на переданный item
+                }
+            } else {
+                this.editingItem = item;
+            }
         },
         closeModal(skipScrollRestore = false) {
             modalMixin.methods.closeModal.call(this, skipScrollRestore);

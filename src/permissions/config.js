@@ -118,6 +118,12 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
+    orders_basement: {
+      has_user_id: true,
+      check_strategy: "user_id",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+    },
     order_statuses: {
       has_user_id: false,
       check_strategy: "default",
@@ -161,6 +167,12 @@ export const PERMISSIONS_CONFIG = {
       scope_actions: ["view", "update", "delete"],
     },
     companies: {
+      has_user_id: false,
+      check_strategy: "default",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+    },
+    company_holidays: {
       has_user_id: false,
       check_strategy: "default",
       actions: ["view", "create", "update", "delete"],
@@ -210,6 +222,18 @@ export const PERMISSIONS_CONFIG = {
         group_create: "chats_group_create",
       },
     },
+    news: {
+      has_user_id: true,
+      check_strategy: "user_id",
+      actions: ["create", "update", "delete"],
+      scope_actions: ["update", "delete"],
+    },
+    templates: {
+      has_user_id: false,
+      check_strategy: "default",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+    },
   },
 
   custom_permissions: [
@@ -252,6 +276,10 @@ export const PERMISSIONS_CONFIG = {
       label: "orders",
       resources: ["orders", "order_statuses", "order_statuscategories"],
     },
+    orders_basement: {
+      label: "orders_basement",
+      resources: ["orders_basement"],
+    },
     products: {
       label: "products",
       resources: ["products", "categories"],
@@ -270,7 +298,7 @@ export const PERMISSIONS_CONFIG = {
     },
     companies: {
       label: "companies",
-      resources: ["companies"],
+      resources: ["companies", "company_holidays"],
     },
     currency_history: {
       label: "currency_history",
@@ -291,6 +319,10 @@ export const PERMISSIONS_CONFIG = {
     chats: {
       label: "chats",
       resources: ["chats"],
+    },
+    news: {
+      label: "news",
+      resources: ["news", "templates"],
     },
   },
 

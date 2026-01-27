@@ -43,6 +43,21 @@
         <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
             :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
     </div>
+    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
+            :is-loading="deleteLoading" icon="fas fa-trash"
+            :disabled="!$store.getters.hasPermission('leaves_delete_all')">
+        </PrimaryButton>
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" 
+            :disabled="!leaveTypeId || !userId || !dateFrom || !dateTo || 
+            (editingItemId != null && !$store.getters.hasPermission('leaves_update_all')) ||
+            (editingItemId == null && !$store.getters.hasPermission('leaves_create'))">
+        </PrimaryButton>
+    </div>
+    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
+        :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
+        :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 <script>

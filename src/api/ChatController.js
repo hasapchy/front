@@ -66,12 +66,15 @@ export default class ChatController extends BaseController {
     );
   }
 
-  static async sendMessage(chatId, { body = "", files = [] } = {}) {
+  static async sendMessage(chatId, { body = "", files = [], parent_id = null } = {}) {
     return super.handleRequest(
       async () => {
         const formData = new FormData();
         if (body) {
           formData.append("body", body);
+        }
+        if (parent_id) {
+          formData.append("parent_id", parent_id);
         }
         (files || []).forEach((file) => {
           formData.append("files[]", file);
@@ -86,6 +89,38 @@ export default class ChatController extends BaseController {
         return data.data || data.message || data;
       },
       "Ошибка при отправке сообщения:"
+    );
+  }
+
+  static async updateMessage(chatId, messageId, body) {
+    return super.handleRequest(
+      async () => {
+        const { data } = await api.put(`/chats/${chatId}/messages/${messageId}`, { body });
+        return data.data || data.message || data;
+      },
+      "Ошибка при редактировании сообщения:"
+    );
+  }
+
+  static async deleteMessage(chatId, messageId) {
+    return super.handleRequest(
+      async () => {
+        const { data } = await api.delete(`/chats/${chatId}/messages/${messageId}`);
+        return data.data || data;
+      },
+      "Ошибка при удалении сообщения:"
+    );
+  }
+
+  static async forwardMessage(chatId, messageId, targetChatId) {
+    return super.handleRequest(
+      async () => {
+        const { data } = await api.post(`/chats/${chatId}/messages/${messageId}/forward`, {
+          target_chat_id: targetChatId,
+        });
+        return data.data || data.message || data;
+      },
+      "Ошибка при пересылке сообщения:"
     );
   }
 
