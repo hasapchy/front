@@ -1460,7 +1460,7 @@ const store = createStore({
           id: "basement-orders",
           to: "/basement-orders",
           icon: "fas fa-cart-arrow-down mr-2",
-          label: "ordersB",
+          label: "orders_basement",
           permission: "orders_basement_view",
           basementOnly: true,
         },
