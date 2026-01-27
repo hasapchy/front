@@ -276,7 +276,6 @@ export default {
             this.fetchItems(1, false);
         },
         async handleCompanyChanged(companyId) {
-            // ✅ Очищаем фильтры при смене компании
             this.dateFilter = 'all_time';
             this.startDate = null;
             this.endDate = null;

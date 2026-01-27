@@ -11,22 +11,22 @@
                                 <div class="sm:flex sm:items-start">
                                     <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
                                         <h3 class="font-semibold text-gray-900 text-lg mb-4">
-                                            {{ $t('printInvoice') || 'Распечатать счет' }}
+                                            {{ $t('printInvoice') }}
                                         </h3>
                                         <div class="mt-2">
                                             <label class="block mb-2 text-sm font-semibold">
-                                                {{ $t('selectPdfVariant') || 'Выберите вариант PDF' }}
+                                                {{ $t('selectPdfVariant') }}
                                             </label>
                                             <div class="space-y-2">
                                                 <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
                                                     <input type="checkbox" v-model="selectedVariants" value="short"
                                                         class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                                    <span>{{ $t('shortPdf') || 'Краткий' }}</span>
+                                                    <span>{{ $t('shortPdf') }}</span>
                                                 </label>
                                                 <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
                                                     <input type="checkbox" v-model="selectedVariants" value="detailed"
                                                         class="mr-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                                    <span>{{ $t('detailedPdf') || 'Подробный' }}</span>
+                                                    <span>{{ $t('detailedPdf') }}</span>
                                                 </label>
                                             </div>
                                         </div>
@@ -36,7 +36,7 @@
                             <div class="my-4 flex space-x-2 mx-5 justify-end">
                                 <PrimaryButton :onclick="onPrint" icon="fas fa-print"
                                     :disabled="selectedVariants.length === 0" :is-loading="loading">
-                                    {{ $t('print') || 'Печать' }}
+                                    {{ $t('print') }}
                                 </PrimaryButton>
                                 <PrimaryButton :onclick="onClose" icon="fas fa-times" :isLight="true">
                                     {{ $t('cancel') }}

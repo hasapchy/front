@@ -1,9 +1,8 @@
 <template>
   <div class="mb-6">
-    <!-- Серверный кэш -->
     <div class="bg-white rounded-lg shadow p-6 mb-6">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-semibold text-gray-900">Серверный кэш</h2>
+        <h2 class="text-lg font-semibold text-gray-900">{{ $t('serverCache') }}</h2>
         <div class="flex space-x-2">
           <button
             @click="getCacheStats"
@@ -11,7 +10,7 @@
             class="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
           >
             <i class="fas fa-database" :class="{ 'fa-spin': loading }"></i>
-            <span>Статистика кэша</span>
+            <span>{{ $t('cacheStats') }}</span>
           </button>
 
           <button
@@ -20,55 +19,55 @@
             class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
           >
             <i class="fas fa-trash" :class="{ 'fa-spin': loading }"></i>
-            <span>Очистить кэш</span>
+            <span>{{ $t('clearCache') }}</span>
           </button>
         </div>
       </div>
 
       <div v-if="cacheStats" class="mb-6">
-        <h3 class="text-md font-medium text-gray-800 mb-3">Информация о кэше</h3>
+        <h3 class="text-md font-medium text-gray-800 mb-3">{{ $t('cacheInfo') }}</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="bg-blue-50 p-4 rounded-lg">
-            <div class="text-sm text-blue-600">Тип кэша</div>
+            <div class="text-sm text-blue-600">{{ $t('cacheType') }}</div>
             <div class="text-lg font-medium">{{ cacheStats.type }}</div>
           </div>
           <div class="bg-blue-50 p-4 rounded-lg">
-            <div class="text-sm text-blue-600">Драйвер</div>
+            <div class="text-sm text-blue-600">{{ $t('cacheDriver') }}</div>
             <div class="text-lg font-medium">{{ cacheStats.driver }}</div>
           </div>
           <div class="bg-blue-50 p-4 rounded-lg">
-            <div class="text-sm text-blue-600">Статус</div>
+            <div class="text-sm text-blue-600">{{ $t('cacheStatus') }}</div>
             <div class="text-lg font-medium" :class="{
               'text-green-600': cacheStats.status === 'active',
               'text-red-600': cacheStats.status === 'error'
             }">{{ cacheStats.status }}</div>
           </div>
           <div class="bg-blue-50 p-4 rounded-lg">
-            <div class="text-sm text-blue-600">Элементов</div>
+            <div class="text-sm text-blue-600">{{ $t('entries') }}</div>
             <div class="text-lg font-medium">{{ cacheStats.items_count || 0 }}</div>
           </div>
         </div>
         
         <div v-if="cacheSize && !cacheSize.error" class="mt-4">
-          <h4 class="text-md font-medium text-gray-800 mb-3">Размер кэша</h4>
+          <h4 class="text-md font-medium text-gray-800 mb-3">{{ $t('cacheSize') }}</h4>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="bg-green-50 p-4 rounded-lg">
-              <div class="text-sm text-green-600">Размер</div>
-              <div class="text-lg font-medium">{{ cacheSize.size_mb }} МБ</div>
+              <div class="text-sm text-green-600">{{ $t('size') }}</div>
+              <div class="text-lg font-medium">{{ cacheSize.size_mb }} MB</div>
             </div>
             <div class="bg-green-50 p-4 rounded-lg">
-              <div class="text-sm text-green-600">В КБ</div>
-              <div class="text-lg font-medium">{{ cacheSize.size_kb }} КБ</div>
+              <div class="text-sm text-green-600">KB</div>
+              <div class="text-lg font-medium">{{ cacheSize.size_kb }} KB</div>
             </div>
             <div class="bg-green-50 p-4 rounded-lg">
-              <div class="text-sm text-green-600">В байтах</div>
+              <div class="text-sm text-green-600">{{ $t('bytes') }}</div>
               <div class="text-lg font-medium">{{ cacheSize.size_bytes.toLocaleString() }}</div>
             </div>
           </div>
         </div>
 
         <div v-if="cacheStats && cacheStats.error" class="mt-4">
-          <h4 class="text-md font-medium text-red-800 mb-3">Ошибка кэша</h4>
+          <h4 class="text-md font-medium text-red-800 mb-3">{{ $t('loadError') }}</h4>
           <div class="bg-red-50 p-4 rounded-lg">
             <div class="text-sm text-red-700">{{ cacheStats.error }}</div>
           </div>
@@ -81,14 +80,14 @@
             <i class="fas fa-exclamation-triangle text-red-400"></i>
           </div>
           <div class="ml-3">
-            <h3 class="text-sm font-medium text-red-800">Ошибка</h3>
+            <h3 class="text-sm font-medium text-red-800">{{ $t('error') }}</h3>
             <div class="mt-2 text-sm text-red-700">{{ error }}</div>
             <div class="mt-2">
               <button 
                 @click="getCacheStats"
                 class="text-sm text-red-600 hover:text-red-800 underline"
               >
-                Попробовать снова
+                {{ $t('tryAgain') }}
               </button>
             </div>
           </div>
@@ -101,19 +100,18 @@
             <i class="fas fa-info-circle text-yellow-400"></i>
           </div>
           <div class="ml-3">
-            <h3 class="text-sm font-medium text-yellow-800">Информация о кэше не загружена</h3>
+            <h3 class="text-sm font-medium text-yellow-800">{{ $t('cacheInfoNotLoaded') }}</h3>
             <div class="mt-2 text-sm text-yellow-700">
-              Нажмите кнопку "Статистика кэша" для загрузки информации
+              {{ $t('pressCacheStatsToLoad') }}
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- localStorage кэш -->
     <div class="bg-white rounded-lg shadow p-6">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-semibold text-gray-900">Клиентский кэш (localStorage)</h2>
+        <h2 class="text-lg font-semibold text-gray-900">{{ $t('clientCacheLocalStorage') }}</h2>
         <div class="flex space-x-2">
           <button
             @click="refreshLocalCacheInfo"
@@ -121,7 +119,7 @@
             class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
           >
             <i class="fas fa-sync-alt" :class="{ 'fa-spin': localCacheLoading }"></i>
-            <span>Обновить</span>
+            <span>{{ $t('refreshMetrics') }}</span>
           </button>
 
           <button
@@ -130,7 +128,7 @@
             class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
           >
             <i class="fas fa-trash" :class="{ 'fa-spin': localCacheLoading }"></i>
-            <span>Очистить localStorage</span>
+            <span>{{ $t('clearLocalStorage') }}</span>
           </button>
 
           <button
@@ -139,27 +137,26 @@
             class="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
           >
             <i class="fas fa-broom"></i>
-            <span>Автоочистка</span>
+            <span>{{ $t('autoCleanup') }}</span>
           </button>
         </div>
       </div>
 
       <div v-if="localCacheInfo" class="mb-6">
-        <h3 class="text-md font-medium text-gray-800 mb-3">Информация о localStorage</h3>
+        <h3 class="text-md font-medium text-gray-800 mb-3">{{ $t('localStorageInfo') }}</h3>
         
-        <!-- Общая статистика -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div class="bg-green-50 p-4 rounded-lg">
-            <div class="text-sm text-green-600">Общий размер</div>
-            <div class="text-lg font-medium">{{ localCacheInfo.totalSizeMB }} МБ</div>
-            <div class="text-xs text-green-500">{{ localCacheInfo.totalSizeKB }} КБ</div>
+            <div class="text-sm text-green-600">{{ $t('totalSize') }}</div>
+            <div class="text-lg font-medium">{{ localCacheInfo.totalSizeMB }} MB</div>
+            <div class="text-xs text-green-500">{{ localCacheInfo.totalSizeKB }} KB</div>
           </div>
           <div class="bg-green-50 p-4 rounded-lg">
-            <div class="text-sm text-green-600">Количество ключей</div>
+            <div class="text-sm text-green-600">{{ $t('keyCount') }}</div>
             <div class="text-lg font-medium">{{ localCacheInfo.keyCount }}</div>
           </div>
           <div class="bg-green-50 p-4 rounded-lg">
-            <div class="text-sm text-green-600">Статус</div>
+            <div class="text-sm text-green-600">{{ $t('status') }}</div>
             <div class="text-lg font-medium" :class="{
               'text-green-600': localCacheInfo.status.level === 'ok',
               'text-yellow-600': localCacheInfo.status.level === 'warning',
@@ -167,37 +164,36 @@
             }">{{ localCacheInfo.status.message }}</div>
           </div>
           <div class="bg-green-50 p-4 rounded-lg">
-            <div class="text-sm text-green-600">Устаревших кэшей</div>
+            <div class="text-sm text-green-600">{{ $t('expiredCaches') }}</div>
             <div class="text-lg font-medium">{{ expiredCaches.length }}</div>
           </div>
         </div>
 
-        <!-- Детали по ключам -->
         <div v-if="localCacheInfo.details && Object.keys(localCacheInfo.details).length > 0">
-          <h4 class="text-md font-medium text-gray-800 mb-3">Детали по ключам</h4>
+          <h4 class="text-md font-medium text-gray-800 mb-3">{{ $t('cacheKeyDetails') }}</h4>
           <div class="overflow-x-auto max-h-64">
             <table class="min-w-full bg-white border border-gray-200 rounded-lg">
               <thead class="bg-gray-50">
                 <tr>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ключ</th>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Размер</th>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Возраст</th>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ $t('cacheKey') }}</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ $t('size') }}</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ $t('age') }}</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ $t('status') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200">
                 <tr v-for="(detail, key) in localCacheInfo.details" :key="key" class="hover:bg-gray-50">
                   <td class="px-4 py-2 text-sm text-gray-900 font-mono">{{ key }}</td>
-                  <td class="px-4 py-2 text-sm text-gray-900">{{ detail.sizeKB }} КБ</td>
+                  <td class="px-4 py-2 text-sm text-gray-900">{{ detail.sizeKB }} KB</td>
                   <td class="px-4 py-2 text-sm text-gray-900">
                     <span v-if="detail.timestamp">
-                      {{ getAgeInMinutes(detail.timestamp) }} мин
+                      {{ getAgeInMinutes(detail.timestamp) }} {{ $t('minutesShort') }}
                     </span>
-                    <span v-else class="text-gray-400">N/A</span>
+                    <span v-else class="text-gray-400">{{ $t('notSpecified') }}</span>
                   </td>
                   <td class="px-4 py-2 text-sm">
-                    <span v-if="isExpired(detail.timestamp, key)" class="text-red-600 font-medium">Устарел</span>
-                    <span v-else class="text-green-600 font-medium">Активен</span>
+                    <span v-if="isExpired(detail.timestamp, key)" class="text-red-600 font-medium">{{ $t('expired') }}</span>
+                    <span v-else class="text-green-600 font-medium">{{ $t('active') }}</span>
                   </td>
                 </tr>
               </tbody>
@@ -205,21 +201,20 @@
           </div>
         </div>
 
-        <!-- Устаревшие кэши -->
         <div v-if="expiredCaches.length > 0" class="mt-6">
-          <h4 class="text-md font-medium text-red-800 mb-3">Устаревшие кэши</h4>
+          <h4 class="text-md font-medium text-red-800 mb-3">{{ $t('expiredCachesList') }}</h4>
           <div class="bg-red-50 border border-red-200 rounded-lg p-4">
             <div class="space-y-2">
               <div v-for="cache in expiredCaches" :key="cache.key" class="flex justify-between items-center">
                 <div>
                   <span class="font-mono text-sm">{{ cache.key }}</span>
-                  <span class="text-xs text-red-600 ml-2">{{ cache.ageMinutes }}мин (TTL: {{ cache.ttlMinutes }}мин)</span>
+                  <span class="text-xs text-red-600 ml-2">{{ cache.ageMinutes }}{{ $t('minutesShort') }} (TTL: {{ cache.ttlMinutes }}{{ $t('minutesShort') }})</span>
                 </div>
                 <button
                   @click="clearSpecificCache(cache.key)"
                   class="text-red-600 hover:text-red-800 text-sm underline"
                 >
-                  Удалить
+                  {{ $t('delete') }}
                 </button>
               </div>
             </div>
@@ -233,7 +228,7 @@
             <i class="fas fa-exclamation-triangle text-red-400"></i>
           </div>
           <div class="ml-3">
-            <h3 class="text-sm font-medium text-red-800">Ошибка</h3>
+            <h3 class="text-sm font-medium text-red-800">{{ $t('error') }}</h3>
             <div class="mt-2 text-sm text-red-700">{{ localCacheError }}</div>
           </div>
         </div>
@@ -245,9 +240,9 @@
             <i class="fas fa-info-circle text-yellow-400"></i>
           </div>
           <div class="ml-3">
-            <h3 class="text-sm font-medium text-yellow-800">Информация о localStorage не загружена</h3>
+            <h3 class="text-sm font-medium text-yellow-800">{{ $t('localStorageInfoNotLoaded') }}</h3>
             <div class="mt-2 text-sm text-yellow-700">
-              Нажмите кнопку "Обновить" для загрузки информации
+              {{ $t('pressRefreshToLoad') }}
             </div>
           </div>
         </div>
@@ -290,10 +285,10 @@ export default {
         const cacheStats = await PerformanceController.getCacheStats();
         this.cacheStats = cacheStats;
         this.cacheSize = cacheStats.cache_size;
-        this.showNotification('Статистика кэша обновлена', '', false);
+        this.showNotification(this.$t('cacheStatsUpdated'), '', false);
       } catch (error) {
-        this.error = error.response?.data?.message || error.message || 'Неизвестная ошибка';
-        this.showNotification('Ошибка загрузки статистики кэша', this.error, true);
+        this.error = error.response?.data?.message || error.message;
+        this.showNotification(this.$t('errorLoadingCacheStats'), this.error, true);
       } finally {
         this.loading = false;
       }
@@ -306,16 +301,15 @@ export default {
       try {
         await PerformanceController.clearCache();
         await this.getCacheStats();
-        this.showNotification('Кэш успешно очищен', '', false);
+        this.showNotification(this.$t('cacheCleared'), '', false);
       } catch (error) {
-        this.error = error.response?.data?.message || error.message || 'Неизвестная ошибка';
-        this.showNotification('Ошибка очистки кэша', this.error, true);
+        this.error = error.response?.data?.message || error.message;
+        this.showNotification(this.$t('errorClearingCache'), this.error, true);
       } finally {
         this.loading = false;
       }
     },
 
-    // Методы для localStorage
     async refreshLocalCacheInfo() {
       this.localCacheLoading = true;
       this.localCacheError = null;
@@ -323,10 +317,10 @@ export default {
       try {
         this.localCacheInfo = CacheMonitor.getCacheInfo();
         this.expiredCaches = CacheMonitor.getExpiredCaches();
-        this.showNotification('Информация о localStorage обновлена', '', false);
+        this.showNotification(this.$t('localStorageInfoUpdated'), '', false);
       } catch (error) {
-        this.localCacheError = error.message || 'Неизвестная ошибка';
-        this.showNotification('Ошибка загрузки информации о localStorage', this.localCacheError, true);
+        this.localCacheError = error.message;
+        this.showNotification(this.$t('errorLoadingLocalStorageInfo'), this.localCacheError, true);
       } finally {
         this.localCacheLoading = false;
       }
@@ -339,10 +333,10 @@ export default {
       try {
         this.$store.dispatch('clearCache');
         await this.refreshLocalCacheInfo();
-        this.showNotification('localStorage успешно очищен', '', false);
+        this.showNotification(this.$t('localStorageCleared'), '', false);
       } catch (error) {
-        this.localCacheError = error.message || 'Неизвестная ошибка';
-        this.showNotification('Ошибка очистки localStorage', this.localCacheError, true);
+        this.localCacheError = error.message;
+        this.showNotification(this.$t('errorClearingLocalStorage'), this.localCacheError, true);
       } finally {
         this.localCacheLoading = false;
       }
@@ -357,13 +351,13 @@ export default {
         await this.refreshLocalCacheInfo();
         
         if (result.clearedCount > 0) {
-          this.showNotification(`Автоочистка выполнена: удалено ${result.clearedCount} записей`, '', false);
+          this.showNotification(this.$t('autoCleanupDone', { count: result.clearedCount }), '', false);
         } else {
-          this.showNotification('Автоочистка не требуется', '', false);
+          this.showNotification(this.$t('autoCleanupNotNeeded'), '', false);
         }
       } catch (error) {
-        this.localCacheError = error.message || 'Неизвестная ошибка';
-        this.showNotification('Ошибка автоочистки', this.localCacheError, true);
+        this.localCacheError = error.message;
+        this.showNotification(this.$t('errorAutoCleanup'), this.localCacheError, true);
       } finally {
         this.localCacheLoading = false;
       }
@@ -374,9 +368,9 @@ export default {
         localStorage.removeItem(key);
         localStorage.removeItem(`${key}_timestamp`);
         this.refreshLocalCacheInfo();
-        this.showNotification(`Кэш ${key} удален`, '', false);
+        this.showNotification(this.$t('cacheDeleted', { key }), '', false);
       } catch (error) {
-        this.showNotification('Ошибка удаления кэша', error.message, true);
+        this.showNotification(this.$t('errorDeletingCache'), error.message, true);
       }
     },
 

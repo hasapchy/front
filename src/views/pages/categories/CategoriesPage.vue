@@ -1,27 +1,22 @@
 <template>
-    <transition name="fade" mode="out-in">
+    <div>
+        <transition name="fade" mode="out-in">
         <div v-if="data != null && !loading" :key="`table-${$i18n.locale}`">
             <DraggableTable table-key="admin.categories" :columns-config="columnsConfig" :table-data="data.items"
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }">
                 <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                    <TableControlsBar
-                        :show-pagination="true"
+                    <TableControlsBar :show-pagination="true"
                         :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                        :on-page-change="fetchItems"
-                        :on-per-page-change="handlePerPageChange"
-                        :resetColumns="resetColumns"
-                        :columns="columns"
-                        :toggleVisible="toggleVisible"
-                        :log="log">
+                        :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
                         <template #left>
-                            <PrimaryButton 
-                                :onclick="() => { showModal(null) }"
-                                icon="fas fa-plus"
+                            <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
                                 :disabled="!$store.getters.hasPermission('categories_create')">
                             </PrimaryButton>
                             <transition name="fade">
-                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()" />
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
+                                    :batch-actions="getBatchActions()" />
                             </transition>
                         </template>
                         <template #gear="{ resetColumns, columns, toggleVisible, log }">
@@ -54,15 +49,18 @@
         <div v-else key="loader" class="flex justify-center items-center h-64">
             <SpinnerIcon />
         </div>
-    </transition>
-    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
-        <AdminCategoryCreatePage ref="admincategorycreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
-    </SideModalDialog>
-    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" @close="closeNotification" />
-            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
-            :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
+        </transition>
+        <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
+            <AdminCategoryCreatePage ref="admincategorycreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
+                @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
+                :editingItem="editingItem" />
+        </SideModalDialog>
+        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
+            :is-danger="notificationIsDanger" @close="closeNotification" />
+        <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
+            :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
+            @leave="deleteDialog = false" />
+    </div>
 </template>
 
 <script>
@@ -87,7 +85,7 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 
 export default {
-    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,  companyChangeMixin],
+    mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
     components: {
         NotificationToast,
         PrimaryButton,
@@ -142,14 +140,14 @@ export default {
         async handleCompanyChanged(companyId) {
             // ✅ Очищаем выбранные элементы при смене компании
             this.selectedIds = [];
-            
+
             // Перезагружаем данные со страницы 1
             await this.fetchItems(1, false);
-            
+
             // Уведомляем пользователя о смене компании
             this.$store.dispatch('showNotification', {
-              title: 'Компания изменена',
-              isDanger: false
+                title: 'Компания изменена',
+                isDanger: false
             });
         },
         async fetchItems(page = 1, silent = false) {
@@ -157,9 +155,9 @@ export default {
                 this.loading = true;
             }
             try {
-               
+
                 const per_page = this.perPage;
-                
+
                 const new_data = await CategoryController.getItems(page, per_page);
                 this.data = new_data;
             } catch (error) {

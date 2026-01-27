@@ -132,7 +132,7 @@
                                 #{{ product.orderId }}
                             </template>
                             <template v-else>
-                                <span class="text-gray-400">{{ $t('notSpecified') || 'Не указан' }}</span>
+                                <span class="text-gray-400">{{ $t('notSpecified') }}</span>
                             </template>
                         </td>
                         <td v-if="!readonly" class="px-4 border-x border-gray-300">
@@ -204,7 +204,7 @@ export default {
         defaultCurrencySymbol() {
             const currencies = this.$store.state.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
-            return defaultCurrency ? defaultCurrency.symbol : 'Нет валюты';
+            return defaultCurrency ? defaultCurrency.symbol : this.$t('noCurrency');
         }
     },
     watch: {
@@ -238,7 +238,7 @@ export default {
                 const response = await OrderController.getItems(1, '', 'all_time', null, null, '', '', '', 20);
                 this.lastOrders = response.items.slice(0, 10);
             } catch (error) {
-                console.error('Ошибка при загрузке последних заказов:', error);
+                console.error('Error loading last orders:', error);
                 this.lastOrders = [];
             }
         },
@@ -272,7 +272,7 @@ export default {
                 }
                 this.$refs.orderInput.blur();
             } catch (error) {
-                console.error('Ошибка при выборе заказа:', error);
+                console.error('Error selecting order:', error);
             }
         },
 
@@ -296,7 +296,7 @@ export default {
                             price: product.price,
                             totalPrice: product.quantity * product.price,
                             unitId: product.unitId,
-                            unitName: product.unitName || product.unitShortName || '',
+                            unitName: product.unitName || product.unitShortName,
                             productImage: product.productImage,
                             orderId: order.id,
                             type: 1,
@@ -306,7 +306,7 @@ export default {
                                     : null;
                             },
                             icons() {
-                                return '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>';
+                                return '<i class="fas fa-box text-[#3571A4]"></i>';
                             }
                         });
                     });
@@ -342,8 +342,8 @@ export default {
         getDefaultIcon(product) {
             const isProduct = product.type == 1;
             return isProduct
-                ? '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>'
-                : '<i class="fas fa-concierge-bell text-[#3571A4]" title="Услуга"></i>';
+                ? '<i class="fas fa-box text-[#3571A4]"></i>'
+                : '<i class="fas fa-concierge-bell text-[#3571A4]"></i>';
         },
 
         getUnitShortName(unitId) {
@@ -372,8 +372,8 @@ export default {
                     totalPrice: totalPrice,
                     total_price: totalPrice,
                     unitId: product.unitId,
-                    unitName: product.unitName || '',
-                    unitShortName: product.unitShortName || '',
+                    unitName: product.unitName,
+                    unitShortName: product.unitShortName,
                     orderId: product.orderId,
                     type: product.type || 1,
                     productImage: product.productImage,
@@ -383,7 +383,7 @@ export default {
                             : null;
                     },
                     icons() {
-                        return '<i class="fas fa-box text-[#3571A4]" title="Товар"></i>';
+                        return '<i class="fas fa-box text-[#3571A4]"></i>';
                     }
                 };
             });

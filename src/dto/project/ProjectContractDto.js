@@ -1,4 +1,4 @@
-import { dtoDateFormatters } from '@/utils/dateUtils';
+import { formatDatabaseDate } from '@/utils/dateUtils';
 import { formatCurrency } from '@/utils/numberUtils';
 import { createFromApiArray } from '@/utils/dtoUtils';
 
@@ -11,6 +11,8 @@ class ProjectContractDto {
         currencyId,
         currencyName,
         currencySymbol,
+        cashId,
+        cashRegisterName,
         date,
         returned,
         isPaid,
@@ -27,6 +29,8 @@ class ProjectContractDto {
         this.currencyId = currencyId;
         this.currencyName = currencyName;
         this.currencySymbol = currencySymbol;
+        this.cashId = cashId;
+        this.cashRegisterName = cashRegisterName;
         this.date = date;
         this.returned = returned;
         this.isPaid = isPaid;
@@ -43,7 +47,7 @@ class ProjectContractDto {
     }
 
     formatDate() {
-        return dtoDateFormatters.formatDate(this.date);
+        return formatDatabaseDate(this.date);
     }
 
     getReturnedStatus() {
@@ -60,6 +64,7 @@ class ProjectContractDto {
             number: this.number,
             amount: this.amount,
             currency_id: this.currencyId,
+            cash_id: this.cashId,
             date: this.date,
             returned: this.returned,
             is_paid: this.isPaid,
@@ -78,6 +83,8 @@ class ProjectContractDto {
                 data.currency_id || data.currencyId,
                 data.currency_name || data.currencyName,
                 data.currency_symbol || data.currencySymbol,
+                data.cash_id || data.cashId,
+                data.cash_register_name || data.cashRegisterName || (data.cash_register?.name || data.cashRegister?.name || null),
                 data.date,
                 data.returned,
                 data.is_paid || data.isPaid,

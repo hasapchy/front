@@ -1,5 +1,6 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
+    <div class="h-full flex flex-col">
+        <div class="flex flex-col overflow-auto flex-1 p-4">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editContract') : $t('addContract') }}</h2>
 
         <div>
@@ -32,8 +33,17 @@
                 </div>
             </div>
             <div>
+                <label>{{ $t('cashRegister') }}</label>
+                <select v-model="cashId" :disabled="isPaidLocked">
+                    <option value="">{{ $t('selectCashRegister') }}</option>
+                    <option v-for="cashRegister in cashRegisters" :key="cashRegister.id" :value="cashRegister.id">
+                        {{ cashRegister.name }} ({{ cashRegister.currencySymbol || '' }})
+                    </option>
+                </select>
+            </div>
+            <div>
                 <label class="required">{{ $t('date') }}</label>
-                <input type="datetime-local" v-model="date" required>
+                <input type="date" v-model="date" required>
             </div>
             <div>
                 <label>
@@ -43,7 +53,7 @@
             </div>
             <div>
                 <label>
-                    <input type="checkbox" v-model="isPaid">
+                    <input type="checkbox" :checked="isPaid" :disabled="isPaidLocked" @click.prevent="handlePaidClick">
                     <span>{{ $t('paid') }}</span>
                 </label>
             </div>
@@ -52,18 +62,21 @@
                 <textarea v-model="note" :placeholder="$t('enterNote')" rows="3"></textarea>
             </div>
         </div>
-    </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+        </div>
+        <div class="mt-auto p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null && $store.getters.hasPermission('projects_delete')"
             :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading" icon="fas fa-trash">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
         </PrimaryButton>
+        </div>
+        <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('deleteContract')"
+            :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
+        <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
+            :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+        <AlertDialog :dialog="paidConfirmDialog" @confirm="confirmMarkPaid" @leave="cancelMarkPaid"
+            :descr="$t('confirmMarkAsPaidIrreversible')" :confirm-text="$t('yes')" :leave-text="$t('cancel')" />
     </div>
-    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('deleteContract')"
-        :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
-        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
 
 <script>
@@ -93,22 +106,32 @@ export default {
             default: null
         }
     },
+    computed: {
+        isPaidLocked() {
+            return !!this.editingItem?.isPaid || this.isPaidLockedLocal;
+        }
+    },
     data() {
         return {
             number: this.editingItem ? this.editingItem.number : '',
             amount: this.editingItem ? this.editingItem.amount : '',
             currencyId: this.editingItem ? this.editingItem.currencyId : '',
-            date: this.editingItem?.date ? this.getFormattedDate(this.editingItem.date) : this.getCurrentLocalDateTime(),
+            cashId: this.editingItem ? (this.editingItem.cashId || '') : '',
+            date: this.editingItem?.date ? this.getDateOnly(this.editingItem.date) : this.getCurrentLocalDateTime().substring(0, 10),
             returned: this.editingItem ? this.editingItem.returned : false,
             isPaid: this.editingItem ? this.editingItem.isPaid : false,
+            paidConfirmDialog: false,
+            isPaidLockedLocal: false,
             note: this.editingItem ? this.editingItem.note : '',
             currencies: [],
+            cashRegisters: [],
             projects: [],
             selectedProjectId: this.projectId || (this.editingItem ? this.editingItem.projectId : null),
         };
     },
     async mounted() {
         await this.fetchCurrencies();
+        await this.fetchCashRegisters();
         if (!this.projectId) {
             await this.fetchProjects();
         }
@@ -118,11 +141,29 @@ export default {
     },
     methods: {
         translateCurrency,
+        handlePaidClick() {
+            if (this.isPaidLocked) return;
+            if (this.isPaid) return;
+
+            this.paidConfirmDialog = true;
+        },
+        confirmMarkPaid() {
+            this.paidConfirmDialog = false;
+            this.isPaid = true;
+            this.isPaidLockedLocal = true;
+        },
+        cancelMarkPaid() {
+            this.paidConfirmDialog = false;
+        },
+        getDateOnly(date) {
+            return this.getFormattedDate(date).substring(0, 10);
+        },
         clearForm() {
             this.number = '';
             this.amount = '';
             this.currencyId = '';
-            this.date = new Date().toISOString().substring(0, 16);
+            this.cashId = '';
+            this.date = this.getCurrentLocalDateTime().substring(0, 10);
             this.returned = false;
             this.isPaid = false;
             this.note = '';
@@ -132,16 +173,18 @@ export default {
         },
         onEditingItemChanged(newEditingItem) {
             if (newEditingItem) {
-                let formattedDate = this.getCurrentLocalDateTime();
+                let formattedDate = this.getCurrentLocalDateTime().substring(0, 10);
                 if (newEditingItem.date) {
-                    formattedDate = this.getFormattedDate(newEditingItem.date);
+                    formattedDate = this.getDateOnly(newEditingItem.date);
                 }
                 this.number = newEditingItem.number || '';
                 this.amount = newEditingItem.amount || '';
                 this.currencyId = newEditingItem.currencyId || '';
+                this.cashId = newEditingItem.cashId || '';
                 this.date = formattedDate;
                 this.returned = newEditingItem.returned || false;
                 this.isPaid = newEditingItem.isPaid || false;
+                this.isPaidLockedLocal = false;
                 this.note = newEditingItem.note || '';
                 this.selectedProjectId = newEditingItem.projectId || null;
             }
@@ -151,6 +194,7 @@ export default {
                 number: this.number,
                 amount: this.amount,
                 currencyId: this.currencyId,
+                cashId: this.cashId,
                 date: this.date,
                 returned: this.returned,
                 isPaid: this.isPaid,
@@ -168,17 +212,26 @@ export default {
         async fetchProjects() {
             await this.loadStoreData({
                 getterName: 'activeProjects',
-                dispatchName: 'loadActiveProjects',
+                dispatchName: 'loadProjects',
                 localProperty: 'projects',
+                defaultValue: []
+            });
+        },
+        async fetchCashRegisters() {
+            await this.loadStoreData({
+                getterName: 'cashRegisters',
+                dispatchName: 'loadCashRegisters',
+                localProperty: 'cashRegisters',
                 defaultValue: []
             });
         },
         prepareSave() {
             const formData = {
-                projectId: this.editingItemId ? this.editingItem.projectId : (this.projectId || this.selectedProjectId),
+                projectId: (this.editingItemId && this.editingItem) ? this.editingItem.projectId : (this.projectId || this.selectedProjectId),
                 number: this.number,
                 amount: this.amount,
                 currencyId: this.currencyId,
+                cashId: this.cashId || null,
                 date: this.date,
                 returned: this.returned,
                 isPaid: this.isPaid,

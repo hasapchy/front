@@ -1,45 +1,35 @@
 <template>
     <div class="mt-4">
         <div class="flex justify-between items-center mb-2">
-            <h3 class="text-md font-semibold">{{ $t('employees') || 'Сотрудники' }}</h3>
+            <h3 class="text-md font-semibold">{{ $t('employees') }}</h3>
             <div v-if="!hideActions" class="flex gap-2">
-                <PrimaryButton 
-                    icon="fas fa-gift" 
-                    :onclick="handleBonus"
-                    :is-success="true"
+                <PrimaryButton icon="fas fa-gift" :onclick="handleBonus" :is-success="true"
                     :disabled="!editingItem || !editingItem.id">
-                    {{ $t('bonus') || 'Начислить премию' }}
+                    {{ $t('bonus') }}
                 </PrimaryButton>
             </div>
         </div>
 
         <div v-if="salaryTransactionsLoading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="!salaryTransactionsLoading && salaryTransactions && salaryTransactions.length === 0" class="text-gray-500 mb-4">
-            {{ $t('noTransactions') || 'Нет транзакций' }}
+        <div v-else-if="!salaryTransactionsLoading && salaryTransactions && salaryTransactions.length === 0"
+            class="text-gray-500 mb-4">
+            {{ $t('noTransactions') }}
         </div>
-        <DraggableTable 
-            v-if="!salaryTransactionsLoading && salaryTransactions && salaryTransactions.length > 0 && editingItem" 
-            table-key="project.employees.salary"
-            :columns-config="salaryTransactionsColumnsConfig" 
-            :table-data="salaryTransactions" 
-            :item-mapper="salaryTransactionMapper"
+        <DraggableTable
+            v-if="!salaryTransactionsLoading && salaryTransactions && salaryTransactions.length > 0 && editingItem"
+            table-key="project.employees.salary" :columns-config="salaryTransactionsColumnsConfig"
+            :table-data="salaryTransactions" :item-mapper="salaryTransactionMapper"
             :onItemClick="handleSalaryTransactionClick" />
 
         <SideModalDialog :showForm="bonusModalOpen" :onclose="closeBonusModal">
             <div v-if="bonusModalOpen && editingItem && editingItem.id" class="flex flex-col overflow-auto h-full p-4">
-                <h2 class="text-lg font-bold mb-4">{{ $t('bonus') || 'Начислить премию' }}</h2>
-                <EmployeeBonusSearch 
-                    v-model="selectedEmployees"
-                    v-model:cashId="bonusCashId"
-                    v-model:currencyId="bonusCurrencyId"
-                    :disabled="bonusSaving"
-                />
+                <h2 class="text-lg font-bold mb-4">{{ $t('bonus') }}</h2>
+                <EmployeeBonusSearch v-model="selectedEmployees" :cashId="bonusCashId"
+                    @update:cashId="bonusCashId = $event" :currencyId="bonusCurrencyId"
+                    @update:currencyId="bonusCurrencyId = $event" :disabled="bonusSaving" />
             </div>
             <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-                <PrimaryButton 
-                    icon="fas fa-save"
-                    :onclick="saveBonuses"
-                    :is-loading="bonusSaving"
+                <PrimaryButton icon="fas fa-save" :onclick="saveBonuses" :is-loading="bonusSaving"
                     :disabled="bonusSaving || !selectedEmployees.length || !hasValidAmounts || !bonusCashId || !bonusCurrencyId">
                 </PrimaryButton>
             </div>
@@ -48,31 +38,24 @@
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
                 <div class="p-8 flex justify-center items-center min-h-[200px]">
-                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
                     </svg>
                 </div>
             </template>
             <template v-else>
-                <TransactionCreatePage 
-                    v-if="selectedEntity && selectedEntity.type === 'transaction'"
-                    :editingItem="editingTransactionItem"
-                    :initial-project-id="editingItem?.id"
-                    @saved="onEntitySaved"
-                    @saved-error="onEntitySavedError"
-                    @deleted="onEntityDeleted"
+                <TransactionCreatePage v-if="selectedEntity && selectedEntity.type === 'transaction'"
+                    :editingItem="editingTransactionItem" :initial-project-id="editingItem?.id" @saved="onEntitySaved"
+                    @saved-error="onEntitySavedError" @deleted="onEntityDeleted"
                     @deleted-error="onEntityDeletedError" />
             </template>
         </SideModalDialog>
 
-        <NotificationToast 
-            :title="notificationTitle" 
-            :subtitle="notificationSubtitle" 
-            :show="notification" 
-            :is-danger="notificationIsDanger" 
-            @close="closeNotification" 
-        />
+        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
+            :is-danger="notificationIsDanger" @close="closeNotification" />
     </div>
 </template>
 
@@ -141,7 +124,7 @@ export default {
         },
         salaryTransactionsColumnsConfig() {
             return [
-                { name: 'id', label: this.$t('number') || '№', size: 60 },
+                { name: 'id', label: this.$t('number'), size: 60 },
                 { name: 'dateUser', label: this.$t('dateUser'), size: 120 },
                 {
                     name: 'type',
@@ -231,7 +214,7 @@ export default {
             if (Array.isArray(errorMessage)) {
                 errorMessage = errorMessage.join(', ');
             }
-            this.showNotification(this.$t('error') || 'Ошибка', errorMessage, true);
+            this.showNotification(this.$t('error'), errorMessage, true);
         },
         async onEntityDeleted() {
             this.closeEntityModal();
@@ -279,13 +262,13 @@ export default {
         salaryTransactionMapper(item, column) {
             switch (column) {
                 case "id":
-                    return item.id || '-';
+                    return item.id;
                 case "dateUser":
-                    return item.formatDateUser ? item.formatDateUser() : (item.formatDate ? item.formatDate() : '-');
+                    return item.formatDateUser ? item.formatDateUser() : (item.formatDate ? item.formatDate() : '');
                 case "categoryName":
-                    return translateTransactionCategory(item.categoryName, this.$t) || '-';
+                    return translateTransactionCategory(item.categoryName, this.$t);
                 case "note":
-                    return item.note || '-';
+                    return item.note;
                 case "cashAmount":
                     return parseFloat(item.cashAmount || item.origAmount || 0);
                 default:
@@ -294,7 +277,7 @@ export default {
         },
         async handleSalaryTransactionClick(item) {
             if (!item?.id) return;
-            
+
             try {
                 this.entityLoading = true;
                 const data = await TransactionController.getItem(item.id);
@@ -303,7 +286,7 @@ export default {
                 this.selectedEntity = { type: 'transaction', data };
             } catch (error) {
                 console.error('Error loading transaction:', error);
-                this.showNotification(this.$t('error') || 'Ошибка', 'Ошибка при загрузке транзакции', true);
+                this.showNotification(this.$t('error'), this.$t('errorLoadingTransaction'), true);
             } finally {
                 this.entityLoading = false;
             }
@@ -319,13 +302,13 @@ export default {
                 this.$store.dispatch('loadClients'),
                 this.$store.dispatch('loadUsers')
             ]);
-            
+
             const defaultCashId = this.$store.getters.defaultCashId;
             const currencies = this.$store.getters.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
             if (defaultCashId) this.bonusCashId = defaultCashId;
             if (defaultCurrency) this.bonusCurrencyId = defaultCurrency.id;
-            
+
             try {
                 const response = await TransactionController.getItems(
                     1,
@@ -342,19 +325,19 @@ export default {
                     null,
                     [26]
                 );
-                
+
                 const existingBonuses = response.items || [];
                 const clients = this.$store.getters.clients || [];
                 const allUsers = this.$store.getters.usersForCurrentCompany || [];
-                
+
                 const employeesMap = new Map();
-                
+
                 for (const transaction of existingBonuses) {
                     if (!transaction.clientId) continue;
-                    
+
                     const client = clients.find(c => Number(c.id) === Number(transaction.clientId));
                     if (!client || !client.employeeId) continue;
-                    
+
                     const userId = Number(client.employeeId);
                     let user = allUsers.find(u => Number(u.id) === userId);
                     if (!user) {
@@ -362,11 +345,11 @@ export default {
                             const UsersController = (await import('@/api/UsersController')).default;
                             user = await UsersController.getItem(userId);
                         } catch (error) {
-                            console.error(`Ошибка при загрузке пользователя ${userId}:`, error);
+                            console.error(`Error loading user ${userId}:`, error);
                             continue;
                         }
                     }
-                    
+
                     if (!employeesMap.has(userId)) {
                         employeesMap.set(userId, {
                             id: user.id,
@@ -379,9 +362,9 @@ export default {
                         });
                     }
                 }
-                
+
                 this.selectedEmployees = Array.from(employeesMap.values());
-                
+
                 if (existingBonuses.length > 0) {
                     const firstTransaction = existingBonuses[0];
                     if (firstTransaction.cashId) this.bonusCashId = firstTransaction.cashId;
@@ -390,7 +373,7 @@ export default {
             } catch (error) {
                 console.error('Ошибка при загрузке существующих премий:', error);
             }
-            
+
             this.bonusModalOpen = true;
         },
         closeBonusModal() {
@@ -421,7 +404,7 @@ export default {
 
                     const employeeClient = await this.findEmployeeClient(employee.id);
                     if (!employeeClient) {
-                        errors.push(`${this.getUserFullName(employee)}: клиент не найден`);
+                        errors.push(`${this.getUserFullName(employee)}: client not found`);
                         continue;
                     }
 
@@ -461,7 +444,7 @@ export default {
 
                 if (errors.length === 0) {
                     this.showNotification(
-                        this.$t('success') || 'Успешно',
+                        this.$t('success'),
                         `Премии начислены для ${this.selectedEmployees.length} сотрудников`,
                         false
                     );
@@ -473,15 +456,15 @@ export default {
                     ]);
                 } else {
                     this.showNotification(
-                        this.$t('error') || 'Ошибка',
+                        this.$t('error'),
                         `Ошибки при сохранении: ${errors.join('; ')}`,
                         true
                     );
                 }
             } catch (error) {
                 this.showNotification(
-                    this.$t('error') || 'Ошибка',
-                    typeof error === 'string' ? error : (error.message || this.$t('errorSavingTransaction') || 'Ошибка сохранения транзакций'),
+                    this.$t('error'),
+                    typeof error === 'string' ? error : (error.message || this.$t('errorSavingTransaction')),
                     true
                 );
             } finally {
@@ -493,9 +476,9 @@ export default {
             if (typeof employee.fullName === 'function') {
                 return employee.fullName();
             }
-            const name = employee.name || '';
-            const surname = employee.surname || '';
-            const position = employee.position || '';
+            const name = employee.name;
+            const surname = employee.surname;
+            const position = employee.position;
             const fullName = [name, surname].filter(Boolean).join(' ').trim();
             return position ? `${fullName} (${position})` : fullName;
         }
