@@ -376,6 +376,12 @@ export default {
   errorCreatingProduct: 'Error creating product',
   productType: 'Product Type',
   allSubcategories: 'All Subcategories',
+  balances: 'Balances',
+  createBalance: 'Create Balance',
+  editBalance: 'Edit Balance',
+  initialBalance: 'Initial Balance',
+  setAsDefault: 'Set as Default',
+  confirmDeleteBalance: 'Confirm Delete Balance',
   
   // Login form
   enterEmail: 'Enter email',

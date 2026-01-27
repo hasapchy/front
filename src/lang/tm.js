@@ -733,6 +733,12 @@ export default {
   errorSavingClient: 'Müşderini saklamakda ýalňyşlyk',
   clientSuccessfullyDeleted: 'Müşderi üstünlikli pozuldy',
   errorDeletingClient: 'Müşderini pozmakda ýalňyşlyk',
+  balances: 'Balanslar',
+  createBalance: 'Balans döret',
+  editBalance: 'Balans redaktirle',
+  initialBalance: 'Başlangyç balans',
+  setAsDefault: 'Bellenen hökmünde bellä',
+  confirmDeleteBalance: 'Balansy pozmagy tassyklamak',
   
   // Товары
   image: 'Surat',

@@ -2,7 +2,17 @@
     <div>
         <ClientSearch v-if="isFieldVisible('client')" v-model:selectedClient="localSelectedClient" :showLabel="true"
             :required="isDebt || isFieldRequired('client')" :disabled="isClientFieldDisabled" :allowDeselect="!initialProjectId"
-            :clientTypeFilter="fieldConfig('client').clientTypeFilter" />
+            :clientTypeFilter="fieldConfig('client').clientTypeFilter" @balance-changed="onBalanceChanged" />
+        <div v-if="shouldShowBalanceSelect" class="mt-2">
+            <label class="block mb-1 required">{{ $t('clientBalance') || 'Баланс клиента' }}</label>
+            <select :value="selectedBalanceId" @input="$emit('update:selectedBalanceId', $event.target.value)" required>
+                <option value="">{{ $t('selectBalance') || 'Выберите баланс' }}</option>
+                <option v-for="balance in clientBalances" :key="balance.id" :value="balance.id">
+                    {{ balance.currency?.symbol || '' }} - {{ formatBalance(balance.balance) }}
+                    <span v-if="balance.isDefault"> ({{ $t('default') || 'По умолчанию' }})</span>
+                </option>
+            </select>
+        </div>
         <div v-if="canShowDateField">
             <label>{{ $t('date') }}</label>
             <input type="datetime-local" :value="date"
@@ -111,6 +121,8 @@ export default {
         allProjects: { type: Array, default: () => [] },
         formConfig: { type: Object, default: () => ({}) },
         isCategoryDisabled: { type: Function, required: true },
+        clientBalances: { type: Array, default: () => [] },
+        selectedBalanceId: { type: [String, Number, null], default: null },
     },
     emits: [
         'update:selectedClient',
@@ -122,7 +134,9 @@ export default {
         'update:currencyId',
         'update:categoryId',
         'update:projectId',
-        'update:note'
+        'update:note',
+        'update:selectedBalanceId',
+        'balance-changed'
     ],
     computed: {
         localSelectedClient: {
@@ -139,9 +153,20 @@ export default {
         isClientFieldDisabled() {
             return !!this.initialProjectId && !this.isFieldVisible('client');
         },
+        shouldShowBalanceSelect() {
+            return !this.isFieldVisible('client') && 
+                   this.clientBalances && 
+                   this.clientBalances.length > 0;
+        },
     },
     methods: {
         translateTransactionCategory,
+        onBalanceChanged(balanceId) {
+            this.$emit('balance-changed', balanceId);
+        },
+        formatBalance(balance) {
+            return this.$formatNumber ? this.$formatNumber(balance, null, true) : parseFloat(balance || 0).toFixed(2);
+        }
     }
 }
 </script>

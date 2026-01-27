@@ -4,10 +4,12 @@
         <TransactionFormFields v-model:selectedClient="selectedClient" v-model:date="date" v-model:type="type"
             v-model:cashId="cashId" v-model:isDebt="isDebt" v-model:origAmount="origAmount"
             v-model:currencyId="currencyId" v-model:categoryId="categoryId" v-model:projectId="projectId"
-            v-model:note="note" :editingItemId="editingItemId" :orderId="orderId" :initialProjectId="initialProjectId"
+            v-model:note="note" v-model:selectedBalanceId="selectedBalanceId" :editingItemId="editingItemId" :orderId="orderId" :initialProjectId="initialProjectId"
             :allCashRegisters="allCashRegisters" :currencies="currencies" :filteredCategories="filteredCategories"
             :allProjects="allProjects" :formConfig="formConfig" :isCategoryDisabled="isCategoryDisabled"
- />
+            :client-balances="clientBalances"
+            @balance-changed="onBalanceChanged"
+        />
         <TransactionBalancePreview :showPreview="showAdjustmentBalancePreview"
             :currentClientBalance="currentClientBalance" :type="type" :origAmount="origAmount"
             :defaultCurrencySymbol="defaultCurrencySymbol" />
@@ -91,6 +93,10 @@ export default {
             type: [Number, String, null],
             default: null,
         },
+        clientBalances: {
+            type: Array,
+            default: () => [],
+        },
     },
     data() {
         return {
@@ -105,6 +111,7 @@ export default {
             note: this.editingItem?.note || '',
             isDebt: this.orderId ? false : (this.editingItem?.isDebt ?? this.fieldConfig('debt').enforcedValue ?? false),
             selectedClient: this.editingItem?.client || this.initialClient,
+            selectedBalanceId: null,
             selectedSource: null,
             sourceType: '',
             currencies: [],
@@ -269,6 +276,11 @@ export default {
                 await this.calculateExchangeRate();
             }
 
+            if (this.clientBalances && this.clientBalances.length > 0 && !this.selectedBalanceId) {
+                const defaultBalance = this.clientBalances.find(b => b.isDefault);
+                this.selectedBalanceId = defaultBalance ? defaultBalance.id : (this.clientBalances[0]?.id || null);
+            }
+
             this.saveInitialState();
             this.applyTypeConstraints();
             this.applyDebtConstraints();
@@ -276,6 +288,14 @@ export default {
         });
     },
     methods: {
+        onBalanceChanged(balanceId) {
+            console.log('[TransactionCreatePage] Balance changed:', {
+                balanceId,
+                selectedClient: this.selectedClient,
+                selectedBalanceId: this.selectedBalanceId
+            });
+            this.selectedBalanceId = balanceId;
+        },
         translateTransactionCategory,
         ensureEditable(eventName = 'saved-error') {
             if (!this.isDeletedTransaction && !this.isSourceRestricted) {
@@ -498,6 +518,9 @@ export default {
                 }
                 if (!this.fieldConfig('client').excludeFromRequest) {
                     requestData.client_id = this.selectedClient?.id;
+                    if (this.selectedBalanceId) {
+                        requestData.client_balance_id = this.selectedBalanceId;
+                    }
                 }
 
                 const sourceType = this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : null);
@@ -547,6 +570,7 @@ export default {
             this.projectId = this.initialProjectId || '';
             this.date = this.getCurrentLocalDateTime();
             this.selectedClient = this.initialClient || null;
+            this.selectedBalanceId = null;
             this.selectedSource = null;
             this.sourceType = '';
             this.exchangeRate = null;
@@ -720,6 +744,10 @@ export default {
                 if (newClient && !this.selectedClient) {
                     this.selectedClient = newClient;
                 }
+                if (newClient && this.clientBalances && this.clientBalances.length > 0 && !this.selectedBalanceId) {
+                    const defaultBalance = this.clientBalances.find(b => b.isDefault);
+                    this.selectedBalanceId = defaultBalance ? defaultBalance.id : (this.clientBalances[0]?.id || null);
+                }
             },
             immediate: true
         },
@@ -786,9 +814,26 @@ export default {
                     const updated = newClients?.find(c => c.id === this.selectedClient.id);
                     if (updated) {
                         this.selectedClient = updated;
+                        if (updated.balances && updated.balances.length > 0) {
+                            const defaultBalance = updated.balances.find(b => b.isDefault);
+                            this.selectedBalanceId = defaultBalance ? defaultBalance.id : (updated.balances[0]?.id || null);
+                        } else {
+                            this.selectedBalanceId = null;
+                        }
                     }
                 }
             },
+        selectedClient: {
+            handler(newClient, oldClient) {
+                if (!newClient || (oldClient && newClient.id !== oldClient.id)) {
+                    this.selectedBalanceId = null;
+                } else if (newClient && newClient.balances && newClient.balances.length > 0) {
+                    const defaultBalance = newClient.balances.find(b => b.isDefault);
+                    this.selectedBalanceId = defaultBalance ? defaultBalance.id : (newClient.balances[0]?.id || null);
+                }
+            },
+            deep: true
+        },
             immediate: true,
             deep: true
         },
@@ -808,6 +853,15 @@ export default {
         },
         currencyId() {
             this.handleCurrencyOrCashChange();
+        },
+        clientBalances: {
+            handler(newBalances) {
+                if (newBalances && newBalances.length > 0 && !this.selectedBalanceId) {
+                    const defaultBalance = newBalances.find(b => b.isDefault);
+                    this.selectedBalanceId = defaultBalance ? defaultBalance.id : (newBalances[0]?.id || null);
+                }
+            },
+            immediate: true
         }
     }
 }

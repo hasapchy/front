@@ -852,6 +852,12 @@ export default {
   errorSavingClient: 'Ошибка сохранения клиента',
   clientSuccessfullyDeleted: 'Клиент успешно удален',
   errorDeletingClient: 'Ошибка удаления клиента',
+  balances: 'Балансы',
+  createBalance: 'Создать баланс',
+  editBalance: 'Редактировать баланс',
+  initialBalance: 'Начальный баланс',
+  setAsDefault: 'Установить по умолчанию',
+  confirmDeleteBalance: 'Подтвердите удаление баланса',
 
   // Товары
   sku: 'SKU',

@@ -14,7 +14,7 @@
             <i class="fas fa-spinner fa-spin text-gray-400"></i>
         </div>
         
-        <div v-else-if="onlineUsers.length > 0" class="space-y-4">
+        <div v-else-if="onlineCount > 0" class="space-y-4">
             <!-- Круговой индикатор с количеством -->
             <div class="flex items-center gap-4">
                 <div class="relative w-16 h-16 shrink-0">
@@ -37,7 +37,7 @@
                             stroke="#10b981"
                             stroke-width="3"
                             :stroke-dasharray="`${circumference} ${circumference}`"
-                            :stroke-dashoffset="circumference / 2 - (onlineCount / totalUsers) * circumference"
+                            :stroke-dashoffset="strokeDashoffset"
                             stroke-linecap="round"
                         />
                     </svg>
@@ -135,6 +135,7 @@
 <script>
 import echo from '@/services/echo';
 import { createChatRealtime } from '@/services/chatRealtime';
+import UsersController from '@/api/UsersController';
 
 export default {
     name: 'OnlineUsersWidget',
@@ -154,13 +155,20 @@ export default {
     },
     computed: {
         circumference() {
-            return 2 * Math.PI * 16; // радиус 16
+            return 2 * Math.PI * 16;
         },
         onlineCount() {
             return this.onlineUserIds.length;
         },
         offlineCount() {
             return Math.max(0, this.totalUsers - this.onlineCount);
+        },
+        circleProgress() {
+            if (this.totalUsers === 0) return 0;
+            return this.onlineCount / this.totalUsers;
+        },
+        strokeDashoffset() {
+            return this.circumference / 2 - this.circleProgress * this.circumference;
         },
         visibleUsers() {
             return this.onlineUsers.slice(0, 7);
@@ -224,13 +232,18 @@ export default {
             const companyId = this.$store.getters.currentCompanyId;
             if (!companyId) return;
 
-            // Получаем всех пользователей компании
-            const users = this.$store.getters.usersForCurrentCompany || [];
-            this.totalUsers = users.length;
+            this.loading = true;
 
-            // Инициализируем realtime для presence
+            try {
+                const data = await UsersController.getItems(1, 1);
+                this.totalUsers = data?.total || 0;
+            } catch (error) {
+                const users = this.$store.getters.usersForCurrentCompany || [];
+                this.totalUsers = users.length;
+            }
+
             if (!echo) {
-                console.warn('[OnlineUsersWidget] Echo не инициализирован');
+                this.loading = false;
                 return;
             }
 

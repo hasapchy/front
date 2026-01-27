@@ -29,7 +29,8 @@ export default class ClientDto {
     userName = null,
     employeeId = null,
     employee = null,
-    currencySymbol = null
+    currencySymbol = null,
+    balances = []
   ) {
     this.id = id;
     this.clientType = clientType;
@@ -53,6 +54,7 @@ export default class ClientDto {
     this.employeeId = employeeId;
     this.employee = employee;
     this.currencySymbol = currencySymbol;
+    this.balances = balances || [];
     this.emails = (emails || []).map(
       (email) => new ClientEmailDto(email.id, null, email.email)
     );
@@ -171,7 +173,16 @@ export default class ClientDto {
         data.user_name || data.user?.name || null,
         data.employee_id,
         data.employee,
-        data.currency_symbol || null
+        data.currency_symbol || null,
+        (data.balances || []).map(b => ({
+          id: b.id,
+          clientId: data.id,
+          currencyId: b.currency_id,
+          currency: b.currency,
+          balance: parseFloat(b.balance) || 0,
+          isDefault: Boolean(b.is_default),
+          note: b.note || ''
+        }))
       );
     }).filter(Boolean);
   }

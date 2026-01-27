@@ -60,16 +60,29 @@
                                 }}</span></p>
                         <p><span class="text-xs">{{ $t('phone') }}:</span> <span class="font-semibold text-sm">{{
                             clientPhones[0]?.phone || '' }}</span></p>
-                        <p v-if="$store.getters.hasPermission('settings_client_balance_view')"><span class="text-xs">{{
-                            $t('balance') }}:</span>
+                        <div v-if="$store.getters.hasPermission('settings_client_balance_view')" class="flex items-center gap-2">
+                            <span class="text-xs whitespace-nowrap">{{ $t('balance') }}:</span>
                             <span class="font-semibold text-sm"
-                                :class="selectedClient.balance == 0 ? 'text-[#337AB7]' : selectedClient.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
-                                {{ clientBalance }} {{ defaultCurrencySymbol }}
-                                <span v-if="selectedClient.balance > 0">({{ $t('clientOwesUs') }})</span>
-                                <span v-else-if="selectedClient.balance < 0">({{ $t('weOweClient') }})</span>
+                                :class="displayBalance == 0 ? 'text-[#337AB7]' : displayBalance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
+                                {{ clientBalance }} {{ displayCurrencySymbol }}
+                                <span v-if="displayBalance > 0">({{ $t('clientOwesUs') }})</span>
+                                <span v-else-if="displayBalance < 0">({{ $t('weOweClient') }})</span>
                                 <span v-else>({{ $t('mutualSettlement') }})</span>
                             </span>
-                        </p>
+                            <select 
+                                v-if="shouldShowBalanceSelect"
+                                v-model="selectedBalanceId" 
+                                @change="onBalanceChange"
+                                class="px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors">
+                                <option 
+                                    v-for="balance in selectedClient.balances" 
+                                    :key="balance.id" 
+                                    :value="balance.id">
+                                    {{ balance.currency?.symbol || '' }} - {{ formatBalance(balance.balance) }}
+                                    <span v-if="balance.isDefault"> (Дефолт)</span>
+                                </option>
+                            </select>
+                        </div>
                     </div>
                     <button v-if="allowDeselect" v-on:click="deselectClient"
                         class="text-red-500 text-2xl cursor-pointer" :disabled="disabled">×</button>
@@ -139,6 +152,7 @@ export default {
             showDropdown: false,
             modalCreateClient: false,
             defaultClientName: '',
+            selectedBalanceId: null,
         };
     },
     computed: {
@@ -178,12 +192,7 @@ export default {
             }
         },
         clientBalance() {
-            if (!this.selectedClient) return 0;
-            if (typeof this.selectedClient.balanceFormatted === 'function') {
-                return this.selectedClient.balanceFormatted();
-            }
-            const balance = this.selectedClient.balance || 0;
-            return formatNumber(balance, null, true);
+            return formatNumber(this.displayBalance, null, true);
         },
         clientPhones() {
             if (!this.selectedClient) return [];
@@ -198,24 +207,123 @@ export default {
             const currencies = this.$store.state.currencies || [];
             const defaultCurrency = currencies.find(c => c.isDefault);
             return defaultCurrency ? defaultCurrency.symbol : '';
+        },
+        displayCurrencySymbol() {
+            if (!this.selectedClient || !this.selectedClient.balances || this.selectedClient.balances.length === 0) {
+                return this.defaultCurrencySymbol;
+            }
+            
+            if (this.selectedBalanceId) {
+                const selectedBalance = this.selectedClient.balances.find(b => b.id === this.selectedBalanceId);
+                if (selectedBalance && selectedBalance.currency) {
+                    return selectedBalance.currency.symbol || this.defaultCurrencySymbol;
+                }
+            }
+            
+            const defaultBalance = this.selectedClient.balances.find(b => b.isDefault);
+            if (defaultBalance && defaultBalance.currency) {
+                return defaultBalance.currency.symbol || this.defaultCurrencySymbol;
+            }
+            
+            return this.selectedClient.balances[0]?.currency?.symbol || this.defaultCurrencySymbol;
+        },
+        displayBalance() {
+            if (!this.selectedClient) {
+                console.log('[ClientSearch] displayBalance: no selectedClient');
+                return 0;
+            }
+            
+            console.log('[ClientSearch] displayBalance:', {
+                selectedClient: this.selectedClient,
+                hasBalances: !!this.selectedClient.balances,
+                balancesLength: this.selectedClient.balances?.length || 0,
+                balances: this.selectedClient.balances,
+                selectedBalanceId: this.selectedBalanceId,
+                oldBalance: this.selectedClient.balance
+            });
+            
+            if (this.selectedClient.balances && this.selectedClient.balances.length > 0) {
+                if (this.selectedBalanceId) {
+                    const selectedBalance = this.selectedClient.balances.find(b => b.id === this.selectedBalanceId);
+                    if (selectedBalance) {
+                        console.log('[ClientSearch] displayBalance: using selectedBalance', selectedBalance);
+                        return selectedBalance.balance || 0;
+                    }
+                }
+                
+                const defaultBalance = this.selectedClient.balances.find(b => b.isDefault);
+                if (defaultBalance) {
+                    console.log('[ClientSearch] displayBalance: using defaultBalance', defaultBalance);
+                    return defaultBalance.balance || 0;
+                }
+                
+                const firstBalance = this.selectedClient.balances[0]?.balance || 0;
+                console.log('[ClientSearch] displayBalance: using firstBalance', firstBalance);
+                return firstBalance;
+            }
+            
+            const oldBalance = this.selectedClient.balance || 0;
+            console.log('[ClientSearch] displayBalance: using old balance', oldBalance);
+            return oldBalance;
+        },
+        shouldShowBalanceSelect() {
+            const hasPermission = this.$store.getters.hasPermission('settings_client_balance_view');
+            const hasBalances = this.selectedClient?.balances && this.selectedClient.balances.length > 1;
+            
+            console.log('[ClientSearch] shouldShowBalanceSelect:', {
+                hasPermission,
+                hasBalances,
+                selectedClient: this.selectedClient,
+                balances: this.selectedClient?.balances,
+                balancesLength: this.selectedClient?.balances?.length || 0
+            });
+            
+            return hasPermission && hasBalances;
         }
     },
     async created() {
+        console.log('[ClientSearch] created:', {
+            selectedClient: this.selectedClient
+        });
+        
         await this.fetchLastClients();
 
         if (this.selectedClient && this.selectedClient.id) {
             try {
-                if (typeof this.selectedClient.fullName === 'function' && (this.selectedClient.phones && Array.isArray(this.selectedClient.phones) || this.selectedClient.primaryPhone)) {
+                const hasFullData = typeof this.selectedClient.fullName === 'function' && 
+                    (this.selectedClient.phones && Array.isArray(this.selectedClient.phones) || this.selectedClient.primaryPhone) &&
+                    this.selectedClient.balances && Array.isArray(this.selectedClient.balances);
+                
+                if (hasFullData) {
+                    console.log('[ClientSearch] selectedClient already has full data including balances');
                     return;
                 }
+                
+                console.log('[ClientSearch] fetching client data for id:', this.selectedClient.id, {
+                    hasBalances: !!this.selectedClient.balances,
+                    balancesLength: this.selectedClient.balances?.length || 0
+                });
                 const updatedClient = await ClientController.getItem(this.selectedClient.id);
+                console.log('[ClientSearch] fetched client:', {
+                    updatedClient,
+                    hasBalances: !!updatedClient?.balances,
+                    balancesLength: updatedClient?.balances?.length || 0,
+                    balances: updatedClient?.balances
+                });
                 this.$emit('update:selectedClient', updatedClient);
             } catch (error) {
                 console.error('Ошибка при обновлении данных клиента:', error);
             }
         }
     },
-    emits: ['update:selectedClient'],
+    mounted() {
+        console.log('[ClientSearch] mounted:', {
+            selectedClient: this.selectedClient,
+            selectedBalanceId: this.selectedBalanceId,
+            hasPermission: this.$store.getters.hasPermission('settings_client_balance_view')
+        });
+    },
+    emits: ['update:selectedClient', 'balance-changed'],
     methods: {
         async fetchLastClients() {
             try {
@@ -282,7 +390,31 @@ export default {
             this.showDropdown = false;
             this.clientSearch = '';
             this.clientResults = [];
-            this.$emit('update:selectedClient', client);
+            
+            console.log('[ClientSearch] selectClient:', {
+                client,
+                hasBalances: !!client?.balances,
+                balancesLength: client?.balances?.length || 0
+            });
+            
+            if (!client?.balances || !Array.isArray(client.balances) || client.balances.length === 0) {
+                console.log('[ClientSearch] Client has no balances, fetching full client data for id:', client?.id);
+                try {
+                    const fullClient = await ClientController.getItem(client.id);
+                    console.log('[ClientSearch] Fetched full client:', {
+                        fullClient,
+                        hasBalances: !!fullClient?.balances,
+                        balancesLength: fullClient?.balances?.length || 0,
+                        balances: fullClient?.balances
+                    });
+                    this.$emit('update:selectedClient', fullClient);
+                } catch (error) {
+                    console.error('[ClientSearch] Error fetching full client data:', error);
+                    this.$emit('update:selectedClient', client);
+                }
+            } else {
+                this.$emit('update:selectedClient', client);
+            }
         },
         deselectClient() {
             this.$emit('update:selectedClient', null);
@@ -340,12 +472,42 @@ export default {
                 this.showDropdown = false;
             });
         },
+        formatBalance(balance) {
+            return formatNumber(balance, null, true);
+        },
+        onBalanceChange() {
+            console.log('[ClientSearch] Balance changed:', {
+                selectedBalanceId: this.selectedBalanceId,
+                selectedClient: this.selectedClient,
+                balances: this.selectedClient?.balances
+            });
+            this.$emit('balance-changed', this.selectedBalanceId);
+        },
     },
     watch: {
         selectedClient: {
             handler(newVal) {
+                console.log('[ClientSearch] selectedClient changed:', {
+                    newVal,
+                    hasBalances: !!newVal?.balances,
+                    balancesLength: newVal?.balances?.length || 0,
+                    balances: newVal?.balances
+                });
+                
+                if (newVal && newVal.balances && newVal.balances.length > 0) {
+                    const defaultBalance = newVal.balances.find(b => b.isDefault);
+                    this.selectedBalanceId = defaultBalance ? defaultBalance.id : (newVal.balances[0]?.id || null);
+                    console.log('[ClientSearch] selectedBalanceId set to:', this.selectedBalanceId, {
+                        defaultBalance: defaultBalance?.id,
+                        firstBalance: newVal.balances[0]?.id
+                    });
+                } else {
+                    this.selectedBalanceId = null;
+                    console.log('[ClientSearch] selectedBalanceId set to null (no balances)');
+                }
             },
             deep: true,
+            immediate: true,
         },
         clientSearch: {
             handler: 'searchClients',

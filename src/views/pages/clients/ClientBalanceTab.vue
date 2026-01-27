@@ -6,15 +6,19 @@
                 
                 <div v-if="editingItem" class="flex items-center gap-2">
                     <select 
-                        v-model="selectedCashRegisterId"
+                        v-if="editingItem.balances && editingItem.balances.length > 0"
+                        v-model="selectedBalanceId"
                         @change="fetchBalanceHistory"
                         class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option :value="null">{{ $t('allCashRegisters') || 'Все кассы' }}</option>
-                        <option v-for="cash in cashRegisters" :key="cash.id" :value="cash.id">
-                            {{ cash.name }} ({{ cash.currencySymbol || '' }})
+                        <option 
+                            v-for="balance in editingItem.balances" 
+                            :key="balance.id" 
+                            :value="balance.id">
+                            {{ balance.currency?.symbol || '' }} - {{ formatBalance(balance.balance) }}
+                            <span v-if="balance.isDefault"> ({{ $t('default') || 'По умолчанию' }})</span>
                         </option>
                     </select>
-
+                    
                     <input 
                         type="date" 
                         v-model="dateFrom"
@@ -36,24 +40,76 @@
                 </div>
             </div>
 
-            <PrimaryButton 
-                v-if="canAdjustBalance"
-                icon="fas fa-plus" 
-                :onclick="openAdjustmentModal"
-                :is-success="true"
-                :disabled="!editingItem || !editingItem.id">
-                {{ $t('adjustBalance') }}
-            </PrimaryButton>
+            <div class="flex gap-2">
+                <PrimaryButton 
+                    v-if="canCreateBalance && editingItem && editingItem.id"
+                    icon="fas fa-plus" 
+                    :onclick="openAddBalanceModal"
+                    :is-success="true">
+                    {{ $t('createBalance') || 'Создать баланс' }}
+                </PrimaryButton>
+                
+                <PrimaryButton 
+                    v-if="canAdjustBalance"
+                    icon="fas fa-plus" 
+                    :onclick="openAdjustmentModal"
+                    :is-success="true"
+                    :disabled="!editingItem || !editingItem.id">
+                    {{ $t('adjustBalance') }}
+                </PrimaryButton>
+            </div>
         </div>
         
-        <div v-if="!balanceLoading && editingItem" class="mb-4 flex items-center gap-4 flex-wrap">
-            <div class="flex items-center gap-2">
-                <i class="fas fa-wallet text-blue-500"></i>
-                <span class="text-sm text-gray-600">{{ balanceStatusText }}:</span>
-                <b :class="{
-                    'text-[#5CB85C]': totalBalance >= 0,
-                    'text-[#EE4F47]': totalBalance < 0
-                }">{{ formatBalance(totalBalance) }} {{ displayCurrencySymbol }}</b>
+        <div v-if="editingItem && editingItem.balances && editingItem.balances.length > 0" class="mb-4">
+            <h4 class="text-sm font-semibold mb-2">{{ $t('balances') || 'Балансы' }}</h4>
+            <div class="overflow-x-auto w-full">
+                <table class="draggable-table min-w-full bg-white shadow-md rounded mb-6" style="font-size: 12px;">
+                    <thead class="bg-gray-100 rounded-t-sm">
+                        <tr>
+                            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
+                                {{ $t('currency') || 'Валюта' }}
+                            </th>
+                            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
+                                {{ $t('balance') || 'Баланс' }}
+                            </th>
+                            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
+                                {{ $t('status') || 'Статус' }}
+                            </th>
+                            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
+                                {{ $t('note') || 'Примечание' }}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(balance, idx) in editingItem.balances" :key="balance.id" 
+                            @dblclick.stop="openBalanceModal(balance)"
+                            class="cursor-pointer hover:bg-gray-100 transition-all"
+                            :class="{ 'border-b border-gray-300': idx !== editingItem.balances.length - 1 }">
+                            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
+                                {{ balance.currency?.symbol || balance.currency?.code || '-' }}
+                            </td>
+                            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300" :class="{
+                                'text-[#5CB85C]': balance.balance > 0,
+                                'text-[#EE4F47]': balance.balance < 0,
+                                'text-[#337AB7]': balance.balance == 0
+                            }">
+                                {{ formatBalance(balance.balance) }}
+                                <span v-if="balance.balance > 0" class="text-xs ml-1">({{ $t('clientOwesUs') }})</span>
+                                <span v-else-if="balance.balance < 0" class="text-xs ml-1">({{ $t('weOweClient') }})</span>
+                                <span v-else class="text-xs ml-1">({{ $t('mutualSettlement') }})</span>
+                            </td>
+                            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
+                                <span v-if="balance.isDefault" class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
+                                    {{ $t('default') || 'По умолчанию' }}
+                                </span>
+                                <span v-else class="text-gray-400">-</span>
+                            </td>
+                            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
+                                {{ balance.note || '-' }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -89,12 +145,35 @@
                     :initialClient="editingItem"
                     :form-config="balanceAdjustmentFormConfig"
                     :current-client-balance="editingItem?.balance"
+                    :client-balances="editingItem?.balances || []"
                     :header-text="balanceAdjustmentHeader"
                     @saved="onEntitySaved"
                     @saved-error="onEntitySavedError"
                     @deleted="onEntityDeleted"
                     @deleted-error="onEntityDeletedError" />
             </template>
+        </SideModalDialog>
+
+        <SideModalDialog :showForm="addBalanceModalOpen" :onclose="closeAddBalanceModal">
+            <ClientBalanceCreatePage 
+                :editing-item="null"
+                :initial-client="editingItem"
+                @saved="onBalanceSaved"
+                @saved-error="onBalanceSavedError"
+                @close-request="closeAddBalanceModal" />
+        </SideModalDialog>
+
+
+        <SideModalDialog :showForm="balanceModalOpen" :onclose="closeBalanceModal">
+            <ClientBalanceCreatePage 
+                v-if="balanceModalOpen"
+                :editing-item="selectedBalance"
+                :initial-client="editingItem"
+                @saved="onBalanceSaved"
+                @saved-error="onBalanceSavedError"
+                @deleted="onBalanceDeleted"
+                @deleted-error="onBalanceDeletedError"
+                @close-request="closeBalanceModal" />
         </SideModalDialog>
     </div>
 </template>
@@ -104,21 +183,23 @@ import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
+import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
 import OperationTypeCell from "@/views/components/app/buttons/OperationTypeCell.vue";
 import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vue";
+import ClientBalanceCreatePage from "@/views/pages/clients/ClientBalanceCreatePage.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import filtersMixin from "@/mixins/filtersMixin";
 import { defineAsyncComponent, markRaw } from 'vue';
+import ClientController from "@/api/ClientController";
+import ClientBalanceDto from "@/dto/client/ClientBalanceDto";
 
 const TransactionCreatePage = defineAsyncComponent(() => 
     import("@/views/pages/transactions/TransactionCreatePage.vue")
 );
 import TransactionController from "@/api/TransactionController";
-import ClientController from "@/api/ClientController";
-import ClientDto from "@/dto/client/ClientDto";
 import TransactionDto from "@/dto/transaction/TransactionDto";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 
@@ -129,8 +210,10 @@ export default {
         SideModalDialog,
         PrimaryButton,
         NotificationToast,
+        AlertDialog,
         SourceButtonCell,
         TransactionCreatePage,
+        ClientBalanceCreatePage,
     },
     emits: ['balance-updated'],
     props: {
@@ -149,16 +232,18 @@ export default {
             balanceHistory: [],
             lastFetchedClientId: null,
             forceRefresh: false,
-            totalBalance: 0,
             transactionModalOpen: false,
             editingTransactionItem: null,
             selectedEntity: null,
             entityModalOpen: false,
             entityLoading: false,
             isAdjustmentMode: false,
-            selectedCashRegisterId: null,
             dateFrom: null,
             dateTo: null,
+            selectedBalanceId: null,
+            addBalanceModalOpen: false,
+            balanceModalOpen: false,
+            selectedBalance: null,
             columnsConfig: [
                 { name: "id", label: "№", size: 60 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 120 },
@@ -229,9 +314,7 @@ export default {
     },
     async mounted() {
         await this.fetchDefaultCurrency();
-        if (!this.$store.getters.cashRegisters?.length) {
-            await this.$store.dispatch('loadCashRegisters');
-        }
+        this.initDefaultBalance();
     },
 
     methods: {
@@ -239,8 +322,8 @@ export default {
             if (!this.editingItem || !this.editingItem.id) return;
             try {
                 const updatedClient = await ClientController.getItem(this.editingItem.id);
-                if (updatedClient && updatedClient.balance !== undefined) {
-                    this.editingItem.balance = updatedClient.balance;
+                if (updatedClient) {
+                    Object.assign(this.editingItem, updatedClient);
                 }
             } catch (error) {
                 console.error('Error updating client data:', error);
@@ -279,7 +362,6 @@ export default {
             
             if (!this.$store.getters.hasPermission('settings_client_balance_view')) {
                 this.balanceHistory = [];
-                this.totalBalance = 0;
                 return;
             }
             
@@ -288,36 +370,37 @@ export default {
                 this.balanceHistory = await ClientController.getBalanceHistory(
                     this.editingItem.id,
                     null,
-                    this.selectedCashRegisterId,
+                    null,
                     this.dateFrom,
-                    this.dateTo
+                    this.dateTo,
+                    this.selectedBalanceId
                 );
-                
-                // Всегда рассчитываем баланс из истории для корректного отображения
-                this.totalBalance = this.balanceHistory.reduce((sum, item) => {
-                    const delta = item.balanceDelta !== null && item.balanceDelta !== undefined 
-                        ? parseFloat(item.balanceDelta) 
-                        : (parseFloat(item.amount) || 0);
-                    return sum + delta;
-                }, 0);
                 
                 this.lastFetchedClientId = this.editingItem.id;
                 this.forceRefresh = false;
             } catch (e) {
                 this.balanceHistory = [];
-                this.totalBalance = 0;
             } finally {
                 this.balanceLoading = false;
             }
         },
         resetFilters() {
             this.resetFiltersFromConfig({
-                selectedCashRegisterId: null,
                 dateFrom: null,
-                dateTo: null
+                dateTo: null,
+                selectedBalanceId: null
             }, () => {
+                this.initDefaultBalance();
                 this.fetchBalanceHistory();
             });
+        },
+        initDefaultBalance() {
+            if (this.editingItem && this.editingItem.balances && this.editingItem.balances.length > 0) {
+                const defaultBalance = this.editingItem.balances.find(b => b.isDefault);
+                this.selectedBalanceId = defaultBalance ? defaultBalance.id : (this.editingItem.balances[0]?.id || null);
+            } else {
+                this.selectedBalanceId = null;
+            }
         },
 
         async handleBalanceItemClick(item) {
@@ -392,25 +475,56 @@ export default {
                     const categoryName = i.categoryName || '';
                     return categoryName ? this.$t(`transactionCategory.${categoryName}`, categoryName) : '-';
                 case "clientImpact":
-                    // Возвращаем числовое значение для сортировки (отображение через компонент ClientImpactCell)
                     return parseFloat(i.amount || 0);
                 default:
                     return i[c];
             }
         },
+        openAddBalanceModal() {
+            this.addBalanceModalOpen = true;
+        },
+        closeAddBalanceModal() {
+            this.addBalanceModalOpen = false;
+        },
+        async onBalanceSaved() {
+            await this.updateClientData();
+            this.closeAddBalanceModal();
+            this.closeBalanceModal();
+            this.$emit('balance-updated');
+        },
+        onBalanceSavedError(error) {
+            console.error('Error saving balance:', error);
+        },
+        async onBalanceDeleted() {
+            await this.updateClientData();
+            this.closeBalanceModal();
+            this.$emit('balance-updated');
+        },
+        onBalanceDeletedError(error) {
+            console.error('Error deleting balance:', error);
+        },
+        openBalanceModal(balance) {
+            if (!balance || !this.editingItem) return;
+            this.selectedBalance = balance;
+            this.balanceModalOpen = true;
+        },
+        closeBalanceModal() {
+            this.balanceModalOpen = false;
+            this.selectedBalance = null;
+        },
     },
     computed: {
-        balanceStatusText() {
-            if (this.totalBalance > 0) {
-                return 'Клиент нам должен';
-            } else if (this.totalBalance < 0) {
-                return 'Мы клиенту должны';
-            } else {
-                return 'Взаиморасчеты';
-            }
-        },
         canAdjustBalance() {
             return this.$store.getters.hasPermission('settings_client_balance_adjustment');
+        },
+        canCreateBalance() {
+            return this.$store.getters.hasPermission('clients_update');
+        },
+        canUpdateBalance() {
+            return this.$store.getters.hasPermission('clients_update');
+        },
+        canDeleteBalance() {
+            return this.$store.getters.hasPermission('clients_delete');
         },
         balanceAdjustmentFormConfig() {
             return this.isAdjustmentMode ? TRANSACTION_FORM_PRESETS.balanceAdjustment : {};
@@ -418,32 +532,41 @@ export default {
         balanceAdjustmentHeader() {
             return this.isAdjustmentMode ? 'Транзакция — корректировка баланса' : '';
         },
-        cashRegisters() {
-            return this.$store.getters.cashRegisters || [];
+        availableCurrencies() {
+            return this.$store.getters.currencies || [];
         },
-        displayCurrencySymbol() {
-            if (this.selectedCashRegisterId) {
-                const selectedCash = this.cashRegisters.find(cash => cash.id === this.selectedCashRegisterId);
-                return selectedCash?.currencySymbol || this.currencySymbol || 'TMT';
-            }
-            return this.currencySymbol || 'TMT';
-        }
     },
     watch: {
         'editingItem.id': {
             handler(newId) {
                 if (newId) {
-                    this.fetchBalanceHistory();
+                    this.initDefaultBalance();
+                    this.$nextTick(() => {
+                        this.fetchBalanceHistory();
+                    });
                 } else {
                     this.balanceHistory = [];
                     this.lastFetchedClientId = null;
                     this.selectedEntity = null;
                     this.entityModalOpen = false;
                     this.entityLoading = false;
-                    this.totalBalance = 0;
+                    this.selectedBalanceId = null;
                 }
             },
             immediate: true,
+        },
+        'editingItem.balances': {
+            handler() {
+                if (this.editingItem && this.editingItem.id) {
+                    this.initDefaultBalance();
+                    this.$nextTick(() => {
+                        if (this.lastFetchedClientId === this.editingItem.id) {
+                            this.fetchBalanceHistory();
+                        }
+                    });
+                }
+            },
+            deep: true,
         },
     },
 };
