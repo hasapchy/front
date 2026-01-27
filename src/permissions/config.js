@@ -118,12 +118,12 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
-    orders_basement: {
-      has_user_id: true,
-      check_strategy: "user_id",
-      actions: ["view", "create", "update", "delete"],
-      scope_actions: ["view", "update", "delete"],
-    },
+    // orders_basement: {
+    //   has_user_id: true,
+    //   check_strategy: "user_id",
+    //   actions: ["view", "create", "update", "delete"],
+    //   scope_actions: ["view", "update", "delete"],
+    // },
     order_statuses: {
       has_user_id: false,
       check_strategy: "default",
