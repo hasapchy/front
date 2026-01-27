@@ -1,15 +1,16 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full p-4">
-    <h2 class="text-lg font-bold mb-4">
-      {{ isEditing ? $t('editOrder') : $t('createOrder') }}
-      <span v-if="isEditing && (orderId || editingItem?.id)" class="text-base font-normal text-gray-600 ml-2">
-        #{{ orderId || editingItem?.id }}
-      </span>
-    </h2>
-    
-    <!-- Форма создания заказа -->
-    <div>
-      <form @submit.prevent="createOrder" class="space-y-6">
+  <div class="flex flex-col h-full relative">
+    <div class="flex-1 overflow-auto p-4 pb-32">
+      <h2 class="text-lg font-bold mb-4">
+        {{ isEditing ? $t('editOrder') : $t('createOrder') }}
+        <span v-if="isEditing && (orderId || editingItem?.id)" class="text-base font-normal text-gray-600 ml-2">
+          #{{ orderId || editingItem?.id }}
+        </span>
+      </h2>
+      
+      <!-- Форма создания заказа -->
+      <div>
+        <form @submit.prevent="createOrder" class="space-y-6">
         <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
           <div class="grid grid-cols-1 gap-6">
             <!-- Клиент и Проект в одной строке -->
@@ -106,15 +107,13 @@
           </div>
         </div>
 
-      </form>
+        </form>
+      </div>
     </div>
 
-    <!-- Футер с кнопками -->
-    <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
+    <!-- Футер с кнопками (зафиксирован внизу) -->
+    <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
       <div class="flex items-center space-x-2">
-        <PrimaryButton v-if="isEditing && (orderId || editingItem?.id)" icon="fas fa-check" :onclick="updateOrder"
-          :is-loading="loading">
-        </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="isEditing ? updateOrder : createOrder" :is-loading="loading"
           :disabled="!canSave">
         </PrimaryButton>
@@ -696,36 +695,37 @@ export default {
       
       // Преобразуем товары для формы
       if (orderData.products && orderData.products.length > 0) {
-
-        const regularProducts = orderData.products.filter(p => p.product_type !== 'temp')
-        const tempProducts = orderData.products.filter(p => p.product_type === 'temp')
+        const regularProducts = orderData.products.filter(p => !(p.isTempProduct || (p.productId == null)))
+        const tempProducts = orderData.products.filter(p => p.isTempProduct || (p.productId == null))
         
         this.form.products = regularProducts.map(product => ({
           id: product.id || null,
-          productId: product.product_id,
-          productName: product.product_name,
-          name: product.product_name,
+          productId: product.productId,
+          productName: product.productName || product.name,
+          name: product.productName || product.name,
           quantity: product.quantity,
           price: product.price,
-          unit: product.unit_short_name || product.unit_name,
-          unitShortName: product.unit_short_name || product.unit_name,
-          unitName: product.unit_name,
-          unitId: product.unit_id,
-          width: product.width || null,
-          height: product.height || null
+          unit: product.unitShortName || '',
+          unitShortName: product.unitShortName || '',
+          unitName: product.unitShortName || '',
+          unitId: product.unitId,
+          width: product.width ?? null,
+          height: product.height ?? null,
+          type: product.type || 1,
+          stockQuantity: product.stockQuantity || 0
         }))
         
         this.form.stockItems = tempProducts.map(product => ({
           id: product.id || null,
-          name: product.product_name,
+          name: product.productName || product.name,
           description: product.description || '',
           quantity: product.quantity,
           price: product.price,
           unit_id: product.unitId,
           unit_short_name: product.unitShortName || '',
           unit_name: product.unitShortName || '',
-          width: product.width || 0,
-          height: product.height || 0,
+          width: product.width ?? 0,
+          height: product.height ?? 0,
           isTempProduct: true,
           type: product.type || 1
         }))

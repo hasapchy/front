@@ -10,7 +10,9 @@ export default class OrderProductDto {
     unitId,
     unitShortName,
     quantity,
-    price
+    price,
+    width = null,
+    height = null
   ) {
     this.id = id;
     this.orderId = orderId;
@@ -21,6 +23,8 @@ export default class OrderProductDto {
     this.unitShortName = unitShortName;
     this.quantity = quantity;
     this.price = price;
+    this.width = width;
+    this.height = height;
     this.type = null;
   }
 
@@ -57,7 +61,9 @@ export default class OrderProductDto {
         data.unit_id,
         data.unit_short_name,
         data.quantity,
-        data.price
+        data.price,
+        data.width ?? null,
+        data.height ?? null
       );
       dto.type = data.type || (data.product ? data.product.type : null);
       return dto;
