@@ -92,17 +92,8 @@
                             @update:endDate="endDate = $event" @update:statusFilter="statusFilter = $event"
                             @update:projectFilter="projectFilter = $event" @update:clientFilter="clientFilter = $event"
                             @reset="resetFilters" @apply="applyFilters" />
-
-    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed"
-        :showTimelineButton="!!editingItem" @toggle-timeline="toggleTimeline">
-        <OrderCreatePage v-if="modalDialog && !isBasementMode" :key="editingItem ? editingItem.id : 'new-order'" ref="ordercreatepageForm"
-            @saved="handleSaved" @saved-silent="handleSavedSilent" @saved-error="handleSavedError"
-            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
-            :editingItem="editingItem" />
-        <BasementOrderCreatePage v-if="modalDialog && isBasementMode" :key="editingItem ? editingItem.id : 'new-order'" ref="basementOrderCreatePageForm"
-            @saved="handleSaved" @saved-silent="handleSavedSilent" @saved-error="handleSavedError"
-            @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
-            :editingItem="editingItem" />
+                    </template>
+                </TableControlsBar>
 
                 <div v-if="selectedIds.length && viewMode === 'kanban'" class="mb-4">
                     <BatchButton :selected-ids="selectedIds" :batch-actions="getBatchActions()"

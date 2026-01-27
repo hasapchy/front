@@ -177,7 +177,6 @@
         <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
             :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
             @leave="deleteDialog = false" />
-    </div>
 </template>
 
 <script>

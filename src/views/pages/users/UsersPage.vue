@@ -39,8 +39,8 @@
                                                         :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
                                                     {{ $te(element.label) ? $t(element.label) : element.label }}
                                                 </div>
-                                                <div><i
-                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                <div>
+                                                    <i class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
                                                 </div>
                                             </div>
                                         </li>

@@ -2,7 +2,7 @@
     <div>
         <div class="flex flex-col overflow-auto h-full p-4">
             <h2 class="text-lg font-bold mb-4">{{ editingItem ? (editingItem.name || $t('editUser')) : $t('createUser')
-                }}
+            }}
             </h2>
             <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
                 changeTab(t);
@@ -31,7 +31,7 @@
 
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('firstName')
-                            }}</label>
+                        }}</label>
                         <input type="text" v-model="form.name"
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required />
@@ -52,7 +52,7 @@
 
                     <div class="mb-4" v-if="!editingItem">
                         <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('password')
-                            }}</label>
+                        }}</label>
                         <div class="flex items-center space-x-2">
                             <input :type="showPassword ? 'text' : 'password'" v-model="form.password"
                                 :placeholder="$t('enterPassword')"
@@ -66,7 +66,7 @@
 
                     <div class="mb-4" v-if="!editingItem">
                         <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('confirmPassword')
-                            }}</label>
+                        }}</label>
                         <div class="flex items-center space-x-2">
                             <input :type="showConfirmPassword ? 'text' : 'password'" v-model="form.confirmPassword"
                                 :placeholder="$t('confirmPassword')"
@@ -79,7 +79,7 @@
 
                     <div class="mb-4" v-if="editingItem">
                         <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('newPassword') }}</label>
-                        <div class="flex items-center space-x-2">   
+                        <div class="flex items-center space-x-2">
                             <input :type="showNewPassword ? 'text' : 'password'" v-model="form.newPassword"
                                 :placeholder="$t('enterNewPassword')"
                                 class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -142,15 +142,13 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('departments') }}</label>
                     <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
                         <div v-if="departments && departments.length > 0">
-                            <div v-for="department in departments" :key="department.id" class="flex items-center space-x-2 mb-2">
-                                <input 
-                                    type="checkbox" 
-                                    :id="`department-${department.id}`" 
-                                    :value="department.id"
+                            <div v-for="department in departments" :key="department.id"
+                                class="flex items-center space-x-2 mb-2">
+                                <input type="checkbox" :id="`department-${department.id}`" :value="department.id"
                                     v-model="form.departments"
-                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
-                                />
-                                <label :for="`department-${department.id}`" class="text-sm text-gray-700 cursor-pointer">
+                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                <label :for="`department-${department.id}`"
+                                    class="text-sm text-gray-700 cursor-pointer">
                                     {{ department.title }}
                                 </label>
                             </div>
@@ -163,86 +161,65 @@
                 <div class="mb-4">
                     <label class="font-semibold mb-2 block">{{ $t('roles') }}</label>
                     <p class="text-sm text-gray-600 mb-3">{{ $t('selectRolesByCompany') }}</p>
-                    
+
                     <div v-if="selectedCompanies && selectedCompanies.length > 0" class="space-y-4">
-                        <div v-for="company in selectedCompanies" :key="company.id" class="border border-gray-300 rounded-md p-3 bg-gray-50">
+                        <div v-for="company in selectedCompanies" :key="company.id"
+                            class="border border-gray-300 rounded-md p-3 bg-gray-50">
                             <div class="flex items-center justify-between mb-2">
                                 <div class="font-semibold text-sm">{{ company.name }}</div>
-                                <button 
-                                    v-if="getCompanyRole(company.id)"
-                                    @click="clearCompanyRole(company.id)"
-                                    type="button"
-                                    class="text-xs text-red-600 hover:text-red-800">
+                                <button v-if="getCompanyRole(company.id)" @click="clearCompanyRole(company.id)"
+                                    type="button" class="text-xs text-red-600 hover:text-red-800">
                                     {{ $t('clear') || 'Очистить' }}
                                 </button>
                             </div>
                             <div v-if="getRolesForCompany(company.id).length > 0" class="max-h-48 overflow-y-auto">
-                                <div v-for="role in getRolesForCompany(company.id)" :key="role.id" class="flex items-center space-x-2 mb-2">
-                                    <input 
-                                        type="radio" 
-                                        :id="`role-${company.id}-${role.id}`" 
-                                        :name="`company-${company.id}-role`"
-                                        :value="role.name"
+                                <div v-for="role in getRolesForCompany(company.id)" :key="role.id"
+                                    class="flex items-center space-x-2 mb-2">
+                                    <input type="radio" :id="`role-${company.id}-${role.id}`"
+                                        :name="`company-${company.id}-role`" :value="role.name"
                                         @change="updateCompanyRole(company.id, role.name)"
                                         :checked="getCompanyRole(company.id) === role.name"
                                         class="border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                    <label :for="`role-${company.id}-${role.id}`" class="text-sm text-gray-700 cursor-pointer flex-1">
+                                    <label :for="`role-${company.id}-${role.id}`"
+                                        class="text-sm text-gray-700 cursor-pointer flex-1">
                                         {{ role.name }}
-                                        <span v-if="role.permissions && role.permissions.length > 0" class="text-xs text-gray-500 ml-2">
+                                        <span v-if="role.permissions && role.permissions.length > 0"
+                                            class="text-xs text-gray-500 ml-2">
                                             ({{ role.permissions.length }} {{ $t('permissions') }})
                                         </span>
                                     </label>
                                 </div>
-                                <div v-if="getRolesForCompany(company.id).length > 0" class="max-h-48 overflow-y-auto">
-                                    <div v-for="role in getRolesForCompany(company.id)" :key="role.id"
-                                        class="flex items-center space-x-2 mb-2">
-                                        <input type="radio" :id="`role-${company.id}-${role.id}`"
-                                            :name="`company-${company.id}-role`" :value="role.name"
-                                            @change="updateCompanyRole(company.id, role.name)"
-                                            :checked="getCompanyRole(company.id) === role.name"
-                                            class="border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                        <label :for="`role-${company.id}-${role.id}`"
-                                            class="text-sm text-gray-700 cursor-pointer flex-1">
-                                            {{ role.name }}
-                                            <span v-if="role.permissions && role.permissions.length > 0"
-                                                class="text-xs text-gray-500 ml-2">
-                                                ({{ role.permissions.length }} {{ $t('permissions') }})
-                                            </span>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div v-else class="text-gray-500 text-sm">{{ $t('noRolesAvailable') }}</div>
                             </div>
+                            <div v-else class="text-gray-500 text-sm">{{ $t('noRolesAvailable') }}</div>
                         </div>
-                        <div v-else class="text-gray-500 text-sm">{{ $t('noCompaniesAvailable') }}</div>
                     </div>
-                </div>
-                <div v-show="currentTab === 'salaries' && editingItem && canViewSalariesTab" class="mt-4">
-                    <UserSalaryTab :editing-item="editingItem" />
-                </div>
-                <div v-if="currentTab === 'balance' && editingItem && canViewBalanceTab" class="mt-4">
-                    <UserBalanceTab :editing-item="editingItem" />
+                    <div v-else class="text-gray-500 text-sm">{{ $t('noCompaniesAvailable') }}</div>
                 </div>
             </div>
+            <div v-show="currentTab === 'salaries' && editingItem && canViewSalariesTab" class="mt-4">
+                <UserSalaryTab :editing-item="editingItem" />
+            </div>
+            <div v-if="currentTab === 'balance' && editingItem && canViewBalanceTab" class="mt-4">
+                <UserBalanceTab :editing-item="editingItem" />
+            </div>
         </div>
-        <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-            <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-trash"
-                :disabled="!$store.getters.hasPermission('users_delete')">
-            </PrimaryButton>
-            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('users_update')) ||
-                (editingItemId == null && !$store.getters.hasPermission('users_create'))">
-            </PrimaryButton>
-        </div>
-
-        <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-            :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-        <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
-            :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-
-        <ImageCropperModal :show="showCropperModal" :imageSrc="tempImageSrc" @close="closeCropperModal"
-            @cropped="handleCroppedImage" />
     </div>
+    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+        <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
+            :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('users_delete')">
+        </PrimaryButton>
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('users_update')) ||
+            (editingItemId == null && !$store.getters.hasPermission('users_create'))">
+        </PrimaryButton>
+    </div>
+
+    <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('confirmDelete')"
+        :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
+    <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
+        :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+
+    <ImageCropperModal :show="showCropperModal" :imageSrc="tempImageSrc" @close="closeCropperModal"
+        @cropped="handleCroppedImage" />
 </template>
 
 <script>
@@ -258,7 +235,6 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 import userPhotoMixin from '@/mixins/userPhotoMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
-import AuthController from '@/api/AuthController';
 import UserSalaryTab from '@/views/pages/users/UserSalaryTab.vue';
 import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
 
@@ -556,7 +532,7 @@ export default {
 
             this.hasNewFile = false;
             return savedUser.user || data;
-        },      
+        },
         togglePasswordVisibility() {
             this.showPassword = !this.showPassword;
         },

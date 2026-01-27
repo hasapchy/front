@@ -113,7 +113,6 @@
 
         <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
             :is-danger="notificationIsDanger" @close="closeNotification" />
-    </div>
 </template>
 
 <script>
