@@ -115,13 +115,18 @@ export default {
                 '/products': 'products_view',
                 '/services': 'products_view',
                 '/warehouses': 'warehouse_stocks_view',
-                '/admin/warehouses': 'warehouses_view'
+                '/admin/warehouses': 'warehouses_view',
+                '/simple-orders': 'orders_simple_view',
+                '/org-structure': 'departments_view_all',
+                '/roles': 'roles_view',
+                '/contracts': 'projects_view'
             };
             return permissionMap[path];
         },
         getTabIcon(path) {
             const iconMap = {
                 '/orders': 'fas fa-clipboard-list',
+                '/simple-orders': 'fas fa-clipboard-check',
                 '/order_statuses': 'fas fa-sitemap',
                 '/order_status_categories': 'fas fa-layer-group',
                 '/transactions': 'fas fa-money-check-alt',
@@ -137,7 +142,10 @@ export default {
                 '/tasks': 'fas fa-tasks',
                 '/categories': 'fas fa-tags',
                 '/warehouses': 'fas fa-box',
-                '/admin/warehouses': 'fas fa-warehouse'
+                '/admin/warehouses': 'fas fa-warehouse',
+                '/org-structure': 'fas fa-sitemap',
+                '/roles': 'fas fa-user-shield',
+                '/contracts': 'fas fa-file-signature'
             };
             return iconMap[path] || 'fas fa-circle';
         },

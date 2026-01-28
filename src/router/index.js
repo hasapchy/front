@@ -162,6 +162,10 @@ const routes = [
           permission: "orders_view",
           binded: [
             {
+              name: "orders_simple",
+              path: "/simple-orders",
+            },
+            {
               name: "orderStatuses",
               path: "/order_statuses",
             },
@@ -508,7 +512,21 @@ const routes = [
         path: "/users",
         name: "users",
         component: UsersPage,
-        meta: { title: "users", requiresAuth: true, permission: "users_view" },
+        meta: {
+          title: "users",
+          requiresAuth: true,
+          permission: "users_view",
+          binded: [
+            {
+              name: "orgStructure",
+              path: "/org-structure",
+            },
+            {
+              name: "roles",
+              path: "/roles",
+            },
+          ],
+        },
       },
       {
         path: "/users/:id",
@@ -520,19 +538,61 @@ const routes = [
         path: "/org-structure",
         name: "org-structure",
         component: () => import("@/views/pages/departments/DepartmentPage.vue"),
-        meta: { title: "orgStructure", requiresAuth: true, permission: "departments_view_all" },
+        meta: {
+          title: "orgStructure",
+          requiresAuth: true,
+          permission: "departments_view_all",
+          binded: [
+            {
+              name: "users",
+              path: "/users",
+            },
+            {
+              name: "roles",
+              path: "/roles",
+            },
+          ],
+        },
       },
       {
         path: "/roles",
         name: "roles",
         component: RolesPage,
-        meta: { title: "roles", requiresAuth: true, permission: "roles_view" },
+        meta: {
+          title: "roles",
+          requiresAuth: true,
+          permission: "roles_view",
+          binded: [
+            {
+              name: "users",
+              path: "/users",
+            },
+            {
+              name: "orgStructure",
+              path: "/org-structure",
+            },
+          ],
+        },
       },
       {
         path: "/roles/:id",
         name: "RoleView",
         component: RolesPage,
-        meta: { title: "roles", requiresAuth: true, permission: "roles_view" },
+        meta: {
+          title: "roles",
+          requiresAuth: true,
+          permission: "roles_view",
+          binded: [
+            {
+              name: "users",
+              path: "/users",
+            },
+            {
+              name: "orgStructure",
+              path: "/org-structure",
+            },
+          ],
+        },
       },
       {
         path: "/companies",

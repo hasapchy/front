@@ -1,11 +1,11 @@
 <template>
-    <div class="kanban-card bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow"
-        :class="cardClasses" @dblclick="handleDoubleClick">
+    <div class="kanban-card rounded-lg shadow-sm border border-gray-200 p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow"
+        :class="cardClasses" :style="cardBackgroundStyle" @dblclick="handleDoubleClick">
         <div class="flex items-start justify-between mb-3">
             <div class="flex items-center space-x-2 min-w-0 flex-1">
                 <input type="checkbox" :checked="isSelected" @click.stop="handleSelectToggle"
                     class="cursor-pointer flex-shrink-0" />
-                <span class="text-sm font-bold text-gray-800 truncate">
+                <span :class="['text-sm font-bold truncate', textColorClass]">
                     {{ isProjectMode ? `№${order.id}` : isTaskMode ? `${order.title}` : `№${order.id}` }}
                 </span>
             </div>
@@ -271,9 +271,19 @@ export default {
     computed: {
         cardClasses() {
             return [
-                { 'ring-2 ring-blue-400': this.isSelected },
-                this.getCardBackgroundClass()
+                { 'ring-2 ring-blue-400': this.isSelected }
             ];
+        },
+        cardBackgroundStyle() {
+            const bgColor = this.getCardBackgroundColor();
+            if (bgColor) {
+                return {
+                    backgroundColor: bgColor
+                };
+            }
+            return {
+                backgroundColor: '#ffffff'
+            };
         },
         kanbanFields() {
             const mode = this.isProjectMode ? 'projects' : (this.isTaskMode ? 'tasks' : 'orders');
@@ -396,25 +406,25 @@ export default {
             return diffDays;
         },
 
-        // Определяет класс фона карточки в зависимости от срока выполнения
-        getCardBackgroundClass() {
+        // Определяет цвет фона карточки в зависимости от срока выполнения
+        getCardBackgroundColor() {
             if (!this.isTaskInActiveStatus() || !this.order?.deadline) {
-                return '';
+                return null;
             }
 
             const daysLeft = this.getDaysUntilDeadline(this.order.deadline);
 
             // Если просрочена - красная подложка (светлая)
             if (daysLeft < 0) {
-                return 'bg-red-500';
+                return 'rgba(220, 53, 69, 0.3)';
             }
 
             // Если до срока осталось 3 дня или меньше - желтая подложка
             if (daysLeft <= 3) {
-                return 'bg-yellow-500';
+                return 'rgba(255, 193, 7, 0.3)';
             }
 
-            return '';
+            return null;
         },
 
         async updateTaskStatus(targetStatusName) {
