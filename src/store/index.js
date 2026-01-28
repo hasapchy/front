@@ -1916,6 +1916,30 @@ const store = createStore({
       
       return state.menuItems.main.filter((item) => {
         if (!item) return false;
+
+        if (item.id === "simple-orders" && getters.hasPermission("orders_view")) {
+          return false;
+        }
+
+        if (item.id === "mutual-settlements" && getters.hasPermission("transactions_view")) {
+          return false;
+        }
+
+        if ((item.id === "org-structure" || item.id === "roles") && getters.hasPermission("users_view")) {
+          return false;
+        }
+
+        if (item.id === "cash-registers" && getters.hasPermission("transactions_view")) {
+          return false;
+        }
+
+        if (item.id === "invoices" && getters.hasPermission("transactions_view")) {
+          return false;
+        }
+
+        if (item.id === "contracts" && getters.hasPermission("projects_view")) {
+          return false;
+        }
         
         // Проверяем права доступа для всех пользователей
         if (!item.permission) return true;
@@ -1935,6 +1959,30 @@ const store = createStore({
       
       return state.menuItems.available.filter((item) => {
         if (!item) return false;
+
+        if (item.id === "simple-orders" && getters.hasPermission("orders_view")) {
+          return false;
+        }
+
+        if (item.id === "mutual-settlements" && getters.hasPermission("transactions_view")) {
+          return false;
+        }
+
+        if ((item.id === "org-structure" || item.id === "roles") && getters.hasPermission("users_view")) {
+          return false;
+        }
+
+        if (item.id === "cash-registers" && getters.hasPermission("transactions_view")) {
+          return false;
+        }
+
+        if (item.id === "invoices" && getters.hasPermission("transactions_view")) {
+          return false;
+        }
+
+        if (item.id === "contracts" && getters.hasPermission("projects_view")) {
+          return false;
+        }
         
         // Проверяем права доступа для всех пользователей
         if (!item.permission) return true;

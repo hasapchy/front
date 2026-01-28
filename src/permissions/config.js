@@ -274,11 +274,7 @@ export const PERMISSIONS_CONFIG = {
     },
     orders: {
       label: "orders",
-      resources: ["orders", "order_statuses", "order_statuscategories"],
-    },
-    orders_simple: {
-      label: "orders_simple",
-      resources: ["orders_simple"],
+      resources: ["orders", "orders_simple", "order_statuses", "order_statuscategories"],
     },
     products: {
       label: "products",
