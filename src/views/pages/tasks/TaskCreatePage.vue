@@ -1,6 +1,5 @@
 <template>
-    <div class="flex flex-col h-full">
-        <div class="flex flex-col overflow-auto h-full p-4 pb-24">
+    <div class="flex flex-col overflow-auto h-full p-4">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editTask') : $t('createTask') }}</h2>
         <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
         
@@ -10,11 +9,7 @@
                 <input type="text" v-model="title" required />
             </div>
             
-            <div>
-                <label>{{ $t('description') }}</label>
-                <textarea v-model="description" rows="4" :placeholder="$t('enterDescription')"></textarea>
-            </div>
-
+            
             <div class="hidden">
                 <label>{{ $t('status') }}</label>
                 <select v-model="statusId">
@@ -26,20 +21,38 @@
 
             <div>
                 <label>{{ $t('deadline') }}</label>
-                <input 
-                    type="datetime-local" 
-                    v-model="deadline"
-                    :min="minDeadline" />
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        :value="formattedDeadline"
+                        @click="showDatePicker = !showDatePicker"
+                        @focus="showDatePicker = true"
+                        readonly
+                        class="cursor-pointer"
+                        :placeholder="$t('deadline')" />
+                    <i class="fas fa-calendar absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    
+                    <div 
+                        v-if="showDatePicker" 
+                        class="absolute z-50 mt-2"
+                        style="left: 0; top: 100%;">
+                        <DatePicker 
+                            v-model="deadline"
+                            :min-date="minDeadline"
+                            @update:modelValue="handleDateChange" />
+                    </div>
+                </div>
             </div>
 
-                <div>
-                    <label>{{ $t('priority') || 'Приоритет' }}</label>
-                    <select v-model="priority">
-                        <option value="low">🔥 </option>
-                        <option value="normal">🔥🔥 </option>
-                        <option value="high">🔥🔥🔥 </option>
-                    </select>
-                </div>
+            <!-- Приоритет -->
+            <div>
+                <label>{{ $t('priority') || 'Приоритет' }}</label>
+                <select v-model="priority">
+                    <option value="low">🔥 </option>
+                    <option value="normal">🔥🔥 </option>
+                    <option value="high">🔥🔥🔥 </option>
+                </select>
+            </div>
 
             <!-- Сложность -->
             <div>
@@ -50,7 +63,7 @@
                     <option value="complex">🧠🧠🧠 </option>
                 </select>
             </div>
-
+            
             <div>
                 <label>{{ $t('project') }}</label>
                 <select v-model="projectId">
@@ -61,19 +74,29 @@
                 </select>
             </div>
 
-                <div>
-                    <UserSearch :selectedUser="selectedSupervisor" @update:selectedUser="selectedSupervisor = $event"
-                        :required="true" :label="$t('supervisor')" />
-                </div>
+            <div>
+                <UserSearch v-model:selectedUser="selectedSupervisor" :required="true" :label="$t('supervisor')" />
+            </div>
 
             <div>
                 <UserSearch v-model:selectedUser="selectedExecutor" :required="true" :label="$t('executor')" />
             </div>
+
+            <div>
+                <label>{{ $t('description') }}</label>
+                <QuillEditor
+                    v-model:content="description"
+                    :options="editorOptions"
+                    contentType="html"
+                    :disabled="saveLoading"
+                    />
+            </div>
         </div>
+
         
         <div v-if="currentTab === 'files'">
             <FileUploader 
-                ref="fileUploader" 
+            ref="fileUploader" 
                 :files="getFormattedFiles()"
                 :uploading="uploading" 
                 :disabled="false"
@@ -82,39 +105,66 @@
                 @delete-file="showDeleteFileDialog"
                 @delete-multiple-files="showDeleteMultipleFilesDialog" />
         </div>
-        
-        <!-- <div v-if="currentTab === 'comments' && editingItem && editingItemId" class="h-full">
-            <TimelinePanel 
-                type="task" 
-                :id="editingItemId"
-                :is-collapsed="false" />
-        </div> -->
-        </div>
-        
-        <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
-            <PrimaryButton v-if="editingItem != null && $store.getters.hasPermission('tasks_delete_all')"
-                :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading" icon="fas fa-trash">
-            </PrimaryButton>
-            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('tasks_update_all')) ||
-                (editingItemId == null && !$store.getters.hasPermission('tasks_create'))">
-            </PrimaryButton>
+
+        <div v-if="currentTab === 'checklist'">
+            <TaskChecklist 
+                :items="checklistItems"
+                @update:items="checklistItems = $event"
+            />
         </div>
 
-        <AlertDialog :dialog="deleteDialog" :onConfirm="deleteItem" :onLeave="closeDeleteDialog"
-            :descr="$t('confirmDelete')" :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
-
-        <AlertDialog :dialog="closeConfirmDialog" :onConfirm="confirmClose" :onLeave="cancelClose"
-            :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-
-        <AlertDialog :dialog="deleteFileDialog" :onConfirm="confirmDeleteFile" :onLeave="closeDeleteFileDialog"
-            :descr="deleteFileIndex === 'multiple' ?
-                `${$t('confirmDeleteSelected')} (${selectedFileIds.length})?` :
-                `${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`" :confirm-text="$t('deleteFile')" :leave-text="$t('cancel')"
-            :confirm-loading="deletingFiles" />
-
-        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-            :is-danger="notificationIsDanger" @close="closeNotification" />
     </div>
+
+    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+        <PrimaryButton 
+            v-if="editingItem != null && $store.getters.hasPermission('tasks_delete_all')"
+            :onclick="showDeleteDialog" 
+            :is-danger="true" 
+            :is-loading="deleteLoading" 
+            icon="fas fa-trash">
+        </PrimaryButton>
+        <PrimaryButton 
+            icon="fas fa-save" 
+            :onclick="save" 
+            :is-loading="saveLoading" 
+            :disabled="(editingItemId != null && !$store.getters.hasPermission('tasks_update_all')) ||
+                (editingItemId == null && !$store.getters.hasPermission('tasks_create'))">
+        </PrimaryButton>
+    </div>
+
+    <AlertDialog 
+        :dialog="deleteDialog" 
+        :onConfirm="deleteItem" 
+        :onLeave="closeDeleteDialog" 
+        :descr="$t('confirmDelete')"
+        :confirm-text="$t('delete')" 
+        :leave-text="$t('cancel')" />
+    
+    <AlertDialog 
+        :dialog="closeConfirmDialog" 
+        :onConfirm="confirmClose" 
+        :onLeave="cancelClose" 
+        :descr="$t('unsavedChanges')"
+        :confirm-text="$t('closeWithoutSaving')" 
+        :leave-text="$t('stay')" />
+    
+    <AlertDialog 
+        :dialog="deleteFileDialog" 
+        :onConfirm="confirmDeleteFile" 
+        :onLeave="closeDeleteFileDialog"
+        :descr="deleteFileIndex === 'multiple' ?
+            `${$t('confirmDeleteSelected')} (${selectedFileIds.length})?` :
+            `${$t('deleteFileConfirm')} '${editingItem?.files?.[deleteFileIndex]?.name || $t('deleteFileWithoutName')}'`" 
+        :confirm-text="$t('deleteFile')" 
+        :leave-text="$t('cancel')"
+        :confirm-loading="deletingFiles" />
+    
+    <NotificationToast 
+        :title="notificationTitle" 
+        :subtitle="notificationSubtitle" 
+        :show="notification"
+        :is-danger="notificationIsDanger" 
+        @close="closeNotification" />
 </template>
 
 <script>
@@ -142,10 +192,10 @@ import TaskChecklist from '@/views/components/app/task/TaskChecklist.vue';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, dateFormMixin, crudFormMixin],
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'update:editingItem'],
-    components: {
-        PrimaryButton,
-        AlertDialog,
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request','update:editingItem'],
+    components: { 
+        PrimaryButton, 
+        AlertDialog, 
         NotificationToast,
         TabBar,
         FileUploader,
@@ -165,17 +215,17 @@ export default {
             statusId: this.editingItem ? (this.editingItem.statusId || this.editingItem.status?.id) : null,
             deadline: this.editingItem?.deadline ? this.getFormattedDate(this.editingItem.deadline) : null,
             minDeadline: dayjs().format('YYYY-MM-DDTHH:mm'),
-            projectId: this.editingItem && this.editingItem.project
-                ? this.editingItem.project.id
+            projectId: this.editingItem && this.editingItem.project 
+                ? this.editingItem.project.id 
                 : null,
             selectedSupervisor: this.editingItem && this.editingItem.supervisor 
                 ? { id: this.editingItem.supervisor.id } 
-                : null,
+                : this.$store.state.user,
             selectedExecutor: this.editingItem && this.editingItem.executor 
                 ? { id: this.editingItem.executor.id } 
                 : null,
-            priority: this.editingItem ? (this.editingItem.priority || 'low') : 'low',
-            complexity: this.editingItem ? (this.editingItem.complexity || 'normal') : 'normal',
+            priority: this.editingItem ? (this.editingItem.priority || 'low') : 'low',        
+            complexity: this.editingItem ? (this.editingItem.complexity || 'normal') : 'normal', 
             editingItemId: this.editingItem ? this.editingItem.id : null,
             projects: [],
             saveLoading: false,
@@ -200,7 +250,24 @@ export default {
         }
     },
     computed: {
-        visibleTabs() {;
+        editorOptions() {
+            return {
+                theme: 'snow',
+                placeholder: this.$t('enterDescription') || 'Введите текст задачи...',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'align': [] }],
+                        ['link', 'image'],
+                        ['clean']
+                    ]
+                }
+            };
+        },
+        visibleTabs() {
             return this.tabs;
         },
         translatedTabs() {
@@ -224,6 +291,7 @@ export default {
         },
     },
     watch: {
+        // Отслеживаем изменения editingItem и обновляем форму
         editingItem: {
             immediate: true,
             handler(newItem) {
@@ -238,6 +306,7 @@ export default {
             }
             await this.fetchProjects();
 
+            // Устанавливаем дефолтный дедлайн только при создании новой задачи
             if (!this.editingItem && !this.deadline) {
                 this.deadline = this.getDefaultDeadline();
             }
@@ -245,6 +314,7 @@ export default {
             this.saveInitialState();
         });
         
+        // Закрытие календаря при клике вне его
         document.addEventListener('click', this.handleClickOutside);
     },
     beforeUnmount() {
@@ -355,10 +425,11 @@ export default {
                 this.statusId = newEditingItem.statusId || newEditingItem.status?.id || null;
                 this.deadline = newEditingItem.deadline ? this.getFormattedDate(newEditingItem.deadline) : null;
                 this.projectId = newEditingItem.project?.id || null;
-                this.selectedSupervisor = newEditingItem.supervisor || null;
-                this.selectedExecutor = newEditingItem.executor || null;
+                this.selectedSupervisor = newEditingItem.supervisor?.id ? { id: newEditingItem.supervisor.id } : null;
+                this.selectedExecutor = newEditingItem.executor?.id ? { id: newEditingItem.executor.id } : null;
                 this.priority = newEditingItem.priority || 'low';
                 this.complexity = newEditingItem.complexity || 'normal';
+                // Обрабатываем чеклист: может быть массивом или строкой JSON
                 if (newEditingItem.checklist) {
                     if (Array.isArray(newEditingItem.checklist)) {
                         this.checklistItems = [...newEditingItem.checklist];
@@ -376,6 +447,7 @@ export default {
                     this.checklistItems = [];
                 }
             } else {
+                // Очищаем форму при создании новой задачи
                 this.clearForm();
             }
         },
@@ -411,10 +483,12 @@ export default {
                 const projects = await ProjectController.getListItems();
                 this.projects = projects || [];
             } catch (error) {
+                console.error('Error fetching projects:', error);
                 this.projects = [];
             }
         },
         getFormattedFiles() {
+            // Если задача уже создана, используем файлы из editingItem
             if (this.editingItem && this.editingItem.files) {
                 // Если editingItem уже является TaskDto, используем его метод напрямую
                 if (typeof this.editingItem.getFormattedFiles === 'function') {
@@ -434,7 +508,7 @@ export default {
                     formattedUploadDate: file.uploaded_at ? new Date(file.uploaded_at).toLocaleString() : ''
                 }));
             }
-
+            
             if (this.pendingFiles?.length) {
                 return this.pendingFiles.map((file, index) => ({
                     name: file.name,
@@ -449,7 +523,7 @@ export default {
                     isPending: true // Флаг для отличия pending файлов
                 }));
             }
-
+            
             return [];
         },
         getFileIcon(file) {
@@ -522,6 +596,8 @@ export default {
                 }, 2000);
 
             } catch (error) {
+                console.error('Ошибка при загрузке файлов:', error);
+
                 uploadingFileIds.forEach(fileInfo => {
                     this.$refs.fileUploader.updateUploadProgress(fileInfo.id, 0, 'Ошибка загрузки файла');
                 });
@@ -538,8 +614,8 @@ export default {
         },
         onDeleteSuccess() {
             this.showNotification(
-                this.$t('success'),
-                this.$t('taskSuccessfullyDeleted'),
+                this.$t('success'), 
+                this.$t('taskSuccessfullyDeleted'), 
                 false
             );
             this.$emit('deleted', this.editingItemId);
@@ -547,8 +623,8 @@ export default {
         onDeleteError(error) {
             const errorMessage = this.getApiErrorMessage(error);
             this.showNotification(
-                this.$t('error'),
-                errorMessage,
+                this.$t('error'), 
+                errorMessage, 
                 true
             );
         },
@@ -557,7 +633,9 @@ export default {
 
             const fileArray = Array.from(files);
 
+            // Если задача еще не создана, сохраняем файлы локально
             if (!this.editingItemId) {
+                // Добавляем новые файлы к pendingFiles
                 this.pendingFiles = [...this.pendingFiles, ...fileArray];
                 return;
             }
@@ -571,13 +649,17 @@ export default {
                 error: null
             }));
 
+            // Проверяем наличие компонента перед работой с ним
             if (!this.$refs.fileUploader) return;
 
+            // Устанавливаем массив файлов в компонент
             this.$refs.fileUploader.uploadingFiles = uploadingFileIds;
 
             try {
+                // Симулируем прогресс загрузки для всех файлов
                 const progressIntervals = uploadingFileIds.map(fileInfo => {
                     return setInterval(() => {
+                        // Проверяем наличие компонента перед обращением к нему
                         if (!this.$refs.fileUploader) {
                             return;
                         }
@@ -592,12 +674,14 @@ export default {
 
                 progressIntervals.forEach(interval => clearInterval(interval));
 
+                // Проверяем наличие компонента перед обновлением прогресса
                 if (this.$refs.fileUploader) {
                     uploadingFileIds.forEach(fileInfo => {
                         this.$refs.fileUploader.updateUploadProgress(fileInfo.id, 100);
                     });
                 }
 
+                // Обновляем список файлов задачи
                 if (this.editingItem) {
                     this.editingItem.files = uploadedFiles;
                 }
@@ -609,6 +693,9 @@ export default {
                 }, 2000);
 
             } catch (error) {
+                console.error('Ошибка при загрузке файлов:', error);
+
+                // Проверяем наличие компонента перед обработкой ошибки
                 if (this.$refs.fileUploader) {
                     uploadingFileIds.forEach(fileInfo => {
                         this.$refs.fileUploader.updateUploadProgress(fileInfo.id, 0, 'Ошибка загрузки файла');
@@ -625,29 +712,33 @@ export default {
             }
         },
         showDeleteFileDialog(filePath) {
+            // Если это pending файл (начинается с "pending_")
             if (filePath.startsWith('pending_')) {
                 const index = parseInt(filePath.replace('pending_', ''));
                 this.pendingFiles.splice(index, 1);
                 return;
             }
-
+            
+            // Если задача уже создана, показываем диалог удаления
             if (!this.editingItemId) return;
-
+            
             this.deleteFileIndex = filePath;
             this.deleteFileDialog = true;
         },
         showDeleteMultipleFilesDialog(selectedFileIds) {
             if (!selectedFileIds?.length) return;
-
+            
+            // Фильтруем pending файлы
             const pendingIndices = selectedFileIds
                 .filter(id => id.startsWith('pending_'))
                 .map(id => parseInt(id.replace('pending_', '')))
-                .sort((a, b) => b - a);
-
+                .sort((a, b) => b - a); // Сортируем по убыванию для правильного удаления
+            
+            // Удаляем pending файлы
             pendingIndices.forEach(index => {
                 this.pendingFiles.splice(index, 1);
             });
-
+            
             const remainingIds = selectedFileIds.filter(id => !id.startsWith('pending_'));
             if (remainingIds?.length && this.editingItemId) {
                 this.selectedFileIds = remainingIds;
@@ -659,14 +750,14 @@ export default {
         },
         async save() {
             if (this.uploading) {
-                alert(this.$t('waitForFileUpload'));
+                alert(this.$t('waitForFileUpload') || 'Дождитесь завершения загрузки файлов');
                 return;
             }
 
             if (!this.title || this.title.trim() === '') {
                 this.showNotification(
-                    this.$t('error'),
-                    this.$t('titleRequired'),
+                    this.$t('error'), 
+                    this.$t('titleRequired') || 'Заголовок обязателен', 
                     true
                 );
                 return;
@@ -674,8 +765,8 @@ export default {
 
             if (!this.supervisorId) {
                 this.showNotification(
-                    this.$t('error'),
-                    this.$t('supervisorRequired'),
+                    this.$t('error'), 
+                    this.$t('supervisorRequired') || 'Постановщик обязателен', 
                     true
                 );
                 return;
@@ -683,8 +774,8 @@ export default {
 
             if (!this.executorId) {
                 this.showNotification(
-                    this.$t('error'),
-                    this.$t('executorRequired'),
+                    this.$t('error'), 
+                    this.$t('executorRequired') || 'Исполнитель обязателен', 
                     true
                 );
                 return;
@@ -720,7 +811,7 @@ export default {
             let response;
             if (this.editingItemId) {
                 response = await TaskController.updateItem(this.editingItemId, data);
-
+                
                 try {
                     const updatedTask = await TaskController.getItem(this.editingItemId);
 
@@ -728,24 +819,26 @@ export default {
                         response.data = updatedTask;
                     }
                 } catch (error) {
+                    console.error('Ошибка при получении обновленной задачи:', error);
                 }
             } else {
                 response = await TaskController.createItem(data);
                 this.editingItemId = response.data.id;
-
+                
                 if (this.pendingFiles?.length) {
                     try {
                         await TaskController.uploadFiles(this.editingItemId, this.pendingFiles);
                         this.pendingFiles = [];
-
+                        
                         const updatedTask = await TaskController.getItem(this.editingItemId);
                         if (updatedTask) {
                             response.data = updatedTask;
                         }
                     } catch (fileError) {
+                        console.error('Ошибка при загрузке файлов после создания задачи:', fileError);
                         this.showNotification(
-                            this.$t('error'),
-                            this.$t('taskCreatedButFileUploadError'),
+                            this.$t('error'), 
+                            'Задача создана, но произошла ошибка при загрузке файлов', 
                             true
                         );
                     }
@@ -760,18 +853,18 @@ export default {
             }
 
             this.showNotification(
-                this.$t('success'),
-                this.editingItemId ? this.$t('taskSuccessfullyUpdated') : this.$t('taskSuccessfullyAdded'),
+                this.$t('success'), 
+                this.editingItemId ? this.$t('taskSuccessfullyUpdated') : this.$t('taskSuccessfullyAdded'), 
                 false
             );
-
+            
             this.saveInitialState();
         },
         onSaveError(error) {
             const errorMessage = this.getApiErrorMessage(error);
             this.showNotification(
-                this.$t('error'),
-                errorMessage,
+                this.$t('error'), 
+                errorMessage, 
                 true
             );
         },
@@ -800,29 +893,35 @@ export default {
                     updatedFiles = await TaskController.deleteFile(this.editingItemId, this.deleteFileIndex);
                 }
 
+                // Получаем обновленную задачу с сервера, чтобы получить актуальный список файлов
                 let updatedTask = null;
                 try {
                     updatedTask = await TaskController.getItem(this.editingItemId);
                 } catch (error) {
+                    console.error('Ошибка при получении обновленной задачи:', error);
                 }
-
+                
                 if (updatedTask && this.editingItem) {
+                    // Обновляем editingItem с актуальными данными
                     this.editingItem.files = updatedTask.files || [];
-
+                    
+                    // Эмитим обновление для родительского компонента
                     this.$emit('update:editingItem', updatedTask);
                 } else if (this.editingItem && updatedFiles) {
+                    // Fallback: если не удалось получить задачу, используем updatedFiles
                     this.editingItem.files = updatedFiles;
                 }
-
+                
                 this.showNotification(
-                    this.$t('success'),
-                    this.$t('fileDeletedSuccessfully'),
+                    this.$t('success'), 
+                    this.$t('fileDeletedSuccessfully') || 'Файл успешно удален', 
                     false
                 );
             } catch (e) {
+                console.error('Ошибка удаления файла:', e);
                 this.showNotification(
-                    this.$t('error'),
-                    this.getApiErrorMessage(e),
+                    this.$t('error'), 
+                    this.getApiErrorMessage(e) || 'Ошибка удаления файла', 
                     true
                 );
             } finally {
