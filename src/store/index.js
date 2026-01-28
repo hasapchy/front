@@ -1202,7 +1202,7 @@ const store = createStore({
 
       try {
         const userFromStorage = getUserFromStorage();
-        const isSimpleWorker = isSimpleWorkerOnly(userFromStorage);
+        // const isSimpleWorker = isSimpleWorkerOnly(userFromStorage);
 
         commit("SET_CURRENT_COMPANY", null);
 
@@ -1216,7 +1216,7 @@ const store = createStore({
         await dispatch("setPermissions", userData.user?.permissions || userData.permissions || []);
         await dispatch("initializeMenu");
 
-        if (!isSimpleWorker) {
+        // if (!isSimpleWorker) {
           await Promise.all([
             dispatch("loadCurrencies"),
             dispatch("loadUnits"),
@@ -1231,11 +1231,13 @@ const store = createStore({
 
           // Инициализируем глобальный WebSocket для чатов
           try {
+            console.log("Инициализируем глобальный WebSocket для чатов");
             await globalChatRealtime.initialize(store);
+
           } catch (error) {
             console.error("[Store] Ошибка инициализации глобального chatRealtime:", error);
           }
-        }
+        // }
 
         return { authenticated: true };
       } catch (error) {
@@ -1359,9 +1361,11 @@ const store = createStore({
         await dispatch("initializeMenu");
         eventBus.emit("company-changed", companyId);
 
-        // Переинициализируем chatRealtime при смене компании
+        // Подписываем чат на каналы новой компании (presence и чаты)
         if (globalChatRealtime.initialized) {
           await globalChatRealtime.reinitialize();
+        } else {
+          await globalChatRealtime.initialize(store);
         }
 
         return company;
