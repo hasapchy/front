@@ -7,6 +7,25 @@
         <div class="px-6 py-4 border-b border-gray-200">
           <h3 class="text-lg font-semibold text-gray-900">Переслать сообщение</h3>
         </div>
+        <!-- Превью пересылаемого сообщения -->
+        <div v-if="forwardMessage" class="px-6 py-3 border-b border-gray-100 bg-gray-50">
+          <div
+            class="rounded-2xl px-3 py-2 text-sm shadow-sm max-w-full bg-[#d9f6c9] text-gray-900 inline-block"
+          >
+            <div v-if="!hideSenderName && previewSenderName" class="text-xs font-medium text-green-600 mb-1">
+              Переслано от {{ previewSenderName }}
+            </div>
+            <div v-else-if="hideSenderName" class="text-xs text-gray-500 mb-1">
+              Будет показано как ваше сообщение
+            </div>
+            <div class="break-words">
+              {{ previewBody }}
+            </div>
+            <div v-if="previewHasFiles" class="mt-1 text-xs text-gray-600">
+              <i class="fas fa-paperclip mr-1"></i>Вложения
+            </div>
+          </div>
+        </div>
         <div class="px-6 py-4 max-h-96 overflow-y-auto">
           <div class="space-y-2">
             <button
@@ -52,6 +71,21 @@
           </div>
         </div>
         <div class="px-6 py-4 border-t border-gray-200">
+          <!-- Опция скрыть имя отправителя при пересылке -->
+          <div v-if="forwardMessage" class="mb-3 space-y-2">
+            <label class="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                :checked="hideSenderName"
+                class="mt-1 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                @change="$emit('update:hide-sender-name', $event.target.checked)"
+              />
+              <span class="text-sm text-gray-700">Скрыть имя отправителя</span>
+            </label>
+            <p class="text-xs text-gray-500 pl-6">
+              Вы можете убрать имя отправителя. В этом случае сообщение будет выглядеть как Ваше.
+            </p>
+          </div>
           <div v-if="forwardTarget" class="text-xs text-gray-600 mb-2">
             Кому: <span class="font-medium text-gray-900">{{ getItemTitle(forwardTarget) }}</span>
           </div>
@@ -90,7 +124,7 @@
   
   <script>
   import { buildStorageUrl } from '../utils/helpers'
-  import { getItemTitle, getUserInitials } from '../utils/chatHelpers'
+  import { getItemTitle, getUserInitials, getForwardedUserName, getMessageUserName } from '../utils/chatHelpers'
   
   export default {
     name: 'ForwardModal',
@@ -102,6 +136,14 @@
       selectedChatId: {
         type: [Number, String],
         default: null
+      },
+      forwardMessage: {
+        type: Object,
+        default: null
+      },
+      hideSenderName: {
+        type: Boolean,
+        default: false
       },
       forwardTarget: {
         type: Object,
@@ -118,7 +160,28 @@
     },
     computed: {
       filteredChats() {
-        return this.chats.filter(c => String(c.id) !== String(this.selectedChatId))
+        return this.chats.filter(
+          c => Number(c.chat_id ?? c.id) !== Number(this.selectedChatId)
+        )
+      },
+      /** Имя отправителя для превью: из forwarded_from или из user сообщения. */
+      previewSenderName() {
+        if (!this.forwardMessage) return ''
+        if (this.forwardMessage.forwarded_from) {
+          return getForwardedUserName(this.forwardMessage.forwarded_from)
+        }
+        return getMessageUserName(this.forwardMessage)
+      },
+      /** Текст для превью: body пересланного или основного сообщения. */
+      previewBody() {
+        if (!this.forwardMessage) return ''
+        const src = this.forwardMessage.forwarded_from || this.forwardMessage
+        return src.body || '(без текста)'
+      },
+      previewHasFiles() {
+        if (!this.forwardMessage) return false
+        const src = this.forwardMessage.forwarded_from || this.forwardMessage
+        return Array.isArray(src.files) && src.files.length > 0
       }
     },
     methods: {

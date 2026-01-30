@@ -1,8 +1,13 @@
 <template>
-    <div class="flex-1 min-h-0 messenger-bg overflow-y-auto" @scroll="handleScroll">
+    <div ref="scrollWrap" class="flex-1 min-h-0 messenger-bg overflow-y-auto" @scroll="handleScroll">
       <EmptyChatState v-if="!chat" />
       
-      <div v-else class="p-4 md:p-6 space-y-3">
+      <div
+        v-else
+        ref="messagesContent"
+        class="relative p-4 md:p-6 space-y-3"
+        @click.self="$emit('close-context-menu')"
+      >
         <LoadingIndicator v-if="loadingOlder" text="Загрузка сообщений..." />
         
         <div v-if="loading" class="text-sm text-gray-600">Загрузка…</div>
@@ -19,6 +24,19 @@
             @message-context-menu="$emit('message-context-menu', $event)"
           />
         </template>
+
+        <!-- Контекстное меню внутри области сообщений; позиция относительно этого блока -->
+        <MessageContextMenu
+          v-if="contextMenuVisible && contextMenuTarget"
+          :message="contextMenuTarget"
+          :position="menuLocalPosition"
+          :is-my-message="isMyMessageForMenu"
+          @close="$emit('close-context-menu')"
+          @reply="$emit('context-menu-reply', $event)"
+          @forward="$emit('context-menu-forward', $event)"
+          @edit="$emit('context-menu-edit', $event)"
+          @delete="$emit('context-menu-delete', $event)"
+        />
       </div>
     </div>
   </template>
@@ -28,25 +46,60 @@
   import LoadingIndicator from './LoadingIndicator.vue'
   import NewMessagesSeparator from './NewMessagesSeparator.vue'
   import MessageGroup from './MessageGroup.vue'
-  
+  import MessageContextMenu from './MessageContextMenu.vue'
+
   export default {
     name: 'MessagesContainer',
     components: {
       EmptyChatState,
       LoadingIndicator,
       NewMessagesSeparator,
-      MessageGroup
+      MessageGroup,
+      MessageContextMenu
     },
     props: {
       chat: Object,
       messages: Array,
       loading: Boolean,
       loadingOlder: Boolean,
-      hasUnread: Boolean
+      hasUnread: Boolean,
+      contextMenuVisible: Boolean,
+      contextMenuTarget: Object,
+      contextMenuPosition: { type: Object, default: () => ({ x: 0, y: 0 }) },
+      isMyMessageForMenu: Boolean
+    },
+    data() {
+      return { menuLocalPosition: { x: 0, y: 0 } }
+    },
+    watch: {
+      contextMenuVisible(visible) {
+        if (visible) this.updateMenuLocalPosition()
+      },
+      contextMenuPosition: { handler() { if (this.contextMenuVisible) this.updateMenuLocalPosition() }, deep: true }
     },
     methods: {
+      updateMenuLocalPosition() {
+        this.$nextTick(() => {
+          const el = this.$refs.messagesContent
+          if (!el || !this.contextMenuPosition) return
+          const rect = el.getBoundingClientRect()
+          this.menuLocalPosition = {
+            x: this.contextMenuPosition.x - rect.left,
+            y: this.contextMenuPosition.y - rect.top
+          }
+        })
+      },
       handleScroll(event) {
         this.$emit('load-more', event)
+      },
+      /** Прокрутка списка сообщений вниз (для вызова из родителя). */
+      scrollToBottom() {
+        const el = this.$refs.scrollWrap
+        if (!el) return
+        const scroll = () => {
+          if (el.scrollHeight !== undefined) el.scrollTop = el.scrollHeight
+        }
+        ;[0, 100, 300].forEach((ms) => setTimeout(scroll, ms))
       }
     }
   }

@@ -6,10 +6,11 @@
           <!-- Large avatar -->
           <div class="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-gray-200">
             <img
-              v-if="user.photo"
+              v-if="user.photo && !imageLoadFailed"
               :src="userPhotoUrl(user.photo)"
               class="w-full h-full object-cover"
-              alt="user"
+              alt=""
+              @error="imageLoadFailed = true"
             />
             <div
               v-else
@@ -40,6 +41,13 @@
   
   export default {
     name: 'PersonalChatHeader',
+    data() {
+      return { imageLoadFailed: false }
+    },
+    watch: {
+      'user.id'() { this.imageLoadFailed = false },
+      'user.photo'() { this.imageLoadFailed = false }
+    },
     props: {
       user: {
         type: Object,

@@ -44,18 +44,20 @@
                 @click="$emit('toggle-user-selection', user.id)"
               >
                 <div class="relative shrink-0">
-                  <img
-                    v-if="user.photo"
-                    :src="userPhotoUrl(user.photo)"
-                    class="w-10 h-10 rounded-full object-cover border border-gray-200"
-                    alt="user"
-                  />
-                  <div
-                    v-else
-                    class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold bg-green-100 text-green-700"
-                  >
-                    {{ getUserInitials(user) }}
-                  </div>
+                   <div v-if="user.photo" class="w-10 h-10 rounded-full object-cover border border-gray-200">
+                        <img
+                            :src="userPhotoUrl(user.photo)"
+                            alt="user"
+                            class="w-full h-full object-cover"
+                        />
+                    </div>
+                    <div
+                        v-else
+                        class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold bg-green-100 text-green-700 px-1 truncate"
+                        :title="(user.name || '').trim() || undefined"
+                        >
+                        {{ (user.name || '').trim() || '?' }}
+                    </div>
                 </div>
                 <div class="min-w-0 flex-1">
                   <div class="font-medium text-sm text-gray-900 truncate">
@@ -104,7 +106,6 @@
   
   <script>
   import { buildStorageUrl } from '../utils/helpers'
-  import { getUserInitials } from '../utils/chatHelpers'
   
   export default {
     name: 'CreateGroupModal',
@@ -142,8 +143,7 @@
     methods: {
       userPhotoUrl(path) {
         return buildStorageUrl(path)
-      },
-      getUserInitials
+      }
     }
   }
   </script>

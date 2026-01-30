@@ -2,7 +2,6 @@
     <div
       class="flex mb-1 group"
       :class="isMyMessage ? 'justify-end' : 'justify-start'"
-      @contextmenu.prevent="$emit('message-context-menu', { event: $event, message })"
     >
       <div 
         class="flex flex-col max-w-[75%]"
@@ -15,12 +14,14 @@
           :color="userColor"
         />
   
-        <div class="flex items-end gap-2">
+        <div class="flex items-end gap-2" 
+            @contextmenu.prevent="$emit('message-context-menu', { event: $event, message })"
+            >
           <MessageBubble
             :message="message"
             :is-my-message="isMyMessage"
             @open-image="$emit('open-image', $event)"
-            @action="$emit('message-context-menu', { event: $event, message })"
+            @action="$emit('message-context-menu', $event)"
           />
         </div>
       </div>

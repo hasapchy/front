@@ -5,7 +5,7 @@
       type="button"
       @click="$emit('click')"
     >
-      <ChatAvatar :item="item" :is-active="isActive" />
+      <ChatAvatar :item="item" :is-active="isActive" :is-user-online="isUserOnline" />
       
       <div class="min-w-0 flex-1">
         <div class="flex items-center justify-between gap-2">
@@ -34,14 +34,19 @@
   
   <script>
   import ChatAvatar from './ChatAvatar.vue'
-  import { formatChatTime, getItemTitle, getItemPreview } from './utils/chatHelpers'
+  import { getItemTitle, getItemPreview } from './utils/chatHelpers'
+  import { formatChatTime } from './utils/dateFormatters'
   
   export default {
     name: 'ChatListItem',
     components: { ChatAvatar },
     props: {
       item: Object,
-      isActive: Boolean
+      isActive: Boolean,
+      /** Строка галочек прочтения (✓/✓✓), передаётся из родителя. */
+      unreadTicks: { type: String, default: '' },
+      /** Онлайн-статус пользователя (зелёный кружок в списке). */
+      isUserOnline: { type: Boolean, default: false }
     },
     computed: {
       itemTitle() {
@@ -51,11 +56,7 @@
         return getItemPreview(this.item)
       },
       formatTime() {
-        return formatChatTime(this.item, this.$i18n)
-      },
-      unreadTicks() {
-        // Логика тиков
-        return ''
+        return formatChatTime(this.item)
       }
     }
   }

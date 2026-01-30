@@ -1,10 +1,24 @@
 <template>
-  <div class="h-[calc(100vh-6rem)] flex overflow-hidden rounded-2xl border border-gray-200 bg-white">
+  <div class="h-[calc(100vh-6rem)] flex overflow-hidden rounded-2xl border border-gray-200 bg-white relative">
+    <!-- Загрузка при первом открытии — тот же вид, что на остальных страницах (SpinnerIcon) -->
+    <div
+      v-if="initialLoading"
+      key="loader"
+      class="absolute inset-0 flex items-center justify-center rounded-2xl bg-white z-10"
+    >
+      <SpinnerIcon />
+    </div>
+
     <ChatSidebar
       :search="search"
       :chats="allChatsList"
       :selected-chat-id="selectedChatId"
+      :selected-chat="selectedChat"
+      :active-peer-user="activePeerUser"
       :has-chats-view="hasChatsView"
+      :is-item-active-fn="isItemActive"
+      :get-chat-last-ticks="chatLastTicks"
+      :is-user-online-fn="isUserOnline"
       @update:search="search = $event"
       @select-chat="selectItem"
       @create-group="showCreateGroupModal = true"
@@ -25,11 +39,21 @@
         :loading="loadingMessages"
         :loading-older="loadingOlderMessages"
         :has-unread="hasUnreadMessages"
+        :context-menu-visible="messageMenuVisible && !!messageMenuTarget"
+        :context-menu-target="messageMenuTarget"
+        :context-menu-position="{ x: messageMenuX, y: messageMenuY }"
+        :is-my-message-for-menu="messageMenuTarget ? isMyMessage(messageMenuTarget) : false"
         @load-more="onMessagesScroll"
         @open-image="openImageModal"
         @message-context-menu="showMessageMenu"
+        @close-context-menu="closeMessageMenu"
+        @context-menu-reply="replyToMessage"
+        @context-menu-forward="forwardMessage"
+        @context-menu-edit="editMessage"
+        @context-menu-delete="deleteMessage"
       />
       
+      <input ref="fileInput" type="file" class="hidden" multiple accept="*/*" @change="onFilesSelected" />
       <MessageComposer
         ref="composer"
         :chat="selectedChat"
@@ -76,11 +100,14 @@
       v-if="showForwardModal"
       :chats="allChatsList"
       :selected-chat-id="selectedChatId"
+      :forward-message="forwardingMessage"
+      :hide-sender-name="hideSenderName"
       :forward-target="forwardTarget"
       :forward-text="forwardText"
       :forwarding-sending="forwardingSending"
       @close="closeForwardModal"
       @select-target="selectForwardTarget"
+      @update:hide-sender-name="hideSenderName = $event"
       @update:text="forwardText = $event"
       @send="sendForward"
     />
@@ -90,17 +117,13 @@
       :image="selectedImage"
       @close="closeImageModal"
     />
-    
-    <MessageContextMenu
-      v-if="messageMenuVisible"
-      :message="messageMenuTarget"
-      :position="{ x: messageMenuX, y: messageMenuY }"
-      :is-my-message="isMyMessage(messageMenuTarget)"
-      @close="closeMessageMenu"
-      @reply="replyToMessage"
-      @forward="forwardMessage"
-      @edit="editMessage"
-      @delete="deleteMessage"
+
+    <!-- Оверлей при открытом контекстном меню: клик или Escape закрывают меню -->
+    <div
+      v-if="messageMenuVisible && messageMenuTarget"
+      class="absolute inset-0 z-40 rounded-2xl"
+      aria-hidden="true"
+      @click="closeMessageMenu"
     />
   </div>
 </template>
@@ -114,11 +137,13 @@ import CreateGroupModal from './components/modals/CreateGroupModal.vue'
 import DeleteConfirmModal from './components/modals/DeleteConfirmModal.vue'
 import ForwardModal from './components/modals/ForwardModal.vue'
 import ImageModal from './components/modals/ImageModal.vue'
-import MessageContextMenu from './components/MessageContextMenu.vue'
+import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue'
 
 // Утилиты
 import { buildStorageUrl, parseDateSafe, extractHHmm } from './components/utils/helpers'
-import { isMyMessage, getMessageUser, getUserInitials, isImageFile, isAudioFile } from './components/utils/messageUtils'
+import { isMyMessage, getMessageUser } from './components/utils/messageUtils'
+import { getUserInitials } from './components/utils/chatHelpers'
+import { isImageFile, isAudioFile } from './components/utils/fileHelpers'
 import { formatDayLabel, formatChatTime, messageTime } from './components/utils/dateFormatters'
 
 // Сервисы
@@ -138,11 +163,13 @@ export default {
     DeleteConfirmModal,
     ForwardModal,
     ImageModal,
-    MessageContextMenu
+    SpinnerIcon
   },
   
   data() {
     return {
+      /** Показывать спиннер до завершения первой загрузки (пользователи + чаты). */
+      initialLoading: true,
       search: "",
       chats: [],
       loadingChats: false,
@@ -180,6 +207,7 @@ export default {
       forwardingMessage: null,
       forwardTarget: null,
       forwardText: "",
+      hideSenderName: false,
       forwardingSending: false,
       showImageModal: false,
       selectedImage: null,
@@ -268,6 +296,8 @@ export default {
     },
     messageGroups() {
       if (!this.messages || this.messages.length === 0) return []
+      // Явная зависимость от локали, чтобы при смене языка пересчитывались подписи дат
+      const _locale = this.$i18n?.global?.locale?.value ?? this.$i18n?.global?.locale ?? this.$i18n?.locale ?? 'ru'
       
       const groups = []
       let currentGroup = null
@@ -283,7 +313,7 @@ export default {
           currentGroup = {
             id: `date-${dayTime}`,
             date: day,
-            dateLabel: formatDayLabel(day, this.$i18n),
+            dateLabel: formatDayLabel(day),
             messages: []
           }
           groups.push(currentGroup)
@@ -326,6 +356,13 @@ export default {
           this.handleCompanyChange()
         }
       }
+    },
+    messageMenuVisible(visible) {
+      if (visible) {
+        document.addEventListener('keydown', this.handleContextMenuEscape)
+      } else {
+        document.removeEventListener('keydown', this.handleContextMenuEscape)
+      }
     }
   },
   
@@ -348,10 +385,13 @@ export default {
         isDanger: true,
         duration: 5000,
       })
+    } finally {
+      this.initialLoading = false
     }
   },
   
   beforeUnmount() {
+    document.removeEventListener('keydown', this.handleContextMenuEscape)
     this.removeEventListeners()
     this.onlineUserIds = []
   },
@@ -779,19 +819,16 @@ export default {
       }
     },
 
-    // subscribeToChat/unsubscribeFromChat moved to src/services/chatRealtime.js (we keep all-chats subscriptions synced)
+    /** Прокрутка контейнера сообщений вниз (вызов метода у MessagesContainer). */
     scrollToBottom() {
-      const el = this.$refs.messagesWrap;
-      if (!el) return;
-      
-      const scroll = () => {
-        if (el.scrollHeight !== undefined) el.scrollTop = el.scrollHeight;
-      };
-
-      // Несколько попыток (DOM/изображения/рефлоу)
-      [0, 100, 300].forEach((ms) => setTimeout(scroll, ms));
+      this.$refs.messagesContainer?.scrollToBottom?.();
+    },
+    /** Открытие диалога выбора файлов для вложений. */
+    openFilePicker() {
+      this.$refs.fileInput?.click?.();
     },
     isMyMessage(m) {
+      if (!m) return false;
       const myId = this.$store.state.user?.id;
       const userId = m.user_id || m.userId || m.user?.id;
       return myId && userId && Number(myId) === Number(userId);
@@ -906,20 +943,28 @@ export default {
         this.sending = false;
       }
     },
-    showMessageMenu(event, message) {
-      this.messageMenuTarget = message;
-      this.messageMenuX = event.clientX;
-      this.messageMenuY = event.clientY;
+    /** Открытие контекстного меню сообщения. Принимает (event, message) или объект { event, message }. */
+    showMessageMenu(eventOrPayload, message) {
+      const e = eventOrPayload?.event ?? eventOrPayload;
+      const msg = message ?? eventOrPayload?.message;
+      if (!e || !msg) return;
+      this.messageMenuTarget = msg;
+      this.messageMenuX = e.clientX;
+      this.messageMenuY = e.clientY;
       this.messageMenuVisible = true;
     },
     closeMessageMenu() {
       this.messageMenuVisible = false;
       this.messageMenuTarget = null;
     },
+    /** Закрытие контекстного меню по Escape. */
+    handleContextMenuEscape(e) {
+      if (e.key === 'Escape') this.closeMessageMenu();
+    },
     replyToMessage(message) {
       this.replyingTo = message;
       this.closeMessageMenu();
-      this.$refs.composerTextarea?.focus();
+      this.$nextTick(() => this.$refs.composer?.focus?.());
     },
     editMessage(message) {
       this.editingMessage = message;
@@ -1025,6 +1070,7 @@ export default {
       this.forwardingMessage = message;
       this.forwardTarget = null;
       this.forwardText = "";
+      this.hideSenderName = false;
       this.forwardingSending = false;
       this.showForwardModal = true;
       this.closeMessageMenu();
@@ -1034,6 +1080,7 @@ export default {
       this.forwardingMessage = null;
       this.forwardTarget = null;
       this.forwardText = "";
+      this.hideSenderName = false;
       this.forwardingSending = false;
     },
     selectForwardTarget(target) {
@@ -1076,7 +1123,7 @@ export default {
           await ChatController.sendMessage(targetChatId, { body: extra, files: [], parent_id: null });
         }
 
-        await ChatController.forwardMessage(this.selectedChatId, this.forwardingMessage.id, targetChatId);
+        await ChatController.forwardMessage(this.selectedChatId, this.forwardingMessage.id, targetChatId, this.hideSenderName);
 
         this.$store.dispatch('showNotification', {
           title: 'Успешно',

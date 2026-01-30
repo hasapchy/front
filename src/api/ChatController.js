@@ -112,11 +112,13 @@ export default class ChatController extends BaseController {
     );
   }
 
-  static async forwardMessage(chatId, messageId, targetChatId) {
+  /** Пересылка сообщения. hideSenderName: true — без указания исходного отправителя (как своё). */
+  static async forwardMessage(chatId, messageId, targetChatId, hideSenderName = false) {
     return super.handleRequest(
       async () => {
         const { data } = await api.post(`/chats/${chatId}/messages/${messageId}/forward`, {
           target_chat_id: targetChatId,
+          hide_sender_name: !!hideSenderName,
         });
         return data.data || data.message || data;
       },

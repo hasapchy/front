@@ -63,19 +63,12 @@ export default {
         },
         updateTotalUnreadCount() {
             let total = 0;
-
-            // Суммируем unread_count из всех чатов
+            // generalChat — ссылка на элемент из chats, не считаем его дважды
             (this.chats || []).forEach((chat) => {
                 if (chat && chat.unread_count) {
                     total += Number(chat.unread_count) || 0;
                 }
             });
-
-            // Добавляем общий чат
-            if (this.generalChat && this.generalChat.unread_count) {
-                total += Number(this.generalChat.unread_count) || 0;
-            }
-
             this.totalUnreadCount = total;
         },
         handleNewMessage(event) {
