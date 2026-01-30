@@ -1,848 +1,151 @@
 <template>
   <div class="h-[calc(100vh-6rem)] flex overflow-hidden rounded-2xl border border-gray-200 bg-white">
-    <!-- LEFT: list -->
-    <aside class="w-full md:w-[360px] shrink-0 border-r border-gray-200 bg-white flex flex-col min-h-0">
-      <!-- Search row -->
-      <div class="px-3 py-2 border-b border-gray-200">
-        <div class="flex items-center gap-2">
-
-          <div class="flex-1 relative">
-            <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-            <input
-              v-model="search"
-              type="text"
-              class="w-full h-9 rounded-full bg-gray-100 pl-9 pr-3 text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
-              placeholder="Найти сотрудника или чат"
-            />
-          </div>
-
-          <button
-            class="w-9 h-9 rounded-lg bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center shrink-0"
-            title="Создать групповой чат"
-            type="button"
-            @click="showCreateGroupModal = true"
-          >
-            <i class="fas fa-users text-sm"></i>
-          </button>
-        </div>
-      </div>
-
-      <div class="flex-1 overflow-y-auto min-h-0">
-        <div v-if="!hasChatsView" class="p-4 text-sm text-gray-500">
-          Нет доступа к чатам
-        </div>
-
-        <template v-else>
-          <!-- Combined list of chats and users -->
-          <div v-if="allChatsList.length === 0" class="px-4 py-3 text-sm text-gray-500">
-            Нет чатов
-          </div>
-
-          <button
-            v-for="item in allChatsList"
-            :key="`${item.type}-${item.id}`"
-            class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3"
-            :class="isItemActive(item) ? 'bg-sky-500 text-white hover:bg-sky-500' : ''"
-            type="button"
-            @click="selectItem(item)"
-          >
-            <div class="relative shrink-0">
-              <!-- Avatar for user or chat icon -->
-              <img
-                v-if="item.type === 'user' && item.photo"
-                :src="userPhotoUrl(item.photo)"
-                class="w-10 h-10 rounded-full object-cover border border-gray-200"
-                alt="user"
-              />
-              <div
-                v-else-if="item.type === 'user'"
-                class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold"
-                :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700'"
-              >
-                {{ getUserInitials(item) }}
-              </div>
-              <div
-                v-else-if="item.type === 'general'"
-                class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
-                :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'"
-              >
-                <i class="fas fa-comments"></i>
-              </div>
-              <div
-                v-else-if="item.type === 'group'"
-                class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
-                :class="isItemActive(item) ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'"
-              >
-                <i class="fas fa-users"></i>
-              </div>
-              
-              <!-- Online indicator for users -->
-              <span
-                v-if="item.type === 'user'"
-                class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white"
-                :class="isUserOnline(item) ? 'bg-green-500' : 'bg-gray-300'"
-              ></span>
-            </div>
-            
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center justify-between gap-2">
-                <div class="font-semibold text-sm truncate" :class="isItemActive(item) ? 'text-white' : 'text-gray-900'">
-                  {{ getItemTitle(item) }}
-                </div>
-                <div class="text-[11px] shrink-0 flex items-center gap-1" :class="isItemActive(item) ? 'text-white/80' : 'text-gray-400'">
-                  <span v-if="item.last_message_at || item.last_message">{{ formatChatTime(item) }}</span>
-                  <span v-if="item.type === 'user' && chatLastTicks(item)" class="text-sky-600">{{ chatLastTicks(item) }}</span>
-                </div>
-              </div>
-              <div class="flex items-center justify-between gap-2 mt-0.5">
-                <div class="text-xs truncate" :class="isItemActive(item) ? 'text-white/90' : 'text-gray-500'">
-                  {{ getItemPreview(item) }}
-                </div>
-                <span
-                  v-if="(item.unread_count || 0) > 0"
-                  class="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] flex items-center justify-center shrink-0"
-                >
-                  {{ item.unread_count }}
-                </span>
-              </div>
-            </div>
-          </button>
-        </template>
-      </div>
-    </aside>
-
-    <!-- RIGHT: chat -->
-    <section class="flex-1 min-w-0 flex flex-col">
-      <!-- Top bar -->
-      <div v-if="selectedChat && activePeerUser" class="px-4 py-1 border-b border-gray-200 bg-white">
-        <div class="flex items-start justify-between gap-4">
-          <!-- Left: User info -->
-          <div class="flex items-start gap-3 min-w-0 flex-1">
-            <!-- Large avatar -->
-            <div class="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-gray-200">
-              <img
-                v-if="activePeerUser.photo"
-                :src="userPhotoUrl(activePeerUser.photo)"
-                class="w-full h-full object-cover"
-                alt="user"
-              />
-              <div
-                v-else
-                class="w-full h-full bg-green-100 flex items-center justify-center text-green-700 font-semibold text-lg"
-              >
-                {{ getUserInitials(activePeerUser) }}
-              </div>
-            </div>
-            
-            <!-- Name and status -->
-            <div class="min-w-0 flex-1">
-              <div class="font-semibold text-gray-900 text-base">
-                {{ activePeerUser.name }} {{ activePeerUser.surname || "" }}
-              </div>
-              <div class="text-xs text-gray-500 mt-0.5">
-                <span class="text-green-600">{{ presenceStatusText }}</span>
-                <span v-if="activePeerUser.position" class="ml-2">{{ activePeerUser.position }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <ChatSidebar
+      :search="search"
+      :chats="allChatsList"
+      :selected-chat-id="selectedChatId"
+      :has-chats-view="hasChatsView"
+      @update:search="search = $event"
+      @select-chat="selectItem"
+      @create-group="showCreateGroupModal = true"
+    />
+    
+    <div class="flex-1 min-w-0 flex flex-col">
+      <ChatHeader
+        :chat="selectedChat"
+        :peer-user="activePeerUser"
+        :presence-status-text="presenceStatusText"
+        @delete-chat="confirmDeleteChat"
+      />
       
-      <!-- Fallback header for non-direct chats -->
-      <div v-else-if="selectedChat" class="h-14 px-4 border-b border-gray-200 flex items-center justify-between bg-white">
-        <div class="flex items-center gap-3 min-w-0 flex-1">
-          <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
-            <i class="fas" :class="chatIcon(selectedChat)"></i>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="font-semibold text-gray-900 truncate">
-              {{ chatTitle(selectedChat) }}
-            </div>
-            <div class="text-xs text-gray-400 truncate">
-              <span v-if="selectedChat.type === 'group' && selectedChat.creator">
-                Создал: {{ selectedChat.creator.name }} {{ selectedChat.creator.surname || "" }}
-              </span>
-              <span v-else>{{ presenceStatusText }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button
-            v-if="showDeleteButton"
-            class="w-9 h-9 rounded-full hover:bg-red-100 text-red-600 flex items-center justify-center"
-            type="button"
-            title="Удалить чат"
-            @click="confirmDeleteChat"
-          >
-            <i class="fas fa-trash text-sm"></i>
-          </button>
-          
-        </div>
-      </div>
+      <MessagesContainer
+        ref="messagesContainer"
+        :chat="selectedChat"
+        :messages="messageGroups"
+        :loading="loadingMessages"
+        :loading-older="loadingOlderMessages"
+        :has-unread="hasUnreadMessages"
+        @load-more="onMessagesScroll"
+        @open-image="openImageModal"
+        @message-context-menu="showMessageMenu"
+      />
       
-      <!-- Empty state header -->
-      <div v-else class="h-14 px-4 border-b border-gray-200 flex items-center justify-between bg-white">
-        <div class="font-semibold text-gray-900">
-          {{ $t("messenger") }}
-        </div>
-      </div>
-
-      <!-- Messages area -->
-      <div class="flex-1 min-h-0 messenger-bg overflow-y-auto" ref="messagesWrap" @scroll="onMessagesScroll">
-        <div v-if="!selectedChat" class="h-full flex items-center justify-center p-6">
-          <div class="text-center text-gray-600">
-            <div class="mx-auto w-14 h-14 rounded-full bg-white/70 border border-white/60 flex items-center justify-center">
-              <i class="fas fa-comments text-xl text-sky-600"></i>
-            </div>
-            <div class="mt-3 font-semibold">Откройте чат</div>
-            <div class="mt-1 text-sm text-gray-500">Слева выберите сотрудника или общий чат</div>
-          </div>
-        </div>
-
-        <div v-else class="p-4 md:p-6 space-y-3">
-          <!-- Индикатор загрузки старых сообщений -->
-          <div v-if="loadingOlderMessages" class="flex justify-center py-2">
-            <div class="px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm text-xs text-gray-600 border border-white/80 shadow-sm flex items-center gap-2">
-              <i class="fas fa-spinner fa-spin"></i>
-              Загрузка сообщений...
-            </div>
-          </div>
-          
-          <div v-if="loadingMessages" class="text-sm text-gray-600">Загрузка…</div>
-
-          <template v-else>
-            <!-- "Новые сообщения" separator (if there are unread messages) -->
-            <div v-if="hasUnreadMessages" class="flex items-center gap-3 my-3">
-              <div class="flex-1 h-px bg-gray-300"></div>
-              <div class="text-xs text-gray-500 font-medium px-2">Новые сообщения</div>
-              <div class="flex-1 h-px bg-gray-300"></div>
-            </div>
-
-            <div v-for="group in messageGroups" :key="group.id" class="relative">
-              <!-- Sticky Date Header -->
-              <div class="sticky top-0 z-10 flex justify-center my-3 -mx-4 md:-mx-6 py-2 bg-transparent pointer-events-none">
-                <div class="px-3 py-1 rounded-full bg-[#c3e3a7] text-xs text-gray-700 shadow-sm pointer-events-auto font-medium">
-                  {{ group.dateLabel }}
-                </div>
-              </div>
-
-              <!-- Messages -->
-              <div
-                v-for="message in group.messages"
-                :key="message.id"
-                class="flex mb-1 group"
-                :class="isMyMessage(message) ? 'justify-end' : 'justify-start'"
-                @contextmenu.prevent="showMessageMenu($event, message)"
-              >
-                <div 
-                  class="flex flex-col max-w-[75%]"
-                  :class="isMyMessage(message) ? 'items-end' : 'items-start'"
-                >
-                  <!-- Sender name (only for incoming messages in group chats) -->
-                  <div 
-                    v-if="!isMyMessage(message) && shouldShowSenderName(message)"
-                    class="text-xs font-medium mb-1 ml-3"
-                    :style="{ color: getUserColor(message) }"
-                  >
-                    {{ getMessageUserName(message) }}
-                  </div>
-
-                  <div class="flex items-end gap-2">
-                    <div
-                      class="rounded-2xl px-3 py-2 text-sm shadow-sm relative"
-                      :class="isMyMessage(message) ? 'bg-[#d9f6c9] text-gray-900 rounded-tr-sm' : 'bg-white text-gray-900 rounded-tl-sm'"
-                    >
-                      <!-- Reply preview -->
-                      <div v-if="message.parent" class="mb-2 pb-2 border-l-2 border-gray-400 pl-2 text-xs text-gray-600">
-                        <div class="font-medium text-gray-700">
-                          {{ getMessageUserName(message.parent) }}
-                        </div>
-                        <div class="truncate">
-                          {{ message.parent.body || (message.parent.files?.length ? `Файлов: ${message.parent.files.length}` : '') }}
-                        </div>
-                      </div>
-
-                      <!-- Forwarded from header (Telegram style) -->
-                      <div v-if="message.forwarded_from" class="mb-2 pb-1">
-                        <div class="text-xs font-medium text-green-600 flex items-center gap-1.5 mb-1">
-                          <span>Переслано от</span>
-                          <span class="font-semibold text-green-600">{{ getForwardedUserName(message.forwarded_from) }}</span>
-                        </div>
-                        <!-- Forwarded message content -->
-                        <div class="text-sm text-gray-900">
-                          <div v-if="message.forwarded_from.body" class="break-words">
-                            {{ message.forwarded_from.body }}
-                          </div>
-                          <div v-if="Array.isArray(message.forwarded_from.files) && message.forwarded_from.files.length" class="mt-1 space-y-1">
-                            <div v-for="f in message.forwarded_from.files" :key="f.path" class="flex items-center gap-2">
-                              <button
-                                v-if="isImageFile(f)"
-                                type="button"
-                                @click="openImageModal(f)"
-                                class="block max-w-xs rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                              >
-                                <img :src="fileUrl(f.path)" :alt="f.name" class="max-h-32 object-contain" />
-                              </button>
-                              <a
-                                v-else
-                                class="block text-xs underline text-gray-600 hover:text-gray-800"
-                                :href="fileUrl(f.path)"
-                                target="_blank"
-                              >
-                                <i class="fas fa-file mr-1"></i>{{ f.name }}
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Additional comment text (only if different from forwarded message) -->
-                      <div v-if="message.body && (!message.forwarded_from || message.body !== message.forwarded_from.body)" class="whitespace-pre-wrap break-words leading-snug mt-2">
-                        {{ message.body }}
-                      </div>
-
-                      <div v-if="Array.isArray(message.files) && message.files.length" class="mt-2 space-y-1">
-                        <div v-for="f in message.files" :key="f.path" class="flex items-center gap-2">
-                          <button
-                            v-if="isImageFile(f)"
-                            type="button"
-                            @click="openImageModal(f)"
-                            class="block max-w-xs rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                          >
-                            <img :src="fileUrl(f.path)" :alt="f.name" class="max-h-48 object-contain" />
-                          </button>
-                          <div
-                            v-else-if="isAudioFile(f)"
-                            class="flex items-center gap-2 p-2 bg-gray-100 rounded-lg"
-                          >
-                            <audio controls class="h-8 text-xs">
-                              <source :src="fileUrl(f.path)" :type="f.mime_type || 'audio/webm'">
-                              Your browser does not support the audio element.
-                            </audio>
-                          </div>
-                          <a
-                            v-else
-                            class="block text-xs underline text-sky-700"
-                            :href="fileUrl(f.path)"
-                            target="_blank"
-                          >
-                            <i class="fas fa-file mr-1"></i>{{ f.name }}
-                          </a>
-                        </div>
-                      </div>
-
-                      <!-- Time and status -->
-                      <div class="mt-1 flex items-center justify-end gap-1 text-[11px] leading-none" :class="isMyMessage(message) ? 'text-gray-600' : 'text-gray-500'">
-                        <span v-if="message.is_edited" class="flex items-center gap-0.5 text-gray-500 mr-1">
-                          <i class="fas fa-pencil-alt text-[9px]"></i>
-                          <span class="italic">изменено</span>
-                        </span>
-                        <span>{{ messageTime(message) }}</span>
-                        <span v-if="isMyMessage(message)" class="ml-1 text-green-600">{{ messageTicks(message) }}</span>
-                      </div>
-
-                      <!-- Message actions menu button -->
-                      <div class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          class="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 text-xs"
-                          @click.stop="showMessageMenu($event, message)"
-                        >
-                          <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </template>
-        </div>
-      </div>
-
-      <!-- Composer -->
-      <div class="p-3 bg-white border-t border-gray-200">
-        <!-- Reply preview -->
-        <div v-if="replyingTo" class="mb-2 p-2 bg-gray-50 rounded-lg border border-gray-200 flex items-start justify-between gap-2">
-          <div class="flex-1 min-w-0">
-            <div class="text-xs font-medium text-gray-700 mb-1">
-              Ответ на сообщение от {{ getMessageUserName(replyingTo) }}
-            </div>
-            <div class="text-xs text-gray-600 truncate">
-              {{ replyingTo.body || (replyingTo.files?.length ? `Файлов: ${replyingTo.files.length}` : '') }}
-            </div>
-          </div>
-          <button
-            type="button"
-            class="text-gray-400 hover:text-gray-600 shrink-0"
-            @click="replyingTo = null"
-          >
-            <i class="fas fa-times text-sm"></i>
-          </button>
-        </div>
-
-        <div class="flex items-end gap-2">
-          <input ref="fileInput" type="file" class="hidden" multiple accept="*/*" @change="onFilesSelected" />
-          <input ref="audioInput" type="file" class="hidden" accept="audio/*" @change="onAudioSelected" />
-
-          <div class="flex items-center gap-1">
-            <button
-              type="button"
-              class="w-9 h-9 rounded-lg text-gray-600 hover:bg-gray-100 flex items-center justify-center disabled:opacity-50"
-              :disabled="!selectedChat || !canWrite"
-              @click="$refs.fileInput?.click()"
-              title="Прикрепить файл"
-            >
-              <i class="fas fa-paperclip text-sm"></i>
-            </button>
-            <button
-              type="button"
-              class="w-9 h-9 rounded-lg text-gray-600 hover:bg-gray-100 flex items-center justify-center disabled:opacity-50"
-              :disabled="!selectedChat || !canWrite"
-              @click="toggleAudioRecording"
-              :title="isRecordingAudio ? 'Остановить запись' : 'Записать аудио'"
-              :class="isRecordingAudio ? 'bg-red-500 text-white hover:bg-red-600' : ''"
-            >
-              <i class="fas fa-microphone text-sm"></i>
-            </button>
-          </div>
-
-          <div class="flex-1 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 focus-within:ring-2 focus-within:ring-sky-500/30 focus-within:border-sky-300">
-            <textarea
-              ref="composerTextarea"
-              v-model="draft"
-              class="w-full bg-transparent resize-none outline-none text-sm text-gray-900 placeholder:text-gray-400 min-h-[40px] max-h-32"
-              :placeholder="editingMessage ? 'Редактирование сообщения...' : '***************** Нажмите Enter для отправки *****************'"
-              :disabled="!selectedChat || !canWrite"
-              @keydown.enter.exact.prevent="handleEnterKey"
-              @keydown.enter.shift.exact="handleShiftEnter"
-              @keydown.esc.exact="cancelEdit"
-            ></textarea>
-            <div v-if="editingMessage" class="mt-2 flex items-center justify-between text-xs">
-              <span class="text-gray-600">Редактирование сообщения</span>
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  class="text-gray-600 hover:text-gray-800"
-                  @click="cancelEdit"
-                >
-                  Отмена
-                </button>
-                <button
-                  type="button"
-                  class="text-sky-600 hover:text-sky-800 font-medium"
-                  @click="saveEdit"
-                >
-                  Сохранить
-                </button>
-              </div>
-            </div>
-            <div v-if="selectedFiles.length" class="mt-2 text-xs text-gray-600">
-              <div class="font-medium text-gray-700">Файлы:</div>
-              <ul class="list-disc ml-4">
-                <li v-for="f in selectedFiles" :key="f.name">{{ f.name }}</li>
-              </ul>
-            </div>
-            <div v-if="isRecordingAudio" class="mt-2 text-xs text-red-600 font-medium">
-              <i class="fas fa-circle animate-pulse"></i> Запись аудио... {{ audioRecordingTime }}с
-            </div>
-          </div>
-
-          <div class="flex items-center gap-1">
-            <button
-              v-if="!editingMessage"
-              class="w-9 h-9 rounded-full bg-sky-500 text-white hover:bg-sky-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300"
-              :disabled="!selectedChat || !canWrite || sending || (!draft.trim() && selectedFiles.length === 0 && !audioBlob)"
-              type="button"
-              @click="send"
-              title="Отправить"
-            >
-              <i class="fas fa-paper-plane text-sm"></i>
-            </button>
-            <button
-              v-else
-              class="w-9 h-9 rounded-full bg-green-500 text-white hover:bg-green-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300"
-              :disabled="!selectedChat || !canWrite || sending || !draft.trim()"
-              type="button"
-              @click="saveEdit"
-              title="Сохранить изменения"
-            >
-              <i class="fas fa-check text-sm"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Delete Chat Confirmation Modal -->
-    <div
-      v-if="showDeleteConfirm"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      @click.self="showDeleteConfirm = false"
-    >
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
-        <div class="px-6 py-4 border-b border-gray-200">
-          <h3 class="text-lg font-semibold text-gray-900">Удалить групповой чат?</h3>
-        </div>
-        <div class="px-6 py-4">
-          <p class="text-sm text-gray-600">
-            Вы уверены, что хотите удалить чат "{{ selectedChat?.title }}"? 
-            Это действие нельзя отменить. Все сообщения и участники будут удалены.
-          </p>
-        </div>
-        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
-            :disabled="deletingChat"
-            @click="showDeleteConfirm = false"
-          >
-            Отмена
-          </button>
-          <button
-            type="button"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="deletingChat"
-            @click="deleteChat"
-          >
-            <span v-if="deletingChat">Удаление...</span>
-            <span v-else>Удалить</span>
-          </button>
-        </div>
-      </div>
+      <MessageComposer
+        ref="composer"
+        :chat="selectedChat"
+        :draft="draft"
+        :replying-to="replyingTo"
+        :editing-message="editingMessage"
+        :selected-files="selectedFiles"
+        :is-recording-audio="isRecordingAudio"
+        :audio-recording-time="audioRecordingTime"
+        :can-write="canWrite"
+        :sending="sending"
+        @update:draft="draft = $event"
+        @send="send"
+        @cancel-edit="cancelEdit"
+        @save-edit="saveEdit"
+        @toggle-audio-recording="toggleAudioRecording"
+        @attach-files="openFilePicker"
+        @cancel-reply="replyingTo = null"
+      />
     </div>
-
-    <!-- Create Group Chat Modal -->
-    <div
+    
+    <!-- Модальные окна -->
+    <CreateGroupModal
       v-if="showCreateGroupModal"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      @click.self="closeCreateGroupModal"
-    >
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
-        <!-- Header -->
-        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-900">Создать групповой чат</h3>
-          <button
-            type="button"
-            class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500"
-            @click="closeCreateGroupModal"
-          >
-            <i class="fas fa-times text-sm"></i>
-          </button>
-        </div>
-
-        <!-- Content -->
-        <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          <!-- Title input -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Название чата</label>
-            <input
-              v-model="groupTitle"
-              type="text"
-              class="w-full h-10 px-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
-              placeholder="Введите название группы"
-              maxlength="255"
-            />
-          </div>
-
-          <!-- Users selection -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Участники ({{ selectedUserIds.length }} выбрано)
-            </label>
-            <div class="border border-gray-300 rounded-lg max-h-64 overflow-y-auto">
-              <div
-                v-for="user in usersForCompany.filter(u => u && u.id !== $store.state.user?.id)"
-                :key="user.id"
-                class="px-3 py-2 hover:bg-gray-50 flex items-center gap-3 cursor-pointer"
-                @click="toggleUserSelection(user.id)"
-              >
-                <div class="relative shrink-0">
-                  <img
-                    v-if="user.photo"
-                    :src="userPhotoUrl(user.photo)"
-                    class="w-10 h-10 rounded-full object-cover border border-gray-200"
-                    alt="user"
-                  />
-                  <div
-                    v-else
-                    class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold bg-green-100 text-green-700"
-                  >
-                    {{ getUserInitials(user) }}
-                  </div>
-                </div>
-                <div class="min-w-0 flex-1">
-                  <div class="font-medium text-sm text-gray-900 truncate">
-                    {{ user.name }} {{ user.surname || "" }}
-                  </div>
-                  <div v-if="user.position" class="text-xs text-gray-500 truncate">
-                    {{ user.position }}
-                  </div>
-                </div>
-                <div
-                  class="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0"
-                  :class="selectedUserIds.includes(Number(user.id)) ? 'bg-sky-500 border-sky-500' : 'border-gray-300'"
-                >
-                  <i
-                    v-if="selectedUserIds.includes(Number(user.id))"
-                    class="fas fa-check text-white text-xs"
-                  ></i>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
-            @click="closeCreateGroupModal"
-          >
-            Отмена
-          </button>
-          <button
-            type="button"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="!canCreateGroup"
-            @click="createGroupChat"
-          >
-            <span v-if="creatingGroup">Создание...</span>
-            <span v-else>Создать</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Message Context Menu -->
-    <div
-      v-if="messageMenuVisible"
-      class="absolute bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50 min-w-[160px]"
-      :style="{
-        left: (isMyMessage(messageMenuTarget) ? (messageMenuX - 160) : messageMenuX) + 'px',
-        top: messageMenuY + 'px'
-      }"
-      @click.stop
-    >
-      <button
-        type="button"
-        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-        @click="replyToMessage(messageMenuTarget)"
-      >
-        <i class="fas fa-reply text-xs"></i>
-        Ответить
-      </button>
-      <button
-        type="button"
-        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-        @click="forwardMessage(messageMenuTarget)"
-      >
-        <i class="fas fa-share text-xs"></i>
-        Переслать
-      </button>
-
-      <!-- Edit and Delete options only for own messages -->
-      <template v-if="isMyMessage(messageMenuTarget)">
-        <div class="border-t border-gray-200 my-1"></div>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-          @click="editMessage(messageMenuTarget)"
-        >
-          <i class="fas fa-edit text-xs"></i>
-          Редактировать
-        </button>
-        <button
-          type="button"
-          class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-          @click="deleteMessage(messageMenuTarget)"
-        >
-          <i class="fas fa-trash text-xs"></i>
-          Удалить
-        </button>
-      </template>
-    </div>
-
-    <!-- Forward Message Modal -->
-    <div
+      :users="usersForCompany"
+      :group-title="groupTitle"
+      :selected-user-ids="selectedUserIds"
+      :creating-group="creatingGroup"
+      @close="closeCreateGroupModal"
+      @update:group-title="groupTitle = $event"
+      @toggle-user-selection="toggleUserSelection"
+      @create="createGroupChat"
+    />
+    
+    <DeleteConfirmModal
+      v-if="showDeleteConfirm"
+      :chat="selectedChat"
+      :deleting="deletingChat"
+      @close="showDeleteConfirm = false"
+      @confirm="deleteChat"
+    />
+    
+    <ForwardModal
       v-if="showForwardModal"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      @click.self="showForwardModal = false"
-    >
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
-        <div class="px-6 py-4 border-b border-gray-200">
-          <h3 class="text-lg font-semibold text-gray-900">Переслать сообщение</h3>
-        </div>
-        <div class="px-6 py-4 max-h-96 overflow-y-auto">
-          <div class="space-y-2">
-            <button
-              v-for="chat in allChatsList.filter(c => c.id !== selectedChatId)"
-              :key="`${chat.type}-${chat.id}`"
-              type="button"
-              class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3 rounded-lg border"
-              :class="forwardTarget && String(forwardTarget.type) === String(chat.type) && Number(forwardTarget.id) === Number(chat.id) ? 'border-sky-500 bg-sky-50' : 'border-transparent'"
-              @click="selectForwardTarget(chat)"
-            >
-              <div class="relative shrink-0">
-                <img
-                  v-if="chat.type === 'user' && chat.photo"
-                  :src="userPhotoUrl(chat.photo)"
-                  class="w-10 h-10 rounded-full object-cover border border-gray-200"
-                  alt="user"
-                />
-                <div
-                  v-else-if="chat.type === 'user'"
-                  class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold bg-green-100 text-green-700"
-                >
-                  {{ getUserInitials(chat) }}
-                </div>
-                <div
-                  v-else-if="chat.type === 'general'"
-                  class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-700"
-                >
-                  <i class="fas fa-comments"></i>
-                </div>
-                <div
-                  v-else-if="chat.type === 'group'"
-                  class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-700"
-                >
-                  <i class="fas fa-users"></i>
-                </div>
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="font-medium text-sm text-gray-900 truncate">
-                  {{ getItemTitle(chat) }}
-                </div>
-              </div>
-            </button>
-          </div>
-        </div>
-        <div class="px-6 py-4 border-t border-gray-200">
-          <div v-if="forwardTarget" class="text-xs text-gray-600 mb-2">
-            Кому: <span class="font-medium text-gray-900">{{ getItemTitle(forwardTarget) }}</span>
-          </div>
-
-          <textarea
-            v-model="forwardText"
-            class="w-full bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 focus-within:ring-2 focus-within:ring-sky-500/30 focus-within:border-sky-300 outline-none text-sm text-gray-900 placeholder:text-gray-400 min-h-[44px] max-h-28 resize-none"
-            placeholder="Добавить сообщение (как в Telegram)..."
-            :disabled="forwardingSending"
-          ></textarea>
-
-          <div class="mt-3 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100"
-            :disabled="forwardingSending"
-            @click="closeForwardModal"
-          >
-            Отмена
-          </button>
-          <button
-            type="button"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="forwardingSending || !forwardTarget"
-            @click="sendForward"
-          >
-            <span v-if="forwardingSending">Отправка…</span>
-            <span v-else>Отправить</span>
-          </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Click outside to close menu -->
-    <div
-      v-if="messageMenuVisible"
-      class="fixed inset-0 z-40"
-      @click="closeMessageMenu"
-    ></div>
-
-    <!-- Image Viewer Modal -->
-    <div
+      :chats="allChatsList"
+      :selected-chat-id="selectedChatId"
+      :forward-target="forwardTarget"
+      :forward-text="forwardText"
+      :forwarding-sending="forwardingSending"
+      @close="closeForwardModal"
+      @select-target="selectForwardTarget"
+      @update:text="forwardText = $event"
+      @send="sendForward"
+    />
+    
+    <ImageModal
       v-if="showImageModal"
-      class="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
-      @click.self="closeImageModal"
-    >
-      <div class="relative max-w-4xl max-h-screen p-4">
-        <!-- Close button -->
-        <button
-          type="button"
-          class="absolute top-2 right-2 w-10 h-10 rounded-full bg-black/50 text-white hover:bg-black/70 flex items-center justify-center z-10"
-          @click="closeImageModal"
-        >
-          <i class="fas fa-times text-lg"></i>
-        </button>
-
-        <!-- Image -->
-        <img
-          v-if="selectedImage"
-          :src="fileUrl(selectedImage.path)"
-          :alt="selectedImage.name"
-          class="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-          @click.stop
-        />
-      </div>
-    </div>
-
+      :image="selectedImage"
+      @close="closeImageModal"
+    />
+    
+    <MessageContextMenu
+      v-if="messageMenuVisible"
+      :message="messageMenuTarget"
+      :position="{ x: messageMenuX, y: messageMenuY }"
+      :is-my-message="isMyMessage(messageMenuTarget)"
+      @close="closeMessageMenu"
+      @reply="replyToMessage"
+      @forward="forwardMessage"
+      @edit="editMessage"
+      @delete="deleteMessage"
+    />
   </div>
 </template>
 
 <script>
-import ChatController from "@/api/ChatController";
-import echo from "@/services/echo";
-import { applySentMessage, handleChatReadEvent, handleIncomingChatEvent } from "@/services/messengerFacade";
-import globalChatRealtime from "@/services/globalChatRealtime";
-import { eventBus } from "@/eventBus";
+import ChatSidebar from './components/ChatSidebar.vue'
+import ChatHeader from './components/ChatHeader.vue'
+import MessagesContainer from './components/MessagesContainer.vue'
+import MessageComposer from './components/MessageComposer.vue'
+import CreateGroupModal from './components/modals/CreateGroupModal.vue'
+import DeleteConfirmModal from './components/modals/DeleteConfirmModal.vue'
+import ForwardModal from './components/modals/ForwardModal.vue'
+import ImageModal from './components/modals/ImageModal.vue'
+import MessageContextMenu from './components/MessageContextMenu.vue'
 
-// ===== Helpers (pure functions) =====
-const buildStorageUrl = (path) => `${import.meta.env.VITE_APP_BASE_URL}/storage/${path}`;
+// Утилиты
+import { buildStorageUrl, parseDateSafe, extractHHmm } from './components/utils/helpers'
+import { isMyMessage, getMessageUser, getUserInitials, isImageFile, isAudioFile } from './components/utils/messageUtils'
+import { formatDayLabel, formatChatTime, messageTime } from './components/utils/dateFormatters'
 
-const parseDateSafe = (dateString) => {
-  if (!dateString) return null;
-  // Laravel sends dates in Asia/Ashgabat timezone (UTC+5)
-  // Parse without 'Z' to treat as local time (server timezone)
-  if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/.test(dateString)) {
-    // Replace space with 'T' for ISO format, but DON'T add 'Z' (which means UTC)
-    return new Date(dateString.replace(' ', 'T'));
-  }
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return null;
-  return date;
-};
-
-const extractHHmm = (raw) => {
-  if (!raw) return "";
-  
-  // Извлекаем время напрямую из строки без конвертации timezone
-  // Формат: "2024-01-20 17:23:45" -> "17:23"
-  const match = raw.match(/(\d{2}):(\d{2}):\d{2}/);
-  if (match) {
-    return `${match[1]}:${match[2]}`;
-  }
-  
-  // Fallback для других форматов
-  const date = parseDateSafe(raw);
-  if (!date) return "";
-  
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-};
-
-// formatDayLabel will be a method that uses i18n
-
-// formatChatTime will be a method that uses i18n
+// Сервисы
+import ChatController from "@/api/ChatController"
+import { applySentMessage, handleChatReadEvent, handleIncomingChatEvent } from "@/services/messengerFacade"
+import globalChatRealtime from "@/services/globalChatRealtime"
+import { eventBus } from "@/eventBus"
 
 export default {
+  name: 'Messenger',
+  components: {
+    ChatSidebar,
+    ChatHeader,
+    MessagesContainer,
+    MessageComposer,
+    CreateGroupModal,
+    DeleteConfirmModal,
+    ForwardModal,
+    ImageModal,
+    MessageContextMenu
+  },
+  
   data() {
     return {
       search: "",
-
       chats: [],
       loadingChats: false,
-
       selectedChat: null,
       selectedChatId: null,
       generalChat: null,
@@ -851,7 +154,6 @@ export default {
       loadingMessages: false,
       loadingOlderMessages: false,
       hasMoreMessages: true,
-
       draft: "",
       selectedFiles: [],
       sending: false,
@@ -862,222 +164,198 @@ export default {
       audioRecordingTime: 0,
       audioRecordingInterval: null,
       mediaRecorder: null,
-
-      onlineUserIds: [], // Массив для реактивности Vue
+      onlineUserIds: [],
       peerReadByChatId: {},
-      
-      // Group chat creation modal
       showCreateGroupModal: false,
       groupTitle: "",
       selectedUserIds: [],
       creatingGroup: false,
-      
-      // Delete chat confirmation
       showDeleteConfirm: false,
       deletingChat: false,
-
-      // Message menu
       messageMenuVisible: false,
       messageMenuX: 0,
       messageMenuY: 0,
       messageMenuTarget: null,
-
-      // Forward message modal
       showForwardModal: false,
       forwardingMessage: null,
       forwardTarget: null,
       forwardText: "",
       forwardingSending: false,
-
-      // Image viewer modal
       showImageModal: false,
       selectedImage: null,
-      
-    };
+    }
   },
+  
   computed: {
     hasChatsView() {
-      return this.$store.getters.hasPermission("chats_view_all");
+      return this.$store.getters.hasPermission("chats_view_all")
     },
     canWrite() {
-      return this.$store.getters.hasPermission("chats_write");
+      return this.$store.getters.hasPermission("chats_write")
     },
     usersForCompany() {
-      return this.$store.getters.usersForCurrentCompany || [];
+      return this.$store.getters.usersForCurrentCompany || []
     },
     filteredUsers() {
-      const q = (this.search || "").trim().toLowerCase();
-      const users = this.usersForCompany.filter((u) => u && u.id !== this.$store.state.user?.id);
+      const q = (this.search || "").trim().toLowerCase()
+      const users = this.usersForCompany.filter((u) => u && u.id !== this.$store.state.user?.id)
       
-      if (!q) return users;
+      if (!q) return users
       return users.filter((u) => {
-        const s = `${u.name || ""} ${u.surname || ""} ${u.email || ""}`.toLowerCase();
-        return s.includes(q);
-      });
+        const s = `${u.name || ""} ${u.surname || ""} ${u.email || ""}`.toLowerCase()
+        return s.includes(q)
+      })
     },
     allChatsList() {
-      const list = [];
-      const q = (this.search || "").trim().toLowerCase();
+      const list = []
+      const q = (this.search || "").trim().toLowerCase()
       
       // Add general chat
       if (this.generalChat) {
         if (!q || this.generalChat.title?.toLowerCase().includes(q)) {
-          list.push({ ...this.generalChat, type: 'general' });
+          list.push({ ...this.generalChat, type: 'general' })
         }
       }
       
       // Add direct chats (from chats list)
-      const directChats = (this.chats || []).filter(c => c.type === 'direct');
+      const directChats = (this.chats || []).filter(c => c.type === 'direct')
       directChats.forEach(chat => {
-        const peerId = this.getPeerUserId(chat);
+        const peerId = this.getPeerUserId(chat)
         if (peerId) {
-          const user = this.usersForCompany.find(u => Number(u.id) === Number(peerId));
+          const user = this.usersForCompany.find(u => Number(u.id) === Number(peerId))
           if (user) {
-            const title = `${user.name} ${user.surname || ""}`.trim();
+            const title = `${user.name} ${user.surname || ""}`.trim()
             if (!q || title.toLowerCase().includes(q) || user.email?.toLowerCase().includes(q)) {
               list.push({
                 ...chat,
                 type: 'user',
                 ...user,
                 displayTitle: title,
-                chat_id: chat.id, // preserve chat id (because ...user overrides id)
-              });
+                chat_id: chat.id,
+              })
             }
           }
         }
-      });
+      })
       
       // Add group chats
-      const groupChats = (this.chats || []).filter(c => c.type === 'group');
+      const groupChats = (this.chats || []).filter(c => c.type === 'group')
       groupChats.forEach(chat => {
         if (!q || chat.title?.toLowerCase().includes(q)) {
-          list.push({ ...chat, type: 'group' });
+          list.push({ ...chat, type: 'group' })
         }
-      });
+      })
       
       // Add users without direct chats
       this.filteredUsers.forEach(user => {
-        const hasDirectChat = list.some(item => item.type === 'user' && Number(item.id) === Number(user.id));
+        const hasDirectChat = list.some(item => item.type === 'user' && Number(item.id) === Number(user.id))
         if (!hasDirectChat) {
           list.push({
             ...user,
             type: 'user',
             id: user.id,
             displayTitle: `${user.name} ${user.surname || ""}`.trim(),
-          });
+          })
         }
-      });
+      })
       
       // Sort by last_message_at
       return list.sort((a, b) => {
-        const aTime = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
-        const bTime = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
-        return bTime - aTime;
-      });
+        const aTime = a.last_message_at ? new Date(a.last_message_at).getTime() : 0
+        const bTime = b.last_message_at ? new Date(b.last_message_at).getTime() : 0
+        return bTime - aTime
+      })
     },
     messageGroups() {
-      if (!this.messages || this.messages.length === 0) return [];
+      if (!this.messages || this.messages.length === 0) return []
       
-      const groups = [];
-      let currentGroup = null;
+      const groups = []
+      let currentGroup = null
       
       this.messages.forEach((message) => {
-        const messageDate = this.parseDate(message.created_at || message.createdAt);
-        // Fallback or skip if invalid? We'll assume valid or use current date fallback
-        const dateObj = messageDate || new Date();
-        const day = new Date(dateObj);
-        day.setHours(0, 0, 0, 0);
-        const dayTime = day.getTime();
+        const messageDate = parseDateSafe(message.created_at || message.createdAt)
+        const dateObj = messageDate || new Date()
+        const day = new Date(dateObj)
+        day.setHours(0, 0, 0, 0)
+        const dayTime = day.getTime()
         
         if (!currentGroup || currentGroup.date.getTime() !== dayTime) {
           currentGroup = {
             id: `date-${dayTime}`,
             date: day,
-            dateLabel: this.formatDayLabel(day),
+            dateLabel: formatDayLabel(day, this.$i18n),
             messages: []
-          };
-          groups.push(currentGroup);
+          }
+          groups.push(currentGroup)
         }
         
-        currentGroup.messages.push(message);
-      });
+        currentGroup.messages.push(message)
+      })
       
-      return groups;
+      return groups
     },
     presenceStatusText() {
-      if (!this.selectedChat) return "Выберите сотрудника или общий чат слева";
+      if (!this.selectedChat) return "Выберите сотрудника или общий чат слева"
       if (this.selectedChat.type === "direct" && this.activePeerUser) {
-        return this.isUserOnline(this.activePeerUser) ? "Онлайн" : "Оффлайн";
+        return this.isUserOnline(this.activePeerUser) ? "Онлайн" : "Оффлайн"
       }
-      return "Онлайн";
+      return "Онлайн"
     },
     hasUnreadMessages() {
-      // Определяем, есть ли непрочитанные сообщения выше текущей позиции прокрутки
-      // Можно использовать last_read_message_id для более точного определения
-      if (!this.selectedChat || !this.messages.length) return false;
-      
-      const myId = this.$store.state.user?.id;
-      if (!myId) return false;
-      
-      // Проверяем, есть ли сообщения от других пользователей после последнего прочитанного
-      // Это упрощенная версия - можно улучшить
-      return false;
+      if (!this.selectedChat || !this.messages.length) return false
+      const myId = this.$store.state.user?.id
+      if (!myId) return false
+      return false
     },
     canCreateGroup() {
       return (
         !this.creatingGroup &&
         this.groupTitle.trim().length > 0 &&
         this.selectedUserIds.length > 0
-      );
+      )
     },
     showDeleteButton() {
-      return this.selectedChat && this.isChatCreator(this.selectedChat);
+      return this.selectedChat && this.isChatCreator(this.selectedChat)
     },
   },
+  
   watch: {
     '$store.getters.currentCompanyId': {
       handler(newCompanyId, oldCompanyId) {
         if (newCompanyId && newCompanyId !== oldCompanyId) {
-          this.handleCompanyChange();
+          this.handleCompanyChange()
         }
-      },
-      immediate: false
+      }
     }
   },
+  
   async mounted() {
     try {
-      // Используем глобальный сервис вместо локального
-      await this.ensureUsersLoaded();
-      await this.loadChats();
+      await this.ensureUsersLoaded()
+      await this.loadChats()
       
-      // НЕ синхронизируем чаты здесь - глобальный сервис уже подписан на все чаты при инициализации
-      // Синхронизация нужна только при создании нового чата
+      this.onlineUserIds = globalChatRealtime.getOnlineUserIds()
+      this.setupEventListeners()
       
-      // Получаем список онлайн пользователей из глобального сервиса
-      this.onlineUserIds = globalChatRealtime.getOnlineUserIds();
-      
-      // Подписываемся на события через eventBus
-      this.setupEventListeners();
-      
-      // Проверяем статус подключения через небольшую задержку
       setTimeout(() => {
-        this.checkWebSocketStatus();
-      }, 2000);
+        this.checkWebSocketStatus()
+      }, 2000)
     } catch (error) {
-      console.error("[Messenger] Ошибка при инициализации:", error);
+      console.error("[Messenger] Ошибка при инициализации:", error)
       this.$store.dispatch("showNotification", {
         title: "Ошибка загрузки чата",
         subtitle: error?.message || "Попробуйте обновить страницу",
         isDanger: true,
         duration: 5000,
-      });
+      })
     }
   },
+  
   beforeUnmount() {
-    // Отписываемся от событий
-    this.removeEventListeners();
-    this.onlineUserIds = [];
+    this.removeEventListeners()
+    this.onlineUserIds = []
   },
+  
   methods: {
     setupEventListeners() {
       console.log("[MessengerPage] 🔗 Подписка на события eventBus...");
@@ -2255,19 +1533,5 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.messenger-bg {
-  background-color: #d9dbd5;
-  /* Telegram/WhatsApp style pattern */
-  background-image:
-    radial-gradient(circle at 20px 20px, rgba(255, 255, 255, 0.2) 0 1.5px, transparent 2px),
-    radial-gradient(circle at 80px 60px, rgba(255, 255, 255, 0.15) 0 1.5px, transparent 2px),
-    radial-gradient(circle at 120px 30px, rgba(255, 255, 255, 0.15) 0 1.5px, transparent 2px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.02));
-  background-size: 140px 100px, 180px 120px, 200px 120px, 100% 100%;
-  background-repeat: repeat, repeat, repeat, no-repeat;
-}
-</style>
 
 
