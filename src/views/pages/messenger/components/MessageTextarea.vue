@@ -52,6 +52,22 @@
       }
     },
     methods: {
+      /** Вставляет текст в позицию курсора и эмитит обновлённый draft. */
+      insertAtCursor(text) {
+        const el = this.$refs.textarea
+        if (!el || !text) return
+        const start = el.selectionStart ?? this.draft.length
+        const end = el.selectionEnd ?? start
+        const before = this.draft.slice(0, start)
+        const after = this.draft.slice(end)
+        const newDraft = before + text + after
+        this.$emit('update:draft', newDraft)
+        this.$nextTick(() => {
+          el.focus()
+          const pos = start + text.length
+          el.setSelectionRange(pos, pos)
+        })
+      },
       handleEnterKey() {
         if (this.editingMessage) {
           this.$emit('save-edit')

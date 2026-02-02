@@ -13,8 +13,12 @@
         :key="message.id"
         :message="message"
         :chat="chat"
+        :active-reaction-picker-message-id="activeReactionPickerMessageId"
         @open-image="$emit('open-image', $event)"
         @message-context-menu="$emit('message-context-menu', $event)"
+        @reaction-toggle="$emit('reaction-toggle', $event)"
+        @open-picker="$emit('open-picker', $event)"
+        @close-reaction-picker="$emit('close-reaction-picker')"
       />
     </div>
   </template>
@@ -27,7 +31,8 @@
     components: { MessageItem },
     props: {
       group: Object,
-      chat: Object
+      chat: Object,
+      activeReactionPickerMessageId: { type: [Number, String], default: null }
     }
   }
   </script>

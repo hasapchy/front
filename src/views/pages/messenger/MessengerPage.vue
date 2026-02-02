@@ -43,10 +43,14 @@
         :context-menu-target="messageMenuTarget"
         :context-menu-position="{ x: messageMenuX, y: messageMenuY }"
         :is-my-message-for-menu="messageMenuTarget ? isMyMessage(messageMenuTarget) : false"
+        :active-reaction-picker-message-id="activeReactionPickerMessageId"
         @load-more="onMessagesScroll"
         @open-image="openImageModal"
         @message-context-menu="showMessageMenu"
         @close-context-menu="closeMessageMenu"
+        @reaction-toggle="onReactionToggle"
+        @open-picker="activeReactionPickerMessageId = $event.messageId"
+        @close-reaction-picker="activeReactionPickerMessageId = null"
         @context-menu-reply="replyToMessage"
         @context-menu-forward="forwardMessage"
         @context-menu-edit="editMessage"
@@ -70,7 +74,9 @@
         @cancel-edit="cancelEdit"
         @save-edit="saveEdit"
         @toggle-audio-recording="toggleAudioRecording"
+        @cancel-audio-recording="cancelAudioRecording"
         @attach-files="openFilePicker"
+        @remove-file="removeSelectedFile"
         @cancel-reply="replyingTo = null"
       />
     </div>
@@ -191,6 +197,7 @@ export default {
       audioRecordingTime: 0,
       audioRecordingInterval: null,
       mediaRecorder: null,
+      cancelRecordingRequested: false,
       onlineUserIds: [],
       peerReadByChatId: {},
       showCreateGroupModal: false,
@@ -211,6 +218,8 @@ export default {
       forwardingSending: false,
       showImageModal: false,
       selectedImage: null,
+      /** id сообщения, для которого открыт пикер реакций (кнопка «+») */
+      activeReactionPickerMessageId: null,
     }
   },
   
@@ -873,13 +882,15 @@ export default {
         };
 
         this.mediaRecorder.onstop = () => {
+          stream.getTracks().forEach(track => track.stop());
+          if (this.cancelRecordingRequested) {
+            this.cancelRecordingRequested = false;
+            return;
+          }
           this.audioBlob = new Blob(chunks, { type: 'audio/webm' });
           const audioFile = new File([this.audioBlob], `audio-${Date.now()}.webm`, { type: 'audio/webm' });
           this.selectedFiles = [...this.selectedFiles, audioFile];
           this.audioBlob = null;
-          
-          // Stop all tracks
-          stream.getTracks().forEach(track => track.stop());
         };
 
         this.mediaRecorder.start();
@@ -907,6 +918,13 @@ export default {
           this.audioRecordingInterval = null;
         }
       }
+    },
+    cancelAudioRecording() {
+      this.cancelRecordingRequested = true;
+      this.stopAudioRecording();
+    },
+    removeSelectedFile(index) {
+      this.selectedFiles = this.selectedFiles.filter((_, i) => i !== index);
     },
     isImageFile(file) {
       const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml'];
@@ -1044,6 +1062,30 @@ export default {
         this.$store.dispatch("showNotification", {
           title: "Ошибка",
           subtitle: error?.message || "Не удалось отредактировать сообщение",
+          isDanger: true,
+          duration: 3000,
+        });
+      }
+    },
+    /** Поставить/снять реакцию на сообщение; обновляет локальный список реакций. */
+    async onReactionToggle({ messageId, emoji }) {
+      if (!this.selectedChatId || !messageId) return;
+      try {
+        const reactions = await ChatController.setReaction(
+          this.selectedChatId,
+          messageId,
+          emoji
+        );
+        const mid = Number(messageId);
+        this.messages = (this.messages || []).map((m) =>
+          Number(m.id) !== mid
+            ? m
+            : { ...m, reactions: Array.isArray(reactions) ? reactions : m.reactions ?? [] }
+        );
+      } catch (err) {
+        this.$store.dispatch("showNotification", {
+          title: "Ошибка",
+          subtitle: err?.message || "Не удалось изменить реакцию",
           isDanger: true,
           duration: 3000,
         });

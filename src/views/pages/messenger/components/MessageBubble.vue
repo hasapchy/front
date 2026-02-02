@@ -84,15 +84,48 @@
         </div>
       </div>
   
-      <!-- Time and status -->
-      <div class="mt-1 flex items-center justify-end gap-1 text-[11px] leading-none" 
-           :class="isMyMessage ? 'text-gray-600' : 'text-gray-500'">
-        <span v-if="message.is_edited" class="flex items-center gap-0.5 text-gray-500 mr-1">
-          <i class="fas fa-pencil-alt text-[9px]"></i>
-          <span class="italic">изменено</span>
-        </span>
-        <span>{{ messageTime }}</span>
-        <span v-if="isMyMessage" class="ml-1 text-green-600">{{ messageTicks }}</span>
+      <!-- Одна строка: реакции слева, время справа (минимальный дизайн как в Telegram) -->
+      <div class="mt-1 flex items-center justify-between gap-2 min-h-[20px]">
+        <!-- Реакции — слева; своя реакция кликабельна (клик — снять), подсказка «клик — снять» -->
+        <div
+          v-if="reactionRows.length"
+          class="flex flex-wrap items-center gap-1 shrink-0"
+        >
+          <component
+            v-for="r in reactionRows"
+            :key="r.emoji"
+            :is="r.isMyReaction ? 'button' : 'span'"
+            type="button"
+            class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[13px] leading-none border border-transparent min-w-[24px] justify-center focus:outline-none"
+            :class="r.isMyReaction ? 'bg-sky-100 border-sky-200/50 cursor-pointer hover:bg-sky-200/80' : 'bg-gray-100/80 border-gray-200/50'"
+            :title="r.isMyReaction ? r.emoji + ' (клик — снять)' : undefined"
+            @click.stop="r.isMyReaction && $emit('reaction-toggle', r.emoji)"
+          >
+            <span>{{ r.emoji }}</span>
+            <span v-if="r.count > 1" class="text-[10px] text-gray-500 font-medium">{{ r.count }}</span>
+          </component>
+        </div>
+        <div v-else class="shrink-0" />
+        <!-- Время, статус и кнопка «+» для реакций — справа внизу -->
+        <div class="flex items-center gap-1.5 text-[11px] leading-none shrink-0 ml-auto" 
+             :class="isMyMessage ? 'text-gray-600' : 'text-gray-500'">
+          <span v-if="message.is_edited" class="flex items-center gap-0.5 text-gray-500">
+            <i class="fas fa-pencil-alt text-[9px]"></i>
+            <span class="italic">изменено</span>
+          </span>
+          <span>{{ messageTime }}</span>
+          <span v-if="isMyMessage" class="ml-0.5 text-green-600">{{ messageTicks }}</span>
+          <button
+            v-if="!currentUserHasReaction"
+            type="button"
+            class="w-5 h-5 rounded-full bg-gray-200/80 hover:bg-gray-300 flex items-center justify-center text-gray-500 text-[10px] leading-none shrink-0"
+            title="Добавить реакцию"
+            aria-label="Добавить реакцию"
+            @click.stop="$emit('open-reaction-picker')"
+          >
+            +
+          </button>
+        </div>
       </div>
   
       <!-- Message actions menu button -->
@@ -116,6 +149,7 @@
   
   export default {
     name: 'MessageBubble',
+    emits: ['open-image', 'action', 'open-reaction-picker', 'reaction-toggle'],
     props: {
       message: {
         type: Object,
@@ -131,9 +165,26 @@
         return messageTime(this.message)
       },
       messageTicks() {
-        // Это вычисление должно быть в родительском компоненте или через проп
-        // Пока возвращаем пустую строку
         return ''
+      },
+      /** Реакции по эмодзи: [{ emoji, count, isMyReaction }]. */
+      reactionRows() {
+        const list = this.message?.reactions || []
+        if (!list.length) return []
+        const myId = this.$store.state.user?.id ? Number(this.$store.state.user.id) : null
+        const byEmoji = {}
+        list.forEach((r) => {
+          const e = r.emoji || ''
+          if (!e) return
+          if (!byEmoji[e]) byEmoji[e] = { count: 0, isMyReaction: false }
+          byEmoji[e].count += 1
+          if (myId && Number(r.user_id) === myId) byEmoji[e].isMyReaction = true
+        })
+        return Object.entries(byEmoji).map(([emoji, { count, isMyReaction }]) => ({ emoji, count, isMyReaction }))
+      },
+      /** Есть ли реакция от текущего пользователя — скрываем «+» на этом сообщении */
+      currentUserHasReaction() {
+        return this.reactionRows.some((r) => r.isMyReaction)
       }
     },
     methods: {

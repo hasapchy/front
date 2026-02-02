@@ -4,7 +4,7 @@
       :class="isMyMessage ? 'justify-end' : 'justify-start'"
     >
       <div 
-        class="flex flex-col max-w-[75%]"
+        class="flex flex-col max-w-[75%] relative"
         :class="isMyMessage ? 'items-end' : 'items-start'"
       >
         <!-- Sender name (only for incoming messages in group chats) -->
@@ -22,6 +22,23 @@
             :is-my-message="isMyMessage"
             @open-image="$emit('open-image', $event)"
             @action="$emit('message-context-menu', $event)"
+            @open-reaction-picker="$emit('open-picker', { messageId: message.id })"
+            @reaction-toggle="$emit('reaction-toggle', { messageId: message.id, emoji: $event })"
+          />
+        </div>
+ 
+        <!-- Пикер реакций: под сообщением (не перекрывает), справа для своих сообщений, слева для чужих -->
+        <div
+          v-if="activeReactionPickerMessageId === message.id"
+          class="absolute mt-[65px] ml-[calc(100%+6px)] min-h-[4px]"
+          :class="isMyMessage ? 'w-full self-end' : 'self-start'"
+        >
+          <EmojiPicker
+            :align-right="isMyMessage"
+            :show-close-button="true"
+            :position-below="true"
+            @select="onReactionEmojiSelect"
+            @close="$emit('close-reaction-picker')"
           />
         </div>
       </div>
@@ -31,22 +48,21 @@
   <script>
   import MessageSender from './MessageSender.vue'
   import MessageBubble from './MessageBubble.vue'
+  import MessageReactions from './MessageReactions.vue'
+  import EmojiPicker from './EmojiPicker.vue'
   import { isMyMessage, getMessageUser } from './utils/messageUtils'
   import { getMessageUserName } from './utils/chatHelpers'
   
   export default {
     name: 'MessageItem',
-    components: { MessageSender, MessageBubble },
+    components: { MessageSender, MessageBubble, MessageReactions, EmojiPicker },
     props: {
-      message: {
-        type: Object,
-        required: true
-      },
-      chat: {
-        type: Object,
-        required: true
-      }
+      message: { type: Object, required: true },
+      chat: { type: Object, required: true },
+      /** id сообщения, для которого открыт пикер реакций */
+      activeReactionPickerMessageId: { type: [Number, String], default: null }
     },
+    emits: ['open-image', 'message-context-menu', 'reaction-toggle', 'open-picker', 'close-reaction-picker'],
     computed: {
       isMyMessage() {
         return isMyMessage(this.message, this.$store.state.user?.id)
@@ -67,6 +83,13 @@
         
         const index = Number(userId) % colors.length
         return colors[index]
+      }
+    },
+    methods: {
+      /** При выборе эмодзи в пикере реакций — ставим реакцию и закрываем пикер */
+      onReactionEmojiSelect(emoji) {
+        this.$emit('reaction-toggle', { messageId: this.message.id, emoji })
+        this.$emit('close-reaction-picker')
       }
     }
   }

@@ -20,8 +20,12 @@
             :key="group.id"
             :group="group"
             :chat="chat"
+            :active-reaction-picker-message-id="activeReactionPickerMessageId"
             @open-image="$emit('open-image', $event)"
             @message-context-menu="$emit('message-context-menu', $event)"
+            @reaction-toggle="$emit('reaction-toggle', $event)"
+            @open-picker="$emit('open-picker', $event)"
+            @close-reaction-picker="$emit('close-reaction-picker')"
           />
         </template>
 
@@ -66,7 +70,8 @@
       contextMenuVisible: Boolean,
       contextMenuTarget: Object,
       contextMenuPosition: { type: Object, default: () => ({ x: 0, y: 0 }) },
-      isMyMessageForMenu: Boolean
+      isMyMessageForMenu: Boolean,
+      activeReactionPickerMessageId: { type: [Number, String], default: null }
     },
     data() {
       return { menuLocalPosition: { x: 0, y: 0 } }

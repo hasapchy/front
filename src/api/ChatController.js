@@ -135,6 +135,20 @@ export default class ChatController extends BaseController {
       "Ошибка при удалении чата:"
     );
   }
+
+  /** Поставить или снять реакцию на сообщение. emoji: строка эмодзи или пустая строка для снятия. */
+  static async setReaction(chatId, messageId, emoji) {
+    return super.handleRequest(
+      async () => {
+        const { data } = await api.post(
+          `/chats/${chatId}/messages/${messageId}/reaction`,
+          { emoji: emoji ?? "" }
+        );
+        return data?.data?.reactions ?? data?.reactions ?? [];
+      },
+      "Ошибка при установке реакции:"
+    );
+  }
 }
 
 
