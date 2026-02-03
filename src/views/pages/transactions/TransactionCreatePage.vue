@@ -4,8 +4,9 @@
         <TransactionFormFields v-model:selectedClient="selectedClient" v-model:date="date" v-model:type="type"
             v-model:cashId="cashId" v-model:isDebt="isDebt" v-model:origAmount="origAmount"
             v-model:currencyId="currencyId" v-model:categoryId="categoryId" v-model:projectId="projectId"
-            v-model:note="note" v-model:selectedBalanceId="selectedBalanceId" :editingItemId="editingItemId" :orderId="orderId" :initialProjectId="initialProjectId"
-            :allCashRegisters="allCashRegisters" :currencies="currencies" :filteredCategories="filteredCategories"
+            v-model:note="note" v-model:selectedBalanceId="selectedBalanceId" v-model:paymentType="paymentType"
+            :editingItemId="editingItemId" :orderId="orderId" :initialProjectId="initialProjectId"
+            :allCashRegisters="cashRegistersForForm" :currencies="currencies" :filteredCategories="filteredCategories"
             :allProjects="allProjects" :formConfig="formConfig" :isCategoryDisabled="isCategoryDisabled"
             :client-balances="clientBalances"
             @balance-changed="onBalanceChanged"
@@ -58,6 +59,8 @@ import TransactionExchangeRateSection from '@/views/components/transactions/Tran
 import TransactionBalancePreview from '@/views/components/transactions/TransactionBalancePreview.vue';
 import TransactionSourceSection from '@/views/components/transactions/TransactionSourceSection.vue';
 import TransactionFormActions from '@/views/components/transactions/TransactionFormActions.vue';
+import CompaniesController from '@/api/CompaniesController';
+import UsersController from '@/api/UsersController';
 
 
 export default {
@@ -114,6 +117,7 @@ export default {
             selectedBalanceId: null,
             selectedSource: null,
             sourceType: '',
+            paymentType: 1,
             currencies: [],
             allCategories: [],
             allCashRegisters: [],
@@ -245,6 +249,13 @@ export default {
             const transactionCurrencyId = this.currencyId;
             return !!(this.calculatedCashAmount && cashCurrencyId != transactionCurrencyId);
         },
+        cashRegistersForForm() {
+            if (!this.formConfig?.paymentType?.visible || this.paymentType === undefined || this.paymentType === null) {
+                return this.allCashRegisters;
+            }
+            const paymentTypeIsCash = this.paymentType === 1;
+            return this.allCashRegisters.filter(c => Boolean(c.isCash ?? c.is_cash) === paymentTypeIsCash);
+        },
     },
     mounted() {
         this.$nextTick(async () => {
@@ -281,20 +292,42 @@ export default {
                 this.selectedBalanceId = defaultBalance ? defaultBalance.id : (this.clientBalances[0]?.id || null);
             }
 
-            this.saveInitialState();
             this.applyTypeConstraints();
             this.applyDebtConstraints();
             this.applyCategoryConstraints();
+            if (!this.editingItemId && this.formConfig?.paymentType?.visible && this.allCashRegisters?.length) {
+                const isCash = this.paymentType === 1;
+                const selected = this.allCashRegisters.find(c => c.id == this.cashId);
+                if (selected && Boolean(selected.is_cash ?? selected.isCash) !== isCash) {
+                    const matching = this.allCashRegisters.filter(c => Boolean(c.is_cash ?? c.isCash) === isCash);
+                    this.cashId = matching.length ? matching[0].id : '';
+                }
+            }
+            if (!this.editingItem && this.formConfig?.options?.loadSalaryAmountByPaymentType && this.selectedClient?.employeeId) {
+                await this.loadEmployeeSalaryAmount();
+            }
+            this.saveInitialState();
         });
     },
     methods: {
         onBalanceChanged(balanceId) {
-            console.log('[TransactionCreatePage] Balance changed:', {
-                balanceId,
-                selectedClient: this.selectedClient,
-                selectedBalanceId: this.selectedBalanceId
-            });
             this.selectedBalanceId = balanceId;
+        },
+        async loadEmployeeSalaryAmount() {
+            if (!this.selectedClient?.employeeId) return;
+            try {
+                const data = await UsersController.getSalaries(this.selectedClient.employeeId);
+                const salaries = data?.salaries || [];
+                const salary = salaries.find(s => Number(s.payment_type) === Number(this.paymentType) && !s.end_date);
+                if (salary?.amount != null) {
+                    this.origAmount = parseFloat(salary.amount);
+                    if (salary.currency_id && !this.currencyId) {
+                        this.currencyId = salary.currency_id;
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading employee salary:', e);
+            }
         },
         translateTransactionCategory,
         ensureEditable(eventName = 'saved-error') {
@@ -319,6 +352,9 @@ export default {
                 const enforcedValue = this.fieldConfig('type').enforcedValue;
                 if (enforcedValue != null) {
                     this.type = enforcedValue;
+                    if (this.fieldConfig('category').visible !== false) {
+                        this.categoryId = enforcedValue === 'outcome' ? 14 : 4;
+                    }
                 }
             }
         },
@@ -469,6 +505,24 @@ export default {
                 throw new Error('Заполните примечание');
             }
 
+            if (this.formConfig?.options?.useSalaryAccrualApi && this.selectedClient?.employeeId && !this.editingItemId) {
+                const companyId = this.$store.getters.currentCompanyId;
+                if (!companyId) {
+                    throw new Error(this.$t('companyNotSelected') || 'Выберите компанию');
+                }
+                if (!this.date || !this.cashId) {
+                    throw new Error(this.$t('fillRequiredFields') || 'Заполните обязательные поля');
+                }
+                return {
+                    _useSalaryAccrualApi: true,
+                    date: this.date,
+                    cash_id: this.cashId,
+                    note: this.note || null,
+                    user_ids: [Number(this.selectedClient.employeeId)],
+                    payment_type: Boolean(this.paymentType),
+                };
+            }
+
             const projectIdForSubmit = this.projectId || this.initialProjectId || null;
 
             if (this.editingItemId != null) {
@@ -535,9 +589,19 @@ export default {
         async performSave(data) {
             if (this.editingItemId != null) {
                 return await TransactionController.updateItem(this.editingItemId, data);
-            } else {
-                return await TransactionController.storeItem(data);
             }
+            if (data?._useSalaryAccrualApi) {
+                const companyId = this.$store.getters.currentCompanyId;
+                const payload = {
+                    date: data.date,
+                    cash_id: data.cash_id,
+                    note: data.note,
+                    user_ids: data.user_ids,
+                    payment_type: data.payment_type,
+                };
+                return await CompaniesController.accrueSalaries(companyId, payload);
+            }
+            return await TransactionController.storeItem(data);
         },
         onSaveSuccess(response) {
             if (response && response.message) {
@@ -573,6 +637,7 @@ export default {
             this.selectedBalanceId = null;
             this.selectedSource = null;
             this.sourceType = '';
+            this.paymentType = 1;
             this.exchangeRate = null;
             this.isExchangeRateManual = false;
             this.applyTypeConstraints();
@@ -698,7 +763,19 @@ export default {
         }
     },
     watch: {
-        // Когда выбирают проект — автоматически подставляем клиента проекта (только если зашли из проекта)
+        paymentType() {
+            if (this.formConfig?.paymentType?.visible && this.allCashRegisters?.length && !this.editingItemId) {
+                const isCash = this.paymentType === 1;
+                const selected = this.allCashRegisters.find(c => c.id == this.cashId);
+                if (selected && Boolean(selected.is_cash ?? selected.isCash) !== isCash) {
+                    const matching = this.allCashRegisters.filter(c => Boolean(c.is_cash ?? c.isCash) === isCash);
+                    this.cashId = matching.length ? matching[0].id : '';
+                }
+            }
+            if (!this.editingItem && this.formConfig?.options?.loadSalaryAmountByPaymentType && this.selectedClient?.employeeId) {
+                this.loadEmployeeSalaryAmount();
+            }
+        },
         projectId: {
             async handler(newProjectId) {
                 if (!this.isFieldVisible('project')) return;

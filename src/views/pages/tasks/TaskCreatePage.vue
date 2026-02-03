@@ -8,8 +8,17 @@
                 <label class="required">{{ $t('title') }}</label>
                 <input type="text" v-model="title" required />
             </div>
-            
-            
+
+            <div>
+                <label>{{ $t('description') }}</label>
+                <QuillEditor
+                    v-model:content="description"
+                    :options="editorOptions"
+                    contentType="html"
+                    :disabled="saveLoading"
+                />
+            </div>
+
             <div class="hidden">
                 <label>{{ $t('status') }}</label>
                 <select v-model="statusId">
@@ -21,47 +30,97 @@
 
             <div>
                 <label>{{ $t('deadline') }}</label>
-                <div class="relative">
+                <div class="relative" ref="dateInputWrapper">
                     <input 
                         type="text" 
                         :value="formattedDeadline"
-                        @click="showDatePicker = !showDatePicker"
-                        @focus="showDatePicker = true"
+                        @click.stop="handleInputClick"
                         readonly
-                        class="cursor-pointer"
-                        :placeholder="$t('deadline')" />
-                    <i class="fas fa-calendar absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        class="cursor-pointer pr-8"
+                        :placeholder="$t('noDeadline')" />
+                    <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                        <i v-if="deadline" 
+                            @click.stop="clearDeadline"
+                            class="fas fa-times text-gray-400 hover:text-gray-600 cursor-pointer"></i>
+                        <i class="fas fa-calendar text-gray-400 pointer-events-none"></i>
+                    </div>
                     
                     <div 
                         v-if="showDatePicker" 
+                        ref="datePickerWrapper"
                         class="absolute z-50 mt-2"
                         style="left: 0; top: 100%;">
                         <DatePicker 
-                            v-model="deadline"
+                            :model-value="deadline"
                             :min-date="minDeadline"
-                            @update:modelValue="handleDateChange" />
+                            :work-schedule="currentCompanyWorkSchedule"
+                            @update:modelValue="handleDateChange"
+                            @apply="showDatePicker = false"
+                            @clear="clearDeadline" />
                     </div>
                 </div>
             </div>
 
-            <!-- Приоритет -->
-            <div>
-                <label>{{ $t('priority') || 'Приоритет' }}</label>
-                <select v-model="priority">
-                    <option value="low">🔥 </option>
-                    <option value="normal">🔥🔥 </option>
-                    <option value="high">🔥🔥🔥 </option>
-                </select>
-            </div>
+            <div class="flex gap-4">
+                <div class="flex-1">
+                    <label>{{ $t('priority') || 'Приоритет' }}</label>
+                    <div class="flex items-center gap-2 mt-1">
+                        <button
+                            type="button"
+                            class="text-xl focus:outline-none"
+                            :class="priorityLevel >= 1 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
+                            @click="priority = 'low'"
+                        >
+                            🔥
+                        </button>
+                        <button
+                            type="button"
+                            class="text-xl focus:outline-none"
+                            :class="priorityLevel >= 2 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
+                            @click="priority = 'normal'"
+                        >
+                            🔥
+                        </button>
+                        <button
+                            type="button"
+                            class="text-xl focus:outline-none"
+                            :class="priorityLevel >= 3 ? 'text-orange-500' : 'text-gray-300 opacity-40'"
+                            @click="priority = 'high'"
+                        >
+                            🔥
+                        </button>
+                    </div>
+                </div>
 
-            <!-- Сложность -->
-            <div>
-                <label>{{ $t('complexity') || 'Сложность' }}</label>
-                <select v-model="complexity">
-                    <option value="simple">🧠 </option>
-                    <option value="normal">🧠🧠 </option>
-                    <option value="complex">🧠🧠🧠 </option>
-                </select>
+                <div class="flex-1">
+                    <label>{{ $t('complexity') || 'Сложность' }}</label>
+                    <div class="flex items-center gap-2 mt-1">
+                        <button
+                            type="button"
+                            class="text-xl focus:outline-none"
+                            :class="complexityLevel >= 1 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
+                            @click="complexity = 'simple'"
+                        >
+                            🧠
+                        </button>
+                        <button
+                            type="button"
+                            class="text-xl focus:outline-none"
+                            :class="complexityLevel >= 2 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
+                            @click="complexity = 'normal'"
+                        >
+                            🧠
+                        </button>
+                        <button
+                            type="button"
+                            class="text-xl focus:outline-none"
+                            :class="complexityLevel >= 3 ? 'text-blue-500' : 'text-gray-300 opacity-40'"
+                            @click="complexity = 'complex'"
+                        >
+                            🧠
+                        </button>
+                    </div>
+                </div>
             </div>
             
             <div>
@@ -80,16 +139,6 @@
 
             <div>
                 <UserSearch v-model:selectedUser="selectedExecutor" :required="true" :label="$t('executor')" />
-            </div>
-
-            <div>
-                <label>{{ $t('description') }}</label>
-                <QuillEditor
-                    v-model:content="description"
-                    :options="editorOptions"
-                    contentType="html"
-                    :disabled="saveLoading"
-                    />
             </div>
         </div>
 
@@ -267,6 +316,14 @@ export default {
                 }
             };
         },
+        priorityLevel() {
+            const map = { low: 1, normal: 2, high: 3 }
+            return map[this.priority] || 1
+        },
+        complexityLevel() {
+            const map = { simple: 1, normal: 2, complex: 3 }
+            return map[this.complexity] || 1
+        },
         visibleTabs() {
             return this.tabs;
         },
@@ -286,8 +343,12 @@ export default {
             return this.selectedExecutor?.id || null;
         },
         formattedDeadline() {
-            if (!this.deadline) return '';
+            if (!this.deadline) return 'Без крайнего срока';
             return dayjs(this.deadline).format('DD.MM.YYYY HH:mm');
+        },
+        currentCompanyWorkSchedule() {
+            const currentCompany = this.$store.getters.currentCompany;
+            return currentCompany?.work_schedule || null;
         },
     },
     watch: {
@@ -458,23 +519,80 @@ export default {
             this.currentTab = tabName;
         },
         handleDateChange(value) {
-            this.deadline = value;
-            this.showDatePicker = false;
-        },
-        handleClickOutside(event) {
-             // Проверяем, что $el существует и является DOM элементом
-             if (!this.$el || !(this.$el instanceof Element)) {
+            if (!value) {
+                this.deadline = null;
+                this.showDatePicker = false;
                 return;
             }
 
-            const datePickerElement = this.$el?.querySelector('.date-picker-container');
-            const inputElement = this.$el?.querySelector('input[readonly]');
+            const selectedDate = dayjs(value);
+            const workSchedule = this.$store.getters.currentCompany?.work_schedule;
             
-            if (this.showDatePicker && 
-                datePickerElement && 
-                inputElement &&
-                !datePickerElement.contains(event.target) &&
-                !inputElement.contains(event.target)) {
+            if (workSchedule) {
+                const scheduleDayKey = this.getScheduleDayKeyFromDayjsDay(selectedDate.day());
+                const daySchedule = workSchedule[scheduleDayKey];
+                
+                if (daySchedule?.end) {
+                    const [endHour, endMinute] = daySchedule.end.split(':').map(Number);
+                    this.deadline = selectedDate.hour(endHour).minute(endMinute).second(0).format('YYYY-MM-DDTHH:mm');
+                    return;
+                }
+            }
+            
+            this.deadline = value;
+        },
+        
+        getScheduleDayKeyFromDayjsDay(dayjsDay) {
+            const map = {
+                0: 7,
+                1: 1,
+                2: 2,
+                3: 3,
+                4: 4,
+                5: 5,
+                6: 6
+            };
+            return map[dayjsDay] || 1;
+        },
+        handleInputClick(event) {
+            console.log('[TaskCreatePage] handleInputClick', {
+                currentState: this.showDatePicker,
+                target: event.target,
+            });
+            event.stopPropagation();
+            this.showDatePicker = true;
+            console.log('[TaskCreatePage] after toggle', {
+                newState: this.showDatePicker,
+            });
+        },
+        clearDeadline() {
+            this.deadline = null;
+            this.showDatePicker = false;
+        },
+        handleClickOutside(event) {
+            console.log('[TaskCreatePage] handleClickOutside', {
+                showDatePicker: this.showDatePicker,
+                target: event.target,
+            });
+            
+            if (!this.showDatePicker) {
+                return;
+            }
+
+            const inputWrapper = this.$refs.dateInputWrapper;
+            const datePickerWrapper = this.$refs.datePickerWrapper;
+            
+            console.log('[TaskCreatePage] elements', {
+                inputWrapper,
+                datePickerWrapper,
+                containsInput: inputWrapper?.contains(event.target),
+                containsPicker: datePickerWrapper?.contains(event.target),
+            });
+            
+            if (inputWrapper && datePickerWrapper &&
+                !inputWrapper.contains(event.target) &&
+                !datePickerWrapper.contains(event.target)) {
+                console.log('[TaskCreatePage] closing datePicker');
                 this.showDatePicker = false;
             }
         },

@@ -377,12 +377,18 @@ export default {
   productType: 'Product Type',
   allSubcategories: 'All Subcategories',
   balances: 'Balances',
+  history: 'History',
+  noBalances: 'No balances',
   createBalance: 'Create Balance',
   editBalance: 'Edit Balance',
   initialBalance: 'Initial Balance',
   setAsDefault: 'Set as Default',
   confirmDeleteBalance: 'Confirm Delete Balance',
-  
+  clientBalance: 'Client Balance',
+  selectBalance: 'Select Balance',
+  balanceAfterOperation: 'Balance After Operation',
+  errorGettingClient: 'Error getting client',
+
   // Login form
   enterEmail: 'Enter email',
   rememberMe: 'Remember me',
@@ -669,6 +675,7 @@ export default {
     status: 'Status',
     project: 'Project',
     deadline: 'Deadline',
+    noDeadline: 'No deadline',
     enterDescription: 'Enter description',
     createdAt: 'Created Date',
 

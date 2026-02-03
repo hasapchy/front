@@ -41,7 +41,7 @@
                             <span v-else>({{ $t('mutualSettlement') }})</span>
                         </span>
                     </li>
-                    <li class="p-2 border-t border-gray-300 bg-gray-50 sticky bottom-0">
+                    <li v-if="$store.getters.hasPermission('clients_create')" class="p-2 border-t border-gray-300 bg-gray-50 sticky bottom-0">
                         <PrimaryButton :is-info="true" :is-full="true" icon="fas fa-plus"
                             @mousedown.prevent="openCreateClientModal">
                             {{ $t('createClient') }}{{ clientSearch ? ` "${clientSearch}"` : '' }}
@@ -60,11 +60,9 @@
                                 }}</span></p>
                         <p><span class="text-xs">{{ $t('phone') }}:</span> <span class="font-semibold text-sm">{{
                             clientPhones[0]?.phone || '' }}</span></p>
-                        <div v-if="$store.getters.hasPermission('settings_client_balance_view')" class="flex items-center gap-2">
-                            <span class="text-xs whitespace-nowrap">{{ $t('balance') }}:</span>
-                            <span class="font-semibold text-sm"
-                                :class="displayBalance == 0 ? 'text-[#337AB7]' : displayBalance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
-                                {{ clientBalance }} {{ displayCurrencySymbol }}
+                        <div v-if="$store.getters.hasPermission('settings_client_balance_view')" class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span class="text-xs">
+                                {{ $t('balance') }}: <span :class="displayBalance == 0 ? 'text-[#337AB7]' : displayBalance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">{{ clientBalance }} {{ displayCurrencySymbol }}</span>
                                 <span v-if="displayBalance > 0">({{ $t('clientOwesUs') }})</span>
                                 <span v-else-if="displayBalance < 0">({{ $t('weOweClient') }})</span>
                                 <span v-else>({{ $t('mutualSettlement') }})</span>

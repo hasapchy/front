@@ -729,17 +729,23 @@ export default {
   // Клиенты
   fullNameCompany: 'Ady/Kompanyiýa',
   errorGettingClientList: 'Müşderi sanawyny almakda ýalňyşlyk',
+  errorGettingClient: 'Müşderini almakda ýalňyşlyk',
   clientSuccessfullyAdded: 'Müşderi üstünlikli goşuldy',
   errorSavingClient: 'Müşderini saklamakda ýalňyşlyk',
   clientSuccessfullyDeleted: 'Müşderi üstünlikli pozuldy',
   errorDeletingClient: 'Müşderini pozmakda ýalňyşlyk',
   balances: 'Balanslar',
+  history: 'Taryh',
+  noBalances: 'Balans ýok',
   createBalance: 'Balans döret',
   editBalance: 'Balans redaktirle',
   initialBalance: 'Başlangyç balans',
   setAsDefault: 'Bellenen hökmünde bellä',
   confirmDeleteBalance: 'Balansy pozmagy tassyklamak',
-  
+  clientBalance: 'Müşderi balansy',
+  selectBalance: 'Balansy saýlaň',
+  balanceAfterOperation: 'Amalyň soňky balansy',
+
   // Товары
   image: 'Surat',
   sku: 'SKU',
@@ -863,6 +869,8 @@ export default {
   notFound: 'Tapylmady',
   clientOwesUs: 'Müşderi bize borçly',
   weOweClient: 'Biz müşderä borçly',
+  employeeOwesUs: 'Işgär bize borçly',
+  weOweEmployee: 'Biz işgäre borçly',
   mutualSettlement: 'Özara hasaplaşma',
   createClient: 'Müşderi',
   errorCreatingClient: 'Müşderi döretmekde ýalňyşlyk',
@@ -1294,6 +1302,7 @@ export default {
   status: 'Ýagdaýy',
   project: 'Taslama',
   deadline: 'Möhleti',
+  noDeadline: 'Möhlet ýok',
   enterDescription: 'Beýany ýazyň',
 
   // Wezipeleriň ýagdaýy

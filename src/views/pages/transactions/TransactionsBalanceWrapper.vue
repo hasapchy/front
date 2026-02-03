@@ -23,7 +23,7 @@
                                 <div class="cash-register-title mb-2 flex items-center justify-center gap-2">
                                     <i
                                         class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 cursor-move"></i>
-                                    <i v-if="card.icon" :class="card.icon" class="text-gray-700"></i>
+                                    <i v-if="card.icon" :class="card.icon" class="text-gray-700 cash-register-icon"></i>
                                     <span class="cash-register-name text-sm font-semibold text-center">
                                         {{ translateName(card.name) }}
                                         <span class="cash-register-currency">({{ card.currencySymbol || '' }})</span>
@@ -577,6 +577,10 @@ export default {
 .balance-card-wrapper {
     transition: transform 0.2s ease;
     flex-shrink: 0;
+}
+
+.cash-register-icon {
+    font-size: 2em;
 }
 
 .balance-drag-handle {

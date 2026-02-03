@@ -57,7 +57,7 @@
                 :onclick="save"
                 :is-loading="saveLoading"
                 icon="fas fa-save"
-                :disabled="!isFormValid || (editingItem && !canUpdateBalance) || (!editingItem && !canCreateBalance)">
+                :disabled="!initialClient || !isFormValid || (editingItem && !canUpdateBalance) || (!editingItem && !canCreateBalance)">
             </PrimaryButton>
         </div>
         
@@ -105,9 +105,9 @@ export default {
         },
         initialClient: {
             type: Object,
-            required: true,
+            default: null,
             validator: function(value) {
-                return value && typeof value === 'object' && value.id !== undefined;
+                return value === null || (value && typeof value === 'object' && value.id !== undefined);
             }
         }
     },
@@ -180,6 +180,7 @@ export default {
             }
         },
         async performSave() {
+            if (!this.initialClient?.id) return;
             if (this.editingItemId) {
                 const result = await ClientController.updateClientBalance(
                     this.initialClient.id,

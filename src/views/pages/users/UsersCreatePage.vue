@@ -136,24 +136,24 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('departments') }}</label>
-                    <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
-                        <div v-if="departments && departments.length > 0">
-                            <div v-for="department in departments" :key="department.id"
-                                class="flex items-center space-x-2 mb-2">
-                                <input type="checkbox" :id="`department-${department.id}`" :value="department.id"
-                                    v-model="form.departments"
-                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                <label :for="`department-${department.id}`"
-                                    class="text-sm text-gray-700 cursor-pointer">
-                                    {{ department.title }}
-                                </label>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('departments') }}</label>
+                        <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
+                            <div v-if="departments && departments.length > 0">
+                                <div v-for="department in departments" :key="department.id"
+                                    class="flex items-center space-x-2 mb-2">
+                                    <input type="checkbox" :id="`department-${department.id}`" :value="department.id"
+                                        v-model="form.departments"
+                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                    <label :for="`department-${department.id}`"
+                                        class="text-sm text-gray-700 cursor-pointer">
+                                        {{ department.title }}
+                                    </label>
+                                </div>
                             </div>
+                            <div v-else class="text-gray-500 text-sm">{{ $t('noDepartmentsAvailable') }}</div>
                         </div>
-                        <div v-else class="text-gray-500 text-sm">{{ $t('noDepartmentsAvailable') }}</div>
                     </div>
                 </div>
             </div>

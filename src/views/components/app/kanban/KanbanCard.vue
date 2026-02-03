@@ -5,7 +5,7 @@
             <div class="flex items-center space-x-2 min-w-0 flex-1">
                 <input type="checkbox" :checked="isSelected" @click.stop="handleSelectToggle"
                     class="cursor-pointer flex-shrink-0" />
-                <span :class="['text-sm font-bold truncate', textColorClass]">
+                <span class="text-sm font-bold truncate text-gray-800">
                     {{ isProjectMode ? `№${order.id}` : isTaskMode ? `${order.title}` : `№${order.id}` }}
                 </span>
             </div>
@@ -294,21 +294,7 @@ export default {
             if (!this.isTaskMode) return false;
             if (!this.order) return false;
 
-            console.log('hasChecklist', this.order);
-            // Проверяем наличие checklist в разных возможных форматах
             const checklist = this.order.checklist;
-
-
-            // Отладка для задачи с ID 2
-            if (this.order.id === 2) {
-                console.log('[KanbanCard] Task 2 debug:', {
-                    order: this.order,
-                    checklist: checklist,
-                    checklistType: typeof checklist,
-                    isArray: Array.isArray(checklist),
-                    length: Array.isArray(checklist) ? checklist.length : 'N/A'
-                });
-            }
 
             if (!checklist) return false;
 
@@ -317,7 +303,6 @@ export default {
                 const hasItems = Array.isArray(items) && items.length > 0;
                 return hasItems;
             } catch (e) {
-                console.warn('Ошибка при проверке чеклиста:', e, this.order);
                 return false;
             }
         },
