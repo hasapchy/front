@@ -848,16 +848,22 @@ export default {
   // Клиенты
   fullNameCompany: 'ФИО/Компания',
   errorGettingClientList: 'Ошибка получения списка клиентов',
+  errorGettingClient: 'Ошибка получения клиента',
   clientSuccessfullyAdded: 'Клиент успешно добавлен',
   errorSavingClient: 'Ошибка сохранения клиента',
   clientSuccessfullyDeleted: 'Клиент успешно удален',
   errorDeletingClient: 'Ошибка удаления клиента',
   balances: 'Балансы',
+  history: 'История',
+  noBalances: 'Нет балансов',
   createBalance: 'Создать баланс',
   editBalance: 'Редактировать баланс',
   initialBalance: 'Начальный баланс',
   setAsDefault: 'Установить по умолчанию',
   confirmDeleteBalance: 'Подтвердите удаление баланса',
+  clientBalance: 'Баланс клиента',
+  selectBalance: 'Выберите баланс',
+  balanceAfterOperation: 'Баланс после операции',
 
   // Товары
   sku: 'SKU',
@@ -1004,6 +1010,8 @@ export default {
   notFound: 'Не найдено',
   clientOwesUs: 'Клиент должен нам',
   weOweClient: 'Мы должны клиенту',
+  employeeOwesUs: 'Сотрудник должен нам',
+  weOweEmployee: 'Мы должны сотруднику',
   mutualSettlement: 'Взаимный расчет',
   createClient: 'Клиент',
   errorCreatingClient: 'Ошибка создания клиента',
@@ -1575,6 +1583,7 @@ export default {
   status: 'Статус',
   project: 'Проект',
   deadline: 'Крайний срок',
+  noDeadline: 'Без крайнего срока',
   enterDescription: 'Введите описание',
 
   // Статусы задач

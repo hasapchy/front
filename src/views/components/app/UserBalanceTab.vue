@@ -1,7 +1,40 @@
 <template>
     <div v-if="canViewBalance" class="mt-4">
         <div class="flex justify-between items-center mb-2">
-            <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
+            <div class="flex items-center gap-4">
+                <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
+                <div v-if="employeeClient" class="flex items-center gap-2">
+                    <select 
+                        v-if="employeeClient.balances?.length"
+                        v-model.number="selectedBalanceId"
+                        @change="fetchBalanceHistory"
+                        class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option 
+                            v-for="balance in employeeClient.balances" 
+                            :key="balance.id" 
+                            :value="balance.id">
+                            {{ balance.currency?.symbol || '' }} - {{ formatBalance(balance.balance) }}
+                            <span v-if="balance.isDefault"> ({{ $t('default') }})</span>
+                        </option>
+                    </select>
+                    <input 
+                        type="date" 
+                        v-model="dateFrom"
+                        @change="fetchBalanceHistory"
+                        class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <input 
+                        type="date" 
+                        v-model="dateTo"
+                        @change="fetchBalanceHistory"
+                        class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <PrimaryButton 
+                        :onclick="resetFilters"
+                        :is-small="true"
+                        icon="fas fa-times"
+                        :isDanger="true">
+                    </PrimaryButton>
+                </div>
+            </div>
             <div v-if="!hideActions" class="flex gap-2">
                 <PrimaryButton 
                     icon="fas fa-money-bill-wave" 
@@ -72,7 +105,7 @@
         </div>
         
         <!-- Итого (баланс сотрудника) -->
-        <div v-if="!balanceLoading && editingItem" class="mb-4 p-4 bg-gray-50 rounded-lg">
+        <div v-if="!balanceLoading && editingItem && balanceDataLoaded" class="mb-4 p-4 bg-gray-50 rounded-lg">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <i class="fas fa-wallet text-blue-500"></i>
@@ -81,7 +114,7 @@
                 <b :class="{
                     'text-[#5CB85C]': totalBalance >= 0,
                     'text-[#EE4F47]': totalBalance < 0
-                }" class="text-lg">{{ formatBalance(totalBalance) }}</b>
+                }" class="text-lg">{{ formatBalanceWithCurrency(totalBalance) }}</b>
             </div>
         </div>
 
@@ -177,6 +210,7 @@ export default {
         return {
             currencySymbol: '',
             balanceLoading: false,
+            balanceDataLoaded: false,
             balanceHistory: [],
             totalBalance: 0,
             transactionModalOpen: false,
@@ -187,6 +221,9 @@ export default {
             entityLoading: false,
             selectedEntity: null,
             editingTransactionItem: null,
+            selectedBalanceId: null,
+            dateFrom: null,
+            dateTo: null,
             ENTITY_CONFIG: {
                 transaction: {
                     fetch: id => TransactionController.getItem(id),
@@ -285,10 +322,8 @@ export default {
         }
         await this.fetchDefaultCurrency();
         if (this.editingItem && this.editingItem.id) {
-            await Promise.all([
-                this.fetchBalanceHistory(),
-                this.findEmployeeClient()
-            ]);
+            await this.findEmployeeClient();
+            await this.fetchBalanceHistory();
         }
     },
     watch: {
@@ -298,31 +333,59 @@ export default {
                     if (!this.canViewBalance) {
                         this.balanceHistory = [];
                         this.totalBalance = 0;
+                        this.balanceDataLoaded = false;
                         this.employeeClient = null;
                         this.selectedEntity = null;
                         this.entityModalOpen = false;
                         this.entityLoading = false;
                         return;
                     }
-                    await Promise.all([
-                        this.fetchBalanceHistory(),
-                        this.findEmployeeClient()
-                    ]);
+                    this.balanceDataLoaded = false;
+                    await this.findEmployeeClient();
+                    await this.fetchBalanceHistory();
                 } else {
                     this.balanceHistory = [];
                     this.totalBalance = 0;
+                    this.balanceDataLoaded = false;
                     this.employeeClient = null;
                     this.selectedEntity = null;
                     this.entityModalOpen = false;
                     this.entityLoading = false;
+                    this.selectedBalanceId = null;
                 }
             },
             immediate: true,
-        }
+        },
+        'employeeClient.balances': {
+            handler() {
+                if (this.employeeClient) {
+                    this.initDefaultBalance();
+                    this.$nextTick(() => this.fetchBalanceHistory());
+                }
+            },
+            deep: true,
+        },
     },
     methods: {
         formatBalance(balance) {
-            return `${this.$formatNumber(balance, null, true)} ${this.currencySymbol}`;
+            return this.$formatNumber(balance, null, true);
+        },
+        formatBalanceWithCurrency(balance) {
+            return `${this.formatBalance(balance)} ${this.currencySymbol}`;
+        },
+        initDefaultBalance() {
+            if (this.employeeClient?.balances?.length) {
+                const defaultBalance = this.employeeClient.balances.find(b => b.isDefault);
+                this.selectedBalanceId = defaultBalance ? defaultBalance.id : (this.employeeClient.balances[0]?.id || null);
+            } else {
+                this.selectedBalanceId = null;
+            }
+        },
+        resetFilters() {
+            this.dateFrom = null;
+            this.dateTo = null;
+            this.initDefaultBalance();
+            this.fetchBalanceHistory();
         },
         itemMapper(i, c) {
             switch (c) {
@@ -365,6 +428,10 @@ export default {
         },
         async onEntitySaved() {
             this.closeEntityModal();
+            if (this.editingItem?.id) {
+                await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            }
+            await this.findEmployeeClient();
             await this.fetchBalanceHistory();
         },
         onEntitySavedError(error) {
@@ -372,6 +439,10 @@ export default {
         },
         async onEntityDeleted() {
             this.closeEntityModal();
+            if (this.editingItem?.id) {
+                await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            }
+            await this.findEmployeeClient();
             await this.fetchBalanceHistory();
         },
         onEntityDeletedError(error) {
@@ -404,17 +475,29 @@ export default {
             
             this.balanceLoading = true;
             try {
-                const UsersController = (await import("@/api/UsersController")).default;
-                const balanceInfo = await UsersController.getEmployeeBalance(this.editingItem.id);
-                const history = await UsersController.getEmployeeBalanceHistory(this.editingItem.id);
-                
-                this.balanceHistory = history || [];
-                
-                this.totalBalance = balanceInfo ? parseFloat(balanceInfo.balance || 0) : 0;
+                if (!this.employeeClient?.id) {
+                    this.balanceHistory = [];
+                    this.totalBalance = 0;
+                    this.balanceDataLoaded = true;
+                    return;
+                }
+                this.balanceHistory = await ClientController.getBalanceHistory(
+                    this.employeeClient.id,
+                    null,
+                    null,
+                    this.dateFrom,
+                    this.dateTo,
+                    this.selectedBalanceId
+                ) || [];
+                const selectedBalance = this.employeeClient.balances?.find(b => b.id === this.selectedBalanceId);
+                this.totalBalance = selectedBalance ? parseFloat(selectedBalance.balance || 0) : parseFloat(this.employeeClient.balance || 0);
+                this.currencySymbol = selectedBalance?.currency?.symbol || this.employeeClient.currencySymbol || '';
+                this.balanceDataLoaded = true;
             } catch (e) {
                 console.error('Error fetching balance history:', e);
                 this.balanceHistory = [];
                 this.totalBalance = 0;
+                this.balanceDataLoaded = true;
             } finally {
                 this.balanceLoading = false;
             }
@@ -486,8 +569,13 @@ export default {
                     const clientEmployeeId = c.employeeId ? Number(c.employeeId) : null;
                     return clientEmployeeId === userId;
                 });
-                
-                this.employeeClient = client || null;
+                if (client?.id) {
+                    const fullClient = await ClientController.getItem(client.id);
+                    this.employeeClient = fullClient || client;
+                } else {
+                    this.employeeClient = null;
+                }
+                this.initDefaultBalance();
             } catch (error) {
                 console.error('Error finding employee client:', error);
                 this.employeeClient = null;
@@ -507,10 +595,8 @@ export default {
                 this.$t('transactionSaved'),
                 false
             );
-            await Promise.all([
-                this.fetchBalanceHistory(),
-                this.findEmployeeClient()
-            ]);
+            await this.findEmployeeClient();
+            await this.fetchBalanceHistory();
         },
         handleTransactionError(error) {
             this.showNotification(

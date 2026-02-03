@@ -36,6 +36,7 @@ import MessengerPage from "@/views/pages/messenger/MessengerPage.vue";
 import SimpleOrdersPage from "@/views/pages/simple/SimpleOrdersPage.vue";
 import SimpleOrderCreatePage from "@/views/pages/simple/SimpleOrderCreatePage.vue";
 import MutualSettlementsPage from "@/views/pages/mutual_settlements/MutualSettlementsPage.vue";
+import NewsPage from "@/views/pages/news/NewsPage.vue";
 const routes = [
   {
     path: "/",
@@ -45,7 +46,7 @@ const routes = [
       {
         path: "/",
         name: "Home",
-        component: () => import("@/views/pages/news/NewsPage.vue"),
+        component: NewsPage,
         meta: { title: "news", requiresAuth: true },
       },
       {
@@ -104,12 +105,18 @@ const routes = [
           title: "tasks",
           requiresAuth: true,
           permission: "tasks_view",
+          binded: [
+            {
+              name: "taskStatuses",
+              path: "/task_statuses",
+            },
+          ],
         },
       },
       {
         path: "/news",
         name: "News",
-        component: () => import("@/views/pages/news/NewsPage.vue"),
+        component: NewsPage,
         meta: {
           title: "news",
           requiresAuth: true,
@@ -185,6 +192,20 @@ const routes = [
           requiresAuth: true,
           showSearch: true,
           permission: "orders_view",
+          binded: [
+            {
+              name: "orders_simple",
+              path: "/simple-orders",
+            },
+            {
+              name: "orderStatuses",
+              path: "/order_statuses",
+            },
+            {
+              name: "orderStatusCategories",
+              path: "/order_status_categories",
+            },
+          ],
         },
       },
       {
@@ -265,6 +286,24 @@ const routes = [
           requiresAuth: true,
           showSearch: true,
           permission: "invoices_view",
+          binded: [
+            {
+              name: "finance",
+              path: "/transactions",
+            },
+            {
+              name: "transfers",
+              path: "/transfers",
+            },
+            {
+              name: "cashRegisters",
+              path: "/cash-registers",
+            },
+            {
+              name: "transactionCategories",
+              path: "/transaction_categories",
+            },
+          ],
         },
       },
       {
@@ -309,6 +348,28 @@ const routes = [
           requiresAuth: true,
           showSearch: true,
           permission: "transactions_view",
+          binded: [
+            {
+              name: "mutualSettlements",
+              path: "/mutual-settlements",
+            },
+            {
+              name: "transfers",
+              path: "/transfers",
+            },
+            {
+              name: "cashRegisters",
+              path: "/cash-registers",
+            },
+            {
+              name: "invoices",
+              path: "/invoices",
+            },
+            {
+              name: "transactionCategories",
+              path: "/transaction_categories",
+            },
+          ],
         },
       },
       {
@@ -426,6 +487,16 @@ const routes = [
           title: "projects",
           requiresAuth: true,
           permission: "projects_view",
+          binded: [
+            {
+              name: "projectStatuses",
+              path: "/project_statuses",
+            },
+            {
+              name: "contracts",
+              path: "/contracts",
+            },
+          ],
         },
       },
       {
@@ -532,7 +603,21 @@ const routes = [
         path: "/users/:id",
         name: "UserView",
         component: UsersPage,
-        meta: { title: "users", requiresAuth: true, permission: "users_view" },
+        meta: {
+          title: "users",
+          requiresAuth: true,
+          permission: "users_view",
+          binded: [
+            {
+              name: "orgStructure",
+              path: "/org-structure",
+            },
+            {
+              name: "roles",
+              path: "/roles",
+            },
+          ],
+        },
       },
       {
         path: "/org-structure",
@@ -634,6 +719,16 @@ const routes = [
           requiresAuth: true,
           showSearch: true,
           permission: "products_view",
+          binded: [
+            {
+              name: "services",
+              path: "/services",
+            },
+            {
+              name: "categories",
+              path: "/categories",
+            },
+          ],
         },
       },
       {
@@ -666,6 +761,16 @@ const routes = [
           requiresAuth: true,
           showSearch: true,
           permission: "products_view",
+          binded: [
+            {
+              name: "products",
+              path: "/products",
+            },
+            {
+              name: "categories",
+              path: "/categories",
+            },
+          ],
         },
       },
       {
@@ -763,16 +868,12 @@ const routes = [
           title: "leaves",
           requiresAuth: true,
           permission: "leaves_view_all",
-        },
-      },
-      {
-        path: "/leaves/:id",
-        name: "LeaveView",
-        component: LeavesPage,
-        meta: {
-          title: "leaves",
-          requiresAuth: true,
-          permission: "leaves_view_all",
+          binded: [
+            {
+              name: "leaveTypes",
+              path: "/leave_types",
+            },
+          ],
         },
       },
       {
@@ -819,6 +920,12 @@ const routes = [
           title: "leaveTypes",
           requiresAuth: true,
           permission: "leave_types_view_all",
+          binded: [
+            {
+              name: "leaves",
+              path: "/leaves",
+            },
+          ],
         },
       },
       // Праздники теперь управляются через вкладку в настройках компании (CompaniesCreatePage)

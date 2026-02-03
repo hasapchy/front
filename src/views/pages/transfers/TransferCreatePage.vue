@@ -113,17 +113,11 @@ export default {
                 this.fetchAllCashRegisters()
             ]);
             
-            if (!this.editingItem && this.allCashRegisters.length > 0) {
-                if (!this.cashIdFrom) this.cashIdFrom = this.allCashRegisters[0].id;
-                if (!this.cashIdTo && this.allCashRegisters.length > 1) {
-                    this.cashIdTo = this.allCashRegisters[1].id;
-                }
-            }
-            
             if (this.showExchangeRate && !this.exchangeRate) {
                 await this.calculateExchangeRate();
             }
-            
+
+            await this.$nextTick();
             this.saveInitialState();
         });
     },

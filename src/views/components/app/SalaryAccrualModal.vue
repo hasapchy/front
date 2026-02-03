@@ -100,7 +100,7 @@ export default {
                 cash_id: null,
                 note: null,
                 amount: null,
-                payment_type: 0
+                payment_type: 1
             },
             loading: false,
             checking: false,

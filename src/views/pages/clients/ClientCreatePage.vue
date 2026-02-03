@@ -108,9 +108,14 @@
           </div>
         </div>
         <div
-          v-show="currentTab === 'balance' && editingItem && $store.getters.hasPermission('settings_client_balance_view')"
+          v-show="currentTab === 'history' && editingItem && $store.getters.hasPermission('settings_client_balance_view')"
           class="mt-4">
-          <ClientBalanceTab :editing-item="editingItem" />
+          <ClientBalanceHistoryTab :editing-item="editingItem" />
+        </div>
+        <div
+          v-show="currentTab === 'balances' && editingItem && $store.getters.hasPermission('settings_client_balance_view')"
+          class="mt-4">
+          <ClientBalancesTab :editing-item="editingItem" />
         </div>
         <div v-show="currentTab === 'payments' && editingItem" class="mt-4">
           <ClientPaymentsTab :editing-item="editingItem" @payments-updated="handlePaymentsUpdated" />
@@ -148,7 +153,8 @@ import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import TabBar from "@/views/components/app/forms/TabBar.vue";
 import PhoneInputWithCountry from "@/views/components/app/forms/PhoneInputWithCountry.vue";
-import ClientBalanceTab from "@/views/pages/clients/ClientBalanceTab.vue";
+import ClientBalancesTab from "@/views/pages/clients/ClientBalancesTab.vue";
+import ClientBalanceHistoryTab from "@/views/pages/clients/ClientBalanceHistoryTab.vue";
 import ClientPaymentsTab from "@/views/pages/clients/ClientPaymentsTab.vue";
 import ClientOperationsTab from "@/views/pages/clients/ClientOperationsTab.vue";
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
@@ -160,7 +166,7 @@ import crudFormMixin from "@/mixins/crudFormMixin";
 export default {
   mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
   emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
-  components: { PrimaryButton, AlertDialog, NotificationToast, TabBar, PhoneInputWithCountry, ClientBalanceTab, ClientPaymentsTab, ClientOperationsTab, UserSearch },
+  components: { PrimaryButton, AlertDialog, NotificationToast, TabBar, PhoneInputWithCountry, ClientBalancesTab, ClientBalanceHistoryTab, ClientPaymentsTab, ClientOperationsTab, UserSearch },
   props: {
     editingItem: { type: ClientDto, default: null },
     defaultFirstName: { type: String, default: "" },
@@ -199,7 +205,8 @@ export default {
       currentTab: "info",
       tabs: [
         { name: "info", label: "info" },
-        { name: "balance", label: "balance" },
+        { name: "history", label: "history" },
+        { name: "balances", label: "balance" },
         { name: "payments", label: "payments" },
         { name: "operations", label: "operations" }
       ]
@@ -208,10 +215,10 @@ export default {
   computed: {
     translatedTabs() {
       let visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab =>
-        tab.name !== 'balance' && tab.name !== 'payments' && tab.name !== 'operations'
+        tab.name !== 'balances' && tab.name !== 'history' && tab.name !== 'payments' && tab.name !== 'operations'
       );
       if (!this.$store.getters.hasPermission('settings_client_balance_view')) {
-        visibleTabs = visibleTabs.filter(tab => tab.name !== 'balance');
+        visibleTabs = visibleTabs.filter(tab => tab.name !== 'balances' && tab.name !== 'history');
       }
       return visibleTabs.map(tab => ({
         ...tab,
@@ -268,7 +275,7 @@ export default {
   },
   methods: {
     changeTab(tabName) {
-      if ((tabName === 'balance' || tabName === 'payments' || tabName === 'operations') && !this.editingItem) {
+      if ((tabName === 'balances' || tabName === 'history' || tabName === 'payments' || tabName === 'operations') && !this.editingItem) {
         this.currentTab = 'info';
         return;
       }

@@ -143,13 +143,13 @@ export default {
             // Инициализация по умолчанию для нового элемента происходит через watchers на Store
             // (allWarehouses, allCashRegisters автоматически установят первые значения)
             if (!this.editingItem) {
-                // Инициализируем currencyId для типа balance
                 const defaultCurrency = this.currencies.find((c) => c.isDefault);
                 if (defaultCurrency && !this.currencyId) {
                     this.currencyId = defaultCurrency.id;
                 }
             }
-            
+
+            await this.$nextTick();
             this.saveInitialState();
         });
     },
