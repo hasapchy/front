@@ -1,13 +1,10 @@
 <template>
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow transition-shadow duration-200">
-        <div class="flex items-center justify-between mb-3 border-b border-gray-100 pb-3">
+        <div class="flex items-center mb-3 border-b border-gray-100 pb-3">
             <div class="flex items-center gap-2">
                 <i class="fas fa-circle text-green-500 text-xs"></i>
                 <h3 class="text-sm font-semibold text-gray-900">{{ $t('onlineNow') || 'Онлайн сейчас' }}</h3>
             </div>
-            <button class="text-gray-400 hover:text-gray-600 transition-colors">
-                <i class="fas fa-question-circle text-xs"></i>
-            </button>
         </div>
         
         <div v-if="loading" class="flex justify-center py-4">

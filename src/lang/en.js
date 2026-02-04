@@ -79,6 +79,7 @@ export default {
   categories: 'Product Categories',
   orders: 'Orders',
   orders_simple: 'Simple Orders',
+  ordersB: 'Basement Orders',
   sales: 'Sales',
   tasks: 'Tasks',
   onlineNow: 'Online Now',
@@ -542,6 +543,9 @@ export default {
     exchangeRate: 'Exchange Rate',
     atExchangeRate: 'at rate',
     exchangeRateHelp: 'Rate shows how many units of target currency you get for 1 unit of source currency',
+    currencyRates: 'Currency Rates',
+    noCurrencyRates: 'No currency rates available',
+    baseCurrency: 'Base',
     receiverAmount: 'Receiver Amount',
     
     // Company settings

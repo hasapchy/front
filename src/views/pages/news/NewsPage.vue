@@ -83,6 +83,25 @@
                         </FiltersContainer>
                     </div>
 
+                    <!-- Правая часть: кнопка настроек виджетов -->
+                    <div class="flex items-center gap-2">
+                        <TableFilterButton v-if="widgetsConfig.length > 0" :onReset="resetWidgets">
+                            <ul>
+                                <li v-for="(element, index) in widgetsConfig" :key="element.id" 
+                                    class="flex items-center hover:bg-gray-100 p-2 rounded cursor-pointer"
+                                    @click.stop="toggleVisible(index)">
+                                    <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                        <div>
+                                            <i class="text-sm mr-2 text-[#337AB7]"
+                                                :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                            {{ element.label }}
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </TableFilterButton>
+                    </div>
+
                 </div>
             </div>
 
@@ -109,17 +128,32 @@
 
                 <!-- Правая колонка: Виджеты -->
                 <aside class="w-full lg:w-80 xl:w-96 shrink-0 space-y-4 order-2 lg:order-2">
-                    <!-- Виджет онлайн пользователей -->
-                    <OnlineUsersWidget />
+                    <!-- Виджеты с поддержкой перетаскивания -->
+                    <draggable
+                        v-if="visibleWidgets && visibleWidgets.length > 0"
+                        :list="visibleWidgets"
+                        :animation="200"
+                        ghost-class="ghost-widget"
+                        drag-class="dragging-widget"
+                        handle=".widget-drag-handle"
+                        @change="handleWidgetReorder"
+                        class="space-y-4"
+                    >
+                        <div v-for="element in visibleWidgets" :key="element.id" class="widget-wrapper relative group">
+                            <!-- Кнопка перетаскивания -->
+                            <div class="widget-drag-handle absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity cursor-move bg-white rounded p-1 shadow-sm">
+                                <i class="fas fa-grip-vertical text-gray-400 hover:text-gray-600 text-xs"></i>
+                            </div>
+                            
+                            <!-- Виджет -->
+                            <component v-if="element && element.component" :is="element.component" />
+                        </div>
+                    </draggable>
                     
-                    <!-- Виджет задач -->
-                    <TasksWidget v-if="$store.getters.hasPermission('tasks_view')" />
-                    
-                    <!-- Виджет дней рождения -->
-                    <BirthdaysWidget />
-                    
-                    <!-- Виджет праздников -->
-                    <HolidaysWidget />
+                    <!-- Пустое состояние если нет виджетов -->
+                    <div v-else class="text-sm text-gray-500 text-center py-4 bg-white rounded-lg border border-gray-200 p-4">
+                        Нет видимых виджетов
+                    </div>
                 </aside>
             </div>
         </div>
@@ -186,6 +220,9 @@ import TasksWidget from '@/views/components/news/TasksWidget.vue';
 import BirthdaysWidget from '@/views/components/news/BirthdaysWidget.vue';
 import OnlineUsersWidget from '@/views/components/news/OnlineUsersWidget.vue';
 import HolidaysWidget from '@/views/components/home/HolidaysWidget.vue';
+import CurrencyRatesWidget from '@/views/components/news/CurrencyRatesWidget.vue';
+import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import { VueDraggableNext } from 'vue-draggable-next';
 
 export default {
     mixins: [
@@ -209,7 +246,10 @@ export default {
         TasksWidget,
         BirthdaysWidget,
         OnlineUsersWidget,
-        HolidaysWidget
+        HolidaysWidget,
+        CurrencyRatesWidget,
+        TableFilterButton,
+        draggable: VueDraggableNext
     },
     data() {
         return {
@@ -226,7 +266,9 @@ export default {
             authorFilter: '',
             authors: [],
             deleteDialog: false,
-            newsToDelete: null
+            newsToDelete: null,
+            widgetsConfig: [],
+            visibleWidgets: []
         }
     },
     computed: {
@@ -238,8 +280,12 @@ export default {
         this.$store.commit('SET_SETTINGS_OPEN', false);
     },
     async mounted() {
+        this.loadWidgets();
         await this.fetchAuthors();
         await this.fetchItems();
+        // Убеждаемся, что виджеты обновлены после загрузки данных
+        await this.$nextTick();
+        this.updateVisibleWidgets();
     },
     methods: {
         async showModal(item = null) {
@@ -393,6 +439,237 @@ export default {
         },
         applyFilters() {
             this.fetchItems(1);
+        },
+        getStorageKey() {
+            return 'news_widgets_config';
+        },
+        getStorageItem() {
+            try {
+                const saved = localStorage.getItem(this.getStorageKey());
+                return saved;
+            } catch (error) {
+                return null;
+            }
+        },
+        setStorageItem(value) {
+            try {
+                localStorage.setItem(this.getStorageKey(), value);
+            } catch (error) {
+                console.warn('Failed to save widgets config:', error);
+            }
+        },
+        loadWidgets() {
+            const defaultWidgets = [
+                {
+                    id: 'onlineUsers',
+                    label: this.$t('onlineNow') || 'Онлайн сейчас',
+                    visible: true,
+                    order: 0
+                },
+                {
+                    id: 'tasks',
+                    label: this.$t('tasks') || 'Задачи',
+                    visible: this.$store.getters.hasPermission('tasks_view'),
+                    order: 1
+                },
+                {
+                    id: 'birthdays',
+                    label: this.$t('birthdays') || 'Дни рождения',
+                    visible: true,
+                    order: 2
+                },
+                {
+                    id: 'holidays',
+                    label: this.$t('holidays') || 'Праздники',
+                    visible: true,
+                    order: 3
+                },
+                {
+                    id: 'currencyRates',
+                    label: this.$t('currencyRates') || 'Курсы валют',
+                    visible: this.$store.getters.hasPermission('currency_history_view') || this.$store.getters.hasPermission('settings_currencies_view'),
+                    order: 4
+                }
+            ];
+
+            const saved = this.getStorageItem();
+            if (saved) {
+                try {
+                    const savedWidgets = JSON.parse(saved);
+                    this.widgetsConfig = savedWidgets.map((savedWidget) => {
+                        const original = defaultWidgets.find(w => w.id === savedWidget.id) || {};
+                        // Если visible явно установлен в false, используем его, иначе true
+                        const visible = savedWidget.visible === false ? false : (savedWidget.visible === true ? true : (original.visible !== undefined ? original.visible : true));
+                        return {
+                            ...savedWidget,
+                            label: original.label || savedWidget.label,
+                            visible: visible
+                        };
+                    });
+                    
+                    // Добавляем новые виджеты, которых нет в сохраненной конфигурации
+                    const savedIds = savedWidgets.map(w => w.id);
+                    const newWidgets = defaultWidgets.filter(w => !savedIds.includes(w.id));
+                    this.widgetsConfig = [...this.widgetsConfig, ...newWidgets]
+                        .sort((a, b) => a.order - b.order)
+                        .map((widget, index) => ({ ...widget, order: index }));
+                } catch (error) {
+                    console.warn('Failed to load saved widgets, using default configuration:', error);
+                    this.widgetsConfig = defaultWidgets.map((widget, index) => ({
+                        ...widget,
+                        order: index,
+                        visible: widget.visible !== undefined ? widget.visible : true
+                    }));
+                }
+            } else {
+                // При первой загрузке все виджеты видимы по умолчанию
+                this.widgetsConfig = defaultWidgets.map((widget, index) => ({
+                    ...widget,
+                    order: index,
+                    visible: widget.visible !== undefined ? widget.visible : true
+                }));
+            }
+            
+            // Убеждаемся, что все виджеты имеют правильные значения
+            this.widgetsConfig = this.widgetsConfig.map(widget => ({
+                ...widget,
+                visible: widget.visible !== undefined ? widget.visible : true,
+                order: widget.order !== undefined ? widget.order : 999
+            }));
+            
+            console.log('Loaded widgets config:', this.widgetsConfig.length, this.widgetsConfig.map(w => ({ id: w.id, visible: w.visible })));
+            
+            // Принудительно обновляем виджеты
+            this.$nextTick(() => {
+                this.updateVisibleWidgets();
+            });
+        },
+        resetWidgets() {
+            const defaultWidgets = [
+                {
+                    id: 'onlineUsers',
+                    label: this.$t('onlineNow') || 'Онлайн сейчас',
+                    visible: true,
+                    order: 0
+                },
+                {
+                    id: 'tasks',
+                    label: this.$t('tasks') || 'Задачи',
+                    visible: this.$store.getters.hasPermission('tasks_view'),
+                    order: 1
+                },
+                {
+                    id: 'birthdays',
+                    label: this.$t('birthdays') || 'Дни рождения',
+                    visible: true,
+                    order: 2
+                },
+                {
+                    id: 'holidays',
+                    label: this.$t('holidays') || 'Праздники',
+                    visible: true,
+                    order: 3
+                },
+                {
+                    id: 'currencyRates',
+                    label: this.$t('currencyRates') || 'Курсы валют',
+                    visible: this.$store.getters.hasPermission('currency_history_view') || this.$store.getters.hasPermission('settings_currencies_view'),
+                    order: 4
+                }
+            ];
+            
+            this.widgetsConfig = defaultWidgets.map((widget, index) => ({
+                ...widget,
+                order: index
+            }));
+            this.updateVisibleWidgets();
+            this.saveWidgets();
+        },
+        saveWidgets() {
+            // Обновляем порядок в widgetsConfig на основе порядка visibleWidgets
+            if (this.visibleWidgets && this.visibleWidgets.length > 0) {
+                const visibleIds = this.visibleWidgets.map(w => w.id);
+                
+                // Обновляем порядок видимых виджетов, но НЕ меняем их видимость
+                visibleIds.forEach((widgetId, index) => {
+                    const widgetIndex = this.widgetsConfig.findIndex(w => w.id === widgetId);
+                    if (widgetIndex !== -1) {
+                        this.widgetsConfig[widgetIndex].order = index;
+                    }
+                });
+            }
+            
+            // Сортируем widgetsConfig по порядку, но сохраняем видимость
+            this.widgetsConfig.sort((a, b) => {
+                const aVisible = a.visible;
+                const bVisible = b.visible;
+                if (aVisible && !bVisible) return -1;
+                if (!aVisible && bVisible) return 1;
+                return a.order - b.order;
+            });
+            
+            const serializableWidgets = this.widgetsConfig.map(widget => {
+                const { component, ...serializableWidget } = widget;
+                return serializableWidget;
+            });
+            this.setStorageItem(JSON.stringify(serializableWidgets));
+        },
+        updateVisibleWidgets() {
+            if (!this.widgetsConfig || this.widgetsConfig.length === 0) {
+                this.visibleWidgets = [];
+                return;
+            }
+            
+            const visible = this.widgetsConfig
+                .filter(widget => {
+                    return widget.visible === true || widget.visible === 'true' || widget.visible === 1 || widget.visible === undefined || widget.visible === null;
+                })
+                .sort((a, b) => {
+                    const orderA = a.order !== undefined ? a.order : 999;
+                    const orderB = b.order !== undefined ? b.order : 999;
+                    return orderA - orderB;
+                });
+            
+            // В Vue 3 просто присваиваем значение напрямую
+            // Добавляем компонент для каждого виджета
+            this.visibleWidgets = visible.map(widget => ({
+                id: widget.id,
+                label: widget.label,
+                visible: true,
+                order: widget.order,
+                component: this.getWidgetComponent(widget.id)
+            }));
+        },
+        toggleVisible(index) {
+            // Переключаем видимость
+            const newVisible = !this.widgetsConfig[index].visible;
+            this.widgetsConfig[index].visible = newVisible;
+            
+            // Сохраняем и обновляем
+            this.saveWidgets();
+            this.updateVisibleWidgets();
+        },
+        getWidgetComponent(widgetId) {
+            const components = {
+                'onlineUsers': OnlineUsersWidget,
+                'tasks': TasksWidget,
+                'birthdays': BirthdaysWidget,
+                'holidays': HolidaysWidget,
+                'currencyRates': CurrencyRatesWidget
+            };
+            return components[widgetId] || null;
+        },
+        handleWidgetReorder() {
+            // Обновляем порядок в widgetsConfig на основе порядка visibleWidgets
+            if (this.visibleWidgets && this.visibleWidgets.length > 0) {
+                this.visibleWidgets.forEach((widget, index) => {
+                    const configIndex = this.widgetsConfig.findIndex(w => w.id === widget.id);
+                    if (configIndex !== -1) {
+                        this.widgetsConfig[configIndex].order = index;
+                    }
+                });
+            }
+            this.saveWidgets();
         }
     },
 }
@@ -407,5 +684,13 @@ export default {
 .fade-enter-from,
 .fade-leave-to {
     opacity: 0;
+}
+
+.widget-wrapper {
+    position: relative;
+}
+
+.widget-drag-handle {
+    z-index: 10;
 }
 </style>

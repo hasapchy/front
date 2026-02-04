@@ -76,6 +76,7 @@ export default {
   sales: 'Satuwlar',
   orders: 'Sargytlar',
   orders_simple: 'Ýönekeý sargytlar',
+  ordersB: 'Podwal sargytlary',
   sales: 'Satuwlar',
   tasks: 'Wezipeler',
   onlineNow: 'Häzir onlaýn',
@@ -420,6 +421,9 @@ export default {
   exchangeRate: 'Walýuta kursy',
   atExchangeRate: 'kurs boýunça',
   exchangeRateHelp: 'Kurs 1 birlik başlangyç walýutadan näçe birlik maksat walýutanyň alynjakdygyny görkezýär',
+  currencyRates: 'Walýuta kurslary',
+  noCurrencyRates: 'Elýeterli walýuta kurslary ýok',
+  baseCurrency: 'Esasy',
   receiverAmount: 'Alyjy mukdary',
   
   // Удаление
