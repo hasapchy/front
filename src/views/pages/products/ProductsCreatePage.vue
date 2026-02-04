@@ -21,6 +21,10 @@
                         <label>{{ $t('description') }}</label>
                         <input type="text" v-model="description">
                     </div>
+                    <div class="mt-2">
+                        <label class="block mb-1 required">{{ $t('sku') }}</label>
+                        <input type="text" v-model="sku" placeholder="AB00001" class="w-full">
+                    </div>
                 </div>
                 <div class="ml-3 w-40 flex flex-col">
                     <label class="block mb-1">{{ $t('image') }}</label>
@@ -54,9 +58,9 @@
                 </div>
             </div>
             <div class="mt-2">
-                <label class="block mb-1 required">{{ $t('category') }}</label>
+                <label class="block mb-2 required">{{ $t('category') }}</label>
                 <div class="flex items-center space-x-2">
-                    <div class="flex-1">
+                    <div class="flex-1 h-8 flex items-center min-w-0 products-category-filter">
                         <CheckboxFilter v-if="categoryOptions.length" v-model="selectedCategoryIds"
                             :options="categoryOptions" :placeholder="'selectCategories'"
                             @update:modelValue="onCategoriesChange" />
@@ -65,7 +69,7 @@
                         :disabled="!$store.getters.hasPermission('categories_create')" />
                 </div>
             </div>
-            <div class=" mt-2">
+            <div class="mt-2">
                 <label class="block mb-1">{{ $t('unit') }}</label>
                 <select v-model="unit_id" v-if="units.length">
                     <option value="">{{ $t('noUnit') }}</option>
@@ -76,10 +80,6 @@
                 <select v-model="unit_id" v-else>
                     <option value="">{{ $t('noUnit') }}</option>
                 </select>
-            </div>
-            <div class="mt-2">
-                <label class="required">{{ $t('sku') }}</label>
-                <input type="text" v-model="sku" placeholder="AB00001">
             </div>
             <div class="mt-2 flex space-x-2">
                 <div class="w-1/3">
@@ -475,3 +475,10 @@ export default {
 }
 
 </script>
+
+<style scoped>
+.products-category-filter :deep(.checkbox-filter__trigger) {
+    min-height: 2rem;
+    padding: 0.25rem 2rem 0.25rem 0.5rem;
+}
+</style>

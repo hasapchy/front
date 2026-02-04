@@ -52,7 +52,6 @@
                         style="left: 0; top: 100%;">
                         <DatePicker 
                             :model-value="deadline"
-                            :min-date="minDeadline"
                             :work-schedule="currentCompanyWorkSchedule"
                             @update:modelValue="handleDateChange"
                             @apply="showDatePicker = false"
@@ -263,7 +262,6 @@ export default {
             description: this.editingItem ? this.editingItem.description : '',
             statusId: this.editingItem ? (this.editingItem.statusId || this.editingItem.status?.id) : null,
             deadline: this.editingItem?.deadline ? this.getFormattedDate(this.editingItem.deadline) : null,
-            minDeadline: dayjs().format('YYYY-MM-DDTHH:mm'),
             projectId: this.editingItem && this.editingItem.project 
                 ? this.editingItem.project.id 
                 : null,
@@ -527,19 +525,27 @@ export default {
 
             const selectedDate = dayjs(value);
             const workSchedule = this.$store.getters.currentCompany?.work_schedule;
-            
+            let finalValue;
+
             if (workSchedule) {
                 const scheduleDayKey = this.getScheduleDayKeyFromDayjsDay(selectedDate.day());
                 const daySchedule = workSchedule[scheduleDayKey];
-                
+
                 if (daySchedule?.end) {
                     const [endHour, endMinute] = daySchedule.end.split(':').map(Number);
-                    this.deadline = selectedDate.hour(endHour).minute(endMinute).second(0).format('YYYY-MM-DDTHH:mm');
-                    return;
+                    finalValue = selectedDate.hour(endHour).minute(endMinute).second(0).format('YYYY-MM-DDTHH:mm');
+                } else {
+                    finalValue = value;
                 }
+            } else {
+                finalValue = value;
             }
-            
-            this.deadline = value;
+
+            if (dayjs(finalValue).isBefore(dayjs()) && !window.confirm(this.$t('confirmPastDeadline'))) {
+                return;
+            }
+
+            this.deadline = finalValue;
         },
         
         getScheduleDayKeyFromDayjsDay(dayjsDay) {

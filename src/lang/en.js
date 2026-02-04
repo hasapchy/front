@@ -75,6 +75,7 @@ export default {
   // Navigation
   home: 'Home',
   clients: 'Clients',
+  client_balances: 'Client balances',
   products: 'Products',
   categories: 'Product Categories',
   orders: 'Orders',
@@ -346,6 +347,7 @@ export default {
   errorSavingContract: 'Error saving contract',
   errorDeletingContract: 'Error deleting contract',
   errorLoadingContract: 'Error loading contract',
+  enterContractNumberOrProject: 'Enter contract number or project name',
   clickToUploadFiles: 'Click to upload files or drag files here',
   dropFilesToUpload: 'Drop files to upload',
   clickToUploadImage: 'Click to upload file',
@@ -412,6 +414,7 @@ export default {
   deleteTransactionCategory: 'Delete Transaction Category',
   transactionCategorySuccessfullyAdded: 'Transaction category successfully added',
   transactionCategorySuccessfullyDeleted: 'Transaction category successfully deleted',
+  errorGettingTransaction: 'Error getting transaction',
   errorGettingTransactionCategories: 'Error getting transaction categories list',
   errorSavingTransactionCategory: 'Error saving transaction category',
   errorDeletingTransactionCategory: 'Error deleting transaction category',
@@ -562,6 +565,8 @@ export default {
     errorSavingProjectStatus: 'Error saving project status',
     errorDeletingProjectStatus: 'Error deleting project status',
     errorGettingProjectStatuses: 'Error getting project statuses list',
+  errorGettingProject: 'Error getting project',
+  errorGettingProjectList: 'Error getting project list',
     
     // Order Statuses
     statusName: 'Status name',
@@ -676,6 +681,7 @@ export default {
     project: 'Project',
     deadline: 'Deadline',
     noDeadline: 'No deadline',
+    confirmPastDeadline: 'Are you sure? The task will be overdue by default.',
     enterDescription: 'Enter description',
     createdAt: 'Created Date',
 

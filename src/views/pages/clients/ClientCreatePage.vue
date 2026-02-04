@@ -113,7 +113,7 @@
           <ClientBalanceHistoryTab :editing-item="editingItem" />
         </div>
         <div
-          v-show="currentTab === 'balances' && editingItem && $store.getters.hasPermission('settings_client_balance_view')"
+          v-show="currentTab === 'balances' && editingItem && ($store.getters.hasPermission('settings_client_balance_view') || $store.getters.hasPermission('client_balances_view_all'))"
           class="mt-4">
           <ClientBalancesTab :editing-item="editingItem" />
         </div>

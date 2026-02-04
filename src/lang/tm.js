@@ -666,6 +666,7 @@ export default {
   users: 'Işgärler',
   categories: 'Kategoriýalar',
   clients: 'Müşderiler',
+  client_balances: 'Müşderi balanslary',
   products: 'Önümler',
   transactions: 'Tranzaksiyalar',
   transfers: 'Kassa transferleri',
@@ -785,6 +786,7 @@ export default {
   lastWeek: 'Öňki hepde',
   lastMonth: 'Öňki aý',
   selectDates: 'Seneleri saýla',
+  errorGettingTransaction: 'Tranzaksiyany almakda ýalňyşlyk',
   errorGettingTransactionList: 'Tranzaksiya sanawyny almakda ýalňyşlyk',
   transactionSuccessfullyAdded: 'Tranzaksiya üstünlikli goşuldy',
   errorSavingTransaction: 'Tranzaksiyany saklamakda ýalňyşlyk',
@@ -801,6 +803,7 @@ export default {
   errorDeletingTransfer: 'Transferi pozmakda ýalňyşlyk',
   
   // Проекты
+  errorGettingProject: 'Proýekti almakda ýalňyşlyk',
   errorGettingProjectList: 'Proýekt sanawyny almakda ýalňyşlyk',
   projectSuccessfullyAdded: 'Proýekt üstünlikli goşuldy',
   errorSavingProject: 'Proýekti saklamakda ýalňyşlyk',
@@ -1114,6 +1117,7 @@ export default {
   errorSavingContract: 'Şertnamany saklamakda ýalňyşlyk',
   errorDeletingContract: 'Şertnamany pozmakda ýalňyşlyk',
   errorLoadingContract: 'Şertnamany ýüklemekde ýalňyşlyk',
+  enterContractNumberOrProject: 'Şertnama nomerini ýa-da proýekt adyny ýazyň',
   clickToUploadFiles: 'Faýllary ýüklemek üçin basyň ýa-da faýllary şu ýere sürüň',
   dropFilesToUpload: 'Faýllary ýüklemek üçin goýuň',
   clickToUploadImage: 'Faýl ýüklemek üçin basyň',
@@ -1303,6 +1307,7 @@ export default {
   project: 'Taslama',
   deadline: 'Möhleti',
   noDeadline: 'Möhlet ýok',
+  confirmPastDeadline: 'Ynanýarsyňyzmy? Wezipe deslapdan möhleti geçen bolup görkeziler.',
   enterDescription: 'Beýany ýazyň',
 
   // Wezipeleriň ýagdaýy

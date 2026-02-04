@@ -153,6 +153,7 @@ export default {
                 { name: 'name', label: 'firstName' },
                 { name: 'surname', label: 'lastName' },
                 { name: 'email', label: 'email' },
+                { name: 'phone', label: 'phoneNumber' },
                 { name: 'position', label: 'position' },
                 { name: 'roles', label: 'roles' },
                 { name: 'companies', label: 'companies' },
@@ -182,6 +183,13 @@ export default {
                     name: 'email',
                     label: this.$t('email') || 'Email',
                     icon: 'fas fa-envelope text-blue-600 text-xs',
+                    type: 'string',
+                    showLabel: false
+                },
+                {
+                    name: 'phone',
+                    label: this.$t('phoneNumber') || 'Телефон',
+                    icon: 'fas fa-phone text-blue-600 text-xs',
                     type: 'string',
                     showLabel: false
                 },
@@ -310,6 +318,8 @@ export default {
                     return this.formatDatabaseDate(item.createdAt);
                 case 'lastLoginAt':
                     return item.lastLoginAt ? this.formatDatabaseDateTime(item.lastLoginAt) : '—';
+                case 'phone':
+                    return item.phone || '—';
                 case 'roles':
                     return item.roles && item.roles.length > 0 ? item.roles.join(', ') : '—';
                 case 'companies':

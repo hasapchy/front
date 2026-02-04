@@ -1,39 +1,40 @@
 <template>
     <div class="mt-4">
-        <div class="flex justify-between items-center mb-2">
-            <h3 class="text-md font-semibold">{{ $t('contracts')}}</h3>
-            <PrimaryButton 
-                icon="fas fa-plus" 
-                :onclick="showAddContractModal" 
-                :is-small="true">
-                {{ $t('addContract')}}
-            </PrimaryButton>
-        </div>
-        <div v-if="!loading && hasContractsTotals" class="mb-4">
-            <div class="flex items-center gap-6 flex-wrap">
-                <span class="flex items-center gap-2">
-                    <i class="fas fa-check-circle text-[#5CB85C]"></i>
-                    <b class="text-[#5CB85C]">{{ paidTotalDisplay }}</b>
-                </span>
-
-                <span class="flex items-center gap-2">
-                    <i class="fas fa-times-circle text-[#EE4F47]"></i>
-                    <b class="text-[#EE4F47]">{{ unpaidTotalDisplay }}</b>
-                </span>
-
-                <span class="flex items-center gap-2">
-                    <i class="fas fa-wallet text-blue-500"></i>
-                    <b class="text-blue-600">{{ totalDisplay }}</b>
-                </span>
+        <transition name="fade" mode="out-in">
+            <div v-if="!loading" key="content">
+                <div v-if="hasContractsTotals" class="mb-4">
+                    <div class="flex items-center gap-6 flex-wrap">
+                        <span class="flex items-center gap-2">
+                            <i class="fas fa-check-circle text-[#5CB85C]"></i>
+                            <b class="text-[#5CB85C]">{{ paidTotalDisplay }}</b>
+                        </span>
+                        <span class="flex items-center gap-2">
+                            <i class="fas fa-times-circle text-[#EE4F47]"></i>
+                            <b class="text-[#EE4F47]">{{ unpaidTotalDisplay }}</b>
+                        </span>
+                        <span class="flex items-center gap-2">
+                            <i class="fas fa-wallet text-blue-500"></i>
+                            <b class="text-blue-600">{{ totalDisplay }}</b>
+                        </span>
+                    </div>
+                </div>
+                <DraggableTable table-key="project.contracts"
+                    :columns-config="columnsConfig" :table-data="contracts" :item-mapper="itemMapper"
+                    @selectionChange="selectedIds = $event" :onItemClick="handleContractClick">
+                    <template #tableSettingsAdditional>
+                        <PrimaryButton
+                            icon="fas fa-plus"
+                            :onclick="showAddContractModal"
+                            :is-small="true">
+                            {{ $t('addContract') }}
+                        </PrimaryButton>
+                    </template>
+                </DraggableTable>
             </div>
-        </div>
-        <div v-if="loading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="contracts.length === 0" class="text-gray-500">
-            {{ $t('noContracts') }}
-        </div>
-        <DraggableTable v-if="!loading && contracts.length" table-key="project.contracts"
-            :columns-config="columnsConfig" :table-data="contracts" :item-mapper="itemMapper"
-            @selectionChange="selectedIds = $event" :onItemClick="handleContractClick" />
+            <div v-else key="loader" class="flex justify-center items-center h-64">
+                <SpinnerIcon />
+            </div>
+        </transition>
 
         <SideModalDialog :showForm="contractModalOpen" :onclose="closeContractModal">
             <ProjectContractCreatePage v-if="!contractLoading && editingItem?.id" :editingItem="editingContractItem"
@@ -50,16 +51,19 @@
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
 import ProjectContractCreatePage from "./ProjectContractCreatePage.vue";
 import ProjectContractController from "@/api/ProjectContractController";
 import notificationMixin from "@/mixins/notificationMixin";
+import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
 
 export default {
-    mixins: [notificationMixin],
+    mixins: [notificationMixin, getApiErrorMessageMixin],
     components: {
         DraggableTable,
         SideModalDialog,
         PrimaryButton,
+        SpinnerIcon,
         ProjectContractCreatePage,
     },
     props: {
@@ -69,6 +73,8 @@ export default {
         return {
             loading: false,
             contracts: [],
+            lastFetchedProjectId: null,
+            forceRefresh: false,
             selectedIds: [],
             contractModalOpen: false,
             editingContractItem: null,
@@ -80,7 +86,7 @@ export default {
                 { name: "cashRegisterName", label: this.$t("cashRegister"), size: 150 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 100 },
                 { name: "returned", label: this.$t("status"), size: 100, html: true },
-                { name: "isPaid", label: this.$t("paid"), size: 120, html: true },
+                { name: "paymentStatusText", label: this.$t("paymentStatus"), size: 140, html: true },
                 { name: "note", label: this.$t("note"), size: 200 },
             ],
         };
@@ -112,7 +118,9 @@ export default {
                 }
 
                 total[currencySymbol] = (total[currencySymbol] || 0) + amount;
-                if (contract.isPaid) {
+                const paidAmount = parseFloat(contract.paidAmount ?? contract.paid_amount ?? 0);
+                const isPaid = !Number.isNaN(paidAmount) && paidAmount >= amount;
+                if (isPaid) {
                     paid[currencySymbol] = (paid[currencySymbol] || 0) + amount;
                 } else {
                     unpaid[currencySymbol] = (unpaid[currencySymbol] || 0) + amount;
@@ -132,6 +140,9 @@ export default {
         },
         async fetchContracts() {
             if (!this.editingItem) return;
+            if (this.lastFetchedProjectId === this.editingItem.id && !this.forceRefresh) {
+                return;
+            }
             this.loading = true;
             try {
                 const items = await ProjectContractController.getListItems(this.editingItem.id);
@@ -144,7 +155,7 @@ export default {
                         return contract.formatDate();
                     },
                     formatDateUser() {
-                        return `${contract.formatDate()} / ${contract.user?.name || contract.userName || "-"}`;
+                        return `${contract.formatDate()} / ${contract.user?.name || contract.userName || contract.creator_name || '-'}`;
                     },
                     formatReturnedStatus() {
                         const status = contract.getReturnedStatus();
@@ -153,10 +164,13 @@ export default {
                     },
                     formatPaidStatus() {
                         const status = contract.getPaidStatus();
-                        const color = contract.isPaid ? '#5CB85C' : '#EE4F47';
+                        const st = contract.paymentStatus || contract.payment_status || ((contract.paidAmount ?? 0) >= (contract.amount ?? 0) ? 'paid' : ((contract.paidAmount ?? 0) > 0 ? 'partially_paid' : 'unpaid'));
+                        const color = st === 'paid' ? '#5CB85C' : (st === 'partially_paid' ? '#FFA500' : '#EE4F47');
                         return `<span style="color:${color};font-weight:bold">${status}</span>`;
                     }
                 }));
+                this.lastFetchedProjectId = this.editingItem.id;
+                this.forceRefresh = false;
             } catch (error) {
                 console.error('Error fetching contracts:', error);
                 this.contracts = [];
@@ -172,10 +186,10 @@ export default {
                 case "cashRegisterName":
                     return item.cashRegisterName || '-';
                 case "dateUser":
-                    return item.formatDateUser ? item.formatDateUser() : `${item.formatDate()} / -`;
+                    return item.formatDateUser ? item.formatDateUser() : `${item.formatDate()} / ${item.userName || item.creator_name || '-'}`;
                 case "returned":
                     return item.formatReturnedStatus();
-                case "isPaid":
+                case "paymentStatusText":
                     return item.formatPaidStatus();
                 case "note":
                     return item.note || '-';
@@ -207,13 +221,13 @@ export default {
         },
         handleContractSaved() {
             this.closeContractModal();
-            // Небольшая задержка для обновления кэша на backend
-            setTimeout(() => {
-                this.fetchContracts();
-            }, 100);
+            this.forceRefresh = true;
+            this.fetchContracts();
         },
         handleContractSavedError(error) {
-            console.error('Ошибка сохранения контракта:', error);
+            const msg = this.getApiErrorMessage(error);
+            const text = Array.isArray(msg) ? msg.join(', ') : msg;
+            this.showNotification(this.$t('error'), text, true);
         },
     },
     watch: {

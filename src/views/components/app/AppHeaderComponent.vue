@@ -10,7 +10,7 @@
 
             <div class="flex items-center gap-4">
                 <router-link v-for="tab in binded" :key="tab.path" :to="tab.path"
-                    class="flex items-center justify-center gap-2 text-[#337AB7] hover:text-[#3571A4] hover:underline font-semibold transition-all"
+                    class="relative flex items-center justify-center gap-2 text-[#337AB7] hover:text-[#3571A4] hover:underline font-semibold transition-all"
                     :title="tab.name">
                     <i :class="getTabIcon(tab.path)" class="text-lg"></i>
                     <span class="tab-label">{{ tab.name }}</span>
@@ -41,7 +41,7 @@ import CompanySwitcher from './CompanySwitcher.vue';
 import SoundToggle from './SoundToggle.vue';
 import UserProfileDropdown from './UserProfileDropdown.vue';
 import ClearCacheButton from './ClearCacheButton.vue';
-import MessengerBadge from './MessengerBadge.vue';
+import MessengerBadge from '@/views/components/app/MessengerBadge.vue';
 import { eventBus } from '@/eventBus';
 
 export default {

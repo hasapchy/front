@@ -42,6 +42,12 @@
                 </select>
             </div>
             <div class="mt-4">
+                <label class="inline-flex items-center gap-1 mb-1">
+                    <span>{{ $t('cashRegisterVisibleToEmployees') || 'Виден сотрудникам' }}</span>
+                    <FieldHint
+                        :text="$t('cashRegisterVisibleToEmployeesHint') || 'Сотрудники, которые видят эту кассу и могут с ней работать. Должен быть выбран хотя бы один пользователь.'"
+                        placement="top" />
+                </label>
                 <UserSearch :selectedUsers="selectedUsers" @update:selectedUsers="selectedUsers = $event"
                     :multiple="true" :filterUsers="userHasCashAccess" />
             </div>
@@ -75,10 +81,11 @@ import crudFormMixin from "@/mixins/crudFormMixin";
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
+import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { PrimaryButton, AlertDialog, UserSearch },
+    components: { PrimaryButton, AlertDialog, UserSearch, FieldHint },
     props: {
         editingItem: { type: CashRegisterDto, required: false, default: null }
     },

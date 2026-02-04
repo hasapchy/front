@@ -1,79 +1,32 @@
 <template>
     <div class="mt-4">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-md font-semibold">{{ $t('balance') }}</h3>
-            <div class="flex items-center gap-2">
-                <PrimaryButton 
+        <div v-if="!canViewBalance" class="text-gray-500 py-4">
+            {{ $t('noPermissionToViewBalances') || 'Нет прав на просмотр балансов' }}
+        </div>
+        <DraggableTable
+            v-else
+            table-key="client.balances"
+            :columns-config="columnsConfig"
+            :table-data="editingItem?.balances || []"
+            :item-mapper="itemMapper"
+            :onItemClick="(item) => openBalanceModal(item)">
+            <template #tableSettingsAdditional>
+                <PrimaryButton
                     v-if="canAdjustBalance"
-                    icon="fas fa-edit" 
+                    icon="fas fa-edit"
                     :onclick="openAdjustmentModal"
                     :disabled="!editingItem?.id">
                     {{ $t('adjustBalance') }}
                 </PrimaryButton>
-                <PrimaryButton 
+                <PrimaryButton
                     v-if="canCreateBalance"
-                    icon="fas fa-plus" 
+                    icon="fas fa-plus"
                     :onclick="openAddBalanceModal"
                     :is-success="true">
                     {{ $t('createBalance') }}
                 </PrimaryButton>
-            </div>
-        </div>
-        
-        <div v-if="editingItem?.balances?.length" class="mb-4">
-            <div class="overflow-x-auto w-full">
-                <table class="draggable-table min-w-full bg-white shadow-md rounded mb-6" style="font-size: 12px;">
-                    <thead class="bg-gray-100 rounded-t-sm">
-                        <tr>
-                            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
-                                {{ $t('currency') || 'Валюта' }}
-                            </th>
-                            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
-                                {{ $t('balance') || 'Баланс' }}
-                            </th>
-                            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
-                                {{ $t('status') || 'Статус' }}
-                            </th>
-                            <th class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium whitespace-nowrap">
-                                {{ $t('note') || 'Примечание' }}
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="(balance, idx) in editingItem.balances" :key="balance.id" 
-                            @dblclick.stop="openBalanceModal(balance)"
-                            class="cursor-pointer hover:bg-gray-100 transition-all"
-                            :class="{ 'border-b border-gray-300': idx !== editingItem.balances.length - 1 }">
-                            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
-                                {{ balance.currency?.symbol || balance.currency?.code || '-' }}
-                            </td>
-                            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300" :class="{
-                                'text-[#5CB85C]': balance.balance > 0,
-                                'text-[#EE4F47]': balance.balance < 0,
-                                'text-[#337AB7]': balance.balance == 0
-                            }">
-                                {{ formatBalance(balance.balance) }}
-                                <span v-if="balance.balance > 0" class="text-xs ml-1">({{ $t('clientOwesUs') }})</span>
-                                <span v-else-if="balance.balance < 0" class="text-xs ml-1">({{ $t('weOweClient') }})</span>
-                                <span v-else class="text-xs ml-1">({{ $t('mutualSettlement') }})</span>
-                            </td>
-                            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
-                                <span v-if="balance.isDefault" class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
-                                    {{ $t('default') || 'По умолчанию' }}
-                                </span>
-                                <span v-else class="text-gray-400">-</span>
-                            </td>
-                            <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300">
-                                {{ balance.note || '-' }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <div v-else class="text-gray-500">
-            {{ $t('noBalances') }}
-        </div>
+            </template>
+        </DraggableTable>
 
         <SideModalDialog :showForm="addBalanceModalOpen" :onclose="closeAddBalanceModal">
             <ClientBalanceCreatePage 
@@ -114,6 +67,7 @@
 </template>
 
 <script>
+import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import ClientBalanceCreatePage from "@/views/pages/clients/ClientBalanceCreatePage.vue";
@@ -130,6 +84,7 @@ const TransactionCreatePage = defineAsyncComponent(() =>
 export default {
     mixins: [notificationMixin, getApiErrorMessage],
     components: {
+        DraggableTable,
         SideModalDialog,
         PrimaryButton,
         ClientBalanceCreatePage,
@@ -147,7 +102,60 @@ export default {
             adjustmentModalOpen: false,
         };
     },
+    computed: {
+        columnsConfig() {
+            return [
+                { name: 'id', label: '№', size: 60 },
+                { name: 'currency', label: this.$t('currency') || 'Валюта', size: 120 },
+                { name: 'balance', label: this.$t('balance') || 'Баланс', size: 200, html: true },
+                { name: 'status', label: this.$t('status') || 'Статус', size: 140, html: true },
+                { name: 'note', label: this.$t('note') || 'Примечание', size: 200 },
+            ];
+        },
+        canCreateBalance() {
+            return this.$store.getters.hasPermission('client_balances_create');
+        },
+        canViewBalance() {
+            return this.$store.getters.hasPermission('client_balances_view_all');
+        },
+        canAdjustBalance() {
+            return this.$store.getters.hasPermission('settings_client_balance_adjustment');
+        },
+        balanceAdjustmentFormConfig() {
+            return TRANSACTION_FORM_PRESETS.balanceAdjustment;
+        },
+        balanceAdjustmentHeader() {
+            return this.$t('adjustBalance') || 'Корректировка баланса';
+        },
+    },
     methods: {
+        itemMapper(item, column) {
+            switch (column) {
+                case 'id':
+                    return item.id;
+                case 'currency':
+                    return item.currency?.symbol || item.currency?.code || '';
+                case 'balance': {
+                    const b = parseFloat(item.balance);
+                    let cls = 'text-[#337AB7]';
+                    if (b > 0) cls = 'text-[#5CB85C]';
+                    else if (b < 0) cls = 'text-[#EE4F47]';
+                    let hint = '';
+                    if (b > 0) hint = `<span class="text-xs ml-1">(${this.$t('clientOwesUs')})</span>`;
+                    else if (b < 0) hint = `<span class="text-xs ml-1">(${this.$t('weOweClient')})</span>`;
+                    else hint = `<span class="text-xs ml-1">(${this.$t('mutualSettlement')})</span>`;
+                    return `<span class="${cls}">${this.formatBalance(b)} ${hint}</span>`;
+                }
+                case 'status':
+                    return item.isDefault
+                        ? `<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">${this.$t('default')}</span>`
+                        : '-';
+                case 'note':
+                    return item.note || '-';
+                default:
+                    return item[column] ?? '-';
+            }
+        },
         async updateClientData() {
             if (!this.editingItem || !this.editingItem.id) return;
             try {
@@ -216,20 +224,6 @@ export default {
         onAdjustmentDeletedError(error) {
             const msg = typeof error === 'string' ? error : this.getApiErrorMessage(error);
             this.showNotification(this.$t('error'), Array.isArray(msg) ? msg.join(', ') : msg, true);
-        },
-    },
-    computed: {
-        canCreateBalance() {
-            return this.$store.getters.hasPermission('clients_update');
-        },
-        canAdjustBalance() {
-            return this.$store.getters.hasPermission('settings_client_balance_adjustment');
-        },
-        balanceAdjustmentFormConfig() {
-            return TRANSACTION_FORM_PRESETS.balanceAdjustment;
-        },
-        balanceAdjustmentHeader() {
-            return this.$t('adjustBalance') || 'Корректировка баланса';
         },
     },
 };

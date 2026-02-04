@@ -1,25 +1,30 @@
 <template>
     <div class="mt-4">
-        <div class="flex justify-between items-center mb-2">
-            <h3 class="text-md font-semibold">{{ $t('employees') }}</h3>
-            <div v-if="!hideActions" class="flex gap-2">
-                <PrimaryButton icon="fas fa-gift" :onclick="handleBonus" :is-success="true"
-                    :disabled="!editingItem || !editingItem.id">
-                    {{ $t('bonus') }}
-                </PrimaryButton>
+        <transition name="fade" mode="out-in">
+            <div v-if="!salaryTransactionsLoading" key="content">
+                <DraggableTable
+                    v-if="editingItem"
+                    table-key="project.employees.salary"
+                    :columns-config="salaryTransactionsColumnsConfig"
+                    :table-data="salaryTransactions || []"
+                    :item-mapper="salaryTransactionMapper"
+                    :onItemClick="handleSalaryTransactionClick">
+                    <template #tableSettingsAdditional>
+                        <PrimaryButton
+                            v-if="!hideActions"
+                            icon="fas fa-gift"
+                            :onclick="handleBonus"
+                            :is-success="true"
+                            :disabled="!editingItem || !editingItem.id">
+                            {{ $t('bonus') }}
+                        </PrimaryButton>
+                    </template>
+                </DraggableTable>
             </div>
-        </div>
-
-        <div v-if="salaryTransactionsLoading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="!salaryTransactionsLoading && salaryTransactions && salaryTransactions.length === 0"
-            class="text-gray-500 mb-4">
-            {{ $t('noTransactions') }}
-        </div>
-        <DraggableTable
-            v-if="!salaryTransactionsLoading && salaryTransactions && salaryTransactions.length > 0 && editingItem"
-            table-key="project.employees.salary" :columns-config="salaryTransactionsColumnsConfig"
-            :table-data="salaryTransactions" :item-mapper="salaryTransactionMapper"
-            :onItemClick="handleSalaryTransactionClick" />
+            <div v-else key="loader" class="flex justify-center items-center h-64">
+                <SpinnerIcon />
+            </div>
+        </transition>
 
         <SideModalDialog :showForm="bonusModalOpen" :onclose="closeBonusModal">
             <div v-if="bonusModalOpen && editingItem && editingItem.id" class="flex flex-col overflow-auto h-full p-4">
@@ -62,6 +67,7 @@
 <script>
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
 import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
@@ -83,6 +89,7 @@ export default {
     components: {
         PrimaryButton,
         SideModalDialog,
+        SpinnerIcon,
         NotificationToast,
         DraggableTable,
         SourceButtonCell,
@@ -115,6 +122,8 @@ export default {
             selectedEntity: null,
             salaryTransactions: [],
             salaryTransactionsLoading: false,
+            lastFetchedProjectId: null,
+            forceRefresh: false,
             SALARY_CATEGORY_IDS: [7, 23, 24, 26, 27],
         };
     },
@@ -189,6 +198,7 @@ export default {
                     this.entityModalOpen = false;
                     this.entityLoading = false;
                     this.salaryTransactions = [];
+                    this.lastFetchedProjectId = null;
                 }
             },
             immediate: true,
@@ -203,6 +213,7 @@ export default {
         },
         async onEntitySaved() {
             this.closeEntityModal();
+            this.forceRefresh = true;
             await Promise.all([
                 this.fetchSalaryTransactions(),
                 this.$store.dispatch('invalidateCache', { type: 'clients' }),
@@ -218,6 +229,7 @@ export default {
         },
         async onEntityDeleted() {
             this.closeEntityModal();
+            this.forceRefresh = true;
             await Promise.all([
                 this.fetchSalaryTransactions(),
                 this.$store.dispatch('invalidateCache', { type: 'clients' }),
@@ -230,6 +242,9 @@ export default {
         async fetchSalaryTransactions() {
             if (!this.editingItem || !this.editingItem.id) {
                 this.salaryTransactions = [];
+                return;
+            }
+            if (this.lastFetchedProjectId === this.editingItem.id && !this.forceRefresh) {
                 return;
             }
 
@@ -252,6 +267,8 @@ export default {
                 );
 
                 this.salaryTransactions = response.items || [];
+                this.lastFetchedProjectId = this.editingItem.id;
+                this.forceRefresh = false;
             } catch (error) {
                 console.error('Error fetching salary transactions:', error);
                 this.salaryTransactions = [];
