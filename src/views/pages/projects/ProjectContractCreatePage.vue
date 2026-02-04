@@ -2,7 +2,6 @@
     <div class="h-full flex flex-col">
         <div class="flex flex-col overflow-auto flex-1 p-4">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editContract') : $t('addContract') }}</h2>
-
         <div>
             <div v-if="!projectId">
                 <label class="required">{{ $t('project') }}</label>
@@ -18,10 +17,23 @@
                 <input type="text" v-model="number" :placeholder="$t('enterContractNumber')" required>
             </div>
             <div>
+                <label class="required">{{ $t('date') }}</label>
+                <input type="date" v-model="date" required>
+            </div>
+            <div>
                 <label class="required">{{ $t('contractType') }}</label>
-                <select v-model="type" :disabled="isPaidLocked" required>
+                <select v-model="type" required>
                     <option :value="0">{{ $t('cashless') }}</option>
                     <option :value="1">{{ $t('cash') }}</option>
+                </select>
+            </div>
+            <div>
+                <label class="required">{{ $t('cashRegister') }}</label>
+                <select v-model="cashId" required>
+                    <option value="">{{ $t('selectCashRegister') }}</option>
+                    <option v-for="cashRegister in filteredCashRegisters" :key="cashRegister.id" :value="cashRegister.id">
+                        {{ cashRegister.name }} ({{ cashRegister.currencySymbol || '' }})
+                    </option>
                 </select>
             </div>
             <div class="flex items-center space-x-2">
@@ -40,31 +52,6 @@
                 </div>
             </div>
             <div>
-                <label class="required">{{ $t('cashRegister') }}</label>
-                <select v-model="cashId" :disabled="isPaidLocked" required>
-                    <option value="">{{ $t('selectCashRegister') }}</option>
-                    <option v-for="cashRegister in filteredCashRegisters" :key="cashRegister.id" :value="cashRegister.id">
-                        {{ cashRegister.name }} ({{ cashRegister.currencySymbol || '' }})
-                    </option>
-                </select>
-            </div>
-            <div>
-                <label class="required">{{ $t('date') }}</label>
-                <input type="date" v-model="date" required>
-            </div>
-            <div>
-                <label>
-                    <input type="checkbox" v-model="returned">
-                    <span>{{ $t('contractReturned') }}</span>
-                </label>
-            </div>
-            <div>
-                <label>
-                    <input type="checkbox" :checked="isPaid" :disabled="isPaidLocked" @click.prevent="handlePaidClick">
-                    <span>{{ $t('paid') }}</span>
-                </label>
-            </div>
-            <div>
                 <label>{{ $t('note') }}</label>
                 <textarea v-model="note" :placeholder="$t('enterNote')" rows="3"></textarea>
             </div>
@@ -81,8 +68,6 @@
             :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
         <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
             :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-        <AlertDialog :dialog="paidConfirmDialog" @confirm="confirmMarkPaid" @leave="cancelMarkPaid"
-            :descr="$t('confirmMarkAsPaidIrreversible')" :confirm-text="$t('yes')" :leave-text="$t('cancel')" />
     </div>
 </template>
 
@@ -114,9 +99,6 @@ export default {
         }
     },
     computed: {
-        isPaidLocked() {
-            return !!this.editingItem?.isPaid || this.isPaidLockedLocal;
-        },
         filteredCashRegisters() {
             if (this.type === undefined || this.type === null) {
                 return this.cashRegisters;
@@ -136,9 +118,6 @@ export default {
             cashId: this.editingItem ? (this.editingItem.cashId || '') : '',
             date: this.editingItem?.date ? this.getDateOnly(this.editingItem.date) : this.getCurrentLocalDateTime().substring(0, 10),
             returned: this.editingItem ? this.editingItem.returned : false,
-            isPaid: this.editingItem ? this.editingItem.isPaid : false,
-            paidConfirmDialog: false,
-            isPaidLockedLocal: false,
             note: this.editingItem ? this.editingItem.note : '',
             currencies: [],
             cashRegisters: [],
@@ -158,7 +137,7 @@ export default {
     },
     watch: {
         type(newType) {
-            if (this.cashId && !this.isPaidLocked) {
+            if (this.cashId) {
                 const selectedCashRegister = this.cashRegisters.find(cr => cr.id == this.cashId);
                 if (selectedCashRegister) {
                     const contractTypeIsCash = newType === 1;
@@ -182,20 +161,6 @@ export default {
     },
     methods: {
         translateCurrency,
-        handlePaidClick() {
-            if (this.isPaidLocked) return;
-            if (this.isPaid) return;
-
-            this.paidConfirmDialog = true;
-        },
-        confirmMarkPaid() {
-            this.paidConfirmDialog = false;
-            this.isPaid = true;
-            this.isPaidLockedLocal = true;
-        },
-        cancelMarkPaid() {
-            this.paidConfirmDialog = false;
-        },
         getDateOnly(date) {
             return this.getFormattedDate(date).substring(0, 10);
         },
@@ -207,7 +172,6 @@ export default {
             this.cashId = '';
             this.date = this.getCurrentLocalDateTime().substring(0, 10);
             this.returned = false;
-            this.isPaid = false;
             this.note = '';
             if (this.resetFormChanges) {
                 this.resetFormChanges();
@@ -238,8 +202,6 @@ export default {
                 
                 this.date = formattedDate;
                 this.returned = newEditingItem.returned || false;
-                this.isPaid = newEditingItem.isPaid || false;
-                this.isPaidLockedLocal = false;
                 this.note = newEditingItem.note || '';
                 this.selectedProjectId = newEditingItem.projectId || null;
             }
@@ -253,7 +215,6 @@ export default {
                 cashId: this.cashId,
                 date: this.date,
                 returned: this.returned,
-                isPaid: this.isPaid,
                 note: this.note
             };
         },
@@ -291,7 +252,6 @@ export default {
                 cashId: this.cashId,
                 date: this.date,
                 returned: this.returned,
-                isPaid: this.isPaid,
                 note: this.note
             };
 

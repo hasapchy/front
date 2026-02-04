@@ -906,6 +906,9 @@ export default {
     },
     mounted() {
         try {
+            if (!this.$store.getters.projects?.length) {
+                this.$store.dispatch('loadProjects');
+            }
             const savedViewMode = localStorage.getItem('orders_viewMode');
             if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
                 this.viewMode = savedViewMode;

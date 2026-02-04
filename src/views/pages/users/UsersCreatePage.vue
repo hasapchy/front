@@ -10,44 +10,63 @@
                 " :key="`tabs-${$i18n.locale}`" />
             <div>
                 <div v-show="currentTab === 'info'">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('profilePhoto') }}</label>
-                        <div>
-                            <input type="file" @change="onFileChange" ref="imageInput">
+                    <div class="mt-2 flex items-start">
+                        <div class="flex-1">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('firstName') }}</label>
+                                <input type="text" v-model="form.name"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required />
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('lastName') }}</label>
+                                <input type="text" v-model="form.surname"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('email') }}</label>
+                                <input type="email" v-model="form.email"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required />
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('phoneNumber') }}</label>
+                                <PhoneInputWithCountry
+                                    v-model="phoneDisplay"
+                                    :default-country="phoneCountryId"
+                                    @country-change="phoneCountryId = $event?.id || 'tm'"
+                                    @blur="normalizeUserPhone" />
+                            </div>
                         </div>
-                        <div v-if="selected_image" class="mt-2 ml-3 p-3 bg-gray-100 rounded">
-                            <img :src="selected_image" alt="Selected Image" class="w-32 h-32 object-cover rounded-full">
-                            <button @click="() => { this.selected_image = null; this.image = null }"
-                                class="mt-2 text-red-500 text-sm">{{ $t('removeImage') }}</button>
+                        <div class="ml-3 w-40 flex flex-col">
+                            <label class="block mb-1">{{ $t('profilePhoto') }}</label>
+                            <input type="file" @change="onFileChange" ref="imageInput" class="hidden" accept="image/*">
+                            <div v-if="selected_image"
+                                class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
+                                <img :src="selected_image" alt="Selected Image"
+                                    class="max-w-full max-h-full object-cover rounded-full">
+                                <button type="button" @click="() => { this.selected_image = null; this.image = null }"
+                                    class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <div v-else-if="editingItem?.photo && editingItem.photo !== ''"
+                                class="h-40 p-3 bg-gray-100 rounded border relative flex items-center justify-center overflow-hidden">
+                                <img :src="getUserPhotoSrc(editingItem)" alt="Current Photo"
+                                    class="max-w-full max-h-full object-cover rounded-full">
+                                <button type="button" @click="() => { this.editingItem.photo = '' }"
+                                    class="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <div v-else @click="$refs.imageInput?.click()"
+                                class="h-40 p-3 bg-gray-100 rounded border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                                <div class="w-full h-full flex flex-col items-center justify-center bg-white rounded">
+                                    <img src="/logo.png" alt="Placeholder" class="w-16 h-16 object-contain opacity-50">
+                                    <span class="text-xs text-gray-500 mt-2 text-center">{{ $t('clickToUploadImage') }}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div v-else-if="editingItem?.photo && editingItem.photo !== ''"
-                            class="mt-2 ml-3 p-3 bg-gray-100 rounded">
-                            <img :src="getUserPhotoSrc(editingItem)" alt="Current Photo"
-                                class="w-32 h-32 object-cover rounded-full">
-                            <button @click="() => { this.editingItem.photo = '' }" class="mt-2 text-red-500 text-sm">{{
-                                $t('removeImage') }}</button>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('firstName')
-                        }}</label>
-                        <input type="text" v-model="form.name"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required />
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('lastName') }}</label>
-                        <input type="text" v-model="form.surname"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2 required">{{ $t('email') }}</label>
-                        <input type="email" v-model="form.email"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required />
                     </div>
 
                     <div class="mb-4" v-if="!editingItem">
@@ -95,16 +114,17 @@
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('hireDate') }}</label>
-                        <input type="date" v-model="form.hire_date"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('birthday') }}</label>
-                        <input type="date" v-model="form.birthday"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <div class="mb-4 flex gap-4">
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('birthday') }}</label>
+                            <input type="date" v-model="form.birthday"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('hireDate') }}</label>
+                            <input type="date" v-model="form.hire_date"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        </div>
                     </div>
 
                     <div class="mb-4">
@@ -123,36 +143,37 @@
                         </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('companies') }}</label>
-                        <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
-                            <div v-for="company in companies" :key="company.id"
-                                class="flex items-center space-x-2 mb-2">
-                                <input type="checkbox" :id="`company-${company.id}`" :value="company.id"
-                                    v-model="form.companies"
-                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                <label :for="`company-${company.id}`" class="text-sm text-gray-700 cursor-pointer">{{
-                                    company.name }}</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('departments') }}</label>
-                        <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
-                            <div v-if="departments && departments.length > 0">
-                                <div v-for="department in departments" :key="department.id"
+                    <div class="mb-4 flex gap-4">
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('companies') }}</label>
+                            <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
+                                <div v-for="company in companies" :key="company.id"
                                     class="flex items-center space-x-2 mb-2">
-                                    <input type="checkbox" :id="`department-${department.id}`" :value="department.id"
-                                        v-model="form.departments"
+                                    <input type="checkbox" :id="`company-${company.id}`" :value="company.id"
+                                        v-model="form.companies"
                                         class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                    <label :for="`department-${department.id}`"
-                                        class="text-sm text-gray-700 cursor-pointer">
-                                        {{ department.title }}
-                                    </label>
+                                    <label :for="`company-${company.id}`" class="text-sm text-gray-700 cursor-pointer">{{
+                                        company.name }}</label>
                                 </div>
                             </div>
-                            <div v-else class="text-gray-500 text-sm">{{ $t('noDepartmentsAvailable') }}</div>
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('departments') }}</label>
+                            <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
+                                <div v-if="departments && departments.length > 0">
+                                    <div v-for="department in departments" :key="department.id"
+                                        class="flex items-center space-x-2 mb-2">
+                                        <input type="checkbox" :id="`department-${department.id}`" :value="department.id"
+                                            v-model="form.departments"
+                                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                        <label :for="`department-${department.id}`"
+                                            class="text-sm text-gray-700 cursor-pointer">
+                                            {{ department.title }}
+                                        </label>
+                                    </div>
+                                </div>
+                                <div v-else class="text-gray-500 text-sm">{{ $t('noDepartmentsAvailable') }}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -235,13 +256,14 @@ import formChangesMixin from "@/mixins/formChangesMixin";
 import userPhotoMixin from '@/mixins/userPhotoMixin';
 import crudFormMixin from '@/mixins/crudFormMixin';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
+import PhoneInputWithCountry from '@/views/components/app/forms/PhoneInputWithCountry.vue';
 import UserSalaryTab from '@/views/pages/users/UserSalaryTab.vue';
 import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, userPhotoMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, UserSalaryTab, UserBalanceTab },
+    components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, PhoneInputWithCountry, UserSalaryTab, UserBalanceTab },
     props: {
         editingItem: { type: Object, required: false, default: null },
     },
@@ -251,6 +273,7 @@ export default {
                 name: '',
                 surname: '',
                 email: '',
+                phone: '',
                 password: '',
                 confirmPassword: '',
                 newPassword: '',
@@ -264,6 +287,8 @@ export default {
                 roles: [],
                 company_roles: [],
             },
+            phoneDisplay: '',
+            phoneCountryId: 'tm',
             editingItemId: null,
             companies: [],
             departments: [],
@@ -371,6 +396,7 @@ export default {
                 name: this.form.name,
                 surname: this.form.surname,
                 email: this.form.email,
+                phone: this.form.phone,
                 password: this.form.password,
                 confirmPassword: this.form.confirmPassword,
                 newPassword: this.form.newPassword,
@@ -452,6 +478,9 @@ export default {
             this.form.name = '';
             this.form.surname = '';
             this.form.email = '';
+            this.form.phone = '';
+            this.phoneDisplay = '';
+            this.phoneCountryId = 'tm';
             this.form.password = '';
             this.form.confirmPassword = '';
             this.form.newPassword = '';
@@ -587,11 +616,31 @@ export default {
         clearCompanyRole(companyId) {
             this.form.company_roles = this.form.company_roles.filter(cr => cr.company_id !== companyId);
         },
+        normalizeUserPhone() {
+            const cleaned = (this.phoneDisplay || '').replace(/\D/g, '');
+            if (!cleaned) {
+                this.form.phone = '';
+                return;
+            }
+            const code = this.phoneCountryId === 'ru' ? '7' : '993';
+            this.form.phone = cleaned.startsWith(code) ? cleaned : code + cleaned;
+            this.phoneDisplay = this.formatPhoneForInput(this.form.phone);
+        },
+        formatPhoneForInput(phone) {
+            if (!phone) return '';
+            const c = String(phone).replace(/\D/g, '');
+            return c.startsWith('993') ? c.slice(3) : c.startsWith('7') ? c.slice(1) : c;
+        },
+        getPhoneCountryId(phone) {
+            return (String(phone || '').replace(/\D/g, '').startsWith('7')) ? 'ru' : 'tm';
+        },
         prepareUserData() {
+            this.normalizeUserPhone();
             const data = {
                 name: this.form.name,
                 surname: this.form.surname,
                 email: this.form.email,
+                phone: this.form.phone || null,
                 position: this.form.position,
                 hire_date: this.form.hire_date,
                 birthday: this.form.birthday,
@@ -632,6 +681,9 @@ export default {
                 this.form.name = newEditingItem.name || '';
                 this.form.surname = newEditingItem.surname || '';
                 this.form.email = newEditingItem.email || '';
+                this.form.phone = newEditingItem.phone || '';
+                this.phoneCountryId = this.getPhoneCountryId(newEditingItem.phone);
+                this.phoneDisplay = this.formatPhoneForInput(newEditingItem.phone);
                 this.form.position = newEditingItem.position || '';
                 this.form.hire_date = newEditingItem.hireDate
                     ? newEditingItem.hireDate.split('T')[0]

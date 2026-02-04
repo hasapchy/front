@@ -109,4 +109,14 @@ export default class OrderController extends BaseController {
       return OrderDto.fromApiArray([orderData])[0] || null;
     }, `Ошибка при получении заказа: /orders/${id}`);
   }
+
+  static async getFirstStageCount() {
+    return super.handleRequest(
+      async () => {
+        const { data } = await api.get("/orders/first-stage-count");
+        return (data?.data?.count ?? 0);
+      },
+      "Ошибка при получении количества заказов на первой стадии:"
+    );
+  }
 }

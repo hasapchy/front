@@ -35,6 +35,16 @@ class TaskController extends BaseController {
         return TaskDto.fromApiArray([data.data])[0] || null;
     }
 
+    static async getOverdueCount() {
+        return super.handleRequest(
+            async () => {
+                const { data } = await api.get('/tasks/overdue-count');
+                return data?.data?.count ?? 0;
+            },
+            'Ошибка при получении количества просроченных задач:'
+        );
+    }
+
     static async createItem(item) {
         return await super.storeItem('/tasks', item);
     }

@@ -6,6 +6,7 @@ export class UserDto {
     this.name = data.name;
     this.surname = data.surname;
     this.email = data.email;
+    this.phone = data.phone || null;
     this.emailVerifiedAt = data.email_verified_at;
     this.hireDate = data.hire_date;
     this.birthday = data.birthday;

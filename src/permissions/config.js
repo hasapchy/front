@@ -51,6 +51,12 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
+    client_balances: {
+      has_user_id: false,
+      check_strategy: "default",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+    },
     cash_registers: {
       has_user_id: false,
       check_strategy: "many_to_many",
@@ -282,7 +288,7 @@ export const PERMISSIONS_CONFIG = {
     },
     clients: {
       label: "clients",
-      resources: ["clients"],
+      resources: ["clients", "client_balances"],
     },
     sales: {
       label: "sales",

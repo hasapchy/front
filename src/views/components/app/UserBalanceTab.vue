@@ -1,96 +1,7 @@
 <template>
     <div v-if="canViewBalance" class="mt-4">
-        <div class="flex justify-between items-center mb-2">
-            <div class="flex items-center gap-4">
-                <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
-                <div v-if="employeeClient" class="flex items-center gap-2">
-                    <select 
-                        v-if="employeeClient.balances?.length"
-                        v-model.number="selectedBalanceId"
-                        @change="fetchBalanceHistory"
-                        class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option 
-                            v-for="balance in employeeClient.balances" 
-                            :key="balance.id" 
-                            :value="balance.id">
-                            {{ balance.currency?.symbol || '' }} - {{ formatBalance(balance.balance) }}
-                            <span v-if="balance.isDefault"> ({{ $t('default') }})</span>
-                        </option>
-                    </select>
-                    <input 
-                        type="date" 
-                        v-model="dateFrom"
-                        @change="fetchBalanceHistory"
-                        class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    <input 
-                        type="date" 
-                        v-model="dateTo"
-                        @change="fetchBalanceHistory"
-                        class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    <PrimaryButton 
-                        :onclick="resetFilters"
-                        :is-small="true"
-                        icon="fas fa-times"
-                        :isDanger="true">
-                    </PrimaryButton>
-                </div>
-            </div>
-            <div v-if="!hideActions" class="flex gap-2">
-                <PrimaryButton 
-                    icon="fas fa-money-bill-wave" 
-                    :onclick="handleSalaryAccrual"
-                    :is-success="true"
-                    :disabled="buttonsDisabled">
-                    {{ $t('accrueSalary') }}
-                </PrimaryButton>
-                <PrimaryButton 
-                    icon="fas fa-hand-holding-usd" 
-                    :onclick="handleSalaryPayment"
-                    :is-success="true"
-                    :disabled="buttonsDisabled">
-                    {{ $t('paySalary') }}
-                </PrimaryButton>
-                <PrimaryButton 
-                    icon="fas fa-gift" 
-                    :onclick="handleBonus"
-                    :is-success="true"
-                    :disabled="buttonsDisabled">
-                    {{ $t('bonus') }}
-                </PrimaryButton>
-                <PrimaryButton 
-                    icon="fas fa-exclamation-triangle" 
-                    :onclick="handlePenalty"
-                    :is-danger="true"
-                    :disabled="buttonsDisabled">
-                    {{ $t('penalty') }}
-                </PrimaryButton>
-                <PrimaryButton 
-                    icon="fas fa-money-check-alt" 
-                    :onclick="handleAdvance"
-                    :is-success="true"
-                    :disabled="buttonsDisabled">
-                    {{ $t('advance') }}
-                </PrimaryButton>
-            </div>
-        </div>
-
-        <!-- Подсказка о разнице между начислением и выплатой зарплаты -->
-        <div v-if="!balanceLoading && editingItem && editingItem.id && employeeClient" 
-             class="mb-4 relative group">
-            <div class="flex items-center gap-2 cursor-help">
-                <i class="fas fa-question-circle text-gray-400 hover:text-blue-600 transition-colors"></i>
-                <span class="text-xs text-gray-600">{{ $t('salaryDifferenceHelpTitle') }}</span>
-            </div>
-            <div class="absolute left-0 top-6 z-10 w-80 p-3 bg-blue-50 border border-blue-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                <p class="text-xs text-blue-800">
-                    {{ $t('salaryDifferenceHelp') }}
-                </p>
-            </div>
-        </div>
-
-        <!-- Предупреждение о том, что клиент не найден -->
-        <div v-if="!balanceLoading && editingItem && editingItem.id && !employeeClient && !clientCheckLoading" 
-             class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div v-if="!balanceLoading && editingItem && editingItem.id && !employeeClient && !clientCheckLoading"
+            class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <div class="flex items-center gap-2">
                 <i class="fas fa-exclamation-triangle text-yellow-600"></i>
                 <div class="flex-1">
@@ -103,8 +14,7 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Итого (баланс сотрудника) -->
+
         <div v-if="!balanceLoading && editingItem && balanceDataLoaded" class="mb-4 p-4 bg-gray-50 rounded-lg">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -118,54 +28,92 @@
             </div>
         </div>
 
-        <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
-        <DraggableTable 
-            v-if="!balanceLoading && balanceHistory && balanceHistory.length > 0 && editingItem" 
-            table-key="user.balance"
-            :columns-config="columnsConfig" 
-            :table-data="balanceHistory" 
-            :item-mapper="itemMapper"
-            :onItemClick="handleBalanceItemClick" />
+        <transition name="fade" mode="out-in">
+            <div v-if="editingItem && !balanceLoading" key="table">
+                <DraggableTable table-key="user.balance" :columns-config="columnsConfig"
+                    :table-data="balanceHistory || []" :item-mapper="itemMapper" :onItemClick="handleBalanceItemClick">
+                    <template #tableSettingsAdditional>
+                        <FiltersContainer v-if="employeeClient?.balances?.length" :has-active-filters="hasActiveFilters"
+                            :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('balance') }}</label>
+                                <select v-model="selectedBalanceId" class="w-full">
+                                    <option v-for="balance in employeeClient.balances" :key="balance.id"
+                                        :value="balance.id">
+                                        {{ balance.currency?.symbol || balance.currency?.code || '' }} - {{
+                                            formatBalance(balance.balance) }}
+                                        <span v-if="balance.isDefault"> ({{ $t('default') }})</span>
+                                    </option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
+                                <input type="date" v-model="dateFrom" class="w-full" />
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
+                                <input type="date" v-model="dateTo" class="w-full" />
+                            </div>
+                        </FiltersContainer>
+                        <template v-if="!hideActions">
+                            <PrimaryButton icon="fas fa-money-bill-wave" :onclick="handleSalaryAccrual"
+                                :is-success="true" :disabled="buttonsDisabled">
+                                {{ $t('accrueSalary') }}
+                            </PrimaryButton>
+                            <PrimaryButton icon="fas fa-hand-holding-usd" :onclick="handleSalaryPayment"
+                                :is-success="true" :disabled="buttonsDisabled">
+                                {{ $t('paySalary') }}
+                            </PrimaryButton>
+                            <PrimaryButton icon="fas fa-gift" :onclick="handleBonus" :is-success="true"
+                                :disabled="buttonsDisabled">
+                                {{ $t('bonus') }}
+                            </PrimaryButton>
+                            <PrimaryButton icon="fas fa-exclamation-triangle" :onclick="handlePenalty" :isDanger="true"
+                                :disabled="buttonsDisabled">
+                                {{ $t('penalty') }}
+                            </PrimaryButton>
+                            <PrimaryButton icon="fas fa-money-check-alt" :onclick="handleAdvance" :is-success="true"
+                                :disabled="buttonsDisabled">
+                                {{ $t('advance') }}
+                            </PrimaryButton>
+                        </template>
+                    </template>
+                </DraggableTable>
+            </div>
+            <div v-else key="loader" class="flex justify-center items-center h-64">
+                <SpinnerIcon />
+            </div>
+        </transition>
 
         <SideModalDialog :showForm="transactionModalOpen" :onclose="closeTransactionModal">
-            <TransactionCreatePage 
+            <TransactionCreatePage
                 v-if="transactionModalOpen && editingItem && editingItem.id && employeeClient && transactionModalType"
-                ref="transactionForm"
-                :form-config="transactionFormConfig"
-                :initial-client="employeeClient"
-                :header-text="getTransactionModalHeader()"
-                @saved="handleTransactionSaved"
+                ref="transactionForm" :form-config="transactionFormConfig" :initial-client="employeeClient"
+                :header-text="getTransactionModalHeader()" @saved="handleTransactionSaved"
                 @saved-error="handleTransactionError" />
         </SideModalDialog>
 
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
                 <div class="p-8 flex justify-center items-center min-h-[200px]">
-                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
                     </svg>
                 </div>
             </template>
             <template v-else>
-                <TransactionCreatePage 
-                    v-if="selectedEntity && selectedEntity.type === 'transaction'"
-                    :editingItem="editingTransactionItem"
-                    :initialClient="employeeClient"
-                    @saved="onEntitySaved"
-                    @saved-error="onEntitySavedError"
-                    @deleted="onEntityDeleted"
+                <TransactionCreatePage v-if="selectedEntity && selectedEntity.type === 'transaction'"
+                    :editingItem="editingTransactionItem" :initialClient="employeeClient" @saved="onEntitySaved"
+                    @saved-error="onEntitySavedError" @deleted="onEntityDeleted"
                     @deleted-error="onEntityDeletedError" />
             </template>
         </SideModalDialog>
 
-        <NotificationToast 
-            :title="notificationTitle" 
-            :subtitle="notificationSubtitle" 
-            :show="notification" 
-            :is-danger="notificationIsDanger" 
-            @close="closeNotification" 
-        />
+        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
+            :is-danger="notificationIsDanger" @close="closeNotification" />
     </div>
 </template>
 
@@ -174,6 +122,8 @@ import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
+import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
+import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
 import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vue";
@@ -182,17 +132,20 @@ import ClientController from "@/api/ClientController";
 import TransactionController from "@/api/TransactionController";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
+import filtersMixin from "@/mixins/filtersMixin";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import { markRaw } from 'vue';
 
 export default {
     name: 'UserBalanceTab',
-    mixins: [notificationMixin, getApiErrorMessage],
+    mixins: [notificationMixin, getApiErrorMessage, filtersMixin],
     components: {
         PrimaryButton,
         SideModalDialog,
         NotificationToast,
         DraggableTable,
+        FiltersContainer,
+        SpinnerIcon,
         SourceButtonCell,
         TransactionCreatePage,
     },
@@ -263,21 +216,26 @@ export default {
         buttonsDisabled() {
             return !this.editingItem || !this.editingItem.id || !this.employeeClient;
         },
+        defaultBalanceId() {
+            if (!this.employeeClient?.balances?.length) return null;
+            const defaultBalance = this.employeeClient.balances.find(b => b.isDefault);
+            return defaultBalance ? defaultBalance.id : (this.employeeClient.balances[0]?.id ?? null);
+        },
         columnsConfig() {
             return [
-                { name: "id", label: this.$t("number"), size: 60 },
+                { name: "id", label: "№", size: 60 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 120 },
                 {
-                    name: "sourceType", 
-                    label: this.$t("source"), 
-                    size: 120, 
+                    name: "sourceType",
+                    label: this.$t("source"),
+                    size: 120,
                     component: markRaw(SourceButtonCell),
                     props: (item) => {
                         const sourceType = item.sourceType || null;
                         const source = item.source || null;
                         const isTransaction = source === 'transaction' || (sourceType && sourceType.includes('Transaction'));
                         const sourceId = isTransaction ? item.sourceId : (item.sourceSourceId || item.sourceId);
-                        
+
                         return {
                             sourceType: sourceType,
                             sourceId: sourceId,
@@ -382,15 +340,28 @@ export default {
             }
         },
         resetFilters() {
-            this.dateFrom = null;
-            this.dateTo = null;
-            this.initDefaultBalance();
+            this.resetFiltersFromConfig({
+                dateFrom: null,
+                dateTo: null
+            }, () => {
+                this.initDefaultBalance();
+                this.fetchBalanceHistory();
+            });
+        },
+        applyFilters() {
             this.fetchBalanceHistory();
+        },
+        getActiveFiltersCount() {
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.dateFrom, defaultValue: null },
+                { value: this.dateTo, defaultValue: null },
+                { value: this.selectedBalanceId, defaultValue: this.defaultBalanceId }
+            ]);
         },
         itemMapper(i, c) {
             switch (c) {
                 case "id":
-                    return i.sourceId;
+                    return i.sourceId ?? i.id ?? '-';
                 case "dateUser":
                     return i.dateUser;
                 case "note":
@@ -406,7 +377,7 @@ export default {
         },
         async handleBalanceItemClick(item) {
             if (!item?.sourceId) return;
-            
+
             try {
                 this.entityLoading = true;
                 const data = await this.ENTITY_CONFIG.transaction.fetch(item.sourceId);
@@ -472,7 +443,7 @@ export default {
         },
         async fetchBalanceHistory() {
             if (!this.editingItem || !this.editingItem.id) return;
-            
+
             this.balanceLoading = true;
             try {
                 if (!this.employeeClient?.id) {
@@ -533,7 +504,7 @@ export default {
         },
         async openTransactionModal(type) {
             if (!this.editingItem || !this.editingItem.id) return;
-            
+
             this.transactionModalType = type;
             await this.findEmployeeClient();
             if (this.employeeClient) {
@@ -608,4 +579,3 @@ export default {
     }
 };
 </script>
-

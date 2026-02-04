@@ -71,6 +71,7 @@ export default {
                 if (this.sourceType.includes('Order')) return 'order';
                 if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) return 'receipt';
                 if (this.sourceType.includes('EmployeeSalary')) return 'salary';
+                if (this.sourceType.includes('ProjectContract')) return 'contract';
                 if (this.sourceType.includes('Transaction')) return 'transaction';
             }
             return 'transaction';
@@ -82,6 +83,7 @@ export default {
                 'receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
                 'wh_receipt': { icon: 'fa-box', color: 'text-[#FFA500]', text: 'Оприходование' },
                 'salary': { icon: 'fa-money-bill-wave', color: 'text-[#28A745]', text: 'Зарплата' },
+                'contract': { icon: 'fa-file-contract', color: 'text-[#337AB7]', text: this.$t('contract') || 'Контракт' },
                 'transaction': { icon: 'fa-circle', color: 'text-[#6C757D]', text: 'Прочее' }
             };
         },
@@ -98,6 +100,8 @@ export default {
                     return 'fas fa-box text-[#FFA500]';
                 } else if (this.sourceType.includes('EmployeeSalary')) {
                     return 'fas fa-money-bill-wave text-[#28A745]';
+                } else if (this.sourceType.includes('ProjectContract')) {
+                    return 'fas fa-file-contract text-[#337AB7]';
                 } else if (this.sourceType.includes('Transaction')) {
                     return 'fas fa-exchange-alt text-[#6C757D]';
                 } else {
@@ -118,6 +122,8 @@ export default {
                     text = `Оприходование #${this.sourceId}`;
                 } else if (this.sourceType.includes('EmployeeSalary')) {
                     text = `Зарплата`;
+                } else if (this.sourceType.includes('ProjectContract')) {
+                    text = `${this.$t('contract') || 'Контракт'} #${this.sourceId}`;
                 } else if (this.sourceType.includes('Transaction')) {
                     text = `Транзакция #${this.sourceId}`;
                 } else {
@@ -168,6 +174,11 @@ export default {
                     const TransactionCreatePage = (await import('@/views/pages/transactions/TransactionCreatePage.vue')).default;
                     this.editingItem = await TransactionController.getItem(this.sourceId);
                     this.modalContentComponent = markRaw(TransactionCreatePage);
+                } else if (this.sourceType && this.sourceType.includes('ProjectContract')) {
+                    const ProjectContractController = (await import('@/api/ProjectContractController')).default;
+                    const ProjectContractCreatePage = (await import('@/views/pages/projects/ProjectContractCreatePage.vue')).default;
+                    this.editingItem = await ProjectContractController.getItem(this.sourceId);
+                    this.modalContentComponent = markRaw(ProjectContractCreatePage);
                 } else {
                     console.warn('[SourceButtonCell] Unknown source type:', this.sourceType, 'source:', this.source);
                     return;

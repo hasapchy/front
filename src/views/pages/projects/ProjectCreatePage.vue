@@ -77,13 +77,13 @@
                 <UserBalanceTab :editing-item="selectedEmployeeForAdvance" />
             </div>
         </div> -->
-        <div v-if="currentTab === 'balance' && editingItem && canViewProjectBalance">
+        <div v-show="currentTab === 'balance' && editingItem && canViewProjectBalance" class="mt-4">
             <ProjectBalanceTab :editing-item="editingItem" />
         </div>
-        <div v-if="currentTab === 'contracts' && editingItem && canViewProjectContracts">
+        <div v-show="currentTab === 'contracts' && editingItem && canViewProjectContracts" class="mt-4">
             <ProjectContractsTab :editing-item="editingItem" />
         </div>
-        <div v-if="currentTab === 'employees' && editingItem">
+        <div v-show="currentTab === 'employees' && editingItem" class="mt-4">
             <ProjectEmployeesTab :editing-item="editingItem" />
         </div>
         </div>

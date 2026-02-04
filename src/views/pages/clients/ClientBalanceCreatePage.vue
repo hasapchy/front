@@ -41,6 +41,18 @@
                         <span>{{ $t('setAsDefault') || 'Установить как дефолтный' }}</span>
                     </label>
                 </div>
+                <div class="mt-4">
+                    <label class="inline-flex items-center gap-1 mb-1">
+                        <span>{{ $t('balanceVisibleToEmployees') || 'Виден сотрудникам' }}</span>
+                        <FieldHint
+                            :text="$t('balanceVisibleToEmployeesHint') || 'Если никого не выбрать — баланс виден всем. Если выбрать сотрудников — только они смогут видеть этот баланс.'"
+                            placement="top" />
+                    </label>
+                    <UserSearch
+                        :selectedUsers="selectedUsers"
+                        @update:selectedUsers="selectedUsers = $event"
+                        :multiple="true" />
+                </div>
             </div>
         </div>
         
@@ -82,6 +94,8 @@
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import UserSearch from '@/views/components/app/search/UserSearch.vue';
+import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import ClientBalanceDto from '@/dto/client/ClientBalanceDto';
 import ClientController from '@/api/ClientController';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
@@ -93,7 +107,9 @@ export default {
     emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
     components: {
         PrimaryButton,
-        AlertDialog
+        AlertDialog,
+        UserSearch,
+        FieldHint,
     },
     props: {
         editingItem: {
@@ -112,11 +128,15 @@ export default {
         }
     },
     data() {
+        const userIds = this.editingItem && this.editingItem.getUserIds
+            ? this.editingItem.getUserIds()
+            : (this.editingItem?.users || []).map(u => (typeof u === 'object' && u?.id != null) ? u.id : u).filter(Boolean);
         return {
             selectedCurrencyId: this.editingItem ? this.editingItem.currencyId : null,
             isDefault: this.editingItem ? this.editingItem.isDefault : false,
             initialBalance: 0,
             note: this.editingItem ? (this.editingItem.note || '') : '',
+            selectedUsers: userIds,
             saveLoading: false,
             deleteDialog: false,
             deleteLoading: false,
@@ -131,13 +151,13 @@ export default {
             return this.$store.getters.currencies || [];
         },
         canCreateBalance() {
-            return this.$store.getters.hasPermission('clients_update');
+            return this.$store.getters.hasPermission('client_balances_create');
         },
         canUpdateBalance() {
-            return this.$store.getters.hasPermission('clients_update');
+            return this.$store.getters.hasPermission('client_balances_update_all');
         },
         canDeleteBalance() {
-            return this.$store.getters.hasPermission('clients_delete');
+            return this.$store.getters.hasPermission('client_balances_delete_all');
         },
         isFormValid() {
             if (this.editingItem) {
@@ -156,8 +176,11 @@ export default {
             handler(newItem) {
                 if (newItem) {
                     this.note = newItem.note || '';
+                    const userIds = newItem.getUserIds ? newItem.getUserIds() : (newItem.users || []).map(u => (typeof u === 'object' && u?.id != null) ? u.id : u).filter(Boolean);
+                    this.selectedUsers = userIds;
                 } else {
                     this.note = '';
+                    this.selectedUsers = [];
                 }
             },
             immediate: true
@@ -179,13 +202,20 @@ export default {
                 this.saveLoading = false;
             }
         },
+        getSelectedUserIds() {
+            if (Array.isArray(this.selectedUsers)) {
+                return this.selectedUsers.map(u => (typeof u === 'object' && u?.id != null) ? u.id : u).filter(Boolean);
+            }
+            return [];
+        },
         async performSave() {
             if (!this.initialClient?.id) return;
+            const userIds = this.getSelectedUserIds();
             if (this.editingItemId) {
                 const result = await ClientController.updateClientBalance(
                     this.initialClient.id,
                     this.editingItemId,
-                    { is_default: this.isDefault, note: this.note }
+                    { is_default: this.isDefault, note: this.note, user_ids: userIds }
                 );
                 
                 if (result.requires_confirmation) {
@@ -197,7 +227,7 @@ export default {
                         await ClientController.updateClientBalance(
                             this.initialClient.id,
                             this.editingItemId,
-                            { is_default: true, skip_confirmation: true, note: this.note }
+                            { is_default: true, skip_confirmation: true, note: this.note, user_ids: userIds }
                         );
                     } else {
                         return;
@@ -209,7 +239,8 @@ export default {
                     this.selectedCurrencyId,
                     this.isDefault,
                     this.initialBalance,
-                    this.note
+                    this.note,
+                    userIds
                 );
             }
             
