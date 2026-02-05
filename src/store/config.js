@@ -11,7 +11,7 @@ export const STORE_CONFIG = {
     warehouses: "SET_WAREHOUSES",
     cashRegisters: "SET_CASH_REGISTERS",
     clients: "SET_CLIENTS",
-    products: "SET_PRODUCTS",
+    // products очищаются вручную в store (SET_LAST_PRODUCTS, SET_ALL_PRODUCTS и т.д.) — отдельной SET_PRODUCTS нет
     services: "SET_SERVICES",
     categories: "SET_CATEGORIES",
     projects: "SET_PROJECTS",
