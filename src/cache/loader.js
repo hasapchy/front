@@ -172,7 +172,7 @@ export async function restoreDtoFromPlainData({
     }
 
     try {
-      const DtoClass = (await import(dtoClassPath)).default;
+      const DtoClass = (await import(/* @vite-ignore */ dtoClassPath)).default;
       if (!DtoClass?.fromApiArray) {
         return false;
       }
