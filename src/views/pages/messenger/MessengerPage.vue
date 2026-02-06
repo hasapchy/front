@@ -412,6 +412,7 @@ export default {
       eventBus.on("chat:message", this.handleIncomingMessage);
       eventBus.on("chat:message:updated", this.handleMessageUpdated);
       eventBus.on("chat:message:deleted", this.handleMessageDeleted);
+      eventBus.on("chat:reaction", this.handleReactionUpdated);
       eventBus.on("chat:read", this.handleReadEvent);
       eventBus.on("presence:here", this.handlePresenceHere);
       eventBus.on("presence:joining", this.handlePresenceJoining);
@@ -423,6 +424,7 @@ export default {
       eventBus.off("chat:message", this.handleIncomingMessage);
       eventBus.off("chat:message:updated", this.handleMessageUpdated);
       eventBus.off("chat:message:deleted", this.handleMessageDeleted);
+      eventBus.off("chat:reaction", this.handleReactionUpdated);
       eventBus.off("chat:read", this.handleReadEvent);
       eventBus.off("presence:here", this.handlePresenceHere);
       eventBus.off("presence:joining", this.handlePresenceJoining);
@@ -493,6 +495,21 @@ export default {
 
       // Удаляем сообщение из текущего списка
       this.messages = (this.messages || []).filter((m) => Number(m.id) !== messageId);
+    },
+    /** Обновление реакций на сообщение (realtime от другого пользователя). */
+    handleReactionUpdated(event) {
+      const messageId = Number(event?.message_id);
+      const chatId = Number(event?.chat_id);
+      const reactions = Array.isArray(event?.reactions) ? event.reactions : [];
+      if (!messageId || !chatId) return;
+
+      // Обновляем только если это текущий открытый чат
+      if (Number(this.selectedChatId) !== chatId) return;
+
+      this.messages = (this.messages || []).map((m) => {
+        if (Number(m.id) !== messageId) return m;
+        return { ...m, reactions };
+      });
     },
     handleReadEvent(event) {
       handleChatReadEvent(this, event);
@@ -579,8 +596,13 @@ export default {
         });
         this.peerReadByChatId = { ...this.peerReadByChatId, ...peerMap };
 
-        // НЕ синхронизируем здесь - глобальный сервис уже подписан на все чаты при инициализации
-        // Синхронизация нужна только при создании нового чата
+        // Синхронизируем подписки WebSocket: general chat мог быть создан после login,
+        // поэтому при открытии мессенджера обновляем подписки на актуальный список
+        const allChats = [...(this.chats || [])];
+        if (this.generalChat && !allChats.some((c) => c && Number(c.id) === Number(this.generalChat.id))) {
+          allChats.push(this.generalChat);
+        }
+        globalChatRealtime.syncChats(allChats);
       } finally {
         this.loadingChats = false;
       }
@@ -721,10 +743,11 @@ export default {
           const chat = await ChatController.ensureGeneralChat();
           if (chat) {
             this.generalChat = chat;
-            // Если в списке не было — добавим
+            // Если в списке не было — добавим и синхронизируем подписки
             const exists = (this.chats || []).some((c) => Number(c.id) === Number(chat.id));
             if (!exists) {
               this.chats = [...(this.chats || []), chat];
+              globalChatRealtime.syncChats(this.chats);
             }
             await this.selectChat(chat);
             return;

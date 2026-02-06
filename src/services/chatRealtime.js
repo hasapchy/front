@@ -7,6 +7,7 @@
  * @property {(event:any)=>void} [onMessageUpdated]
  * @property {(event:any)=>void} [onMessageDeleted]
  * @property {(event:any)=>void} [onRead]
+ * @property {(event:any)=>void} [onReactionUpdated]
  * @property {(error:any)=>void} [onChatError]
  * @property {(users:Array)=>void} [onPresenceHere]
  * @property {(user:Object)=>void} [onPresenceJoining]
@@ -68,6 +69,9 @@ export function createChatRealtime(echo, options) {
       .listen(".chat.read.updated", (event) => {
         options?.onRead?.(event);
       })
+      .listen(".chat.message.reaction", (event) => {
+        options?.onReactionUpdated?.(event);
+      })
       .error((error) => {
         log(`[WebSocket] ❌ Ошибка канала ${chatIdNum}:`, error);
         options?.onChatError?.(error);
@@ -109,6 +113,7 @@ export function createChatRealtime(echo, options) {
       entry.channel?.stopListening?.(".chat.message.updated");
       entry.channel?.stopListening?.(".chat.message.deleted");
       entry.channel?.stopListening?.(".chat.read.updated");
+      entry.channel?.stopListening?.(".chat.message.reaction");
     } catch (_) {
       // ignore
     }

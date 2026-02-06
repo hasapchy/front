@@ -65,6 +65,9 @@ class GlobalChatRealtime {
       onRead: (event) => {
         eventBus.emit("chat:read", event);
       },
+      onReactionUpdated: (event) => {
+        eventBus.emit("chat:reaction", event);
+      },
       onChatError: (error) => {
         console.error("[GlobalChatRealtime] Ошибка канала:", error);
         eventBus.emit("chat:error", error);
