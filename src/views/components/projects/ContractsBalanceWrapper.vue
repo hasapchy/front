@@ -79,7 +79,9 @@ export default {
                 }
 
                 total[currencySymbol] = (total[currencySymbol] || 0) + amount;
-                if (contract.isPaid) {
+                const paidAmount = parseFloat(contract.paidAmount ?? contract.paid_amount ?? 0);
+                const isPaid = !Number.isNaN(paidAmount) && paidAmount >= amount;
+                if (isPaid) {
                     paid[currencySymbol] = (paid[currencySymbol] || 0) + amount;
                 } else {
                     unpaid[currencySymbol] = (unpaid[currencySymbol] || 0) + amount;

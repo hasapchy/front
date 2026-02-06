@@ -58,7 +58,12 @@
                             class="relative group"
                         >
                             <span class="flex items-center justify-between w-full">
-                                <span>{{ $t(element.label) }}</span>
+                                <span class="inline-flex items-center">
+                                    {{ $t(element.label) }}
+                                    <OrdersBadge v-if="element.to === '/orders'" inline />
+                                    <MessengerBadge v-if="element.to === '/messenger'" inline />
+                                    <TasksBadge v-if="element.to === '/tasks'" />
+                                </span>
                                 <i class="fas fa-grip-vertical drag-handle opacity-0 group-hover:opacity-50 cursor-move ml-2 text-xs"></i>
                             </span>
                         </SidebarLink>
@@ -102,7 +107,12 @@
                                     class="relative group pl-4"
                                 >
                                     <span class="flex items-center justify-between w-full">
-                                        <span>{{ $t(element.label) }}</span>
+                                        <span class="inline-flex items-center">
+                                            {{ $t(element.label) }}
+                                            <OrdersBadge v-if="element.to === '/orders'" inline />
+                                            <MessengerBadge v-if="element.to === '/messenger'" inline />
+                                            <TasksBadge v-if="element.to === '/tasks'" />
+                                        </span>
                                         <i class="fas fa-grip-vertical drag-handle opacity-0 group-hover:opacity-50 cursor-move ml-2 text-xs"></i>
                                     </span>
                                 </SidebarLink>
@@ -160,13 +170,19 @@
 import { VueDraggableNext } from 'vue-draggable-next';
 import SidebarLink from './SidebarLink.vue';
 import AppVersionBadge from '../AppVersionBadge.vue';
+import OrdersBadge from '../OrdersBadge.vue';
+import MessengerBadge from '../MessengerBadge.vue';
+import TasksBadge from '../TasksBadge.vue';
 import { eventBus } from '@/eventBus';
 
 export default {
     components: {
         draggable: VueDraggableNext,
         SidebarLink,
-        AppVersionBadge
+        AppVersionBadge,
+        OrdersBadge,
+        MessengerBadge,
+        TasksBadge
     },
     
     data() {

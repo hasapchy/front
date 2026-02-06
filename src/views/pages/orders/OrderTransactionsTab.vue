@@ -3,14 +3,24 @@
         <div v-if="!orderId" class="p-4 text-gray-500">
             {{ $t('saveOrderFirst') }}
         </div>
-        <div v-else>
-            <PrimaryButton icon="fas fa-plus" :onclick="showTransactionModal" class="my-3"></PrimaryButton>
-
-            <DraggableTable v-if="transactions.length" table-key="order.transactions" :columns-config="columnsConfig"
-                :table-data="transactions" :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="editTransaction" />
-
-            <div v-else class="text-gray-500">{{ $t('noTransactions') }}</div>
-        </div>
+        <transition v-else name="fade" mode="out-in">
+            <div v-if="!transactionsLoading" key="table">
+                <DraggableTable
+                    table-key="order.transactions"
+                    :columns-config="columnsConfig"
+                    :table-data="transactions || []"
+                    :item-mapper="itemMapper"
+                    @selectionChange="selectedIds = $event"
+                    :onItemClick="editTransaction">
+                    <template #tableSettingsAdditional>
+                        <PrimaryButton icon="fas fa-plus" :onclick="showTransactionModal" :is-small="true" />
+                    </template>
+                </DraggableTable>
+            </div>
+            <div v-else key="loader" class="flex justify-center items-center h-64">
+                <SpinnerIcon />
+            </div>
+        </transition>
 
         <SideModalDialog :showForm="transactionModal" :onclose="closeTransactionModal">
             <template v-if="transactionModal">
@@ -37,6 +47,7 @@ import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import DebtCell from '@/views/components/app/buttons/DebtCell.vue';
 import TransactionAmountCell from '@/views/components/app/buttons/TransactionAmountCell.vue';
+import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 import { markRaw } from 'vue';
 
 export default {
@@ -57,11 +68,13 @@ export default {
         SideModalDialog,
         TransactionCreatePage,
         DebtCell,
-        TransactionAmountCell
+        TransactionAmountCell,
+        SpinnerIcon,
     },
     data() {
         return {
             transactions: [],
+            transactionsLoading: false,
             transactionModal: false,
             editingTransaction: null,
             paidTotalAmount: 0,
@@ -96,7 +109,13 @@ export default {
     },
     watch: {
         orderId: {
-            handler() {
+            handler(newVal) {
+                if (!newVal) {
+                    this.transactions = [];
+                    this.transactionsLoading = false;
+                    return;
+                }
+                this.transactionsLoading = true;
                 this.fetchTransactions();
                 this.fetchPaidTotal();
             },
@@ -109,13 +128,14 @@ export default {
                 this.transactions = [];
                 return;
             }
+            this.transactionsLoading = true;
             try {
                 const response = await TransactionController.getItems(1, null, "all_time", this.orderId, null, null, null, null, 20);
-                this.transactions = response.items.filter(item => {
-                    return item.isDebt != 1;
-                });
+                this.transactions = response.items.filter(item => item.isDebt != 1);
             } catch (error) {
                 this.transactions = [];
+            } finally {
+                this.transactionsLoading = false;
             }
         },
         async fetchPaidTotal() {
@@ -173,6 +193,8 @@ export default {
         },
         itemMapper(i, c) {
             switch (c) {
+                case 'id':
+                    return i.id ?? '-';
                 case 'cashName':
                     return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
                 case 'dateUser':

@@ -1,5 +1,5 @@
 <template>
-    <div class="mt-2" v-if="isFieldVisible('source')">
+    <div class="mt-2" v-if="isFieldVisible('source') && sourceType !== 'contract'">
         <template v-if="orderId || selectedSource">
             <label class="block mb-1">{{ $t('source') || 'Источник' }}</label>
             <div class="p-3 border rounded bg-white">
@@ -30,12 +30,14 @@ export default {
                 if (this.sourceType.includes('Sale')) return 'Продажа';
                 if (this.sourceType.includes('WhReceipt') || this.sourceType.includes('WarehouseReceipt')) return 'Оприходование';
                 if (this.sourceType.includes('EmployeeSalary')) return 'Зарплата';
+                if (this.sourceType.includes('ProjectContract')) return this.$t('contract') || 'Контракт';
             }
             const labelMap = {
                 'order': 'Заказ',
                 'sale': 'Продажа',
                 'warehouse_receipt': 'Оприходование',
-                'salary': 'Зарплата'
+                'salary': 'Зарплата',
+                'contract': this.$t('contract') || 'Контракт'
             };
             return labelMap[this.sourceType] || (this.$t('source') || 'Источник');
         },

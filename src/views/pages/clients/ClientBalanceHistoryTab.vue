@@ -1,49 +1,45 @@
 <template>
     <div class="mt-4">
-        <div class="flex justify-between items-center mb-4">
-            <div class="flex items-center gap-4">
-                <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
-                <div v-if="editingItem" class="flex items-center gap-2">
-                    <select 
-                        v-if="editingItem.balances?.length"
-                        v-model="selectedBalanceId"
-                        @change="fetchBalanceHistory"
-                        class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option 
-                            v-for="balance in editingItem.balances" 
-                            :key="balance.id" 
-                            :value="balance.id">
-                            {{ balance.currency?.symbol || '' }} - {{ formatBalance(balance.balance) }}
-                            <span v-if="balance.isDefault"> ({{ $t('default') }})</span>
-                        </option>
-                    </select>
-                    <input 
-                        type="date" 
-                        v-model="dateFrom"
-                        @change="fetchBalanceHistory"
-                        class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    <input 
-                        type="date" 
-                        v-model="dateTo"
-                        @change="fetchBalanceHistory"
-                        class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    <PrimaryButton 
-                        :onclick="resetFilters"
-                        :is-small="true"
-                        icon="fas fa-times"
-                        :isDanger="true">
-                    </PrimaryButton>
-                </div>
+        <transition name="fade" mode="out-in">
+            <div v-if="editingItem && !balanceLoading" key="table">
+                <DraggableTable table-key="client.balance.history"
+                    :columns-config="columnsConfig" :table-data="balanceHistory || []" :item-mapper="itemMapper"
+                    :onItemClick="handleBalanceItemClick">
+                    <template #tableSettingsAdditional>
+                        <FiltersContainer
+                            v-if="editingItem?.balances?.length"
+                            :has-active-filters="hasActiveFilters"
+                            :active-filters-count="getActiveFiltersCount()"
+                            @reset="resetFilters"
+                            @apply="applyFilters">
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('balance') }}</label>
+                                <select v-model="selectedBalanceId" @change="fetchBalanceHistory" class="w-full">
+                                    <option
+                                        v-for="balance in editingItem.balances"
+                                        :key="balance.id"
+                                        :value="balance.id">
+                                        {{ balance.currency?.symbol || '' }} - {{ formatBalance(balance.balance) }}
+                                        <span v-if="balance.isDefault"> ({{ $t('default') }})</span>
+                                    </option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') || 'Дата с' }}</label>
+                                <input type="date" v-model="dateFrom" class="w-full" />
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') || 'Дата по' }}</label>
+                                <input type="date" v-model="dateTo" class="w-full" />
+                            </div>
+                        </FiltersContainer>
+                    </template>
+                </DraggableTable>
             </div>
-        </div>
-
-        <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="!balanceHistory || balanceHistory.length === 0" class="text-gray-500">
-            {{ $t('noHistory') }}
-        </div>
-        <DraggableTable v-if="!balanceLoading && balanceHistory?.length && editingItem" table-key="client.balance.history"
-            :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
-            :onItemClick="handleBalanceItemClick" />
+            <div v-else key="loader" class="flex justify-center items-center h-64">
+                <SpinnerIcon />
+            </div>
+        </transition>
 
         <NotificationToast 
             :title="notificationTitle" 
@@ -82,8 +78,9 @@
 
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
+import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
-import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
 import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
@@ -91,6 +88,7 @@ import OperationTypeCell from "@/views/components/app/buttons/OperationTypeCell.
 import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
+import filtersMixin from "@/mixins/filtersMixin";
 import { defineAsyncComponent, markRaw } from 'vue';
 import ClientController from "@/api/ClientController";
 import TransactionController from "@/api/TransactionController";
@@ -101,11 +99,11 @@ const TransactionCreatePage = defineAsyncComponent(() =>
 );
 
 export default {
-    mixins: [notificationMixin, getApiErrorMessage],
+    mixins: [notificationMixin, getApiErrorMessage, filtersMixin],
     components: {
         DraggableTable,
+        FiltersContainer,
         SideModalDialog,
-        PrimaryButton,
         NotificationToast,
         SourceButtonCell,
         TransactionCreatePage,
@@ -183,7 +181,6 @@ export default {
     },
     async mounted() {
         await this.fetchDefaultCurrency();
-        this.initDefaultBalance();
     },
     methods: {
         async updateClientData() {
@@ -215,8 +212,7 @@ export default {
             }
         },
         async fetchBalanceHistory() {
-            if (!this.editingItem || !this.editingItem.id) return;
-            if (!this.$store.getters.hasPermission('settings_client_balance_view')) {
+            if (!this.editingItem?.id || !this.$store.getters.hasPermission('settings_client_balance_view')) {
                 this.balanceHistory = [];
                 return;
             }
@@ -233,9 +229,15 @@ export default {
             }
         },
         resetFilters() {
-            this.dateFrom = null;
-            this.dateTo = null;
-            this.initDefaultBalance();
+            this.resetFiltersFromConfig({
+                dateFrom: null,
+                dateTo: null
+            }, () => {
+                this.initDefaultBalance();
+                this.fetchBalanceHistory();
+            });
+        },
+        applyFilters() {
             this.fetchBalanceHistory();
         },
         initDefaultBalance() {
@@ -301,6 +303,13 @@ export default {
             this.selectedEntity = { type: 'transaction' };
             this.editingTransactionItem = null;
         },
+        getActiveFiltersCount() {
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.dateFrom, defaultValue: null },
+                { value: this.dateTo, defaultValue: null },
+                { value: this.selectedBalanceId, defaultValue: this.defaultBalanceId }
+            ]);
+        },
         itemMapper(i, c) {
             switch (c) {
                 case "id": return i.sourceId || '-';
@@ -316,6 +325,11 @@ export default {
         },
     },
     computed: {
+        defaultBalanceId() {
+            if (!this.editingItem?.balances?.length) return null;
+            const defaultBalance = this.editingItem.balances.find(b => b.isDefault);
+            return defaultBalance ? defaultBalance.id : (this.editingItem.balances[0]?.id ?? null);
+        },
         canAdjustBalance() {
             return this.$store.getters.hasPermission('settings_client_balance_adjustment');
         },
@@ -345,7 +359,6 @@ export default {
         'editingItem.balances': {
             handler() {
                 this.initDefaultBalance();
-                this.$nextTick(() => this.fetchBalanceHistory());
             },
             deep: true,
         },

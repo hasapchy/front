@@ -171,7 +171,11 @@ export default {
       orders: [],
       loading: true,
       paginationData: null,
-      perPage: 20,
+      perPage: (() => {
+        const stored = localStorage.getItem('perPage');
+        const parsed = stored ? parseInt(stored, 10) : NaN;
+        return Number.isFinite(parsed) && [10, 20, 50, 100].includes(parsed) ? parsed : 20;
+      })(),
       perPageOptions: [10, 20, 50, 100],
       projects: [],
       dateFilter: 'all_time',

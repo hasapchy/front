@@ -1,52 +1,44 @@
 <template>
     <div class="mt-4">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-md font-semibold">{{ $t('operations') }}</h3>
-            <div class="flex gap-2">
-                <button 
-                    @click="selectedFilter = 'orders'"
-                    :class="[
-                        'px-4 py-2 rounded transition-colors',
-                        selectedFilter === 'orders' 
-                            ? 'bg-blue-500 text-white' 
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    ]">
-                    {{ $t('orders') }}
-                </button>
-                <button 
-                    @click="selectedFilter = 'sales'"
-                    :class="[
-                        'px-4 py-2 rounded transition-colors',
-                        selectedFilter === 'sales' 
-                            ? 'bg-blue-500 text-white' 
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    ]">
-                    {{ $t('sales') }}
-                </button>
-                <button 
-                    @click="selectedFilter = 'receipts'"
-                    :class="[
-                        'px-4 py-2 rounded transition-colors',
-                        selectedFilter === 'receipts' 
-                            ? 'bg-blue-500 text-white' 
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    ]">
-                    {{ $t('warehouseReceipts') }}
-                </button>
+        <transition name="fade" mode="out-in">
+            <div v-if="editingItem && !loading" key="table">
+                <DraggableTable
+                    :table-key="`client.operations.${selectedFilter}`"
+                    :columns-config="columnsConfig"
+                    :table-data="tableData || []"
+                    :item-mapper="itemMapper"
+                    :onItemClick="handleItemClick">
+                    <template #tableSettingsAdditional>
+                        <FiltersContainer
+                            :has-active-filters="hasActiveFilters"
+                            :active-filters-count="getActiveFiltersCount()"
+                            @reset="resetFilters"
+                            @apply="applyFilters">
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('type') || 'Тип' }}</label>
+                                <div class="flex flex-col gap-2">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" v-model="selectedFilter" value="orders" class="rounded" />
+                                        <span>{{ $t('orders') }}</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" v-model="selectedFilter" value="sales" class="rounded" />
+                                        <span>{{ $t('sales') }}</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" v-model="selectedFilter" value="receipts" class="rounded" />
+                                        <span>{{ $t('warehouseReceipts') }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </FiltersContainer>
+                    </template>
+                </DraggableTable>
             </div>
-        </div>
-
-        <div v-if="loading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="!tableData || tableData.length === 0" class="text-gray-500">
-            {{ $t('noData') }}
-        </div>
-        <DraggableTable 
-            v-if="!loading && tableData && tableData.length > 0 && editingItem" 
-            :table-key="`client.operations.${selectedFilter}`"
-            :columns-config="columnsConfig" 
-            :table-data="tableData" 
-            :item-mapper="itemMapper"
-            :onItemClick="handleItemClick" />
+            <div v-else key="loader" class="flex justify-center items-center h-64">
+                <SpinnerIcon />
+            </div>
+        </transition>
 
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
@@ -86,7 +78,10 @@
 
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
+import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
+import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import filtersMixin from "@/mixins/filtersMixin";
 import OrderController from "@/api/OrderController";
 import SaleController from "@/api/SaleController";
 import WarehouseReceiptController from "@/api/WarehouseReceiptController";
@@ -105,8 +100,11 @@ const WarehouseReceiptCreatePage = defineAsyncComponent(() =>
 );
 
 export default {
+    mixins: [filtersMixin],
     components: {
         DraggableTable,
+        FiltersContainer,
+        SpinnerIcon,
         SideModalDialog,
         OrderCreatePage,
         SaleCreatePage,
@@ -310,6 +308,16 @@ export default {
             this.entityModalOpen = false;
             this.selectedEntity = null;
             this.entityLoading = false;
+        },
+        getActiveFiltersCount() {
+            return this.selectedFilter !== 'orders' ? 1 : 0;
+        },
+        resetFilters() {
+            this.selectedFilter = 'orders';
+            if (this.editingItem?.id) this.fetchData();
+        },
+        applyFilters() {
+            if (this.editingItem?.id) this.fetchData();
         },
         async onEntitySaved() {
             this.closeEntityModal();

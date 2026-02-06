@@ -19,6 +19,9 @@
             :transactionCurrencySymbol="transactionCurrencySymbol" :cashCurrencySymbol="cashCurrencySymbol"
             :calculatedCashAmount="calculatedCashAmount" :isTransferTransaction="isTransferTransaction"
             @exchange-rate-manual="handleExchangeRateChange" />
+        <div class="mt-2" v-if="isFieldVisible('source') && !orderId && $store.getters.hasPermission('contracts_create')">
+            <ContractSearch v-model:selectedContract="selectedContractForSource" :showLabel="true" />
+        </div>
         <TransactionSourceSection :orderId="orderId" :selectedSource="selectedSource" :sourceType="sourceType"
             :formConfig="formConfig" />
     </div>
@@ -59,6 +62,7 @@ import TransactionExchangeRateSection from '@/views/components/transactions/Tran
 import TransactionBalancePreview from '@/views/components/transactions/TransactionBalancePreview.vue';
 import TransactionSourceSection from '@/views/components/transactions/TransactionSourceSection.vue';
 import TransactionFormActions from '@/views/components/transactions/TransactionFormActions.vue';
+import ContractSearch from '@/views/components/app/search/ContractSearch.vue';
 import CompaniesController from '@/api/CompaniesController';
 import UsersController from '@/api/UsersController';
 
@@ -72,7 +76,8 @@ export default {
         TransactionExchangeRateSection,
         TransactionBalancePreview,
         TransactionSourceSection,
-        TransactionFormActions
+        TransactionFormActions,
+        ContractSearch
     },
     props: {
         editingItem: { type: TransactionDto, required: false, default: null },
@@ -256,6 +261,15 @@ export default {
             const paymentTypeIsCash = this.paymentType === 1;
             return this.allCashRegisters.filter(c => Boolean(c.isCash ?? c.is_cash) === paymentTypeIsCash);
         },
+        selectedContractForSource: {
+            get() {
+                return this.sourceType === 'contract' ? this.selectedSource : null;
+            },
+            set(value) {
+                this.selectedSource = value;
+                this.sourceType = value ? 'contract' : '';
+            }
+        },
     },
     mounted() {
         this.$nextTick(async () => {
@@ -388,7 +402,8 @@ export default {
             const typeMap = {
                 'order': 'App\\Models\\Order',
                 'sale': 'App\\Models\\Sale',
-                'warehouse_receipt': 'App\\Models\\WhReceipt'
+                'warehouse_receipt': 'App\\Models\\WhReceipt',
+                'contract': 'App\\Models\\ProjectContract'
             };
 
             return typeMap[this.sourceType] || null;
@@ -694,7 +709,6 @@ export default {
         },
         async loadSourceForEdit(sourceType, sourceId) {
             try {
-                // Определяем тип источника
                 if (sourceType.includes('Order')) {
                     this.sourceType = 'order';
                     const order = await OrderController.getItem(sourceId);
@@ -707,9 +721,13 @@ export default {
                     this.sourceType = 'warehouse_receipt';
                     const receipt = await WarehouseReceiptController.getItem(sourceId);
                     this.selectedSource = receipt;
+                } else if (sourceType.includes('ProjectContract')) {
+                    this.sourceType = 'contract';
+                    const ProjectContractController = (await import('@/api/ProjectContractController')).default;
+                    const contract = await ProjectContractController.getItem(sourceId);
+                    this.selectedSource = contract;
                 }
             } catch (error) {
-                console.error('Ошибка при загрузке источника:', error);
                 this.selectedSource = null;
                 this.sourceType = '';
             }

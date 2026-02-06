@@ -962,6 +962,17 @@ const routes = [
           simpleMode: true,
         },
       },
+      {
+        path: "/basement-orders",
+        name: "BasementOrders",
+        component: SimpleOrdersPage,
+        meta: {
+          title: "simpleOrders",
+          requiresAuth: true,
+          permission: "orders_simple_view",
+          simpleMode: true,
+        },
+      },
     ],
   },
   {

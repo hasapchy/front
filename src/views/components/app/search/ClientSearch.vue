@@ -62,7 +62,7 @@
                             clientPhones[0]?.phone || '' }}</span></p>
                         <div v-if="$store.getters.hasPermission('settings_client_balance_view')" class="flex flex-wrap items-center gap-x-2 gap-y-1">
                             <span class="text-xs">
-                                {{ $t('balance') }}: <span :class="displayBalance == 0 ? 'text-[#337AB7]' : displayBalance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">{{ clientBalance }} {{ displayCurrencySymbol }}</span>
+                                {{ $t('balance') }}: <span :class="['font-semibold', 'text-sm', displayBalance == 0 ? 'text-[#337AB7]' : displayBalance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]']">{{ clientBalance }} {{ displayCurrencySymbol }}</span>
                                 <span v-if="displayBalance > 0">({{ $t('clientOwesUs') }})</span>
                                 <span v-else-if="displayBalance < 0">({{ $t('weOweClient') }})</span>
                                 <span v-else>({{ $t('mutualSettlement') }})</span>

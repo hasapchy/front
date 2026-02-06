@@ -1,71 +1,65 @@
 <template>
     <div class="mt-4">
-        <div class="flex justify-between items-center mb-2">
-            <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
-            <div class="flex gap-2">
-                <PrimaryButton
-                    v-if="$store.getters.hasPermission('transactions_create')"
-                    icon="fas fa-plus"
-                    :onclick="() => showAddTransactionModal('income')"
-                    :is-small="true">
-                    {{ $t('income') }}
-                </PrimaryButton>
-
-                <PrimaryButton
-                    v-if="$store.getters.hasPermission('transactions_create')"
-                    icon="fas fa-minus"
-                    :isDanger="true"
-                    :onclick="() => showAddTransactionModal('outcome')"
-                    :is-small="true">
-                    {{ $t('outcome') }}
-                </PrimaryButton>
-                <PrimaryButton 
-                    v-if="$store.getters.hasPermission('projects_update')"
-                    icon="fas fa-plus" 
-                    :onclick="() => showAddTransactionModal(null)" 
-                    :is-small="true">
-                    {{ $t('addTransaction') || $t('add') }}
-                </PrimaryButton>
+        <div v-if="canViewProjectBudget" class="mb-4 grid grid-cols-4 gap-3">
+            <div class="px-4 py-2.5 rounded-lg bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 min-w-0">
+                <i class="fas fa-arrow-up text-[#5CB85C] text-sm"></i>
+                <span class="text-xs text-gray-500">{{ $t('income') }}</span>
+                <b class="text-[#5CB85C] text-sm">{{ totalIncomeDisplay }}</b>
+            </div>
+            <div class="px-4 py-2.5 rounded-lg bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 min-w-0">
+                <i class="fas fa-arrow-down text-[#EE4F47] text-sm"></i>
+                <span class="text-xs text-gray-500">{{ $t('outcome') }}</span>
+                <b class="text-[#EE4F47] text-sm">{{ totalExpenseDisplay }}</b>
+            </div>
+            <div class="px-4 py-2.5 rounded-lg bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 min-w-0">
+                <i class="fas fa-wallet text-blue-500 text-sm"></i>
+                <span class="text-xs text-gray-500">{{ $t('total') || 'Итого' }}</span>
+                <b class="text-sm" :class="{
+                    'text-[#5CB85C]': detailedBalance.total_balance >= 0,
+                    'text-[#EE4F47]': detailedBalance.total_balance < 0
+                }">{{ formatBalance(detailedBalance.total_balance) }}</b>
+            </div>
+            <div class="px-4 py-2.5 rounded-lg bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 min-w-0">
+                <i class="fas fa-chart-line text-purple-500 text-sm"></i>
+                <span class="text-xs text-gray-500">{{ $t('projectBudget') }}</span>
+                <b class="text-purple-600 text-sm">{{ budgetDisplay }}</b>
             </div>
         </div>
-        <div v-if="canViewProjectBudget" class="mb-4">
-            <!-- Все показатели в один ряд -->
-            <div class="flex items-center gap-6">
-                <!-- Приход -->
-                <span class="flex items-center gap-2">
-                    <i class="fas fa-arrow-up text-[#5CB85C]"></i>
-                    <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b>
-                </span>
-                
-                <!-- Расход -->
-                <span class="flex items-center gap-2">
-                    <i class="fas fa-arrow-down text-[#EE4F47]"></i>
-                    <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b>
-                </span>
-                
-                <!-- Итого -->
-                <span class="flex items-center gap-2">
-                    <i class="fas fa-wallet text-blue-500"></i>
-                    <b :class="{
-                        'text-[#5CB85C]': detailedBalance.total_balance >= 0,
-                        'text-[#EE4F47]': detailedBalance.total_balance < 0
-                    }">{{ formatBalance(detailedBalance.total_balance) }}</b>
-                </span>
-                
-                <!-- Бюджет -->
-                <span class="flex items-center gap-2">
-                    <i class="fas fa-chart-line text-purple-500"></i>
-                    <b class="text-purple-600">{{ budgetDisplay }}</b>
-                </span>
+        <transition name="fade" mode="out-in">
+            <div v-if="!balanceLoading" key="content">
+                <DraggableTable table-key="project.balance"
+                    :columns-config="columnsConfig" :table-data="balanceHistory || []" :item-mapper="itemMapper"
+                    @selectionChange="selectedIds = $event" :onItemClick="handleBalanceItemClick">
+                    <template #tableSettingsAdditional>
+                        <PrimaryButton
+                            v-if="$store.getters.hasPermission('transactions_create')"
+                            icon="fas fa-plus"
+                            :onclick="() => showAddTransactionModal('income')"
+                            :is-small="true">
+                            {{ $t('income') }}
+                        </PrimaryButton>
+                        <PrimaryButton
+                            v-if="$store.getters.hasPermission('transactions_create')"
+                            icon="fas fa-minus"
+                            :isDanger="true"
+                            :onclick="() => showAddTransactionModal('outcome')"
+                            :is-small="true">
+                            {{ $t('outcome') }}
+                        </PrimaryButton>
+                        <PrimaryButton
+                            v-if="$store.getters.hasPermission('projects_update')"
+                            icon="fas fa-plus"
+                            :onclick="() => showAddTransactionModal(null)"
+                            :is-small="true">
+                            {{ $t('addTransaction') || $t('add') }}
+                        </PrimaryButton>
+                    </template>
+                </DraggableTable>
             </div>
-        </div>
-        <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="!balanceHistory?.length" class="text-gray-500">
-            {{ $t('noHistory') }}
-        </div>
-        <DraggableTable v-if="!balanceLoading && balanceHistory?.length" table-key="project.balance"
-            :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
-            @selectionChange="selectedIds = $event" :onItemClick="handleBalanceItemClick" />
+            <div v-else key="loader" class="flex justify-center items-center h-64">
+                <SpinnerIcon />
+            </div>
+        </transition>
 
         <!-- Модальное окно для создания/редактирования транзакции -->
         <SideModalDialog 
@@ -102,6 +96,7 @@
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
+import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
 import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
@@ -124,6 +119,7 @@ export default {
         DraggableTable,
         SideModalDialog,
         PrimaryButton,
+        SpinnerIcon,
         NotificationToast,
         SourceButtonCell,
         TransactionCreatePage,
@@ -149,6 +145,7 @@ export default {
             transactionLoading: false,
             selectedNewTransactionType: null,
             columnsConfig: [
+                { name: "id", label: "№", size: 60 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 120 },
                 { 
                     name: "source", 
@@ -339,6 +336,8 @@ export default {
         },
         itemMapper(i, c) {
             switch (c) {
+                case "id":
+                    return i.sourceId ?? i.id ?? '-';
                 case "dateUser":
                     return i.dateUser || (i.formatDate ? i.formatDate() : '');
                 case "note":

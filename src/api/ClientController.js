@@ -135,14 +135,15 @@ export default class ClientController extends BaseController {
     );
   }
 
-  static async createClientBalance(clientId, currencyId, isDefault = false, initialBalance = 0, note = '') {
+  static async createClientBalance(clientId, currencyId, isDefault = false, initialBalance = 0, note = '', userIds = []) {
     return super.handleRequest(
       async () => {
         const response = await api.post(`/clients/${clientId}/balances`, {
           currency_id: currencyId,
           is_default: isDefault,
           balance: initialBalance,
-          note: note
+          note: note,
+          user_ids: Array.isArray(userIds) ? userIds : []
         });
         const balanceData = response.data.data || response.data;
         return ClientBalanceDto.fromApi(balanceData);
