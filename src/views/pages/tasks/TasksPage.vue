@@ -267,6 +267,7 @@ import { VueDraggableNext } from 'vue-draggable-next';
 import debounce from 'lodash.debounce';
 import { translateTaskStatus } from '@/utils/translationUtils';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import KanbanSkeleton from '@/views/components/app/kanban/KanbanSkeleton.vue';
 
 const TimelinePanel = defineAsyncComponent(() =>
     import("@/views/components/app/dialog/TimelinePanel.vue")
