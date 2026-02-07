@@ -360,13 +360,20 @@ export default {
         },
         searchClients: debounce(async function () {
             if (this.clientSearch.length >= 3) {
+                if (this.searchAbortController) {
+                    this.searchAbortController.abort();
+                }
+                this.searchAbortController = new AbortController();
+                const signal = this.searchAbortController.signal;
                 this.clientSearchLoading = true;
                 try {
                     const typeFilter = this.clientTypeFilter && Array.isArray(this.clientTypeFilter) && this.clientTypeFilter.length > 0
                         ? this.clientTypeFilter
                         : null;
 
-                    const results = await ClientController.searchItems(this.clientSearch, typeFilter);
+                    const results = await ClientController.searchItems(this.clientSearch, typeFilter, signal);
+
+                    if (signal.aborted) return;
 
                     let filtered = this.onlySuppliers
                         ? results.filter((client) => client.isSupplier)
@@ -375,10 +382,11 @@ export default {
                     this.clientResults = filtered;
 
                 } catch (error) {
+                    if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') return;
                     console.error('Ошибка при поиске клиентов:', error);
                     this.clientResults = [];
                 } finally {
-                    this.clientSearchLoading = false;
+                    if (!signal.aborted) this.clientSearchLoading = false;
                 }
             } else {
                 this.clientResults = [];

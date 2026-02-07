@@ -68,6 +68,8 @@ export const TRANSACTION_FORM_PRESETS = {
         client: { visible: false },
         debt: { visible: false, enforcedValue: false },
         project: { visible: false },
+        source: { visible: false },
+        paymentType: { visible: false },
     },
     employeeBonus: {
         client: { visible: false },
@@ -120,11 +122,13 @@ export const TRANSACTION_FORM_PRESETS = {
         ...full,
         type: { ...full.type, visible: false, enforcedValue: 'income', readonly: true },
         paymentType: { visible: false },
+        options: { bindProjectAndContract: true },
     },
     fullOutcome: {
         ...full,
         type: { ...full.type, visible: false, enforcedValue: 'outcome', readonly: true },
         paymentType: { visible: false },
+        options: { bindProjectAndContract: true },
     },
 };
 

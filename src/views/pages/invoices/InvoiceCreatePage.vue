@@ -40,11 +40,11 @@
         
         <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
             <div class="flex items-center space-x-2">
-                <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
+                <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
                 </PrimaryButton>
                 <div v-if="editingItemId" class="flex items-center space-x-2">
                     <div class="relative">
-                        <PrimaryButton :onclick="togglePdfDropdown" :icon="'fas fa-file-pdf'" class="px-3 py-2">
+                        <PrimaryButton :onclick="togglePdfDropdown" :icon="'fas fa-file-pdf'" class="px-3 py-2" :aria-label="$t('pdfMenu')">
                             <i :class="showPdfDropdown ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" class="ml-2"></i>
                         </PrimaryButton>
 

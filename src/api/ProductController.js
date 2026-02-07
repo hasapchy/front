@@ -27,24 +27,24 @@ export default class ProductController extends BaseController {
     );
   }
 
-  static async searchItems($search_term, productsOnly = null, warehouseId = null) {
+  static async searchItems($search_term, productsOnly = null, warehouseId = null, signal = null) {
     return super.handleRequest(
       async () => {
         const searchParams = {
           search: $search_term,
         };
-        
+
         if (productsOnly !== null) {
           searchParams.products_only = productsOnly;
         }
-        
+
         if (warehouseId) {
           searchParams.warehouse_id = warehouseId;
         }
-        
-        const response = await api.get("/products/search", {
-          params: searchParams,
-        });
+
+        const config = { params: searchParams };
+        if (signal) config.signal = signal;
+        const response = await api.get("/products/search", config);
         return ProductSearchDto.fromApiArray(response.data);
       },
       "Ошибка при поиске товаров или услуг:"

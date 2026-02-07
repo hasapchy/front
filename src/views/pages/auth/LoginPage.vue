@@ -194,8 +194,6 @@
             </div>
         </div>
 
-        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-            :isDanger="notificationIsDanger" @close="closeNotification" />
     </div>
 </template>
 
@@ -205,13 +203,11 @@ import { required, email, minLength } from '@vuelidate/validators';
 import ValidationErrorMessage from '@/views/components/app/forms/ValidationErrorMessage.vue';
 import AuthController from '@/api/AuthController';
 import { isSimpleWorkerOnly } from '@/utils/userUtils';
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 
 export default {
     components: {
-        ValidationErrorMessage,
-        NotificationToast
+        ValidationErrorMessage
     },
     mixins: [notificationMixin],
     data() {

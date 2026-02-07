@@ -115,7 +115,7 @@
     <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
       <div class="flex items-center space-x-2">
         <PrimaryButton icon="fas fa-save" :onclick="isEditing ? updateOrder : createOrder" :is-loading="loading"
-          :disabled="!canSave">
+          :disabled="!canSave" :aria-label="$t('save')">
         </PrimaryButton>
         <PrimaryButton v-if="isEditing && (orderId || editingItem?.id)" :onclick="showDeleteDialog" :is-danger="true"
           :is-loading="deleteLoading" icon="fas fa-trash">

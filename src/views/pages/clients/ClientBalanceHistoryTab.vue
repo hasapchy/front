@@ -2,22 +2,16 @@
     <div class="mt-4">
         <transition name="fade" mode="out-in">
             <div v-if="editingItem && !balanceLoading" key="table">
-                <DraggableTable table-key="client.balance.history"
-                    :columns-config="columnsConfig" :table-data="balanceHistory || []" :item-mapper="itemMapper"
+                <DraggableTable table-key="client.balance.history" :columns-config="columnsConfig"
+                    :table-data="filteredBalanceHistory" :item-mapper="itemMapper"
                     :onItemClick="handleBalanceItemClick">
                     <template #tableSettingsAdditional>
-                        <FiltersContainer
-                            v-if="editingItem?.balances?.length"
-                            :has-active-filters="hasActiveFilters"
-                            :active-filters-count="getActiveFiltersCount()"
-                            @reset="resetFilters"
-                            @apply="applyFilters">
-                            <div>
+                        <FiltersContainer v-if="editingItem" :has-active-filters="hasActiveFilters"
+                            :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
+                            <div v-if="editingItem?.balances?.length">
                                 <label class="block mb-2 text-xs font-semibold">{{ $t('balance') }}</label>
                                 <select v-model="selectedBalanceId" @change="fetchBalanceHistory" class="w-full">
-                                    <option
-                                        v-for="balance in editingItem.balances"
-                                        :key="balance.id"
+                                    <option v-for="balance in editingItem.balances" :key="balance.id"
                                         :value="balance.id">
                                         {{ balance.currency?.symbol || '' }} - {{ formatBalance(balance.balance) }}
                                         <span v-if="balance.isDefault"> ({{ $t('default') }})</span>
@@ -25,51 +19,62 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') || 'Дата с' }}</label>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('source') }}</label>
+                                <select v-model="sourceFilter" @change="applyFilters" class="w-full">
+                                    <option value="">{{ $t('all') || 'Все' }}</option>
+                                    <option value="order">{{ $t('orders') }}</option>
+                                    <option value="sale">{{ $t('sales') }}</option>
+                                    <option value="receipt">{{ $t('warehouseReceipts') }}</option>
+                                    <option value="transaction">{{ $t('payments') }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('credit') }}</label>
+                                <select v-model="debtFilter" @change="applyFilters" class="w-full">
+                                    <option value="">{{ $t('all') || 'Все' }}</option>
+                                    <option value="payments">{{ $t('payments') }}</option>
+                                    <option value="debt">{{ $t('credit') }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
                                 <input type="date" v-model="dateFrom" class="w-full" />
                             </div>
                             <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') || 'Дата по' }}</label>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
                                 <input type="date" v-model="dateTo" class="w-full" />
                             </div>
                         </FiltersContainer>
+                        <PrimaryButton v-if="editingItem?.id" icon="fas fa-plus" :onclick="openCreatePaymentModal"
+                            :is-success="true">
+                            {{ $t('createPayment') }}
+                        </PrimaryButton>
                     </template>
                 </DraggableTable>
             </div>
-            <div v-else key="loader" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
             </div>
         </transition>
 
-        <NotificationToast 
-            :title="notificationTitle" 
-            :subtitle="notificationSubtitle" 
-            :show="notification" 
-            :is-danger="notificationIsDanger" 
-            @close="closeNotification" 
-        />
 
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
                 <div class="p-8 flex justify-center items-center min-h-[200px]">
-                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
                     </svg>
                 </div>
             </template>
             <template v-else>
-                <TransactionCreatePage 
-                    v-if="selectedEntity && selectedEntity.type === 'transaction'"
-                    :editingItem="editingTransactionItem"
-                    :initialClient="editingItem"
-                    :form-config="balanceAdjustmentFormConfig"
-                    :current-client-balance="editingItem?.balance"
-                    :client-balances="editingItem?.balances || []"
-                    :header-text="balanceAdjustmentHeader"
-                    @saved="onEntitySaved"
-                    @saved-error="onEntitySavedError"
-                    @deleted="onEntityDeleted"
+                <TransactionCreatePage v-if="selectedEntity && selectedEntity.type === 'transaction'"
+                    :editingItem="editingTransactionItem" :initialClient="editingItem"
+                    :form-config="transactionFormConfig" :current-client-balance="editingItem?.balance"
+                    :client-balances="editingItem?.balances || []" :header-text="transactionHeaderText"
+                    @saved="onEntitySaved" @saved-error="onEntitySavedError" @deleted="onEntityDeleted"
                     @deleted-error="onEntityDeletedError" />
             </template>
         </SideModalDialog>
@@ -79,9 +84,9 @@
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
+import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
-import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
-import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
+import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
 import OperationTypeCell from "@/views/components/app/buttons/OperationTypeCell.vue";
@@ -94,7 +99,7 @@ import ClientController from "@/api/ClientController";
 import TransactionController from "@/api/TransactionController";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 
-const TransactionCreatePage = defineAsyncComponent(() => 
+const TransactionCreatePage = defineAsyncComponent(() =>
     import("@/views/pages/transactions/TransactionCreatePage.vue")
 );
 
@@ -103,9 +108,10 @@ export default {
     components: {
         DraggableTable,
         FiltersContainer,
+        PrimaryButton,
         SideModalDialog,
-        NotificationToast,
         SourceButtonCell,
+        TableSkeleton,
         TransactionCreatePage,
     },
     emits: ['balance-updated'],
@@ -125,6 +131,9 @@ export default {
             dateFrom: null,
             dateTo: null,
             selectedBalanceId: null,
+            sourceFilter: '',
+            debtFilter: '',
+            isPaymentCreateMode: false,
             columnsConfig: [
                 { name: "id", label: "№", size: 60 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 120 },
@@ -136,9 +145,9 @@ export default {
                     props: (item) => ({ item: item })
                 },
                 {
-                    name: "sourceType", 
-                    label: "Источник", 
-                    size: 120, 
+                    name: "sourceType",
+                    label: "Источник",
+                    size: 120,
                     component: markRaw(SourceButtonCell),
                     props: (item) => {
                         const sourceType = item.sourceType || null;
@@ -154,12 +163,13 @@ export default {
                 },
                 { name: "note", label: this.$t("note"), size: 200 },
                 { name: "categoryName", label: this.$t("category"), size: 150 },
+                { name: "projectName", label: this.$t("project"), size: 150 },
                 {
                     name: "debt",
                     label: "Долг",
                     size: 80,
                     component: markRaw(DebtCell),
-                    props: (item) => ({ isDebt: item.is_debt, variant: 'text' })
+                    props: (item) => ({ isDebt: item.isDebt ?? item.is_debt, variant: 'text' })
                 },
                 { name: "userName", label: this.$t("user"), size: 120 },
                 {
@@ -218,8 +228,9 @@ export default {
             }
             this.balanceLoading = true;
             try {
+                const excludeDebt = this.debtFilter === 'payments' ? true : null;
                 this.balanceHistory = await ClientController.getBalanceHistory(
-                    this.editingItem.id, null, null,
+                    this.editingItem.id, excludeDebt, null,
                     this.dateFrom, this.dateTo, this.selectedBalanceId
                 );
             } catch (e) {
@@ -231,11 +242,19 @@ export default {
         resetFilters() {
             this.resetFiltersFromConfig({
                 dateFrom: null,
-                dateTo: null
+                dateTo: null,
+                sourceFilter: '',
+                debtFilter: ''
             }, () => {
                 this.initDefaultBalance();
                 this.fetchBalanceHistory();
             });
+        },
+        openCreatePaymentModal() {
+            this.isPaymentCreateMode = true;
+            this.entityModalOpen = true;
+            this.selectedEntity = { type: 'transaction' };
+            this.editingTransactionItem = null;
         },
         applyFilters() {
             this.fetchBalanceHistory();
@@ -252,6 +271,7 @@ export default {
             if (!item?.sourceId) return;
             try {
                 this.entityLoading = true;
+                this.isPaymentCreateMode = false;
                 const data = await this.ENTITY_CONFIG.transaction.fetch(item.sourceId);
                 this.editingTransactionItem = data;
                 this.entityModalOpen = true;
@@ -268,6 +288,7 @@ export default {
             this.selectedEntity = null;
             this.entityLoading = false;
             this.isAdjustmentMode = false;
+            this.isPaymentCreateMode = false;
         },
         async onEntitySaved() {
             this.entityModalOpen = false;
@@ -297,17 +318,13 @@ export default {
         onEntityDeletedError(error) {
             this.handleEntityError(error);
         },
-        openAdjustmentModal() {
-            this.isAdjustmentMode = true;
-            this.entityModalOpen = true;
-            this.selectedEntity = { type: 'transaction' };
-            this.editingTransactionItem = null;
-        },
         getActiveFiltersCount() {
             return this.getActiveFiltersCountFromConfig([
                 { value: this.dateFrom, defaultValue: null },
                 { value: this.dateTo, defaultValue: null },
-                { value: this.selectedBalanceId, defaultValue: this.defaultBalanceId }
+                { value: this.selectedBalanceId, defaultValue: this.defaultBalanceId },
+                { value: this.sourceFilter, defaultValue: '' },
+                { value: this.debtFilter, defaultValue: '' }
             ]);
         },
         itemMapper(i, c) {
@@ -319,6 +336,7 @@ export default {
                 case "categoryName":
                     const categoryName = i.categoryName || '';
                     return categoryName ? this.$t(`transactionCategory.${categoryName}`, categoryName) : '-';
+                case "projectName": return i.projectName ?? '-';
                 case "clientImpact": return parseFloat(i.amount || 0);
                 default: return i[c];
             }
@@ -330,14 +348,27 @@ export default {
             const defaultBalance = this.editingItem.balances.find(b => b.isDefault);
             return defaultBalance ? defaultBalance.id : (this.editingItem.balances[0]?.id ?? null);
         },
-        canAdjustBalance() {
-            return this.$store.getters.hasPermission('settings_client_balance_adjustment');
+        filteredBalanceHistory() {
+            let items = this.balanceHistory || [];
+            if (this.sourceFilter) {
+                items = items.filter(i => (i.source || i.sourceType) === this.sourceFilter);
+            }
+            if (this.debtFilter === 'debt') {
+                items = items.filter(i => i.isDebt);
+            }
+            return items;
         },
-        balanceAdjustmentFormConfig() {
-            return this.isAdjustmentMode ? TRANSACTION_FORM_PRESETS.balanceAdjustment : {};
+        transactionFormConfig() {
+            if (this.isPaymentCreateMode && !this.editingTransactionItem) {
+                return TRANSACTION_FORM_PRESETS.clientPayment;
+            }
+            return {};
         },
-        balanceAdjustmentHeader() {
-            return this.isAdjustmentMode ? 'Транзакция — корректировка баланса' : '';
+        transactionHeaderText() {
+            if (this.isPaymentCreateMode && !this.editingTransactionItem) {
+                return this.$t('createPayment') || 'Создать платеж';
+            }
+            return '';
         },
     },
     watch: {

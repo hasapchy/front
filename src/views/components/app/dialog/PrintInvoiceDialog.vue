@@ -34,11 +34,11 @@
                                 </div>
                             </div>
                             <div class="my-4 flex space-x-2 mx-5 justify-end">
-                                <PrimaryButton :onclick="onPrint" icon="fas fa-print"
+                                <PrimaryButton :onclick="onPrint" icon="fas fa-print" :aria-label="$t('print')"
                                     :disabled="selectedVariants.length === 0" :is-loading="loading">
                                     {{ $t('print') }}
                                 </PrimaryButton>
-                                <PrimaryButton :onclick="onClose" icon="fas fa-times" :isLight="true">
+                                <PrimaryButton :onclick="onClose" icon="fas fa-times" :isLight="true" :aria-label="$t('close')">
                                     {{ $t('cancel') }}
                                 </PrimaryButton>
                             </div>

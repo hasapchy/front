@@ -181,7 +181,7 @@
             :disabled="!$store.getters.hasPermission('roles_delete_all')">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('roles_update_all')) ||
-            (editingItemId == null && !$store.getters.hasPermission('roles_create'))">
+            (editingItemId == null && !$store.getters.hasPermission('roles_create'))" :aria-label="$t('save')">
         </PrimaryButton>
     </div>
 

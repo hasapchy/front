@@ -111,8 +111,8 @@
         </DraggableTable>
       </div>
 
-      <div v-else key="loader" class="flex justify-center items-center h-64">
-        <SpinnerIcon />
+      <div v-else key="loader" class="min-h-64">
+        <TableSkeleton />
       </div>
     </transition>
 
@@ -142,7 +142,7 @@ import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue'
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import Pagination from '@/views/components/app/buttons/Pagination.vue'
-import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue'
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue'
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue'
 import SimpleOrderCreatePage from '@/views/pages/simple/SimpleOrderCreatePage.vue'
 import filtersMixin from '@/mixins/filtersMixin'
@@ -162,7 +162,7 @@ export default {
     FiltersContainer,
     Pagination,
     draggable: VueDraggableNext,
-    SpinnerIcon,
+    TableSkeleton,
     SideModalDialog,
     SimpleOrderCreatePage
   },

@@ -35,8 +35,8 @@
                     </template>
                 </DraggableTable>
             </div>
-            <div v-else key="loader" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
             </div>
         </transition>
 
@@ -79,7 +79,7 @@
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
-import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
+import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import filtersMixin from "@/mixins/filtersMixin";
 import OrderController from "@/api/OrderController";
@@ -104,7 +104,7 @@ export default {
     components: {
         DraggableTable,
         FiltersContainer,
-        SpinnerIcon,
+        TableSkeleton,
         SideModalDialog,
         OrderCreatePage,
         SaleCreatePage,

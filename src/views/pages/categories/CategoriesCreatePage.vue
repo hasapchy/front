@@ -32,7 +32,7 @@
                 :disabled="!$store.getters.hasPermission('categories_delete_all')">
             </PrimaryButton>
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!selectedUsers?.length || (editingItemId != null && !$store.getters.hasPermission('categories_update_all')) ||
-                (editingItemId == null && !$store.getters.hasPermission('categories_create'))">
+                (editingItemId == null && !$store.getters.hasPermission('categories_create'))" :aria-label="$t('save')">
             </PrimaryButton>
         </div>
         <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"

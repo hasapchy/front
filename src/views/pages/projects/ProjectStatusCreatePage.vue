@@ -26,7 +26,7 @@
             :disabled="!$store.getters.hasPermission('project_statuses_delete')">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('project_statuses_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('project_statuses_create'))">
+            (editingItemId == null && !$store.getters.hasPermission('project_statuses_create'))" :aria-label="$t('save')">
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"

@@ -69,7 +69,7 @@
                 :disabled="!$store.getters.hasPermission('warehouse_receipts_delete')">
             </PrimaryButton>
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_receipts_update')) ||
-                (editingItemId == null && !$store.getters.hasPermission('warehouse_receipts_create'))">
+                (editingItemId == null && !$store.getters.hasPermission('warehouse_receipts_create'))" :aria-label="$t('save')">
             </PrimaryButton>
         </div>
         

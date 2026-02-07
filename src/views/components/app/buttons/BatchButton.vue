@@ -5,7 +5,8 @@
                 :onChange="(newStatusId) => handleChangeStatus(selectedIds, newStatusId)" :placeholder="$t('changeStatus')" />
             <PrimaryButton v-else :icon="action.icon" :isDanger="action.type === 'danger'"
                 :isInfo="action.type === 'info'" :isLight="action.type === 'light'" :isFull="action.isFull"
-                @click="() => action.action(selectedIds)" :disabled="!!action.disabled">
+                @click="() => action.action(selectedIds)" :disabled="!!action.disabled"
+                :aria-label="action.ariaLabel || action.label">
                 <span v-if="action.label">{{ action.label }}</span>
             </PrimaryButton>
         </template>

@@ -5,6 +5,7 @@ import TokenUtils from "@/utils/tokenUtils";
 
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_APP_BASE_URL || "http://127.0.0.1"}/api`,
+  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -50,6 +51,28 @@ api.interceptors.response.use(
   },
   async (error) => {
     endApiCall();
+
+    if (error.code === "ECONNABORTED") {
+      const store = getStore();
+      if (store) {
+        try {
+          const i18n = (await import("@/i18n")).default;
+          const t = i18n?.global?.t ?? ((key) => key);
+          store.dispatch("showNotification", {
+            title: t("error"),
+            subtitle: t("loadTimeout"),
+            isDanger: true,
+          });
+        } catch (_) {
+          store.dispatch("showNotification", {
+            title: "Error",
+            subtitle: "Load timeout",
+            isDanger: true,
+          });
+        }
+      }
+      return Promise.reject(error);
+    }
 
     if (error.response?.status === 401) {
       try {

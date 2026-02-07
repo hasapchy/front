@@ -58,7 +58,7 @@
                 :disabled="!$store.getters.hasPermission('cash_registers_delete')">
             </PrimaryButton>
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!selectedUsers?.length || (editingItemId != null && !$store.getters.hasPermission('cash_registers_update')) ||
-                (editingItemId == null && !$store.getters.hasPermission('cash_registers_create'))">
+                (editingItemId == null && !$store.getters.hasPermission('cash_registers_create'))" :aria-label="$t('save')">
             </PrimaryButton>
         </div>
         <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
@@ -193,7 +193,8 @@ export default {
             };
 
             if (this.editingItemId == null) {
-                data.balance = this.balance;
+                const balanceNum = parseFloat(this.balance);
+                data.balance = !isNaN(balanceNum) ? balanceNum : 0;
                 data.currency_id = this.currency_id;
             }
 

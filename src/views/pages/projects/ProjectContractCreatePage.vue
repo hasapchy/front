@@ -16,6 +16,10 @@
                 <label class="required">{{ $t('contractNumber') }}</label>
                 <input type="text" v-model="number" :placeholder="$t('enterContractNumber')" required>
             </div>
+            <div v-if="type === 1">
+                <label>{{ $t('name') }}</label>
+                <input type="text" v-model="name" :placeholder="$t('name')">
+            </div>
             <div>
                 <label class="required">{{ $t('date') }}</label>
                 <input type="date" v-model="date" required>
@@ -61,7 +65,7 @@
         <PrimaryButton v-if="editingItem != null && $store.getters.hasPermission('projects_delete')"
             :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading" icon="fas fa-trash">
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
         </PrimaryButton>
         </div>
         <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('deleteContract')"
@@ -110,9 +114,11 @@ export default {
         }
     },
     data() {
+        const initialType = this.editingItem ? (this.editingItem.type !== undefined ? this.editingItem.type : 0) : 0;
         return {
             number: this.editingItem ? this.editingItem.number : '',
-            type: this.editingItem ? (this.editingItem.type !== undefined ? this.editingItem.type : 0) : 0,
+            type: initialType,
+            name: initialType === 1 && this.editingItem ? (this.editingItem.name || '') : '',
             amount: this.editingItem ? this.editingItem.amount : '',
             currencyId: this.editingItem ? this.editingItem.currencyId : '',
             cashId: this.editingItem ? (this.editingItem.cashId || '') : '',
@@ -137,6 +143,9 @@ export default {
     },
     watch: {
         type(newType) {
+            if (newType === 0) {
+                this.name = '';
+            }
             if (this.cashId) {
                 const selectedCashRegister = this.cashRegisters.find(cr => cr.id == this.cashId);
                 if (selectedCashRegister) {
@@ -167,6 +176,7 @@ export default {
         clearForm() {
             this.number = '';
             this.type = 0;
+            this.name = '';
             this.amount = '';
             this.currencyId = '';
             this.cashId = '';
@@ -185,6 +195,7 @@ export default {
                 }
                 this.number = newEditingItem.number || '';
                 this.type = newEditingItem.type !== undefined ? newEditingItem.type : 0;
+                this.name = this.type === 1 ? (newEditingItem.name || '') : '';
                 this.amount = newEditingItem.amount || '';
                 this.currencyId = newEditingItem.currencyId || '';
                 
@@ -207,7 +218,7 @@ export default {
             }
         },
         getFormState() {
-            return {
+            const state = {
                 number: this.number,
                 type: this.type,
                 amount: this.amount,
@@ -217,6 +228,10 @@ export default {
                 returned: this.returned,
                 note: this.note
             };
+            if (this.type === 1) {
+                state.name = this.name;
+            }
+            return state;
         },
         async fetchCurrencies() {
             await this.loadStoreData({
@@ -254,6 +269,9 @@ export default {
                 returned: this.returned,
                 note: this.note
             };
+            if (this.type === 1) {
+                formData.name = this.name;
+            }
 
             const selectedCurrency = this.currencies.find(c => c.id == formData.currencyId);
             if (selectedCurrency) {

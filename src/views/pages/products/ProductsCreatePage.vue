@@ -66,7 +66,7 @@
                             @update:modelValue="onCategoriesChange" />
                     </div>
                     <PrimaryButton icon="fas fa-plus" :is-info="true" :onclick="showModal"
-                        :disabled="!$store.getters.hasPermission('categories_create')" />
+                        :disabled="!$store.getters.hasPermission('categories_create')" :aria-label="$t('add')" />
                 </div>
             </div>
             <div class="mt-2">
@@ -106,12 +106,12 @@
                 <div class="flex items-center space-x-2">
                     <input type="text" v-model="barcode">
                     <PrimaryButton v-if="!barcode" icon="fas fa-barcode" :is-info="true" :onclick="generateBarcode"
-                        :is-full="false">
+                        :is-full="false" :aria-label="$t('generateBarcode')">
                     </PrimaryButton>
                     <template v-if="barcode">
                         <svg id="barcode-svg" class="w-32 h-12" />
                         <canvas id="barcode-canvas" style="display:none;"></canvas>
-                        <PrimaryButton @click="downloadBarcodePng" icon="fas fa-download" :is-info="true">
+                        <PrimaryButton @click="downloadBarcodePng" icon="fas fa-download" :is-info="true" :aria-label="$t('downloadBarcode')">
                         </PrimaryButton>
                     </template>
                 </div>
@@ -121,10 +121,10 @@
         <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
             <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
                 :is-loading="deleteLoading" icon="fas fa-trash"
-                :disabled="!$store.getters.hasPermission('products_delete')">
+                :disabled="!$store.getters.hasPermission('products_delete')" :aria-label="$t('delete')">
             </PrimaryButton>
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('products_update')) ||
-                (editingItemId == null && !$store.getters.hasPermission('products_create'))">
+                (editingItemId == null && !$store.getters.hasPermission('products_create'))" :aria-label="$t('save')">
             </PrimaryButton>
         </div>
         

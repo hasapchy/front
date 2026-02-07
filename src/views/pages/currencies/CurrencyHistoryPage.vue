@@ -82,8 +82,8 @@
                 </template>
             </DraggableTable>
         </div>
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
 
@@ -100,14 +100,6 @@
         />
     </SideModalDialog>
 
-    <NotificationToast
-        :title="notificationTitle"
-        :subtitle="notificationSubtitle"
-        :show="notification"
-        :is-danger="notificationIsDanger"
-        @close="closeNotification"
-    />
-
     <AlertDialog
         :dialog="deleteDialog"
         :descr="`${$t('confirmDeleteExchangeRate')} (${selectedIds.length})?`"
@@ -119,7 +111,6 @@
 </template>
 
 <script>
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
@@ -138,12 +129,11 @@ import modalMixin from '@/mixins/modalMixin';
 import filtersMixin from '@/mixins/filtersMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { translateCurrency } from '@/utils/translationUtils';
-
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, filtersMixin],
     components: {
-        NotificationToast,
         PrimaryButton,
         SideModalDialog,
         Pagination,
@@ -154,6 +144,7 @@ export default {
         TableControlsBar,
         TableFilterButton,
         FiltersContainer,
+        TableSkeleton,
         draggable: VueDraggableNext
     },
     data() {

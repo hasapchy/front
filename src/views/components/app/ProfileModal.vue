@@ -87,7 +87,7 @@
                     />
                     <PrimaryButton :onclick="toggleNewPasswordVisibility"
                         :icon="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
-                    <PrimaryButton :onclick="generateNewPassword" :icon="'fas fa-dice'" class="px-2 py-1" />
+                    <PrimaryButton :onclick="generateNewPassword" :icon="'fas fa-dice'" class="px-2 py-1" :aria-label="$t('generatePassword')" />
                 </div>
             </div>
 
@@ -103,7 +103,7 @@
         </div>
     </div>
     <div v-show="currentTab === 'info'" class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
         </PrimaryButton>
     </div>
 

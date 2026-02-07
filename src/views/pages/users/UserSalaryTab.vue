@@ -23,8 +23,8 @@
                     </template>
                 </DraggableTable>
             </div>
-            <div v-else key="loader" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
             </div>
         </transition>
 
@@ -37,22 +37,14 @@
                 @deleted="handleDeleted" />
         </SideModalDialog>
 
-        <NotificationToast 
-            :title="notificationTitle" 
-            :subtitle="notificationSubtitle" 
-            :show="notification" 
-            :is-danger="notificationIsDanger" 
-            @close="closeNotification" 
-        />
     </div>
 </template>
 
 <script>
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
-import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
-import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
+import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import UserSalaryCreatePage from "./UserSalaryCreatePage.vue";
 import UsersController from "@/api/UsersController";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
@@ -64,9 +56,8 @@ export default {
     components: {
         PrimaryButton,
         SideModalDialog,
-        NotificationToast,
         DraggableTable,
-        SpinnerIcon,
+        TableSkeleton,
         UserSalaryCreatePage,
     },
     props: {

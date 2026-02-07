@@ -8,9 +8,7 @@
             :editingItemId="editingItemId" :orderId="orderId" :initialProjectId="initialProjectId"
             :allCashRegisters="cashRegistersForForm" :currencies="currencies" :filteredCategories="filteredCategories"
             :allProjects="allProjects" :formConfig="formConfig" :isCategoryDisabled="isCategoryDisabled"
-            :client-balances="clientBalances"
-            @balance-changed="onBalanceChanged"
-        />
+            :client-balances="clientBalances" @balance-changed="onBalanceChanged" />
         <TransactionBalancePreview :showPreview="showAdjustmentBalancePreview"
             :currentClientBalance="currentClientBalance" :type="type" :origAmount="origAmount"
             :defaultCurrencySymbol="defaultCurrencySymbol" />
@@ -19,8 +17,10 @@
             :transactionCurrencySymbol="transactionCurrencySymbol" :cashCurrencySymbol="cashCurrencySymbol"
             :calculatedCashAmount="calculatedCashAmount" :isTransferTransaction="isTransferTransaction"
             @exchange-rate-manual="handleExchangeRateChange" />
-        <div class="mt-2" v-if="isFieldVisible('source') && !orderId && $store.getters.hasPermission('contracts_create')">
-            <ContractSearch v-model:selectedContract="selectedContractForSource" :showLabel="true" />
+        <div class="mt-2"
+            v-if="isFieldVisible('source') && !orderId && $store.getters.hasPermission('contracts_create')">
+            <ContractSearch v-model:selectedContract="selectedContractForSource" :showLabel="true"
+                :project-id="useProjectContractBinding ? projectId : null" :active-projects-only="true" />
         </div>
         <TransactionSourceSection :orderId="orderId" :selectedSource="selectedSource" :sourceType="sourceType"
             :formConfig="formConfig" />
@@ -261,6 +261,9 @@ export default {
             const paymentTypeIsCash = this.paymentType === 1;
             return this.allCashRegisters.filter(c => Boolean(c.isCash ?? c.is_cash) === paymentTypeIsCash);
         },
+        useProjectContractBinding() {
+            return !this.editingItemId && this.formConfig?.options?.bindProjectAndContract === true;
+        },
         selectedContractForSource: {
             get() {
                 return this.sourceType === 'contract' ? this.selectedSource : null;
@@ -268,6 +271,9 @@ export default {
             set(value) {
                 this.selectedSource = value;
                 this.sourceType = value ? 'contract' : '';
+                if (this.useProjectContractBinding && value) {
+                    this.projectId = value.projectId ?? value.project_id;
+                }
             }
         },
     },
@@ -517,7 +523,10 @@ export default {
                 throw new Error('При транзакции "в кредит" должен быть выбран клиент');
             }
             if (this.isFieldRequired('note') && (!this.note || String(this.note).trim() === '')) {
-                throw new Error('Заполните примечание');
+                throw new Error(this.$t('fillRequiredFields') || 'Заполните примечание');
+            }
+            if (this.isFieldVisible('client') && this.isFieldRequired('client') && !this.selectedClient?.id) {
+                throw new Error(this.$t('selectClient') || 'Выберите клиента');
             }
 
             if (this.formConfig?.options?.useSalaryAccrualApi && this.selectedClient?.employeeId && !this.editingItemId) {
@@ -797,12 +806,18 @@ export default {
         projectId: {
             async handler(newProjectId) {
                 if (!this.isFieldVisible('project')) return;
+                if (this.useProjectContractBinding && this.sourceType === 'contract' && this.selectedSource) {
+                    const contractProjectId = this.selectedSource.projectId ?? this.selectedSource.project_id;
+                    if (contractProjectId != null && Number(contractProjectId) !== Number(newProjectId)) {
+                        this.selectedSource = null;
+                        this.sourceType = '';
+                    }
+                }
                 if (!newProjectId || !this.initialProjectId) return;
                 if (this.editingItemId) return;
                 if (this.isFieldVisible('client') && this.isFieldRequired('client')) {
                     return;
                 }
-                // Ищем проект в store (activeProjects может не содержать завершённых — в таком случае подгрузим)
                 let project = (this.allProjects || []).find(p => p.id === newProjectId) || null;
                 if (!project) {
                     try {
@@ -866,7 +881,7 @@ export default {
                 this.currencyId = newEditingItem.origCurrencyId || '';
                 this.categoryId = newEditingItem.categoryId || '';
                 this.projectId = newEditingItem.projectId || '';
-                this.date = newEditingItem.date                     ? this.getFormattedDate(newEditingItem.date)
+                this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date)
                     : this.getCurrentLocalDateTime();
                 this.selectedClient = newEditingItem.client || this.initialClient || null;
                 this.isDebt = newEditingItem.isDebt || false;
@@ -918,17 +933,17 @@ export default {
                     }
                 }
             },
-        selectedClient: {
-            handler(newClient, oldClient) {
-                if (!newClient || (oldClient && newClient.id !== oldClient.id)) {
-                    this.selectedBalanceId = null;
-                } else if (newClient && newClient.balances && newClient.balances.length > 0) {
-                    const defaultBalance = newClient.balances.find(b => b.isDefault);
-                    this.selectedBalanceId = defaultBalance ? defaultBalance.id : (newClient.balances[0]?.id || null);
-                }
+            selectedClient: {
+                handler(newClient, oldClient) {
+                    if (!newClient || (oldClient && newClient.id !== oldClient.id)) {
+                        this.selectedBalanceId = null;
+                    } else if (newClient && newClient.balances && newClient.balances.length > 0) {
+                        const defaultBalance = newClient.balances.find(b => b.isDefault);
+                        this.selectedBalanceId = defaultBalance ? defaultBalance.id : (newClient.balances[0]?.id || null);
+                    }
+                },
+                deep: true
             },
-            deep: true
-        },
             immediate: true,
             deep: true
         },

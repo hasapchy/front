@@ -1,5 +1,6 @@
 import "./assets/main.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
+import "vue3-toastify/dist/index.css";
 
 // Настройка часового пояса UTC+5 по умолчанию
 const originalDate = window.Date;
@@ -24,6 +25,7 @@ import App from "./App.vue";
 import router from "./router";
 import store from "./store";
 import i18n from "./i18n";
+import Vue3Toastify from "vue3-toastify";
 import { setStore } from "./store/storeManager";
 import soundManager from "./utils/soundUtils";
 import SpinnerIcon from "./views/components/app/SpinnerIcon.vue";
@@ -47,7 +49,17 @@ async function bootstrapApp() {
   app.config.globalProperties.$formatCurrency = formatCurrency;
   app.config.globalProperties.$getStepForDecimals = getStepForDecimals;
   
-  app.use(router).use(store).use(i18n);
+  app.use(router).use(store).use(i18n).use(Vue3Toastify, {
+    autoClose: 10000,
+    position: "top-right",
+    transition: "bounce",
+    hideProgressBar: false,
+    pauseOnHover: true,
+    closeOnClick: true,
+    newestOnTop: true,
+    limit: 5,
+    clearOnUrlChange: false,
+  });
   
   // Добавляем глобальные методы с доступом к store
   app.config.globalProperties.$formatNumberForCompany = (value, showDecimals = true) => {

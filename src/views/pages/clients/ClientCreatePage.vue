@@ -70,7 +70,7 @@
               <PhoneInputWithCountry v-model="newPhone" :default-country="newPhoneCountry"
                 @country-change="handleCountryChange" @keyup.enter="addPhone" @blur="handlePhoneBlur" class="flex-1"
                 :required="true" ref="phoneInputRef" />
-              <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" />
+              <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" :aria-label="$t('add')" />
             </div>
             <div v-for="(phone, index) in phones" :key="`phone-${index}-${phone}`"
               class="flex items-stretch space-x-2 mt-2">
@@ -85,11 +85,11 @@
             <label>{{ $t('email') }}</label>
             <div class="flex items-center space-x-2">
               <input type="text" v-model="newEmail" @keyup.enter="addEmail" />
-              <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addEmail" />
+              <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addEmail" :aria-label="$t('add')" />
             </div>
             <div v-for="(email, index) in emails" :key="email" class="flex items-center space-x-2 mt-2">
               <input type="text" :value="email" readonly />
-              <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removeEmail(index)" />
+              <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removeEmail(index)" :aria-label="$t('remove')" />
             </div>
           </div>
           <div class="flex gap-4 w-full">
@@ -117,21 +117,15 @@
           class="mt-4">
           <ClientBalancesTab :editing-item="editingItem" />
         </div>
-        <div v-show="currentTab === 'payments' && editingItem" class="mt-4">
-          <ClientPaymentsTab :editing-item="editingItem" @payments-updated="handlePaymentsUpdated" />
-        </div>
-        <div v-show="currentTab === 'operations' && editingItem" class="mt-4">
-          <ClientOperationsTab :editing-item="editingItem" />
-        </div>
       </div>
     </div>
     
     <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
       <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-        :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('clients_delete')">
+        :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('clients_delete')" :aria-label="$t('delete')">
       </PrimaryButton>
       <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('clients_update')) ||
-        (editingItemId == null && !$store.getters.hasPermission('clients_create'))">
+        (editingItemId == null && !$store.getters.hasPermission('clients_create'))" :aria-label="$t('save')">
       </PrimaryButton>
     </div>
     
@@ -139,8 +133,6 @@
       :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
       :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-      :is-danger="notificationIsDanger" @close="closeNotification" />
   </div>
 </template>
 
@@ -150,13 +142,10 @@ import UsersController from "@/api/UsersController";
 import ClientDto from "@/dto/client/ClientDto";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
-import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import TabBar from "@/views/components/app/forms/TabBar.vue";
 import PhoneInputWithCountry from "@/views/components/app/forms/PhoneInputWithCountry.vue";
 import ClientBalancesTab from "@/views/pages/clients/ClientBalancesTab.vue";
 import ClientBalanceHistoryTab from "@/views/pages/clients/ClientBalanceHistoryTab.vue";
-import ClientPaymentsTab from "@/views/pages/clients/ClientPaymentsTab.vue";
-import ClientOperationsTab from "@/views/pages/clients/ClientOperationsTab.vue";
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
@@ -166,7 +155,7 @@ import crudFormMixin from "@/mixins/crudFormMixin";
 export default {
   mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
   emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
-  components: { PrimaryButton, AlertDialog, NotificationToast, TabBar, PhoneInputWithCountry, ClientBalancesTab, ClientBalanceHistoryTab, ClientPaymentsTab, ClientOperationsTab, UserSearch },
+  components: { PrimaryButton, AlertDialog, TabBar, PhoneInputWithCountry, ClientBalancesTab, ClientBalanceHistoryTab, UserSearch },
   props: {
     editingItem: { type: ClientDto, default: null },
     defaultFirstName: { type: String, default: "" },
@@ -206,16 +195,14 @@ export default {
       tabs: [
         { name: "info", label: "info" },
         { name: "history", label: "history" },
-        { name: "balances", label: "balance" },
-        { name: "payments", label: "payments" },
-        { name: "operations", label: "operations" }
+        { name: "balances", label: "balance" }
       ]
     };
   },
   computed: {
     translatedTabs() {
       let visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab =>
-        tab.name !== 'balances' && tab.name !== 'history' && tab.name !== 'payments' && tab.name !== 'operations'
+        tab.name !== 'balances' && tab.name !== 'history'
       );
       if (!this.$store.getters.hasPermission('settings_client_balance_view')) {
         visibleTabs = visibleTabs.filter(tab => tab.name !== 'balances' && tab.name !== 'history');
@@ -275,7 +262,7 @@ export default {
   },
   methods: {
     changeTab(tabName) {
-      if ((tabName === 'balances' || tabName === 'history' || tabName === 'payments' || tabName === 'operations') && !this.editingItem) {
+      if ((tabName === 'balances' || tabName === 'history') && !this.editingItem) {
         this.currentTab = 'info';
         return;
       }
@@ -319,10 +306,6 @@ export default {
         return true;
       }
       return !usedEmployeeIds.has(user.id);
-    },
-    handlePaymentsUpdated() {
-      if (this.editingItem && this.editingItem.id) {
-      }
     },
     getFormState() {
       return {
@@ -384,8 +367,11 @@ export default {
       if (this.newPhone && this.newPhone.trim()) {
         const cleanedPhone = this.newPhone.replace(/\D/g, "");
 
+        if (cleanedPhone.length < 6) {
+          this.showNotification(this.$t('error'), this.$t('phoneNumberMinLength') || 'Номер телефона должен содержать не менее 6 цифр', true);
+          return;
+        }
         const expectedLength = 11;
-
         if (cleanedPhone.length < expectedLength) {
           this.showNotification(this.$t('error'), this.$t('phoneNumberLengthWithCountry', { length: expectedLength }), true);
           return;
@@ -549,6 +535,10 @@ export default {
     prepareSave() {
       if ((this.clientType === 'employee' || this.clientType === 'investor') && !this.selectedEmployee) {
         throw new Error(this.$t('selectEmployee') || 'Необходимо выбрать сотрудника');
+      }
+      const invalidPhone = (this.phones || []).find(p => (p || '').replace(/\D/g, '').length < 6);
+      if (invalidPhone) {
+        throw new Error(this.$t('phoneNumberMinLength') || 'Номер телефона должен содержать не менее 6 цифр');
       }
 
       return {

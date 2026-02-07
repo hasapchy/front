@@ -65,7 +65,7 @@
             :disabled="!$store.getters.hasPermission('currency_history_delete')">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('currency_history_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('currency_history_create'))">
+            (editingItemId == null && !$store.getters.hasPermission('currency_history_create'))" :aria-label="$t('save')">
         </PrimaryButton>
     </div>
 
@@ -75,15 +75,12 @@
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
         :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 
-    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" @close="closeNotification" />
 </template>
 
 <script>
 import CurrencyHistoryController from '@/api/CurrencyHistoryController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
 import formChangesMixin from '@/mixins/formChangesMixin';
@@ -93,7 +90,7 @@ import { translateCurrency } from '@/utils/translationUtils';
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
     emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
-    components: { PrimaryButton, AlertDialog, NotificationToast },
+    components: { PrimaryButton, AlertDialog },
     props: {
         editingItem: { type: Object, default: null },
         currency: { type: Object, default: null }

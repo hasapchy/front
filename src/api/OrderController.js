@@ -15,7 +15,8 @@ export default class OrderController extends BaseController {
     projectFilter = "",
     clientFilter = "",
     per_page = 20,
-    unpaidOnly = false
+    unpaidOnly = false,
+    signal = null
   ) {
     const params = {};
     if (search) {
@@ -42,9 +43,9 @@ export default class OrderController extends BaseController {
     }
 
     return super.handleRequest(async () => {
-      const response = await api.get("/orders", {
-        params: { page, per_page, ...params },
-      });
+      const config = { params: { page, per_page, ...params } };
+      if (signal) config.signal = signal;
+      const response = await api.get("/orders", config);
       const responseData = response.data;
       const items = OrderDto.fromApiArray(responseData.data || []);
       const meta = responseData.meta || {};

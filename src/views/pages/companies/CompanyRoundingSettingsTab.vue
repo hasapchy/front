@@ -19,9 +19,6 @@
                 @update:customThreshold="updateRuleData(contextConfig.context, 'customThreshold', $event)" />
         </div>
 
-        <!-- Уведомления -->
-        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-            :is-danger="notificationIsDanger" @close="closeNotification" />
     </div>
 </template>
 
@@ -29,12 +26,11 @@
 import CompanyRoundingRulesController from '@/api/CompanyRoundingRulesController';
 import CompanyRoundingRuleDto from '@/dto/CompanyRoundingRuleDto';
 import RoundingRuleSection from './RoundingRuleSection.vue';
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 
 export default {
     mixins: [notificationMixin],
-    components: { RoundingRuleSection, NotificationToast },
+    components: { RoundingRuleSection },
     props: {
         companyId: {
             type: [Number, String],

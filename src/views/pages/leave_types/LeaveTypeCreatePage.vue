@@ -17,9 +17,9 @@
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('leave_types_delete_all')">
+            :disabled="!$store.getters.hasPermission('leave_types_delete_all')" :aria-label="$t('delete')">
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" 
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')"
             :disabled="!name || name.trim() === '' || 
             (editingItemId != null && !$store.getters.hasPermission('leave_types_update_all')) ||
             (editingItemId == null && !$store.getters.hasPermission('leave_types_create'))">

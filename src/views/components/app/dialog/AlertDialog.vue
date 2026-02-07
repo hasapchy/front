@@ -6,6 +6,11 @@
                 <div class="fixed inset-0 z-10 overflow-y-auto">
                     <div class="flex min-h-full items-center justify-center p-4 text-center">
                         <div
+                            ref="trapRef"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="modal-title"
+                            aria-describedby="modal-descr"
                             class="w-full max-w-lg transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all">
                             <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                                 <div class="sm:flex sm:items-start">
@@ -21,7 +26,7 @@
                                     <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                                         <h3 class="font-semibold text-gray-900 text-base" id="modal-title" style="font-size: 16px;">{{ displayTitle }}
                                         </h3>
-                                        <div class="mt-2">
+                                        <div class="mt-2" id="modal-descr">
                                             <p class="text-sm text-gray-500" v-html="displayDescr">
                                             </p>
                                         </div>
@@ -42,7 +47,11 @@
 </template>
 
 <script>
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { onKeyStroke } from '@vueuse/core';
+import { useFocusTrap } from '@vueuse/integrations/useFocusTrap';
 import PrimaryButton from '../buttons/PrimaryButton.vue';
+
 export default {
     components: {
         PrimaryButton
@@ -85,6 +94,24 @@ export default {
             required: false,
             default: false
         }
+    },
+    setup(props) {
+        const trapRef = ref(null);
+        const { activate, deactivate } = useFocusTrap(trapRef);
+        watch(() => props.dialog, (open) => {
+            if (open) {
+                nextTick(() => activate());
+            } else {
+                deactivate({ returnFocus: true });
+            }
+        });
+        const stopEscape = onKeyStroke('Escape', () => {
+            if (props.dialog && props.onLeave) {
+                props.onLeave();
+            }
+        });
+        onBeforeUnmount(stopEscape);
+        return { trapRef };
     },
     computed: {
         displayTitle() {

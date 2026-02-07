@@ -70,7 +70,6 @@ export function permissionGroupLabel(name) {
     projects: "Projects",
     order_statuses: "Order Statuses",
     order_statuscategories: "Status Categories",
-    order_categories: "Order Categories",
     transaction_categories: "Transaction Categories",
     cash_registers: "Cash Registers",
     currencies_access: "Currency Access",

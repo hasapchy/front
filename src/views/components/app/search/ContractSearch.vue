@@ -56,6 +56,14 @@ export default {
             type: Object,
             default: null,
         },
+        projectId: {
+            type: [String, Number],
+            default: null,
+        },
+        activeProjectsOnly: {
+            type: Boolean,
+            default: false,
+        },
         disabled: {
             type: Boolean,
             default: false,
@@ -96,29 +104,31 @@ export default {
         },
         async fetchLastContracts() {
             try {
-                const response = await ProjectContractController.getAllItems({ per_page: 10, page: 1 });
+                const params = { per_page: 10, page: 1 };
+                if (this.projectId) params.project_id = this.projectId;
+                if (this.activeProjectsOnly) params.active_projects_only = true;
+                const response = await ProjectContractController.getAllItems(params);
                 this.lastContracts = response?.items ?? [];
             } catch (error) {
                 this.lastContracts = [];
             }
         },
         searchContracts: debounce(async function () {
-            if (this.contractSearch.length >= 2) {
-                this.contractSearchLoading = true;
-                try {
-                    const response = await ProjectContractController.getAllItems({
-                        search: this.contractSearch,
-                        per_page: 20,
-                        page: 1
-                    });
-                    this.contractResults = response?.items ?? [];
-                } catch (error) {
-                    this.contractResults = [];
-                } finally {
-                    this.contractSearchLoading = false;
-                }
-            } else {
+            if (this.contractSearch.length < 2) {
                 this.contractResults = [];
+                return;
+            }
+            this.contractSearchLoading = true;
+            try {
+                const params = { search: this.contractSearch, per_page: 20, page: 1 };
+                if (this.projectId) params.project_id = this.projectId;
+                if (this.activeProjectsOnly) params.active_projects_only = true;
+                const response = await ProjectContractController.getAllItems(params);
+                this.contractResults = response?.items ?? [];
+            } catch (error) {
+                this.contractResults = [];
+            } finally {
+                this.contractSearchLoading = false;
             }
         }, 250),
         selectContract(contract) {
@@ -146,6 +156,14 @@ export default {
         contractSearch: {
             handler: 'searchContracts',
             immediate: true,
+        },
+        projectId() {
+            this.contractResults = [];
+            this.fetchLastContracts();
+        },
+        activeProjectsOnly() {
+            this.contractResults = [];
+            this.fetchLastContracts();
         },
     },
     created() {
