@@ -70,6 +70,7 @@
                 :editingItem="editingTransactionItem"
                 :initialProjectId="editingItem?.id"
                 :form-config="projectFormConfig"
+                :client-balances="editingItem?.client?.balances || []"
                 :header-text="'Транзакция — проект'"
                 @saved="handleTransactionSaved"
                 @saved-error="handleTransactionSavedError"
@@ -81,14 +82,6 @@
             </div>
         </SideModalDialog>
 
-        <!-- Notification Toast -->
-        <NotificationToast 
-            :title="notificationTitle" 
-            :subtitle="notificationSubtitle" 
-            :show="notification" 
-            :is-danger="notificationIsDanger" 
-            @close="closeNotification" 
-        />
     </div>
 </template>
 
@@ -97,7 +90,6 @@ import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
-import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
 import ProjectAmountCell from "@/views/components/app/buttons/ProjectAmountCell.vue";
@@ -120,7 +112,6 @@ export default {
         SideModalDialog,
         PrimaryButton,
         SpinnerIcon,
-        NotificationToast,
         SourceButtonCell,
         TransactionCreatePage,
     },

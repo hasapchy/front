@@ -448,6 +448,8 @@ export default {
   phoneNumberLength: 'Номер должен содержать {length} цифр',
   phoneNumberLengthWithCountry: 'Номер должен содержать {length} цифр (код страны + номер)',
   phoneNumberLengthWithoutCountry: 'Номер должен содержать {length} цифр (без кода страны)',
+  phoneNumberMinLength: 'Номер телефона должен содержать не менее 6 цифр',
+  selectClient: 'Выберите клиента',
 
   // Время
   today: 'Сегодня',
@@ -515,7 +517,6 @@ export default {
   // Новые ключи
   transaction: 'Операция',
   sale: 'Продажа',
-  orderCategory: 'Категория заказа',
   warehouse: 'Склад',
   user: 'Сотрудник',
   cashRegister: 'Касса',
@@ -528,7 +529,6 @@ export default {
 
   // Удаление
   deleteCategory: 'Удалить категорию',
-  deleteOrderCategory: 'Удалить категорию заказа',
   deleteOrderStatus: 'Удалить статус заказа',
   deleteOrderStatusCategory: 'Удалить категорию статусов заказа',
   deleteProject: 'Удалить проект',
@@ -597,8 +597,6 @@ export default {
   // Сообщения
   categorySuccessfullyAdded: 'Категория успешно добавлена',
   categorySuccessfullyDeleted: 'Категория успешно удалена',
-  orderCategorySuccessfullyAdded: 'Категория заказа успешно добавлена',
-  orderCategorySuccessfullyDeleted: 'Категория заказа успешно удалена',
   orderStatusCategorySuccessfullyAdded: 'Категория статуса заказа успешно добавлена',
   orderStatusCategorySuccessfullyDeleted: 'Категория статуса заказа успешно удалена',
   statusSuccessfullyAdded: 'Статус успешно добавлен',
@@ -610,9 +608,6 @@ export default {
   errorGettingStatuses: 'Ошибка получения списка статусов',
   errorSavingStatus: 'Ошибка сохранения статуса',
   errorDeletingStatus: 'Ошибка удаления статуса',
-  errorGettingOrderCategories: 'Ошибка получения списка категорий заказов',
-  errorSavingOrderCategory: 'Ошибка сохранения категории заказа',
-  errorDeletingOrderCategory: 'Ошибка удаления категории заказа',
   errorGettingOrderStatusCategories: 'Ошибка получения списка категорий статусов заказов',
   errorSavingOrderStatusCategory: 'Ошибка сохранения категории статуса заказа',
   errorDeletingOrderStatusCategory: 'Ошибка удаления категории статуса заказа',
@@ -729,6 +724,7 @@ export default {
   newPassword: 'Новый пароль',
   enterNewPassword: 'Введите новый пароль',
   confirmPassword: 'Подтвердите пароль',
+  confirmNewPassword: 'Подтвердите новый пароль',
   generate: 'Сгенерировать',
   passwordsDoNotMatch: 'Пароли не совпадают',
   currentPasswordRequired: 'Текущий пароль обязателен для смены пароля',
@@ -785,7 +781,6 @@ export default {
   projects: 'Проекты',
   order_statuses: 'Статусы заказов',
   order_statuscategories: 'Категории статусов заказов',
-  order_categories: 'Категории заказов',
   cash_registers: 'Кассы',
   settings: 'Доп. меню',
   currencies: 'Валюты',
@@ -1064,9 +1059,6 @@ export default {
   transactionSaved: 'Транзакция сохранена',
 
   // Фразы для категорий заказов
-  addOrderCategory: 'Добавить категорию заказа',
-  createOrderCategory: 'Категория заказа',
-  editOrderCategory: 'Категория заказа',
   addTransactionCategory: 'Добавить категорию транзакции',
   createTransactionCategory: 'Категория транзакции',
   editTransactionCategory: 'Категория транзакции',
@@ -1375,7 +1367,6 @@ export default {
   system: 'Система',
 
   // Permission group translations
-  orderCategories: 'Категории заказов',
   orderStatusCategories: 'Категории статусов заказов',
   warehouseStocks: 'Склад — Остатки',
   warehouseReceipts: 'Склад — Оприходования',

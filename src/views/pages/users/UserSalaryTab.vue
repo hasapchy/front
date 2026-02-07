@@ -37,20 +37,12 @@
                 @deleted="handleDeleted" />
         </SideModalDialog>
 
-        <NotificationToast 
-            :title="notificationTitle" 
-            :subtitle="notificationSubtitle" 
-            :show="notification" 
-            :is-danger="notificationIsDanger" 
-            @close="closeNotification" 
-        />
     </div>
 </template>
 
 <script>
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
-import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
 import UserSalaryCreatePage from "./UserSalaryCreatePage.vue";
@@ -64,7 +56,6 @@ export default {
     components: {
         PrimaryButton,
         SideModalDialog,
-        NotificationToast,
         DraggableTable,
         SpinnerIcon,
         UserSalaryCreatePage,

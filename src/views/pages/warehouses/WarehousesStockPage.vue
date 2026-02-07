@@ -96,8 +96,6 @@
                 <SpinnerIcon />
             </div>
         </transition>
-        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-            :is-danger="notificationIsDanger" @close="closeNotification" />
         <SideModalDialog :showForm="modalCreateWarehouse" :onclose="() => modalCreateWarehouse = false" :level="1">
             <AdminWarehouseCreatePage @saved="onWarehouseSaved" @saved-error="() => modalCreateWarehouse = false" />
         </SideModalDialog>
@@ -113,7 +111,6 @@
 </template>
 
 <script>
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
@@ -141,7 +138,7 @@ import { CacheInvalidator } from '@/cache';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, companyChangeMixin, searchMixin, filtersMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, AdminWarehouseCreatePage, TableControlsBar, TableFilterButton, FiltersContainer, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, AdminWarehouseCreatePage, TableControlsBar, TableFilterButton, FiltersContainer, draggable: VueDraggableNext },
     data() {
         return {
             cacheInvalidationType: 'stocks',

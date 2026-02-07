@@ -89,6 +89,7 @@
             <TransactionCreatePage
                 v-if="transactionModalOpen && editingItem && editingItem.id && employeeClient && transactionModalType"
                 ref="transactionForm" :form-config="transactionFormConfig" :initial-client="employeeClient"
+                :client-balances="employeeClient?.balances || []"
                 :header-text="getTransactionModalHeader()" @saved="handleTransactionSaved"
                 @saved-error="handleTransactionError" />
         </SideModalDialog>
@@ -106,21 +107,19 @@
             </template>
             <template v-else>
                 <TransactionCreatePage v-if="selectedEntity && selectedEntity.type === 'transaction'"
-                    :editingItem="editingTransactionItem" :initialClient="employeeClient" @saved="onEntitySaved"
-                    @saved-error="onEntitySavedError" @deleted="onEntityDeleted"
+                    :editingItem="editingTransactionItem" :initialClient="employeeClient"
+                    :client-balances="employeeClient?.balances || []"
+                    @saved="onEntitySaved" @saved-error="onEntitySavedError" @deleted="onEntityDeleted"
                     @deleted-error="onEntityDeletedError" />
             </template>
         </SideModalDialog>
 
-        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-            :is-danger="notificationIsDanger" @close="closeNotification" />
     </div>
 </template>
 
 <script>
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
-import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
 import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
@@ -142,7 +141,6 @@ export default {
     components: {
         PrimaryButton,
         SideModalDialog,
-        NotificationToast,
         DraggableTable,
         FiltersContainer,
         SpinnerIcon,
@@ -250,6 +248,7 @@ export default {
                 },
                 { name: "note", label: this.$t("note"), size: 200 },
                 { name: "categoryName", label: this.$t("category"), size: 150 },
+                { name: "projectName", label: this.$t("project"), size: 150 },
                 {
                     name: "debt",
                     label: this.$t("debt"),
@@ -369,6 +368,8 @@ export default {
                 case "categoryName":
                     const categoryName = i.categoryName || i.category_name;
                     return categoryName ? this.$t(`transactionCategory.${categoryName}`, categoryName) : '';
+                case "projectName":
+                    return i.projectName ?? '-';
                 case "clientImpact":
                     return parseFloat(i.amount || 0);
                 default:

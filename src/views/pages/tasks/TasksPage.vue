@@ -233,14 +233,11 @@
                 :id="editingItem.id" @toggle-timeline="toggleTimeline" />
         </template>
     </SideModalDialog>
-    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" @close="closeNotification" />
             <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
                   :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
@@ -277,7 +274,6 @@ const TimelinePanel = defineAsyncComponent(() =>
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
     components: { 
-        NotificationToast, 
         PrimaryButton, 
         SideModalDialog, 
         Pagination, 

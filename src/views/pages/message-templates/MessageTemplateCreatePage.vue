@@ -142,12 +142,6 @@
         :descr="$t('unsavedChanges')" 
         :confirm-text="$t('closeWithoutSaving')" 
         :leave-text="$t('stay')" />
-    <NotificationToast 
-        :title="notificationTitle" 
-        :subtitle="notificationSubtitle" 
-        :show="notification"
-        :is-danger="notificationIsDanger" 
-        @close="closeNotification" />
 </template>
 
 <script>
@@ -156,7 +150,6 @@ import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import MessageTemplateController from '@/api/MessageTemplateController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -170,7 +163,6 @@ export default {
         QuillEditor,
         PrimaryButton,
         AlertDialog,
-        NotificationToast,
         TabBar,
     },
     props: {

@@ -207,12 +207,6 @@
         :leave-text="$t('cancel')"
         :confirm-loading="deletingFiles" />
     
-    <NotificationToast 
-        :title="notificationTitle" 
-        :subtitle="notificationSubtitle" 
-        :show="notification"
-        :is-danger="notificationIsDanger" 
-        @close="closeNotification" />
 </template>
 
 <script>
@@ -222,7 +216,6 @@ import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import ProjectController from '@/api/ProjectController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import FileUploader from '@/views/components/app/forms/FileUploader.vue';
 import TimelinePanel from '@/views/components/app/dialog/TimelinePanel.vue';
@@ -244,7 +237,6 @@ export default {
     components: { 
         PrimaryButton, 
         AlertDialog, 
-        NotificationToast,
         TabBar,
         FileUploader,
         TimelinePanel,

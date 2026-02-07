@@ -64,14 +64,11 @@
         <AdminWarehouseCreatePage ref="adminwarehousecreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :warehouse="editingItem" />
     </SideModalDialog>
-    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" @close="closeNotification" />
             <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
             :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 <script>
 import WarehouseController from '@/api/WarehouseController';
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import AdminWarehouseCreatePage from '@/views/pages/admin/warehouses/AdminWarehouseCreatePage.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
@@ -91,7 +88,6 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
     components: {
-        NotificationToast,
         PrimaryButton,
         SideModalDialog,
         AdminWarehouseCreatePage,

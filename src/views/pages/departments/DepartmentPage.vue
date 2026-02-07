@@ -66,8 +66,6 @@
                 @deleted-error="handleDeletedError" @close-request="closeModal" />
         </SideModalDialog>
 
-        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-            :is-danger="notificationIsDanger" @close="closeNotification" />
 
         <AlertDialog :dialog="deleteDialog" :descr="$t('confirmDelete')" :confirm-text="$t('delete')"
             :leave-text="$t('cancel')" @confirm="confirmDelete" @leave="deleteDialog = false" />
@@ -80,7 +78,6 @@ import OrgNode from './components/OrgNode.vue';
 import OrgChartConnectors from './components/OrgChartConnectors.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import DepartmentCreatePage from './DepartmentCreatePage.vue';
 import notificationMixin from '@/mixins/notificationMixin';
@@ -101,7 +98,6 @@ export default {
         OrgChartConnectors,
         PrimaryButton,
         SideModalDialog,
-        NotificationToast,
         AlertDialog,
         DepartmentCreatePage,
         SpinnerIcon

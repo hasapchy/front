@@ -327,6 +327,8 @@ export default {
   phoneNumberLength: 'Belgi {length} sanamdan ybarat bolmaly',
   phoneNumberLengthWithCountry: 'Belgi {length} sanamdan ybarat bolmaly (ýurt kody + belgi)',
   phoneNumberLengthWithoutCountry: 'Belgi {length} sanamdan ybarat bolmaly (ýurt kodsyz)',
+  phoneNumberMinLength: 'Telefon belgisi azyndan 6 sanamdan ybarat bolmaly',
+  selectClient: 'Müşderini saýlaň',
   
   // Время
   today: 'Şu gün',
@@ -393,7 +395,6 @@ export default {
   service: 'Hyzmat',
   transaction: 'Tranzaksiya',
   sale: 'Satuw',
-  orderCategory: 'Sargyt kategoriýasy',
   warehouse: 'Ammar',
   stock: 'Ammar',
   leftovers: 'Galdyk',
@@ -424,7 +425,6 @@ export default {
   
   // Удаление
   deleteCategory: 'Kategoriýany poz',
-  deleteOrderCategory: 'Sargyt kategoriýasyny poz',
   deleteOrderStatus: 'Sargyt ýagdaýyny poz',
   deleteOrderStatusCategory: 'Sargyt ýagdaý kategoriýasyny poz',
   deleteProject: 'Layihäni poz',
@@ -493,8 +493,6 @@ export default {
   // Сообщения
   categorySuccessfullyAdded: 'Kategoriýa üstünlikli goşuldy',
   categorySuccessfullyDeleted: 'Kategoriýa üstünlikli pozuldy',
-  orderCategorySuccessfullyAdded: 'Sargyt kategoriýasy üstünlikli goşuldy',
-  orderCategorySuccessfullyDeleted: 'Sargyt kategoriýasy üstünlikli pozuldy',
   orderStatusCategorySuccessfullyAdded: 'Sargyt ýagdaýy kategoriýasy üstünlikli goşuldy',
   orderStatusCategorySuccessfullyDeleted: 'Sargyt ýagdaýy kategoriýasy üstünlikli pozuldy',
   statusSuccessfullyAdded: 'Ýagdaý üstünlikli goşuldy',
@@ -506,9 +504,6 @@ export default {
   errorGettingStatuses: 'Ýagdaýlary almakda ýalňyşlyk',
   errorSavingStatus: 'Ýagdaýy saklamakda ýalňyşlyk',
   errorDeletingStatus: 'Ýagdaýy pozmakda ýalňyşlyk',
-  errorGettingOrderCategories: 'Sargyt kategoriýalaryny almakda ýalňyşlyk',
-  errorSavingOrderCategory: 'Sargyt kategoriýasyny saklamakda ýalňyşlyk',
-  errorDeletingOrderCategory: 'Sargyt kategoriýasyny pozmakda ýalňyşlyk',
   errorGettingOrderStatusCategories: 'Sargyt ýagdaýy kategoriýalaryny almakda ýalňyşlyk',
   errorSavingOrderStatusCategory: 'Sargyt ýagdaýy kategoriýasyny saklamakda ýalňyşlyk',
   errorDeletingOrderStatusCategory: 'Sargyt ýagdaýy kategoriýasyny pozmakda ýalňyşlyk',
@@ -614,6 +609,7 @@ export default {
   newPassword: 'Täze açarsöz',
   enterNewPassword: 'Täze açarsöz giriziň',
   confirmPassword: 'Açarsözi tassyklamak',
+  confirmNewPassword: 'Täze açarsözi tassyklamak',
   generate: 'Döretmek',
     passwordsDoNotMatch: 'Açarsözler gabat gelmeýär',
     currentPasswordRequired: 'Açarsöz üýtgetmek üçin häzirki açarsöz hökmany',
@@ -674,7 +670,6 @@ export default {
   projects: 'Proýektler',
   order_statuses: 'Sargyt ýagdaýlary',
   order_statuscategories: 'Ýagdaý kategoriýalary',
-  order_categories: 'Sargyt kategoriýalary',
   cash_registers: 'Kassalar',
   settings: 'Sazlamalar',
   currencies: 'Pul birlikleri',
@@ -909,10 +904,6 @@ export default {
   errorCreatingOrder: 'Sargyty döretmekde ýalňyşlyk',
   errorAddingOrder: 'Sargyty goşmakda ýalňyşlyk',
   errorUpdatingOrder: 'Sargyty täzelemekde ýalňyşlyk',
-  
-  // Фразы для категорий заказов
-  createOrderCategory: 'Sargyt kategoriýasy',
-  editOrderCategory: 'Sargyt kategoriýasy',
   
   // Фразы для товаров
   createProduct: 'Önüm',

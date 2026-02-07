@@ -466,8 +466,13 @@ export default {
             await this.performSaveInternal(false);
         },
         async saveWithoutClose() {
-            const formData = this.prepareFormData();
-            await this.performSave(formData);
+            this.saveLoading = true;
+            try {
+                const formData = this.prepareFormData();
+                await this.performSave(formData);
+            } finally {
+                this.saveLoading = false;
+            }
         },
 
         // Метод для crudFormMixin

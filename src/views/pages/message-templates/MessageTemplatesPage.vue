@@ -66,12 +66,6 @@
             @close-request="closeModal" 
             :editingItem="editingItem" />
     </SideModalDialog>
-    <NotificationToast 
-        :title="notificationTitle" 
-        :subtitle="notificationSubtitle" 
-        :show="notification"
-        :is-danger="notificationIsDanger" 
-        @close="closeNotification" />
     <AlertDialog 
         :dialog="deleteDialog" 
         :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" 
@@ -82,7 +76,6 @@
 </template>
 
 <script>
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
@@ -105,7 +98,6 @@ import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
     components: {
-        NotificationToast,
         PrimaryButton,
         SideModalDialog,
         MessageTemplateCreatePage,

@@ -34,14 +34,6 @@
             </div>
         </transition>
 
-        <NotificationToast 
-            :title="notificationTitle" 
-            :subtitle="notificationSubtitle" 
-            :show="notification" 
-            :is-danger="notificationIsDanger" 
-            @close="closeNotification" 
-        />
-
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
                 <div class="p-8 flex justify-center items-center min-h-[200px]">
@@ -72,7 +64,6 @@ import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
-import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
@@ -96,7 +87,6 @@ export default {
         SpinnerIcon,
         SideModalDialog,
         PrimaryButton,
-        NotificationToast,
         TransactionCreatePage,
         SourceButtonCell,
         OperationTypeCell,

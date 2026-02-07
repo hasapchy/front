@@ -100,14 +100,6 @@
         />
     </SideModalDialog>
 
-    <NotificationToast
-        :title="notificationTitle"
-        :subtitle="notificationSubtitle"
-        :show="notification"
-        :is-danger="notificationIsDanger"
-        @close="closeNotification"
-    />
-
     <AlertDialog
         :dialog="deleteDialog"
         :descr="`${$t('confirmDeleteExchangeRate')} (${selectedIds.length})?`"
@@ -119,7 +111,6 @@
 </template>
 
 <script>
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
@@ -143,7 +134,6 @@ import { translateCurrency } from '@/utils/translationUtils';
 export default {
     mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, filtersMixin],
     components: {
-        NotificationToast,
         PrimaryButton,
         SideModalDialog,
         Pagination,

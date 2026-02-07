@@ -431,10 +431,11 @@
                 </button>
                 <button
                   type="button"
-                  class="text-sky-600 hover:text-sky-800 font-medium"
+                  class="text-sky-600 hover:text-sky-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  :disabled="saveEditLoading"
                   @click="saveEdit"
                 >
-                  Сохранить
+                  {{ saveEditLoading ? 'Сохраняю…' : 'Сохранить' }}
                 </button>
               </div>
             </div>
@@ -463,12 +464,13 @@
             <button
               v-else
               class="w-9 h-9 rounded-full bg-green-500 text-white hover:bg-green-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300"
-              :disabled="!selectedChat || !canWrite || sending || !draft.trim()"
+              :disabled="!selectedChat || !canWrite || sending || saveEditLoading || !draft.trim()"
               type="button"
               @click="saveEdit"
               title="Сохранить изменения"
             >
-              <i class="fas fa-check text-sm"></i>
+              <i v-if="saveEditLoading" class="fas fa-spinner fa-spin text-sm"></i>
+              <i v-else class="fas fa-check text-sm"></i>
             </button>
           </div>
         </div>
@@ -855,6 +857,7 @@ export default {
       draft: "",
       selectedFiles: [],
       sending: false,
+      saveEditLoading: false,
       replyingTo: null,
       editingMessage: null,
       audioBlob: null,
@@ -1654,7 +1657,7 @@ export default {
     },
     async saveEdit() {
       if (!this.editingMessage || !this.draft.trim()) return;
-      
+      this.saveEditLoading = true;
       try {
         const updatedMessage = await ChatController.updateMessage(this.selectedChatId, this.editingMessage.id, this.draft);
         
@@ -1724,6 +1727,8 @@ export default {
           isDanger: true,
           duration: 3000,
         });
+      } finally {
+        this.saveEditLoading = false;
       }
     },
     async deleteMessage(message) {

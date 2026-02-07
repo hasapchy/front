@@ -193,7 +193,8 @@ export default {
             };
 
             if (this.editingItemId == null) {
-                data.balance = this.balance;
+                const balanceNum = parseFloat(this.balance);
+                data.balance = !isNaN(balanceNum) ? balanceNum : 0;
                 data.currency_id = this.currency_id;
             }
 

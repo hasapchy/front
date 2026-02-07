@@ -154,14 +154,6 @@
         :leave-text="$t('cancel') || 'Отмена'" 
     />
 
-    <!-- Уведомления -->
-    <NotificationToast 
-        :title="notificationTitle" 
-        :subtitle="notificationSubtitle" 
-        :show="notification"
-        :is-danger="notificationIsDanger" 
-        @close="closeNotification" 
-    />
 </template>
 
 <script>
@@ -179,7 +171,6 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 import NewsCard from '@/views/components/news/NewsCard.vue';
 import TasksWidget from '@/views/components/news/TasksWidget.vue';
@@ -202,7 +193,6 @@ export default {
         FiltersContainer,
         SideModalDialog,
         AlertDialog,
-        NotificationToast,
         SpinnerIcon,
         NewsCreatePage,
         NewsCard,

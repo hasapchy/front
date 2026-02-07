@@ -11,13 +11,6 @@
                     <router-view />
                 </main>
             </div>
-            <NotificationToast
-                :title="$store.getters.notificationTitle"
-                :subtitle="$store.getters.notificationSubtitle"
-                :show="$store.getters.notification"
-                :is-danger="$store.getters.notificationIsDanger"
-                @close="$store.dispatch('closeNotification')"
-            />
             <ScrollToTopButton />
             <!-- ✅ Полноэкранный спиннер при загрузке данных компании -->
             <!-- Временно отключен -->
@@ -48,7 +41,6 @@
 import AppHeaderComponent from '../components/app/AppHeaderComponent.vue';
 import AppSidebarComponent from '../components/app/sidebar/AppSidebarComponent.vue';
 import AppSettingsSidebarComponent from '../components/app/sidebar/AppSettingsSidebarComponent.vue';
-import NotificationToast from '../components/app/dialog/NotificationToast.vue';
 import SpinnerIcon from '../components/app/SpinnerIcon.vue';
 import ScrollToTopButton from '../components/app/ScrollToTopButton.vue';
 
@@ -57,7 +49,6 @@ export default {
         AppHeaderComponent,
         AppSidebarComponent,
         AppSettingsSidebarComponent,
-        NotificationToast,
         SpinnerIcon,
         ScrollToTopButton
     },

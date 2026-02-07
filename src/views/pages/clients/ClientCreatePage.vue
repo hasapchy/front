@@ -117,12 +117,6 @@
           class="mt-4">
           <ClientBalancesTab :editing-item="editingItem" />
         </div>
-        <div v-show="currentTab === 'payments' && editingItem" class="mt-4">
-          <ClientPaymentsTab :editing-item="editingItem" @payments-updated="handlePaymentsUpdated" />
-        </div>
-        <div v-show="currentTab === 'operations' && editingItem" class="mt-4">
-          <ClientOperationsTab :editing-item="editingItem" />
-        </div>
       </div>
     </div>
     
@@ -139,8 +133,6 @@
       :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
       :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
-    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-      :is-danger="notificationIsDanger" @close="closeNotification" />
   </div>
 </template>
 
@@ -150,13 +142,10 @@ import UsersController from "@/api/UsersController";
 import ClientDto from "@/dto/client/ClientDto";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
-import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import TabBar from "@/views/components/app/forms/TabBar.vue";
 import PhoneInputWithCountry from "@/views/components/app/forms/PhoneInputWithCountry.vue";
 import ClientBalancesTab from "@/views/pages/clients/ClientBalancesTab.vue";
 import ClientBalanceHistoryTab from "@/views/pages/clients/ClientBalanceHistoryTab.vue";
-import ClientPaymentsTab from "@/views/pages/clients/ClientPaymentsTab.vue";
-import ClientOperationsTab from "@/views/pages/clients/ClientOperationsTab.vue";
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
@@ -166,7 +155,7 @@ import crudFormMixin from "@/mixins/crudFormMixin";
 export default {
   mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
   emits: ["saved", "saved-error", "deleted", "deleted-error", "close-request"],
-  components: { PrimaryButton, AlertDialog, NotificationToast, TabBar, PhoneInputWithCountry, ClientBalancesTab, ClientBalanceHistoryTab, ClientPaymentsTab, ClientOperationsTab, UserSearch },
+  components: { PrimaryButton, AlertDialog, TabBar, PhoneInputWithCountry, ClientBalancesTab, ClientBalanceHistoryTab, UserSearch },
   props: {
     editingItem: { type: ClientDto, default: null },
     defaultFirstName: { type: String, default: "" },
@@ -206,16 +195,14 @@ export default {
       tabs: [
         { name: "info", label: "info" },
         { name: "history", label: "history" },
-        { name: "balances", label: "balance" },
-        { name: "payments", label: "payments" },
-        { name: "operations", label: "operations" }
+        { name: "balances", label: "balance" }
       ]
     };
   },
   computed: {
     translatedTabs() {
       let visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab =>
-        tab.name !== 'balances' && tab.name !== 'history' && tab.name !== 'payments' && tab.name !== 'operations'
+        tab.name !== 'balances' && tab.name !== 'history'
       );
       if (!this.$store.getters.hasPermission('settings_client_balance_view')) {
         visibleTabs = visibleTabs.filter(tab => tab.name !== 'balances' && tab.name !== 'history');
@@ -275,7 +262,7 @@ export default {
   },
   methods: {
     changeTab(tabName) {
-      if ((tabName === 'balances' || tabName === 'history' || tabName === 'payments' || tabName === 'operations') && !this.editingItem) {
+      if ((tabName === 'balances' || tabName === 'history') && !this.editingItem) {
         this.currentTab = 'info';
         return;
       }
@@ -319,10 +306,6 @@ export default {
         return true;
       }
       return !usedEmployeeIds.has(user.id);
-    },
-    handlePaymentsUpdated() {
-      if (this.editingItem && this.editingItem.id) {
-      }
     },
     getFormState() {
       return {
@@ -384,8 +367,11 @@ export default {
       if (this.newPhone && this.newPhone.trim()) {
         const cleanedPhone = this.newPhone.replace(/\D/g, "");
 
+        if (cleanedPhone.length < 6) {
+          this.showNotification(this.$t('error'), this.$t('phoneNumberMinLength') || 'Номер телефона должен содержать не менее 6 цифр', true);
+          return;
+        }
         const expectedLength = 11;
-
         if (cleanedPhone.length < expectedLength) {
           this.showNotification(this.$t('error'), this.$t('phoneNumberLengthWithCountry', { length: expectedLength }), true);
           return;
@@ -549,6 +535,10 @@ export default {
     prepareSave() {
       if ((this.clientType === 'employee' || this.clientType === 'investor') && !this.selectedEmployee) {
         throw new Error(this.$t('selectEmployee') || 'Необходимо выбрать сотрудника');
+      }
+      const invalidPhone = (this.phones || []).find(p => (p || '').replace(/\D/g, '').length < 6);
+      if (invalidPhone) {
+        throw new Error(this.$t('phoneNumberMinLength') || 'Номер телефона должен содержать не менее 6 цифр');
       }
 
       return {

@@ -107,6 +107,16 @@
                             <PrimaryButton :onclick="generateNewPassword" :icon="'fas fa-dice'" class="px-2 py-1" />
                         </div>
                     </div>
+                    <div class="mb-4" v-if="editingItem && form.newPassword">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('confirmNewPassword') || $t('confirmPassword') }}</label>
+                        <div class="flex items-center space-x-2">
+                            <input :type="showConfirmNewPassword ? 'text' : 'password'" v-model="form.confirmNewPassword"
+                                :placeholder="$t('confirmPassword')"
+                                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <PrimaryButton :onclick="toggleConfirmNewPasswordVisibility"
+                                :icon="showConfirmNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
+                        </div>
+                    </div>
 
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('position') }}</label>
@@ -277,6 +287,7 @@ export default {
                 password: '',
                 confirmPassword: '',
                 newPassword: '',
+                confirmNewPassword: '',
                 position: '',
                 hire_date: '',
                 birthday: '',
@@ -299,6 +310,7 @@ export default {
             showPassword: false,
             showConfirmPassword: false,
             showNewPassword: false,
+            showConfirmNewPassword: false,
             selected_image: null,
             image: '',
             hasNewFile: false,
@@ -484,6 +496,7 @@ export default {
             this.form.password = '';
             this.form.confirmPassword = '';
             this.form.newPassword = '';
+            this.form.confirmNewPassword = '';
             this.form.position = '';
             this.form.hire_date = '';
             this.form.birthday = '';
@@ -513,6 +526,9 @@ export default {
             if (!this.editingItemId && this.form.password !== this.form.confirmPassword) {
                 throw new Error(this.$t('passwordsDoNotMatch'));
             }
+            if (this.editingItemId && this.form.newPassword && this.form.newPassword !== this.form.confirmNewPassword) {
+                throw new Error(this.$t('passwordsDoNotMatch'));
+            }
 
             const selectedCompanies = Array.isArray(this.form.companies)
                 ? this.form.companies.filter((companyId) => companyId !== null && companyId !== undefined && `${companyId}` !== '')
@@ -527,6 +543,7 @@ export default {
             const formData = this.prepareUserData();
             if (this.editingItemId && this.form.newPassword) {
                 formData.password = this.form.newPassword;
+                formData.password_confirmation = this.form.confirmNewPassword;
             }
             if (this.editingItem && this.editingItem.photo === '') {
                 formData.photo = '';
@@ -577,7 +594,12 @@ export default {
             this.form.confirmPassword = password;
         },
         generateNewPassword() {
-            this.form.newPassword = this.generateRandomPassword();
+            const pwd = this.generateRandomPassword();
+            this.form.newPassword = pwd;
+            this.form.confirmNewPassword = pwd;
+        },
+        toggleConfirmNewPasswordVisibility() {
+            this.showConfirmNewPassword = !this.showConfirmNewPassword;
         },
         generateRandomPassword() {
             const length = 12;
@@ -651,6 +673,7 @@ export default {
 
             if (!this.editingItemId) {
                 data.password = this.form.password;
+                data.password_confirmation = this.form.confirmPassword;
             }
 
             if (this.form.departments?.length) {
