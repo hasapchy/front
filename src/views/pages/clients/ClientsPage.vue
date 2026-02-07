@@ -88,8 +88,8 @@
                 </template>
             </DraggableTable>
         </div>
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
 
@@ -109,6 +109,7 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import ClientController from '@/api/ClientController';
 import ClientCreatePage from './ClientCreatePage.vue';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
@@ -132,7 +133,7 @@ import { markRaw } from 'vue';
 
 export default {
     mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, searchMixin, getApiErrorMessageMixin, filtersMixin],
-    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog, FiltersContainer, TableControlsBar, TableFilterButton, ClientNameCell, StatusIconCell, ListCell, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, FiltersContainer, ClientNameCell, StatusIconCell, ListCell, draggable: VueDraggableNext },
     data() {
         return {
             controller: ClientController,

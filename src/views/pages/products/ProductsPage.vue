@@ -79,8 +79,8 @@
                 </template>
             </DraggableTable>
         </div>
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
@@ -98,6 +98,7 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import ProductController from '@/api/ProductController';
@@ -119,7 +120,7 @@ import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,  companyChangeMixin, searchMixin, filtersMixin, storeDataLoaderMixin],
-    components: { PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, FiltersContainer, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin

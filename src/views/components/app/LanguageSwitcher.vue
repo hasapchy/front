@@ -1,5 +1,5 @@
 <template>
-  <div class="language-dropdown relative">
+  <div ref="dropdownRef" class="language-dropdown relative">
 
     <button 
       @click="toggleDropdown"
@@ -59,15 +59,32 @@
 </template>
 
 <script>
+import { getCurrentInstance, onBeforeUnmount, ref } from 'vue';
+import { onClickOutside, useWindowSize } from '@vueuse/core';
+
 export default {
   name: 'LanguageSwitcher',
+  setup() {
+    const dropdownRef = ref(null);
+    const { width } = useWindowSize();
+    const instance = getCurrentInstance();
+    const stopClickOutside = onClickOutside(dropdownRef, () => {
+      if (instance?.proxy) {
+        instance.proxy.isOpen = false;
+      }
+    });
+    onBeforeUnmount(stopClickOutside);
+    return { dropdownRef, windowWidth: width };
+  },
   data() {
     return {
-      isOpen: false,
-      isMobile: false
+      isOpen: false
     }
   },
   computed: {
+    isMobile() {
+      return this.windowWidth < 640;
+    },
     currentLocale() {
       return this.$i18n.locale
     },
@@ -78,19 +95,7 @@ export default {
       return 'RU'
     }
   },
-  mounted() {
-    this.checkMobile();
-    window.addEventListener('resize', this.checkMobile);
-    document.addEventListener('click', this.handleClickOutside)
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.checkMobile);
-    document.removeEventListener('click', this.handleClickOutside)
-  },
   methods: {
-    checkMobile() {
-      this.isMobile = window.innerWidth < 640;
-    },
     toggleDropdown() {
       this.isOpen = !this.isOpen
     },
@@ -106,12 +111,6 @@ export default {
       this.$emit('language-changed', locale)
       
       this.showLanguageNotification(locale)
-    },
-    
-    handleClickOutside(event) {
-      if (!this.$el.contains(event.target)) {
-        this.isOpen = false
-      }
     },
     
     getPageTitle() {

@@ -70,7 +70,7 @@
               <PhoneInputWithCountry v-model="newPhone" :default-country="newPhoneCountry"
                 @country-change="handleCountryChange" @keyup.enter="addPhone" @blur="handlePhoneBlur" class="flex-1"
                 :required="true" ref="phoneInputRef" />
-              <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" />
+              <PrimaryButton v-if="newPhone" icon="fas fa-add" :is-info="true" :onclick="addPhone" :aria-label="$t('add')" />
             </div>
             <div v-for="(phone, index) in phones" :key="`phone-${index}-${phone}`"
               class="flex items-stretch space-x-2 mt-2">
@@ -85,11 +85,11 @@
             <label>{{ $t('email') }}</label>
             <div class="flex items-center space-x-2">
               <input type="text" v-model="newEmail" @keyup.enter="addEmail" />
-              <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addEmail" />
+              <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="addEmail" :aria-label="$t('add')" />
             </div>
             <div v-for="(email, index) in emails" :key="email" class="flex items-center space-x-2 mt-2">
               <input type="text" :value="email" readonly />
-              <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removeEmail(index)" />
+              <PrimaryButton icon="fas fa-close" :is-danger="true" :onclick="() => removeEmail(index)" :aria-label="$t('remove')" />
             </div>
           </div>
           <div class="flex gap-4 w-full">
@@ -122,10 +122,10 @@
     
     <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
       <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
-        :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('clients_delete')">
+        :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('clients_delete')" :aria-label="$t('delete')">
       </PrimaryButton>
       <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('clients_update')) ||
-        (editingItemId == null && !$store.getters.hasPermission('clients_create'))">
+        (editingItemId == null && !$store.getters.hasPermission('clients_create'))" :aria-label="$t('save')">
       </PrimaryButton>
     </div>
     

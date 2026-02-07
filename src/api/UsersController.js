@@ -21,12 +21,12 @@ export default class UsersController extends BaseController {
     return UserDto.fromApiArray(data);
   }
 
-  static async searchItems(term) {
+  static async searchItems(term, signal = null) {
     return super.handleRequest(
       async () => {
-        const response = await api.get("/users/search", {
-          params: { search_request: term },
-        });
+        const config = { params: { search_request: term } };
+        if (signal) config.signal = signal;
+        const response = await api.get("/users/search", config);
         const data = Array.isArray(response.data) ? response.data : [];
         return UserDto.fromApiArray(data);
       },

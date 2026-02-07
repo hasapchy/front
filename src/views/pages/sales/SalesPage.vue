@@ -85,8 +85,8 @@
                     </template>
                 </DraggableTable>
             </div>
-            <div v-else key="loader" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
             </div>
         </transition>
         <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
@@ -126,11 +126,11 @@ import { eventBus } from '@/eventBus';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import searchMixin from '@/mixins/searchMixin';
 import filtersMixin from '@/mixins/filtersMixin';
-
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
-    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, ClientButtonCell, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, ClientButtonCell, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             controller: SaleController,

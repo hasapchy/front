@@ -2,7 +2,7 @@
     <h2>Кнопки</h2>
     <PrimaryButton :onclick="toggleLoading" :is-loading="loading">Кнопка с загрузкой</PrimaryButton>
     <div class="inline-block mr-1"></div>
-    <PrimaryButton :onclick="toggleLoading" :is-loading="loading" :icon="'fas fa-plus'"></PrimaryButton>
+    <PrimaryButton :onclick="toggleLoading" :is-loading="loading" :icon="'fas fa-plus'" :aria-label="$t('add')"></PrimaryButton>
     <h2>Диалоги</h2>
     <PrimaryButton :onclick="showModal">Модальное окно</PrimaryButton>
     <div class="inline-block mr-1"></div>

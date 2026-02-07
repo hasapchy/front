@@ -52,8 +52,8 @@
                 </template>
             </DraggableTable>
         </div>
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
@@ -124,11 +124,11 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import Card from '@/views/components/app/cards/Card.vue';
 import CardFieldsButton from '@/views/components/app/cards/CardFieldsButton.vue';
-import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
-    components: { PrimaryButton, SideModalDialog, UsersCreatePage, SalaryAccrualModal, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, ViewModeToggle, Card, CardFieldsButton, SpinnerIcon, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, UsersCreatePage, SalaryAccrualModal, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, ViewModeToggle, Card, CardFieldsButton, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             controller: UsersController,

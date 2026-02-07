@@ -217,9 +217,9 @@
             />
         </div>
 
-        <!-- Загрузка -->
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <KanbanSkeleton v-if="viewMode === 'kanban'" />
+            <TableSkeleton v-else />
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed"
@@ -266,6 +266,7 @@ import { markRaw, defineAsyncComponent } from 'vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import debounce from 'lodash.debounce';
 import { translateTaskStatus } from '@/utils/translationUtils';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 const TimelinePanel = defineAsyncComponent(() =>
     import("@/views/components/app/dialog/TimelinePanel.vue")
@@ -288,6 +289,8 @@ export default {
         KanbanFieldsButton, 
         StatusSelectCell,
         TimelinePanel,
+        TableSkeleton,
+        KanbanSkeleton,
         draggable: VueDraggableNext
     },
     data() {

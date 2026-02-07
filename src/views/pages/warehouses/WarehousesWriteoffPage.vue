@@ -50,8 +50,8 @@
                     </template>
                 </DraggableTable>
             </div>
-            <div v-else key="loader" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
             </div>
         </transition>
         <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
@@ -83,12 +83,12 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { markRaw } from 'vue';
-
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,],
-    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, WarehousesWriteoffCreatePage, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, WarehousesWriteoffCreatePage, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             controller: WarehouseWriteoffController,

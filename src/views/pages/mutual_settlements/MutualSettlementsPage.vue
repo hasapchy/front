@@ -83,10 +83,11 @@ import { eventBus } from '@/eventBus';
 import searchMixin from '@/mixins/searchMixin';
 import filtersMixin from '@/mixins/filtersMixin';
 import { highlightMatches } from '@/utils/searchUtils';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     mixins: [notificationMixin, modalMixin, companyChangeMixin, searchMixin, crudEventMixin, getApiErrorMessageMixin, filtersMixin],
-    components: { SideModalDialog, PrimaryButton, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
+    components: { SideModalDialog, PrimaryButton, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             allClients: [],

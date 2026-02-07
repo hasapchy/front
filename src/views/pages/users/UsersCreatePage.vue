@@ -79,7 +79,7 @@
                                 required />
                             <PrimaryButton :onclick="togglePasswordVisibility"
                                 :icon="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
-                            <PrimaryButton :onclick="generatePassword" :icon="'fas fa-dice'" class="px-2 py-1" />
+                            <PrimaryButton :onclick="generatePassword" :icon="'fas fa-dice'" class="px-2 py-1" :aria-label="$t('generatePassword')" />
                         </div>
                     </div>
 
@@ -104,7 +104,7 @@
                                 class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
                             <PrimaryButton :onclick="toggleNewPasswordVisibility"
                                 :icon="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'" class="px-2 py-1" />
-                            <PrimaryButton :onclick="generateNewPassword" :icon="'fas fa-dice'" class="px-2 py-1" />
+                            <PrimaryButton :onclick="generateNewPassword" :icon="'fas fa-dice'" class="px-2 py-1" :aria-label="$t('generatePassword')" />
                         </div>
                     </div>
                     <div class="mb-4" v-if="editingItem && form.newPassword">
@@ -239,7 +239,7 @@
             :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('users_delete')">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('users_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('users_create'))">
+            (editingItemId == null && !$store.getters.hasPermission('users_create'))" :aria-label="$t('save')">
         </PrimaryButton>
     </div>
 

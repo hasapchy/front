@@ -54,8 +54,8 @@
                     </template>
                 </DraggableTable>
             </div>
-            <div v-else key="loader" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
             </div>
         </transition>
         <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
@@ -89,11 +89,11 @@ import WarehouseDirectionCell from '@/views/components/app/buttons/WarehouseDire
 import ProductsListCell from '@/views/components/app/buttons/ProductsListCell.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { markRaw } from 'vue';
-
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin,],
-    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, WarehousesMovementCreatePage, BatchButton, AlertDialog, WarehouseDirectionCell, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, WarehousesMovementCreatePage, BatchButton, AlertDialog, WarehouseDirectionCell, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             controller: WarehouseMovementController,

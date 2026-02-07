@@ -44,7 +44,7 @@
         <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
             <AlertDialog :dialog="confirmDialog" @confirm="confirmOperation" @leave="confirmDialog = false"
                 :descr="confirmMessage" :confirm-text="getConfirmButtonText()" :leave-text="$t('cancel')" />
-            <PrimaryButton :onclick="handleCancel" :is-danger="true" icon="fas fa-times">
+            <PrimaryButton :onclick="handleCancel" :is-danger="true" icon="fas fa-times" :aria-label="$t('close')">
             </PrimaryButton>
             <PrimaryButton :onclick="handleOperation" :is-loading="loading" :is-success="true" :disabled="!isFormValid"
                 icon="fas fa-save">

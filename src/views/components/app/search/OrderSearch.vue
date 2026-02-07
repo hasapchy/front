@@ -194,6 +194,7 @@ export default {
             orderSearchLoading: false,
             orderResults: [],
             lastOrders: [],
+            searchAbortController: null,
             showDropdown: false,
             selectedOrders: [],
             allProductsFromOrders: []
@@ -247,14 +248,21 @@ export default {
 
         searchOrders: debounce(async function () {
             if (this.orderSearch.length >= 3) {
+                if (this.searchAbortController) {
+                    this.searchAbortController.abort();
+                }
+                this.searchAbortController = new AbortController();
+                const signal = this.searchAbortController.signal;
                 this.orderSearchLoading = true;
                 try {
-                    const response = await OrderController.getItems(1, this.orderSearch, 'all_time', null, null, '', '', '', 20);
+                    const response = await OrderController.getItems(1, this.orderSearch, 'all_time', null, null, '', '', '', 20, false, signal);
+                    if (signal.aborted) return;
                     this.orderResults = response.items;
-                    this.orderSearchLoading = false;
                 } catch (error) {
+                    if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') return;
                     this.orderResults = [];
-                    this.orderSearchLoading = false;
+                } finally {
+                    if (!signal.aborted) this.orderSearchLoading = false;
                 }
             } else {
                 this.orderResults = [];

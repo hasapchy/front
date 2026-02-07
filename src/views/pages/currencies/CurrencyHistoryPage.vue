@@ -82,8 +82,8 @@
                 </template>
             </DraggableTable>
         </div>
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
 
@@ -129,7 +129,7 @@ import modalMixin from '@/mixins/modalMixin';
 import filtersMixin from '@/mixins/filtersMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { translateCurrency } from '@/utils/translationUtils';
-
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, filtersMixin],
@@ -144,6 +144,7 @@ export default {
         TableControlsBar,
         TableFilterButton,
         FiltersContainer,
+        TableSkeleton,
         draggable: VueDraggableNext
     },
     data() {

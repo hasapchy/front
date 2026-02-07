@@ -56,8 +56,8 @@
                 </template>
             </DraggableTable>
         </div>
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
@@ -86,12 +86,12 @@ import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
 import { translateOrderStatus, translateOrderStatusCategory } from '@/utils/translationUtils';
-
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, ],
     components: {
-        PrimaryButton, SideModalDialog, OrderStatusCreatePage, Pagination, DraggableTable, AlertDialog, BatchButton, TableControlsBar, TableFilterButton, draggable: VueDraggableNext
+        PrimaryButton, SideModalDialog, OrderStatusCreatePage, Pagination, DraggableTable, AlertDialog, BatchButton, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext
     },
     data() {
         return {

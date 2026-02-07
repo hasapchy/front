@@ -65,7 +65,7 @@
         <PrimaryButton v-if="editingItem != null && $store.getters.hasPermission('projects_delete')"
             :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading" icon="fas fa-trash">
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
         </PrimaryButton>
         </div>
         <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('deleteContract')"

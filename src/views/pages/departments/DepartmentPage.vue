@@ -2,8 +2,8 @@
     <div class="flex flex-col h-full">
         <!-- Main Content Area - Transparent background as requested -->
         <div class="flex-1 bg-transparent overflow-auto">
-            <div v-if="loading" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
+            <div v-if="loading" class="min-h-64">
+                <TableSkeleton />
             </div>
 
             <div v-else class="py-8 px-6">
@@ -85,7 +85,7 @@ import modalMixin from '@/mixins/modalMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
-import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 const CARD_WIDTH = 288; 
 const HORIZONTAL_GAP = 40; 
@@ -100,7 +100,7 @@ export default {
         SideModalDialog,
         AlertDialog,
         DepartmentCreatePage,
-        SpinnerIcon
+        TableSkeleton
     },
     data() {
         return {

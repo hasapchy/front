@@ -48,7 +48,7 @@
             :disabled="!$store.getters.hasPermission('warehouse_movements_delete')">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('warehouse_movements_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('warehouse_movements_create'))">
+            (editingItemId == null && !$store.getters.hasPermission('warehouse_movements_create'))" :aria-label="$t('save')">
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" :onConfirm="deleteItem" :onLeave="closeDeleteDialog"

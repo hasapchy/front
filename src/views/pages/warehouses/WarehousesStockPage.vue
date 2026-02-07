@@ -92,8 +92,8 @@
                     </template>
                 </DraggableTable>
             </div>
-            <div v-else key="loader" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
             </div>
         </transition>
         <SideModalDialog :showForm="modalCreateWarehouse" :onclose="() => modalCreateWarehouse = false" :level="1">
@@ -135,10 +135,11 @@ import filtersMixin from '@/mixins/filtersMixin';
 import crudEventMixin from '@/mixins/crudEventMixin';
 import { highlightMatches } from '@/utils/searchUtils';
 import { CacheInvalidator } from '@/cache';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, companyChangeMixin, searchMixin, filtersMixin],
-    components: { PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, AdminWarehouseCreatePage, TableControlsBar, TableFilterButton, FiltersContainer, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, ProductsCreatePage, Pagination, DraggableTable, AdminWarehouseCreatePage, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             cacheInvalidationType: 'stocks',

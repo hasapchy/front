@@ -20,8 +20,8 @@
                 :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
                 :onItemClick="(i) => { showModal(i) }" />
         </div>
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
@@ -47,7 +47,7 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { translateOrderStatusCategory } from '@/utils/translationUtils';
-
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
@@ -58,7 +58,8 @@ export default {
         Pagination,
         DraggableTable,
         BatchButton,
-        AlertDialog
+        AlertDialog,
+        TableSkeleton
     },
     data() {
         return {

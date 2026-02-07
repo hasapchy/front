@@ -50,6 +50,9 @@ export default {
     cancelClose() {
       this.closeConfirmDialog = false;
     },
+    handleEscapeKey() {
+      this.handleCloseRequest();
+    },
     closeForm() {
       this.$emit('close-request');
     },

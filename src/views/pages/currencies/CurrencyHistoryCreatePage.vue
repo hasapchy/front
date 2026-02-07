@@ -65,7 +65,7 @@
             :disabled="!$store.getters.hasPermission('currency_history_delete')">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('currency_history_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('currency_history_create'))">
+            (editingItemId == null && !$store.getters.hasPermission('currency_history_create'))" :aria-label="$t('save')">
         </PrimaryButton>
     </div>
 

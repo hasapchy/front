@@ -125,8 +125,8 @@
         </div>
 
         <!-- Загрузка -->
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
 
@@ -171,7 +171,7 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import NewsCard from '@/views/components/news/NewsCard.vue';
 import TasksWidget from '@/views/components/news/TasksWidget.vue';
 import BirthdaysWidget from '@/views/components/news/BirthdaysWidget.vue';
@@ -193,7 +193,7 @@ export default {
         FiltersContainer,
         SideModalDialog,
         AlertDialog,
-        SpinnerIcon,
+        TableSkeleton,
         NewsCreatePage,
         NewsCard,
         TasksWidget,

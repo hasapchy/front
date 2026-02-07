@@ -24,7 +24,8 @@ export default class ClientController extends BaseController {
     includeInactive = false,
     statusFilter = null,
     typeFilter = null,
-    per_page = 20
+    per_page = 20,
+    signal = null
   ) {
     const params = {};
     if (search) {
@@ -42,7 +43,9 @@ export default class ClientController extends BaseController {
 
     return super.handleRequest(
       async () => {
-        const response = await api.get("/clients", { params: { page, per_page, ...params } });
+        const config = { params: { page, per_page, ...params } };
+        if (signal) config.signal = signal;
+        const response = await api.get("/clients", config);
         const responseData = response.data;
         const items = ClientDto.fromApiArray(responseData.data || []);
         const meta = responseData.meta || {};

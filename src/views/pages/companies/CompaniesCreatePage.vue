@@ -178,7 +178,7 @@
             icon="fas fa-trash">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('companies_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('companies_create'))">
+            (editingItemId == null && !$store.getters.hasPermission('companies_create'))" :aria-label="$t('save')">
         </PrimaryButton>
     </div>
 

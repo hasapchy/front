@@ -1,13 +1,11 @@
 <template>
-    <!-- Mobile Overlay (transparent, only to capture clicks) -->
-    <div 
-        v-if="isMobileMenuOpen" 
-        class="fixed inset-0 bg-transparent z-40 lg:hidden"
-        @click="closeMobileMenu">
-    </div>
-    
-    <!-- Sidebar -->
-    <aside 
+    <div>
+        <div
+            v-if="isMobileMenuOpen"
+            class="fixed inset-0 bg-transparent z-40 lg:hidden"
+            @click="closeMobileMenu">
+        </div>
+        <aside 
         :style="{ display: sidebarDisplayStyle }"
         :class="[
             'bg-[#282E33] text-white flex-shrink-0 transform transition-transform duration-300 relative z-50',
@@ -164,9 +162,11 @@
             </div>
         </div>
     </aside>
+    </div>
 </template>
 
 <script>
+import { useWindowSize } from '@vueuse/core';
 import { VueDraggableNext } from 'vue-draggable-next';
 import SidebarLink from './SidebarLink.vue';
 import AppVersionBadge from '../AppVersionBadge.vue';
@@ -184,13 +184,15 @@ export default {
         MessengerBadge,
         TasksBadge
     },
-    
+    setup() {
+        const { width } = useWindowSize();
+        return { windowWidth: width };
+    },
     data() {
         return {
             draggableMenuItems: [],
             draggableAvailableItems: [],
             isMobileMenuOpen: false,
-            isDesktop: false,
             showAdditionalMenu: false
         };
     },
@@ -230,14 +232,17 @@ export default {
         hasAvailableMenuItems() {
             return this.availableMenuItems && this.availableMenuItems.length > 0;
         },
+        isDesktop() {
+            return this.windowWidth >= 1024;
+        },
         isMobile() {
             return !this.isDesktop;
         }
     },
     async mounted() {
-        this.checkDesktop();
-        window.addEventListener('resize', this.checkDesktop);
-        
+        if (this.windowWidth >= 1024) {
+            this.isMobileMenuOpen = false;
+        }
         if (!this.$store.state.menuItems || !this.$store.state.menuItems.main || this.$store.state.menuItems.main.length === 0) {
             await this.$store.dispatch('initializeMenu');
         }
@@ -250,18 +255,22 @@ export default {
         eventBus.on('closeMobileMenu', this.closeMobileMenu);
         
         this.$router.afterEach(() => {
-            if (window.innerWidth < 1024) {
+            if (this.windowWidth < 1024) {
                 this.closeMobileMenu();
             }
         });
     },
     beforeUnmount() {
-        window.removeEventListener('resize', this.checkDesktop);
         eventBus.off('toggleMobileMenu', this.toggleMobileMenu);
         eventBus.off('closeMobileMenu', this.closeMobileMenu);
         document.body.style.overflow = '';
     },
     watch: {
+        windowWidth(val) {
+            if (val >= 1024) {
+                this.isMobileMenuOpen = false;
+            }
+        },
         '$store.state.permissions': {
             handler() {
                 this.$forceUpdate();
@@ -294,12 +303,6 @@ export default {
         }
     },
     methods: {
-        checkDesktop() {
-            this.isDesktop = window.innerWidth >= 1024;
-            if (this.isDesktop) {
-                this.isMobileMenuOpen = false;
-            }
-        },
         getCompanyLogo() {
             const company = this.currentCompany;
             if (!company) return '/logo.png';

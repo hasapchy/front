@@ -51,8 +51,8 @@
                 </template>
             </DraggableTable>
         </div>
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
@@ -93,7 +93,7 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
-import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
@@ -107,7 +107,7 @@ export default {
         AlertDialog,
         TableControlsBar,
         TableFilterButton,
-        SpinnerIcon,
+        TableSkeleton,
         draggable: VueDraggableNext
     },
     data() {

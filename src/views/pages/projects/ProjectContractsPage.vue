@@ -97,8 +97,8 @@
             </template>
         </DraggableTable>
             </div>
-            <div v-else key="loader" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
             </div>
         </transition>
 
@@ -125,7 +125,7 @@ import ProjectContractCreatePage from "./ProjectContractCreatePage.vue";
 import ProjectContractController from "@/api/ProjectContractController";
 import BooleanSelectCell from "@/views/components/app/buttons/BooleanSelectCell.vue";
 import ContractsBalanceWrapper from "@/views/components/projects/ContractsBalanceWrapper.vue";
-import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
+import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import notificationMixin from "@/mixins/notificationMixin";
 import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
 import filtersMixin from "@/mixins/filtersMixin";
@@ -144,7 +144,7 @@ export default {
         FiltersContainer,
         ProjectContractCreatePage,
         ContractsBalanceWrapper,
-        SpinnerIcon,
+        TableSkeleton,
         draggable: VueDraggableNext,
     },
     data() {

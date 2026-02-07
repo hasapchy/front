@@ -13,12 +13,12 @@
                     @selectionChange="selectedIds = $event"
                     :onItemClick="editTransaction">
                     <template #tableSettingsAdditional>
-                        <PrimaryButton icon="fas fa-plus" :onclick="showTransactionModal" :is-small="true" />
+                        <PrimaryButton icon="fas fa-plus" :onclick="showTransactionModal" :is-small="true" :aria-label="$t('addTransaction')" />
                     </template>
                 </DraggableTable>
             </div>
-            <div v-else key="loader" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
             </div>
         </transition>
 
@@ -47,7 +47,7 @@ import notificationMixin from '@/mixins/notificationMixin';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import DebtCell from '@/views/components/app/buttons/DebtCell.vue';
 import TransactionAmountCell from '@/views/components/app/buttons/TransactionAmountCell.vue';
-import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { markRaw } from 'vue';
 
 export default {
@@ -69,7 +69,7 @@ export default {
         TransactionCreatePage,
         DebtCell,
         TransactionAmountCell,
-        SpinnerIcon,
+        TableSkeleton,
     },
     data() {
         return {

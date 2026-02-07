@@ -66,7 +66,7 @@
             :is-loading="deleteLoading" icon="fas fa-trash"
             :disabled="!$store.getters.hasPermission('transfers_delete')">
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!canSave">
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!canSave" :aria-label="$t('save')">
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"

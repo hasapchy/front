@@ -160,8 +160,8 @@
                 </template>
             </DraggableTable>
         </div>
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
 
@@ -217,10 +217,11 @@ import Card from '@/views/components/app/cards/Card.vue';
 import CardFieldsButton from '@/views/components/app/cards/CardFieldsButton.vue';
 import { dayjsDateTime } from '@/utils/dateUtils';
 import { formatNumber } from '@/utils/numberUtils';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
-    components: { AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, ViewModeToggle, Card, CardFieldsButton, draggable: VueDraggableNext },
+    components: { AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, Card, CardFieldsButton, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin

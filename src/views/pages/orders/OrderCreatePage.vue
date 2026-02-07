@@ -16,7 +16,7 @@
                             </option>
                         </select>
                         <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showProductCategoryModal"
-                            :disabled="!$store.getters.hasPermission('categories_create')" />
+                            :disabled="!$store.getters.hasPermission('categories_create')" :aria-label="$t('addCategory')" />
                     </div>
                 </div>
                 <div>
@@ -38,7 +38,7 @@
                             </option>
                         </select>
                         <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showProjectModal"
-                            :disabled="!$store.getters.hasPermission('projects_create')" />
+                            :disabled="!$store.getters.hasPermission('projects_create')" :aria-label="$t('addProject')" />
                     </div>
                 </div>
                 <div>
@@ -81,12 +81,12 @@
         <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
         <div class="flex items-center space-x-2">
             <PrimaryButton v-if="editingItemId" icon="fas fa-check" :onclick="saveWithoutClose"
-                :is-loading="saveLoading">
+                :is-loading="saveLoading" :aria-label="$t('saveWithoutClose')">
             </PrimaryButton>
-            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
+            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
             </PrimaryButton>
             <PrimaryButton v-if="editingItemId" :onclick="showDeleteDialog" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-trash">
+                :is-loading="deleteLoading" icon="fas fa-trash" :aria-label="$t('delete')">
             </PrimaryButton>
         </div>
 

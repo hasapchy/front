@@ -38,6 +38,7 @@
 </template>
 
 <script>
+import { useWindowSize } from '@vueuse/core';
 import AppHeaderComponent from '../components/app/AppHeaderComponent.vue';
 import AppSidebarComponent from '../components/app/sidebar/AppSidebarComponent.vue';
 import AppSettingsSidebarComponent from '../components/app/sidebar/AppSettingsSidebarComponent.vue';
@@ -52,26 +53,16 @@ export default {
         SpinnerIcon,
         ScrollToTopButton
     },
-    data() {
-        return {
-            isMobile: false
-        };
-    },
-    mounted() {
-        this.checkMobile();
-        window.addEventListener('resize', this.checkMobile);
-    },
-    beforeUnmount() {
-        window.removeEventListener('resize', this.checkMobile);
+    setup() {
+        const { width } = useWindowSize();
+        return { windowWidth: width };
     },
     computed: {
+        isMobile() {
+            return this.windowWidth < 1024;
+        },
         isLoadingCompanyData() {
             return this.$store.state.loadingFlags?.companyData || false;
-        }
-    },
-    methods: {
-        checkMobile() {
-            this.isMobile = window.innerWidth < 1024;
         }
     }
 }

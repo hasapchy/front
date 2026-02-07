@@ -95,8 +95,8 @@
                 </template>
             </DraggableTable>
         </div>
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
 
@@ -138,7 +138,7 @@ import { eventBus } from "@/eventBus";
 import companyChangeMixin from "@/mixins/companyChangeMixin";
 import searchMixin from "@/mixins/searchMixin";
 import filtersMixin from "@/mixins/filtersMixin";
-
+import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 
 export default {
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin],
@@ -154,6 +154,7 @@ export default {
         FiltersContainer,
         TableControlsBar,
         TableFilterButton,
+        TableSkeleton,
         draggable: VueDraggableNext
     },
     data() {

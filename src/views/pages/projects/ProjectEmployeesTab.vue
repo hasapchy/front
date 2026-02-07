@@ -13,8 +13,8 @@
                     </template>
                 </DraggableTable>
             </div>
-            <div v-else key="loader" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
             </div>
         </transition>
 
@@ -28,7 +28,8 @@
             </div>
             <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
                 <PrimaryButton icon="fas fa-save" :onclick="saveBonuses" :is-loading="bonusSaving"
-                    :disabled="bonusSaving || !selectedEmployees.length || !hasValidAmounts || !bonusCashId || !bonusCurrencyId">
+                    :disabled="bonusSaving || !selectedEmployees.length || !hasValidAmounts || !bonusCashId || !bonusCurrencyId"
+                    :aria-label="$t('save')">
                 </PrimaryButton>
             </div>
         </SideModalDialog>
@@ -58,7 +59,7 @@
 <script>
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
-import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
+import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import EmployeeBonusSearch from "@/views/components/app/search/EmployeeBonusSearch.vue";
@@ -80,7 +81,7 @@ export default {
     components: {
         PrimaryButton,
         SideModalDialog,
-        SpinnerIcon,
+        TableSkeleton,
         DraggableTable,
         SourceButtonCell,
         TransactionCreatePage,

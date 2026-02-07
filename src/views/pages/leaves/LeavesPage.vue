@@ -177,8 +177,8 @@
         </div>
 
         <!-- Загрузка -->
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
@@ -211,7 +211,7 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import filtersMixin from '@/mixins/filtersMixin';
-import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import LeaveCalendarView from '@/views/components/leave/LeaveCalendarView.vue';
 import debounce from "lodash.debounce";
 import { translateLeaveType as translateLeaveTypeUtil } from '@/utils/translationUtils';
@@ -229,7 +229,7 @@ export default {
         TableControlsBar,
         TableFilterButton,
         FiltersContainer,
-        SpinnerIcon,
+        TableSkeleton,
         LeaveCalendarView,
         draggable: VueDraggableNext
     },

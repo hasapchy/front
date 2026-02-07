@@ -4,11 +4,11 @@
             :is-loading="deleteLoading" icon="fas fa-trash"
             :disabled="isDeletedTransaction || isTransferTransaction || !hasDeletePermission">
         </PrimaryButton>
-        <PrimaryButton v-if="editingItemId != null" :onclick="handleCopy" icon="fas fa-copy"
+        <PrimaryButton v-if="editingItemId != null" :onclick="handleCopy" icon="fas fa-copy" :aria-label="$t('copyTransaction')"
             :disabled="isDeletedTransaction || isTransferTransaction || !hasCreatePermission">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="handleSave" :is-loading="saveLoading"
-            :disabled="isDeletedTransaction || isTransferTransaction || !hasSavePermission">
+            :disabled="isDeletedTransaction || isTransferTransaction || !hasSavePermission" :aria-label="$t('save')">
         </PrimaryButton>
     </div>
 </template>

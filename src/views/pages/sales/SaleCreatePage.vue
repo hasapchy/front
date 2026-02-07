@@ -75,7 +75,7 @@
             :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('sales_delete')">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('sales_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('sales_create'))">
+            (editingItemId == null && !$store.getters.hasPermission('sales_create'))" :aria-label="$t('save')">
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"

@@ -52,6 +52,28 @@ api.interceptors.response.use(
   async (error) => {
     endApiCall();
 
+    if (error.code === "ECONNABORTED") {
+      const store = getStore();
+      if (store) {
+        try {
+          const i18n = (await import("@/i18n")).default;
+          const t = i18n?.global?.t ?? ((key) => key);
+          store.dispatch("showNotification", {
+            title: t("error"),
+            subtitle: t("loadTimeout"),
+            isDanger: true,
+          });
+        } catch (_) {
+          store.dispatch("showNotification", {
+            title: "Error",
+            subtitle: "Load timeout",
+            isDanger: true,
+          });
+        }
+      }
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401) {
       try {
         const refreshToken = TokenUtils.getRefreshToken();
