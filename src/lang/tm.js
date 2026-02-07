@@ -1,6 +1,8 @@
 export default {
   // Общие
   save: 'Sakla',
+  waitCompanyCreating: 'Garaşyň, kompaniýa döredilýär',
+  waitCompanyUpdating: 'Garaşyň, kompaniýa saklanýar',
   cancel: 'Batal et',
   delete: 'Poz',
   edit: 'Redaktirlemek',

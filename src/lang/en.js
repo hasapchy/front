@@ -1,6 +1,8 @@
 export default {
   // General
   save: 'Save',
+  waitCompanyCreating: 'Please wait, company is being created',
+  waitCompanyUpdating: 'Please wait, company is being saved',
   cancel: 'Cancel',
   delete: 'Delete',
   edit: 'Edit',

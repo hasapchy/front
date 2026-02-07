@@ -1,6 +1,8 @@
 export default {
   // Общие
   save: 'Сохранить',
+  waitCompanyCreating: 'Ждите, компания создаётся',
+  waitCompanyUpdating: 'Ждите, компания сохраняется',
   cancel: 'Отмена',
   delete: 'Удалить',
   edit: 'Редактировать',

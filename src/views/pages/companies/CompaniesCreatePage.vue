@@ -1,5 +1,13 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
+    <div class="flex flex-col overflow-auto h-full p-4 relative">
+        <!-- Оверлей при сохранении — блокирует все операции -->
+        <div v-if="saveLoading"
+            class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
+            <SpinnerIcon />
+            <p class="mt-3 text-gray-700 font-medium">
+                {{ editingItemId ? $t('waitCompanyUpdating') : $t('waitCompanyCreating') }}
+            </p>
+        </div>
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editCompany') : $t('addCompany') }}</h2>
         <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
             changeTab(t);
@@ -179,6 +187,7 @@
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('companies_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('companies_create'))">
+            {{ saveLoading ? (editingItemId ? $t('waitCompanyUpdating') : $t('waitCompanyCreating')) : $t('save') }}
         </PrimaryButton>
     </div>
 
@@ -207,6 +216,7 @@
 
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
@@ -224,14 +234,14 @@ import { CompanyDto } from '@/dto/companies/CompanyDto';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
-    components: { PrimaryButton, AlertDialog, NotificationToast, ImageCropperModal, TabBar, HolidayManager, WorkScheduleEditor },
+    components: { PrimaryButton, SpinnerIcon, AlertDialog, NotificationToast, ImageCropperModal, TabBar, HolidayManager, WorkScheduleEditor },
     props: {
         editingItem: {
             type: Object,
             default: null
         }
     },
-    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request'],
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'save-loading'],
     data() {
         return {
             lastSaveResponse: null, // Для передачи response в onSaveSuccess
@@ -300,8 +310,23 @@ export default {
             }
         });
     },
+    watch: {
+        saveLoading(val) {
+            this.$emit('save-loading', !!val);
+        }
+    },
     methods: {
+        handleCloseRequest() {
+            if (this.saveLoading) return;
+            if (this.uploading) return;
+            if (this.checkForChanges()) {
+                this.closeConfirmDialog = true;
+            } else {
+                this.closeForm();
+            }
+        },
         changeTab(tabName) {
+            if (this.saveLoading) return;
             // Предотвращаем переход на вкладки настроек и праздников при создании новой компании
             if ((tabName === 'settings' || tabName === 'holidays') && !this.editingItem) {
                 this.currentTab = 'info';

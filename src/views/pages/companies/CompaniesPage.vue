@@ -47,10 +47,10 @@
             <SpinnerIcon />
         </div>
     </transition>
-    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
+    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :closeBlocked="companySaveLoading">
         <CompaniesCreatePage ref="companiescreatepageForm" @saved="handleSaved" @saved-error="handleSavedError"
             @deleted="handleDeleted" @deleted-error="handleDeletedError" @close-request="closeModal"
-            :editingItem="editingItem" />
+            @save-loading="companySaveLoading = $event" :editingItem="editingItem" />
     </SideModalDialog>
     <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
         :is-danger="notificationIsDanger" @close="closeNotification" />
@@ -85,6 +85,7 @@ export default {
     components: { NotificationToast, PrimaryButton, SideModalDialog, CompaniesCreatePage, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
     data() {
         return {
+            companySaveLoading: false,
             // data, loading, perPage, perPageOptions - из crudEventMixin
             // selectedIds - из batchActionsMixin
             controller: CompaniesController,
@@ -114,6 +115,12 @@ export default {
 
     beforeUnmount() {
         eventBus.off('company-updated', this.handleCompanyUpdated);
+    },
+
+    watch: {
+        modalDialog(val) {
+            if (!val) this.companySaveLoading = false;
+        }
     },
 
     methods: {

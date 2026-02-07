@@ -3,13 +3,13 @@
         <div :class="[
             'fixed inset-0 z-40 transition-opacity duration-300',
             showForm ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        ]" @mousedown="onclose">
+        ]" @mousedown="handleBackdropClick">
             <div class="fixed top-0 right-0 h-full flex transform transition-transform duration-300 ease-in-out z-50"
                 :style="{ transform: showForm ? 'translateX(0)' : 'translateX(100%)' }" @mousedown.stop>
 
                 <div id="form" class="h-full flex flex-col bg-white shadow-lg relative transition-all duration-300 ease-in-out mobile-full-width" :style="{ width: modalWidth }">
-                    <PrimaryButton :onclick="onclose" icon="fas fa-times" class="absolute top-4 right-4"
-                        :is-light="true" />
+                    <PrimaryButton :onclick="handleCloseClick" icon="fas fa-times" class="absolute top-4 right-4"
+                        :is-light="true" :disabled="closeBlocked" />
                     <slot />
                 </div>
 
@@ -46,6 +46,10 @@ export default {
         onclose: {
             type: Function,
             required: true
+        },
+        closeBlocked: {
+            type: Boolean,
+            default: false
         },
         level: {
             type: Number,
@@ -88,6 +92,12 @@ export default {
     methods: {
         toggleTimeline() {
             this.$emit('toggle-timeline');
+        },
+        handleBackdropClick() {
+            if (!this.closeBlocked) this.onclose();
+        },
+        handleCloseClick() {
+            if (!this.closeBlocked) this.onclose();
         }
     }
 }
