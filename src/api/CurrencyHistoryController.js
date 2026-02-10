@@ -4,10 +4,12 @@ import BaseController from "./BaseController";
 
 export default class CurrencyHistoryController extends BaseController {
   
+  /** Возвращает массив валют с курсами; при 204 или пустом ответе — пустой массив. */
   static async getCurrenciesWithRates() {
     return super.handleRequest(async () => {
       const response = await api.get("/currency-history/currencies");
-      return response.data;
+      const data = response.data;
+      return Array.isArray(data) ? data : [];
     }, "Error fetching currencies with rates:");
   }
 

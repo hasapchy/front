@@ -341,7 +341,7 @@ export default {
                     }), 
                 },
                 { name: 'creator', label: 'creator', sortable: false },
-                { name: 'description', label: 'description', sortable: false, visible: true },
+                { name: 'description', label: 'description', sortable: false, visible: true, html: true },
                 { name: 'supervisor', label: 'supervisor', sortable: false },
                 { name: 'executor', label: 'executor', sortable: false },
                 { name: 'deadline', label: 'deadline', sortable: true },

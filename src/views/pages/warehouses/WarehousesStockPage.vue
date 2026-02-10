@@ -276,7 +276,8 @@ export default {
         openCreateWarehouse() {
             this.modalCreateWarehouse = true;
         },
-        onWarehouseSaved() {
+        /** После сохранения склада инвалидируем кэш и перезагружаем список, чтобы новый склад появился в фильтре и таблице. */
+        async onWarehouseSaved() {
             this.modalCreateWarehouse = false;
             this.fetchAllWarehouses();
             this.showNotification(this.$t('warehouseSuccessfullyAdded'), '');

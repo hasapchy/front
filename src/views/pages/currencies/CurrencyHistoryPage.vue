@@ -184,9 +184,11 @@ export default {
     },
     async mounted() {
         await this.fetchCurrencies();
-        if (this.currencies.length > 0) {
+        if (this.currencies && this.currencies.length > 0) {
             this.selectedCurrencyId = this.currencies[0].id;
             await this.fetchItems(1, false);
+        } else {
+            this.data = { items: [], currentPage: 1, lastPage: 1 };
         }
     },
     computed: {
@@ -198,8 +200,10 @@ export default {
         translateCurrency,
         async fetchCurrencies() {
             try {
-                this.currencies = await CurrencyHistoryController.getCurrenciesWithRates();
+                const list = await CurrencyHistoryController.getCurrenciesWithRates();
+                this.currencies = Array.isArray(list) ? list : [];
             } catch (error) {
+                this.currencies = [];
                 this.showNotification(this.$t('errorLoadingCurrencies'), error.message, true);
             }
         },
