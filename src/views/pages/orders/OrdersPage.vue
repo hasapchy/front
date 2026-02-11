@@ -242,7 +242,7 @@ export default {
             deletedErrorText: this.$t('errorDeletingOrder'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: "id", label: "№", size: 20 },
+                { name: "id", label: "№", size: 20, html: true },
                 { name: "statusName", label: 'status', component: markRaw(StatusSelectCell), props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
                 { name: "cashName", label: 'cashRegister' },
                 { name: "warehouseName", label: 'warehouse' },
@@ -356,6 +356,11 @@ export default {
             const search = this.searchQuery;
 
             switch (c) {
+                case "id":
+                    if (search) {
+                        return highlightMatches(String(i.id ?? ""), search);
+                    }
+                    return i.id;
                 case "products":
                     return i.productsHtmlList();
                 case "dateUser":

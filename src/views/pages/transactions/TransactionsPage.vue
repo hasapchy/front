@@ -250,7 +250,7 @@ export default {
             currentFormConfig: TRANSACTION_FORM_PRESETS.full,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: 'number', size: 60 },
+                { name: 'id', label: 'number', size: 60, html: true },
                 { name: 'dateUser', label: 'dateUser' },
                 {
                     name: 'type',
@@ -347,6 +347,11 @@ export default {
             const search = this.searchQuery;
 
             switch (c) {
+                case 'id':
+                    if (search) {
+                        return highlightMatches(String(i.id ?? ''), search);
+                    }
+                    return i.id;
                 case 'cashName':
                     return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
                 case 'cashAmount':

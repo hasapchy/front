@@ -129,6 +129,7 @@ import ClientNameCell from '@/views/components/app/buttons/ClientNameCell.vue';
 import StatusIconCell from '@/views/components/app/buttons/StatusIconCell.vue';
 import ListCell from '@/views/components/app/buttons/ListCell.vue';
 import { markRaw } from 'vue';
+import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
     mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, searchMixin, getApiErrorMessageMixin, filtersMixin],
@@ -172,7 +173,14 @@ export default {
 
     methods: {
         itemMapper(i, c) {
+            const search = this.searchQuery;
+
             switch (c) {
+                case 'id':
+                    if (search) {
+                        return highlightMatches(String(i.id ?? ''), search);
+                    }
+                    return i.id;
                 case 'discount':
                     return i.discountFormatted();
                 case 'balance':
@@ -245,7 +253,7 @@ export default {
         columnsConfig() {
             return [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: 'number', size: 60 },
+                { name: 'id', label: 'number', size: 60, html: true },
                 {
                     name: 'firstName',
                     label: 'fullNameCompany',

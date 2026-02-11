@@ -127,6 +127,7 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import searchMixin from '@/mixins/searchMixin';
 import filtersMixin from '@/mixins/filtersMixin';
 import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
@@ -146,7 +147,7 @@ export default {
             deletedErrorText: this.$t('errorDeletingRecord'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: 'number', size: 60 },
+                { name: 'id', label: 'number', size: 60, html: true },
                 { name: 'dateUser', label: 'dateUser' },
                 { name: 'cashName', label: 'cashRegister' },
                 { name: 'warehouseName', label: 'warehouse' },
@@ -188,6 +189,8 @@ export default {
     },
     methods: {
         itemMapper(i, c) {
+            const search = this.searchQuery;
+
             if (c === 'cashName') {
                 return i.cashNameDisplay();
             }
@@ -195,6 +198,11 @@ export default {
                 return i.warehouseNameDisplay();
             }
             switch (c) {
+                case 'id':
+                    if (search) {
+                        return highlightMatches(String(i.id ?? ''), search);
+                    }
+                    return i.id;
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
                 case 'products':
