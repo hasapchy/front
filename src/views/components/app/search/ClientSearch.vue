@@ -16,7 +16,7 @@
                                 <div class="text-[#337AB7]">{{ client.phones?.[0]?.phone || client.primaryPhone }}</div>
                             </div>
                             <span v-if="$store.getters.hasPermission('settings_client_balance_view')"
-                                :class="client.balance == 0 ? 'text-[#337AB7]' : client.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
+                                :class="balanceColorClass(client.balance)">
                                 {{ client.balanceFormatted() }}
                                 <span v-if="client.balance > 0">({{ $t('clientOwesUs') }})</span>
                                 <span v-else-if="client.balance < 0">({{ $t('weOweClient') }})</span>
@@ -34,7 +34,7 @@
                             <div class="text-[#337AB7]">{{ client.primaryPhone || client.phones?.[0]?.phone }}</div>
                         </div>
                         <span v-if="$store.getters.hasPermission('settings_client_balance_view')"
-                            :class="client.balance == 0 ? 'text-[#337AB7]' : client.balance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]'">
+                            :class="balanceColorClass(client.balance)">
                             {{ client.balanceFormatted() }}
                             <span v-if="client.balance > 0">({{ $t('clientOwesUs') }})</span>
                             <span v-else-if="client.balance < 0">({{ $t('weOweClient') }})</span>
@@ -60,26 +60,34 @@
                                 }}</span></p>
                         <p><span class="text-xs">{{ $t('phone') }}:</span> <span class="font-semibold text-sm">{{
                             clientPhones[0]?.phone || '' }}</span></p>
-                        <div v-if="$store.getters.hasPermission('settings_client_balance_view')" class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <div v-if="$store.getters.hasPermission('settings_client_balance_view')" class="flex flex-wrap items-center gap-x-2 gap-y-1 balance-dropdown-wrap">
                             <span class="text-xs">
-                                {{ $t('balance') }}: <span :class="['font-semibold', 'text-sm', displayBalance == 0 ? 'text-[#337AB7]' : displayBalance > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]']">{{ clientBalance }} {{ displayCurrencySymbol }}</span>
+                                {{ $t('balance') }}:
+                                <span v-if="shouldShowBalanceSelect" class="relative inline-block">
+                                    <button type="button"
+                                        @mousedown.prevent="showBalanceDropdown = !showBalanceDropdown"
+                                        :class="['font-semibold', 'text-sm', 'cursor-pointer', 'flex', 'items-center', 'gap-1', 'pr-1', 'border-0', 'bg-transparent', 'hover:opacity-80', balanceColorClass(displayBalance)]">
+                                        {{ clientBalance }} {{ displayCurrencySymbol }}
+                                        <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
+                                    </button>
+                                    <transition name="appear">
+                                        <ul v-show="showBalanceDropdown"
+                                            class="absolute left-0 top-full mt-1 min-w-[120px] bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 max-h-40 overflow-y-auto">
+                                            <li v-for="balance in selectedClient.balances" :key="balance.id"
+                                                @mousedown.prevent="selectBalance(balance)"
+                                                class="px-3 py-2 cursor-pointer text-sm hover:bg-gray-50">
+                                                <span :class="balanceColorClass(balance.balance)">{{ formatBalance(balance.balance) }}</span>
+                                                {{ balance.currency?.symbol || '' }}
+                                                <span v-if="balance.isDefault" class="text-amber-500">★</span>
+                                            </li>
+                                        </ul>
+                                    </transition>
+                                </span>
+                                <span v-else :class="['font-semibold', 'text-sm', balanceColorClass(displayBalance)]">{{ clientBalance }} {{ displayCurrencySymbol }}</span>
                                 <span v-if="displayBalance > 0">({{ $t('clientOwesUs') }})</span>
                                 <span v-else-if="displayBalance < 0">({{ $t('weOweClient') }})</span>
                                 <span v-else>({{ $t('mutualSettlement') }})</span>
                             </span>
-                            <select 
-                                v-if="shouldShowBalanceSelect"
-                                v-model="selectedBalanceId" 
-                                @change="onBalanceChange"
-                                class="px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors">
-                                <option 
-                                    v-for="balance in selectedClient.balances" 
-                                    :key="balance.id" 
-                                    :value="balance.id">
-                                    {{ balance.currency?.symbol || '' }} - {{ formatBalance(balance.balance) }}
-                                    <span v-if="balance.isDefault"> (Дефолт)</span>
-                                </option>
-                            </select>
                         </div>
                     </div>
                     <button v-if="allowDeselect" v-on:click="deselectClient"
@@ -151,6 +159,7 @@ export default {
             modalCreateClient: false,
             defaultClientName: '',
             selectedBalanceId: null,
+            showBalanceDropdown: false,
         };
     },
     computed: {
@@ -320,6 +329,10 @@ export default {
             selectedBalanceId: this.selectedBalanceId,
             hasPermission: this.$store.getters.hasPermission('settings_client_balance_view')
         });
+        document.addEventListener('click', this.handleBalanceDropdownClickOutside);
+    },
+    beforeUnmount() {
+        document.removeEventListener('click', this.handleBalanceDropdownClickOutside);
     },
     emits: ['update:selectedClient', 'balance-changed'],
     methods: {
@@ -481,6 +494,10 @@ export default {
         formatBalance(balance) {
             return formatNumber(balance, null, true);
         },
+        balanceColorClass(value) {
+            const v = value == null ? 0 : Number(value);
+            return v === 0 ? 'text-[#337AB7]' : v > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]';
+        },
         onBalanceChange() {
             console.log('[ClientSearch] Balance changed:', {
                 selectedBalanceId: this.selectedBalanceId,
@@ -488,6 +505,16 @@ export default {
                 balances: this.selectedClient?.balances
             });
             this.$emit('balance-changed', this.selectedBalanceId);
+        },
+        selectBalance(balance) {
+            this.selectedBalanceId = balance.id;
+            this.showBalanceDropdown = false;
+            this.onBalanceChange();
+        },
+        handleBalanceDropdownClickOutside(event) {
+            if (!event.target.closest('.balance-dropdown-wrap')) {
+                this.showBalanceDropdown = false;
+            }
         },
     },
     watch: {

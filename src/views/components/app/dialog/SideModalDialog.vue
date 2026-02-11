@@ -80,7 +80,13 @@ export default {
     },
     setup(props) {
         const trapRef = ref(null);
-        const { activate, deactivate } = useFocusTrap(trapRef);
+        const { activate, deactivate } = useFocusTrap(trapRef, {
+            allowOutsideClick: (event) => {
+                const target = event?.target;
+                if (!(target instanceof Element)) return false;
+                return !!target.closest('.Toastify');
+            }
+        });
         watch(() => props.showForm, (open) => {
             if (open) {
                 nextTick(() => activate());

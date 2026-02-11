@@ -622,7 +622,7 @@ const store = createStore({
       }
     },
     closeNotification() {
-      toast.clearAll();
+      toast.remove();
     },
     async loadUnits(context) {
       await loadGlobalReference(context, {

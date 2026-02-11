@@ -163,10 +163,18 @@ export default {
                         return `<span style="color:${color};font-weight:bold">${status}</span>`;
                     },
                     formatPaidStatus() {
-                        const status = contract.getPaidStatus();
                         const st = contract.paymentStatus || contract.payment_status || ((contract.paidAmount ?? 0) >= (contract.amount ?? 0) ? 'paid' : ((contract.paidAmount ?? 0) > 0 ? 'partially_paid' : 'unpaid'));
                         const color = st === 'paid' ? '#5CB85C' : (st === 'partially_paid' ? '#FFA500' : '#EE4F47');
-                        return `<span style="color:${color};font-weight:bold">${status}</span>`;
+
+                        let iconClass = 'fas fa-times-circle';
+                        if (st === 'paid') {
+                            iconClass = 'fas fa-check-circle';
+                        } else if (st === 'partially_paid') {
+                            iconClass = 'fas fa-adjust';
+                        }
+
+                        const title = contract.getPaidStatus();
+                        return `<span style="color:${color};font-weight:bold" title="${title}"><i class="${iconClass}"></i></span>`;
                     }
                 }));
                 this.lastFetchedProjectId = this.editingItem.id;

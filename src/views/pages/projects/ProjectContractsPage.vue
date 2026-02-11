@@ -364,9 +364,33 @@ export default {
                 case "returned":
                     return item.returned ? 1 : 0;
                 case "paymentStatusText": {
-                    const text = item.payment_status_text || item.paymentStatusText || (item.paid_amount >= (item.amount || 0) ? (this.$t('paid') || 'Оплачено') : (item.paid_amount > 0 ? (this.$t('partiallyPaid') || 'Частично оплачено') : (this.$t('notPaid') || 'Не оплачено')));
+                    const status = item.payment_status || item.paymentStatus || ((item.paid_amount ?? 0) >= (item.amount ?? 0)
+                        ? 'paid'
+                        : ((item.paid_amount ?? 0) > 0 ? 'partially_paid' : 'unpaid'));
+
                     const cls = this.getContractPaymentStatusClass(item);
-                    return `<span class="${cls}">${text}</span>`;
+
+                    let iconClass = 'fas fa-times-circle';
+                    if (status === 'paid') {
+                        iconClass = 'fas fa-check-circle';
+                    } else if (status === 'partially_paid') {
+                        iconClass = 'fas fa-adjust';
+                    }
+
+                    const paidAmount = item.paid_amount ?? item.paidAmount ?? 0;
+                    const currencySymbol = item.currency_symbol ?? item.currencySymbol ?? '';
+                    const showAmount = status === 'partially_paid' && paidAmount > 0;
+                    const formattedAmount = showAmount
+                        ? `${this.$formatNumber(paidAmount, null, true)} ${currencySymbol}`.trim()
+                        : '';
+
+                    const title = item.payment_status_text || item.paymentStatusText || '';
+
+                    const amountHtml = showAmount && formattedAmount
+                        ? `<span class="ml-1">${formattedAmount}</span>`
+                        : '';
+
+                    return `<span class="${cls}" title="${title}"><i class="${iconClass}"></i>${amountHtml}</span>`;
                 }
                 case "note":
                     return item.note || '-';

@@ -60,7 +60,7 @@ async function bootstrapApp() {
     limit: 5,
     clearOnUrlChange: false,
   });
-  
+
   // Добавляем глобальные методы с доступом к store
   app.config.globalProperties.$formatNumberForCompany = (value, showDecimals = true) => {
     return formatNumberWithRounding(value, showDecimals);
