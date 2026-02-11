@@ -123,7 +123,6 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { eventBus } from '@/eventBus';
 import { VueDraggableNext } from 'vue-draggable-next';
 
-import { highlightMatches } from '@/utils/searchUtils';
 import searchMixin from '@/mixins/searchMixin';
 import filtersMixin from '@/mixins/filtersMixin';
 import ClientNameCell from '@/views/components/app/buttons/ClientNameCell.vue';
@@ -251,10 +250,7 @@ export default {
                     name: 'firstName',
                     label: 'fullNameCompany',
                     component: markRaw(ClientNameCell),
-                    props: (item) => ({
-                        client: item,
-                        searchQuery: this.searchQuery
-                    })
+                    props: (item) => ({ client: item, searchQuery: this.searchQuery })
                 },
                 {
                     name: 'phones',

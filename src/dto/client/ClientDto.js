@@ -181,7 +181,8 @@ export default class ClientDto {
           currency: b.currency,
           balance: parseFloat(b.balance) || 0,
           isDefault: Boolean(b.is_default),
-          note: b.note || ''
+          note: b.note || '',
+          users: b.users || []
         }))
       );
     }).filter(Boolean);

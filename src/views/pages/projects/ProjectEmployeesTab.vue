@@ -317,72 +317,6 @@ export default {
             const defaultCurrency = currencies.find(c => c.isDefault);
             if (defaultCashId) this.bonusCashId = defaultCashId;
             if (defaultCurrency) this.bonusCurrencyId = defaultCurrency.id;
-
-            try {
-                const response = await TransactionController.getItems(
-                    1,
-                    null,
-                    'all_time',
-                    null,
-                    null,
-                    null,
-                    null,
-                    this.editingItem.id,
-                    100,
-                    null,
-                    null,
-                    null,
-                    [26]
-                );
-
-                const existingBonuses = response.items || [];
-                const clients = this.$store.getters.clients || [];
-                const allUsers = this.$store.getters.usersForCurrentCompany || [];
-
-                const employeesMap = new Map();
-
-                for (const transaction of existingBonuses) {
-                    if (!transaction.clientId) continue;
-
-                    const client = clients.find(c => Number(c.id) === Number(transaction.clientId));
-                    if (!client || !client.employeeId) continue;
-
-                    const userId = Number(client.employeeId);
-                    let user = allUsers.find(u => Number(u.id) === userId);
-                    if (!user) {
-                        try {
-                            const UsersController = (await import('@/api/UsersController')).default;
-                            user = await UsersController.getItem(userId);
-                        } catch (error) {
-                            console.error(`Error loading user ${userId}:`, error);
-                            continue;
-                        }
-                    }
-
-                    if (!employeesMap.has(userId)) {
-                        employeesMap.set(userId, {
-                            id: user.id,
-                            name: user.name,
-                            surname: user.surname,
-                            position: user.position,
-                            photo: user.photo,
-                            amount: parseFloat(transaction.origAmount || transaction.amount || 0),
-                            transactionId: transaction.id,
-                        });
-                    }
-                }
-
-                this.selectedEmployees = Array.from(employeesMap.values());
-
-                if (existingBonuses.length > 0) {
-                    const firstTransaction = existingBonuses[0];
-                    if (firstTransaction.cashId) this.bonusCashId = firstTransaction.cashId;
-                    if (firstTransaction.origCurrencyId) this.bonusCurrencyId = firstTransaction.origCurrencyId;
-                }
-            } catch (error) {
-                console.error('Ошибка при загрузке существующих премий:', error);
-            }
-
             this.bonusModalOpen = true;
         },
         closeBonusModal() {
@@ -452,6 +386,7 @@ export default {
                         false
                     );
                     this.closeBonusModal();
+                    this.forceRefresh = true;
                     await Promise.all([
                         this.fetchSalaryTransactions(),
                         this.$store.dispatch('invalidateCache', { type: 'clients' }),

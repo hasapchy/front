@@ -361,6 +361,11 @@ export default {
             if (!isSelected && !this.selectedUsersCache.find(u => Number(u.id) === userId)) {
                 this.selectedUsersCache.push(user);
             }
+
+            if (!isSelected) {
+                this.userSearch = '';
+                this.userResults = [];
+            }
         },
         removeUser(user) {
             if (this.disabled) return;
