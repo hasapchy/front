@@ -15,13 +15,6 @@
                                 <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
                                 <div class="text-[#337AB7]">{{ client.phones?.[0]?.phone || client.primaryPhone }}</div>
                             </div>
-                            <span v-if="$store.getters.hasPermission('settings_client_balance_view')"
-                                :class="balanceColorClass(client.balance)">
-                                {{ client.balanceFormatted() }}
-                                <span v-if="client.balance > 0">({{ $t('clientOwesUs') }})</span>
-                                <span v-else-if="client.balance < 0">({{ $t('weOweClient') }})</span>
-                                <span v-else>({{ $t('mutualSettlement') }})</span>
-                            </span>
                         </li>
                     </template>
                     <li v-else-if="clientSearch.length < 3" class="p-2 text-gray-500">{{ $t('minimum3Characters') }}
@@ -33,13 +26,6 @@
                             <div><span v-html="client.icons()"></span> {{ client.fullName() }}</div>
                             <div class="text-[#337AB7]">{{ client.primaryPhone || client.phones?.[0]?.phone }}</div>
                         </div>
-                        <span v-if="$store.getters.hasPermission('settings_client_balance_view')"
-                            :class="balanceColorClass(client.balance)">
-                            {{ client.balanceFormatted() }}
-                            <span v-if="client.balance > 0">({{ $t('clientOwesUs') }})</span>
-                            <span v-else-if="client.balance < 0">({{ $t('weOweClient') }})</span>
-                            <span v-else>({{ $t('mutualSettlement') }})</span>
-                        </span>
                     </li>
                     <li v-if="$store.getters.hasPermission('clients_create')" class="p-2 border-t border-gray-300 bg-gray-50 sticky bottom-0">
                         <PrimaryButton :is-info="true" :is-full="true" icon="fas fa-plus"
