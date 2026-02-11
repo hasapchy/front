@@ -1,5 +1,5 @@
 <template>
-    <div class="flex items-center justify-between gap-2 mb-4 p-3 bg-white rounded-lg shadow-sm flex-wrap">
+    <div class="flex items-center justify-between gap-2 mb-4 p-3 bg-white rounded-lg shadow-md flex-wrap sticky top-0 z-20">
         <div class="flex items-center gap-2 flex-wrap">
             <slot name="left">
                 <PrimaryButton v-if="showCreateButton && onCreateClick" :onclick="onCreateClick" icon="fas fa-plus"

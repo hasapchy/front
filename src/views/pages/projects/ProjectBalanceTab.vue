@@ -1,30 +1,5 @@
 <template>
     <div class="mt-4">
-        <div v-if="canViewProjectBudget" class="mb-4 grid grid-cols-4 gap-3">
-            <div class="px-4 py-2.5 rounded-lg bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 min-w-0">
-                <i class="fas fa-arrow-up text-[#5CB85C] text-sm"></i>
-                <span class="text-xs text-gray-500">{{ $t('income') }}</span>
-                <b class="text-[#5CB85C] text-sm">{{ totalIncomeDisplay }}</b>
-            </div>
-            <div class="px-4 py-2.5 rounded-lg bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 min-w-0">
-                <i class="fas fa-arrow-down text-[#EE4F47] text-sm"></i>
-                <span class="text-xs text-gray-500">{{ $t('outcome') }}</span>
-                <b class="text-[#EE4F47] text-sm">{{ totalExpenseDisplay }}</b>
-            </div>
-            <div class="px-4 py-2.5 rounded-lg bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 min-w-0">
-                <i class="fas fa-wallet text-blue-500 text-sm"></i>
-                <span class="text-xs text-gray-500">{{ $t('total') || 'Итого' }}</span>
-                <b class="text-sm" :class="{
-                    'text-[#5CB85C]': detailedBalance.total_balance >= 0,
-                    'text-[#EE4F47]': detailedBalance.total_balance < 0
-                }">{{ formatBalance(detailedBalance.total_balance) }}</b>
-            </div>
-            <div class="px-4 py-2.5 rounded-lg bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 min-w-0">
-                <i class="fas fa-chart-line text-purple-500 text-sm"></i>
-                <span class="text-xs text-gray-500">{{ $t('projectBudget') }}</span>
-                <b class="text-purple-600 text-sm">{{ budgetDisplay }}</b>
-            </div>
-        </div>
         <transition name="fade" mode="out-in">
             <div v-if="!balanceLoading" key="content">
                 <DraggableTable table-key="project.balance"
@@ -46,13 +21,27 @@
                             :is-small="true">
                             {{ $t('outcome') }}
                         </PrimaryButton>
-                        <PrimaryButton
-                            v-if="$store.getters.hasPermission('projects_update')"
-                            icon="fas fa-plus"
-                            :onclick="() => showAddTransactionModal(null)"
-                            :is-small="true">
-                            {{ $t('addTransaction') || $t('add') }}
-                        </PrimaryButton>
+                        <div v-if="canViewProjectBudget" class="flex flex-wrap items-center gap-3 text-xs text-gray-600">
+                            <span class="inline-flex items-center gap-1">
+                                <i class="fas fa-arrow-up text-[#5CB85C]" :title="$t('income')"></i>
+                                <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b>
+                            </span>
+                            <span class="inline-flex items-center gap-1">
+                                <i class="fas fa-arrow-down text-[#EE4F47]" :title="$t('outcome')"></i>
+                                <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b>
+                            </span>
+                            <span class="inline-flex items-center gap-1">
+                                <i class="fas fa-wallet text-blue-500" :title="$t('total') || 'Итого'"></i>
+                                <b :class="{
+                                    'text-[#5CB85C]': detailedBalance.total_balance >= 0,
+                                    'text-[#EE4F47]': detailedBalance.total_balance < 0
+                                }">{{ formatBalance(detailedBalance.total_balance) }}</b>
+                            </span>
+                            <span class="inline-flex items-center gap-1">
+                                <i class="fas fa-chart-line text-purple-500" :title="$t('projectBudget')"></i>
+                                <b class="text-purple-600">{{ budgetDisplay }}</b>
+                            </span>
+                        </div>
                     </template>
                 </DraggableTable>
             </div>
@@ -195,11 +184,10 @@ export default {
             return this.editingItem?.currencyId && this.editingItem?.currency;
         },
         projectFormConfig() {
-            return this.selectedNewTransactionType === 'outcome'
+            const type = this.selectedNewTransactionType || this.editingTransactionItem?.typeName?.();
+            return type === 'outcome'
                 ? TRANSACTION_FORM_PRESETS.projectBalanceOutcome
-                : this.selectedNewTransactionType === 'income'
-                    ? TRANSACTION_FORM_PRESETS.projectBalanceIncome
-                    : TRANSACTION_FORM_PRESETS.projectBalance;
+                : TRANSACTION_FORM_PRESETS.projectBalanceIncome;
         },
         balanceFormatted() {
             const balance = typeof this.balance === 'number' ? this.balance : 0;
@@ -349,9 +337,10 @@ export default {
             
             try {
                 this.transactionLoading = true;
-                this.selectedNewTransactionType = null;
-                
                 this.editingTransactionItem = await TransactionController.getItem(item.sourceId);
+                const type = this.editingTransactionItem?.typeName?.() 
+                    || (this.editingTransactionItem?.type == 2 ? 'outcome' : 'income');
+                this.selectedNewTransactionType = type;
                 this.transactionModalOpen = true;
             } catch (error) {
                 console.error('Error loading transaction:', error);
@@ -360,9 +349,9 @@ export default {
                 this.transactionLoading = false;
             }
         },
-        showAddTransactionModal(type = null) {
+        showAddTransactionModal(type) {
             this.editingTransactionItem = null;
-            this.selectedNewTransactionType = type;
+            this.selectedNewTransactionType = type || 'income';
             this.transactionModalOpen = true;
         },
         closeTransactionModal() {
