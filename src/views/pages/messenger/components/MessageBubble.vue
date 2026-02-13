@@ -32,15 +32,15 @@
                 @click="$emit('open-image', f)"
                 class="block max-w-xs rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
               >
-                <img :src="fileUrl(f.path)" :alt="f.name" class="max-h-32 object-contain" />
+                <img :src="fileUrl(f)" :alt="fileName(f)" class="max-h-32 object-contain" />
               </button>
               <a
                 v-else
                 class="block text-xs underline text-gray-600 hover:text-gray-800"
-                :href="fileUrl(f.path)"
+                :href="fileUrl(f)"
                 target="_blank"
               >
-                <i class="fas fa-file mr-1"></i>{{ f.name }}
+                <i class="fas fa-file mr-1"></i>{{ fileName(f) }}
               </a>
             </div>
           </div>
@@ -62,24 +62,24 @@
             @click="$emit('open-image', f)"
             class="block max-w-xs rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
           >
-            <img :src="fileUrl(f.path)" :alt="f.name" class="max-h-48 object-contain" />
+            <img :src="fileUrl(f)" :alt="fileName(f)" class="max-h-48 object-contain" />
           </button>
           <div
             v-else-if="isAudioFile(f)"
             class="flex items-center gap-2 p-2 bg-gray-100 rounded-lg"
           >
             <audio controls class="h-8 text-xs">
-              <source :src="fileUrl(f.path)" :type="f.mime_type || 'audio/webm'">
+              <source :src="fileUrl(f)" :type="f.mime_type || 'audio/webm'">
               Your browser does not support the audio element.
             </audio>
           </div>
           <a
             v-else
             class="block text-xs underline text-sky-700"
-            :href="fileUrl(f.path)"
+            :href="fileUrl(f)"
             target="_blank"
           >
-            <i class="fas fa-file mr-1"></i>{{ f.name }}
+            <i class="fas fa-file mr-1"></i>{{ fileName(f) }}
           </a>
         </div>
       </div>
@@ -142,7 +142,7 @@
   </template>
   
   <script>
-  import { buildStorageUrl } from './utils/helpers'
+  import { buildStorageUrl, buildTenantStorageUrl } from './utils/helpers'
   import { isImageFile, isAudioFile } from './utils/fileHelpers'
   import { getMessageUserName, getMessagePreview, getForwardedUserName } from './utils/chatHelpers'
   import { messageTime } from './utils/dateFormatters'
@@ -188,8 +188,21 @@
       }
     },
     methods: {
-      fileUrl(path) {
-        return buildStorageUrl(path)
+      /** URL файла: при наличии file.url — его; иначе tenant по текущей компании (чаты в tenant, не в public). */
+      fileUrl(file) {
+        const path = typeof file === 'string' ? file : file?.path
+        if (typeof file === 'object' && file?.url) return file.url
+        const companyId = this.$store.state.currentCompany?.id
+        return buildTenantStorageUrl(path, companyId) || buildStorageUrl(path)
+      },
+      /** Отображаемое имя файла: name или последний сегмент path. */
+      fileName(file) {
+        if (!file) return ''
+        const n = file.name || file.fileName || file.original_name
+        if (n) return n
+        const p = file.path || ''
+        const seg = p.split('/').filter(Boolean).pop()
+        return seg || 'Файл'
       },
       isImageFile,
       isAudioFile,

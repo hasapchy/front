@@ -1,4 +1,18 @@
+const getBaseUrl = () => (import.meta.env.VITE_APP_BASE_URL || '').replace(/\/$/, '')
 export const buildStorageUrl = (path) => `${import.meta.env.VITE_APP_BASE_URL}/storage/${path}`
+
+/**
+ * URL файла в tenant storage (чаты и др.).
+ * @param {string} path - путь типа "chats/1/uuid.jpg"
+ * @param {string|number} companyId - ID текущей компании
+ */
+export const buildTenantStorageUrl = (path, companyId) => {
+  if (!path) return ''
+  if (!companyId) return buildStorageUrl(path)
+  const base = getBaseUrl()
+  const normalizedPath = (path || '').replace(/^\//, '')
+  return `${base}/storage/tenant/${companyId}/${normalizedPath}`
+}
 
 export const parseDateSafe = (dateString) => {
   if (!dateString) return null

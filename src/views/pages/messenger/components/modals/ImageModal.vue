@@ -16,7 +16,7 @@
         <!-- Image -->
         <img
           v-if="image"
-          :src="fileUrl(image.path)"
+          :src="fileUrl(image)"
           :alt="image.name"
           class="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
           @click.stop
@@ -26,8 +26,8 @@
   </template>
   
   <script>
-  import { buildStorageUrl } from '../utils/helpers'
-  
+  import { buildStorageUrl, buildTenantStorageUrl } from '../utils/helpers'
+
   export default {
     name: 'ImageModal',
     props: {
@@ -37,8 +37,12 @@
       }
     },
     methods: {
-      fileUrl(path) {
-        return buildStorageUrl(path)
+      /** URL: при наличии image.url — его; иначе tenant по текущей компании (чаты в tenant). */
+      fileUrl(file) {
+        const path = typeof file === 'string' ? file : file?.path
+        if (typeof file === 'object' && file?.url) return file.url
+        const companyId = this.$store.state.currentCompany?.id
+        return buildTenantStorageUrl(path, companyId) || buildStorageUrl(path)
       }
     }
   }
