@@ -230,8 +230,11 @@
             <div v-show="currentTab === 'salaries' && editingItem && canViewSalariesTab" class="mt-4">
                 <UserSalaryTab :editing-item="editingItem" />
             </div>
-            <div v-if="currentTab === 'balance' && editingItem && canViewBalanceTab" class="mt-4">
+            <div v-if="editingItem && canViewBalanceTab" v-show="currentTab === 'balance'" class="mt-4">
                 <UserBalanceTab :editing-item="editingItem" />
+            </div>
+            <div v-if="editingItem && canViewBalanceTab" v-show="currentTab === 'account'" class="mt-4">
+                <UserAccountTab :editing-item="editingItem" />
             </div>
         </div>
         <div class="flex-shrink-0 p-4 flex space-x-2 bg-[#edf4fb]">
@@ -269,11 +272,12 @@ import TabBar from '@/views/components/app/forms/TabBar.vue';
 import PhoneInputWithCountry from '@/views/components/app/forms/PhoneInputWithCountry.vue';
 import UserSalaryTab from '@/views/pages/users/UserSalaryTab.vue';
 import UserBalanceTab from '@/views/components/app/UserBalanceTab.vue';
+import UserAccountTab from '@/views/pages/users/UserAccountTab.vue';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, userPhotoMixin, crudFormMixin],
     emits: ['saved', 'saved-error', 'deleted', 'deleted-error', "close-request"],
-    components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, PhoneInputWithCountry, UserSalaryTab, UserBalanceTab },
+    components: { PrimaryButton, AlertDialog, TabBar, ImageCropperModal, PhoneInputWithCountry, UserSalaryTab, UserBalanceTab, UserAccountTab },
     props: {
         editingItem: { type: Object, required: false, default: null },
     },
@@ -321,7 +325,8 @@ export default {
                 { name: 'info', label: 'information' },
                 { name: 'roles', label: 'roles' },
                 { name: 'salaries', label: 'salaries' },
-                { name: 'balance', label: 'balance' }
+                { name: 'balance', label: 'balance' },
+                { name: 'account', label: 'account' }
             ],
             allRoles: [],
         };
@@ -329,7 +334,7 @@ export default {
     computed: {
         translatedTabs() {
             let visibleTabs = this.editingItem ? this.tabs : this.tabs.filter(tab =>
-                tab.name !== 'salaries' && tab.name !== 'balance'
+                tab.name !== 'salaries' && tab.name !== 'balance' && tab.name !== 'account'
             );
             if (!this.canViewSalariesTab) {
                 visibleTabs = visibleTabs.filter(tab => tab.name !== 'salaries');
@@ -338,7 +343,7 @@ export default {
                 visibleTabs = visibleTabs.filter(tab => tab.name !== 'roles');
             }
             if (!this.canViewBalanceTab) {
-                visibleTabs = visibleTabs.filter(tab => tab.name !== 'balance');
+                visibleTabs = visibleTabs.filter(tab => tab.name !== 'balance' && tab.name !== 'account');
             }
             return visibleTabs.map(tab => ({
                 ...tab,
@@ -611,6 +616,9 @@ export default {
             return password;
         },
         changeTab(tab) {
+            if ((tab === 'balance' || tab === 'account') && !this.editingItem) {
+                return;
+            }
             this.currentTab = tab;
         },
         getRolesForCompany(companyId) {

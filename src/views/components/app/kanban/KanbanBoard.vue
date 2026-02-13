@@ -38,10 +38,9 @@
             </div>
         </div>
 
-        <!-- Индикатор загрузки -->
         <div v-if="loading"
-            class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg z-10">
-            <SpinnerIcon />
+            class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg z-10 min-h-64">
+            <TableSkeleton />
         </div>
     </div>
 </template>
@@ -50,7 +49,7 @@
 import { VueDraggableNext } from 'vue-draggable-next';
 import KanbanColumn from './KanbanColumn.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
-import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     name: 'KanbanBoard',
@@ -58,7 +57,7 @@ export default {
         draggable: VueDraggableNext,
         KanbanColumn,
         PrimaryButton,
-        SpinnerIcon
+        TableSkeleton
     },
     props: {
         type: {

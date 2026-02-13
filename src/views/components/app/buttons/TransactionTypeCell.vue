@@ -1,5 +1,5 @@
 <template>
-    <div class="flex items-center">
+    <div class="flex items-center justify-center">
         <i :class="iconClass" class="mr-2"></i>
         <span>{{ text }}</span>
     </div>

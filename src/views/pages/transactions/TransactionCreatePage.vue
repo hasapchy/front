@@ -339,11 +339,8 @@ export default {
                 const data = await UsersController.getSalaries(this.selectedClient.employeeId);
                 const salaries = data?.salaries || [];
                 const salary = salaries.find(s => Number(s.payment_type) === Number(this.paymentType) && !s.end_date);
-                if (salary?.amount != null) {
-                    this.origAmount = parseFloat(salary.amount);
-                    if (salary.currency_id && !this.currencyId) {
-                        this.currencyId = salary.currency_id;
-                    }
+                if (salary?.currency_id && !this.currencyId) {
+                    this.currencyId = salary.currency_id;
                 }
             } catch (e) {
                 console.error('Error loading employee salary:', e);

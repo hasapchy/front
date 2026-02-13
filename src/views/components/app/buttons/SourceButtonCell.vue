@@ -1,12 +1,12 @@
 <template>
-    <div>
+    <div class="flex justify-center">
         <div v-if="sourceType && sourceId && !isSalary" 
-            class="w-full h-full cursor-pointer text-[#2a6496] hover:underline rounded flex items-center"
+            class="w-full h-full cursor-pointer text-[#2a6496] hover:underline rounded flex items-center justify-center"
             @dblclick.stop="openSourceModal">
             <i :class="iconClass" class="mr-2"></i>
             <span v-html="displayText"></span>
         </div>
-        <div v-else class="w-full h-full flex items-center">
+        <div v-else class="w-full h-full flex items-center justify-center">
             <i :class="iconClass" class="mr-2"></i>
             <span :class="sourceInfo.color">{{ displayText }}</span>
         </div>

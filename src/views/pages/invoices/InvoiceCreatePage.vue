@@ -88,11 +88,8 @@
 
         <SideModalDialog v-if="orderModalOpen" :showForm="orderModalOpen" :onclose="closeOrderModal">
             <template v-if="orderLoading">
-                <div class="p-8 flex justify-center items-center min-h-[200px]">
-                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
+                <div class="min-h-64">
+                    <TableSkeleton />
                 </div>
             </template>
             <OrderCreatePage 
@@ -114,6 +111,7 @@ import ClientSearch from "@/views/components/app/search/ClientSearch.vue";
 import OrderSearch from "@/views/components/app/search/OrderSearch.vue";
 import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
+import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import InvoiceController from "@/api/InvoiceController";
 import OrderController from "@/api/OrderController";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
@@ -135,6 +133,7 @@ export default {
         OrderSearch,
         AlertDialog,
         SideModalDialog,
+        TableSkeleton,
         OrderCreatePage: defineAsyncComponent(() => 
             import("@/views/pages/orders/OrderCreatePage.vue")
         )

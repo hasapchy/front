@@ -74,7 +74,7 @@
                             <ul>
                                 <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                     @change="log">
-                                    <li v-for="(element, index) in columns" :key="element.name"
+                                    <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
                                         @click="toggleVisible(index)"
                                         class="flex items-center hover:bg-gray-100 p-2 rounded">
                                         <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -106,8 +106,8 @@
             <ProjectContractCreatePage v-if="!contractLoading" :editingItem="editingContractItem"
                 @saved="handleContractSaved" @saved-error="handleContractSavedError"
                 @close-request="closeContractModal" />
-            <div v-else-if="contractLoading" class="p-4 text-center">
-                {{ $t('loading') }}...
+            <div v-else-if="contractLoading" class="min-h-64">
+                <TableSkeleton />
             </div>
         </SideModalDialog>
     </div>

@@ -34,8 +34,8 @@
                                 <ul>
                                     <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                         @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name"
-                                            @click="toggleVisible(index)"
+<li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
+                                                @click="toggleVisible(index)"
                                             class="flex items-center hover:bg-gray-100 p-2 rounded">
                                             <div class="space-x-2 flex flex-row justify-between w-full select-none">
                                                 <div>

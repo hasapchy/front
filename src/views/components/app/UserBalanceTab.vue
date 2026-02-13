@@ -21,10 +21,30 @@
                     <i class="fas fa-wallet text-blue-500"></i>
                     <span class="text-sm text-gray-600">{{ balanceStatusText }}:</span>
                 </div>
-                <b :class="{
-                    'text-[#5CB85C]': totalBalance >= 0,
-                    'text-[#EE4F47]': totalBalance < 0
-                }" class="text-lg">{{ formatBalanceWithCurrency(totalBalance) }}</b>
+                <span v-if="shouldShowBalanceSelect" class="relative inline-block balance-dropdown-wrap">
+                    <button type="button"
+                        @mousedown.prevent="showBalanceDropdown = !showBalanceDropdown"
+                        :class="['text-lg', 'font-bold', 'cursor-pointer', 'flex', 'items-center', 'gap-1', 'pr-1', 'border-0', 'bg-transparent', 'hover:opacity-80', balanceColorClass(totalBalance)]">
+                        {{ formatBalanceWithCurrency(totalBalance) }}
+                        <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
+                    </button>
+                    <transition name="appear">
+                        <ul v-show="showBalanceDropdown"
+                            class="absolute right-0 top-full mt-1 min-w-[120px] bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 max-h-40 overflow-y-auto">
+                            <li v-for="balance in employeeClient.balances" :key="balance.id"
+                                @mousedown.prevent="selectBalance(balance)"
+                                class="px-3 py-2 cursor-pointer text-sm hover:bg-gray-50">
+                                <span :class="balanceColorClass(balance.balance)">{{ formatBalance(balance.balance) }}</span>
+                                {{ balance.currency?.symbol || '' }}
+                                <span v-if="balance.isDefault" class="text-amber-500">★</span>
+                            </li>
+                        </ul>
+                    </transition>
+                </span>
+                <b v-else :class="[
+                    'text-lg',
+                    balanceColorClass(totalBalance)
+                ]">{{ formatBalanceWithCurrency(totalBalance) }}</b>
             </div>
         </div>
 
@@ -35,17 +55,6 @@
                     <template #tableSettingsAdditional>
                         <FiltersContainer v-if="employeeClient?.balances?.length" :has-active-filters="hasActiveFilters"
                             :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
-                            <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('balance') }}</label>
-                                <select v-model="selectedBalanceId" class="w-full">
-                                    <option v-for="balance in employeeClient.balances" :key="balance.id"
-                                        :value="balance.id">
-                                        {{ balance.currency?.symbol || balance.currency?.code || '' }} - {{
-                                            formatBalance(balance.balance) }}
-                                        <span v-if="balance.isDefault"> ({{ $t('default') }})</span>
-                                    </option>
-                                </select>
-                            </div>
                             <div>
                                 <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
                                 <input type="date" v-model="dateFrom" class="w-full" />
@@ -96,13 +105,8 @@
 
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
-                <div class="p-8 flex justify-center items-center min-h-[200px]">
-                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none"
-                        viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                        </circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
+                <div class="min-h-64">
+                    <TableSkeleton />
                 </div>
             </template>
             <template v-else>
@@ -175,6 +179,7 @@ export default {
             selectedBalanceId: null,
             dateFrom: null,
             dateTo: null,
+            showBalanceDropdown: false,
             ENTITY_CONFIG: {
                 transaction: {
                     fetch: id => TransactionController.getItem(id),
@@ -218,6 +223,9 @@ export default {
             if (!this.employeeClient?.balances?.length) return null;
             const defaultBalance = this.employeeClient.balances.find(b => b.isDefault);
             return defaultBalance ? defaultBalance.id : (this.employeeClient.balances[0]?.id ?? null);
+        },
+        shouldShowBalanceSelect() {
+            return this.canViewBalance && this.employeeClient?.balances?.length > 1;
         },
         columnsConfig() {
             return [
@@ -277,11 +285,11 @@ export default {
         if (!this.canViewBalance) {
             return;
         }
+        document.addEventListener('click', this.handleBalanceDropdownClickOutside);
         await this.fetchDefaultCurrency();
-        if (this.editingItem && this.editingItem.id) {
-            await this.findEmployeeClient();
-            await this.fetchBalanceHistory();
-        }
+    },
+    beforeUnmount() {
+        document.removeEventListener('click', this.handleBalanceDropdownClickOutside);
     },
     watch: {
         'editingItem.id': {
@@ -330,6 +338,20 @@ export default {
         formatBalanceWithCurrency(balance) {
             return `${this.formatBalance(balance)} ${this.currencySymbol}`;
         },
+        balanceColorClass(value) {
+            const v = value == null ? 0 : Number(value);
+            return v === 0 ? 'text-[#337AB7]' : v > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]';
+        },
+        selectBalance(balance) {
+            this.selectedBalanceId = balance.id;
+            this.showBalanceDropdown = false;
+            this.fetchBalanceHistory();
+        },
+        handleBalanceDropdownClickOutside(event) {
+            if (!event.target.closest('.balance-dropdown-wrap')) {
+                this.showBalanceDropdown = false;
+            }
+        },
         initDefaultBalance() {
             if (this.employeeClient?.balances?.length) {
                 const defaultBalance = this.employeeClient.balances.find(b => b.isDefault);
@@ -353,8 +375,7 @@ export default {
         getActiveFiltersCount() {
             return this.getActiveFiltersCountFromConfig([
                 { value: this.dateFrom, defaultValue: null },
-                { value: this.dateTo, defaultValue: null },
-                { value: this.selectedBalanceId, defaultValue: this.defaultBalanceId }
+                { value: this.dateTo, defaultValue: null }
             ]);
         },
         itemMapper(i, c) {

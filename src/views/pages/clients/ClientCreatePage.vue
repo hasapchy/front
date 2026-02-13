@@ -94,16 +94,16 @@
           </div>
           <div class="flex gap-4 w-full">
             <div class="flex flex-col w-full">
+              <label>{{ $t('discount') }}</label>
+              <input type="number" v-model="discount" class="w-full" />
+            </div>
+            <div class="flex flex-col w-full">
               <label>{{ $t('discountType') }}</label>
               <select v-model="discountType" class="w-full">
                 <option value="">{{ $t('selectDiscountType') }}</option>
                 <option value="percent">{{ $t('percent') }}</option>
                 <option value="fixed">{{ $t('fixed') }}</option>
               </select>
-            </div>
-            <div class="flex flex-col w-full">
-              <label>{{ $t('discount') }}</label>
-              <input type="number" v-model="discount" class="w-full" />
             </div>
           </div>
         </div>
@@ -195,7 +195,7 @@ export default {
       tabs: [
         { name: "info", label: "info" },
         { name: "history", label: "history" },
-        { name: "balances", label: "balance" }
+        { name: "balances", label: "account" }
       ]
     };
   },

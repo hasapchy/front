@@ -11,8 +11,8 @@
           <TableFilterButton v-if="columns.length" :onReset="resetColumns">
             <ul>
               <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
-                <li v-for="(element, index) in columns" :key="element.name" @click="toggleVisible(index)"
-                  class="flex items-center hover:bg-gray-100 p-2 rounded">
+                <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
+                  @click="toggleVisible(index)" class="flex items-center hover:bg-gray-100 p-2 rounded">
                   <div class="space-x-2 flex flex-row justify-between w-full select-none">
                     <div>
                       <i class="text-sm mr-2 text-[#337AB7]"
@@ -37,7 +37,7 @@
             <draggable v-if="columns.length" tag="tr" class="dragArea list-group w-full" :list="columns" @change="log">
               <th v-for="(element, index) in columns" :key="element.name"
                 :class="{ hidden: !element.visible, relative: true }"
-                class="text-left border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium cursor-pointer select-none whitespace-nowrap"
+                class="text-center border border-gray-300 py-2 px-2 sm:px-3 md:px-4 font-medium cursor-pointer select-none whitespace-nowrap"
                 :style="getColumnStyle(element)" @dblclick.prevent="sortBy(element.name)"
                 :title="$t('doubleClickToSort') + ' ' + ($te(element.label) ? $t(element.label) : element.label)">
                 <template v-if="element.name === 'select'">
@@ -60,7 +60,7 @@
           </thead>
           <tbody>
             <tr v-if="sortedData.length === 0" class="text-center">
-              <td class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300" :colspan="columns.length">
+              <td class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300" :colspan="columns.length">
                 {{ $t('noData') }}
               </td>
             </tr>
@@ -70,7 +70,7 @@
                 'opacity-50': item.isDeleted || item.is_deleted
               }" @dblclick="(e) => itemClick(item, e)">
               <td v-for="(column, cIndex) in columns" :key="`${cIndex}_${idx}`"
-                class="py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300" :class="{
+                class="text-center py-2 px-2 sm:px-3 md:px-4 border-x border-gray-300" :class="{
                   hidden: !column.visible,
                   'note-cell': column.name === 'note'
                 }" :style="getColumnStyle(column)" :title="column.name === 'note' ? getNoteTitle(item, column) : null">
@@ -264,6 +264,8 @@ export default {
               component: original.component,
               props: original.props,
               size: size,
+              html: original.html ?? savedCol.html,
+              image: original.image ?? savedCol.image,
             };
           });
         } catch (error) {
@@ -547,5 +549,15 @@ export default {
 .draggable-table {
   width: 100%;
   min-width: max-content;
+}
+
+.draggable-table th,
+.draggable-table td {
+  text-align: center;
+}
+
+.draggable-table td :deep(> *),
+.draggable-table th :deep(> *) {
+  text-align: center;
 }
 </style>

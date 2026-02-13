@@ -36,13 +36,8 @@
 
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
-                <div class="p-8 flex justify-center items-center min-h-[200px]">
-                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none"
-                        viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                        </circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
+                <div class="min-h-64">
+                    <TableSkeleton />
                 </div>
             </template>
             <template v-else>
@@ -360,7 +355,7 @@ export default {
                         category_id: 26,
                         project_id: this.editingItem.id,
                         client_id: employeeClient.id,
-                        note: `Премия для ${this.getUserFullName(employee)}`,
+                        note: '',
                         date: dayjs().format('YYYY-MM-DD HH:mm:ss'),
                         is_debt: true,
                     };

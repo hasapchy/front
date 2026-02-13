@@ -31,6 +31,7 @@ export default {
   logout: 'Logout',
   info: 'Information',
   balance: 'Balance',
+  account: 'Account',
   debt: 'Credit',
   clientDebts: 'Client Credits',
   oweUs: 'Owe Us',
@@ -405,7 +406,7 @@ export default {
   balances: 'Balances',
   history: 'History',
   noBalances: 'No balances',
-  createBalance: 'Create Balance',
+  createBalance: 'Create account',
   editBalance: 'Edit Balance',
   initialBalance: 'Initial Balance',
   setAsDefault: 'Set as Default',
@@ -413,6 +414,7 @@ export default {
   clientBalance: 'Client Balance',
   selectBalance: 'Select Balance',
   balanceAfterOperation: 'Balance After Operation',
+  adjustBalance: 'Adjustment',
   errorGettingClient: 'Error getting client',
 
   // Login form

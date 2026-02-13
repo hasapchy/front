@@ -10,8 +10,8 @@
             </button>
         </div>
         
-        <div v-if="loading" class="flex justify-center py-4">
-            <i class="fas fa-spinner fa-spin text-gray-400"></i>
+        <div v-if="loading" class="min-h-24">
+            <TableSkeleton />
         </div>
         
         <div v-else-if="onlineCount > 0" class="space-y-4">
@@ -136,8 +136,10 @@
 import echo from '@/services/echo';
 import { createChatRealtime } from '@/services/chatRealtime';
 import UsersController from '@/api/UsersController';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
+    components: { TableSkeleton },
     name: 'OnlineUsersWidget',
     data() {
         return {

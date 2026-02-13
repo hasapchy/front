@@ -5,8 +5,8 @@
             <h3 class="text-sm font-semibold text-gray-900">{{ $t('birthdays') || 'Дни рождения' }}</h3>
         </div>
         
-        <div v-if="loading" class="flex justify-center py-4">
-            <i class="fas fa-spinner fa-spin text-gray-400"></i>
+        <div v-if="loading" class="min-h-24">
+            <TableSkeleton />
         </div>
         
         <div v-else-if="birthdays.length > 0" class="space-y-3">
@@ -40,6 +40,7 @@
 
 <script>
 import UsersController from '@/api/UsersController';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import 'dayjs/locale/en';
@@ -47,6 +48,7 @@ import 'dayjs/locale/tk';
 
 export default {
     name: 'BirthdaysWidget',
+    components: { TableSkeleton },
     data() {
         return {
             birthdays: [],

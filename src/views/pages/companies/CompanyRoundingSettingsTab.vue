@@ -2,9 +2,8 @@
     <div>
         <h3 class="text-md font-semibold mb-4">{{ $t('roundingRules') }}</h3>
 
-        <!-- Загрузка -->
-        <div v-if="loading" class="flex justify-center items-center py-8">
-            <SpinnerIcon size-class="text-2xl" additional-class="text-gray-400" />
+        <div v-if="loading" class="min-h-64">
+            <TableSkeleton />
         </div>
 
         <!-- Формы настроек по контекстам -->
@@ -26,11 +25,12 @@
 import CompanyRoundingRulesController from '@/api/CompanyRoundingRulesController';
 import CompanyRoundingRuleDto from '@/dto/CompanyRoundingRuleDto';
 import RoundingRuleSection from './RoundingRuleSection.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 
 export default {
     mixins: [notificationMixin],
-    components: { RoundingRuleSection },
+    components: { RoundingRuleSection, TableSkeleton },
     props: {
         companyId: {
             type: [Number, String],

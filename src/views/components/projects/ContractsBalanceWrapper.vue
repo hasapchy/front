@@ -38,8 +38,8 @@
                         </div>
                     </div>
                 </div>
-                <div v-else-if="loading" key="loader" class="flex justify-center items-center h-20">
-                    <SpinnerIcon />
+                <div v-else-if="loading" key="loader" class="min-h-64">
+                    <TableSkeleton />
                 </div>
             </transition>
         </div>
@@ -47,12 +47,12 @@
 </template>
 
 <script>
-import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     name: 'ContractsBalanceWrapper',
     components: {
-        SpinnerIcon
+        TableSkeleton
     },
     props: {
         data: {

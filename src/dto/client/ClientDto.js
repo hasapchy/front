@@ -129,12 +129,12 @@ export default class ClientDto {
   discountFormatted() {
     if (this.discount == null && !this.discountType) return "";
     const discount = this.discount ?? "";
-    const typeMap = {
-      "fixed": "фиксированная",
-      "percent": "процентная"
+    const iconMap = {
+      fixed: '<i class="fas fa-coins ml-1" title="Фиксированная"></i>',
+      percent: '<i class="fas fa-percent ml-1" title="Процентная"></i>'
     };
-    const discountType = typeMap[this.discountType] || this.discountType;
-    return discount + (discountType ? ` (${discountType})` : "");
+    const icon = iconMap[this.discountType] || "";
+    return discount + icon;
   }
 
   formatCreatedAt() {

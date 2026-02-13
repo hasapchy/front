@@ -17,8 +17,8 @@
                             icon="fas fa-plus"
                             :onclick="openCreateModal"
                             :is-success="true"
-                            :disabled="!editingItem?.id">
-                            {{ $t('addSalary') }}
+                            :disabled="!editingItem?.id"
+                            :aria-label="$t('addSalary')">
                         </PrimaryButton>
                     </template>
                 </DraggableTable>

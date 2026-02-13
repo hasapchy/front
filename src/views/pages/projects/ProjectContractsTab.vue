@@ -40,8 +40,8 @@
             <ProjectContractCreatePage v-if="!contractLoading && editingItem?.id" :editingItem="editingContractItem"
                 :projectId="editingItem.id" @saved="handleContractSaved" @saved-error="handleContractSavedError"
                 @close-request="closeContractModal" />
-            <div v-else-if="contractLoading" class="p-4 text-center">
-                {{ $t('loading') }}...
+            <div v-else-if="contractLoading" class="min-h-64">
+                <TableSkeleton />
             </div>
         </SideModalDialog>
     </div>

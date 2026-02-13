@@ -6,22 +6,7 @@
                     :columns-config="columnsConfig" :table-data="balanceHistory || []" :item-mapper="itemMapper"
                     @selectionChange="selectedIds = $event" :onItemClick="handleBalanceItemClick">
                     <template #tableSettingsAdditional>
-                        <PrimaryButton
-                            v-if="$store.getters.hasPermission('transactions_create')"
-                            icon="fas fa-plus"
-                            :onclick="() => showAddTransactionModal('income')"
-                            :is-small="true">
-                            {{ $t('income') }}
-                        </PrimaryButton>
-                        <PrimaryButton
-                            v-if="$store.getters.hasPermission('transactions_create')"
-                            icon="fas fa-minus"
-                            :isDanger="true"
-                            :onclick="() => showAddTransactionModal('outcome')"
-                            :is-small="true">
-                            {{ $t('outcome') }}
-                        </PrimaryButton>
-                        <div v-if="canViewProjectBudget" class="flex flex-wrap items-center gap-3 text-xs text-gray-600">
+                        <div v-if="canViewProjectBudget" class="flex flex-wrap items-center gap-3 text-xs text-gray-600 w-full mb-2">
                             <span class="inline-flex items-center gap-1">
                                 <i class="fas fa-arrow-up text-[#5CB85C]" :title="$t('income')"></i>
                                 <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b>
@@ -42,6 +27,23 @@
                                 <b class="text-purple-600">{{ budgetDisplay }}</b>
                             </span>
                         </div>
+                    </template>
+                    <template #tableSettingsRight>
+                        <PrimaryButton
+                            v-if="$store.getters.hasPermission('transactions_create')"
+                            icon="fas fa-plus"
+                            :onclick="() => showAddTransactionModal('income')"
+                            :is-small="true">
+                            {{ $t('income') }}
+                        </PrimaryButton>
+                        <PrimaryButton
+                            v-if="$store.getters.hasPermission('transactions_create')"
+                            icon="fas fa-minus"
+                            :isDanger="true"
+                            :onclick="() => showAddTransactionModal('outcome')"
+                            :is-small="true">
+                            {{ $t('outcome') }}
+                        </PrimaryButton>
                     </template>
                 </DraggableTable>
             </div>
@@ -66,8 +68,8 @@
                 @deleted="handleTransactionDeleted"
                 @deleted-error="handleTransactionSavedError"
                 @close-request="closeTransactionModal" />
-            <div v-else-if="transactionLoading" class="p-4 text-center">
-                {{ $t('loading') }}...
+            <div v-else-if="transactionLoading" class="min-h-64">
+                <TableSkeleton />
             </div>
         </SideModalDialog>
 

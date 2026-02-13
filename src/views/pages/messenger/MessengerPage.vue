@@ -1,5 +1,7 @@
 <template>
   <div class="h-[calc(100vh-6rem)] flex overflow-hidden rounded-2xl border border-gray-200 bg-white">
+    <ChatSkeleton v-if="loadingChats && !selectedChat" />
+    <template v-else>
     <!-- LEFT: list -->
     <aside class="w-full md:w-[360px] shrink-0 border-r border-gray-200 bg-white flex flex-col min-h-0">
       <!-- Search row -->
@@ -789,7 +791,7 @@
         />
       </div>
     </div>
-
+    </template>
   </div>
 </template>
 
@@ -799,6 +801,7 @@ import echo from "@/services/echo";
 import { applySentMessage, handleChatReadEvent, handleIncomingChatEvent } from "@/services/messengerFacade";
 import globalChatRealtime from "@/services/globalChatRealtime";
 import { eventBus } from "@/eventBus";
+import ChatSkeleton from "@/views/components/app/ChatSkeleton.vue";
 
 // ===== Helpers (pure functions) =====
 const buildStorageUrl = (path) => `${import.meta.env.VITE_APP_BASE_URL}/storage/${path}`;
@@ -838,6 +841,9 @@ const extractHHmm = (raw) => {
 // formatChatTime will be a method that uses i18n
 
 export default {
+  components: {
+    ChatSkeleton
+  },
   data() {
     return {
       search: "",

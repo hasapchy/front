@@ -37,9 +37,8 @@
             </div>
         </div>
 
-        <!-- Загрузка -->
-        <div v-else class="p-8 text-center">
-            <i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i>
+        <div v-else class="min-h-64">
+            <TableSkeleton />
         </div>
 
         <!-- Список праздников текущего месяца -->
@@ -70,11 +69,13 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import CompanyHolidayController from '@/api/CompanyHolidayController';
 import CompanyHolidayDto from '@/dto/companyHoliday/CompanyHolidayDto';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 dayjs.locale('ru');
 
 export default {
     name: 'HolidayCalendar',
+    components: { TableSkeleton },
     data() {
         return {
             currentDate: dayjs(),

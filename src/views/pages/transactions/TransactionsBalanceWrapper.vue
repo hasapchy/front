@@ -78,8 +78,8 @@
                     </draggable>
                 </div>
             </div>
-            <div v-else-if="loading" key="loader" class="flex justify-center items-center h-20">
-                <SpinnerIcon />
+            <div v-else-if="loading" key="loader" class="min-h-64">
+                <TableSkeleton />
             </div>
         </transition>
     </div>
@@ -88,7 +88,7 @@
 <script>
 import { VueDraggableNext } from 'vue-draggable-next';
 import CashRegisterController from '@/api/CashRegisterController';
-import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 
@@ -111,7 +111,7 @@ const TITLE_TRANSLATIONS = {
 export default {
     components: {
         draggable: VueDraggableNext,
-        SpinnerIcon
+        TableSkeleton
     },
     props: {
         cashRegisterId: { type: Number, default: null },

@@ -60,7 +60,7 @@
                             <option value="">{{ $t('selectBalance') || 'Выберите баланс' }}</option>
                             <option v-for="b in (employeeBalancesMap && employeeBalancesMap[employee.id]) || []" :key="b.id" :value="b.id">
                                 {{ b.currency?.symbol || '' }} - {{ formatBalance(b.balance) }}
-                                <span v-if="b.isDefault"> ({{ $t('default') || 'По умолчанию' }})</span>
+                                <i v-if="b.isDefault" class="fas fa-star text-yellow-500 ml-1" :title="$t('default')"></i>
                             </option>
                         </select>
                     </td>
