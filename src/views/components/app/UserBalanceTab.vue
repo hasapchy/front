@@ -1,63 +1,7 @@
 <template>
     <div v-if="canViewBalance" class="mt-4">
-        <div class="flex justify-between items-center mb-2">
-            <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
-            <div v-if="!hideActions" class="flex gap-2">
-                <PrimaryButton 
-                    icon="fas fa-money-bill-wave" 
-                    :onclick="handleSalaryAccrual"
-                    :is-success="true"
-                    :disabled="buttonsDisabled">
-                    {{ $t('accrueSalary') }}
-                </PrimaryButton>
-                <PrimaryButton 
-                    icon="fas fa-hand-holding-usd" 
-                    :onclick="handleSalaryPayment"
-                    :is-success="true"
-                    :disabled="buttonsDisabled">
-                    {{ $t('paySalary') }}
-                </PrimaryButton>
-                <PrimaryButton 
-                    icon="fas fa-gift" 
-                    :onclick="handleBonus"
-                    :is-success="true"
-                    :disabled="buttonsDisabled">
-                    {{ $t('bonus') }}
-                </PrimaryButton>
-                <PrimaryButton 
-                    icon="fas fa-exclamation-triangle" 
-                    :onclick="handlePenalty"
-                    :is-danger="true"
-                    :disabled="buttonsDisabled">
-                    {{ $t('penalty') }}
-                </PrimaryButton>
-                <PrimaryButton 
-                    icon="fas fa-money-check-alt" 
-                    :onclick="handleAdvance"
-                    :is-success="true"
-                    :disabled="buttonsDisabled">
-                    {{ $t('advance') }}
-                </PrimaryButton>
-            </div>
-        </div>
-
-        <!-- Подсказка о разнице между начислением и выплатой зарплаты -->
-        <div v-if="!balanceLoading && editingItem && editingItem.id && employeeClient" 
-             class="mb-4 relative group">
-            <div class="flex items-center gap-2 cursor-help">
-                <i class="fas fa-question-circle text-gray-400 hover:text-blue-600 transition-colors"></i>
-                <span class="text-xs text-gray-600">{{ $t('salaryDifferenceHelpTitle') }}</span>
-            </div>
-            <div class="absolute left-0 top-6 z-10 w-80 p-3 bg-blue-50 border border-blue-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                <p class="text-xs text-blue-800">
-                    {{ $t('salaryDifferenceHelp') }}
-                </p>
-            </div>
-        </div>
-
-        <!-- Предупреждение о том, что клиент не найден -->
-        <div v-if="!balanceLoading && editingItem && editingItem.id && !employeeClient && !clientCheckLoading" 
-             class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div v-if="!balanceLoading && editingItem && editingItem.id && !employeeClient && !clientCheckLoading"
+            class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <div class="flex items-center gap-2">
                 <i class="fas fa-exclamation-triangle text-yellow-600"></i>
                 <div class="flex-1">
@@ -70,77 +14,119 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Итого (баланс сотрудника) -->
-        <div v-if="!balanceLoading && editingItem" class="mb-4 p-4 bg-gray-50 rounded-lg">
+
+        <div v-if="!balanceLoading && editingItem && balanceDataLoaded" class="mb-4 p-4 bg-gray-50 rounded-lg">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <i class="fas fa-wallet text-blue-500"></i>
                     <span class="text-sm text-gray-600">{{ balanceStatusText }}:</span>
                 </div>
-                <b :class="{
-                    'text-[#5CB85C]': totalBalance >= 0,
-                    'text-[#EE4F47]': totalBalance < 0
-                }" class="text-lg">{{ formatBalance(totalBalance) }}</b>
+                <span v-if="shouldShowBalanceSelect" class="relative inline-block balance-dropdown-wrap">
+                    <button type="button"
+                        @mousedown.prevent="showBalanceDropdown = !showBalanceDropdown"
+                        :class="['text-lg', 'font-bold', 'cursor-pointer', 'flex', 'items-center', 'gap-1', 'pr-1', 'border-0', 'bg-transparent', 'hover:opacity-80', balanceColorClass(totalBalance)]">
+                        {{ formatBalanceWithCurrency(totalBalance) }}
+                        <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
+                    </button>
+                    <transition name="appear">
+                        <ul v-show="showBalanceDropdown"
+                            class="absolute right-0 top-full mt-1 min-w-[120px] bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 max-h-40 overflow-y-auto">
+                            <li v-for="balance in employeeClient.balances" :key="balance.id"
+                                @mousedown.prevent="selectBalance(balance)"
+                                class="px-3 py-2 cursor-pointer text-sm hover:bg-gray-50">
+                                <span :class="balanceColorClass(balance.balance)">{{ formatBalance(balance.balance) }}</span>
+                                {{ balance.currency?.symbol || '' }}
+                                <span v-if="balance.isDefault" class="text-amber-500">★</span>
+                            </li>
+                        </ul>
+                    </transition>
+                </span>
+                <b v-else :class="[
+                    'text-lg',
+                    balanceColorClass(totalBalance)
+                ]">{{ formatBalanceWithCurrency(totalBalance) }}</b>
             </div>
         </div>
 
-        <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
-        <DraggableTable 
-            v-if="!balanceLoading && balanceHistory && balanceHistory.length > 0 && editingItem" 
-            table-key="user.balance"
-            :columns-config="columnsConfig" 
-            :table-data="balanceHistory" 
-            :item-mapper="itemMapper"
-            :onItemClick="handleBalanceItemClick" />
+        <transition name="fade" mode="out-in">
+            <div v-if="editingItem && !balanceLoading" key="table">
+                <DraggableTable table-key="user.balance" :columns-config="columnsConfig"
+                    :table-data="balanceHistory || []" :item-mapper="itemMapper" :onItemClick="handleBalanceItemClick">
+                    <template #tableSettingsAdditional>
+                        <FiltersContainer v-if="employeeClient?.balances?.length" :has-active-filters="hasActiveFilters"
+                            :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('dateFrom') }}</label>
+                                <input type="date" v-model="dateFrom" class="w-full" />
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('dateTo') }}</label>
+                                <input type="date" v-model="dateTo" class="w-full" />
+                            </div>
+                        </FiltersContainer>
+                        <template v-if="!hideActions">
+                            <PrimaryButton icon="fas fa-money-bill-wave" :onclick="handleSalaryAccrual"
+                                :is-success="true" :disabled="buttonsDisabled">
+                                {{ $t('accrueSalary') }}
+                            </PrimaryButton>
+                            <PrimaryButton icon="fas fa-hand-holding-usd" :onclick="handleSalaryPayment"
+                                :is-success="true" :disabled="buttonsDisabled">
+                                {{ $t('paySalary') }}
+                            </PrimaryButton>
+                            <PrimaryButton icon="fas fa-gift" :onclick="handleBonus" :is-success="true"
+                                :disabled="buttonsDisabled">
+                                {{ $t('bonus') }}
+                            </PrimaryButton>
+                            <PrimaryButton icon="fas fa-exclamation-triangle" :onclick="handlePenalty" :isDanger="true"
+                                :disabled="buttonsDisabled">
+                                {{ $t('penalty') }}
+                            </PrimaryButton>
+                            <PrimaryButton icon="fas fa-money-check-alt" :onclick="handleAdvance" :is-success="true"
+                                :disabled="buttonsDisabled">
+                                {{ $t('advance') }}
+                            </PrimaryButton>
+                        </template>
+                    </template>
+                </DraggableTable>
+            </div>
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
+            </div>
+        </transition>
 
         <SideModalDialog :showForm="transactionModalOpen" :onclose="closeTransactionModal">
-            <TransactionCreatePage 
+            <TransactionCreatePage
                 v-if="transactionModalOpen && editingItem && editingItem.id && employeeClient && transactionModalType"
-                ref="transactionForm"
-                :form-config="transactionFormConfig"
-                :initial-client="employeeClient"
-                :header-text="getTransactionModalHeader()"
-                @saved="handleTransactionSaved"
+                ref="transactionForm" :form-config="transactionFormConfig" :initial-client="employeeClient"
+                :client-balances="employeeClient?.balances || []"
+                :header-text="getTransactionModalHeader()" @saved="handleTransactionSaved"
                 @saved-error="handleTransactionError" />
         </SideModalDialog>
 
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
-                <div class="p-8 flex justify-center items-center min-h-[200px]">
-                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
+                <div class="min-h-64">
+                    <TableSkeleton />
                 </div>
             </template>
             <template v-else>
-                <TransactionCreatePage 
-                    v-if="selectedEntity && selectedEntity.type === 'transaction'"
-                    :editingItem="editingTransactionItem"
-                    :initialClient="employeeClient"
-                    @saved="onEntitySaved"
-                    @saved-error="onEntitySavedError"
-                    @deleted="onEntityDeleted"
+                <TransactionCreatePage v-if="selectedEntity && selectedEntity.type === 'transaction'"
+                    :editingItem="editingTransactionItem" :initialClient="employeeClient"
+                    :client-balances="employeeClient?.balances || []"
+                    @saved="onEntitySaved" @saved-error="onEntitySavedError" @deleted="onEntityDeleted"
                     @deleted-error="onEntityDeletedError" />
             </template>
         </SideModalDialog>
 
-        <NotificationToast 
-            :title="notificationTitle" 
-            :subtitle="notificationSubtitle" 
-            :show="notification" 
-            :is-danger="notificationIsDanger" 
-            @close="closeNotification" 
-        />
     </div>
 </template>
 
 <script>
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
-import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
+import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue";
+import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
 import ClientImpactCell from "@/views/components/app/buttons/ClientImpactCell.vue";
@@ -149,17 +135,19 @@ import ClientController from "@/api/ClientController";
 import TransactionController from "@/api/TransactionController";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
+import filtersMixin from "@/mixins/filtersMixin";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import { markRaw } from 'vue';
 
 export default {
     name: 'UserBalanceTab',
-    mixins: [notificationMixin, getApiErrorMessage],
+    mixins: [notificationMixin, getApiErrorMessage, filtersMixin],
     components: {
         PrimaryButton,
         SideModalDialog,
-        NotificationToast,
         DraggableTable,
+        FiltersContainer,
+        TableSkeleton,
         SourceButtonCell,
         TransactionCreatePage,
     },
@@ -177,6 +165,7 @@ export default {
         return {
             currencySymbol: '',
             balanceLoading: false,
+            balanceDataLoaded: false,
             balanceHistory: [],
             totalBalance: 0,
             transactionModalOpen: false,
@@ -187,6 +176,10 @@ export default {
             entityLoading: false,
             selectedEntity: null,
             editingTransactionItem: null,
+            selectedBalanceId: null,
+            dateFrom: null,
+            dateTo: null,
+            showBalanceDropdown: false,
             ENTITY_CONFIG: {
                 transaction: {
                     fetch: id => TransactionController.getItem(id),
@@ -226,21 +219,29 @@ export default {
         buttonsDisabled() {
             return !this.editingItem || !this.editingItem.id || !this.employeeClient;
         },
+        defaultBalanceId() {
+            if (!this.employeeClient?.balances?.length) return null;
+            const defaultBalance = this.employeeClient.balances.find(b => b.isDefault);
+            return defaultBalance ? defaultBalance.id : (this.employeeClient.balances[0]?.id ?? null);
+        },
+        shouldShowBalanceSelect() {
+            return this.canViewBalance && this.employeeClient?.balances?.length > 1;
+        },
         columnsConfig() {
             return [
-                { name: "id", label: this.$t("number"), size: 60 },
+                { name: "id", label: "№", size: 60 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 120 },
                 {
-                    name: "sourceType", 
-                    label: this.$t("source"), 
-                    size: 120, 
+                    name: "sourceType",
+                    label: this.$t("source"),
+                    size: 120,
                     component: markRaw(SourceButtonCell),
                     props: (item) => {
                         const sourceType = item.sourceType || null;
                         const source = item.source || null;
                         const isTransaction = source === 'transaction' || (sourceType && sourceType.includes('Transaction'));
                         const sourceId = isTransaction ? item.sourceId : (item.sourceSourceId || item.sourceId);
-                        
+
                         return {
                             sourceType: sourceType,
                             sourceId: sourceId,
@@ -255,6 +256,7 @@ export default {
                 },
                 { name: "note", label: this.$t("note"), size: 200 },
                 { name: "categoryName", label: this.$t("category"), size: 150 },
+                { name: "projectName", label: this.$t("project"), size: 150 },
                 {
                     name: "debt",
                     label: this.$t("debt"),
@@ -283,13 +285,11 @@ export default {
         if (!this.canViewBalance) {
             return;
         }
+        document.addEventListener('click', this.handleBalanceDropdownClickOutside);
         await this.fetchDefaultCurrency();
-        if (this.editingItem && this.editingItem.id) {
-            await Promise.all([
-                this.fetchBalanceHistory(),
-                this.findEmployeeClient()
-            ]);
-        }
+    },
+    beforeUnmount() {
+        document.removeEventListener('click', this.handleBalanceDropdownClickOutside);
     },
     watch: {
         'editingItem.id': {
@@ -298,36 +298,90 @@ export default {
                     if (!this.canViewBalance) {
                         this.balanceHistory = [];
                         this.totalBalance = 0;
+                        this.balanceDataLoaded = false;
                         this.employeeClient = null;
                         this.selectedEntity = null;
                         this.entityModalOpen = false;
                         this.entityLoading = false;
                         return;
                     }
-                    await Promise.all([
-                        this.fetchBalanceHistory(),
-                        this.findEmployeeClient()
-                    ]);
+                    this.balanceDataLoaded = false;
+                    await this.findEmployeeClient();
+                    await this.fetchBalanceHistory();
                 } else {
                     this.balanceHistory = [];
                     this.totalBalance = 0;
+                    this.balanceDataLoaded = false;
                     this.employeeClient = null;
                     this.selectedEntity = null;
                     this.entityModalOpen = false;
                     this.entityLoading = false;
+                    this.selectedBalanceId = null;
                 }
             },
             immediate: true,
-        }
+        },
+        'employeeClient.balances': {
+            handler() {
+                if (this.employeeClient) {
+                    this.initDefaultBalance();
+                    this.$nextTick(() => this.fetchBalanceHistory());
+                }
+            },
+            deep: true,
+        },
     },
     methods: {
         formatBalance(balance) {
-            return `${this.$formatNumber(balance, null, true)} ${this.currencySymbol}`;
+            return this.$formatNumber(balance, null, true);
+        },
+        formatBalanceWithCurrency(balance) {
+            return `${this.formatBalance(balance)} ${this.currencySymbol}`;
+        },
+        balanceColorClass(value) {
+            const v = value == null ? 0 : Number(value);
+            return v === 0 ? 'text-[#337AB7]' : v > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]';
+        },
+        selectBalance(balance) {
+            this.selectedBalanceId = balance.id;
+            this.showBalanceDropdown = false;
+            this.fetchBalanceHistory();
+        },
+        handleBalanceDropdownClickOutside(event) {
+            if (!event.target.closest('.balance-dropdown-wrap')) {
+                this.showBalanceDropdown = false;
+            }
+        },
+        initDefaultBalance() {
+            if (this.employeeClient?.balances?.length) {
+                const defaultBalance = this.employeeClient.balances.find(b => b.isDefault);
+                this.selectedBalanceId = defaultBalance ? defaultBalance.id : (this.employeeClient.balances[0]?.id || null);
+            } else {
+                this.selectedBalanceId = null;
+            }
+        },
+        resetFilters() {
+            this.resetFiltersFromConfig({
+                dateFrom: null,
+                dateTo: null
+            }, () => {
+                this.initDefaultBalance();
+                this.fetchBalanceHistory();
+            });
+        },
+        applyFilters() {
+            this.fetchBalanceHistory();
+        },
+        getActiveFiltersCount() {
+            return this.getActiveFiltersCountFromConfig([
+                { value: this.dateFrom, defaultValue: null },
+                { value: this.dateTo, defaultValue: null }
+            ]);
         },
         itemMapper(i, c) {
             switch (c) {
                 case "id":
-                    return i.sourceId;
+                    return i.sourceId ?? i.id ?? '-';
                 case "dateUser":
                     return i.dateUser;
                 case "note":
@@ -335,6 +389,8 @@ export default {
                 case "categoryName":
                     const categoryName = i.categoryName || i.category_name;
                     return categoryName ? this.$t(`transactionCategory.${categoryName}`, categoryName) : '';
+                case "projectName":
+                    return i.projectName ?? '-';
                 case "clientImpact":
                     return parseFloat(i.amount || 0);
                 default:
@@ -343,7 +399,7 @@ export default {
         },
         async handleBalanceItemClick(item) {
             if (!item?.sourceId) return;
-            
+
             try {
                 this.entityLoading = true;
                 const data = await this.ENTITY_CONFIG.transaction.fetch(item.sourceId);
@@ -365,6 +421,10 @@ export default {
         },
         async onEntitySaved() {
             this.closeEntityModal();
+            if (this.editingItem?.id) {
+                await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            }
+            await this.findEmployeeClient();
             await this.fetchBalanceHistory();
         },
         onEntitySavedError(error) {
@@ -372,6 +432,10 @@ export default {
         },
         async onEntityDeleted() {
             this.closeEntityModal();
+            if (this.editingItem?.id) {
+                await this.$store.dispatch('invalidateCache', { type: 'clients' });
+            }
+            await this.findEmployeeClient();
             await this.fetchBalanceHistory();
         },
         onEntityDeletedError(error) {
@@ -401,20 +465,32 @@ export default {
         },
         async fetchBalanceHistory() {
             if (!this.editingItem || !this.editingItem.id) return;
-            
+
             this.balanceLoading = true;
             try {
-                const UsersController = (await import("@/api/UsersController")).default;
-                const balanceInfo = await UsersController.getEmployeeBalance(this.editingItem.id);
-                const history = await UsersController.getEmployeeBalanceHistory(this.editingItem.id);
-                
-                this.balanceHistory = history || [];
-                
-                this.totalBalance = balanceInfo ? parseFloat(balanceInfo.balance || 0) : 0;
+                if (!this.employeeClient?.id) {
+                    this.balanceHistory = [];
+                    this.totalBalance = 0;
+                    this.balanceDataLoaded = true;
+                    return;
+                }
+                this.balanceHistory = await ClientController.getBalanceHistory(
+                    this.employeeClient.id,
+                    null,
+                    null,
+                    this.dateFrom,
+                    this.dateTo,
+                    this.selectedBalanceId
+                ) || [];
+                const selectedBalance = this.employeeClient.balances?.find(b => b.id === this.selectedBalanceId);
+                this.totalBalance = selectedBalance ? parseFloat(selectedBalance.balance || 0) : parseFloat(this.employeeClient.balance || 0);
+                this.currencySymbol = selectedBalance?.currency?.symbol || this.employeeClient.currencySymbol || '';
+                this.balanceDataLoaded = true;
             } catch (e) {
                 console.error('Error fetching balance history:', e);
                 this.balanceHistory = [];
                 this.totalBalance = 0;
+                this.balanceDataLoaded = true;
             } finally {
                 this.balanceLoading = false;
             }
@@ -450,7 +526,7 @@ export default {
         },
         async openTransactionModal(type) {
             if (!this.editingItem || !this.editingItem.id) return;
-            
+
             this.transactionModalType = type;
             await this.findEmployeeClient();
             if (this.employeeClient) {
@@ -486,8 +562,13 @@ export default {
                     const clientEmployeeId = c.employeeId ? Number(c.employeeId) : null;
                     return clientEmployeeId === userId;
                 });
-                
-                this.employeeClient = client || null;
+                if (client?.id) {
+                    const fullClient = await ClientController.getItem(client.id);
+                    this.employeeClient = fullClient || client;
+                } else {
+                    this.employeeClient = null;
+                }
+                this.initDefaultBalance();
             } catch (error) {
                 console.error('Error finding employee client:', error);
                 this.employeeClient = null;
@@ -507,10 +588,8 @@ export default {
                 this.$t('transactionSaved'),
                 false
             );
-            await Promise.all([
-                this.fetchBalanceHistory(),
-                this.findEmployeeClient()
-            ]);
+            await this.findEmployeeClient();
+            await this.fetchBalanceHistory();
         },
         handleTransactionError(error) {
             this.showNotification(
@@ -522,4 +601,3 @@ export default {
     }
 };
 </script>
-

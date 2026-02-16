@@ -35,6 +35,7 @@
             <thead class="bg-gray-100 rounded-t-sm">
                 <tr>
                     <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">{{ $t('name') }}</th>
+                    <th class="text-left border border-gray-300 py-2 px-4 font-medium w-32">{{ $t('clientBalance') || 'Баланс' }}</th>
                     <th class="text-left border border-gray-300 py-2 px-4 font-medium w-48">{{ $t('amount') }}</th>
                     <th class="text-left border border-gray-300 py-2 px-4 font-medium w-12">~</th>
                 </tr>
@@ -49,6 +50,19 @@
                             </div>
                             {{ getUserFullName(employee) }}
                         </div>
+                    </td>
+                    <td class="py-2 px-4 border-x border-gray-300">
+                        <select
+                            :value="employee.selectedBalanceId || ''"
+                            @input="onBalanceChange(employee, $event.target.value)"
+                            class="w-full p-1"
+                            :disabled="disabled">
+                            <option value="">{{ $t('selectBalance') || 'Выберите баланс' }}</option>
+                            <option v-for="b in (employeeBalancesMap && employeeBalancesMap[employee.id]) || []" :key="b.id" :value="b.id">
+                                {{ b.currency?.symbol || '' }} - {{ formatBalance(b.balance) }}
+                                <i v-if="b.isDefault" class="fas fa-star text-yellow-500 ml-1" :title="$t('default')"></i>
+                            </option>
+                        </select>
                     </td>
                     <td class="py-2 px-4 border-x border-gray-300">
                         <input 
@@ -106,6 +120,10 @@ export default {
         required: {
             type: Boolean,
             default: false,
+        },
+        employeeBalancesMap: {
+            type: Object,
+            default: () => ({}),
         },
     },
     emits: ['update:modelValue', 'update:cashId', 'update:currencyId'],
@@ -232,6 +250,15 @@ export default {
                 Number(emp.id) === Number(employee.id) ? { ...emp, amount } : emp
             );
             this.$emit('update:modelValue', updated);
+        },
+        onBalanceChange(employee, balanceId) {
+            const updated = this.employees.map(emp => 
+                Number(emp.id) === Number(employee.id) ? { ...emp, selectedBalanceId: balanceId || null } : emp
+            );
+            this.$emit('update:modelValue', updated);
+        },
+        formatBalance(balance) {
+            return this.$formatNumber ? this.$formatNumber(balance, null, true) : parseFloat(balance || 0).toFixed(2);
         },
         getUserFullName(user) {
             if (!user) return '';

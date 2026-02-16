@@ -49,7 +49,7 @@
                                     <ul>
                                         <draggable v-if="columns && columns.length" class="dragArea list-group w-full"
                                             :list="columns" @change="log">
-                                            <li v-for="(element, index) in columns" :key="element.name"
+                                            <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
                                                 @click="toggleVisible(index)"
                                                 class="flex items-center hover:bg-gray-100 p-2 rounded">
                                                 <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -95,6 +95,9 @@
 
                         <ViewModeToggle :view-mode="viewMode" @change="changeViewMode" />
                     </template>
+                    <template #right>
+                        <KanbanFieldsButton mode="orders" />
+                    </template>
                 </TableControlsBar>
 
                 <div v-if="selectedIds.length && viewMode === 'kanban'" class="mb-4">
@@ -113,8 +116,9 @@
                     @load-more="loadMoreKanbanItems" />
             </div>
 
-            <div v-else key="loader" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
+            <div v-else key="loader" class="min-h-64">
+                <KanbanSkeleton v-if="viewMode === 'kanban'" />
+                <TableSkeleton v-else />
             </div>
         </transition>
 
@@ -156,8 +160,6 @@
                 @saved-error="handleTransactionSavedError" @close-request="() => transactionModal = false" />
         </SideModalDialog>
 
-        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-            :is-danger="notificationIsDanger" @close="closeNotification" />
         <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
             :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
             @leave="deleteDialog = false" />
@@ -168,7 +170,6 @@
 </template>
 
 <script>
-import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
@@ -206,7 +207,8 @@ import filtersMixin from "@/mixins/filtersMixin";
 import storeDataLoaderMixin from "@/mixins/storeDataLoaderMixin";
 import { formatCurrency } from "@/utils/numberUtils";
 import { highlightMatches } from "@/utils/searchUtils";
-import SpinnerIcon from "@/views/components/app/SpinnerIcon.vue";
+import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
+import KanbanSkeleton from "@/views/components/app/kanban/KanbanSkeleton.vue";
 import { TRANSACTION_FORM_PRESETS } from "@/constants/transactionFormPresets";
 import KanbanFieldsButton from "@/views/components/app/kanban/KanbanFieldsButton.vue";
 import PrintInvoiceDialog from "@/views/components/app/dialog/PrintInvoiceDialog.vue";
@@ -220,7 +222,7 @@ const TimelinePanel = defineAsyncComponent(() =>
 
 export default {
     mixins: [getApiErrorMessage, crudEventMixin, notificationMixin, modalMixin, batchActionsMixin, companyChangeMixin, searchMixin, filtersMixin, printInvoiceMixin, storeDataLoaderMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, SimpleOrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, SpinnerIcon, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, draggable: VueDraggableNext },
+    components: { SideModalDialog, PrimaryButton, Pagination, DraggableTable, KanbanBoard, OrderCreatePage, SimpleOrderCreatePage, InvoiceCreatePage, TransactionCreatePage, ClientButtonCell, OrderStatusController, BatchButton, AlertDialog, TimelinePanel, OrderPaymentFilter, StatusSelectCell, TableSkeleton, KanbanSkeleton, FiltersContainer, TableControlsBar, TableFilterButton, KanbanFieldsButton, PrintInvoiceDialog, OrderFilters, ViewModeToggle, draggable: VueDraggableNext },
     data() {
         return {
             viewMode: 'kanban',
@@ -240,7 +242,7 @@ export default {
             deletedErrorText: this.$t('errorDeletingOrder'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: "id", label: "№", size: 20 },
+                { name: "id", label: "№", size: 20, html: true },
                 { name: "statusName", label: 'status', component: markRaw(StatusSelectCell), props: (i) => ({ id: i.id, value: i.statusId, statuses: this.statuses, onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) }), },
                 { name: "cashName", label: 'cashRegister' },
                 { name: "warehouseName", label: 'warehouse' },
@@ -251,6 +253,7 @@ export default {
                 { name: "note", label: 'note', html: true },
                 { name: "description", label: 'description' },
                 { name: "totalPrice", label: 'orderAmount' },
+                { name: "paymentStatusText", label: 'paymentStatus', size: 120, html: true },
             ],
             dateFilter: 'all_time',
             startDate: null,
@@ -353,6 +356,11 @@ export default {
             const search = this.searchQuery;
 
             switch (c) {
+                case "id":
+                    if (search) {
+                        return highlightMatches(String(i.id ?? ""), search);
+                    }
+                    return i.id;
                 case "products":
                     return i.productsHtmlList();
                 case "dateUser":
@@ -365,6 +373,11 @@ export default {
                 case "statusName":
                     const statusName = i.status?.name || i.statusName || '';
                     return statusName ? translateOrderStatus(statusName, this.$t) : '-';
+                case "paymentStatusText":
+                    const paymentStatusText = i.paymentStatusText || (typeof i.getPaymentStatusText === 'function' ? i.getPaymentStatusText() : null);
+                    if (!paymentStatusText) return '-';
+                    const paymentStatusClass = typeof i.getPaymentStatusClass === 'function' ? i.getPaymentStatusClass() : '';
+                    return `<span class="${paymentStatusClass}">${paymentStatusText}</span>`;
                 case "cashName":
                     return i.cash?.name || i.cashName || "-";
                 case "warehouseName":
@@ -897,6 +910,9 @@ export default {
     },
     mounted() {
         try {
+            if (!this.$store.getters.projects?.length) {
+                this.$store.dispatch('loadProjects');
+            }
             const savedViewMode = localStorage.getItem('orders_viewMode');
             if (savedViewMode && ['table', 'kanban'].includes(savedViewMode)) {
                 this.viewMode = savedViewMode;

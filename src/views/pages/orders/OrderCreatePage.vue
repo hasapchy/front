@@ -1,8 +1,9 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
-        <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editOrder') : $t('createOrder') }}</h2>
-        <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
-        <div>
+    <div class="flex flex-col h-full">
+        <div class="flex flex-col overflow-auto h-full p-4 pb-24">
+            <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editOrder') : $t('createOrder') }}</h2>
+            <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
+            <div>
             <div v-show="currentTab === 'info'">
                 <ClientSearch v-model:selectedClient="selectedClient" :allowDeselect="true" />
                 <div>
@@ -15,7 +16,7 @@
                             </option>
                         </select>
                         <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showProductCategoryModal"
-                            :disabled="!$store.getters.hasPermission('categories_create')" />
+                            :disabled="!$store.getters.hasPermission('categories_create')" :aria-label="$t('addCategory')" />
                     </div>
                 </div>
                 <div>
@@ -37,7 +38,7 @@
                             </option>
                         </select>
                         <PrimaryButton icon="fas fa-add" :is-info="true" :onclick="showProjectModal"
-                            :disabled="!$store.getters.hasPermission('projects_create')" />
+                            :disabled="!$store.getters.hasPermission('projects_create')" :aria-label="$t('addProject')" />
                     </div>
                 </div>
                 <div>
@@ -75,16 +76,17 @@
                 </template>
             </div>
         </div>
-    </div>
-    <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
+        </div>
+        
+        <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
         <div class="flex items-center space-x-2">
             <PrimaryButton v-if="editingItemId" icon="fas fa-check" :onclick="saveWithoutClose"
-                :is-loading="saveLoading">
+                :is-loading="saveLoading" :aria-label="$t('saveWithoutClose')">
             </PrimaryButton>
-            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading">
+            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
             </PrimaryButton>
             <PrimaryButton v-if="editingItemId" :onclick="showDeleteDialog" :is-danger="true"
-                :is-loading="deleteLoading" icon="fas fa-trash">
+                :is-loading="deleteLoading" icon="fas fa-trash" :aria-label="$t('delete')">
             </PrimaryButton>
         </div>
 
@@ -110,6 +112,7 @@
     <SideModalDialog :showForm="productCategoryModalDialog" :onclose="closeProductCategoryModal" :level="1">
         <CategoriesCreatePage v-if="productCategoryModalDialog" @saved="handleProductCategorySaved" />
     </SideModalDialog>
+    </div>
 </template>
 
 <script>
@@ -463,8 +466,13 @@ export default {
             await this.performSaveInternal(false);
         },
         async saveWithoutClose() {
-            const formData = this.prepareFormData();
-            await this.performSave(formData);
+            this.saveLoading = true;
+            try {
+                const formData = this.prepareFormData();
+                await this.performSave(formData);
+            } finally {
+                this.saveLoading = false;
+            }
         },
 
         // Метод для crudFormMixin

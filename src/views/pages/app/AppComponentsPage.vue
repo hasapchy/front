@@ -2,7 +2,7 @@
     <h2>Кнопки</h2>
     <PrimaryButton :onclick="toggleLoading" :is-loading="loading">Кнопка с загрузкой</PrimaryButton>
     <div class="inline-block mr-1"></div>
-    <PrimaryButton :onclick="toggleLoading" :is-loading="loading" :icon="'fas fa-plus'"></PrimaryButton>
+    <PrimaryButton :onclick="toggleLoading" :is-loading="loading" :icon="'fas fa-plus'" :aria-label="$t('add')"></PrimaryButton>
     <h2>Диалоги</h2>
     <PrimaryButton :onclick="showModal">Модальное окно</PrimaryButton>
     <div class="inline-block mr-1"></div>
@@ -16,10 +16,6 @@
         <div class="inline-block mr-1"></div>
         <PrimaryButton :onclick="showNotificationErr" :isLight="true">Ошибка</PrimaryButton>
     </SideModalDialog>
-    <NotificationToast :title="'Успешно'" :subtitle="'Данные успешно сохранены'" :show="notificationScs">
-    </NotificationToast>
-    <NotificationToast :title="'Ошибка'" :subtitle="'Ошибка сохранения данных'" :show="notificationErr"
-        :is-danger="true"></NotificationToast>
 </template>
 
 <script>
@@ -28,7 +24,6 @@ import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 // Диалоги
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 import modalMixin from '@/mixins/modalMixin';
 
@@ -37,14 +32,11 @@ export default {
     components: {
         AlertDialog,
         PrimaryButton,
-        SideModalDialog,
-        NotificationToast
+        SideModalDialog
     },
     data() {
         return {
             deleteDialog: false,
-            notificationScs: false,
-            notificationErr: false,
             loading: false
         }
     },
@@ -65,16 +57,10 @@ export default {
             }, 1000);
         },
         showNotificationScs() {
-            this.notificationScs = true;
-            setTimeout(() => {
-                this.notificationScs = false;
-            }, 1000);
+            this.$store.dispatch('showNotification', { title: 'Успешно', subtitle: 'Данные успешно сохранены', duration: 3000 });
         },
         showNotificationErr() {
-            this.notificationErr = true;
-            setTimeout(() => {
-                this.notificationErr = false;
-            }, 1000);
+            this.$store.dispatch('showNotification', { title: 'Ошибка', subtitle: 'Ошибка сохранения данных', isDanger: true, duration: 3000 });
         }
     }
 }

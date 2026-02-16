@@ -1,11 +1,11 @@
 <template>
-    <div class="kanban-card bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow"
-        :class="cardClasses" @dblclick="handleDoubleClick">
+    <div class="kanban-card rounded-lg shadow-sm border border-gray-200 p-3 mb-2 cursor-pointer hover:shadow-md transition-shadow"
+        :class="cardClasses" :style="cardBackgroundStyle" @dblclick="handleDoubleClick">
         <div class="flex items-start justify-between mb-3">
             <div class="flex items-center space-x-2 min-w-0 flex-1">
                 <input type="checkbox" :checked="isSelected" @click.stop="handleSelectToggle"
                     class="cursor-pointer flex-shrink-0" />
-                <span class="text-sm font-bold text-gray-800 truncate">
+                <span class="text-sm font-bold truncate text-gray-800">
                     {{ isProjectMode ? `№${order.id}` : isTaskMode ? `${order.title}` : `№${order.id}` }}
                 </span>
             </div>
@@ -181,6 +181,15 @@
                     {{ formatTotalPrice() }}
                 </span>
             </div>
+            <div v-if="showField('paymentStatus') && !isTaskMode" class="flex items-center justify-between">
+                <div class="flex items-center space-x-1">
+                    <i :class="[getPaymentStatusIcon(), getPaymentStatusClass()]"></i>
+                    <span class="text-xs text-gray-500">{{ $t('paymentStatus') }}:</span>
+                </div>
+                <span class="text-xs font-semibold" :class="getPaymentStatusClass()">
+                    {{ getPaymentStatusText() }}
+                </span>
+            </div>
         </div>
         <div v-if="isSupervisor && order?.statusId === 3 && isTaskMode" class="flex gap-2 mt-2">
             <button @click.stop="updateTaskStatus('COMPLETED')"
@@ -262,9 +271,19 @@ export default {
     computed: {
         cardClasses() {
             return [
-                { 'ring-2 ring-blue-400': this.isSelected },
-                this.getCardBackgroundClass()
+                { 'ring-2 ring-blue-400': this.isSelected }
             ];
+        },
+        cardBackgroundStyle() {
+            const bgColor = this.getCardBackgroundColor();
+            if (bgColor) {
+                return {
+                    backgroundColor: bgColor
+                };
+            }
+            return {
+                backgroundColor: '#ffffff'
+            };
         },
         kanbanFields() {
             const mode = this.isProjectMode ? 'projects' : (this.isTaskMode ? 'tasks' : 'orders');
@@ -275,21 +294,7 @@ export default {
             if (!this.isTaskMode) return false;
             if (!this.order) return false;
 
-            console.log('hasChecklist', this.order);
-            // Проверяем наличие checklist в разных возможных форматах
             const checklist = this.order.checklist;
-
-
-            // Отладка для задачи с ID 2
-            if (this.order.id === 2) {
-                console.log('[KanbanCard] Task 2 debug:', {
-                    order: this.order,
-                    checklist: checklist,
-                    checklistType: typeof checklist,
-                    isArray: Array.isArray(checklist),
-                    length: Array.isArray(checklist) ? checklist.length : 'N/A'
-                });
-            }
 
             if (!checklist) return false;
 
@@ -298,7 +303,6 @@ export default {
                 const hasItems = Array.isArray(items) && items.length > 0;
                 return hasItems;
             } catch (e) {
-                console.warn('Ошибка при проверке чеклиста:', e, this.order);
                 return false;
             }
         },
@@ -387,25 +391,25 @@ export default {
             return diffDays;
         },
 
-        // Определяет класс фона карточки в зависимости от срока выполнения
-        getCardBackgroundClass() {
+        // Определяет цвет фона карточки в зависимости от срока выполнения
+        getCardBackgroundColor() {
             if (!this.isTaskInActiveStatus() || !this.order?.deadline) {
-                return '';
+                return null;
             }
 
             const daysLeft = this.getDaysUntilDeadline(this.order.deadline);
 
             // Если просрочена - красная подложка (светлая)
             if (daysLeft < 0) {
-                return 'bg-red-500';
+                return 'rgba(220, 53, 69, 0.3)';
             }
 
             // Если до срока осталось 3 дня или меньше - желтая подложка
             if (daysLeft <= 3) {
-                return 'bg-yellow-500';
+                return 'rgba(255, 193, 7, 0.3)';
             }
 
-            return '';
+            return null;
         },
 
         async updateTaskStatus(targetStatusName) {
@@ -526,9 +530,14 @@ export default {
             }
         },
         getPaymentStatusText() {
+            if (this.order?.paymentStatusText) {
+                return this.order.paymentStatusText;
+            }
+            
             if (typeof this.order?.getPaymentStatusText === 'function') {
                 return this.order.getPaymentStatusText();
             }
+            
             const paidAmount = parseFloat(this.order?.paidAmount || 0);
             const totalPrice = parseFloat(this.order?.totalPrice || 0);
             const paymentStatus = this.order?.paymentStatus;

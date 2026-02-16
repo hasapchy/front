@@ -51,6 +51,12 @@ export const PERMISSIONS_CONFIG = {
       actions: ["view", "create", "update", "delete"],
       scope_actions: ["view", "update", "delete"],
     },
+    client_balances: {
+      has_user_id: false,
+      check_strategy: "default",
+      actions: ["view", "create", "update", "delete"],
+      scope_actions: ["view", "update", "delete"],
+    },
     cash_registers: {
       has_user_id: false,
       check_strategy: "many_to_many",
@@ -274,11 +280,7 @@ export const PERMISSIONS_CONFIG = {
     },
     orders: {
       label: "orders",
-      resources: ["orders", "order_statuses", "order_statuscategories"],
-    },
-    orders_simple: {
-      label: "orders_simple",
-      resources: ["orders_simple"],
+      resources: ["orders", "orders_simple", "order_statuses", "order_statuscategories"],
     },
     products: {
       label: "products",
@@ -286,7 +288,7 @@ export const PERMISSIONS_CONFIG = {
     },
     clients: {
       label: "clients",
-      resources: ["clients"],
+      resources: ["clients", "client_balances"],
     },
     sales: {
       label: "sales",

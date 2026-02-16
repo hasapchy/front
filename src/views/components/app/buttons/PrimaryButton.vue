@@ -1,5 +1,6 @@
 <template>
-    <button :disabled="isLoading || isDisabled || isClickBlocked" :class="[
+    <button :disabled="isLoading || isDisabled || isClickBlocked" :aria-label="ariaLabel || undefined" :title="(ariaLabel || title) || undefined"
+        :class="[
         buttonClasses,
         {
             'cursor-pointer': !isDisabled && !isLoading && !isClickBlocked,
@@ -61,6 +62,14 @@ export default {
         disabled: {
             type: Boolean,
             default: false
+        },
+        ariaLabel: {
+            type: String,
+            default: ''
+        },
+        title: {
+            type: String,
+            default: ''
         }
     },
     computed: {

@@ -53,13 +53,7 @@ class GlobalChatRealtime {
 
     // Создаем экземпляр chatRealtime
     this.realtime = createChatRealtime(echo, {
-      log: (msg, ...args) => console.log(msg, ...args),
       onMessage: (event) => {
-        console.log("[GlobalChatRealtime] 📨 Получено сообщение:", {
-          chat_id: event?.chat_id,
-          user: event?.user?.name,
-          body: event?.body?.substring(0, 50),
-        });
         eventBus.emit("chat:message", event);
       },
       onMessageUpdated: (event) => {
@@ -76,13 +70,11 @@ class GlobalChatRealtime {
         eventBus.emit("chat:error", error);
       },
       onChannelSubscribed: (chatId, channelName) => {
-        console.log(`[GlobalChatRealtime] ✅ Подписан на канал чата #${chatId}: ${channelName}`);
         eventBus.emit("chat:subscribed", { chatId, channelName });
       },
       onPresenceHere: (users) => {
         const ids = (users || []).map((u) => Number(u.id)).filter((id) => !Number.isNaN(id));
         this.onlineUserIds = [...ids];
-        console.log(`[GlobalChatRealtime] 👥 Presence: ${users?.length || 0} пользователей онлайн`);
         eventBus.emit("presence:here", users);
       },
       onPresenceJoining: (user) => {
@@ -130,8 +122,6 @@ class GlobalChatRealtime {
     }
 
     try {
-      console.log("[GlobalChatRealtime] 📡 Загрузка и подписка на чаты...");
-      
       // Загружаем список чатов
       const chats = await ChatController.getChats();
       const chatsArray = Array.isArray(chats) ? chats : [];
@@ -145,11 +135,9 @@ class GlobalChatRealtime {
         allChats.push(generalChat);
       }
 
-      console.log(`[GlobalChatRealtime] Подписка на ${allChats.length} чат(ов)...`);
       this.realtime.syncChats(companyId, allChats);
 
       // Подписываемся на presence (онлайн статус)
-      console.log(`[GlobalChatRealtime] Подписка на presence канал для компании ${companyId}...`);
       this.realtime.subscribePresence(companyId);
     } catch (error) {
       console.error("[GlobalChatRealtime] Ошибка инициализации каналов:", error);

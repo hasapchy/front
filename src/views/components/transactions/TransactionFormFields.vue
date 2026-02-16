@@ -2,7 +2,17 @@
     <div>
         <ClientSearch v-if="isFieldVisible('client')" v-model:selectedClient="localSelectedClient" :showLabel="true"
             :required="isDebt || isFieldRequired('client')" :disabled="isClientFieldDisabled" :allowDeselect="!initialProjectId"
-            :clientTypeFilter="fieldConfig('client').clientTypeFilter" />
+            :clientTypeFilter="fieldConfig('client').clientTypeFilter" @balance-changed="onBalanceChanged" />
+        <div v-if="shouldShowBalanceSelect" class="mt-2">
+            <label class="block mb-1 required">{{ $t('clientBalance') || 'Баланс клиента' }}</label>
+            <select :value="selectedBalanceId" @input="$emit('update:selectedBalanceId', $event.target.value)" required>
+                <option value="">{{ $t('selectBalance') || 'Выберите баланс' }}</option>
+                <option v-for="balance in clientBalances" :key="balance.id" :value="balance.id">
+                    {{ balance.currency?.symbol || '' }} - {{ formatBalance(balance.balance) }}
+                    <span v-if="balance.isDefault"> ({{ $t('default') || 'По умолчанию' }})</span>
+                </option>
+            </select>
+        </div>
         <div v-if="canShowDateField">
             <label>{{ $t('date') }}</label>
             <input type="datetime-local" :value="date"
@@ -21,14 +31,23 @@
                 <option value="outcome">🔺 {{ $t('outcome') }}</option>
             </select>
         </div>
-        <div class="mt-2">
-            <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
-            <select :value="cashId" @input="$emit('update:cashId', $event.target.value)" :disabled="!!editingItemId" required>
-                <option value="">{{ $t('no') }}</option>
-                <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
-                    {{ parent.name }} ({{ parent.currencySymbol || '' }})
-                </option>
-            </select>
+        <div class="flex items-center space-x-2 mt-2">
+            <div class="w-full" v-if="isFieldVisible('paymentType')">
+                <label class="block mb-1 required">{{ $t('salaryPaymentType') }}</label>
+                <select :value="paymentType" @input="$emit('update:paymentType', Number($event.target.value))" :disabled="!!editingItemId" required>
+                    <option :value="0">{{ $t('salaryPaymentTypeNonCash') }}</option>
+                    <option :value="1">{{ $t('salaryPaymentTypeCash') }}</option>
+                </select>
+            </div>
+            <div class="w-full">
+                <label class="block mb-1 required">{{ $t('cashRegister') }}</label>
+                <select :value="cashId" @input="$emit('update:cashId', $event.target.value)" :disabled="!!editingItemId" required>
+                    <option value="">{{ $t('no') }}</option>
+                    <option v-for="parent in allCashRegisters" :key="parent.id" :value="parent.id">
+                        {{ parent.name }} ({{ parent.currencySymbol || '' }})
+                    </option>
+                </select>
+            </div>
         </div>
         <div class="mt-2" v-if="isFieldVisible('debt')">
             <label class="inline-flex items-center">
@@ -111,6 +130,9 @@ export default {
         allProjects: { type: Array, default: () => [] },
         formConfig: { type: Object, default: () => ({}) },
         isCategoryDisabled: { type: Function, required: true },
+        clientBalances: { type: Array, default: () => [] },
+        selectedBalanceId: { type: [String, Number, null], default: null },
+        paymentType: { type: Number, default: 1 },
     },
     emits: [
         'update:selectedClient',
@@ -122,7 +144,10 @@ export default {
         'update:currencyId',
         'update:categoryId',
         'update:projectId',
-        'update:note'
+        'update:note',
+        'update:selectedBalanceId',
+        'update:paymentType',
+        'balance-changed'
     ],
     computed: {
         localSelectedClient: {
@@ -139,9 +164,20 @@ export default {
         isClientFieldDisabled() {
             return !!this.initialProjectId && !this.isFieldVisible('client');
         },
+        shouldShowBalanceSelect() {
+            return !this.isFieldVisible('client') && 
+                   this.clientBalances && 
+                   this.clientBalances.length > 0;
+        },
     },
     methods: {
         translateTransactionCategory,
+        onBalanceChanged(balanceId) {
+            this.$emit('balance-changed', balanceId);
+        },
+        formatBalance(balance) {
+            return this.$formatNumber ? this.$formatNumber(balance, null, true) : parseFloat(balance || 0).toFixed(2);
+        }
     }
 }
 </script>

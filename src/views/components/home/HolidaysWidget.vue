@@ -5,8 +5,8 @@
             <h3 class="text-sm font-semibold text-gray-900">{{ $t('upcomingHolidays') || 'Ближайшие праздники' }}</h3>
         </div>
         
-        <div v-if="loading" class="flex justify-center py-4">
-            <i class="fas fa-spinner fa-spin text-gray-400"></i>
+        <div v-if="loading" class="min-h-24">
+            <TableSkeleton />
         </div>
         
         <div v-else-if="holidays.length > 0" class="space-y-3">
@@ -36,6 +36,7 @@
 
 <script>
 import CompanyHolidayController from '@/api/CompanyHolidayController';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import 'dayjs/locale/en';
@@ -43,6 +44,7 @@ import 'dayjs/locale/tk';
 
 export default {
     name: 'HolidaysWidget',
+    components: { TableSkeleton },
     data() {
         return {
             holidays: [],
@@ -93,9 +95,9 @@ export default {
                     return holiday.daysUntil >= 0;
                 });
                 
-                // Показываем все праздники по порядку
                 this.holidays = filtered
-                    .sort((a, b) => a.nextHoliday.diff(b.nextHoliday));
+                    .sort((a, b) => a.nextHoliday.diff(b.nextHoliday))
+                    .slice(0, 3);
             } catch (error) {
                 console.error('Ошибка загрузки праздников:', error);
                 this.holidays = [];

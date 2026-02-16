@@ -1,34 +1,32 @@
 <template>
     <div class="mt-4">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-md font-semibold">{{ $t('salaries') }}</h3>
-            <div class="flex gap-2" v-if="canCreateSalary && canViewSalary">
-                <PrimaryButton 
-                    icon="fas fa-plus" 
-                    :onclick="openCreateModal"
-                    :is-success="true"
-                    :disabled="!editingItem || !editingItem.id">
-                    {{ $t('addSalary') }}
-                </PrimaryButton>
-            </div>
-        </div>
-
         <div v-if="!canViewSalary" class="text-gray-500">
             {{ $t('noPermission') }}
         </div>
-        <template v-else>
-            <div v-if="salariesLoading" class="text-gray-500">{{ $t('loading') }}</div>
-            <div v-else-if="!salaries || salaries.length === 0" class="text-gray-500">
-                {{ $t('noSalaries') }}
+        <transition v-else name="fade" mode="out-in">
+            <div v-if="!salariesLoading" key="table">
+                <DraggableTable
+                    table-key="user.salaries"
+                    :columns-config="columnsConfig"
+                    :table-data="salaries || []"
+                    :item-mapper="itemMapper"
+                    :onItemClick="canUpdateSalary ? handleSalaryClick : null">
+                    <template #tableSettingsAdditional>
+                        <PrimaryButton
+                            v-if="canCreateSalary"
+                            icon="fas fa-plus"
+                            :onclick="openCreateModal"
+                            :is-success="true"
+                            :disabled="!editingItem?.id"
+                            :aria-label="$t('addSalary')">
+                        </PrimaryButton>
+                    </template>
+                </DraggableTable>
             </div>
-            <DraggableTable 
-                v-if="!salariesLoading && salaries && salaries.length > 0"
-                table-key="user.salaries"
-                :columns-config="columnsConfig" 
-                :table-data="salaries" 
-                :item-mapper="itemMapper"
-                :onItemClick="canUpdateSalary ? handleSalaryClick : null" />
-        </template>
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
+            </div>
+        </transition>
 
         <SideModalDialog :showForm="modalOpen" :onclose="closeModal">
             <UserSalaryCreatePage 
@@ -39,21 +37,14 @@
                 @deleted="handleDeleted" />
         </SideModalDialog>
 
-        <NotificationToast 
-            :title="notificationTitle" 
-            :subtitle="notificationSubtitle" 
-            :show="notification" 
-            :is-danger="notificationIsDanger" 
-            @close="closeNotification" 
-        />
     </div>
 </template>
 
 <script>
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
-import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
+import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import UserSalaryCreatePage from "./UserSalaryCreatePage.vue";
 import UsersController from "@/api/UsersController";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
@@ -65,8 +56,8 @@ export default {
     components: {
         PrimaryButton,
         SideModalDialog,
-        NotificationToast,
         DraggableTable,
+        TableSkeleton,
         UserSalaryCreatePage,
     },
     props: {

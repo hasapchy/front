@@ -30,7 +30,7 @@
                                 <ul>
                                     <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                         @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name"
+                                        <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
                                             @click="toggleVisible(index)"
                                             class="flex items-center hover:bg-gray-100 p-2 rounded">
                                             <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -52,8 +52,8 @@
                 </template>
             </DraggableTable>
         </div>
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
@@ -71,8 +71,6 @@
             @cancel="closeSalaryAccrualModal"
         />
     </SideModalDialog>
-    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" @close="closeNotification" />
     <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
         :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
         @leave="deleteDialog = false" />
@@ -105,7 +103,6 @@
 
 <script>
 import UsersController from '@/api/UsersController';
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
@@ -127,11 +124,11 @@ import companyChangeMixin from '@/mixins/companyChangeMixin';
 import ViewModeToggle from '@/views/components/app/ViewModeToggle.vue';
 import Card from '@/views/components/app/cards/Card.vue';
 import CardFieldsButton from '@/views/components/app/cards/CardFieldsButton.vue';
-import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     mixins: [notificationMixin, modalMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, UsersCreatePage, SalaryAccrualModal, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, ViewModeToggle, Card, CardFieldsButton, SpinnerIcon, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, UsersCreatePage, SalaryAccrualModal, Pagination, DraggableTable, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, ViewModeToggle, Card, CardFieldsButton, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             controller: UsersController,
@@ -153,6 +150,7 @@ export default {
                 { name: 'name', label: 'firstName' },
                 { name: 'surname', label: 'lastName' },
                 { name: 'email', label: 'email' },
+                { name: 'phone', label: 'phoneNumber' },
                 { name: 'position', label: 'position' },
                 { name: 'roles', label: 'roles' },
                 { name: 'companies', label: 'companies' },
@@ -182,6 +180,13 @@ export default {
                     name: 'email',
                     label: this.$t('email') || 'Email',
                     icon: 'fas fa-envelope text-blue-600 text-xs',
+                    type: 'string',
+                    showLabel: false
+                },
+                {
+                    name: 'phone',
+                    label: this.$t('phoneNumber') || 'Телефон',
+                    icon: 'fas fa-phone text-blue-600 text-xs',
                     type: 'string',
                     showLabel: false
                 },
@@ -310,6 +315,8 @@ export default {
                     return this.formatDatabaseDate(item.createdAt);
                 case 'lastLoginAt':
                     return item.lastLoginAt ? this.formatDatabaseDateTime(item.lastLoginAt) : '—';
+                case 'phone':
+                    return item.phone || '—';
                 case 'roles':
                     return item.roles && item.roles.length > 0 ? item.roles.join(', ') : '—';
                 case 'companies':

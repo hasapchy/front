@@ -1,52 +1,43 @@
 <template>
     <div class="mt-4">
-        <div class="flex justify-between items-center mb-2">
-            <h3 class="text-md font-semibold">{{ $t('paymentsHistory') }}</h3>
-            <PrimaryButton 
-                icon="fas fa-plus" 
-                :onclick="openCreatePaymentModal"
-                :is-success="true"
-                :disabled="!editingItem || !editingItem.id">
-                {{ $t('createPayment') }}
-            </PrimaryButton>
-        </div>
-
-        <div v-if="!paymentsLoading && editingItem && (totalIncome > 0 || totalExpense > 0)" class="mb-4 space-y-2">
-            <div class="flex items-center gap-2">
-                <i class="fas fa-arrow-up text-green-500"></i>
-                <span class="text-sm text-gray-600">{{ $t('totalIncome') || 'Приходы' }}:</span>
-                <b class="text-[#5CB85C]">{{ formatBalance(totalIncome) }}</b>
+        <div v-if="editingItem && !paymentsLoading && (totalIncome > 0 || totalExpense > 0)" class="mb-4 grid grid-cols-2 gap-3">
+            <div class="px-4 py-2.5 rounded-lg bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 min-w-0">
+                <i class="fas fa-arrow-up text-[#5CB85C] text-sm"></i>
+                <span class="text-xs text-gray-500">{{ $t('totalIncome') || 'Приходы' }}</span>
+                <b class="text-[#5CB85C] text-sm">{{ formatBalance(totalIncome) }}</b>
             </div>
-            <div class="flex items-center gap-2">
-                <i class="fas fa-arrow-down text-red-500"></i>
-                <span class="text-sm text-gray-600">{{ $t('totalExpense') || 'Расходы' }}:</span>
-                <b class="text-red-600">{{ formatBalance(totalExpense) }}</b>
+            <div class="px-4 py-2.5 rounded-lg bg-white border border-gray-200 shadow-sm flex items-center justify-center gap-2 min-w-0">
+                <i class="fas fa-arrow-down text-[#EE4F47] text-sm"></i>
+                <span class="text-xs text-gray-500">{{ $t('totalExpense') || 'Расходы' }}</span>
+                <b class="text-[#EE4F47] text-sm">{{ formatBalance(totalExpense) }}</b>
             </div>
         </div>
 
-        <div v-if="paymentsLoading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="!paymentsHistory || paymentsHistory.length === 0" class="text-gray-500">
-            {{ $t('noHistory') }}
-        </div>
-        <DraggableTable v-if="!paymentsLoading && paymentsHistory && paymentsHistory.length > 0 && editingItem" table-key="client.payments"
-            :columns-config="columnsConfig" :table-data="paymentsHistory" :item-mapper="itemMapper"
-            :onItemClick="handlePaymentItemClick" />
-
-        <NotificationToast 
-            :title="notificationTitle" 
-            :subtitle="notificationSubtitle" 
-            :show="notification" 
-            :is-danger="notificationIsDanger" 
-            @close="closeNotification" 
-        />
+        <transition name="fade" mode="out-in">
+            <div v-if="editingItem && !paymentsLoading" key="table">
+                <DraggableTable table-key="client.payments"
+                    :columns-config="columnsConfig" :table-data="paymentsHistory || []" :item-mapper="itemMapper"
+                    :onItemClick="handlePaymentItemClick">
+                    <template #tableSettingsAdditional>
+                        <PrimaryButton
+                            icon="fas fa-plus"
+                            :onclick="openCreatePaymentModal"
+                            :is-success="true"
+                            :disabled="!editingItem?.id">
+                            {{ $t('createPayment') }}
+                        </PrimaryButton>
+                    </template>
+                </DraggableTable>
+            </div>
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
+            </div>
+        </transition>
 
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
-                <div class="p-8 flex justify-center items-center min-h-[200px]">
-                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
+                <div class="min-h-64">
+                    <TableSkeleton />
                 </div>
             </template>
             <template v-else>
@@ -67,9 +58,9 @@
 
 <script>
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
+import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
-import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
@@ -90,9 +81,9 @@ export default {
     mixins: [notificationMixin, getApiErrorMessage],
     components: {
         DraggableTable,
+        TableSkeleton,
         SideModalDialog,
         PrimaryButton,
-        NotificationToast,
         TransactionCreatePage,
         SourceButtonCell,
         OperationTypeCell,

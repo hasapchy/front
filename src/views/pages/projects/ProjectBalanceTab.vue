@@ -1,71 +1,56 @@
 <template>
     <div class="mt-4">
-        <div class="flex justify-between items-center mb-2">
-            <h3 class="text-md font-semibold">{{ $t('balanceHistory') }}</h3>
-            <div class="flex gap-2">
-                <PrimaryButton
-                    v-if="$store.getters.hasPermission('transactions_create')"
-                    icon="fas fa-plus"
-                    :onclick="() => showAddTransactionModal('income')"
-                    :is-small="true">
-                    {{ $t('income') }}
-                </PrimaryButton>
-
-                <PrimaryButton
-                    v-if="$store.getters.hasPermission('transactions_create')"
-                    icon="fas fa-minus"
-                    :isDanger="true"
-                    :onclick="() => showAddTransactionModal('outcome')"
-                    :is-small="true">
-                    {{ $t('outcome') }}
-                </PrimaryButton>
-                <PrimaryButton 
-                    v-if="$store.getters.hasPermission('projects_update')"
-                    icon="fas fa-plus" 
-                    :onclick="() => showAddTransactionModal(null)" 
-                    :is-small="true">
-                    {{ $t('addTransaction') || $t('add') }}
-                </PrimaryButton>
+        <transition name="fade" mode="out-in">
+            <div v-if="!balanceLoading" key="content">
+                <DraggableTable table-key="project.balance"
+                    :columns-config="columnsConfig" :table-data="balanceHistory || []" :item-mapper="itemMapper"
+                    @selectionChange="selectedIds = $event" :onItemClick="handleBalanceItemClick">
+                    <template #tableSettingsAdditional>
+                        <div v-if="canViewProjectBudget" class="flex flex-wrap items-center gap-3 text-xs text-gray-600 w-full mb-2">
+                            <span class="inline-flex items-center gap-1">
+                                <i class="fas fa-arrow-up text-[#5CB85C]" :title="$t('income')"></i>
+                                <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b>
+                            </span>
+                            <span class="inline-flex items-center gap-1">
+                                <i class="fas fa-arrow-down text-[#EE4F47]" :title="$t('outcome')"></i>
+                                <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b>
+                            </span>
+                            <span class="inline-flex items-center gap-1">
+                                <i class="fas fa-wallet text-blue-500" :title="$t('total') || 'Итого'"></i>
+                                <b :class="{
+                                    'text-[#5CB85C]': detailedBalance.total_balance >= 0,
+                                    'text-[#EE4F47]': detailedBalance.total_balance < 0
+                                }">{{ formatBalance(detailedBalance.total_balance) }}</b>
+                            </span>
+                            <span class="inline-flex items-center gap-1">
+                                <i class="fas fa-chart-line text-purple-500" :title="$t('projectBudget')"></i>
+                                <b class="text-purple-600">{{ budgetDisplay }}</b>
+                            </span>
+                        </div>
+                    </template>
+                    <template #tableSettingsRight>
+                        <PrimaryButton
+                            v-if="$store.getters.hasPermission('transactions_create')"
+                            icon="fas fa-plus"
+                            :onclick="() => showAddTransactionModal('income')"
+                            :is-small="true">
+                            {{ $t('income') }}
+                        </PrimaryButton>
+                        <PrimaryButton
+                            v-if="$store.getters.hasPermission('transactions_create')"
+                            icon="fas fa-minus"
+                            :isDanger="true"
+                            :onclick="() => showAddTransactionModal('outcome')"
+                            :is-small="true">
+                            {{ $t('outcome') }}
+                        </PrimaryButton>
+                    </template>
+                </DraggableTable>
             </div>
-        </div>
-        <div v-if="canViewProjectBudget" class="mb-4">
-            <!-- Все показатели в один ряд -->
-            <div class="flex items-center gap-6">
-                <!-- Приход -->
-                <span class="flex items-center gap-2">
-                    <i class="fas fa-arrow-up text-[#5CB85C]"></i>
-                    <b class="text-[#5CB85C]">{{ totalIncomeDisplay }}</b>
-                </span>
-                
-                <!-- Расход -->
-                <span class="flex items-center gap-2">
-                    <i class="fas fa-arrow-down text-[#EE4F47]"></i>
-                    <b class="text-[#EE4F47]">{{ totalExpenseDisplay }}</b>
-                </span>
-                
-                <!-- Итого -->
-                <span class="flex items-center gap-2">
-                    <i class="fas fa-wallet text-blue-500"></i>
-                    <b :class="{
-                        'text-[#5CB85C]': detailedBalance.total_balance >= 0,
-                        'text-[#EE4F47]': detailedBalance.total_balance < 0
-                    }">{{ formatBalance(detailedBalance.total_balance) }}</b>
-                </span>
-                
-                <!-- Бюджет -->
-                <span class="flex items-center gap-2">
-                    <i class="fas fa-chart-line text-purple-500"></i>
-                    <b class="text-purple-600">{{ budgetDisplay }}</b>
-                </span>
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
             </div>
-        </div>
-        <div v-if="balanceLoading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="!balanceHistory?.length" class="text-gray-500">
-            {{ $t('noHistory') }}
-        </div>
-        <DraggableTable v-if="!balanceLoading && balanceHistory?.length" table-key="project.balance"
-            :columns-config="columnsConfig" :table-data="balanceHistory" :item-mapper="itemMapper"
-            @selectionChange="selectedIds = $event" :onItemClick="handleBalanceItemClick" />
+        </transition>
 
         <!-- Модальное окно для создания/редактирования транзакции -->
         <SideModalDialog 
@@ -76,25 +61,18 @@
                 :editingItem="editingTransactionItem"
                 :initialProjectId="editingItem?.id"
                 :form-config="projectFormConfig"
+                :client-balances="editingItem?.client?.balances || []"
                 :header-text="'Транзакция — проект'"
                 @saved="handleTransactionSaved"
                 @saved-error="handleTransactionSavedError"
                 @deleted="handleTransactionDeleted"
                 @deleted-error="handleTransactionSavedError"
                 @close-request="closeTransactionModal" />
-            <div v-else-if="transactionLoading" class="p-4 text-center">
-                {{ $t('loading') }}...
+            <div v-else-if="transactionLoading" class="min-h-64">
+                <TableSkeleton />
             </div>
         </SideModalDialog>
 
-        <!-- Notification Toast -->
-        <NotificationToast 
-            :title="notificationTitle" 
-            :subtitle="notificationSubtitle" 
-            :show="notification" 
-            :is-danger="notificationIsDanger" 
-            @close="closeNotification" 
-        />
     </div>
 </template>
 
@@ -102,7 +80,7 @@
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
-import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
+import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import SourceButtonCell from "@/views/components/app/buttons/SourceButtonCell.vue";
 import DebtCell from "@/views/components/app/buttons/DebtCell.vue";
 import ProjectAmountCell from "@/views/components/app/buttons/ProjectAmountCell.vue";
@@ -124,7 +102,7 @@ export default {
         DraggableTable,
         SideModalDialog,
         PrimaryButton,
-        NotificationToast,
+        TableSkeleton,
         SourceButtonCell,
         TransactionCreatePage,
     },
@@ -149,6 +127,7 @@ export default {
             transactionLoading: false,
             selectedNewTransactionType: null,
             columnsConfig: [
+                { name: "id", label: "№", size: 60 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 120 },
                 { 
                     name: "source", 
@@ -207,11 +186,10 @@ export default {
             return this.editingItem?.currencyId && this.editingItem?.currency;
         },
         projectFormConfig() {
-            return this.selectedNewTransactionType === 'outcome'
+            const type = this.selectedNewTransactionType || this.editingTransactionItem?.typeName?.();
+            return type === 'outcome'
                 ? TRANSACTION_FORM_PRESETS.projectBalanceOutcome
-                : this.selectedNewTransactionType === 'income'
-                    ? TRANSACTION_FORM_PRESETS.projectBalanceIncome
-                    : TRANSACTION_FORM_PRESETS.projectBalance;
+                : TRANSACTION_FORM_PRESETS.projectBalanceIncome;
         },
         balanceFormatted() {
             const balance = typeof this.balance === 'number' ? this.balance : 0;
@@ -339,6 +317,8 @@ export default {
         },
         itemMapper(i, c) {
             switch (c) {
+                case "id":
+                    return i.sourceId ?? i.id ?? '-';
                 case "dateUser":
                     return i.dateUser || (i.formatDate ? i.formatDate() : '');
                 case "note":
@@ -359,9 +339,10 @@ export default {
             
             try {
                 this.transactionLoading = true;
-                this.selectedNewTransactionType = null;
-                
                 this.editingTransactionItem = await TransactionController.getItem(item.sourceId);
+                const type = this.editingTransactionItem?.typeName?.() 
+                    || (this.editingTransactionItem?.type == 2 ? 'outcome' : 'income');
+                this.selectedNewTransactionType = type;
                 this.transactionModalOpen = true;
             } catch (error) {
                 console.error('Error loading transaction:', error);
@@ -370,9 +351,9 @@ export default {
                 this.transactionLoading = false;
             }
         },
-        showAddTransactionModal(type = null) {
+        showAddTransactionModal(type) {
             this.editingTransactionItem = null;
-            this.selectedNewTransactionType = type;
+            this.selectedNewTransactionType = type || 'income';
             this.transactionModalOpen = true;
         },
         closeTransactionModal() {

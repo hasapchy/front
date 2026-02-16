@@ -1,49 +1,43 @@
 <template>
     <div class="mt-4">
-        <div class="flex justify-between items-center mb-2">
-            <h3 class="text-md font-semibold">{{ $t('employees') }}</h3>
-            <div v-if="!hideActions" class="flex gap-2">
-                <PrimaryButton icon="fas fa-gift" :onclick="handleBonus" :is-success="true"
-                    :disabled="!editingItem || !editingItem.id">
-                    {{ $t('bonus') }}
-                </PrimaryButton>
+        <transition name="fade" mode="out-in">
+            <div v-if="!salaryTransactionsLoading" key="content">
+                <DraggableTable v-if="editingItem" table-key="project.employees.salary"
+                    :columns-config="salaryTransactionsColumnsConfig" :table-data="salaryTransactions || []"
+                    :item-mapper="salaryTransactionMapper" :onItemClick="handleSalaryTransactionClick">
+                    <template #tableSettingsAdditional>
+                        <PrimaryButton v-if="!hideActions" icon="fas fa-gift" :onclick="handleBonus" :is-success="true"
+                            :disabled="!editingItem || !editingItem.id">
+                            {{ $t('bonus') }}
+                        </PrimaryButton>
+                    </template>
+                </DraggableTable>
             </div>
-        </div>
-
-        <div v-if="salaryTransactionsLoading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="!salaryTransactionsLoading && salaryTransactions && salaryTransactions.length === 0"
-            class="text-gray-500 mb-4">
-            {{ $t('noTransactions') }}
-        </div>
-        <DraggableTable
-            v-if="!salaryTransactionsLoading && salaryTransactions && salaryTransactions.length > 0 && editingItem"
-            table-key="project.employees.salary" :columns-config="salaryTransactionsColumnsConfig"
-            :table-data="salaryTransactions" :item-mapper="salaryTransactionMapper"
-            :onItemClick="handleSalaryTransactionClick" />
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
+            </div>
+        </transition>
 
         <SideModalDialog :showForm="bonusModalOpen" :onclose="closeBonusModal">
             <div v-if="bonusModalOpen && editingItem && editingItem.id" class="flex flex-col overflow-auto h-full p-4">
                 <h2 class="text-lg font-bold mb-4">{{ $t('bonus') }}</h2>
                 <EmployeeBonusSearch v-model="selectedEmployees" :cashId="bonusCashId"
                     @update:cashId="bonusCashId = $event" :currencyId="bonusCurrencyId"
-                    @update:currencyId="bonusCurrencyId = $event" :disabled="bonusSaving" />
+                    @update:currencyId="bonusCurrencyId = $event" :disabled="bonusSaving"
+                    :employee-balances-map="employeeBalancesMap" />
             </div>
             <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
                 <PrimaryButton icon="fas fa-save" :onclick="saveBonuses" :is-loading="bonusSaving"
-                    :disabled="bonusSaving || !selectedEmployees.length || !hasValidAmounts || !bonusCashId || !bonusCurrencyId">
+                    :disabled="bonusSaving || !selectedEmployees.length || !hasValidAmounts || !bonusCashId || !bonusCurrencyId"
+                    :aria-label="$t('save')">
                 </PrimaryButton>
             </div>
         </SideModalDialog>
 
         <SideModalDialog :showForm="entityModalOpen" :onclose="closeEntityModal">
             <template v-if="entityLoading">
-                <div class="p-8 flex justify-center items-center min-h-[200px]">
-                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none"
-                        viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                        </circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
+                <div class="min-h-64">
+                    <TableSkeleton />
                 </div>
             </template>
             <template v-else>
@@ -54,19 +48,18 @@
             </template>
         </SideModalDialog>
 
-        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-            :is-danger="notificationIsDanger" @close="closeNotification" />
     </div>
 </template>
 
 <script>
 import PrimaryButton from "@/views/components/app/buttons/PrimaryButton.vue";
 import SideModalDialog from "@/views/components/app/dialog/SideModalDialog.vue";
-import NotificationToast from "@/views/components/app/dialog/NotificationToast.vue";
+import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import DraggableTable from "@/views/components/app/forms/DraggableTable.vue";
 import TransactionCreatePage from "@/views/pages/transactions/TransactionCreatePage.vue";
 import EmployeeBonusSearch from "@/views/components/app/search/EmployeeBonusSearch.vue";
 import TransactionController from "@/api/TransactionController";
+import ClientController from "@/api/ClientController";
 import getApiErrorMessage from "@/mixins/getApiErrorMessageMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import { markRaw } from 'vue';
@@ -83,7 +76,7 @@ export default {
     components: {
         PrimaryButton,
         SideModalDialog,
-        NotificationToast,
+        TableSkeleton,
         DraggableTable,
         SourceButtonCell,
         TransactionCreatePage,
@@ -106,6 +99,7 @@ export default {
         return {
             bonusModalOpen: false,
             selectedEmployees: [],
+            employeeBalancesMap: {},
             bonusCashId: '',
             bonusCurrencyId: '',
             bonusSaving: false,
@@ -115,6 +109,8 @@ export default {
             selectedEntity: null,
             salaryTransactions: [],
             salaryTransactionsLoading: false,
+            lastFetchedProjectId: null,
+            forceRefresh: false,
             SALARY_CATEGORY_IDS: [7, 23, 24, 26, 27],
         };
     },
@@ -189,6 +185,7 @@ export default {
                     this.entityModalOpen = false;
                     this.entityLoading = false;
                     this.salaryTransactions = [];
+                    this.lastFetchedProjectId = null;
                 }
             },
             immediate: true,
@@ -203,6 +200,7 @@ export default {
         },
         async onEntitySaved() {
             this.closeEntityModal();
+            this.forceRefresh = true;
             await Promise.all([
                 this.fetchSalaryTransactions(),
                 this.$store.dispatch('invalidateCache', { type: 'clients' }),
@@ -218,6 +216,7 @@ export default {
         },
         async onEntityDeleted() {
             this.closeEntityModal();
+            this.forceRefresh = true;
             await Promise.all([
                 this.fetchSalaryTransactions(),
                 this.$store.dispatch('invalidateCache', { type: 'clients' }),
@@ -230,6 +229,9 @@ export default {
         async fetchSalaryTransactions() {
             if (!this.editingItem || !this.editingItem.id) {
                 this.salaryTransactions = [];
+                return;
+            }
+            if (this.lastFetchedProjectId === this.editingItem.id && !this.forceRefresh) {
                 return;
             }
 
@@ -252,6 +254,8 @@ export default {
                 );
 
                 this.salaryTransactions = response.items || [];
+                this.lastFetchedProjectId = this.editingItem.id;
+                this.forceRefresh = false;
             } catch (error) {
                 console.error('Error fetching salary transactions:', error);
                 this.salaryTransactions = [];
@@ -308,77 +312,12 @@ export default {
             const defaultCurrency = currencies.find(c => c.isDefault);
             if (defaultCashId) this.bonusCashId = defaultCashId;
             if (defaultCurrency) this.bonusCurrencyId = defaultCurrency.id;
-
-            try {
-                const response = await TransactionController.getItems(
-                    1,
-                    null,
-                    'all_time',
-                    null,
-                    null,
-                    null,
-                    null,
-                    this.editingItem.id,
-                    100,
-                    null,
-                    null,
-                    null,
-                    [26]
-                );
-
-                const existingBonuses = response.items || [];
-                const clients = this.$store.getters.clients || [];
-                const allUsers = this.$store.getters.usersForCurrentCompany || [];
-
-                const employeesMap = new Map();
-
-                for (const transaction of existingBonuses) {
-                    if (!transaction.clientId) continue;
-
-                    const client = clients.find(c => Number(c.id) === Number(transaction.clientId));
-                    if (!client || !client.employeeId) continue;
-
-                    const userId = Number(client.employeeId);
-                    let user = allUsers.find(u => Number(u.id) === userId);
-                    if (!user) {
-                        try {
-                            const UsersController = (await import('@/api/UsersController')).default;
-                            user = await UsersController.getItem(userId);
-                        } catch (error) {
-                            console.error(`Error loading user ${userId}:`, error);
-                            continue;
-                        }
-                    }
-
-                    if (!employeesMap.has(userId)) {
-                        employeesMap.set(userId, {
-                            id: user.id,
-                            name: user.name,
-                            surname: user.surname,
-                            position: user.position,
-                            photo: user.photo,
-                            amount: parseFloat(transaction.origAmount || transaction.amount || 0),
-                            transactionId: transaction.id,
-                        });
-                    }
-                }
-
-                this.selectedEmployees = Array.from(employeesMap.values());
-
-                if (existingBonuses.length > 0) {
-                    const firstTransaction = existingBonuses[0];
-                    if (firstTransaction.cashId) this.bonusCashId = firstTransaction.cashId;
-                    if (firstTransaction.origCurrencyId) this.bonusCurrencyId = firstTransaction.origCurrencyId;
-                }
-            } catch (error) {
-                console.error('Ошибка при загрузке существующих премий:', error);
-            }
-
             this.bonusModalOpen = true;
         },
         closeBonusModal() {
             this.bonusModalOpen = false;
             this.selectedEmployees = [];
+            this.employeeBalancesMap = {};
             this.bonusCashId = '';
             this.bonusCurrencyId = '';
         },
@@ -408,33 +347,26 @@ export default {
                         continue;
                     }
 
+                    const payload = {
+                        type: 0,
+                        cash_id: this.bonusCashId,
+                        orig_amount: parseFloat(employee.amount),
+                        currency_id: this.bonusCurrencyId,
+                        category_id: 26,
+                        project_id: this.editingItem.id,
+                        client_id: employeeClient.id,
+                        note: '',
+                        date: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+                        is_debt: true,
+                    };
+                    if (employee.selectedBalanceId) {
+                        payload.client_balance_id = employee.selectedBalanceId;
+                    }
                     try {
                         if (employee.transactionId) {
-                            await TransactionController.updateItem(employee.transactionId, {
-                                type: 0,
-                                cash_id: this.bonusCashId,
-                                orig_amount: parseFloat(employee.amount),
-                                currency_id: this.bonusCurrencyId,
-                                category_id: 26,
-                                project_id: this.editingItem.id,
-                                client_id: employeeClient.id,
-                                note: `Премия для ${this.getUserFullName(employee)}`,
-                                date: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-                                is_debt: true,
-                            });
+                            await TransactionController.updateItem(employee.transactionId, payload);
                         } else {
-                            await TransactionController.storeItem({
-                                type: 0,
-                                cash_id: this.bonusCashId,
-                                orig_amount: parseFloat(employee.amount),
-                                currency_id: this.bonusCurrencyId,
-                                category_id: 26,
-                                project_id: this.editingItem.id,
-                                client_id: employeeClient.id,
-                                note: `Премия для ${this.getUserFullName(employee)}`,
-                                date: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-                                is_debt: true,
-                            });
+                            await TransactionController.storeItem(payload);
                         }
                     } catch (error) {
                         const errorMsg = typeof error === 'string' ? error : this.getApiErrorMessage(error);
@@ -449,6 +381,7 @@ export default {
                         false
                     );
                     this.closeBonusModal();
+                    this.forceRefresh = true;
                     await Promise.all([
                         this.fetchSalaryTransactions(),
                         this.$store.dispatch('invalidateCache', { type: 'clients' }),
@@ -481,6 +414,37 @@ export default {
             const position = employee.position;
             const fullName = [name, surname].filter(Boolean).join(' ').trim();
             return position ? `${fullName} (${position})` : fullName;
+        }
+    },
+    watch: {
+        async selectedEmployees(employees) {
+            if (!this.bonusModalOpen || !Array.isArray(employees) || !employees.length) {
+                if (!this.bonusModalOpen) this.employeeBalancesMap = {};
+                return;
+            }
+            const map = {};
+            for (const emp of employees) {
+                const client = await this.findEmployeeClient(emp.id);
+                if (client?.id) {
+                    try {
+                        const balances = await ClientController.getClientBalances(client.id);
+                        map[emp.id] = balances || [];
+                    } catch (e) {
+                        map[emp.id] = [];
+                    }
+                }
+            }
+            this.employeeBalancesMap = map;
+            const withDefaults = employees.map(emp => {
+                if (emp.selectedBalanceId) return emp;
+                const balances = map[emp.id] || [];
+                const defaultBalance = balances.find(b => b.isDefault);
+                const balanceId = defaultBalance ? defaultBalance.id : balances[0]?.id;
+                return balanceId ? { ...emp, selectedBalanceId: balanceId } : emp;
+            });
+            if (withDefaults.some((e, i) => e.selectedBalanceId !== employees[i].selectedBalanceId)) {
+                this.selectedEmployees = withDefaults;
+            }
         }
     }
 };

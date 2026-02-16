@@ -26,9 +26,9 @@
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-trash"
-            :disabled="!$store.getters.hasPermission('company_holidays_delete')">
+            :disabled="!$store.getters.hasPermission('company_holidays_delete')" :aria-label="$t('delete')">
         </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" 
+        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')"
             :disabled="!name || !date || 
             (editingItemId != null && !$store.getters.hasPermission('company_holidays_update')) ||
             (editingItemId == null && !$store.getters.hasPermission('company_holidays_create'))">

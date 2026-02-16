@@ -178,7 +178,7 @@
             icon="fas fa-trash">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('companies_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('companies_create'))">
+            (editingItemId == null && !$store.getters.hasPermission('companies_create'))" :aria-label="$t('save')">
         </PrimaryButton>
     </div>
 
@@ -197,8 +197,6 @@
         @leave="cancelSkipProjectOrderBalance"
         :descr="$t('skipProjectOrderBalanceEnableConfirmDescription') || 'Вы уверены, что хотите пропускать баланс заказов проекта? Значения будут изменены без сохранения исходных данных.'"
         :confirm-text="$t('enable') || 'Включить'" :leave-text="$t('cancel')" />
-    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" @close="closeNotification" />
 
     <!-- Image Cropper Modal -->
     <ImageCropperModal :show="showCropperModal" :imageSrc="tempImageSrc" @close="closeCropperModal"
@@ -208,7 +206,6 @@
 <script>
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import ImageCropperModal from '@/views/components/app/ImageCropperModal.vue';
 import TabBar from '@/views/components/app/forms/TabBar.vue';
 import HolidayManager from '@/views/components/app/HolidayManager.vue';
@@ -224,7 +221,7 @@ import { CompanyDto } from '@/dto/companies/CompanyDto';
 
 export default {
     mixins: [getApiErrorMessage, notificationMixin, formChangesMixin, crudFormMixin],
-    components: { PrimaryButton, AlertDialog, NotificationToast, ImageCropperModal, TabBar, HolidayManager, WorkScheduleEditor },
+    components: { PrimaryButton, AlertDialog, ImageCropperModal, TabBar, HolidayManager, WorkScheduleEditor },
     props: {
         editingItem: {
             type: Object,

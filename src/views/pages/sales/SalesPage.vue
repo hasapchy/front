@@ -63,7 +63,7 @@
                                     <ul>
                                         <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                             @change="log">
-                                            <li v-for="(element, index) in columns" :key="element.name"
+                                            <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
                                                 @click="toggleVisible(index)"
                                                 class="flex items-center hover:bg-gray-100 p-2 rounded">
                                                 <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -85,8 +85,8 @@
                     </template>
                 </DraggableTable>
             </div>
-            <div v-else key="loader" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
             </div>
         </transition>
         <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
@@ -94,8 +94,6 @@
                 @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
                 @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
         </SideModalDialog>
-        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-            :is-danger="notificationIsDanger" @close="closeNotification" />
         <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
             :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
             @leave="deleteDialog = false" />
@@ -103,7 +101,6 @@
 </template>
 
 <script>
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
@@ -129,11 +126,12 @@ import { eventBus } from '@/eventBus';
 import companyChangeMixin from '@/mixins/companyChangeMixin';
 import searchMixin from '@/mixins/searchMixin';
 import filtersMixin from '@/mixins/filtersMixin';
-
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, ClientButtonCell, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, SaleCreatePage, ClientButtonCell, BatchButton, AlertDialog, TableControlsBar, TableFilterButton, FiltersContainer, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             controller: SaleController,
@@ -149,7 +147,7 @@ export default {
             deletedErrorText: this.$t('errorDeletingRecord'),
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: 'number', size: 60 },
+                { name: 'id', label: 'number', size: 60, html: true },
                 { name: 'dateUser', label: 'dateUser' },
                 { name: 'cashName', label: 'cashRegister' },
                 { name: 'warehouseName', label: 'warehouse' },
@@ -191,6 +189,8 @@ export default {
     },
     methods: {
         itemMapper(i, c) {
+            const search = this.searchQuery;
+
             if (c === 'cashName') {
                 return i.cashNameDisplay();
             }
@@ -198,6 +198,11 @@ export default {
                 return i.warehouseNameDisplay();
             }
             switch (c) {
+                case 'id':
+                    if (search) {
+                        return highlightMatches(String(i.id ?? ''), search);
+                    }
+                    return i.id;
                 case 'dateUser':
                     return `${i.formatDate()} / ${i.userName}`;
                 case 'products':

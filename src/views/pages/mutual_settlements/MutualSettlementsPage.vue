@@ -27,7 +27,7 @@
                                 <ul>
                                     <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                         @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name"
+                                        <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
                                             @click="toggleVisible(index)"
                                             class="flex items-center hover:bg-gray-100 p-2 rounded">
                                             <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -49,8 +49,8 @@
                 </template>
             </DraggableTable>
         </div>
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
 
@@ -60,12 +60,9 @@
             :editingItem="editingItem" />
     </SideModalDialog>
 
-    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" @close="closeNotification" />
 </template>
 
 <script>
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
@@ -86,10 +83,11 @@ import { eventBus } from '@/eventBus';
 import searchMixin from '@/mixins/searchMixin';
 import filtersMixin from '@/mixins/filtersMixin';
 import { highlightMatches } from '@/utils/searchUtils';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     mixins: [notificationMixin, modalMixin, companyChangeMixin, searchMixin, crudEventMixin, getApiErrorMessageMixin, filtersMixin],
-    components: { NotificationToast, SideModalDialog, PrimaryButton, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, draggable: VueDraggableNext },
+    components: { SideModalDialog, PrimaryButton, DraggableTable, ClientCreatePage, MutualSettlementsBalanceWrapper, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, TableSkeleton, draggable: VueDraggableNext },
     data() {
         return {
             allClients: [],

@@ -5,8 +5,8 @@
             <h3 class="text-sm font-semibold text-gray-900">{{ $t('statistics') || 'Статистика' }}</h3>
         </div>
         
-        <div v-if="loading" class="flex justify-center py-4">
-            <i class="fas fa-spinner fa-spin text-gray-400"></i>
+        <div v-if="loading" class="min-h-24">
+            <TableSkeleton />
         </div>
         
         <div v-else class="space-y-3">
@@ -50,9 +50,11 @@ import OrderController from '@/api/OrderController';
 import ProjectController from '@/api/ProjectController';
 import ClientController from '@/api/ClientController';
 import UsersController from '@/api/UsersController';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     name: 'StatsWidget',
+    components: { TableSkeleton },
     data() {
         return {
             stats: {

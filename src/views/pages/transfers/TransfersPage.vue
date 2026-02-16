@@ -30,7 +30,7 @@
                                 <ul>
                                     <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                         @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name"
+                                        <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
                                             @click="toggleVisible(index)"
                                             class="flex items-center hover:bg-gray-100 p-2 rounded">
                                             <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -52,22 +52,19 @@
                 </template>
             </DraggableTable>
         </div>
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
     <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose">
         <TransferCreatePage v-if="modalDialog" ref="transfercreatepageForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
-    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" @close="closeNotification" />
             <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
             :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
@@ -86,12 +83,11 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import TransferAmountCell from '@/views/components/app/buttons/TransferAmountCell.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import { markRaw } from 'vue';
-
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
     components: {
-        NotificationToast,
         PrimaryButton,
         SideModalDialog,
         Pagination,
@@ -102,6 +98,7 @@ export default {
         TransferAmountCell,
         TableControlsBar,
         TableFilterButton,
+        TableSkeleton,
         draggable: VueDraggableNext
     },
     data() {

@@ -13,7 +13,9 @@
         </button>
       </div>
 
-      <div v-if="logsLoading" class="text-gray-600">Загрузка логов...</div>
+      <div v-if="logsLoading" class="min-h-64">
+        <TableSkeleton />
+      </div>
       <div v-else-if="logsError" class="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700">{{ logsError }}</div>
 
       <div v-else>
@@ -39,10 +41,12 @@
 
 <script>
 import PerformanceController from '@/api/PerformanceController';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import notificationMixin from '@/mixins/notificationMixin';
 
 export default {
   name: 'ServerLogsComponent',
+  components: { TableSkeleton },
   mixins: [notificationMixin],
   data() {
     return {

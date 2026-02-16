@@ -10,7 +10,7 @@
 
             <div class="flex items-center gap-4">
                 <router-link v-for="tab in binded" :key="tab.path" :to="tab.path"
-                    class="flex items-center justify-center gap-2 text-[#337AB7] hover:text-[#3571A4] hover:underline font-semibold transition-all"
+                    class="relative flex items-center justify-center gap-2 text-[#337AB7] hover:text-[#3571A4] hover:underline font-semibold transition-all"
                     :title="tab.name">
                     <i :class="getTabIcon(tab.path)" class="text-lg"></i>
                     <span class="tab-label">{{ tab.name }}</span>
@@ -41,7 +41,7 @@ import CompanySwitcher from './CompanySwitcher.vue';
 import SoundToggle from './SoundToggle.vue';
 import UserProfileDropdown from './UserProfileDropdown.vue';
 import ClearCacheButton from './ClearCacheButton.vue';
-import MessengerBadge from './MessengerBadge.vue';
+import MessengerBadge from '@/views/components/app/MessengerBadge.vue';
 import { eventBus } from '@/eventBus';
 
 export default {
@@ -115,13 +115,18 @@ export default {
                 '/products': 'products_view',
                 '/services': 'products_view',
                 '/warehouses': 'warehouse_stocks_view',
-                '/admin/warehouses': 'warehouses_view'
+                '/admin/warehouses': 'warehouses_view',
+                '/simple-orders': 'orders_simple_view',
+                '/org-structure': 'departments_view_all',
+                '/roles': 'roles_view',
+                '/contracts': 'projects_view'
             };
             return permissionMap[path];
         },
         getTabIcon(path) {
             const iconMap = {
                 '/orders': 'fas fa-clipboard-list',
+                '/simple-orders': 'fas fa-clipboard-check',
                 '/order_statuses': 'fas fa-sitemap',
                 '/order_status_categories': 'fas fa-layer-group',
                 '/transactions': 'fas fa-money-check-alt',
@@ -137,7 +142,10 @@ export default {
                 '/tasks': 'fas fa-tasks',
                 '/categories': 'fas fa-tags',
                 '/warehouses': 'fas fa-box',
-                '/admin/warehouses': 'fas fa-warehouse'
+                '/admin/warehouses': 'fas fa-warehouse',
+                '/org-structure': 'fas fa-sitemap',
+                '/roles': 'fas fa-user-shield',
+                '/contracts': 'fas fa-file-signature'
             };
             return iconMap[path] || 'fas fa-circle';
         },

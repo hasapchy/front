@@ -7,6 +7,7 @@ class ProjectContractDto {
         id,
         projectId,
         number,
+        type,
         amount,
         currencyId,
         currencyName,
@@ -20,11 +21,16 @@ class ProjectContractDto {
         note,
         createdAt,
         updatedAt,
-        projectName
+        projectName,
+        paidAmount,
+        paymentStatus,
+        paymentStatusText,
+        userName
     ) {
         this.id = id;
         this.projectId = projectId;
         this.number = number;
+        this.type = type;
         this.amount = amount;
         this.currencyId = currencyId;
         this.currencyName = currencyName;
@@ -39,6 +45,10 @@ class ProjectContractDto {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.projectName = projectName || null;
+        this.paidAmount = paidAmount ?? 0;
+        this.paymentStatus = paymentStatus || 'unpaid';
+        this.paymentStatusText = paymentStatusText || null;
+        this.userName = userName || null;
     }
 
 
@@ -55,19 +65,21 @@ class ProjectContractDto {
     }
 
     getPaidStatus() {
-        return this.isPaid ? 'Оплачено' : 'Не оплачено';
+        if (this.paymentStatusText) return this.paymentStatusText;
+        const paid = (this.paidAmount ?? 0) >= (this.amount ?? 0);
+        return paid ? 'Оплачено' : ((this.paidAmount ?? 0) > 0 ? 'Частично оплачено' : 'Не оплачено');
     }
 
     toApi() {
         return {
             project_id: this.projectId,
             number: this.number,
+            type: this.type,
             amount: this.amount,
             currency_id: this.currencyId,
             cash_id: this.cashId,
             date: this.date,
             returned: this.returned,
-            is_paid: this.isPaid,
             files: this.files,
             note: this.note
         };
@@ -79,6 +91,7 @@ class ProjectContractDto {
                 data.id,
                 data.project_id || data.projectId,
                 data.number,
+                data.type !== undefined ? data.type : 0,
                 data.amount,
                 data.currency_id || data.currencyId,
                 data.currency_name || data.currencyName,
@@ -92,7 +105,11 @@ class ProjectContractDto {
                 data.note,
                 data.created_at || data.createdAt,
                 data.updated_at || data.updatedAt,
-                data.project_name || data.projectName || (data.project?.name || null)
+                data.project_name || data.projectName || (data.project?.name || null),
+                data.paid_amount ?? data.paidAmount,
+                data.payment_status || data.paymentStatus,
+                data.payment_status_text || data.paymentStatusText,
+                data.creator_name ?? data.creatorName ?? data.creator?.name ?? null
             );
         }).filter(Boolean);
     }

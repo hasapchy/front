@@ -7,9 +7,10 @@
             <div class="fixed top-0 right-0 h-full flex transform transition-transform duration-300 ease-in-out z-50"
                 :style="{ transform: showForm ? 'translateX(0)' : 'translateX(100%)' }" @mousedown.stop>
 
-                <div id="form" class="h-full flex flex-col bg-white shadow-lg relative transition-all duration-300 ease-in-out mobile-full-width" :style="{ width: modalWidth }">
+                <div ref="trapRef" id="form" class="h-full flex flex-col bg-white shadow-lg relative transition-all duration-300 ease-in-out mobile-full-width" :style="{ width: modalWidth }"
+                    role="dialog" aria-modal="true" :aria-label="titleA11y || $t('formPanel')">
                     <PrimaryButton :onclick="onclose" icon="fas fa-times" class="absolute top-4 right-4"
-                        :is-light="true" />
+                        :is-light="true" :aria-label="$t('close')" />
                     <slot />
                 </div>
 
@@ -32,7 +33,11 @@
 </template>
 
 <script>
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { onKeyStroke } from '@vueuse/core';
+import { useFocusTrap } from '@vueuse/integrations/useFocusTrap';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
+
 export default {
     components: {
         PrimaryButton
@@ -67,7 +72,35 @@ export default {
         widthRatio: {
             type: Number,
             default: null
+        },
+        titleA11y: {
+            type: String,
+            default: ''
         }
+    },
+    setup(props) {
+        const trapRef = ref(null);
+        const { activate, deactivate } = useFocusTrap(trapRef, {
+            allowOutsideClick: (event) => {
+                const target = event?.target;
+                if (!(target instanceof Element)) return false;
+                return !!target.closest('.Toastify');
+            }
+        });
+        watch(() => props.showForm, (open) => {
+            if (open) {
+                nextTick(() => activate());
+            } else {
+                deactivate({ returnFocus: true });
+            }
+        });
+        const stopEscape = onKeyStroke('Escape', () => {
+            if (props.showForm && props.onclose) {
+                props.onclose();
+            }
+        });
+        onBeforeUnmount(stopEscape);
+        return { trapRef };
     },
     computed: {
         modalWidth() {

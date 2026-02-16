@@ -1,12 +1,12 @@
 <template>
     <div class="mt-4">
-        <div v-if="loading" class="text-gray-500">{{ $t('loading') }}</div>
-        <div v-else-if="data && data.items && data.items.length === 0" class="text-gray-500">
-            {{ $t('noContracts') }}
-        </div>
-        <DraggableTable v-if="!loading && data && data.items && data.items.length" table-key="project.contracts.all"
-            :columns-config="columnsConfig" :table-data="data.items" :item-mapper="itemMapper"
-            @selectionChange="selectedIds = $event" :onItemClick="handleContractClick">
+        <ContractsBalanceWrapper v-if="cashRegisterFilter" :data="data?.items || []" :loading="loading" />
+        
+        <transition name="fade" mode="out-in">
+            <div v-if="data != null && !loading" key="table">
+                <DraggableTable table-key="project.contracts.all"
+                    :columns-config="columnsConfig" :table-data="data.items || []" :item-mapper="itemMapper"
+                    @selectionChange="selectedIds = $event" :onItemClick="handleContractClick">
             <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
                 <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
                     :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
@@ -17,6 +17,7 @@
                     <template #left>
                         <PrimaryButton :onclick="showAddContractModal" icon="fas fa-plus"
                             :disabled="!$store.getters.hasPermission('contracts_create')">
+                            {{ $t('addContract') }}
                         </PrimaryButton>
 
                         <FiltersContainer :has-active-filters="hasActiveFilters"
@@ -55,6 +56,14 @@
                                     </option>
                                 </select>
                             </div>
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('contractType') }}</label>
+                                <select v-model="typeFilter" class="w-full">
+                                    <option value="">{{ $t('allTypes') }}</option>
+                                    <option :value="0">{{ $t('cashless') }}</option>
+                                    <option :value="1">{{ $t('cash') }}</option>
+                                </select>
+                            </div>
                         </FiltersContainer>
                     </template>
                     <template #right="{ resetColumns, columns, toggleVisible, log }">
@@ -65,7 +74,7 @@
                             <ul>
                                 <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                     @change="log">
-                                    <li v-for="(element, index) in columns" :key="element.name"
+                                    <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
                                         @click="toggleVisible(index)"
                                         class="flex items-center hover:bg-gray-100 p-2 rounded">
                                         <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -87,19 +96,20 @@
                 </TableControlsBar>
             </template>
         </DraggableTable>
+            </div>
+            <div v-else key="loader" class="min-h-64">
+                <TableSkeleton />
+            </div>
+        </transition>
 
         <SideModalDialog :showForm="contractModalOpen" :onclose="closeContractModal">
             <ProjectContractCreatePage v-if="!contractLoading" :editingItem="editingContractItem"
                 @saved="handleContractSaved" @saved-error="handleContractSavedError"
                 @close-request="closeContractModal" />
-            <div v-else-if="contractLoading" class="p-4 text-center">
-                {{ $t('loading') }}...
+            <div v-else-if="contractLoading" class="min-h-64">
+                <TableSkeleton />
             </div>
         </SideModalDialog>
-
-        <AlertDialog :dialog="paidConfirmDialog" :title="$t('attention')" :descr="$t('confirmMarkAsPaidIrreversible')"
-            :confirm-text="$t('yes')" :leave-text="$t('cancel')" :confirm-loading="paidConfirmLoading"
-            :onConfirm="confirmMarkPaid" :onLeave="cancelMarkPaid" />
     </div>
 </template>
 
@@ -114,14 +124,16 @@ import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue"
 import ProjectContractCreatePage from "./ProjectContractCreatePage.vue";
 import ProjectContractController from "@/api/ProjectContractController";
 import BooleanSelectCell from "@/views/components/app/buttons/BooleanSelectCell.vue";
-import AlertDialog from "@/views/components/app/dialog/AlertDialog.vue";
+import ContractsBalanceWrapper from "@/views/components/projects/ContractsBalanceWrapper.vue";
+import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import notificationMixin from "@/mixins/notificationMixin";
+import getApiErrorMessageMixin from "@/mixins/getApiErrorMessageMixin";
 import filtersMixin from "@/mixins/filtersMixin";
 import { VueDraggableNext } from 'vue-draggable-next';
 import { markRaw } from "vue";
 
 export default {
-    mixins: [notificationMixin, filtersMixin],
+    mixins: [notificationMixin, getApiErrorMessageMixin, filtersMixin],
     components: {
         DraggableTable,
         SideModalDialog,
@@ -131,7 +143,8 @@ export default {
         TableFilterButton,
         FiltersContainer,
         ProjectContractCreatePage,
-        AlertDialog,
+        ContractsBalanceWrapper,
+        TableSkeleton,
         draggable: VueDraggableNext,
     },
     data() {
@@ -142,21 +155,19 @@ export default {
             contractModalOpen: false,
             editingContractItem: null,
             contractLoading: false,
-            perPage: 20,
+            perPage: (() => {
+                const stored = localStorage.getItem('perPage');
+                const parsed = stored ? parseInt(stored, 10) : NaN;
+                return Number.isFinite(parsed) && [10, 20, 50, 100].includes(parsed) ? parsed : 20;
+            })(),
             perPageOptions: [10, 20, 50, 100],
             projectFilter: '',
             paymentStatusFilter: '',
             contractStatusFilter: '',
             cashRegisterFilter: '',
+            typeFilter: '',
             projects: [],
             cashRegisters: [],
-            paidConfirmDialog: false,
-            paidConfirmLoading: false,
-            pendingPaidChange: null,
-            paidOptions: [
-                { value: true, label: this.$t('paid'), color: '#5CB85C' },
-                { value: false, label: this.$t('notPaid'), color: '#EE4F47' },
-            ],
             returnedOptions: [
                 { value: true, label: this.$t('returned'), color: '#5CB85C' },
                 { value: false, label: this.$t('notReturned'), color: '#EE4F47' },
@@ -165,6 +176,7 @@ export default {
                 { name: "id", label: "ID", size: 80 },
                 { name: "projectName", label: this.$t("project"), size: 200 },
                 { name: "number", label: this.$t("contractNumber"), size: 150 },
+                { name: "type", label: this.$t("contractType"), size: 120 },
                 { name: "amount", label: this.$t("amount"), size: 120, html: true },
                 { name: "cashRegisterName", label: this.$t("cashRegister"), size: 150 },
                 { name: "dateUser", label: this.$t("dateUser"), size: 100 },
@@ -180,16 +192,10 @@ export default {
                     }),
                 },
                 {
-                    name: "isPaid",
-                    label: this.$t("paid"),
-                    size: 160,
-                    component: markRaw(BooleanSelectCell),
-                    props: (i) => ({
-                        value: !!i.isPaid,
-                        options: this.paidOptions,
-                        disabled: !!i.isPaid,
-                        onChange: (newValue) => this.updateContractField(i.id, 'isPaid', newValue),
-                    }),
+                    name: "paymentStatusText",
+                    label: this.$t("paymentStatus"),
+                    size: 140,
+                    html: true,
                 },
                 { name: "note", label: this.$t("note"), size: 200 },
             ],
@@ -197,7 +203,7 @@ export default {
     },
     computed: {
         hasActiveFilters() {
-            return !!this.projectFilter || this.paymentStatusFilter !== '' || this.contractStatusFilter !== '' || this.cashRegisterFilter !== '';
+            return !!this.projectFilter || this.paymentStatusFilter !== '' || this.contractStatusFilter !== '' || this.cashRegisterFilter !== '' || this.typeFilter !== '';
         },
     },
     methods: {
@@ -226,37 +232,13 @@ export default {
             }
         },
         updateContractField(contractId, field, value) {
-            const item = this.data?.items?.find(i => i.id === contractId);
-            if (!item) return;
-
-            if (field === 'isPaid') {
-                if (item.isPaid) return;
-                if (!value) return;
-
-                this.pendingPaidChange = { contractId };
-                this.paidConfirmDialog = true;
-                return;
-            }
-
             this.saveContractField(contractId, field, value);
         },
-        async confirmMarkPaid() {
-            const contractId = this.pendingPaidChange?.contractId;
-            this.pendingPaidChange = null;
-            this.paidConfirmLoading = true;
-
-            try {
-                if (contractId) {
-                    await this.saveContractField(contractId, 'isPaid', true);
-                }
-            } finally {
-                this.paidConfirmLoading = false;
-                this.paidConfirmDialog = false;
-            }
-        },
-        cancelMarkPaid() {
-            this.pendingPaidChange = null;
-            this.paidConfirmDialog = false;
+        getContractPaymentStatusClass(item) {
+            const status = item.payment_status || item.paymentStatus || 'unpaid';
+            if (status === 'paid') return 'text-[#5CB85C] font-medium';
+            if (status === 'partially_paid') return 'text-[#FFA500] font-medium';
+            return 'text-[#EE4F47] font-medium';
         },
         async fetchContracts(page = 1) {
             this.loading = true;
@@ -271,7 +253,7 @@ export default {
                 }
 
                 if (this.paymentStatusFilter === '0' || this.paymentStatusFilter === '1') {
-                    params.is_paid = this.paymentStatusFilter;
+                    params.is_paid = this.paymentStatusFilter === '1';
                 }
 
                 if (this.contractStatusFilter === '0' || this.contractStatusFilter === '1') {
@@ -280,6 +262,10 @@ export default {
 
                 if (this.cashRegisterFilter) {
                     params.cash_id = this.cashRegisterFilter;
+                }
+
+                if (this.typeFilter !== '') {
+                    params.type = this.typeFilter;
                 }
 
                 const response = await ProjectContractController.getAllItems(params);
@@ -293,7 +279,7 @@ export default {
                         return contract.formatDate();
                     },
                     formatDateUser() {
-                        return `${contract.formatDate()} / ${contract.user?.name || contract.userName}`;
+                        return `${contract.formatDate()} / ${contract.user?.name || contract.userName || contract.creator_name || '-'}`;
                     }
                 }));
                 this.data = {
@@ -336,7 +322,8 @@ export default {
                 projectFilter: '',
                 paymentStatusFilter: '',
                 contractStatusFilter: '',
-                cashRegisterFilter: ''
+                cashRegisterFilter: '',
+                typeFilter: ''
             }, () => {
                 this.fetchContracts(1);
             });
@@ -350,7 +337,15 @@ export default {
             if (this.paymentStatusFilter !== '') count++;
             if (this.contractStatusFilter !== '') count++;
             if (this.cashRegisterFilter !== '') count++;
+            if (this.typeFilter !== '') count++;
             return count;
+        },
+        formatTotals(totalsByCurrency) {
+            const result = Object.entries(totalsByCurrency || {})
+                .map(([currencySymbol, amount]) => `${this.$formatNumber(amount || 0, null, true)} ${currencySymbol}`.trim())
+                .join(' / ');
+
+            return result || '0';
         },
         itemMapper(item, column) {
             switch (column) {
@@ -358,16 +353,45 @@ export default {
                     return item.projectName || '-';
                 case "number":
                     return item.number;
+                case "type":
+                    return item.type === 1 ? this.$t('cash') : this.$t('cashless');
                 case "amount":
                     return item.formatAmount();
                 case "cashRegisterName":
                     return item.cashRegisterName || '-';
                 case "dateUser":
-                    return item.formatDateUser ? item.formatDateUser() : `${item.formatDate()} / -`;
+                    return item.formatDateUser ? item.formatDateUser() : `${item.formatDate()} / ${item.userName || item.creator_name || '-'}`;
                 case "returned":
                     return item.returned ? 1 : 0;
-                case "isPaid":
-                    return item.isPaid ? 1 : 0;
+                case "paymentStatusText": {
+                    const status = item.payment_status || item.paymentStatus || ((item.paid_amount ?? 0) >= (item.amount ?? 0)
+                        ? 'paid'
+                        : ((item.paid_amount ?? 0) > 0 ? 'partially_paid' : 'unpaid'));
+
+                    const cls = this.getContractPaymentStatusClass(item);
+
+                    let iconClass = 'fas fa-times-circle';
+                    if (status === 'paid') {
+                        iconClass = 'fas fa-check-circle';
+                    } else if (status === 'partially_paid') {
+                        iconClass = 'fas fa-adjust';
+                    }
+
+                    const paidAmount = item.paid_amount ?? item.paidAmount ?? 0;
+                    const currencySymbol = item.currency_symbol ?? item.currencySymbol ?? '';
+                    const showAmount = status === 'partially_paid' && paidAmount > 0;
+                    const formattedAmount = showAmount
+                        ? `${this.$formatNumber(paidAmount, null, true)} ${currencySymbol}`.trim()
+                        : '';
+
+                    const title = item.payment_status_text || item.paymentStatusText || '';
+
+                    const amountHtml = showAmount && formattedAmount
+                        ? `<span class="ml-1">${formattedAmount}</span>`
+                        : '';
+
+                    return `<span class="${cls}" title="${title}"><i class="${iconClass}"></i>${amountHtml}</span>`;
+                }
                 case "note":
                     return item.note || '-';
                 default:
@@ -401,12 +425,22 @@ export default {
             this.fetchContracts(this.data?.currentPage || 1);
         },
         handleContractSavedError(error) {
-            console.error('Error saving contract:', error);
+            const msg = this.getApiErrorMessage(error);
+            const text = Array.isArray(msg) ? msg.join(', ') : msg;
+            this.showNotification(this.$t('error'), text, true);
         },
     },
     async mounted() {
-        await this.fetchProjects();
-        await this.fetchCashRegisters();
+        if (!(this.$store.getters.activeProjects?.length)) {
+            await this.fetchProjects();
+        } else {
+            this.projects = this.$store.getters.activeProjects || [];
+        }
+        if (!(this.$store.getters.cashRegisters?.length)) {
+            await this.fetchCashRegisters();
+        } else {
+            this.cashRegisters = this.$store.getters.cashRegisters || [];
+        }
         this.fetchContracts();
     },
 };

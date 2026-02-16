@@ -48,13 +48,11 @@ export function createChatRealtime(echo, options) {
       // Проверяем, что канал действительно подписан
       const entry = chatChannels.get(chatIdNum);
       if (entry.subscribed) {
-        log(`[WebSocket] Канал ${chatIdNum} уже подписан`);
         return;
       }
     }
 
     const channelName = `company.${companyId}.chat.${chatIdNum}`;
-    log(`[WebSocket] Подписка на канал: ${channelName}`);
 
     const channel = echo
       .private(channelName)
@@ -62,11 +60,9 @@ export function createChatRealtime(echo, options) {
         options?.onMessage?.(event);
       })
       .listen(".chat.message.updated", (event) => {
-        log(`[WebSocket] Сообщение обновлено:`, event);
         options?.onMessageUpdated?.(event);
       })
       .listen(".chat.message.deleted", (event) => {
-        log(`[WebSocket] Сообщение удалено:`, event);
         options?.onMessageDeleted?.(event);
       })
       .listen(".chat.read.updated", (event) => {
@@ -84,7 +80,6 @@ export function createChatRealtime(echo, options) {
 
     // Проверка успешной подписки
     channel.subscribed(() => {
-      log(`[WebSocket] ✅ Успешно подписан на канал: ${channelName}`);
       chatChannels.set(chatIdNum, { channel, channelName, subscribed: true });
       if (options?.onChannelSubscribed) {
         options.onChannelSubscribed(chatIdNum, channelName);
@@ -109,7 +104,6 @@ export function createChatRealtime(echo, options) {
     const entry = chatChannels.get(chatIdNum);
     if (!entry) return;
 
-    log(`[WebSocket] Отписка от канала чата ${chatIdNum}`);
     try {
       entry.channel?.stopListening?.(".chat.message.sent");
       entry.channel?.stopListening?.(".chat.message.updated");
@@ -158,22 +152,17 @@ export function createChatRealtime(echo, options) {
     presenceChannelName = channelName;
     presenceSubscribed = false;
 
-    log(`[Presence] Подписка на канал: ${channelName}`);
-
     try {
       presenceChannel = echo
         .join(channelName)
         .here((users) => {
-          log(`[Presence] ✅ Подписан на presence канал, пользователей онлайн: ${users?.length || 0}`);
           presenceSubscribed = true;
           options?.onPresenceHere?.(users || []);
         })
         .joining((user) => {
-          log(`[Presence] Пользователь зашел:`, user);
           options?.onPresenceJoining?.(user);
         })
         .leaving((user) => {
-          log(`[Presence] Пользователь вышел:`, user);
           options?.onPresenceLeaving?.(user);
         })
         .error((err) => {
@@ -189,7 +178,6 @@ export function createChatRealtime(echo, options) {
 
   const unsubscribePresence = () => {
     if (!presenceChannelName) return;
-    log(`[Presence] Отписка от канала: ${presenceChannelName}`);
 
     safeLeave(presenceChannelName);
     safeLeave(`presence-${presenceChannelName}`);

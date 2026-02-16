@@ -66,7 +66,7 @@
                                 <ul>
                                     <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                         @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name"
+                                        <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
                                             @click="toggleVisible(index)"
                                             class="flex items-center hover:bg-gray-100 p-2 rounded">
                                             <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -88,8 +88,8 @@
                 </template>
             </DraggableTable>
         </div>
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
 
@@ -97,14 +97,11 @@
         <ClientCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new'" ref="clientForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
             @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" />
     </SideModalDialog>
-    <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-        :is-danger="notificationIsDanger" @close="closeNotification" />
             <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`" :confirm-text="$t('delete')"
             :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
@@ -112,6 +109,7 @@ import Pagination from '@/views/components/app/buttons/Pagination.vue';
 import DraggableTable from '@/views/components/app/forms/DraggableTable.vue';
 import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue';
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import ClientController from '@/api/ClientController';
 import ClientCreatePage from './ClientCreatePage.vue';
 import BatchButton from '@/views/components/app/buttons/BatchButton.vue';
@@ -125,17 +123,17 @@ import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import { eventBus } from '@/eventBus';
 import { VueDraggableNext } from 'vue-draggable-next';
 
-import { highlightMatches } from '@/utils/searchUtils';
 import searchMixin from '@/mixins/searchMixin';
 import filtersMixin from '@/mixins/filtersMixin';
 import ClientNameCell from '@/views/components/app/buttons/ClientNameCell.vue';
 import StatusIconCell from '@/views/components/app/buttons/StatusIconCell.vue';
 import ListCell from '@/views/components/app/buttons/ListCell.vue';
 import { markRaw } from 'vue';
+import { highlightMatches } from '@/utils/searchUtils';
 
 export default {
     mixins: [batchActionsMixin, crudEventMixin, notificationMixin, modalMixin, companyChangeMixin, searchMixin, getApiErrorMessageMixin, filtersMixin],
-    components: { NotificationToast, PrimaryButton, SideModalDialog, Pagination, DraggableTable, ClientCreatePage, BatchButton, AlertDialog, FiltersContainer, TableControlsBar, TableFilterButton, ClientNameCell, StatusIconCell, ListCell, draggable: VueDraggableNext },
+    components: { PrimaryButton, SideModalDialog, Pagination, DraggableTable, TableControlsBar, TableFilterButton, TableSkeleton, ClientCreatePage, BatchButton, AlertDialog, FiltersContainer, ClientNameCell, StatusIconCell, ListCell, draggable: VueDraggableNext },
     data() {
         return {
             controller: ClientController,
@@ -175,7 +173,14 @@ export default {
 
     methods: {
         itemMapper(i, c) {
+            const search = this.searchQuery;
+
             switch (c) {
+                case 'id':
+                    if (search) {
+                        return highlightMatches(String(i.id ?? ''), search);
+                    }
+                    return i.id;
                 case 'discount':
                     return i.discountFormatted();
                 case 'balance':
@@ -248,15 +253,12 @@ export default {
         columnsConfig() {
             return [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: 'number', size: 60 },
+                { name: 'id', label: 'number', size: 60, html: true },
                 {
                     name: 'firstName',
                     label: 'fullNameCompany',
                     component: markRaw(ClientNameCell),
-                    props: (item) => ({
-                        client: item,
-                        searchQuery: this.searchQuery
-                    })
+                    props: (item) => ({ client: item, searchQuery: this.searchQuery })
                 },
                 {
                     name: 'phones',
@@ -278,7 +280,7 @@ export default {
                 },
                 { name: 'address', label: 'address' },
                 { name: 'note', label: 'note' },
-                { name: 'discount', label: 'discount' },
+                { name: 'discount', label: 'discount', html: true },
                 ...(this.$store.getters.hasPermission('settings_client_balance_view') ? [{ name: 'balance', label: 'balance' }] : []),
                 {
                     name: 'status',

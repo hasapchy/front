@@ -26,9 +26,6 @@ export default {
         }
     },
     watch: {
-        $route() {
-            this.setSearchQuery('');
-        },
         searchQuery: {
             handler(newValue) {
                 this.debouncedSearch(newValue);

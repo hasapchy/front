@@ -87,7 +87,7 @@ export default {
       if (!defaultValues || typeof defaultValues !== 'object') return;
       
       Object.keys(defaultValues).forEach(key => {
-        if (this.hasOwnProperty(key) || this[key] !== undefined) {
+        if (Object.prototype.hasOwnProperty.call(this, key) || this[key] !== undefined) {
           this[key] = defaultValues[key];
         }
       });

@@ -284,6 +284,7 @@ export default {
             productSearch: '',
             productSearchLoading: false,
             productResults: [],
+            searchAbortController: null,
             showDropdown: false,
             modalCreateProduct: false,
             defaultProductType: 'product',
@@ -438,9 +439,16 @@ export default {
         },
         searchProducts: debounce(async function () {
             if (this.productSearch.length >= 3) {
+                if (this.searchAbortController) {
+                    this.searchAbortController.abort();
+                }
+                this.searchAbortController = new AbortController();
+                const signal = this.searchAbortController.signal;
                 this.productSearchLoading = true;
                 try {
-                    const results = await ProductController.searchItems(this.productSearch, this.onlyProducts ? true : null, this.warehouseId);
+                    const results = await ProductController.searchItems(this.productSearch, this.onlyProducts ? true : null, this.warehouseId, signal);
+                    if (signal.aborted) return;
+
                     let products = results;
 
                     if (this.onlyProducts) {
@@ -448,10 +456,11 @@ export default {
                     }
 
                     this.productResults = products;
-                    this.productSearchLoading = false;
                 } catch (error) {
+                    if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') return;
                     this.productResults = [];
-                    this.productSearchLoading = false;
+                } finally {
+                    if (!signal.aborted) this.productSearchLoading = false;
                 }
             } else {
                 this.productResults = [];

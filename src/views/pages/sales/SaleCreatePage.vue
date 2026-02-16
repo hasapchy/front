@@ -1,5 +1,6 @@
 <template>
-    <div class="flex flex-col overflow-auto h-full p-4">
+    <div class="flex flex-col h-full">
+        <div class="flex flex-col overflow-auto h-full p-4 pb-24">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editSale') : $t('createSale') }}</h2>
         <ClientSearch v-model:selectedClient="selectedClient" :disabled="!!editingItemId" />
         <div>
@@ -67,13 +68,14 @@
         <ProductSearch v-model="products" :disabled="!!editingItemId" :show-quantity="true" :show-price="true"
             :show-price-type="true" :is-sale="true" :currency-symbol="currencySymbol" :warehouse-id="warehouseId"
             v-model:discount="discount" v-model:discountType="discountType" required />
-    </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+        </div>
+        
+        <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
         <PrimaryButton v-if="editingItemId != null" :onclick="showDeleteDialog" :is-danger="true"
             :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('sales_delete')">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="(editingItemId != null && !$store.getters.hasPermission('sales_update')) ||
-            (editingItemId == null && !$store.getters.hasPermission('sales_create'))">
+            (editingItemId == null && !$store.getters.hasPermission('sales_create'))" :aria-label="$t('save')">
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
@@ -81,6 +83,7 @@
                   :confirm-text="$t('deleteSale')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
         :descr="$t('unsavedChanges')" :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
+    </div>
 </template>
 
 <script>
@@ -140,13 +143,13 @@ export default {
             // Инициализация по умолчанию для нового элемента происходит через watchers на Store
             // (allWarehouses, allCashRegisters автоматически установят первые значения)
             if (!this.editingItem) {
-                // Инициализируем currencyId для типа balance
                 const defaultCurrency = this.currencies.find((c) => c.isDefault);
                 if (defaultCurrency && !this.currencyId) {
                     this.currencyId = defaultCurrency.id;
                 }
             }
-            
+
+            await this.$nextTick();
             this.saveInitialState();
         });
     },

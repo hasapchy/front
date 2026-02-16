@@ -7,7 +7,12 @@
         </div>
 
         <div class="mt-4">
-            <label>{{ $t('assignUsers') }}</label>
+            <label class="inline-flex items-center gap-1 mb-1">
+                <span>{{ $t('assignUsers') }}</span>
+                <FieldHint
+                    :text="$t('warehouseVisibleToEmployeesHint') || 'Сотрудники, которые видят этот склад и могут с ним работать. Должен быть выбран хотя бы один пользователь.'"
+                    placement="top" />
+            </label>
             <UserSearch v-model:selectedUsers="selectedUsers" :multiple="true" :filterUsers="userHasWarehouseAccess"
                 :showLabel="false" />
         </div>
@@ -18,7 +23,7 @@
             :disabled="!$store.getters.hasPermission('warehouses_delete')">
         </PrimaryButton>
         <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!selectedUsers?.length || (editingItem != null && !$store.getters.hasPermission('warehouses_update')) ||
-            (editingItem == null && !$store.getters.hasPermission('warehouses_create'))">
+            (editingItem == null && !$store.getters.hasPermission('warehouses_create'))" :aria-label="$t('save')">
         </PrimaryButton>
     </div>
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('deleteWarehouse')"
@@ -35,6 +40,7 @@ import WarehouseDto from '@/dto/warehouse/WarehouseDto';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import UserSearch from '@/views/components/app/search/UserSearch.vue';
+import FieldHint from '@/views/components/app/forms/FieldHint.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
@@ -43,7 +49,8 @@ export default {
     components: {
         PrimaryButton,
         AlertDialog,
-        UserSearch
+        UserSearch,
+        FieldHint,
     },
     props: {
         warehouse: {

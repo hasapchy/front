@@ -11,13 +11,6 @@
                     <router-view />
                 </main>
             </div>
-            <NotificationToast
-                :title="$store.getters.notificationTitle"
-                :subtitle="$store.getters.notificationSubtitle"
-                :show="$store.getters.notification"
-                :is-danger="$store.getters.notificationIsDanger"
-                @close="$store.dispatch('closeNotification')"
-            />
             <ScrollToTopButton />
             <!-- ✅ Полноэкранный спиннер при загрузке данных компании -->
             <!-- Временно отключен -->
@@ -45,10 +38,10 @@
 </template>
 
 <script>
+import { useWindowSize } from '@vueuse/core';
 import AppHeaderComponent from '../components/app/AppHeaderComponent.vue';
 import AppSidebarComponent from '../components/app/sidebar/AppSidebarComponent.vue';
 import AppSettingsSidebarComponent from '../components/app/sidebar/AppSettingsSidebarComponent.vue';
-import NotificationToast from '../components/app/dialog/NotificationToast.vue';
 import SpinnerIcon from '../components/app/SpinnerIcon.vue';
 import ScrollToTopButton from '../components/app/ScrollToTopButton.vue';
 
@@ -57,30 +50,19 @@ export default {
         AppHeaderComponent,
         AppSidebarComponent,
         AppSettingsSidebarComponent,
-        NotificationToast,
         SpinnerIcon,
         ScrollToTopButton
     },
-    data() {
-        return {
-            isMobile: false
-        };
-    },
-    mounted() {
-        this.checkMobile();
-        window.addEventListener('resize', this.checkMobile);
-    },
-    beforeUnmount() {
-        window.removeEventListener('resize', this.checkMobile);
+    setup() {
+        const { width } = useWindowSize();
+        return { windowWidth: width };
     },
     computed: {
+        isMobile() {
+            return this.windowWidth < 1024;
+        },
         isLoadingCompanyData() {
             return this.$store.state.loadingFlags?.companyData || false;
-        }
-    },
-    methods: {
-        checkMobile() {
-            this.isMobile = window.innerWidth < 1024;
         }
     }
 }

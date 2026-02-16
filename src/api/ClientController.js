@@ -3,6 +3,7 @@ import PaginatedResponse from "@/dto/app/PaginatedResponseDto";
 import ClientDto from "@/dto/client/ClientDto";
 import ClientSearchDto from "@/dto/client/ClientSearchDto";
 import ClientBalanceHistoryDto from "@/dto/client/ClientBalanceHistoryDto";
+import ClientBalanceDto from "@/dto/client/ClientBalanceDto";
 import BaseController from "./BaseController";
 
 export default class ClientController extends BaseController {
@@ -23,7 +24,8 @@ export default class ClientController extends BaseController {
     includeInactive = false,
     statusFilter = null,
     typeFilter = null,
-    per_page = 20
+    per_page = 20,
+    signal = null
   ) {
     const params = {};
     if (search) {
@@ -41,7 +43,9 @@ export default class ClientController extends BaseController {
 
     return super.handleRequest(
       async () => {
-        const response = await api.get("/clients", { params: { page, per_page, ...params } });
+        const config = { params: { page, per_page, ...params } };
+        if (signal) config.signal = signal;
+        const response = await api.get("/clients", config);
         const responseData = response.data;
         const items = ClientDto.fromApiArray(responseData.data || []);
         const meta = responseData.meta || {};
@@ -123,7 +127,66 @@ export default class ClientController extends BaseController {
     return super.deleteItem("/clients", id);
   }
 
-  static async getBalanceHistory(id, excludeDebt = null, cashRegisterId = null, dateFrom = null, dateTo = null) {
+  static async getClientBalances(clientId) {
+    return super.handleRequest(
+      async () => {
+        const response = await api.get(`/clients/${clientId}/balances`);
+        const balancesData = response.data.data || [];
+        return ClientBalanceDto.fromApiArray(balancesData);
+      },
+      `Ошибка при получении балансов клиента: /clients/${clientId}/balances`
+    );
+  }
+
+  static async createClientBalance(clientId, currencyId, isDefault = false, initialBalance = 0, note = '', userIds = []) {
+    return super.handleRequest(
+      async () => {
+        const response = await api.post(`/clients/${clientId}/balances`, {
+          currency_id: currencyId,
+          is_default: isDefault,
+          balance: initialBalance,
+          note: note,
+          user_ids: Array.isArray(userIds) ? userIds : []
+        });
+        const balanceData = response.data.data || response.data;
+        return ClientBalanceDto.fromApi(balanceData);
+      },
+      `Ошибка при создании баланса клиента: /clients/${clientId}/balances`
+    );
+  }
+
+  static async updateClientBalance(clientId, balanceId, data) {
+    return super.handleRequest(
+      async () => {
+        const response = await api.put(`/clients/${clientId}/balances/${balanceId}`, data);
+        const responseData = response.data;
+        
+        if (responseData.requires_confirmation) {
+          return {
+            requires_confirmation: true,
+            message: responseData.message,
+            current_default: responseData.current_default,
+          };
+        }
+        
+        const balanceData = responseData.data || responseData;
+        return ClientBalanceDto.fromApi(balanceData);
+      },
+      `Ошибка при обновлении баланса клиента: /clients/${clientId}/balances/${balanceId}`
+    );
+  }
+
+  static async deleteClientBalance(clientId, balanceId) {
+    return super.handleRequest(
+      async () => {
+        await api.delete(`/clients/${clientId}/balances/${balanceId}`);
+        return true;
+      },
+      `Ошибка при удалении баланса клиента: /clients/${clientId}/balances/${balanceId}`
+    );
+  }
+
+  static async getBalanceHistory(id, excludeDebt = null, cashRegisterId = null, dateFrom = null, dateTo = null, balanceId = null) {
     return super.handleRequest(
       async () => {
         const params = {};
@@ -138,6 +201,9 @@ export default class ClientController extends BaseController {
         }
         if (dateTo) {
           params.date_to = dateTo;
+        }
+        if (balanceId) {
+          params.balance_id = balanceId;
         }
         const response = await api.get(`/clients/${id}/balance-history`, {
           params,

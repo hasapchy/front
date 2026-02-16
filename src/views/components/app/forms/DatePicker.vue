@@ -93,12 +93,18 @@
                 </div>
             </div>
         </div>
-        <div class="mt-2">
+        <div class="mt-2 flex gap-2">
             <button
                 @click="clearDate"
                 type="button"
-                class="w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded border border-gray-200 transition-colors">
-                {{ $t('clear') || 'Очистить' }}
+                class="flex-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded border border-gray-200 transition-colors">
+                {{ $t('noDeadline') }}
+            </button>
+            <button
+                @click="applyDate"
+                type="button"
+                class="flex-1 px-3 py-2 text-sm text-white bg-blue-500 hover:bg-blue-600 rounded border border-blue-600 transition-colors">
+                {{ $t('apply') || 'Применить' }}
             </button>
         </div>
     </div>
@@ -125,9 +131,13 @@ export default {
         minDate: {
             type: String,
             default: null
+        },
+        workSchedule: {
+            type: Object,
+            default: null
         }
     },
-    emits: ['update:modelValue'],
+    emits: ['update:modelValue', 'apply', 'clear'],
     data() {
         const today = dayjs();
         const initialDate = this.modelValue ? dayjs(this.modelValue) : today;
@@ -167,7 +177,11 @@ export default {
                 const dateStr = date.format('YYYY-MM-DD');
                 const isOtherMonth = date.month() !== this.currentMonth;
                 const isToday = dateStr === today.format('YYYY-MM-DD');
-                const isWeekend = date.day() === 0 || date.day() === 6; // Воскресенье или Суббота
+                
+                const scheduleDayKey = this.getScheduleDayKeyFromDayjsDay(date.day());
+                const daySchedule = this.workSchedule?.[scheduleDayKey];
+                const isWeekend = !daySchedule?.enabled;
+                
                 const isSelected = dateStr === selectedDateStr;
 
                 days.push({
@@ -277,41 +291,56 @@ export default {
         },
         selectDate(dateObj) {
             if (dateObj.isOtherMonth) {
-                // Переключаемся на месяц выбранной даты
                 this.currentMonth = dateObj.date.month();
                 this.currentYear = dateObj.date.year();
             }
             
             this.selectedDate = dateObj.date;
+            
+            const scheduleDayKey = this.getScheduleDayKeyFromDayjsDay(dateObj.date.day());
+            const daySchedule = this.workSchedule?.[scheduleDayKey];
+            if (daySchedule?.end) {
+                this.selectedTime = daySchedule.end;
+            }
+            
             this.updateDateTime();
         },
 
         clearDate() {
             this.$emit('update:modelValue', null);
+            this.$emit('clear');
+        },
+        applyDate() {
+            this.updateDateTime();
+            this.$emit('apply');
         },
         selectQuickDate(key) {
             const option = this.quickSelectOptions.find(opt => opt.key === key);
-            if (option) {
-                this.selectedDate = option.date;
-                this.currentMonth = option.date.month();
-                this.currentYear = option.date.year();
-                this.updateDateTime();
+            if (!option) return;
+            
+            this.selectedDate = option.date;
+            this.currentMonth = option.date.month();
+            this.currentYear = option.date.year();
+            
+            const scheduleDayKey = this.getScheduleDayKeyFromDayjsDay(option.date.day());
+            const daySchedule = this.workSchedule?.[scheduleDayKey];
+            if (daySchedule?.end) {
+                this.selectedTime = daySchedule.end;
             }
+            
+            this.updateDateTime();
         },
         updateDateTime() {
             const [hours, minutes] = this.selectedTime.split(':');
-            const dateTime = this.selectedDate
+            let dateTime = this.selectedDate
                 .hour(parseInt(hours) || 0)
                 .minute(parseInt(minutes) || 0)
                 .second(0);
 
-            // Проверка минимальной даты
             if (this.minDate && dateTime.isBefore(dayjs(this.minDate))) {
-                const minDateTime = dayjs(this.minDate);
-                this.selectedDate = minDateTime;
-                this.selectedTime = minDateTime.format('HH:mm');
-                this.$emit('update:modelValue', minDateTime.format('YYYY-MM-DDTHH:mm'));
-                return;
+                dateTime = dayjs(this.minDate);
+                this.selectedDate = dateTime;
+                this.selectedTime = dateTime.format('HH:mm');
             }
 
             this.$emit('update:modelValue', dateTime.format('YYYY-MM-DDTHH:mm'));
@@ -325,6 +354,9 @@ export default {
             const newDate = dayjs().year(this.currentYear).month(this.currentMonth).add(1, 'month');
             this.currentMonth = newDate.month();
             this.currentYear = newDate.year();
+        },
+        getScheduleDayKeyFromDayjsDay(dayjsDay) {
+            return { 0: 7, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6 }[dayjsDay] ?? 1;
         }
     }
 };

@@ -88,7 +88,7 @@
                 <TableFilterButton v-if="columns && columns.length" :onReset="resetColumns">
                   <ul>
                     <draggable v-if="columns && columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
-                      <li v-for="(element, index) in columns" :key="element.name"
+                      <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
                           @click="toggleVisible(index)"
                           class="flex items-center hover:bg-gray-100 p-2 rounded">
                           <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -111,8 +111,8 @@
         </DraggableTable>
       </div>
 
-      <div v-else key="loader" class="flex justify-center items-center h-64">
-        <SpinnerIcon />
+      <div v-else key="loader" class="min-h-64">
+        <TableSkeleton />
       </div>
     </transition>
 
@@ -142,7 +142,7 @@ import TableControlsBar from '@/views/components/app/forms/TableControlsBar.vue'
 import TableFilterButton from '@/views/components/app/forms/TableFilterButton.vue'
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue'
 import Pagination from '@/views/components/app/buttons/Pagination.vue'
-import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue'
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue'
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue'
 import SimpleOrderCreatePage from '@/views/pages/simple/SimpleOrderCreatePage.vue'
 import filtersMixin from '@/mixins/filtersMixin'
@@ -162,7 +162,7 @@ export default {
     FiltersContainer,
     Pagination,
     draggable: VueDraggableNext,
-    SpinnerIcon,
+    TableSkeleton,
     SideModalDialog,
     SimpleOrderCreatePage
   },
@@ -171,7 +171,11 @@ export default {
       orders: [],
       loading: true,
       paginationData: null,
-      perPage: 20,
+      perPage: (() => {
+        const stored = localStorage.getItem('perPage');
+        const parsed = stored ? parseInt(stored, 10) : NaN;
+        return Number.isFinite(parsed) && [10, 20, 50, 100].includes(parsed) ? parsed : 20;
+      })(),
       perPageOptions: [10, 20, 50, 100],
       projects: [],
       dateFilter: 'all_time',

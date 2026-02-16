@@ -1,34 +1,28 @@
 <template>
-    <div class="flex items-center justify-between gap-2 mb-4 p-3 bg-white rounded-lg shadow-sm flex-wrap">
+    <div class="flex items-center justify-between gap-2 mb-4 p-3 bg-white rounded-lg shadow-md flex-wrap sticky top-0 z-20">
         <div class="flex items-center gap-2 flex-wrap">
             <slot name="left">
-                <PrimaryButton 
-                    v-if="showCreateButton && onCreateClick"
-                    :onclick="onCreateClick" 
-                    icon="fas fa-plus"
+                <PrimaryButton v-if="showCreateButton && onCreateClick" :onclick="onCreateClick" icon="fas fa-plus"
                     :disabled="createButtonDisabled">
                 </PrimaryButton>
-                
+
                 <slot name="additionalButtons"></slot>
-                
+
                 <slot name="filters-desktop"></slot>
             </slot>
         </div>
-        
+
         <div class="flex items-center gap-2">
-            <slot name="right" :resetColumns="$attrs.resetColumns" :columns="$attrs.columns" :toggleVisible="$attrs.toggleVisible" :log="$attrs.log">
-                <Pagination 
-                    v-if="showPagination && paginationData && onPageChange"
-                    :currentPage="paginationData.currentPage" 
-                    :lastPage="paginationData.lastPage"
-                    :per-page="paginationData.perPage" 
-                    :per-page-options="paginationData.perPageOptions" 
-                    :show-per-page-selector="paginationData.showPerPageSelector !== false"
-                    @changePage="onPageChange" 
-                    @perPageChange="onPerPageChange" 
-                />
+            <slot name="right" :resetColumns="$attrs.resetColumns" :columns="$attrs.columns"
+                :toggleVisible="$attrs.toggleVisible" :log="$attrs.log">
+                <Pagination v-if="showPagination && paginationData && onPageChange"
+                    :currentPage="paginationData.currentPage" :lastPage="paginationData.lastPage"
+                    :per-page="paginationData.perPage" :per-page-options="paginationData.perPageOptions"
+                    :show-per-page-selector="paginationData.showPerPageSelector !== false" @changePage="onPageChange"
+                    @perPageChange="onPerPageChange" />
             </slot>
-            <slot name="gear" :resetColumns="$attrs.resetColumns" :columns="$attrs.columns" :toggleVisible="$attrs.toggleVisible" :log="$attrs.log"></slot>
+            <slot name="gear" :resetColumns="$attrs.resetColumns" :columns="$attrs.columns"
+                :toggleVisible="$attrs.toggleVisible" :log="$attrs.log"></slot>
         </div>
     </div>
 </template>
@@ -93,4 +87,3 @@ export default {
     },
 };
 </script>
-

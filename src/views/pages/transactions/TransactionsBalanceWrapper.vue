@@ -23,7 +23,7 @@
                                 <div class="cash-register-title mb-2 flex items-center justify-center gap-2">
                                     <i
                                         class="fas fa-grip-vertical balance-drag-handle text-gray-400 hover:text-gray-600 cursor-move"></i>
-                                    <i v-if="card.icon" :class="card.icon" class="text-gray-700"></i>
+                                    <i v-if="card.icon" :class="card.icon" class="text-gray-700 cash-register-icon"></i>
                                     <span class="cash-register-name text-sm font-semibold text-center">
                                         {{ translateName(card.name) }}
                                         <span class="cash-register-currency">({{ card.currencySymbol || '' }})</span>
@@ -78,8 +78,8 @@
                     </draggable>
                 </div>
             </div>
-            <div v-else-if="loading" key="loader" class="flex justify-center items-center h-20">
-                <SpinnerIcon />
+            <div v-else-if="loading" key="loader">
+                <BalanceCardsSkeleton />
             </div>
         </transition>
     </div>
@@ -88,7 +88,7 @@
 <script>
 import { VueDraggableNext } from 'vue-draggable-next';
 import CashRegisterController from '@/api/CashRegisterController';
-import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
+import BalanceCardsSkeleton from '@/views/components/app/BalanceCardsSkeleton.vue';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 
@@ -111,7 +111,7 @@ const TITLE_TRANSLATIONS = {
 export default {
     components: {
         draggable: VueDraggableNext,
-        SpinnerIcon
+        BalanceCardsSkeleton
     },
     props: {
         cashRegisterId: { type: Number, default: null },
@@ -577,6 +577,10 @@ export default {
 .balance-card-wrapper {
     transition: transform 0.2s ease;
     flex-shrink: 0;
+}
+
+.cash-register-icon {
+    font-size: 2em;
 }
 
 .balance-drag-handle {

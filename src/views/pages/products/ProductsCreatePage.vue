@@ -1,6 +1,6 @@
 <template>
-    <div class="flex flex-col h-full min-h-0">
-        <div class="flex-1 min-h-0 overflow-y-auto p-4">
+    <div class="flex flex-col h-full">
+        <div class="flex flex-col overflow-auto h-full p-4 pb-24">
             <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editProduct') : $t('createProduct') }}</h2>
             <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="changeTab" />
 
@@ -56,15 +56,15 @@
                     </div>
                 </div>
                 <div class="mt-2">
-                    <label class="block mb-1 required">{{ $t('category') }}</label>
+                    <label class="block mb-2 required">{{ $t('category') }}</label>
                     <div class="flex items-center space-x-2">
-                        <div class="flex-1">
+                        <div class="flex-1 h-8 flex items-center min-w-0 products-category-filter">
                             <CheckboxFilter v-if="categoryOptions.length" v-model="selectedCategoryIds"
                                 :options="categoryOptions" :placeholder="'selectCategories'"
                                 @update:modelValue="onCategoriesChange" />
                         </div>
                         <PrimaryButton icon="fas fa-plus" :is-info="true" :onclick="showModal"
-                            :disabled="!$store.getters.hasPermission('categories_create')" />
+                            :disabled="!$store.getters.hasPermission('categories_create')" :aria-label="$t('add')" />
                     </div>
                 </div>
                 <div class="mt-2">
@@ -78,8 +78,8 @@
                     </select>
                 </div>
                 <div class="mt-2">
-                    <label class="required">{{ $t('sku') }}</label>
-                    <input type="text" v-model="sku" placeholder="AB00001">
+                    <label class="block mb-1 required">{{ $t('sku') }}</label>
+                    <input type="text" v-model="sku" placeholder="AB00001" class="w-full">
                 </div>
                 <div class="mt-2 flex space-x-2">
                     <div class="w-1/3">
@@ -106,12 +106,12 @@
                     <div class="flex items-center space-x-2">
                         <input type="text" v-model="barcode">
                         <PrimaryButton v-if="!barcode" icon="fas fa-barcode" :is-info="true" :onclick="generateBarcode"
-                            :is-full="false">
+                            :is-full="false" :aria-label="$t('generateBarcode')">
                         </PrimaryButton>
                         <template v-if="barcode">
                             <svg id="barcode-svg" class="w-32 h-12" />
                             <canvas id="barcode-canvas" style="display:none;"></canvas>
-                            <PrimaryButton @click="downloadBarcodePng" icon="fas fa-download" :is-info="true">
+                            <PrimaryButton @click="downloadBarcodePng" icon="fas fa-download" :is-info="true" :aria-label="$t('downloadBarcode')">
                             </PrimaryButton>
                         </template>
                     </div>
@@ -123,15 +123,17 @@
                 <div v-else class="text-gray-500 py-8 text-center">{{ $t('saveProductFirst') || 'Сначала сохраните товар' }}</div>
             </div>
         </div>
-        <div class="flex-shrink-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200">
+
+        <div class="fixed bottom-0 left-0 right-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200 z-10">
             <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
                 :is-loading="deleteLoading" icon="fas fa-trash"
-                :disabled="!$store.getters.hasPermission('products_delete')">
+                :disabled="!$store.getters.hasPermission('products_delete')" :aria-label="$t('delete')">
             </PrimaryButton>
             <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :disabled="!isFormValid || (editingItemId != null && !$store.getters.hasPermission('products_update')) ||
-                (editingItemId == null && !$store.getters.hasPermission('products_create'))">
+                (editingItemId == null && !$store.getters.hasPermission('products_create'))" :aria-label="$t('save')">
             </PrimaryButton>
         </div>
+        
         <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
             :descr="$t('deleteCategory')" :confirm-text="$t('deleteCategory')" :leave-text="$t('cancel')" />
         <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose"
@@ -492,3 +494,10 @@ export default {
 }
 
 </script>
+
+<style scoped>
+.products-category-filter :deep(.checkbox-filter__trigger) {
+    min-height: 2rem;
+    padding: 0.25rem 2rem 0.25rem 0.5rem;
+}
+</style>

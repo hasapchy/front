@@ -17,7 +17,9 @@
                     <HolidayCalendar />
                 </div>
 
-                <div v-if="loading" class="text-gray-400">Загрузка...</div>
+                <div v-if="loading" class="min-h-64">
+                    <TableSkeleton />
+                </div>
                 <div v-else-if="timeline.length === 0" class="text-gray-400">Нет данных</div>
                 <div v-else class="relative">
 
@@ -140,12 +142,14 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import { translateOrderStatus, translateTaskStatus } from '@/utils/translationUtils';
 import HolidayCalendar from '@/views/components/app/HolidayCalendar.vue';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 dayjs.locale('ru');
 
 export default {
     components: {
         HolidayCalendar,
+        TableSkeleton,
     },
     props: {
         type: { type: String, required: true },

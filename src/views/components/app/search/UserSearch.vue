@@ -179,6 +179,7 @@ export default {
             userSearchLoading: false,
             userResults: [],
             lastUsers: [],
+            searchAbortController: null,
             showDropdown: false,
             selectedUsersCache: [],
         };
@@ -310,9 +311,15 @@ export default {
         },
         searchUsers: debounce(async function () {
             if (this.userSearch.length >= 3) {
+                if (this.searchAbortController) {
+                    this.searchAbortController.abort();
+                }
+                this.searchAbortController = new AbortController();
+                const signal = this.searchAbortController.signal;
                 this.userSearchLoading = true;
                 try {
-                    let results = await UsersController.searchItems(this.userSearch);
+                    let results = await UsersController.searchItems(this.userSearch, signal);
+                    if (signal.aborted) return;
 
                     if (this.multiple && this.filterUsers) {
                         results = results.filter(this.filterUsers);
@@ -320,9 +327,10 @@ export default {
 
                     this.userResults = results;
                 } catch (error) {
+                    if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') return;
                     this.userResults = [];
                 } finally {
-                    this.userSearchLoading = false;
+                    if (!signal.aborted) this.userSearchLoading = false;
                 }
             } else {
                 this.userResults = [];
@@ -352,6 +360,11 @@ export default {
 
             if (!isSelected && !this.selectedUsersCache.find(u => Number(u.id) === userId)) {
                 this.selectedUsersCache.push(user);
+            }
+
+            if (!isSelected) {
+                this.userSearch = '';
+                this.userResults = [];
             }
         },
         removeUser(user) {

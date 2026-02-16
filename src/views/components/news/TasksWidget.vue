@@ -7,8 +7,8 @@
             </div>
         </div>
         
-        <div v-if="loading" class="flex justify-center py-4">
-            <i class="fas fa-spinner fa-spin text-gray-400"></i>
+        <div v-if="loading" class="min-h-24">
+            <TableSkeleton />
         </div>
         
         <div v-else-if="statusCounts.length > 0" class="space-y-2">
@@ -38,10 +38,12 @@
 <script>
 import TaskController from '@/api/TaskController';
 import TaskStatusController from '@/api/TaskStatusController';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 import { translateTaskStatus } from '@/utils/translationUtils';
 
 export default {
     name: 'TasksWidget',
+    components: { TableSkeleton },
     data() {
         return {
             statusCounts: [],

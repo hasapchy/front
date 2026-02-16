@@ -1,7 +1,7 @@
 <template>
     <div class="flex items-center">
-        <select 
-            v-model="selectedPerPage" 
+        <select
+            v-model="selectedPerPage"
             @change="handlePerPageChange"
             class="px-2 py-1 pr-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none w-auto min-w-fit cursor-pointer"
         >
@@ -33,7 +33,7 @@ export default {
     data() {
         return {
             selectedPerPage: this.getStoredPerPage()
-        }
+        };
     },
     mounted() {
         this.loadStoredPerPage();
@@ -46,7 +46,7 @@ export default {
     methods: {
         getStoredPerPage() {
             const stored = localStorage.getItem(this.storageKey);
-            return stored ? parseInt(stored) : this.perPage;
+            return stored ? parseInt(stored, 10) : this.perPage;
         },
         loadStoredPerPage() {
             const stored = this.getStoredPerPage();

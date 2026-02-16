@@ -1,5 +1,5 @@
 <template>
-  <div class="company-dropdown relative">
+  <div ref="dropdownRef" class="company-dropdown relative">
     <button 
       @click="toggleDropdown"
       class="dropdown-trigger flex items-center gap-2 px-3 py-2 bg-white border-0 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
@@ -55,6 +55,8 @@
 </template>
 
 <script>
+import { getCurrentInstance, onBeforeUnmount, ref } from 'vue';
+import { onClickOutside, useWindowSize } from '@vueuse/core';
 import UserCompanyController from '@/api/UserCompanyController';
 import { eventBus } from '@/eventBus';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
@@ -64,15 +66,28 @@ export default {
   components: {
     SpinnerIcon
   },
+  setup() {
+    const dropdownRef = ref(null);
+    const { width } = useWindowSize();
+    const instance = getCurrentInstance();
+    const stopClickOutside = onClickOutside(dropdownRef, () => {
+      if (instance?.proxy) {
+        instance.proxy.isOpen = false;
+      }
+    });
+    onBeforeUnmount(stopClickOutside);
+    return { dropdownRef, windowWidth: width };
+  },
   data() {
     return {
       isOpen: false,
-      isLoading: true,
-      isMobile: false
+      isLoading: true
     }
   },
-  
   computed: {
+    isMobile() {
+      return this.windowWidth < 640;
+    },
     companies() {
       return this.$store.getters.userCompanies;
     },
@@ -105,9 +120,6 @@ export default {
   },
   
   async mounted() {
-    this.checkMobile();
-    window.addEventListener('resize', this.checkMobile);
-    
     if (this.currentCompany) {
       this.isLoading = false;
     }
@@ -129,19 +141,8 @@ export default {
     } finally {
       this.isLoading = false;
     }
-    
-    document.addEventListener('click', this.handleClickOutside);
   },
-  
-  beforeUnmount() {
-    window.removeEventListener('resize', this.checkMobile);
-    document.removeEventListener('click', this.handleClickOutside);
-  },
-  
   methods: {
-    checkMobile() {
-      this.isMobile = window.innerWidth < 640;
-    },
     toggleDropdown() {
       this.isOpen = !this.isOpen
     },
@@ -178,13 +179,6 @@ export default {
           subtitle: error.message || this.$t('errorChangingCompanySubtitle'),
           isDanger: true
         });
-      }
-    },
-    
-    
-    handleClickOutside(event) {
-      if (!this.$el.contains(event.target)) {
-        this.isOpen = false
       }
     }
   }

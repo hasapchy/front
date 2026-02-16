@@ -1,5 +1,7 @@
 <template>
   <div class="h-[calc(100vh-6rem)] flex overflow-hidden rounded-2xl border border-gray-200 bg-white">
+    <ChatSkeleton v-if="loadingChats && !selectedChat" />
+    <template v-else>
     <!-- LEFT: list -->
     <aside class="w-full md:w-[360px] shrink-0 border-r border-gray-200 bg-white flex flex-col min-h-0">
       <!-- Search row -->
@@ -431,10 +433,11 @@
                 </button>
                 <button
                   type="button"
-                  class="text-sky-600 hover:text-sky-800 font-medium"
+                  class="text-sky-600 hover:text-sky-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  :disabled="saveEditLoading"
                   @click="saveEdit"
                 >
-                  Сохранить
+                  {{ saveEditLoading ? 'Сохраняю…' : 'Сохранить' }}
                 </button>
               </div>
             </div>
@@ -463,12 +466,13 @@
             <button
               v-else
               class="w-9 h-9 rounded-full bg-green-500 text-white hover:bg-green-600 flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300"
-              :disabled="!selectedChat || !canWrite || sending || !draft.trim()"
+              :disabled="!selectedChat || !canWrite || sending || saveEditLoading || !draft.trim()"
               type="button"
               @click="saveEdit"
               title="Сохранить изменения"
             >
-              <i class="fas fa-check text-sm"></i>
+              <i v-if="saveEditLoading" class="fas fa-spinner fa-spin text-sm"></i>
+              <i v-else class="fas fa-check text-sm"></i>
             </button>
           </div>
         </div>
@@ -787,7 +791,7 @@
         />
       </div>
     </div>
-
+    </template>
   </div>
 </template>
 
@@ -797,6 +801,7 @@ import echo from "@/services/echo";
 import { applySentMessage, handleChatReadEvent, handleIncomingChatEvent } from "@/services/messengerFacade";
 import globalChatRealtime from "@/services/globalChatRealtime";
 import { eventBus } from "@/eventBus";
+import ChatSkeleton from "@/views/components/app/ChatSkeleton.vue";
 
 // ===== Helpers (pure functions) =====
 const buildStorageUrl = (path) => `${import.meta.env.VITE_APP_BASE_URL}/storage/${path}`;
@@ -836,6 +841,9 @@ const extractHHmm = (raw) => {
 // formatChatTime will be a method that uses i18n
 
 export default {
+  components: {
+    ChatSkeleton
+  },
   data() {
     return {
       search: "",
@@ -855,6 +863,7 @@ export default {
       draft: "",
       selectedFiles: [],
       sending: false,
+      saveEditLoading: false,
       replyingTo: null,
       editingMessage: null,
       audioBlob: null,
@@ -1654,7 +1663,7 @@ export default {
     },
     async saveEdit() {
       if (!this.editingMessage || !this.draft.trim()) return;
-      
+      this.saveEditLoading = true;
       try {
         const updatedMessage = await ChatController.updateMessage(this.selectedChatId, this.editingMessage.id, this.draft);
         
@@ -1724,6 +1733,8 @@ export default {
           isDanger: true,
           duration: 3000,
         });
+      } finally {
+        this.saveEditLoading = false;
       }
     },
     async deleteMessage(message) {

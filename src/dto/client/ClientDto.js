@@ -29,7 +29,8 @@ export default class ClientDto {
     userName = null,
     employeeId = null,
     employee = null,
-    currencySymbol = null
+    currencySymbol = null,
+    balances = []
   ) {
     this.id = id;
     this.clientType = clientType;
@@ -53,6 +54,7 @@ export default class ClientDto {
     this.employeeId = employeeId;
     this.employee = employee;
     this.currencySymbol = currencySymbol;
+    this.balances = balances || [];
     this.emails = (emails || []).map(
       (email) => new ClientEmailDto(email.id, null, email.email)
     );
@@ -127,12 +129,12 @@ export default class ClientDto {
   discountFormatted() {
     if (this.discount == null && !this.discountType) return "";
     const discount = this.discount ?? "";
-    const typeMap = {
-      "fixed": "фиксированная",
-      "percent": "процентная"
+    const iconMap = {
+      fixed: '<i class="fas fa-coins ml-1" title="Фиксированная"></i>',
+      percent: '<i class="fas fa-percent ml-1" title="Процентная"></i>'
     };
-    const discountType = typeMap[this.discountType] || this.discountType;
-    return discount + (discountType ? ` (${discountType})` : "");
+    const icon = iconMap[this.discountType] || "";
+    return discount + icon;
   }
 
   formatCreatedAt() {
@@ -171,7 +173,17 @@ export default class ClientDto {
         data.user_name || data.user?.name || null,
         data.employee_id,
         data.employee,
-        data.currency_symbol || null
+        data.currency_symbol || null,
+        (data.balances || []).map(b => ({
+          id: b.id,
+          clientId: data.id,
+          currencyId: b.currency_id,
+          currency: b.currency,
+          balance: parseFloat(b.balance) || 0,
+          isDefault: Boolean(b.is_default),
+          note: b.note || '',
+          users: b.users || []
+        }))
       );
     }).filter(Boolean);
   }

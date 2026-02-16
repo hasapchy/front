@@ -138,7 +138,7 @@
                                 <ul>
                                     <draggable v-if="columns.length" class="dragArea list-group w-full" :list="columns"
                                         @change="log">
-                                        <li v-for="(element, index) in columns" :key="element.name"
+                                        <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
                                             @click="toggleVisible(index)"
                                             class="flex items-center hover:bg-gray-100 p-2 rounded">
                                             <div class="space-x-2 flex flex-row justify-between w-full select-none">
@@ -160,8 +160,8 @@
                 </template>
             </DraggableTable>
         </div>
-        <div v-else key="loader" class="flex justify-center items-center h-64">
-            <SpinnerIcon />
+        <div v-else key="loader" class="min-h-64">
+            <TableSkeleton />
         </div>
     </transition>
 
@@ -172,15 +172,12 @@
                 @copy-transaction="handleCopyTransaction" :editingItem="editingItem"
                 :default-cash-id="cashRegisterId || null" :form-config="activeFormConfig" />
         </SideModalDialog>
-        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-            :is-danger="notificationIsDanger" @close="closeNotification" />
         <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDelete')} (${selectedIds.length})?`"
             :confirm-text="$t('delete')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
             @leave="deleteDialog = false" />
 </template>
 
 <script>
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import FiltersContainer from '@/views/components/app/forms/FiltersContainer.vue';
@@ -220,10 +217,11 @@ import Card from '@/views/components/app/cards/Card.vue';
 import CardFieldsButton from '@/views/components/app/cards/CardFieldsButton.vue';
 import { dayjsDateTime } from '@/utils/dateUtils';
 import { formatNumber } from '@/utils/numberUtils';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
-    components: { NotificationToast, AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, ViewModeToggle, Card, CardFieldsButton, draggable: VueDraggableNext },
+    components: { AlertDialog, PrimaryButton, SideModalDialog, Pagination, DraggableTable, TransactionCreatePage, TransactionsBalanceWrapper, ClientButtonCell, SourceButtonCell, TransactionTypeCell, TransactionAmountCell, BatchButton, FiltersContainer, CheckboxFilter, TableControlsBar, TableFilterButton, TableSkeleton, ViewModeToggle, Card, CardFieldsButton, draggable: VueDraggableNext },
     data() {
         return {
             // data, loading, perPage, perPageOptions - из crudEventMixin
@@ -252,7 +250,7 @@ export default {
             currentFormConfig: TRANSACTION_FORM_PRESETS.full,
             columnsConfig: [
                 { name: 'select', label: '#', size: 15 },
-                { name: 'id', label: 'number', size: 60 },
+                { name: 'id', label: 'number', size: 60, html: true },
                 { name: 'dateUser', label: 'dateUser' },
                 {
                     name: 'type',
@@ -349,6 +347,11 @@ export default {
             const search = this.searchQuery;
 
             switch (c) {
+                case 'id':
+                    if (search) {
+                        return highlightMatches(String(i.id ?? ''), search);
+                    }
+                    return i.id;
                 case 'cashName':
                     return i.cashName ? `${i.cashName} (${i.cashCurrencySymbol})` : '-';
                 case 'cashAmount':

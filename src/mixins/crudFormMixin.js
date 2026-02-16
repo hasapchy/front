@@ -1,4 +1,7 @@
+import keyboardShortcutsMixin from './keyboardShortcutsMixin';
+
 export default {
+  mixins: [keyboardShortcutsMixin],
   data() {
     return {
       saveLoading: false,
@@ -66,6 +69,11 @@ export default {
     onDeleteError(error) {
     },
     onEditingItemChanged(newEditingItem) {
+    },
+    handleSaveShortcut() {
+      if (!this.saveLoading) {
+        this.save();
+      }
     },
   },
   watch: {

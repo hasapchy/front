@@ -1,218 +1,243 @@
 <template>
-    <div>
-        <transition name="fade" mode="out-in">
-            <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
-                <DraggableTable table-key="admin.tasks" :columns-config="columnsConfig" :table-data="data.items"
-                    :item-mapper="itemMapper" @selectionChange="selectedIds = $event" :onItemClick="onItemClick">
-                    <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
-                        <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
-                            :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
-                            :show-pagination="true"
-                            :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
-                            :on-page-change="fetchItems" :on-per-page-change="handlePerPageChange"
-                            :resetColumns="resetColumns" :columns="columns" :toggleVisible="toggleVisible" :log="log">
-                            <template #left>
-                                <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
-                                    :disabled="!$store.getters.hasPermission('tasks_create')">
-                                </PrimaryButton>
-
-                                <transition name="fade">
-                                    <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds"
-                                        :batch-actions="getBatchActions()" :statuses="statuses"
-                                        :handle-change-status="handleChangeStatus" :show-status-select="true" />
-                                </transition>
-
-                                <FiltersContainer :has-active-filters="hasActiveFilters"
-                                    :active-filters-count="getActiveFiltersCount()" @reset="resetFilters"
-                                    @apply="applyFilters">
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус'
-                                        }}</label>
-                                        <select v-model="statusFilter" class="w-full">
-                                            <option value="all">{{ $t('allStatuses') }}</option>
-                                            <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
-                                                {{ translateTaskStatus(status.name, $t) }}
-                                            </option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период'
-                                        }}</label>
-                                        <select v-model="dateFilter" class="w-full">
-                                            <option value="all_time">{{ $t('allTime') }}</option>
-                                            <option value="today">{{ $t('today') }}</option>
-                                            <option value="yesterday">{{ $t('yesterday') }}</option>
-                                            <option value="this_week">{{ $t('thisWeek') }}</option>
-                                            <option value="this_month">{{ $t('thisMonth') }}</option>
-                                            <option value="last_week">{{ $t('lastWeek') }}</option>
-                                            <option value="last_month">{{ $t('lastMonth') }}</option>
-                                            <option value="custom">{{ $t('selectDates') }}</option>
-                                        </select>
-                                    </div>
-
-                                    <div v-if="dateFilter === 'custom'" class="space-y-2">
-                                        <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') ||
-                                                'Начальная дата' }}</label>
-                                            <input type="date" v-model="startDate" class="w-full" />
-                                        </div>
-                                        <div>
-                                            <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') ||
-                                                'Конечная дата' }}</label>
-                                            <input type="date" v-model="endDate" class="w-full" />
-                                        </div>
-                                    </div>
-                                </FiltersContainer>
-
-                                <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                                    <button @click="viewMode = 'table'" class="px-3 py-2 transition-colors"
-                                        :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                                        <i class="fas fa-table"></i>
-                                    </button>
-                                    <button @click="viewMode = 'kanban'" class="px-3 py-2 transition-colors"
-                                        :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                                        <i class="fas fa-columns"></i>
-                                    </button>
+    <transition name="fade" mode="out-in">
+        <!-- Табличный вид -->
+        <div v-if="data && !loading && viewMode === 'table'" :key="`table-${$i18n.locale}`">
+            <DraggableTable table-key="admin.tasks" :columns-config="columnsConfig" :table-data="data.items" 
+                :item-mapper="itemMapper" @selectionChange="selectedIds = $event"
+                :onItemClick="onItemClick">
+                <template #tableControlsBar="{ resetColumns, columns, toggleVisible, log }">
+                    <TableControlsBar
+                        :show-filters="true"
+                        :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()"
+                        :on-filters-reset="resetFilters"
+                        :show-pagination="true"
+                        :pagination-data="data ? { currentPage: data.currentPage, lastPage: data.lastPage, perPage: perPage, perPageOptions: perPageOptions } : null"
+                        :on-page-change="fetchItems"
+                        :on-per-page-change="handlePerPageChange"
+                        :resetColumns="resetColumns"
+                        :columns="columns"
+                        :toggleVisible="toggleVisible"
+                        :log="log">
+                        <template #left>
+                            <PrimaryButton 
+                                :onclick="() => { showModal(null) }" 
+                                icon="fas fa-plus"
+                                :disabled="!$store.getters.hasPermission('tasks_create')">
+                            </PrimaryButton>
+                            
+                            <transition name="fade">
+                                <BatchButton v-if="selectedIds.length" :selected-ids="selectedIds" :batch-actions="getBatchActions()"
+                                    :statuses="statuses" :handle-change-status="handleChangeStatus" :show-status-select="true" />
+                            </transition>
+                            
+                            <FiltersContainer
+                                :has-active-filters="hasActiveFilters"
+                                :active-filters-count="getActiveFiltersCount()"
+                                @reset="resetFilters"
+                                @apply="applyFilters"
+                                >
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
+                                    <select v-model="statusFilter" class="w-full">
+                                        <option value="all">{{ $t('allStatuses') }}</option>
+                                        <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
+                                            {{ translateTaskStatus(status.name, $t) }}
+                                        </option>
+                                    </select>
                                 </div>
-                            </template>
 
-                            <template #right="{ resetColumns, columns, toggleVisible, log }">
-                                <Pagination v-if="data != null" :currentPage="data.currentPage"
-                                    :lastPage="data.lastPage" :per-page="perPage" :per-page-options="perPageOptions"
-                                    :show-per-page-selector="true" @changePage="fetchItems"
-                                    @perPageChange="handlePerPageChange" />
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
+                                    <select v-model="dateFilter" class="w-full">
+                                        <option value="all_time">{{ $t('allTime') }}</option>
+                                        <option value="today">{{ $t('today') }}</option>
+                                        <option value="yesterday">{{ $t('yesterday') }}</option>
+                                        <option value="this_week">{{ $t('thisWeek') }}</option>
+                                        <option value="this_month">{{ $t('thisMonth') }}</option>
+                                        <option value="last_week">{{ $t('lastWeek') }}</option>
+                                        <option value="last_month">{{ $t('lastMonth') }}</option>
+                                        <option value="custom">{{ $t('selectDates') }}</option>
+                                    </select>
+                                </div>
+                                
+                                <div v-if="dateFilter === 'custom'" class="space-y-2">
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
+                                        <input type="date" v-model="startDate" class="w-full" />
+                                    </div>
+                                    <div>
+                                        <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
+                                        <input type="date" v-model="endDate"  class="w-full" />
+                                    </div>
+                                </div>
+                            </FiltersContainer>
 
-                                <TableFilterButton v-if="viewMode === 'table'" :onReset="resetColumns">
-                                    <ul>
-                                        <draggable v-if="columns && columns.length" class="dragArea list-group w-full"
-                                            :list="columns" @change="log">
-                                            <li v-for="(element, index) in columns" :key="element.name"
-                                                @click="toggleVisible(index)"
-                                                class="flex items-center hover:bg-gray-100 p-2 rounded">
-                                                <div class="space-x-2 flex flex-row justify-between w-full select-none">
-                                                    <div>
-                                                        <i class="text-sm mr-2 text-[#337AB7]"
-                                                            :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
-                                                        {{ $te(element.label) ? $t(element.label) : element.label }}
-                                                    </div>
-                                                    <div><i
-                                                            class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
-                                                    </div>
+                            <div class="flex items-center border border-gray-300 rounded overflow-hidden">
+                                <button  
+                                    @click="viewMode = 'table'"
+                                    class="px-3 py-2 transition-colors"
+                                    :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                                    <i class="fas fa-table"></i>
+                                </button>
+                                <button 
+                                    @click="viewMode = 'kanban'"
+                                    class="px-3 py-2 transition-colors"
+                                    :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                                    <i class="fas fa-columns"></i>
+                                </button>
+                            </div>
+                        </template>
+
+                        <template #right="{ resetColumns, columns, toggleVisible, log }">
+                            <Pagination v-if="data != null" :currentPage="data.currentPage" :lastPage="data.lastPage"
+                                :per-page="perPage" :per-page-options="perPageOptions" :show-per-page-selector="true"
+                                @changePage="fetchItems" @perPageChange="handlePerPageChange" />
+
+                            <TableFilterButton v-if="viewMode === 'table'" :onReset="resetColumns">
+                                <ul>
+                                    <draggable v-if="columns && columns.length" class="dragArea list-group w-full" :list="columns" @change="log">
+                                        <li v-for="(element, index) in columns" :key="element.name" v-show="element.name !== 'select'"
+                                            @click="toggleVisible(index)"
+                                            class="flex items-center hover:bg-gray-100 p-2 rounded">
+                                            <div class="space-x-2 flex flex-row justify-between w-full select-none">
+                                                <div>
+                                                    <i class="text-sm mr-2 text-[#337AB7]"
+                                                        :class="[element.visible ? 'fas fa-circle-check' : 'far fa-circle']"></i>
+                                                    {{ $te(element.label) ? $t(element.label) : element.label }}
                                                 </div>
-                                            </li>
-                                        </draggable>
-                                    </ul>
-                                </TableFilterButton>
-                            </template>
-                            <template #gear></template>
-                        </TableControlsBar>
-                    </template>
-                </DraggableTable>
-            </div>
+                                                <div><i
+                                                        class="fas fa-grip-vertical text-gray-300 text-sm cursor-grab"></i>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </draggable>
+                                </ul>
+                            </TableFilterButton>
+                        </template>
+                        <template #gear></template>
+                    </TableControlsBar>
+                </template>
+            </DraggableTable>
+        </div>
 
-            <!-- Канбан вид -->
-            <div v-else-if="data && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
-                <TableControlsBar :show-filters="true" :has-active-filters="hasActiveFilters"
-                    :active-filters-count="getActiveFiltersCount()" :on-filters-reset="resetFilters"
-                    :show-pagination="false">
-                    <template #left>
-                        <PrimaryButton :onclick="() => { showModal(null) }" icon="fas fa-plus"
-                            :disabled="!$store.getters.hasPermission('tasks_create')">
-                        </PrimaryButton>
-
-                        <FiltersContainer :has-active-filters="hasActiveFilters"
-                            :active-filters-count="getActiveFiltersCount()" @reset="resetFilters" @apply="applyFilters">
-                            <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
-                                <select v-model="statusFilter" class="w-full">
-                                    <option value="all">{{ $t('allStatuses') }}</option>
-                                    <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
-                                        {{ translateTaskStatus(status.name, $t) }}
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период'
-                                }}</label>
-                                <select v-model="dateFilter" class="w-full">
-                                    <option value="all_time">{{ $t('allTime') }}</option>
-                                    <option value="today">{{ $t('today') }}</option>
-                                    <option value="yesterday">{{ $t('yesterday') }}</option>
-                                    <option value="this_week">{{ $t('thisWeek') }}</option>
-                                    <option value="this_month">{{ $t('thisMonth') }}</option>
-                                    <option value="last_week">{{ $t('lastWeek') }}</option>
-                                    <option value="last_month">{{ $t('lastMonth') }}</option>
-                                    <option value="custom">{{ $t('selectDates') }}</option>
-                                </select>
-                            </div>
-
-                            <div v-if="dateFilter === 'custom'" class="space-y-2">
-                                <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') }}</label>
-                                    <input type="date" v-model="startDate" class="w-full" />
-                                </div>
-                                <div>
-                                    <label class="block mb-2 text-xs font-semibold">{{ $t('endDate')
-                                    }}</label>
-                                    <input type="date" v-model="endDate" class="w-full" />
-                                </div>
-                            </div>
-                        </FiltersContainer>
-
-                        <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                            <button @click="viewMode = 'table'" class="px-3 py-2 transition-colors"
-                                :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                                <i class="fas fa-table"></i>
-                            </button>
-                            <button @click="viewMode = 'kanban'" class="px-3 py-2 transition-colors"
-                                :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
-                                <i class="fas fa-columns"></i>
-                            </button>
+        <!-- Канбан вид -->
+        <div v-else-if="data && viewMode === 'kanban'" key="kanban-view" class="kanban-view-container">
+            <TableControlsBar
+                :show-filters="true"
+                :has-active-filters="hasActiveFilters"
+                :active-filters-count="getActiveFiltersCount()"
+                :on-filters-reset="resetFilters"
+                :show-pagination="false">
+                <template #left>
+                    <PrimaryButton 
+                        :onclick="() => { showModal(null) }" 
+                        icon="fas fa-plus"
+                        :disabled="!$store.getters.hasPermission('tasks_create')">
+                    </PrimaryButton>
+                    
+                    <FiltersContainer
+                        :has-active-filters="hasActiveFilters"
+                        :active-filters-count="getActiveFiltersCount()"
+                        @reset="resetFilters"
+                        @apply="applyFilters">
+                        <div>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('status') || 'Статус' }}</label>
+                            <select v-model="statusFilter" class="w-full">
+                                <option value="all">{{ $t('allStatuses') }}</option>
+                                <option v-for="status in taskStatuses" :key="status.id" :value="status.id">
+                                    {{ translateTaskStatus(status.name, $t) }}
+                                </option>
+                            </select>
                         </div>
-                    </template>
-                    <template #right>
-                        <KanbanFieldsButton mode="tasks" />
-                    </template>
-                </TableControlsBar>
 
-                <KanbanBoard :orders="kanbanTasks" :statuses="statuses" :projects="[]" :selected-ids="selectedIds"
-                    :loading="loading" :currency-symbol="''" :is-task-mode="true" :batch-status-id="batchStatusId"
-                    @order-moved="handleTaskMoved" @card-dblclick="onItemClick" @card-select-toggle="toggleSelectRow"
-                    @column-select-toggle="handleColumnSelectToggle"
-                    @batch-status-change="handleBatchStatusChangeFromToolbar"
-                    @batch-delete="() => deleteItems(selectedIds)" @clear-selection="() => selectedIds = []"
-                    @status-updated="fetchItems" />
-            </div>
+                        <div>
+                            <label class="block mb-2 text-xs font-semibold">{{ $t('dateFilter') || 'Период' }}</label>
+                            <select v-model="dateFilter" class="w-full">
+                                <option value="all_time">{{ $t('allTime') }}</option>
+                                <option value="today">{{ $t('today') }}</option>
+                                <option value="yesterday">{{ $t('yesterday') }}</option>
+                                <option value="this_week">{{ $t('thisWeek') }}</option>
+                                <option value="this_month">{{ $t('thisMonth') }}</option>
+                                <option value="last_week">{{ $t('lastWeek') }}</option>
+                                <option value="last_month">{{ $t('lastMonth') }}</option>
+                                <option value="custom">{{ $t('selectDates') }}</option>
+                            </select>
+                        </div>
+                        
+                        <div v-if="dateFilter === 'custom'" class="space-y-2">
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('startDate') || 'Начальная дата' }}</label>
+                                <input type="date" v-model="startDate" class="w-full" />
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold">{{ $t('endDate') || 'Конечная дата' }}</label>
+                                <input type="date" v-model="endDate" class="w-full" />
+                            </div>
+                        </div>
+                    </FiltersContainer>
 
-            <!-- Загрузка -->
-            <div v-else key="loader" class="flex justify-center items-center h-64">
-                <SpinnerIcon />
-            </div>
-        </transition>
-        <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed"
-            :showTimelineButton="!!editingItem" @toggle-timeline="toggleTimeline">
-            <TaskCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-task'" ref="taskForm"
-                @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
-                @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem"
-                @update:editingItem="editingItem = $event" />
+                    <div class="flex items-center border border-gray-300 rounded overflow-hidden">
+                        <button 
+                            @click="viewMode = 'table'"
+                            class="px-3 py-2 transition-colors"
+                            :class="viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                            <i class="fas fa-table"></i>
+                        </button>
+                        <button 
+                            @click="viewMode = 'kanban'"
+                            class="px-3 py-2 transition-colors"
+                            :class="viewMode === 'kanban' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'">
+                            <i class="fas fa-columns"></i>
+                        </button>
+                    </div>
+                </template>
+                <template #right>
+                    <KanbanFieldsButton mode="tasks" />
+                </template>
+            </TableControlsBar>
+            
+            <KanbanBoard
+                :orders="kanbanTasks"
+                :statuses="statuses"
+                :projects="[]"
+                :selected-ids="selectedIds"
+                :loading="loading"
+                :currency-symbol="''"
+                :is-task-mode="true"
+                :batch-status-id="batchStatusId"
+                @order-moved="handleTaskMoved"
+                @card-dblclick="onItemClick"
+                @card-select-toggle="toggleSelectRow"
+                @column-select-toggle="handleColumnSelectToggle"
+                @batch-status-change="handleBatchStatusChangeFromToolbar"
+                @batch-delete="() => deleteItems(selectedIds)"
+                @clear-selection="() => selectedIds = []"
+                @status-updated="fetchItems"
+            />
+        </div>
 
-            <template #timeline>
-                <TimelinePanel v-if="editingItem && !timelineCollapsed" ref="timelinePanel" :type="'task'"
-                    :id="editingItem.id" @toggle-timeline="toggleTimeline" />
-            </template>
-        </SideModalDialog>
-        <NotificationToast :title="notificationTitle" :subtitle="notificationSubtitle" :show="notification"
-            :is-danger="notificationIsDanger" @close="closeNotification" />
-        <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`"
-            :confirm-text="$t('deleteSelected')" :leave-text="$t('cancel')" @confirm="confirmDeleteItems"
-            @leave="deleteDialog = false" />
-    </div>
+        <div v-else key="loader" class="min-h-64">
+            <KanbanSkeleton v-if="viewMode === 'kanban'" />
+            <TableSkeleton v-else />
+        </div>
+    </transition>
+    <SideModalDialog :showForm="modalDialog" :onclose="handleModalClose" :timelineCollapsed="timelineCollapsed"
+        :showTimelineButton="!!editingItem" @toggle-timeline="toggleTimeline">
+        <TaskCreatePage v-if="modalDialog" :key="editingItem ? editingItem.id : 'new-task'" ref="taskForm" @saved="handleSaved" @saved-error="handleSavedError" @deleted="handleDeleted"
+            @deleted-error="handleDeletedError" @close-request="closeModal" :editingItem="editingItem" 
+            @update:editingItem="editingItem = $event" />
+
+        <template #timeline>
+            <TimelinePanel v-if="editingItem && !timelineCollapsed" ref="timelinePanel" :type="'task'"
+                :id="editingItem.id" @toggle-timeline="toggleTimeline" />
+        </template>
+    </SideModalDialog>
+            <AlertDialog :dialog="deleteDialog" :descr="`${$t('confirmDeleteSelected')} (${selectedIds.length})?`" :confirm-text="$t('deleteSelected')"
+                  :leave-text="$t('cancel')" @confirm="confirmDeleteItems" @leave="deleteDialog = false" />
 </template>
 
 <script>
-import NotificationToast from '@/views/components/app/dialog/NotificationToast.vue';
 import SideModalDialog from '@/views/components/app/dialog/SideModalDialog.vue';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import Pagination from '@/views/components/app/buttons/Pagination.vue';
@@ -241,6 +266,8 @@ import { markRaw, defineAsyncComponent } from 'vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import debounce from 'lodash.debounce';
 import { translateTaskStatus } from '@/utils/translationUtils';
+import TableSkeleton from '@/views/components/app/TableSkeleton.vue';
+import KanbanSkeleton from '@/views/components/app/kanban/KanbanSkeleton.vue';
 
 const TimelinePanel = defineAsyncComponent(() =>
     import("@/views/components/app/dialog/TimelinePanel.vue")
@@ -248,26 +275,29 @@ const TimelinePanel = defineAsyncComponent(() =>
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin, companyChangeMixin, searchMixin, filtersMixin],
-    components: {
-        NotificationToast,
-        PrimaryButton,
-        SideModalDialog,
-        Pagination,
-        DraggableTable,
-        KanbanBoard,
-        TaskCreatePage,
-        BatchButton,
-        AlertDialog,
-        TableControlsBar,
-        TableFilterButton,
-        FiltersContainer,
-        KanbanFieldsButton,
+    components: { 
+        PrimaryButton, 
+        SideModalDialog, 
+        Pagination, 
+        DraggableTable, 
+        KanbanBoard, 
+        TaskCreatePage, 
+        BatchButton, 
+        AlertDialog, 
+        TableControlsBar, 
+        TableFilterButton, 
+        FiltersContainer, 
+        KanbanFieldsButton, 
         StatusSelectCell,
         TimelinePanel,
+        TableSkeleton,
+        KanbanSkeleton,
         draggable: VueDraggableNext
     },
     data() {
         return {
+            // data, loading, perPage, perPageOptions - из crudEventMixin
+            // selectedIds - из batchActionsMixin
             viewMode: localStorage.getItem('tasks_viewMode') || 'kanban',
             statusFilter: 'all',
             dateFilter: 'all_time',
@@ -299,16 +329,16 @@ export default {
                 { name: 'select', label: '#', size: 15 },
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'title', label: 'title', sortable: true },
-                {
-                    name: 'status',
-                    label: 'status',
-                    component: markRaw(StatusSelectCell),
-                    props: (i) => ({
-                        id: i.id,
-                        value: i.statusId || (i.status?.id),
-                        statuses: this.statuses,
-                        onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId)
-                    }),
+                { 
+                    name: 'status', 
+                    label: 'status', 
+                    component: markRaw(StatusSelectCell), 
+                    props: (i) => ({ 
+                        id: i.id, 
+                        value: i.statusId || (i.status?.id), 
+                        statuses: this.statuses, 
+                        onChange: (newStatusId) => this.handleChangeStatus([i.id], newStatusId) 
+                    }), 
                 },
                 { name: 'creator', label: 'creator', sortable: false },
                 { name: 'description', label: 'description', sortable: false, visible: true },
@@ -321,6 +351,7 @@ export default {
         hasActiveFilters() {
             return this.statusFilter !== 'all' || this.dateFilter !== 'all_time';
         },
+        // Преобразование data.items в формат для канбана
         kanbanTasks() {
             const tasksToUse = this.viewMode === 'kanban' ? this.allKanbanItems : (this.data?.items || []);
             return tasksToUse.map(task => {
@@ -356,21 +387,21 @@ export default {
     },
     methods: {
         formatDatabaseDateTime(date) {
-            try {
-                return formatDatabaseDateTime(date);
-            } catch (error) {
-                console.error('Ошибка форматирования даты:', error, date);
-                return date || '-';
-            }
-        },
-        formatDatabaseDate(date) {
-            try {
-                return formatDatabaseDate(date);
-            } catch (error) {
-                console.error('Ошибка форматирования даты:', error, date);
-                return date || '-';
-            }
-        },
+        try {
+            return formatDatabaseDateTime(date);
+        } catch (error) {
+            console.error('Ошибка форматирования даты:', error, date);
+            return date || '-';
+        }
+    },
+    formatDatabaseDate(date) {
+        try {
+            return formatDatabaseDate(date);
+        } catch (error) {
+            console.error('Ошибка форматирования даты:', error, date);
+            return date || '-';
+        }
+    },
 
         // formatDatabaseDateTime(date) {
         //     return formatDatabaseDateTime(date);
@@ -404,9 +435,10 @@ export default {
                 this.$router.replace({ name: 'Tasks' });
             }
         },
-
+        
         async fetchTaskStatuses() {
             try {
+                // Используем данные из store
                 await this.$store.dispatch('loadTaskStatuses');
                 this.statuses = this.$store.getters.taskStatuses || [];
             } catch (error) {
@@ -418,20 +450,20 @@ export default {
             const search = this.searchQuery;
             switch (c) {
                 case 'title':
-                    const title = i.title;
+                    const title = i.title || '-';
                     return search ? highlightMatches(title, search) : title;
                 case 'description':
-                    return i.description;
+                    return i.description || '-';
                 case 'creator':
-                    return i.creator?.name;
+                    return i.creator?.name || '-';
                 case 'supervisor':
-                    return i.supervisor?.name;
+                    return i.supervisor?.name || '-';
                 case 'executor':
-                    return i.executor?.name;
+                    return i.executor?.name || '-';
                 case 'deadline':
-                    return i.deadline ? this.formatDatabaseDateTime(i.deadline) : null;
+                    return i.deadline ? this.formatDatabaseDateTime(i.deadline) : '-';
                 case 'created_at':
-                    return i.createdAt ? this.formatDatabaseDate(i.createdAt) : null;
+                    return i.createdAt ? this.formatDatabaseDate(i.createdAt) : '-';
                 default:
                     return i[c];
             }
@@ -443,11 +475,11 @@ export default {
                     dateTo: this.endDate || null
                 };
             }
-
+            
             const today = new Date();
             const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
             const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
-
+            
             switch (this.dateFilter) {
                 case 'today':
                     return {
@@ -502,7 +534,7 @@ export default {
                 const per_page = this.viewMode === 'kanban' ? 1000 : this.perPage;
                 const status = this.statusFilter === 'all' ? '' : this.statusFilter;
                 const { dateFrom, dateTo } = this.getDateRange();
-
+                
                 const new_data = await TaskController.getItems(page, this.searchQuery, status, per_page, dateFrom, dateTo);
 
                 if (this.viewMode === 'kanban') {
@@ -514,8 +546,8 @@ export default {
             } catch (error) {
                 console.error('❌ [TasksPage.fetchItems] Ошибка загрузки:', error);
                 this.showNotification(
-                    this.$t('errorGettingTaskList'),
-                    this.getApiErrorMessage(error),
+                    this.$t('errorGettingTaskList'), 
+                    this.getApiErrorMessage(error), 
                     true
                 );
             }
@@ -541,6 +573,7 @@ export default {
                 { value: this.dateFilter, defaultValue: 'all_time' }
             ]);
         },
+        // Переопределяем метод из crudEventMixin для правильной работы с data
         refreshDataAfterOperation() {
             if (this.fetchItems) {
                 this.fetchItems(this.data?.currentPage || 1, true)
@@ -564,7 +597,7 @@ export default {
                             task.statusName = translateTaskStatus(status.name, this.$t);
                         }
                     }
-
+                    
                     this.pendingStatusUpdates.set(updateData.orderId, updateData.statusId);
                     this.debouncedStatusUpdate();
                 }
@@ -574,9 +607,9 @@ export default {
                 this.fetchItems(this.data.currentPage, true);
             }
         },
-        debouncedStatusUpdate: debounce(function () {
+        debouncedStatusUpdate: debounce(function() {
             if (this.pendingStatusUpdates.size === 0) return;
-
+            
             const promises = [];
             this.pendingStatusUpdates.forEach((statusId, taskId) => {
                 const updateData = { status_id: statusId };
@@ -586,9 +619,9 @@ export default {
                     });
                 promises.push(promise);
             });
-
+            
             this.pendingStatusUpdates.clear();
-
+            
             Promise.all(promises).then(() => {
                 this.$store.dispatch('invalidateCache', { type: 'tasks' });
                 this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
@@ -622,16 +655,16 @@ export default {
                     ids.map(id => {
                         const task = this.data.items.find(t => t.id === id);
                         const updateData = { status_id: statusId };
-
+                        
                         if (task) {
                             if (task.supervisorId) updateData.supervisor_id = task.supervisorId;
                             if (task.executorId) updateData.executor_id = task.executorId;
                         }
-
+                        
                         return TaskController.updateItem(id, updateData);
                     })
                 );
-
+                
                 await this.$store.dispatch('invalidateCache', { type: 'tasks' });
                 await this.fetchItems(this.data.currentPage, true);
                 this.showNotification(this.$t('success'), this.$t('statusUpdated'), false);
@@ -643,7 +676,7 @@ export default {
         },
         handleBatchStatusChange() {
             if (!this.batchStatusId || this.selectedIds.length === 0) return;
-
+            
             this.handleChangeStatus(this.selectedIds, this.batchStatusId);
             this.batchStatusId = '';
             this.selectedIds = [];
@@ -665,6 +698,7 @@ export default {
             if (this.$refs.timelinePanel && !this.timelineCollapsed) {
                 this.$refs.timelinePanel.refreshTimeline();
             }
+            // Вызываем стандартную обработку из crudEventMixin
             this.refreshDataAfterOperation();
         },
         async handleCompanyChanged(companyId) {
@@ -673,11 +707,11 @@ export default {
             this.startDate = '';
             this.endDate = '';
             this.selectedIds = [];
-
+            
             await this.fetchItems(1, false);
-
+            
             this.$store.dispatch('showNotification', {
-                title: this.$t('companyChanged'),
+                title: 'Компания изменена',
                 isDanger: false
             });
         },
