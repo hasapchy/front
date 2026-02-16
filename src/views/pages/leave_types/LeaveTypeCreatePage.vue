@@ -13,6 +13,10 @@
                     class="flex-1" pattern="^#[0-9A-Fa-f]{6}$">
             </div>
         </div>
+        <div class="mb-4 flex items-center gap-2">
+            <input type="checkbox" id="is_penalty" v-model="isPenalty" class="rounded border-gray-300">
+            <label for="is_penalty">{{ $t('leaveTypeIsPenaltyDays') }}</label>
+        </div>
     </div>
     <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
         <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
@@ -52,6 +56,7 @@ export default {
         return {
             name: this.editingItem ? this.editingItem.name : '',
             color: this.editingItem && this.editingItem.color ? this.editingItem.color : '#3B82F6',
+            isPenalty: this.editingItem ? Boolean(this.editingItem.isPenalty) : false,
         }
     },
     mounted() {
@@ -63,13 +68,15 @@ export default {
         getFormState() {
             return {
                 name: this.name,
-                color: this.color
+                color: this.color,
+                isPenalty: this.isPenalty
             };
         },
         prepareSave() {
             return {
                 name: this.name.trim(),
-                color: this.color && this.color.trim() ? this.color.trim() : null
+                color: this.color && this.color.trim() ? this.color.trim() : null,
+                is_penalty: this.isPenalty
             };
         },
         async performSave(data) {
@@ -94,6 +101,7 @@ export default {
         clearForm() {
             this.name = '';
             this.color = '#3B82F6';
+            this.isPenalty = false;
             if (this.resetFormChanges) {
                 this.resetFormChanges();
             }
@@ -101,6 +109,7 @@ export default {
         onEditingItemChanged(newEditingItem) {
             this.name = newEditingItem.name || '';
             this.color = newEditingItem.color || '#3B82F6';
+            this.isPenalty = Boolean(newEditingItem.isPenalty);
         }
     }
 }

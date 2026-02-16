@@ -168,6 +168,7 @@ export default {
   errorGettingOrder: 'Error getting order',
   errorGettingOrderList: 'Error getting order list',
   saveOrderFirst: 'Save order first',
+  saveProductFirst: 'Save product first',
   toPay: 'To Pay',
   paid: 'Paid',
   total: 'Total',
@@ -281,6 +282,10 @@ export default {
   performanceMonitor: 'Monitoring',
   
   // Balance
+  history: 'History',
+  filterAll: 'All',
+  filterIncome: 'Income',
+  filterExpense: 'Expense',
   balanceHistory: 'Balance History',
   payments: 'Payments',
   operations: 'Operations',
@@ -609,6 +614,7 @@ export default {
     allUsers: 'All Users',
     allLeaveTypes: 'All Types',
     selectLeaveType: 'Select Leave Type',
+    leaveTypeIsPenaltyDays: 'Penalty days',
     selectUser: 'Select User',
     leaveTypeSuccessfullyAdded: 'Leave type successfully added',
     errorSavingLeaveType: 'Error saving leave type',

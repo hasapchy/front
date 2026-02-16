@@ -280,14 +280,8 @@ export default {
             if (searchTerm && searchTerm.length >= 3) {
                 this.productSearchLoading = true;
                 try {
-                    const results = await ProductController.search(searchTerm);
-                    let products = results;
-
-                    if (this.onlyProducts) {
-                        products = products.filter(p => Boolean(p.type));
-                    }
-
-                    this.productResults = products;
+                    const results = await ProductController.search(searchTerm, this.onlyProducts ? true : null);
+                    this.productResults = results || [];
                     this.productSearchLoading = false;
                 } catch (error) {
                     this.productResults = [];

@@ -15,5 +15,6 @@ export const translateInvoiceStatus = (status, t) => {
     return t(status) || status;
 };
 export const translateLeaveType = (name, t) => translate('leaveType', name, t);
+export const translateContractType = (name, t) => translate('contractType', name, t);
 export const translateCurrency = (name, t) => translate('currency', name, t);
 

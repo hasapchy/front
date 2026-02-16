@@ -1913,7 +1913,10 @@ const store = createStore({
       return state.menuItems.main.filter((item) => {
         if (!item) return false;
         
-        // Проверяем права доступа для всех пользователей
+        if (item.id === 'simple-orders') {
+          return getters.hasPermission('orders_simple_view') && !getters.hasPermission('orders_view');
+        }
+        
         if (!item.permission) return true;
         return getters.hasPermission(item.permission);
       });
@@ -1932,7 +1935,10 @@ const store = createStore({
       return state.menuItems.available.filter((item) => {
         if (!item) return false;
         
-        // Проверяем права доступа для всех пользователей
+        if (item.id === 'simple-orders') {
+          return getters.hasPermission('orders_simple_view') && !getters.hasPermission('orders_view');
+        }
+        
         if (!item.permission) return true;
         return getters.hasPermission(item.permission);
       });

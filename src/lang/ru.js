@@ -520,6 +520,7 @@ export default {
   user: 'Сотрудник',
   cashRegister: 'Касса',
   saveOrderFirst: 'Сначала сохраните заказ, чтобы добавить/просматривать операции',
+  saveProductFirst: 'Сначала сохраните товар',
 
   // Дополнительные сообщения
   noTransactions: 'Транзакции отсутствуют',
@@ -627,6 +628,10 @@ export default {
   errorCreatingProduct: 'Ошибка создания товара',
 
   // Баланс
+  history: 'История',
+  filterAll: 'Все',
+  filterIncome: 'Приход',
+  filterExpense: 'Расход',
   balanceHistory: 'История баланса',
   payments: 'Платежи',
   paymentsHistory: 'История платежей',
@@ -1513,6 +1518,7 @@ export default {
   allUsers: 'Все сотрудники',
   allLeaveTypes: 'Все типы',
   selectLeaveType: 'Выберите тип отпуска',
+  leaveTypeIsPenaltyDays: 'Штрафные дни',
   selectUser: 'Выберите сотрудника',
   leaveTypeSuccessfullyAdded: 'Тип отпуска успешно добавлен',
   errorSavingLeaveType: 'Ошибка сохранения типа отпуска',

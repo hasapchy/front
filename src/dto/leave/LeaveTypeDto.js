@@ -6,12 +6,14 @@ export default class LeaveTypeDto {
     id,
     name,
     color = null,
+    isPenalty = false,
     createdAt = "",
     updatedAt = ""
   ) {
     this.id = id;
     this.name = name;
     this.color = color;
+    this.isPenalty = isPenalty;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
@@ -30,6 +32,7 @@ export default class LeaveTypeDto {
         data.id,
         data.name,
         data.color || null,
+        Boolean(data.is_penalty),
         data.created_at,
         data.updated_at
       );

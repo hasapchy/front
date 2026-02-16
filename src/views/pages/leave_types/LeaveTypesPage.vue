@@ -81,6 +81,7 @@ import batchActionsMixin from '@/mixins/batchActionsMixin';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
 import getApiErrorMessageMixin from '@/mixins/getApiErrorMessageMixin';
 import SpinnerIcon from '@/views/components/app/SpinnerIcon.vue';
+import { translateLeaveType } from '@/utils/translationUtils';
 
 export default {
     mixins: [modalMixin, notificationMixin, crudEventMixin, batchActionsMixin, getApiErrorMessageMixin],
@@ -114,6 +115,7 @@ export default {
                 { name: 'id', label: 'number', size: 60 },
                 { name: 'name', label: 'name' },
                 { name: 'color', label: 'color', size: 100, html: true },
+                { name: 'isPenalty', label: 'leaveTypeIsPenaltyDays', size: 120 },
                 { name: 'createdAt', label: 'creationDate' }
             ]
         }
@@ -137,6 +139,8 @@ export default {
     methods: {
         itemMapper(i, c) {
             switch (c) {
+                case 'name':
+                    return translateLeaveType(i.name, this.$t);
                 case 'createdAt':
                     return i.formatCreatedAt();
                 case 'color':
@@ -144,6 +148,8 @@ export default {
                         return `<div style="width: 20px; height: 20px; background-color: ${i.color}; border-radius: 4px; display: inline-block; border: 1px solid #ddd;"></div>`;
                     }
                     return '-';
+                case 'isPenalty':
+                    return i.isPenalty ? this.$t('yes') : this.$t('no');
                 default:
                     return i[c];
             }

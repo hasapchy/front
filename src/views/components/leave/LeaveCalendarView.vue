@@ -98,7 +98,7 @@
                         class="w-5 h-5 rounded" 
                         :style="{ backgroundColor: leaveType.color || '#9CA3AF' }"
                     ></div>
-                    <span class="text-sm">{{ getLeaveTypeName(leaveType.name) }}</span>
+                    <span class="text-sm">{{ getLeaveTypeName(leaveType.name) }}{{ leaveType.isPenalty ? ` (${$t('leaveTypeIsPenaltyDays')})` : '' }}</span>
                 </div>
             </div>
         </div>

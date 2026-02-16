@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <div class="flex flex-col overflow-auto h-full p-4">
+    <div class="flex flex-col h-full min-h-0">
+        <div class="flex-1 min-h-0 overflow-y-auto p-4">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editReceipt') : $t('createReceipt') }}</h2>
 
         <ClientSearch :selectedClient="selectedClient" @update:selectedClient="selectedClient = $event" :onlySuppliers="true" :disabled="!!editingItemId"
@@ -62,7 +62,7 @@
             :is-receipt="true" :show-amount="editingItemId == null" :only-products="true" :warehouse-id="warehouseId" required />
         </div>
     
-    <div class="mt-4 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap">
+    <div class="flex-shrink-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200">
         <div class="flex items-center space-x-2">
             <PrimaryButton v-if="editingItemId != null" :onclick="showDeleteDialog" :is-danger="true"
                 :is-loading="deleteLoading" icon="fas fa-trash"

@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="flex flex-col overflow-auto h-full p-4">
+  <div class="flex flex-col h-full min-h-0">
+    <div class="flex-1 min-h-0 overflow-y-auto p-4">
       <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editClient') : $t('createClient') }}</h2>
       <TabBar :key="`tabs-${$i18n.locale}`" :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => {
         changeTab(t);
@@ -121,7 +121,7 @@
       </div>
 
     </div>
-    <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+    <div class="flex-shrink-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200">
       <PrimaryButton v-if="editingItem != null" :onclick="showDeleteDialog" :is-danger="true"
         :is-loading="deleteLoading" icon="fas fa-trash" :disabled="!$store.getters.hasPermission('clients_delete')">
       </PrimaryButton>

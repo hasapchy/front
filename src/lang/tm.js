@@ -402,6 +402,7 @@ export default {
   user: 'Işgär',
   cashRegister: 'Kassa',
   saveOrderFirst: 'Ilki sargyty saklaň, soňra tranzaksiyalary goşup/görüp bilersiňiz',
+  saveProductFirst: 'Ilki önümi saklaň',
   barcode: 'Ştrix kod',
   sku: 'SKU',
   purchasePrice: 'Satyn alnan bahasy',
@@ -520,6 +521,10 @@ export default {
   errorCreatingProduct: 'Önüm döretmekde ýalňyşlyk',
   
   // Баланс
+  history: 'Taryh',
+  filterAll: 'Ählisi',
+  filterIncome: 'Gelir',
+  filterExpense: 'Çykdajy',
   balanceHistory: 'Balans taryhy',
   payments: 'Tölegler',
   operations: 'Amallar',
@@ -1266,6 +1271,7 @@ export default {
   allUsers: 'Ähli işgärler',
   allLeaveTypes: 'Ähli görnüşler',
   selectLeaveType: 'Dynç alyş görnüşini saýlaň',
+  leaveTypeIsPenaltyDays: 'Jeza günleri',
   selectUser: 'Işgäri saýlaň',
   leaveTypeSuccessfullyAdded: 'Dynç alyş görnüşi üstünlikli goşuldy',
   errorSavingLeaveType: 'Dynç alyş görnüşini saklamakda ýalňyşlyk',

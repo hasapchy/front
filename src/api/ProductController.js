@@ -27,6 +27,10 @@ export default class ProductController extends BaseController {
     );
   }
 
+  static async search(searchTerm, productsOnly = null, warehouseId = null) {
+    return this.searchItems(searchTerm, productsOnly, warehouseId);
+  }
+
   static async searchItems($search_term, productsOnly = null, warehouseId = null) {
     return super.handleRequest(
       async () => {
@@ -81,5 +85,15 @@ export default class ProductController extends BaseController {
       return null;
     }
     return ProductDto.fromApiArray([data.item])[0] || null;
+  }
+
+  static async getHistory(productId, filter = 'all') {
+    return super.handleRequest(
+      async () => {
+        const { data } = await api.get(`/products/${productId}/history`, { params: { filter } });
+        return data;
+      },
+      "Ошибка при загрузке истории товара"
+    );
   }
 }

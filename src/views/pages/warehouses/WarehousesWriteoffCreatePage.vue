@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <div class="flex flex-col overflow-auto h-full p-4">
+    <div class="flex flex-col h-full min-h-0">
+        <div class="flex-1 min-h-0 overflow-y-auto p-4">
             <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editWriteoff') : $t('createWriteoff') }}</h2>
 
             <div class="mt-2">
@@ -24,7 +24,7 @@
             <ProductSearch v-model="products" :disabled="!!editingItemId" :show-quantity="true" :only-products="true"
                 :warehouse-id="warehouseId" required />
         </div>
-        <div class="mt-4 p-4 flex space-x-2 bg-[#edf4fb]">
+        <div class="flex-shrink-0 p-4 flex space-x-2 bg-[#edf4fb] border-t border-gray-200">
             <PrimaryButton v-if="editingItemId != null" :onclick="showDeleteDialog" :is-danger="true"
                 :is-loading="deleteLoading" icon="fas fa-trash"
                 :disabled="!$store.getters.hasPermission('warehouse_writeoffs_delete')">
