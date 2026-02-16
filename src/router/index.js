@@ -6,6 +6,7 @@ import SidebarLayout from "@/views/layouts/SidebarLayout.vue";
 import BlankLayout from "@/views/layouts/BlankLayout.vue";
 
 import LoginPage from "@/views/pages/auth/LoginPage.vue";
+import MaintenancePage from "@/views/pages/MaintenancePage.vue";
 import WarehousesPage from "@/views/pages/warehouses/WarehousesPage.vue";
 import AdminWarehousesPage from "@/views/pages/admin/warehouses/AdminWarehousesPage.vue";
 import CategoriesPage from "@/views/pages/categories/CategoriesPage.vue";
@@ -974,6 +975,18 @@ const routes = [
         path: "/auth/login",
         name: "Login",
         component: LoginPage,
+      },
+    ],
+  },
+  {
+    path: "/maintenance",
+    name: "Maintenance",
+    component: BlankLayout,
+    children: [
+      {
+        path: "",
+        name: "MaintenancePage",
+        component: MaintenancePage,
       },
     ],
   },

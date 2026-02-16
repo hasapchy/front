@@ -3,6 +3,8 @@ import AuthController from "./AuthController";
 import { startApiCall, endApiCall, getStore } from "@/store/storeManager";
 import TokenUtils from "@/utils/tokenUtils";
 
+const MAINTENANCE_BYPASS_KEY = "maintenance_bypass";
+
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_APP_BASE_URL || "http://127.0.0.1"}/api`,
   timeout: 30000,
@@ -11,9 +13,19 @@ const api = axios.create({
   },
 });
 
+export function getMaintenanceBypassKey() {
+  return MAINTENANCE_BYPASS_KEY;
+}
+
 api.interceptors.request.use(
   async (config) => {
     startApiCall();
+
+    const bypass = localStorage.getItem(MAINTENANCE_BYPASS_KEY);
+    if (bypass) {
+      config.headers["X-Maintenance-Bypass"] = bypass;
+      console.log("Maintenance bypass header set:", bypass);
+    }
 
     const token = TokenUtils.getToken();
 
@@ -70,6 +82,13 @@ api.interceptors.response.use(
             isDanger: true,
           });
         }
+      }
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status === 503) {
+      if (window.location.pathname !== "/maintenance") {
+        window.location.href = "/maintenance";
       }
       return Promise.reject(error);
     }
