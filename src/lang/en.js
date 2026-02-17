@@ -199,6 +199,7 @@ export default {
   errorGettingOrder: 'Error getting order',
   errorGettingOrderList: 'Error getting order list',
   saveOrderFirst: 'Save order first',
+  saveContractFirst: 'Save contract first',
   saveProductFirst: 'Save product first',
   toPay: 'To Pay',
   paid: 'Paid',
@@ -448,6 +449,8 @@ export default {
   // Transaction Categories
   createTransactionCategory: 'Transaction Category',
   editTransactionCategory: 'Transaction Category',
+  deleteTransaction: 'Delete transaction',
+  deleteTransactionLinkedToContract: 'Are you sure? The transaction is linked to a contract.',
   deleteTransactionCategory: 'Delete Transaction Category',
   transactionCategorySuccessfullyAdded: 'Transaction category successfully added',
   transactionCategorySuccessfullyDeleted: 'Transaction category successfully deleted',
@@ -490,6 +493,7 @@ export default {
   'transactionCategory.PREMIUM': 'Premium',
   'transactionCategory.FINE': 'Fine',
   'transactionCategory.RENT_INCOME': 'Rent Income',
+  'transactionCategory.CONTRACT': 'Contract',
   
   // Payment types
   paymentType: 'Payment Type',

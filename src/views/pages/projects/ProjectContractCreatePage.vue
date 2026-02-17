@@ -1,8 +1,10 @@
 <template>
     <div class="h-full flex flex-col">
-        <div class="flex flex-col overflow-auto flex-1 p-4">
+        <div class="flex flex-col overflow-auto flex-1 p-4 pb-24">
         <h2 class="text-lg font-bold mb-4">{{ editingItem ? $t('editContract') : $t('addContract') }}</h2>
+        <TabBar :tabs="translatedTabs" :active-tab="currentTab" :tab-click="(t) => { changeTab(t) }" />
         <div>
+            <div v-show="currentTab === 'info'">
             <div v-if="!projectId">
                 <label class="required">{{ $t('project') }}</label>
                 <select v-model="selectedProjectId" :disabled="!!editingItem" required>
@@ -55,14 +57,31 @@
                 <label>{{ $t('note') }}</label>
                 <textarea v-model="note" :placeholder="$t('enterNote')" rows="3"></textarea>
             </div>
+            </div>
+            <div v-show="currentTab === 'transactions'">
+                <template v-if="transactionsTabVisited">
+                    <ContractTransactionsTab v-if="editingItemId" :contract-id="editingItemId" :client="contractClient"
+                        :project-id="effectiveProjectId" :cash-id="cashId" @updated="$emit('refresh-contract')" />
+                    <div v-else class="p-4 text-gray-500">
+                        {{ $t('saveContractFirst') }}
+                    </div>
+                </template>
+            </div>
         </div>
         </div>
-        <div class="mt-auto p-4 flex space-x-2 bg-[#edf4fb]">
-        <PrimaryButton v-if="editingItem != null && $store.getters.hasPermission('projects_delete')"
-            :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading" icon="fas fa-trash">
-        </PrimaryButton>
-        <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
-        </PrimaryButton>
+        <div class="fixed bottom-0 left-0 right-0 p-4 flex items-center justify-between bg-[#edf4fb] gap-4 flex-wrap md:flex-nowrap border-t border-gray-200 z-10">
+        <div class="flex items-center gap-2">
+            <PrimaryButton v-if="editingItem != null && $store.getters.hasPermission('projects_delete')"
+                :onclick="showDeleteDialog" :is-danger="true" :is-loading="deleteLoading" icon="fas fa-trash">
+            </PrimaryButton>
+            <PrimaryButton icon="fas fa-save" :onclick="save" :is-loading="saveLoading" :aria-label="$t('save')">
+            </PrimaryButton>
+        </div>
+        <div v-if="editingItemId" class="text-sm text-gray-700 flex flex-wrap md:flex-nowrap gap-x-4 gap-y-1 font-medium">
+            <div>{{ $t('toPay') }}: <span class="font-bold">{{ formatCurrency(parseFloat(amount) || 0, currencySymbol, 2, true) }}</span></div>
+            <div>{{ $t('paid') }}: <span class="font-bold">{{ formatCurrency(paidTotalAmount, currencySymbol, 2, true) }}</span></div>
+            <div>{{ $t('total') }}: <span class="font-bold" :class="remainingAmountClass">{{ formatCurrency(remainingAmount, currencySymbol, 2, true) }}</span></div>
+        </div>
         </div>
         <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog" :descr="$t('deleteContract')"
             :confirm-text="$t('delete')" :leave-text="$t('cancel')" />
@@ -75,7 +94,10 @@
 import ProjectContractController from '@/api/ProjectContractController';
 import PrimaryButton from '@/views/components/app/buttons/PrimaryButton.vue';
 import AlertDialog from '@/views/components/app/dialog/AlertDialog.vue';
+import TabBar from '@/views/components/app/forms/TabBar.vue';
+import ContractTransactionsTab from '@/views/pages/projects/ContractTransactionsTab.vue';
 import getApiErrorMessage from '@/mixins/getApiErrorMessageMixin';
+import { formatCurrency } from '@/utils/numberUtils';
 import formChangesMixin from "@/mixins/formChangesMixin";
 import notificationMixin from "@/mixins/notificationMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
@@ -85,8 +107,8 @@ import { translateCurrency } from '@/utils/translationUtils';
 
 export default {
     mixins: [getApiErrorMessage, formChangesMixin, notificationMixin, crudFormMixin, dateFormMixin, storeDataLoaderMixin],
-    components: { /* FileUploader, */ PrimaryButton, AlertDialog },
-    emits: ['saved', 'saved-error', 'close-request'],
+    components: { PrimaryButton, AlertDialog, TabBar, ContractTransactionsTab },
+    emits: ['saved', 'saved-error', 'deleted', 'deleted-error', 'close-request', 'refresh-contract'],
     props: {
         editingItem: {
             type: Object,
@@ -99,6 +121,31 @@ export default {
         }
     },
     computed: {
+        effectiveProjectId() {
+            return this.projectId || this.selectedProjectId || (this.editingItem?.projectId ?? null);
+        },
+        contractClient() {
+            return this.editingItem?.project?.client ?? null;
+        },
+        paidTotalAmount() {
+            return this.editingItem?.paidAmount ?? this.editingItem?.paid_amount ?? 0;
+        },
+        remainingAmount() {
+            return (parseFloat(this.amount) || 0) - this.paidTotalAmount;
+        },
+        remainingAmountClass() {
+            const remaining = this.remainingAmount;
+            if (remaining > 0) return 'text-red-500';
+            if (remaining < 0) return 'text-green-500';
+            return 'text-gray-700';
+        },
+        translatedTabs() {
+            return this.tabs.map(tab => ({ ...tab, label: this.$t(tab.label) }));
+        },
+        currencySymbol() {
+            const currency = this.currencies.find(c => c.id == this.currencyId);
+            return currency?.symbol ?? '';
+        },
         filteredCashRegisters() {
             if (this.type === undefined || this.type === null) {
                 return this.cashRegisters;
@@ -112,13 +159,18 @@ export default {
     data() {
         const initialType = this.editingItem ? (this.editingItem.type !== undefined ? this.editingItem.type : 0) : 0;
         return {
+            currentTab: 'info',
+            transactionsTabVisited: false,
+            tabs: [
+                { name: 'info', label: 'info' },
+                { name: 'transactions', label: 'transactions' }
+            ],
             number: this.editingItem ? this.editingItem.number : '',
             type: initialType,
             amount: this.editingItem ? this.editingItem.amount : '',
             currencyId: this.editingItem ? this.editingItem.currencyId : '',
             cashId: this.editingItem ? (this.editingItem.cashId || '') : '',
             date: this.editingItem?.date ? this.getDateOnly(this.editingItem.date) : this.getCurrentLocalDateTime().substring(0, 10),
-            returned: this.editingItem ? this.editingItem.returned : false,
             note: this.editingItem ? this.editingItem.note : '',
             currencies: [],
             cashRegisters: [],
@@ -164,18 +216,25 @@ export default {
         }
     },
     methods: {
+        formatCurrency,
         translateCurrency,
+        changeTab(tabName) {
+            this.currentTab = tabName;
+            if (tabName === 'transactions' && !this.transactionsTabVisited) {
+                this.transactionsTabVisited = true;
+            }
+        },
         getDateOnly(date) {
             return this.getFormattedDate(date).substring(0, 10);
         },
         clearForm() {
+            this.transactionsTabVisited = false;
             this.number = '';
             this.type = 0;
             this.amount = '';
             this.currencyId = '';
             this.cashId = '';
             this.date = this.getCurrentLocalDateTime().substring(0, 10);
-            this.returned = false;
             this.note = '';
             if (this.resetFormChanges) {
                 this.resetFormChanges();
@@ -205,7 +264,6 @@ export default {
                 }
                 
                 this.date = formattedDate;
-                this.returned = newEditingItem.returned || false;
                 this.note = newEditingItem.note || '';
                 this.selectedProjectId = newEditingItem.projectId || null;
             }
@@ -218,7 +276,6 @@ export default {
                 currencyId: this.currencyId,
                 cashId: this.cashId,
                 date: this.date,
-                returned: this.returned,
                 note: this.note
             };
         },
@@ -255,7 +312,6 @@ export default {
                 currencyId: this.currencyId,
                 cashId: this.cashId,
                 date: this.date,
-                returned: this.returned,
                 note: this.note
             };
 
@@ -289,9 +345,8 @@ export default {
                 this.clearForm();
             }
         },
-        onDeleteSuccess(response) {
-            this.showNotification('Успех', response.message || 'Контракт успешно удален', false);
-            this.$emit('saved');
+        onDeleteSuccess() {
+            this.showNotification('Успех', 'Контракт успешно удален', false);
         },
         handleCloseRequest() {
             this.$emit('close-request');

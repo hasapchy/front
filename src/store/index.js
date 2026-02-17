@@ -265,6 +265,7 @@ const store = createStore({
       userPermissions: false,
       currentCompany: false,
     },
+    appInitializing: false,
     // ✅ Флаги для отслеживания уже залогированных данных (чтобы не спамить логи)
     loggedDataFlags: {
       warehouses: false,
@@ -490,6 +491,9 @@ const store = createStore({
     },
     SET_LOADING_FLAG(state, { type, loading }) {
       state.loadingFlags[type] = loading;
+    },
+    SET_APP_INITIALIZING(state, value) {
+      state.appInitializing = value;
     },
     // ✅ Управление флагами залогированных данных
     SET_LOGGED_DATA_FLAG(state, { type, logged }) {
@@ -1167,36 +1171,34 @@ const store = createStore({
           throw new Error(t("failedToFetchUserData"));
         }
 
+        commit("SET_APP_INITIALIZING", true);
         await dispatch("setUser", userData.user);
         await dispatch("setPermissions", userData.user?.permissions || userData.permissions || []);
         await dispatch("initializeMenu");
-
-        // if (!isSimpleWorker) {
+        try {
           await Promise.all([
             dispatch("loadCurrencies"),
             dispatch("loadUnits"),
           ]);
+          await dispatch("loadUserCompanies");
+          await dispatch("loadCurrentCompany", { skipPermissionRefresh: false });
+        } catch (error) {
+          console.error("Error loading companies:", error);
+        } finally {
+          commit("SET_APP_INITIALIZING", false);
+        }
 
-          try {
-            await dispatch("loadUserCompanies");
-            await dispatch("loadCurrentCompany", { skipPermissionRefresh: false });
-          } catch (error) {
-            console.error("Error loading companies:", error);
-          }
-
-          // Инициализируем глобальный WebSocket для чатов
-          try {
-            console.log("Инициализируем глобальный WebSocket для чатов");
-            await globalChatRealtime.initialize(store);
-
-          } catch (error) {
-            console.error("[Store] Ошибка инициализации глобального chatRealtime:", error);
-          }
-        // }
+        try {
+          console.log("Инициализируем глобальный WebSocket для чатов");
+          await globalChatRealtime.initialize(store);
+        } catch (error) {
+          console.error("[Store] Ошибка инициализации глобального chatRealtime:", error);
+        }
 
         return { authenticated: true };
       } catch (error) {
         console.error("Error fetching user:", error);
+        commit("SET_APP_INITIALIZING", false);
         await dispatch("setUser", null);
         await dispatch("setPermissions", []);
         TokenUtils.clearAuthData();

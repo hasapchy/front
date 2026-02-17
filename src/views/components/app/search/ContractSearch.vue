@@ -33,7 +33,7 @@
             <div class="p-2 pt-0 border-2 border-gray-400/60 rounded-md">
                 <div class="flex justify-between items-center">
                     <div>
-                        <label :class="{ 'required': required }">{{ $t('contract') }}</label>
+                        <label :class="{ 'required': required }">{{ $t('contract') }}{{ selectedContract?.id ? ` #${selectedContract.id}` : '' }}</label>
                         <p><span class="font-semibold text-sm">{{ contractDisplayTitle(selectedContract) }}</span></p>
                         <p><span class="text-xs">{{ $t('amount') }}:</span> <span class="font-semibold text-sm">{{ selectedContract.formatAmount ? selectedContract.formatAmount() : formatContractAmount(selectedContract) }}</span></p>
                     </div>
@@ -54,6 +54,10 @@ export default {
     props: {
         selectedContract: {
             type: Object,
+            default: null,
+        },
+        contractId: {
+            type: [Number, String],
             default: null,
         },
         projectId: {
@@ -99,7 +103,7 @@ export default {
         },
         formatContractAmount(contract) {
             const amount = contract?.amount ?? 0;
-            const symbol = contract?.currencySymbol ?? contract?.currency_symbol ?? '';
+            const symbol = contract?.currencySymbol ?? contract?.currency_symbol ?? contract?.currency?.symbol ?? '';
             return formatCurrency(amount, symbol, null, true);
         },
         async fetchLastContracts() {
@@ -155,6 +159,19 @@ export default {
     watch: {
         contractSearch: {
             handler: 'searchContracts',
+            immediate: true,
+        },
+        contractId: {
+            async handler(id) {
+                if (id && !this.selectedContract) {
+                    try {
+                        const contract = await ProjectContractController.getItem(id);
+                        this.$emit('update:selectedContract', contract);
+                    } catch (e) {
+                        this.$emit('update:selectedContract', null);
+                    }
+                }
+            },
             immediate: true,
         },
         projectId() {

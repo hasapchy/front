@@ -202,7 +202,7 @@ export default class OrderDto {
         data.category_id ?? category.id ?? null,
         category.name ?? null,
         data.client_id,
-        data.user_id,
+        data.creator_id,
         user.name ?? null,
         user.photo ?? null,
         data.cash_id ?? cash.id ?? null,

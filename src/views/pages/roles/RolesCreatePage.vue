@@ -61,7 +61,7 @@
                                     <span>{{ $t('create') }}</span>
                                 </div>
 
-                                <!-- View: All / Own (или только All для ресурсов без user_id) -->
+                                <!-- View: All / Own (или только All для ресурсов без creator_id) -->
                                 <div v-if="resource.view && resource.view.all" class="flex items-center gap-3 pl-4">
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <input type="checkbox" :value="resource.view.all.name"
@@ -84,7 +84,7 @@
                                     </label>
                                 </div>
 
-                                <!-- Update: All / Own (или только All для ресурсов без user_id) -->
+                                <!-- Update: All / Own (или только All для ресурсов без creator_id) -->
                                 <div v-if="resource.update && resource.update.all" class="flex items-center gap-3 pl-4">
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <input type="checkbox" :value="resource.update.all.name"
@@ -107,7 +107,7 @@
                                     </label>
                                 </div>
 
-                                <!-- Delete: All / Own (или только All для ресурсов без user_id) -->
+                                <!-- Delete: All / Own (или только All для ресурсов без creator_id) -->
                                 <div v-if="resource.delete && resource.delete.all" class="flex items-center gap-3 pl-4">
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <input type="checkbox" :value="resource.delete.all.name"
@@ -227,7 +227,7 @@ export default {
     computed: {
         resourcesWithoutUserId() {
             return Object.keys(PERMISSIONS_CONFIG.resources)
-                .filter(key => !PERMISSIONS_CONFIG.resources[key].has_user_id);
+                .filter(key => !PERMISSIONS_CONFIG.resources[key].has_creator_id);
         },
         resourcesWithManyToMany() {
             return Object.keys(PERMISSIONS_CONFIG.resources)
@@ -253,7 +253,7 @@ export default {
                 if (!resourceConfig) return;
 
                 const resource = parsed.resources[resourceKey];
-                const hasUserId = resourceConfig.has_user_id;
+                const hasUserId = resourceConfig.has_creator_id;
                 const scopeActions = resourceConfig.scope_actions || [];
 
                 resources[resourceKey] = {};

@@ -45,7 +45,7 @@ export default class WarehouseWriteoffDto {
         data.warehouse_name,
         products,
         data.note,
-        data.user_id,
+        data.creator_id,
         data.user_name,
         data.created_at,
         data.updated_at

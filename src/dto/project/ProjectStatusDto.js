@@ -37,7 +37,7 @@ export default class ProjectStatusDto {
         data.name,
         data.color,
         data.is_tr_visible ?? true,
-        data.user_id,
+        data.creator_id,
         data.user,
         data.created_at,
         data.updated_at

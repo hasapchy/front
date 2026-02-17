@@ -433,6 +433,7 @@ export default {
   user: 'Işgär',
   cashRegister: 'Kassa',
   saveOrderFirst: 'Ilki sargyty saklaň, soňra tranzaksiyalary goşup/görüp bilersiňiz',
+  saveContractFirst: 'Ilki şertnamany saklaň, soňra tranzaksiyalary goşup/görüp bilersiňiz',
   saveProductFirst: 'Ilki önümi saklaň',
   barcode: 'Ştrix kod',
   sku: 'SKU',
@@ -460,6 +461,7 @@ export default {
   deleteOrderStatusCategory: 'Sargyt ýagdaý kategoriýasyny poz',
   deleteProject: 'Layihäni poz',
   deleteTransaction: 'Tranzaksiyany poz',
+  deleteTransactionLinkedToContract: 'Ynanýarsyňyzmy? Tranzaksiýa şertnamaga baglanyşykly.',
   deleteTransfer: 'Transferi poz',
   deleteWarehouse: 'Ammary poz',
   deleteCashRegister: 'Kassa',
@@ -1218,6 +1220,7 @@ export default {
   'transactionCategory.PREMIUM': 'Premiýa',
   'transactionCategory.FINE': 'Jäza',
   'transactionCategory.RENT_INCOME': 'Iýe tölegi',
+  'transactionCategory.CONTRACT': 'Şertnama',
   
   // Payment types
   paymentType: 'Töleg görnüşi',

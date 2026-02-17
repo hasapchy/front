@@ -21,7 +21,7 @@ export default class OrderStatusCategoryDto {
         data.id,
         data.name,
         data.color,
-        data.user_id,
+        data.creator_id,
         data.created_at,
         data.updated_at
       );

@@ -119,6 +119,7 @@ import notificationMixin from "@/mixins/notificationMixin";
 import formChangesMixin from "@/mixins/formChangesMixin";
 import crudFormMixin from "@/mixins/crudFormMixin";
 import dateFormMixin from "@/mixins/dateFormMixin";
+import { getCurrentLocalDateTime } from "@/utils/dateUtils";
 import { generateInvoicePdf, InvoicePdfGenerator } from "@/utils/pdfUtils";
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
@@ -155,15 +156,7 @@ export default {
             currencySymbol: '',
             formData: {
                 client_id: null,
-                invoice_date: (() => {
-                    const now = new Date();
-                    const year = now.getFullYear();
-                    const month = String(now.getMonth() + 1).padStart(2, '0');
-                    const day = String(now.getDate()).padStart(2, '0');
-                    const hours = String(now.getHours()).padStart(2, '0');
-                    const minutes = String(now.getMinutes()).padStart(2, '0');
-                    return `${year}-${month}-${day}T${hours}:${minutes}`;
-                })(),
+                invoice_date: getCurrentLocalDateTime(),
                 status: 'new',
                 note: '',
                 order_ids: [],

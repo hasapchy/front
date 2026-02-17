@@ -7,7 +7,7 @@ const toNumberOrNull = (v) => {
   return Number.isNaN(n) ? null : n;
 };
 
-const getMessageUserId = (msg) => toNumberOrNull(msg?.user_id ?? msg?.userId ?? msg?.user?.id);
+const getMessageUserId = (msg) => toNumberOrNull(msg?.creator_id ?? msg?.userId ?? msg?.user?.id);
 
 const getMessageChatId = (msg) => toNumberOrNull(msg?.chat_id ?? msg?.chatId);
 
@@ -64,7 +64,7 @@ export function buildIncomingMessage(event) {
   return {
     id: event.id,
     chat_id: event.chat_id,
-    user_id: event.user?.id,
+    creator_id: event.user?.id,
     body: event.body,
     files: event.files,
     created_at: event.created_at,
@@ -111,13 +111,6 @@ export function applyIncomingMessage({ messages, chats, generalChat, selectedCha
   const chatId = getMessageChatId(newMessage);
   const selectedIdNum = toNumberOrNull(selectedChatId);
   const isCurrentChat = chatId && selectedIdNum && Number(chatId) === Number(selectedIdNum);
-  
-  console.log("[ChatState] 🔄 applyIncomingMessage:", {
-    chatId,
-    selectedChatId: selectedIdNum,
-    isCurrentChat,
-    messageId: newMessage.id,
-  });
 
   const myIdNum = toNumberOrNull(myUserId);
   const isMyMessage = myIdNum && getMessageUserId(newMessage) && Number(getMessageUserId(newMessage)) === Number(myIdNum);

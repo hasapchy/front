@@ -40,7 +40,7 @@ class ProjectContractDto {
         this.date = date;
         this.returned = returned;
         this.isPaid = isPaid;
-        this.files = files || [];
+        this.files = files?.length ? files : null;
         this.note = note;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -80,14 +80,14 @@ class ProjectContractDto {
             cash_id: this.cashId,
             date: this.date,
             returned: this.returned,
-            files: this.files,
+            files: this.files?.length ? this.files : null,
             note: this.note
         };
     }
 
     static fromApiArray(dataArray) {
         return createFromApiArray(dataArray, data => {
-            return new ProjectContractDto(
+            const dto = new ProjectContractDto(
                 data.id,
                 data.project_id || data.projectId,
                 data.number,
@@ -95,7 +95,7 @@ class ProjectContractDto {
                 data.amount,
                 data.currency_id || data.currencyId,
                 data.currency_name || data.currencyName,
-                data.currency_symbol || data.currencySymbol,
+                data.currency_symbol || data.currencySymbol || data.currency?.symbol,
                 data.cash_id || data.cashId,
                 data.cash_register_name || data.cashRegisterName || (data.cash_register?.name || data.cashRegister?.name || null),
                 data.date,
@@ -111,6 +111,13 @@ class ProjectContractDto {
                 data.payment_status_text || data.paymentStatusText,
                 data.creator_name ?? data.creatorName ?? data.creator?.name ?? null
             );
+            if (data.client_id) {
+                dto.clientId = data.client_id;
+                const fn = data.client_first_name ?? data.clientFirstName ?? '';
+                const ln = data.client_last_name ?? data.clientLastName ?? '';
+                dto.clientName = `${fn} ${ln}`.trim() || '-';
+            }
+            return dto;
         }).filter(Boolean);
     }
 }

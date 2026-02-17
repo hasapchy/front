@@ -42,7 +42,7 @@ export default class TransferDto {
          data.currency_to_name,
          data.currency_to_symbol,
          data.amount,
-         data.user_id,
+         data.creator_id,
          data.user_name,
          data.date,
          data.note,

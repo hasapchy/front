@@ -222,87 +222,40 @@ export default {
         },
         displayBalance() {
             if (!this.selectedClient) {
-                console.log('[ClientSearch] displayBalance: no selectedClient');
                 return 0;
             }
-            
-            console.log('[ClientSearch] displayBalance:', {
-                selectedClient: this.selectedClient,
-                hasBalances: !!this.selectedClient.balances,
-                balancesLength: this.selectedClient.balances?.length || 0,
-                balances: this.selectedClient.balances,
-                selectedBalanceId: this.selectedBalanceId,
-                oldBalance: this.selectedClient.balance
-            });
-            
             if (this.selectedClient.balances && this.selectedClient.balances.length > 0) {
                 if (this.selectedBalanceId) {
                     const selectedBalance = this.selectedClient.balances.find(b => b.id === this.selectedBalanceId);
                     if (selectedBalance) {
-                        console.log('[ClientSearch] displayBalance: using selectedBalance', selectedBalance);
                         return selectedBalance.balance || 0;
                     }
                 }
-                
                 const defaultBalance = this.selectedClient.balances.find(b => b.isDefault);
                 if (defaultBalance) {
-                    console.log('[ClientSearch] displayBalance: using defaultBalance', defaultBalance);
                     return defaultBalance.balance || 0;
                 }
-                
-                const firstBalance = this.selectedClient.balances[0]?.balance || 0;
-                console.log('[ClientSearch] displayBalance: using firstBalance', firstBalance);
-                return firstBalance;
+                return this.selectedClient.balances[0]?.balance || 0;
             }
-            
-            const oldBalance = this.selectedClient.balance || 0;
-            console.log('[ClientSearch] displayBalance: using old balance', oldBalance);
-            return oldBalance;
+            return this.selectedClient.balance || 0;
         },
         shouldShowBalanceSelect() {
             const hasPermission = this.$store.getters.hasPermission('settings_client_balance_view');
             const hasBalances = this.selectedClient?.balances && this.selectedClient.balances.length > 1;
-            
-            console.log('[ClientSearch] shouldShowBalanceSelect:', {
-                hasPermission,
-                hasBalances,
-                selectedClient: this.selectedClient,
-                balances: this.selectedClient?.balances,
-                balancesLength: this.selectedClient?.balances?.length || 0
-            });
-            
             return hasPermission && hasBalances;
         }
     },
     async created() {
-        console.log('[ClientSearch] created:', {
-            selectedClient: this.selectedClient
-        });
-        
         await this.fetchLastClients();
-
         if (this.selectedClient && this.selectedClient.id) {
             try {
                 const hasFullData = typeof this.selectedClient.fullName === 'function' && 
                     (this.selectedClient.phones && Array.isArray(this.selectedClient.phones) || this.selectedClient.primaryPhone) &&
                     this.selectedClient.balances && Array.isArray(this.selectedClient.balances);
-                
                 if (hasFullData) {
-                    console.log('[ClientSearch] selectedClient already has full data including balances');
                     return;
                 }
-                
-                console.log('[ClientSearch] fetching client data for id:', this.selectedClient.id, {
-                    hasBalances: !!this.selectedClient.balances,
-                    balancesLength: this.selectedClient.balances?.length || 0
-                });
                 const updatedClient = await ClientController.getItem(this.selectedClient.id);
-                console.log('[ClientSearch] fetched client:', {
-                    updatedClient,
-                    hasBalances: !!updatedClient?.balances,
-                    balancesLength: updatedClient?.balances?.length || 0,
-                    balances: updatedClient?.balances
-                });
                 this.$emit('update:selectedClient', updatedClient);
             } catch (error) {
                 console.error('Ошибка при обновлении данных клиента:', error);
@@ -310,11 +263,6 @@ export default {
         }
     },
     mounted() {
-        console.log('[ClientSearch] mounted:', {
-            selectedClient: this.selectedClient,
-            selectedBalanceId: this.selectedBalanceId,
-            hasPermission: this.$store.getters.hasPermission('settings_client_balance_view')
-        });
         document.addEventListener('click', this.handleBalanceDropdownClickOutside);
     },
     beforeUnmount() {
@@ -395,26 +343,11 @@ export default {
             this.showDropdown = false;
             this.clientSearch = '';
             this.clientResults = [];
-            
-            console.log('[ClientSearch] selectClient:', {
-                client,
-                hasBalances: !!client?.balances,
-                balancesLength: client?.balances?.length || 0
-            });
-            
             if (!client?.balances || !Array.isArray(client.balances) || client.balances.length === 0) {
-                console.log('[ClientSearch] Client has no balances, fetching full client data for id:', client?.id);
                 try {
                     const fullClient = await ClientController.getItem(client.id);
-                    console.log('[ClientSearch] Fetched full client:', {
-                        fullClient,
-                        hasBalances: !!fullClient?.balances,
-                        balancesLength: fullClient?.balances?.length || 0,
-                        balances: fullClient?.balances
-                    });
                     this.$emit('update:selectedClient', fullClient);
                 } catch (error) {
-                    console.error('[ClientSearch] Error fetching full client data:', error);
                     this.$emit('update:selectedClient', client);
                 }
             } else {
@@ -485,11 +418,6 @@ export default {
             return v === 0 ? 'text-[#337AB7]' : v > 0 ? 'text-[#5CB85C]' : 'text-[#EE4F47]';
         },
         onBalanceChange() {
-            console.log('[ClientSearch] Balance changed:', {
-                selectedBalanceId: this.selectedBalanceId,
-                selectedClient: this.selectedClient,
-                balances: this.selectedClient?.balances
-            });
             this.$emit('balance-changed', this.selectedBalanceId);
         },
         selectBalance(balance) {
@@ -506,23 +434,11 @@ export default {
     watch: {
         selectedClient: {
             handler(newVal) {
-                console.log('[ClientSearch] selectedClient changed:', {
-                    newVal,
-                    hasBalances: !!newVal?.balances,
-                    balancesLength: newVal?.balances?.length || 0,
-                    balances: newVal?.balances
-                });
-                
                 if (newVal && newVal.balances && newVal.balances.length > 0) {
                     const defaultBalance = newVal.balances.find(b => b.isDefault);
                     this.selectedBalanceId = defaultBalance ? defaultBalance.id : (newVal.balances[0]?.id || null);
-                    console.log('[ClientSearch] selectedBalanceId set to:', this.selectedBalanceId, {
-                        defaultBalance: defaultBalance?.id,
-                        firstBalance: newVal.balances[0]?.id
-                    });
                 } else {
                     this.selectedBalanceId = null;
-                    console.log('[ClientSearch] selectedBalanceId set to null (no balances)');
                 }
             },
             deep: true,

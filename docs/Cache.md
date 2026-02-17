@@ -167,8 +167,7 @@ try {
 
 **Рекомендация:**
 
-- Добавить логирование ошибок через `Log::warning()` или `Log::error()`
-- В development окружении можно выбрасывать исключения
+- В development окружении можно выбрасывать исключения при проблемах с кэшем
 
 ---
 
@@ -549,18 +548,7 @@ protected static function invalidateOtherCache(string $like, ?int $companyId, st
         // Для других драйверов (file, memcached) паттерн-инвалидация не поддерживается
         // Можно только инвалидировать конкретные ключи
         // НЕ используем Cache::flush() - это очистит весь кэш!
-        
-        \Log::warning('Cache invalidation by pattern not supported for driver: ' . $driver, [
-            'pattern' => $like,
-            'company_id' => $companyId
-        ]);
     } catch (\Exception $e) {
-        \Log::error('Cache invalidation failed', [
-            'driver' => $driver,
-            'pattern' => $like,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
     }
 }
 ```
@@ -615,20 +603,8 @@ protected static function invalidateRedisCache(string $pattern, ?int $companyId)
             foreach ($chunks as $chunk) {
                 Cache::forget($chunk);
             }
-            
-            \Log::info('Cache invalidated', [
-                'pattern' => $pattern,
-                'keys_count' => count($keysToDelete),
-                'company_id' => $companyId
-            ]);
         }
     } catch (\Exception $e) {
-        \Log::error('Redis cache invalidation failed', [
-            'pattern' => $pattern,
-            'company_id' => $companyId,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
     }
 }
 ```
@@ -702,19 +678,7 @@ protected static function invalidateDatabaseCache(string $like, ?int $companyId)
         }
 
         $deleted = DB::table($cacheTable)->where('key', 'like', $like)->delete();
-        
-        \Log::debug('Database cache invalidated', [
-            'pattern' => $originalPattern,
-            'company_id' => $companyId,
-            'deleted_count' => $deleted
-        ]);
     } catch (\Exception $e) {
-        \Log::error('Database cache invalidation failed', [
-            'pattern' => $like,
-            'company_id' => $companyId,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
     }
 }
 ```

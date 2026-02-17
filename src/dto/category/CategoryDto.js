@@ -33,7 +33,7 @@ export default class CategoryDto {
                 data.name,
                 data.parent_id,
                 data.parent_name,
-                data.user_id,
+                data.creator_id,
                 data.user_name,
                 data.users || [],
                 data.created_at,

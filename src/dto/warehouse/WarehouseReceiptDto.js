@@ -86,7 +86,7 @@ export default class WarehouseReceiptDto {
         client,
         products,
         data.note,
-        data.user_id,
+        data.creator_id,
         data.user?.name || '',
         data.date,
         data.created_at,

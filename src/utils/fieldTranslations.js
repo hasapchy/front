@@ -12,7 +12,7 @@ export const fieldTranslations = {
   client_id: "Клиент",
   warehouse_id: "Склад",
   cash_id: "Касса",
-  user_id: "Сотрудник",
+  creator_id: "Сотрудник",
   price: "Цена",
   quantity: "Количество",
   product_id: "Товар",

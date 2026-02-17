@@ -56,7 +56,7 @@ export default class WarehouseMovementDto {
         data.warehouse_to_name,
         products,
         data.note,
-        data.user_id,
+        data.creator_id,
         data.user_name,
         data.date,
         data.created_at,

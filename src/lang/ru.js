@@ -551,6 +551,7 @@ export default {
   user: 'Сотрудник',
   cashRegister: 'Касса',
   saveOrderFirst: 'Сначала сохраните заказ, чтобы добавить/просматривать операции',
+  saveContractFirst: 'Сначала сохраните контракт, чтобы добавить/просматривать операции',
   saveProductFirst: 'Сначала сохраните товар',
 
   // Дополнительные сообщения
@@ -564,6 +565,7 @@ export default {
   deleteOrderStatusCategory: 'Удалить категорию статусов заказа',
   deleteProject: 'Удалить проект',
   deleteTransaction: 'Удалить транзакцию',
+  deleteTransactionLinkedToContract: 'Вы уверены? Транзакция подвязана к контракту.',
   deleteTransfer: 'Удалить трансфер',
   deleteWarehouse: 'Удалить склад',
   deleteCashRegister: 'Касса',
@@ -1133,6 +1135,7 @@ export default {
   'transactionCategory.PREMIUM': 'Премия',
   'transactionCategory.FINE': 'Штраф',
   'transactionCategory.RENT_INCOME': 'Оплата за аренду',
+  'transactionCategory.CONTRACT': 'Контракт',
   // Фразы для товаров
   createProduct: 'Товар',
   editProduct: 'Редактировать товар',

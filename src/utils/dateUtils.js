@@ -57,17 +57,12 @@ export function formatDatabaseDateTimeForInput(date) {
 }
 
 export function getCurrentLocalDateTime() {
-  // Получаем текущее время в UTC
   const now = new Date();
-  // Добавляем 5 часов (Asia/Ashgabat = UTC+5)
-  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const asiaTime = new Date(utcTime + (5 * 3600000)); // +5 часов
-  
-  const year = asiaTime.getUTCFullYear();
-  const month = String(asiaTime.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(asiaTime.getUTCDate()).padStart(2, '0');
-  const hours = String(asiaTime.getUTCHours()).padStart(2, '0');
-  const minutes = String(asiaTime.getUTCMinutes()).padStart(2, '0');
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 

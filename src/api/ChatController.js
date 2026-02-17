@@ -49,7 +49,7 @@ export default class ChatController extends BaseController {
   static async startDirectChat(userId) {
     return super.handleRequest(
       async () => {
-        const { data } = await api.post("/chats/direct", { user_id: userId });
+        const { data } = await api.post("/chats/direct", { creator_id: userId });
         return data.data || data.chat || data;
       },
       "Ошибка при создании личного чата:"

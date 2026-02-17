@@ -17,11 +17,12 @@ export default {
         return getCurrentLocalDateTime();
       }
       if (typeof date === 'string') {
-        // Если уже в формате datetime-local, возвращаем как есть
+        if (date.includes('Z') || /[-+]\d{2}:?\d{2}$/.test(date)) {
+          return formatDatabaseDateTimeForInput(new Date(date));
+        }
         if (date.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/)) {
           return date.substring(0, 16);
         }
-        // Иначе конвертируем из формата базы данных
         return formatDatabaseDateTimeForInput(date);
       }
       if (date instanceof Date || date?.toISOString) {

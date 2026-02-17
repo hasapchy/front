@@ -169,7 +169,7 @@ export default class ClientDto {
         data.updated_at,
         data.emails || [],
         data.phones || [],
-        data.user_id,
+        data.creator_id,
         data.user_name || data.user?.name || null,
         data.employee_id,
         data.employee,

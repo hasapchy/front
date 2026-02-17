@@ -38,7 +38,7 @@ class MessageTemplateController extends BaseController {
             data.item.content,
             data.item.company_id,
             data.item.company,
-            data.item.user_id,
+            data.item.creator_id,
             data.item.user,
             data.item.is_active,
             data.item.created_at,

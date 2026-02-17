@@ -39,7 +39,8 @@
         <SideModalDialog :showForm="contractModalOpen" :onclose="closeContractModal">
             <ProjectContractCreatePage v-if="!contractLoading && editingItem?.id" :editingItem="editingContractItem"
                 :projectId="editingItem.id" @saved="handleContractSaved" @saved-error="handleContractSavedError"
-                @close-request="closeContractModal" />
+                @deleted="handleContractDeleted" @deleted-error="handleContractDeletedError"
+                @refresh-contract="handleRefreshContract" @close-request="closeContractModal" />
             <div v-else-if="contractLoading" class="min-h-64">
                 <TableSkeleton />
             </div>
@@ -179,8 +180,7 @@ export default {
                 }));
                 this.lastFetchedProjectId = this.editingItem.id;
                 this.forceRefresh = false;
-            } catch (error) {
-                console.error('Error fetching contracts:', error);
+            } catch {
                 this.contracts = [];
             }
             this.loading = false;
@@ -212,9 +212,8 @@ export default {
                 this.editingContractItem = contractItem;
                 this.contractModalOpen = true;
             } catch (error) {
-                console.error('Error loading contract:', error);
-                const errorMessage = error?.response?.data?.message || error?.message || 'Ошибка при загрузке контракта';
-                this.showNotification('Ошибка при загрузке контракта', errorMessage, true);
+                const msg = this.getApiErrorMessage(error);
+                this.showNotification(this.$t('error'), Array.isArray(msg) ? msg.join(', ') : msg, true);
             } finally {
                 this.contractLoading = false;
             }
@@ -222,6 +221,12 @@ export default {
         showAddContractModal() {
             this.editingContractItem = null;
             this.contractModalOpen = true;
+        },
+        async handleRefreshContract() {
+            if (this.editingContractItem?.id) {
+                const updated = await ProjectContractController.getItem(this.editingContractItem.id);
+                this.editingContractItem = updated;
+            }
         },
         closeContractModal() {
             this.contractModalOpen = false;
@@ -233,6 +238,16 @@ export default {
             this.fetchContracts();
         },
         handleContractSavedError(error) {
+            const msg = this.getApiErrorMessage(error);
+            const text = Array.isArray(msg) ? msg.join(', ') : msg;
+            this.showNotification(this.$t('error'), text, true);
+        },
+        handleContractDeleted() {
+            this.closeContractModal();
+            this.forceRefresh = true;
+            this.fetchContracts();
+        },
+        handleContractDeletedError(error) {
             const msg = this.getApiErrorMessage(error);
             const text = Array.isArray(msg) ? msg.join(', ') : msg;
             this.showNotification(this.$t('error'), text, true);

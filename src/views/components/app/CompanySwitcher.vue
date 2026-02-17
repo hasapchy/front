@@ -116,6 +116,13 @@ export default {
         }
       },
       immediate: true
+    },
+    '$store.state.appInitializing': {
+      handler(initializing) {
+        if (initializing === false) {
+          this.runLoadIfNeeded();
+        }
+      }
     }
   },
   
@@ -123,26 +130,29 @@ export default {
     if (this.currentCompany) {
       this.isLoading = false;
     }
-    
-    try {
-      if (this.companies.length === 0) {
-        await this.$store.dispatch('loadUserCompanies');
-      }
-      
-      if (!this.currentCompany && !this.$store.state.loadingFlags.currentCompany) {
-        await this.$store.dispatch('loadCurrentCompany', { skipPermissionRefresh: true });
-      }
-      
-      if (!this.selectedCompanyId && this.companies.length > 0) {
-        await this.selectCompany(this.companies[0].id);
-      }
-    } catch (error) {
-      console.error('Error loading companies:', error);
-    } finally {
-      this.isLoading = false;
+    if (this.$store.state.appInitializing) {
+      return;
     }
+    await this.runLoadIfNeeded();
   },
   methods: {
+    async runLoadIfNeeded() {
+      try {
+        if (this.companies.length === 0) {
+          await this.$store.dispatch('loadUserCompanies');
+        }
+        if (!this.currentCompany && !this.$store.state.loadingFlags.currentCompany) {
+          await this.$store.dispatch('loadCurrentCompany', { skipPermissionRefresh: true });
+        }
+        if (!this.selectedCompanyId && this.companies.length > 0) {
+          await this.selectCompany(this.companies[0].id);
+        }
+      } catch (error) {
+        console.error('Error loading companies:', error);
+      } finally {
+        this.isLoading = false;
+      }
+    },
     toggleDropdown() {
       this.isOpen = !this.isOpen
     },

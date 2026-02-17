@@ -42,6 +42,17 @@ export const TRANSACTION_FORM_PRESETS = {
             enforcedValue: 25,
         },
     },
+    contractPayment: {
+        type: { visible: false },
+        client: { visible: false },
+        project: { visible: false },
+        source: { visible: false },
+        debt: { visible: false },
+        category: {
+            visible: false,
+            enforcedValue: 30,
+        },
+    },
     projectBalance: {
         client: { visible: false, excludeFromRequest: true },
         project: { visible: false },

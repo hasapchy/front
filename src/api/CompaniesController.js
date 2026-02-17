@@ -59,7 +59,7 @@ export default class CompaniesController extends BaseController {
     return super.handleRequest(
       async () => {
         const response = await api.get(`/companies/${companyId}/salaries/check`, {
-          params: { date, user_ids: userIds }
+          params: { date, creator_ids: userIds }
         });
         return response.data;
       },

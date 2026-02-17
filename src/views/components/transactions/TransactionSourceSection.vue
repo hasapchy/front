@@ -1,10 +1,10 @@
 <template>
     <div class="mt-2" v-if="isFieldVisible('source') && sourceType !== 'contract'">
-        <template v-if="orderId || selectedSource">
+        <template v-if="orderId || contractId || selectedSource">
             <label class="block mb-1">{{ $t('source') || 'Источник' }}</label>
             <div class="p-3 border rounded bg-white">
                 <div class="text-sm"><span class="font-semibold">Тип:</span> {{ displaySourceTypeLabel() }}</div>
-                <div class="text-sm mt-1"><span class="font-semibold">ID:</span> {{ `#${selectedSource?.id || orderId}` }}</div>
+                <div class="text-sm mt-1"><span class="font-semibold">ID:</span> {{ `#${selectedSource?.id || orderId || contractId}` }}</div>
             </div>
         </template>
     </div>
@@ -18,6 +18,7 @@ export default {
     mixins: [transactionFormConfigMixin],
     props: {
         orderId: { type: [String, Number], default: null },
+        contractId: { type: [String, Number], default: null },
         selectedSource: { type: Object, default: null },
         sourceType: { type: String, default: '' },
         formConfig: { type: Object, default: () => ({}) },
@@ -25,6 +26,7 @@ export default {
     methods: {
         displaySourceTypeLabel() {
             if (this.orderId) return 'Заказ';
+            if (this.contractId) return this.$t('contract') || 'Контракт';
             if (this.sourceType) {
                 if (this.sourceType.includes('Order')) return 'Заказ';
                 if (this.sourceType.includes('Sale')) return 'Продажа';

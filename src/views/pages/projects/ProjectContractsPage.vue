@@ -105,7 +105,8 @@
         <SideModalDialog :showForm="contractModalOpen" :onclose="closeContractModal">
             <ProjectContractCreatePage v-if="!contractLoading" :editingItem="editingContractItem"
                 @saved="handleContractSaved" @saved-error="handleContractSavedError"
-                @close-request="closeContractModal" />
+                @deleted="handleContractDeleted" @deleted-error="handleContractDeletedError"
+                @refresh-contract="handleRefreshContract" @close-request="closeContractModal" />
             <div v-else-if="contractLoading" class="min-h-64">
                 <TableSkeleton />
             </div>
@@ -124,6 +125,7 @@ import FiltersContainer from "@/views/components/app/forms/FiltersContainer.vue"
 import ProjectContractCreatePage from "./ProjectContractCreatePage.vue";
 import ProjectContractController from "@/api/ProjectContractController";
 import BooleanSelectCell from "@/views/components/app/buttons/BooleanSelectCell.vue";
+import ClientButtonCell from "@/views/components/app/buttons/ClientButtonCell.vue";
 import ContractsBalanceWrapper from "@/views/components/projects/ContractsBalanceWrapper.vue";
 import TableSkeleton from "@/views/components/app/TableSkeleton.vue";
 import notificationMixin from "@/mixins/notificationMixin";
@@ -137,6 +139,7 @@ export default {
     components: {
         DraggableTable,
         SideModalDialog,
+        ClientButtonCell,
         PrimaryButton,
         TableControlsBar,
         Pagination,
@@ -175,6 +178,13 @@ export default {
             columnsConfig: [
                 { name: "id", label: "ID", size: 80 },
                 { name: "projectName", label: this.$t("project"), size: 200 },
+                {
+                    name: "client",
+                    label: this.$t("client"),
+                    size: 180,
+                    component: markRaw(ClientButtonCell),
+                    props: (i) => ({ client: i.clientId ? { id: i.clientId, clientName: i.clientName } : null })
+                },
                 { name: "number", label: this.$t("contractNumber"), size: 150 },
                 { name: "type", label: this.$t("contractType"), size: 120 },
                 { name: "amount", label: this.$t("amount"), size: 120, html: true },
@@ -188,7 +198,7 @@ export default {
                     props: (i) => ({
                         value: !!i.returned,
                         options: this.returnedOptions,
-                        onChange: (newValue) => this.updateContractField(i.id, 'returned', newValue),
+                        onChange: (newValue) => this.saveContractField(i.id, 'returned', newValue),
                     }),
                 },
                 {
@@ -227,12 +237,9 @@ export default {
                 }
             } catch (error) {
                 item[field] = oldValue;
-                const message = error?.response?.data?.message || error?.message || 'Ошибка при сохранении';
-                this.showNotification('Error', message, true);
+                const msg = this.getApiErrorMessage(error);
+                this.showNotification(this.$t('error'), Array.isArray(msg) ? msg.join(', ') : msg, true);
             }
-        },
-        updateContractField(contractId, field, value) {
-            this.saveContractField(contractId, field, value);
         },
         getContractPaymentStatusClass(item) {
             const status = item.payment_status || item.paymentStatus || 'unpaid';
@@ -288,8 +295,7 @@ export default {
                     lastPage: response.lastPage || 1,
                     total: response.total || 0
                 };
-            } catch (error) {
-                console.error('Error fetching contracts:', error);
+            } catch {
                 this.data = { items: [], currentPage: 1, lastPage: 1, total: 0 };
                 this.showNotification('Error', 'Error loading contracts', true);
             }
@@ -303,8 +309,7 @@ export default {
             try {
                 await this.$store.dispatch('loadProjects');
                 this.projects = this.$store.getters.activeProjects || [];
-            } catch (error) {
-                console.error('Error fetching projects:', error);
+            } catch {
                 this.projects = [];
             }
         },
@@ -312,8 +317,7 @@ export default {
             try {
                 await this.$store.dispatch('loadCashRegisters');
                 this.cashRegisters = this.$store.getters.cashRegisters || [];
-            } catch (error) {
-                console.error('Error fetching cash registers:', error);
+            } catch {
                 this.cashRegisters = [];
             }
         },
@@ -349,6 +353,8 @@ export default {
         },
         itemMapper(item, column) {
             switch (column) {
+                case "client":
+                    return item.clientName || '-';
                 case "projectName":
                     return item.projectName || '-';
                 case "number":
@@ -405,9 +411,8 @@ export default {
                 this.editingContractItem = contractItem;
                 this.contractModalOpen = true;
             } catch (error) {
-                console.error('Error loading contract:', error);
-                const errorMessage = error?.response?.data?.message || error?.message || 'Error loading contract';
-                this.showNotification('Ошибка при загрузке контракта', errorMessage, true);
+                const msg = this.getApiErrorMessage(error);
+                this.showNotification(this.$t('error'), Array.isArray(msg) ? msg.join(', ') : msg, true);
             } finally {
                 this.contractLoading = false;
             }
@@ -428,6 +433,21 @@ export default {
             const msg = this.getApiErrorMessage(error);
             const text = Array.isArray(msg) ? msg.join(', ') : msg;
             this.showNotification(this.$t('error'), text, true);
+        },
+        handleContractDeleted() {
+            this.closeContractModal();
+            this.fetchContracts(this.data?.currentPage || 1);
+        },
+        handleContractDeletedError(error) {
+            const msg = this.getApiErrorMessage(error);
+            const text = Array.isArray(msg) ? msg.join(', ') : msg;
+            this.showNotification(this.$t('error'), text, true);
+        },
+        async handleRefreshContract() {
+            if (this.editingContractItem?.id) {
+                const updated = await ProjectContractController.getItem(this.editingContractItem.id);
+                this.editingContractItem = updated;
+            }
         },
     },
     async mounted() {

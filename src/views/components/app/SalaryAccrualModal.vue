@@ -200,7 +200,7 @@ export default {
                 if (checkResult?.has_existing && checkResult.affected_users?.length > 0) {
                     const month = checkResult.month || new Intl.DateTimeFormat(this.getLocale(), { month: 'long', year: 'numeric' }).format(new Date(this.form.date));
                     const userNames = checkResult.affected_users
-                        .map(u => u.user_name || `ID: ${u.user_id}`)
+                        .map(u => u.user_name || `ID: ${u.creator_id}`)
                         .filter(name => name);
 
                     if (userNames.length > 0) {
@@ -214,7 +214,7 @@ export default {
                         date: this.form.date,
                         cash_id: this.form.cash_id,
                         note: this.form.note || null,
-                        user_ids: this.userIds,
+                        creator_ids: this.userIds,
                         payment_type: this.form.payment_type
                     };
                     this.confirmDialog = true;
@@ -227,7 +227,7 @@ export default {
                     date: this.form.date,
                     cash_id: this.form.cash_id,
                     note: this.form.note || null,
-                    user_ids: this.userIds,
+                    creator_ids: this.userIds,
                     payment_type: this.form.payment_type
                 });
             } catch (error) {

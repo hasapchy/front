@@ -322,7 +322,6 @@ export default {
 
     mounted() {
         this.fetchItems();
-        // Кассы и проекты загружаются автоматически через store при установке компании
         this.allCashRegisters = this.$store.getters.cashRegisters;
         this.allProjects = this.$store.getters.activeProjects;
     },

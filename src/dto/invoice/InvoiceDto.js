@@ -134,7 +134,7 @@ export default class InvoiceDto {
       return new InvoiceDto(
         data.id,
         data.client_id,
-        data.user_id,
+        data.creator_id,
         data.user_name,
         data.invoice_date,
         data.note,

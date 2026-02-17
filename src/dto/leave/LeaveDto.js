@@ -111,7 +111,7 @@ export default class LeaveDto {
         data.id,
         data.leave_type_id || data.leaveTypeId,
         leaveType,
-        data.user_id || data.userId,
+        data.user_id ?? data.creator_id ?? data.userId,
         user,
         data.comment,
         data.date_from || data.dateFrom,

@@ -5,7 +5,7 @@
             v-model:cashId="cashId" v-model:isDebt="isDebt" v-model:origAmount="origAmount"
             v-model:currencyId="currencyId" v-model:categoryId="categoryId" v-model:projectId="projectId"
             v-model:note="note" v-model:selectedBalanceId="selectedBalanceId" v-model:paymentType="paymentType"
-            :editingItemId="editingItemId" :orderId="orderId" :initialProjectId="initialProjectId"
+            :editingItemId="editingItemId" :orderId="orderId" :contractId="contractId" :initialProjectId="initialProjectId"
             :allCashRegisters="cashRegistersForForm" :currencies="currencies" :filteredCategories="filteredCategories"
             :allProjects="allProjects" :formConfig="formConfig" :isCategoryDisabled="isCategoryDisabled"
             :client-balances="clientBalances" @balance-changed="onBalanceChanged" />
@@ -18,11 +18,11 @@
             :calculatedCashAmount="calculatedCashAmount" :isTransferTransaction="isTransferTransaction"
             @exchange-rate-manual="handleExchangeRateChange" />
         <div class="mt-2"
-            v-if="isFieldVisible('source') && !orderId && $store.getters.hasPermission('contracts_create')">
-            <ContractSearch v-model:selectedContract="selectedContractForSource" :showLabel="true"
-                :project-id="useProjectContractBinding ? projectId : null" :active-projects-only="true" />
+            v-if="isFieldVisible('source') && !orderId && !contractId && $store.getters.hasPermission('contracts_create')">
+            <ContractSearch v-model:selectedContract="selectedContractForSource" :contract-id="contractIdForEdit"
+                :showLabel="true" :project-id="useProjectContractBinding ? projectId : null" :active-projects-only="true" />
         </div>
-        <TransactionSourceSection :orderId="orderId" :selectedSource="selectedSource" :sourceType="sourceType"
+        <TransactionSourceSection :orderId="orderId" :contractId="contractId" :selectedSource="selectedSource" :sourceType="sourceType"
             :formConfig="formConfig" />
     </div>
     <div v-if="readOnlyReason" class="mt-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700">
@@ -32,7 +32,7 @@
         :isTransferTransaction="isTransferTransaction" :saveLoading="saveLoading" :deleteLoading="deleteLoading"
         @save="save" @delete="showDeleteDialog" @copy="copyTransaction" />
     <AlertDialog :dialog="deleteDialog" @confirm="deleteItem" @leave="closeDeleteDialog"
-        :descr="$t('deleteTransaction')" :confirm-text="$t('deleteTransaction')" :leave-text="$t('cancel')" />
+        :descr="deleteDialogDescr" :confirm-text="$t('deleteTransaction')" :leave-text="$t('cancel')" />
     <AlertDialog :dialog="closeConfirmDialog" @confirm="confirmClose" @leave="cancelClose" :descr="$t('unsavedChanges')"
         :confirm-text="$t('closeWithoutSaving')" :leave-text="$t('stay')" />
 </template>
@@ -45,6 +45,7 @@ import TransactionDto from '@/dto/transaction/TransactionDto';
 import ClientDto from '@/dto/client/ClientDto';
 import TransactionController from '@/api/TransactionController';
 import OrderController from '@/api/OrderController';
+import ProjectContractController from '@/api/ProjectContractController';
 import SaleController from '@/api/SaleController';
 import WarehouseReceiptController from '@/api/WarehouseReceiptController';
 import OrderStatusController from '@/api/OrderStatusController';
@@ -84,6 +85,7 @@ export default {
         initialClient: { type: ClientDto, default: null },
         initialProjectId: { type: [String, Number, null], default: null },
         orderId: { type: [String, Number], required: false },
+        contractId: { type: [String, Number], required: false },
         defaultCashId: { type: Number, default: null, required: false },
         prefillAmount: { type: [Number, String], default: null },
         prefillCurrencyId: { type: [Number, String], default: null },
@@ -109,7 +111,7 @@ export default {
     data() {
         return {
             // Для заказов всегда тип "income" и не долговая
-            type: this.orderId ? "income" : (this.editingItem ? this.editingItem.typeName() : "income"),
+            type: (this.orderId || this.contractId) ? "income" : (this.editingItem ? this.editingItem.typeName() : "income"),
             cashId: this.editingItem?.cashId || this.defaultCashId || '',
             origAmount: this.editingItem?.origAmount ?? (this.prefillAmount ? parseFloat(this.prefillAmount) || 0 : 0),
             currencyId: this.editingItem?.origCurrencyId || this.prefillCurrencyId || '',
@@ -117,7 +119,7 @@ export default {
             projectId: this.editingItem?.projectId || this.initialProjectId || '',
             date: this.getFormattedDate(this.editingItem?.date),
             note: this.editingItem?.note || '',
-            isDebt: this.orderId ? false : (this.editingItem?.isDebt ?? this.fieldConfig('debt').enforcedValue ?? false),
+            isDebt: (this.orderId || this.contractId) ? false : Boolean(this.editingItem?.is_debt ?? this.editingItem?.isDebt ?? this.fieldConfig('debt').enforcedValue ?? false),
             selectedClient: this.editingItem?.client || this.initialClient,
             selectedBalanceId: null,
             selectedSource: null,
@@ -264,6 +266,15 @@ export default {
         useProjectContractBinding() {
             return !this.editingItemId && this.formConfig?.options?.bindProjectAndContract === true;
         },
+        contractIdForEdit() {
+            if (!this.editingItem?.sourceType?.includes?.('ProjectContract') || !this.editingItem?.sourceId) return null;
+            return this.editingItem.sourceId;
+        },
+        deleteDialogDescr() {
+            return this.editingItem?.sourceType?.includes?.('ProjectContract')
+                ? this.$t('deleteTransactionLinkedToContract')
+                : this.$t('deleteTransaction');
+        },
         selectedContractForSource: {
             get() {
                 return this.sourceType === 'contract' ? this.selectedSource : null;
@@ -325,6 +336,9 @@ export default {
             }
             if (!this.editingItem && this.formConfig?.options?.loadSalaryAmountByPaymentType && this.selectedClient?.employeeId) {
                 await this.loadEmployeeSalaryAmount();
+            }
+            if (!this.editingItem && this.contractId) {
+                await this.loadContractForSource();
             }
             this.saveInitialState();
         });
@@ -539,7 +553,7 @@ export default {
                     date: this.date,
                     cash_id: this.cashId,
                     note: this.note || null,
-                    user_ids: [Number(this.selectedClient.employeeId)],
+                    creator_ids: [Number(this.selectedClient.employeeId)],
                     payment_type: Boolean(this.paymentType),
                 };
             }
@@ -598,10 +612,10 @@ export default {
                     }
                 }
 
-                const sourceType = this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : null);
+                const sourceType = this.getSourceTypeForBackend() || (this.orderId ? 'App\\Models\\Order' : this.contractId ? 'App\\Models\\ProjectContract' : null);
                 if (sourceType) {
                     requestData.source_type = sourceType;
-                    requestData.source_id = this.selectedSource?.id || this.orderId || null;
+                    requestData.source_id = this.selectedSource?.id || this.orderId || this.contractId || null;
                 }
 
                 return requestData;
@@ -617,7 +631,7 @@ export default {
                     date: data.date,
                     cash_id: data.cash_id,
                     note: data.note,
-                    user_ids: data.user_ids,
+                    creator_ids: data.creator_ids,
                     payment_type: data.payment_type,
                 };
                 return await CompaniesController.accrueSalaries(companyId, payload);
@@ -682,6 +696,27 @@ export default {
         },
 
         // Загружаем информацию о заказе если это модалка доплаты
+        async loadContractForSource() {
+            if (!this.contractId) return;
+            try {
+                const contract = await ProjectContractController.getItem(this.contractId);
+                if (contract) {
+                    this.selectedSource = contract;
+                    this.sourceType = 'contract';
+                    this.projectId = contract.projectId ?? contract.project_id ?? '';
+                    if (contract.cashId && !this.cashId) {
+                        this.cashId = contract.cashId;
+                        this.updateCurrencyFromCash(contract.cashId);
+                    }
+                    if (contract.currencyId && !this.currencyId) {
+                        this.currencyId = contract.currencyId;
+                    }
+                }
+            } catch (e) {
+                this.selectedSource = null;
+                this.sourceType = '';
+            }
+        },
         async loadOrderInfo() {
             if (this.isPaymentModal && this.orderId) {
                 try {
@@ -694,7 +729,7 @@ export default {
 
         // Загружаем источник при редактировании
         handleSourceFromEditingItem(newEditingItem) {
-            if (newEditingItem.sourceType && newEditingItem.sourceId) {
+            if (newEditingItem?.sourceType && newEditingItem?.sourceId) {
                 this.loadSourceForEdit(newEditingItem.sourceType, newEditingItem.sourceId);
             } else {
                 this.selectedSource = null;
@@ -729,7 +764,6 @@ export default {
                     this.selectedSource = receipt;
                 } else if (sourceType.includes('ProjectContract')) {
                     this.sourceType = 'contract';
-                    const ProjectContractController = (await import('@/api/ProjectContractController')).default;
                     const contract = await ProjectContractController.getItem(sourceId);
                     this.selectedSource = contract;
                 }
@@ -881,7 +915,7 @@ export default {
                 this.date = newEditingItem.date ? this.getFormattedDate(newEditingItem.date)
                     : this.getCurrentLocalDateTime();
                 this.selectedClient = newEditingItem.client || this.initialClient || null;
-                this.isDebt = newEditingItem.isDebt || false;
+                this.isDebt = Boolean(newEditingItem.is_debt ?? newEditingItem.isDebt ?? false);
                 this.exchangeRate = newEditingItem.exchangeRate || null;
                 this.isExchangeRateManual = !!newEditingItem.exchangeRate;
                 this.handleSourceFromEditingItem(newEditingItem);

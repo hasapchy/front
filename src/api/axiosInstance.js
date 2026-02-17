@@ -24,7 +24,6 @@ api.interceptors.request.use(
     const bypass = localStorage.getItem(MAINTENANCE_BYPASS_KEY);
     if (bypass) {
       config.headers["X-Maintenance-Bypass"] = bypass;
-      console.log("Maintenance bypass header set:", bypass);
     }
 
     const token = TokenUtils.getToken();
@@ -105,7 +104,6 @@ api.interceptors.response.use(
           }
         }
       } catch (refreshError) {
-        console.error("Ошибка при обновлении токена", refreshError);
         TokenUtils.clearAuthData();
 
         if (window.location.pathname !== "/auth/login") {

@@ -1089,8 +1089,6 @@ export default {
   },
   methods: {
     setupEventListeners() {
-      console.log("[MessengerPage] 🔗 Подписка на события eventBus...");
-      // Подписываемся на события чатов через eventBus
       eventBus.on("chat:message", this.handleIncomingMessage);
       eventBus.on("chat:message:updated", this.handleMessageUpdated);
       eventBus.on("chat:message:deleted", this.handleMessageDeleted);
@@ -1098,7 +1096,6 @@ export default {
       eventBus.on("presence:here", this.handlePresenceHere);
       eventBus.on("presence:joining", this.handlePresenceJoining);
       eventBus.on("presence:leaving", this.handlePresenceLeaving);
-      console.log("[MessengerPage] ✅ Подписка на события завершена");
     },
     removeEventListeners() {
       // Отписываемся от событий
@@ -1111,15 +1108,9 @@ export default {
       eventBus.off("presence:leaving", this.handlePresenceLeaving);
     },
     handleIncomingMessage(event) {
-      console.log("[MessengerPage] 📬 handleIncomingMessage вызван:", {
-        chat_id: event?.chat_id,
-        user: event?.user?.name,
-      });
       handleIncomingChatEvent(this, event);
     },
     handleMessageUpdated(event) {
-      console.log("[MessengerPage] ✏️ Сообщение обновлено:", event);
-      
       const messageId = Number(event?.id);
       if (!messageId) return;
 
@@ -1168,8 +1159,6 @@ export default {
       }
     },
     handleMessageDeleted(event) {
-      console.log("[MessengerPage] 🗑️ Сообщение удалено:", event);
-      
       const messageId = Number(event?.id);
       if (!messageId) return;
 
@@ -1524,7 +1513,7 @@ export default {
     },
     isMyMessage(m) {
       const myId = this.$store.state.user?.id;
-      const userId = m.user_id || m.userId || m.user?.id;
+      const userId = m.creator_id || m.userId || m.user?.id;
       return myId && userId && Number(myId) === Number(userId);
     },
     messageTime(m) {
@@ -1666,24 +1655,10 @@ export default {
       this.saveEditLoading = true;
       try {
         const updatedMessage = await ChatController.updateMessage(this.selectedChatId, this.editingMessage.id, this.draft);
-        
-        console.log("[MessengerPage] 📝 Ответ API после редактирования:", {
-          id: updatedMessage.id,
-          body: updatedMessage.body,
-          is_edited: updatedMessage.is_edited,
-          edited_at: updatedMessage.edited_at,
-        });
-        
-        // Обновляем сообщение локально с принудительной установкой is_edited
+
         const messageId = Number(this.editingMessage.id);
         this.messages = (this.messages || []).map((m) => {
           if (Number(m.id) !== messageId) return m;
-          
-          console.log("[MessengerPage] 🔄 Обновляем сообщение:", {
-            old_is_edited: m.is_edited,
-            new_is_edited: updatedMessage.is_edited,
-          });
-          
           return {
             ...m,
             body: updatedMessage.body,
@@ -1951,7 +1926,7 @@ export default {
         return users.find(u => u && Number(u.id) === Number(userId)) || message.user;
       }
       
-      const userId = message.user_id || message.userId || message.user?.id;
+      const userId = message.creator_id || message.userId || message.user?.id;
       if (!userId) return null;
       
       // Проверяем, это текущий пользователь?
@@ -1967,8 +1942,8 @@ export default {
     getMessageUserName(message) {
       const user = this.getMessageUser(message);
       if (!user) {
-        // Fallback: если пользователь не найден, показываем user_id
-        const userId = message.user_id || message.userId || message.user?.id;
+        // Fallback: если пользователь не найден, показываем creator_id
+        const userId = message.creator_id || message.userId || message.user?.id;
         return userId ? `Пользователь #${userId}` : "Неизвестный";
       }
       const name = user.name || "";
@@ -1991,7 +1966,7 @@ export default {
     getMessageUserInitials(message) {
       const user = this.getMessageUser(message);
       if (!user) {
-        const userId = message.user_id || message.userId || message.user?.id;
+        const userId = message.creator_id || message.userId || message.user?.id;
         return userId ? String(userId).charAt(0) : "?";
       }
       return this.getUserInitials(user);
@@ -2011,8 +1986,8 @@ export default {
       }
       
       const nextMessage = groupMessages[index + 1];
-      const currentUserId = message.user_id || message.userId || message.user?.id;
-      const nextUserId = nextMessage.user_id || nextMessage.userId || nextMessage.user?.id;
+      const currentUserId = message.creator_id || message.userId || message.user?.id;
+      const nextUserId = nextMessage.creator_id || nextMessage.userId || nextMessage.user?.id;
       
       // If next message is from different user, show avatar
       if (String(currentUserId) !== String(nextUserId)) {
@@ -2032,7 +2007,7 @@ export default {
     },
     getUserColor(message) {
       // Generate consistent color for user based on their ID
-      const userId = message.user_id || message.userId || message.user?.id;
+      const userId = message.creator_id || message.userId || message.user?.id;
       if (!userId) return '#000000';
       
       const colors = [
@@ -2060,7 +2035,7 @@ export default {
       }
       
       // Получаем текущего пользователя сообщения
-      const currentUserId = item.data?.user_id || item.data?.userId || item.data?.user?.id;
+      const currentUserId = item.data?.creator_id || item.data?.userId || item.data?.user?.id;
       if (!currentUserId) return false;
       
       // Ищем следующее сообщение (не разделитель даты)
@@ -2074,7 +2049,7 @@ export default {
         }
         
         // Получаем пользователя следующего сообщения
-        const nextUserId = nextItem.data?.user_id || nextItem.data?.userId || nextItem.data?.user?.id;
+        const nextUserId = nextItem.data?.creator_id || nextItem.data?.userId || nextItem.data?.user?.id;
         
         // Если следующее сообщение от другого пользователя, показываем аватар (это последнее сообщение от текущего пользователя)
         if (nextUserId && Number(nextUserId) !== Number(currentUserId)) {
@@ -2129,7 +2104,7 @@ export default {
     isMyMessageInChat(item) {
       if (!item.last_message) return false;
       const myId = this.$store.state.user?.id;
-      return myId && Number(item.last_message.user_id) === Number(myId);
+      return myId && Number(item.last_message.creator_id) === Number(myId);
     },
     handleEnterKey() {
       if (this.editingMessage) {
@@ -2163,7 +2138,7 @@ export default {
       try {
         const chat = await ChatController.createGroupChat({
           title: this.groupTitle.trim(),
-          user_ids: this.selectedUserIds,
+          creator_ids: this.selectedUserIds,
         });
         
         if (chat) {

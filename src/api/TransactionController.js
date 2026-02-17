@@ -18,7 +18,8 @@ export default class TransactionController extends BaseController {
     start_date = null,
     end_date = null,
     is_debt = null,
-    category_ids = null
+    category_ids = null,
+    contract_id = null
   ) {
     const params = {
       cash_id,
@@ -31,6 +32,7 @@ export default class TransactionController extends BaseController {
       start_date,
       end_date,
       is_debt,
+      contract_id,
     };
 
     if (category_ids && Array.isArray(category_ids) && category_ids.length > 0) {
@@ -52,6 +54,10 @@ export default class TransactionController extends BaseController {
   static async getItem(id) {
     const data = await super.getItem("/transactions", id);
     return TransactionDto.fromApiArray([data.item])[0] || null;
+  }
+
+  static async getItemsByContractId(contractId, perPage = 20) {
+    return this.getItems(1, null, 'all_time', null, null, null, null, null, perPage, null, null, null, null, contractId);
   }
 
   static async getTotalPaidByOrderId(orderId) {

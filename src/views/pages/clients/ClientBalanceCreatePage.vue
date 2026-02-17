@@ -215,7 +215,7 @@ export default {
                 const result = await ClientController.updateClientBalance(
                     this.initialClient.id,
                     this.editingItemId,
-                    { is_default: this.isDefault, note: this.note, user_ids: userIds }
+                    { is_default: this.isDefault, note: this.note, creator_ids: userIds }
                 );
                 
                 if (result.requires_confirmation) {
@@ -227,7 +227,7 @@ export default {
                         await ClientController.updateClientBalance(
                             this.initialClient.id,
                             this.editingItemId,
-                            { is_default: true, skip_confirmation: true, note: this.note, user_ids: userIds }
+                            { is_default: true, skip_confirmation: true, note: this.note, creator_ids: userIds }
                         );
                     } else {
                         return;

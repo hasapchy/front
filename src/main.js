@@ -43,8 +43,20 @@ async function bootstrapApp() {
 
   const app = createApp(App);
   app.component("SpinnerIcon", SpinnerIcon);
-  
-  // Глобальные методы для форматирования чисел
+
+  app.config.errorHandler = (err, instance, info) => {
+    console.error("Vue error:", err, info, instance);
+    try {
+      store.dispatch("showNotification", {
+        title: i18n.global?.t?.("error") ?? "Ошибка",
+        subtitle: err?.message ?? String(err),
+        isDanger: true,
+      });
+    } catch (_) {
+      console.error("Error handler failed:", _);
+    }
+  };
+
   app.config.globalProperties.$formatNumber = formatNumber;
   app.config.globalProperties.$formatCurrency = formatCurrency;
   app.config.globalProperties.$getStepForDecimals = getStepForDecimals;

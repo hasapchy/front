@@ -15,13 +15,6 @@ const readDebounceMap = new Map(); // chatId -> { timer, lastMessageId }
  * @returns {any} result from applyIncomingMessage
  */
 export function handleIncomingChatEvent(vm, event) {
-  console.log("[MessengerFacade] 📥 Обработка входящего сообщения:", {
-    chat_id: event?.chat_id,
-    selectedChatId: vm.selectedChatId,
-    user: event?.user?.name,
-    body: event?.body?.substring(0, 50),
-  });
-  
   const myUserId = vm?.$store?.state?.user?.id;
   const next = applyIncomingMessage(
     {
@@ -33,12 +26,6 @@ export function handleIncomingChatEvent(vm, event) {
     },
     event
   );
-
-  console.log("[MessengerFacade] ✅ Результат обработки:", {
-    appendedToMessages: next.appendedToMessages,
-    shouldScroll: next.shouldScroll,
-    messagesCount: next.messages?.length,
-  });
 
   vm.messages = next.messages;
   vm.chats = next.chats;
@@ -107,12 +94,12 @@ export function applySentMessage(vm, msg) {
 /**
  * Handle WS read-receipt event and update component state used for ✓ / ✓✓ rendering.
  *
- * Expected payload: { chat_id, user_id, last_read_message_id }
+ * Expected payload: { chat_id, creator_id, last_read_message_id }
  */
 export function handleChatReadEvent(vm, event) {
   try {
     const chatId = Number(event?.chat_id);
-    const userId = Number(event?.user_id);
+    const userId = Number(event?.creator_id);
     const lastReadId = Number(event?.last_read_message_id);
     if (!chatId || !userId || !lastReadId) return;
 

@@ -39,10 +39,6 @@ export async function loadGlobalReference(
     const finalData = transformFn ? transformFn(data, state) : data;
     commit(mutation, finalData);
     touchKey(cacheKey);
-    if (process.env.NODE_ENV !== "production" && logName) {
-      const dataLength = Array.isArray(finalData) ? finalData.length : 0;
-      console.log(`${logName} (${dataLength})`);
-    }
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       console.error(`Ошибка загрузки ${logName || "данных"}:`, error);
@@ -96,9 +92,6 @@ export async function loadCompanyScopedData({ commit, state, dispatch }, config)
   
   if (Array.isArray(stateData) && stateData.length > 0 && isFreshByKey(cacheKey, ttl)) {
     if (loggedFlagKey && state.loggedDataFlags && !state.loggedDataFlags[loggedFlagKey]) {
-      if (process.env.NODE_ENV !== "production" && logEmoji && logName) {
-        console.log(`  ${logEmoji} ${logName} (${stateData.length}) - из кэша`);
-      }
       commit("SET_LOGGED_DATA_FLAG", { type: loggedFlagKey, logged: true });
     }
     return;
@@ -113,10 +106,6 @@ export async function loadCompanyScopedData({ commit, state, dispatch }, config)
       clearMutations.slice(1).forEach((mutation) => {
         commit(mutation, data);
       });
-    }
-    if (process.env.NODE_ENV !== "production" && logEmoji && logName) {
-      const dataLength = Array.isArray(data) ? data.length : 0;
-      console.log(`  ${logEmoji} ${logName} (${dataLength})`);
     }
     touchKey(cacheKey);
   } catch (error) {

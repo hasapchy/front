@@ -553,44 +553,24 @@ export default {
             return map[dayjsDay] || 1;
         },
         handleInputClick(event) {
-            console.log('[TaskCreatePage] handleInputClick', {
-                currentState: this.showDatePicker,
-                target: event.target,
-            });
             event.stopPropagation();
             this.showDatePicker = true;
-            console.log('[TaskCreatePage] after toggle', {
-                newState: this.showDatePicker,
-            });
         },
         clearDeadline() {
             this.deadline = null;
             this.showDatePicker = false;
         },
         handleClickOutside(event) {
-            console.log('[TaskCreatePage] handleClickOutside', {
-                showDatePicker: this.showDatePicker,
-                target: event.target,
-            });
-            
             if (!this.showDatePicker) {
                 return;
             }
 
             const inputWrapper = this.$refs.dateInputWrapper;
             const datePickerWrapper = this.$refs.datePickerWrapper;
-            
-            console.log('[TaskCreatePage] elements', {
-                inputWrapper,
-                datePickerWrapper,
-                containsInput: inputWrapper?.contains(event.target),
-                containsPicker: datePickerWrapper?.contains(event.target),
-            });
-            
+
             if (inputWrapper && datePickerWrapper &&
                 !inputWrapper.contains(event.target) &&
                 !datePickerWrapper.contains(event.target)) {
-                console.log('[TaskCreatePage] closing datePicker');
                 this.showDatePicker = false;
             }
         },

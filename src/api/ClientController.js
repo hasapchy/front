@@ -146,7 +146,7 @@ export default class ClientController extends BaseController {
           is_default: isDefault,
           balance: initialBalance,
           note: note,
-          user_ids: Array.isArray(userIds) ? userIds : []
+          creator_ids: Array.isArray(userIds) ? userIds : []
         });
         const balanceData = response.data.data || response.data;
         return ClientBalanceDto.fromApi(balanceData);

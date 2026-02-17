@@ -151,7 +151,7 @@ export default class ProjectDto {
         data.date,
         data.client_id,
         client,
-        data.user_id,
+        data.creator_id,
         data.user_name,
         data.user_photo,
         data.users || [],

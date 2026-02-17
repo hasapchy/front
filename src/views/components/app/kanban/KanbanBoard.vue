@@ -216,7 +216,6 @@ export default {
         }
     },
     mounted() {
-        console.log('orders***', this.orders.checklist);
         this.loadColumnOrder();
         this.updateSortedColumns();
     }
